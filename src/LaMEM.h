@@ -154,6 +154,9 @@
 // maximum number of adjoint points
 #define _max_adj_point_ 100
 
+// maximum number of control polygons
+#define _max_ctrl_poly_ 20
+
 // cast macros
 #define LLD long long int
 

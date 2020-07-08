@@ -1145,6 +1145,8 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscInt       nPoly;
 	PetscScalar    atol;
 	PetscScalar    box[4];
+	CtrlP          CtrlPoly;
+	PetscInt       VolID, nCP;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1296,6 +1298,9 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polyin); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X);  CHKERRQ(ierr);
 
+	// read geometry variations
+	ierr = ADVMarkReadCtrlPoly(fb, &CtrlPoly, VolID, nCP); CHKERRQ(ierr);
+
 	// --- loop over all volumes ---
 	for(kvol = 0; kvol < VolN; kvol++)
 	{
@@ -1324,7 +1329,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "The 'Dir' argument is wrong; should be 0, 1 or 2.");
 		}
 
-		// get lengths of polygons (PetscScalar !)
+		// get position of polygons (PetscScalar !)
 		for(kpoly = 0; kpoly < Poly.num; kpoly++)
 		{
 			PolyIdx[kpoly] = PolyFile[Fcount]; Fcount++;
@@ -1334,6 +1339,30 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 		for (kpoly=0; kpoly<Poly.num;kpoly++)
 		{
 			PolyLen[kpoly] = PolyFile[Fcount]; Fcount++;
+		}
+
+		// interpolate stretch parameters
+		PetscScalar SxAll[Poly.num];
+		PetscScalar SyAll[Poly.num];
+		if (kvol == VolID)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"\nVarying volume %d (phase: %d, type: %d) \n", VolID, Poly.phase, Poly.type);
+			
+			// shift index of control polys by 1 to be in line with c indexing
+			PetscInt    i;
+    		for (i=0; i < nCP; ++i)
+    		{
+				// also check if control polygon is out of bounds
+				if (CtrlPoly.Pos[i] > Poly.num)
+				{
+					SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %d polygons", Poly.num);
+				}
+				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %d: Pos: %d, Sx: %.6f, Sy: %.6f \n",i+1,CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
+				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;
+    		}
+
+			// interpolate stretch parameters
+			interpStretch(CtrlPoly.Sx,CtrlPoly.Sy,nCP,CtrlPoly.Pos,Poly.num,SxAll,SyAll);
 		}
 
 		// --- loop through all slices ---
@@ -1351,6 +1380,12 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				for (n=0; n<Poly.len*2;n++)
 				{
 					Poly.X[n] = PolyFile[Fcount]; Fcount++;
+				}
+
+				// vary Polygon geometry
+				if (kvol == VolID)
+				{
+					stretchPolygon(Poly.X,Poly.len,SxAll[kpoly],SyAll[kpoly]);
 				}
 
 				// get local markers that locate on polygon plane
@@ -1418,6 +1453,52 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
 	PrintDone(t);
+
+	PetscFunctionReturn(ierr);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkReadCtrlPoly"
+PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, PetscInt &nCP)
+{
+	PetscInt       jj;
+	
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// find blocks
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<vG_ControlPolyStart>", "<vG_ControlPolyEnd>"); CHKERRQ(ierr);
+	nCP  = fb->nblocks;
+
+	// check number of control polygons
+	if (nCP > _max_ctrl_poly_)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%d exceeds maximum number of control polygons (%d) \n",nCP,_max_ctrl_poly_);
+	}
+
+	// loop over blocks
+	for(jj = 0; jj < nCP; jj++)
+	{
+		ierr = getIntParam   (fb, _REQUIRED_, "PolyID",  &CtrlPoly->ID[jj],    1, 0);   CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "VolID",   &CtrlPoly->VolID[jj], 1, 0);   CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "PolyPos", &CtrlPoly->Pos[jj],   1, 0);   CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "Sx",      &CtrlPoly->Sx[jj],    1, 1);   CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "Sy",      &CtrlPoly->Sy[jj],    1, 1);   CHKERRQ(ierr);
+
+		if (CtrlPoly->VolID[jj] != CtrlPoly->VolID[0])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "All control polygons should have the same volume ID \n");
+		}
+
+		fb->blockID++;
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	if (nCP > 0)
+	{
+		VolID = CtrlPoly->VolID[0];
+	}
 
 	PetscFunctionReturn(ierr);
 }

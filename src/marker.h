@@ -159,6 +159,18 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx);
 // Load and set data from phase diagram
 PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i);
 
+// read control polygons
+struct CtrlP
+{
+	PetscInt    ID[_max_ctrl_poly_];
+	PetscInt    VolID[_max_ctrl_poly_];
+	PetscInt    Pos[_max_ctrl_poly_];
+	PetscScalar Sx[_max_ctrl_poly_];
+	PetscScalar Sy[_max_ctrl_poly_];
+};
+
+PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, PetscInt &nCP);
+
 //---------------------------------------------------------------------------
 
 // Specific initialization routines
