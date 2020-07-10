@@ -81,9 +81,12 @@ typedef struct GeomPrim GeomPrim;
 struct GeomPrim
 {
 	PetscInt    phase;
-	// sphere & cylinder
+	// sphere & cylinder & ellipsoid
 	PetscScalar center[3];
+	// sphere & cylinder
 	PetscScalar radius;
+	// ellipsoid
+	PetscScalar axes[3];
 	// cylinder
 	PetscScalar base[3], cap[3];
 	// box & hex
@@ -106,6 +109,8 @@ struct GeomPrim
 };
 
 void setPhaseSphere(GeomPrim *sphere, Marker *P);
+
+void setPhaseEllipsoid(GeomPrim *ellipsoid, Marker *P);
 
 void setPhaseBox(GeomPrim *box, Marker *P);
 
