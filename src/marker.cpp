@@ -864,7 +864,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	PetscScalar     chLen, chTime, chTemp;
 	char            TemperatureStructure[_str_len_];
 	PetscInt        jj, ngeom, imark, maxPhaseID;
-	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
+	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *hex, *layer, *cylinder;
 
 	// map container to sort primitives in the order of appearance
 	map<PetscInt, GeomPrim*> cgeom;
@@ -979,6 +979,40 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		sphere->setPhase = setPhaseSphere;
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], sphere));
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	//===========
+	// ELLIPSOIDS
+	//===========
+
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<EllipsoidStart>", "<EllipsoidEnd>"); CHKERRQ(ierr);
+
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		GET_GEOM(ellipsoid, geom, ngeom, _max_geom_);
+
+		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &ellipsoid->phase,  1, maxPhaseID); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "axes",    ellipsoid->axes,   3, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "center",  ellipsoid->center, 3, chLen);      CHKERRQ(ierr);
+
+		// Optional temperature options:
+		ellipsoid->setTemp = 0;
+		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		if 		(!strcmp(TemperatureStructure, "constant"))	    {ellipsoid->setTemp=1;}
+		
+		// Depending on temperature options, get required input parameters
+		if (ellipsoid->setTemp==1){
+			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&ellipsoid->cstTemp, 1, 1);     CHKERRQ(ierr); 
+		
+			// take potential shift C->K into account	
+			ellipsoid->cstTemp = (ellipsoid->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		}
+
+		ellipsoid->setPhase = setPhaseEllipsoid;
+
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ellipsoid));	
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -1671,6 +1705,32 @@ void setPhaseSphere(GeomPrim *sphere, Marker *P)
 			P->T = T; 			// set Temperature
 		}
 	}
+}
+//---------------------------------------------------------------------------
+void setPhaseEllipsoid(GeomPrim *ellipsoid, Marker *P)
+{
+	PetscScalar dx, dy, dz;
+	PetscScalar x2, y2, z2;
+	x2 = (ellipsoid->axes[0])*(ellipsoid->axes[0]);
+	y2 = (ellipsoid->axes[1])*(ellipsoid->axes[1]);
+	z2 = (ellipsoid->axes[2])*(ellipsoid->axes[2]);
+
+	dx = P->X[0] - ellipsoid->center[0];
+	dy = P->X[1] - ellipsoid->center[1];
+	dz = P->X[2] - ellipsoid->center[2];
+
+	if((dx*dx)/x2 + (dy*dy)/y2 + (dz*dz)/z2 <= 1)
+	{
+		P->phase = ellipsoid->phase;
+		if(ellipsoid->setTemp > 0)
+		{
+			PetscScalar T=0;
+			computeTemperature(ellipsoid, P, &T);
+
+			P->T = T; 			// set Temperature
+		}
+	}
+
 }
 //---------------------------------------------------------------------------
 void setPhaseBox(GeomPrim *box, Marker *P)

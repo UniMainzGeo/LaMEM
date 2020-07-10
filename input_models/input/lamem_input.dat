@@ -335,6 +335,14 @@
 
 	<SphereEnd>
 
+	<EllipsoidStart>
+		phase       = 1
+		axes        = 2.0 1.5 1.0  # semi-axes of ellipsoid in x, y and z
+		center      = 1.0 2.0 3.0
+		Temperature = constant     # optional: Temperature of the sphere. possibilities: [constant]
+		cstTemp     = 1000         # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+	<EllipsoidEnd>
+
 	<BoxStart>
 		phase       = 1
 		bounds      = 1.0 2.0 1.0 2.0 1.0 2.0 # box bound coordinates: left, right, front, back, bottom, top
