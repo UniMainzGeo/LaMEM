@@ -148,7 +148,8 @@ def ViscoElastic_DislocationCreep():
   #==============================================
   # Run the input script wth matlab-generated particles
   ranks = 1
-  launch = ['rm -rf ./t13_Rheology0D/Out_DisCreep_VE_0D; mkdir ./t13_Rheology0D/Out_DisCreep_VE_0D',
+  launch = ['rm -r Timestep*',
+            'rm -rf ./t13_Rheology0D/Out_DisCreep_VE_0D; mkdir ./t13_Rheology0D/Out_DisCreep_VE_0D',
             '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_DislocationCreep_VE_0D.dat',
             'mv Timestep* ./t13_Rheology0D/Out_DisCreep_VE_0D'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't13_Rheology0D/Rheology_DislocationCreep_VE_0D-p1.expected'

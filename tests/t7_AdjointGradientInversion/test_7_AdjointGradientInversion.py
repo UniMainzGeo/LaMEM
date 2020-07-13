@@ -156,7 +156,7 @@ def PSD_Paper_GD_Linear():
     unittest.compareFloatingPoint(key,1e-3)
 
     key = re.escape("| 1. Parameter value = ")
-    unittest.compareFloatingPoint(key,1e-5)
+    unittest.compareFloatingPoint(key,5e-5)
 
   # Create unit test object
   ex1 = pth.pthUnitTest('t7_PSDInversion_2',ranks,launch,expected_file)
