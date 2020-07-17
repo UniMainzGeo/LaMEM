@@ -2177,7 +2177,7 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	BCCtx       *bc;
 	PetscInt    i, num, *list;
 	PetscScalar *fx, *fy, *fz, *c, *res, *iter;
-	PetscScalar *eta_fx, *eta_fy, *eta_fz, *eta_iter;
+	PetscScalar *eta_fx, *eta_fy, *eta_fz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2213,7 +2213,7 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 
 
 
-
+/*
 	// ----------------------------------------
 	eta_iter = res;
 
@@ -2225,7 +2225,7 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 
 	ierr  = PetscMemcpy(eta_iter, eta_fz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 	iter += fs->nZFace;
-
+*/
 	// zero out constrained residuals (velocity)
 	num   = bc->vNumSPC;
 	list  = bc->vSPCList;
