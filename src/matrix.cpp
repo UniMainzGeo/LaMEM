@@ -1250,9 +1250,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xv, &P->C);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp1);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp6);                                  CHKERRQ(ierr);
-	ierr = DMCreateMatrix(fs->DA_X,&P->test);							  CHKERRQ(ierr);
 	ierr = DMCreateMatrix(fs->DA_CEN,&P->K);	CHKERRQ(ierr);
-	//ierr = MatDuplicate(P->Avv, MAT_DO_NOT_COPY_VALUES, &P->K);	CHKERRQ(ierr);
 
 	// free counter arrays
 	ierr = PetscFree(Avv_d_nnz); CHKERRQ(ierr);
@@ -1329,7 +1327,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatZeroEntries(P->Apv); CHKERRQ(ierr);
 
 	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
-	ierr = MatZeroEntries(P->test); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
@@ -1579,8 +1576,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	}
 	END_STD_LOOP
 
-	//JacResGetViscMat(pm); CHKERRQ(ierr);
-
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy); CHKERRQ(ierr);
@@ -1714,7 +1709,6 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 
 	// wBFBT stuff
 	ierr = MatDestroy (&P->K); 	 CHKERRQ(ierr);
-	ierr = MatDestroy (&P->test);CHKERRQ(ierr);
 	ierr = VecDestroy (&P->C); 	 CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wv0); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp1); CHKERRQ(ierr);

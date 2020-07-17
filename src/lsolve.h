@@ -114,9 +114,7 @@ struct PCStokesBF
 	KSP       vksp;  // velocity solver
 	MG        vmg;   // velocity multigrid context
 	PCBFType  type;  // factorization type
-
-	KSP 	  pksp;
-	MG	      pmg;
+	KSP 	  pksp;  // pressure solver
 
 };
 

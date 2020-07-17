@@ -391,23 +391,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt);
 // assemble temperature preconditioner matrix
 PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt);
 
-// ------------------------------------------------------------------------------
-// BFBT
-// ------------------------------------------------------------------------------
-PetscErrorCode JacResGetBFBTParam(
-	JacRes      *jr,
-	PetscScalar *phRat,
-	PetscScalar *mu_visc);      // viscosity
-
-// assemble BFBT preconditioner matrix
-PetscErrorCode JacResGetBFBTMat(JacRes *jr, PetscScalar dt);
-
-
-
-
-
-
-
 //---------------------------------------------------------------------------
 //......................   INTEGRATION FUNCTIONS   ..........................
 //---------------------------------------------------------------------------

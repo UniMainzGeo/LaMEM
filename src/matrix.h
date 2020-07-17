@@ -146,12 +146,11 @@ struct PMatBlock
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
 
-	// wBFBT stuff:
+	// wBFBT stuff
 	Vec rblock, xblock;
 	DM  DA_P;
 	Mat K;
-	Mat test;
-	Vec C;                            // Diagonal weighting matrix in vector form velocity space
+	Vec C;                            // diagonal weighting matrix in vector form velocity space
 	Vec wv0, wv2, wv3, wv4, wv5, wv7; // working vectors in velocity space
 	Vec wp1, wp6;                     // working vectors in pressure space
 
