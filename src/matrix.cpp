@@ -1262,7 +1262,6 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	// attach near null space
 	ierr = MatAIJSetNullSpace(P->Avv, dof); CHKERRQ(ierr);
-	ierr = MatAIJSetNullSpace(P->K, dof); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

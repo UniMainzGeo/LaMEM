@@ -59,7 +59,7 @@ enum PCStokesType
 // Stokes preconditioner type
 enum PCBFType
 {
-	_wBFBT_,
+	_wBFBT_,  // scaled BFBT
 	_UPPER_,  // upper triangular factorization
 	_LOWER_   // lower triangular factorization
 
