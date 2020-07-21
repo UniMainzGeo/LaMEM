@@ -22,7 +22,7 @@
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.5   # CFL criterion for elasticity
-	nstep_max = 3     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1     # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
@@ -66,16 +66,7 @@
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e12           # viscosity lower limit
 
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 			=	multigrid  	# solver [direct or multigrid]
-	MGLevels 			=	4			# number of MG levels [default=3]
-	MGSweeps 			=	10			# number of MG smoothening steps per level [default=10]
-	MGSmoother 			=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
-	MGCoarseSolver 		=	mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
-	
-	
+
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -86,12 +77,11 @@
 	nmark_z        = 3                 # ...                 z-direction
 	bg_phase       = 0                 # background phase ID
 	rand_noise     = 1                 # random noise flag
-	advect         = rk2               # advection scheme
-	interp         = stagp             # velocity interpolation scheme
-	stagp_a        = 0.7               # STAG_P velocity interpolation parameter
-	mark_ctrl      = avd               # marker control type
-	nmark_lim      = 16 100            # min/max number per cell
 	
+	advect          = basic             # advection scheme
+	interp          = stag              # velocity interpolation scheme
+	mark_ctrl       = subgrid           # marker control type
+	nmark_sub       = 1                 # max number of same phase markers per subcell (subgrid marker control)
 
 # Geometric primitives:
 	
@@ -173,16 +163,9 @@
 
 	out_file_name       = Spheres_multigrid # output file name
 	out_pvd             = 1       	# activate writing .pvd file
-	out_j2_dev_stress   = 1			# second invariant of stress tensor
-	out_strain_rate     = 1			# strain rate tensor
-	out_j2_strain_rate  = 1			# second invariant of strain rate tensor
+	out_moment_res      = 1
+	out_cont_res        = 1
 	
-
-# AVD phase viewer output options (requires activation)
-
-	out_avd     = 1 # activate AVD phase output
-	out_avd_pvd = 1 # activate writing .pvd file
-	out_avd_ref = 3 # AVD grid refinement factor
 
 #===============================================================================
 # Material phase parameters
@@ -211,16 +194,53 @@
 	# LINEAR & NONLINEAR SOLVER OPTIONS
 	-snes_type ksponly 		# no nonlinear solver
 
-	-js_ksp_monitor 		# display how the inner iterations converge
+	-js_ksp_type fgmres
+	-js_ksp_max_it 1000
+ 	-js_ksp_monitor
 	-js_ksp_rtol 1e-6
+
+#	-pcmat_type block
+#	-pcmat_pgamma 1.0
+#	-jp_type bf
+#	-bf_vs_type user
+#	-vs_ksp_type preonly
+#	-vs_pc_type lu
+#	-vs_pc_factor_mat_solver_package mumps
 
 
     -pcmat_type block
+    -pcmat_pgamma 1.0
     -jp_type bf
+    -bf_type upper
     -bf_vs_type mg
-    #-bf_type wbfbt
-    -vs_ksp_type fgmres
+    -vs_ksp_type gmres
+    -vs_ksp_rtol 1e-2
+    -vs_ksp_max_it 10
+    
+       
+#	-bf_type wbfbt
 
+#	-pcmat_type mono
+#	-jp_type mg
+
+	-gmg_pc_type mg
+	-gmg_pc_mg_levels 4
+	-gmg_pc_mg_galerkin
+	-gmg_pc_mg_type multiplicative
+	-gmg_pc_mg_cycle_type v
+
+	-gmg_mg_levels_ksp_type richardson
+	-gmg_mg_levels_ksp_richardson_scale 0.5
+	-gmg_mg_levels_ksp_max_it 20
+	-gmg_mg_levels_pc_type jacobi
+
+	-crs_ksp_type preonly
+	-crs_pc_type lu
+	-crs_pc_factor_mat_solver_package mumps
+
+
+#-vs_ksp_view
+#-crs_ksp_view
 
 
 <PetscOptionsEnd>

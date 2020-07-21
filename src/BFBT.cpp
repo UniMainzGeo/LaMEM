@@ -19,7 +19,7 @@
 #include "surf.h"
 
 #include "BFBT.h"
-
+/*
 //---------------------------------------------------------------------------
 
 #define SCATTER_FIELD(da, vec, FIELD) \
@@ -249,3 +249,4 @@ PetscErrorCode CopyViscosityToScalingVector(Vec a, Vec b, Vec c, Vec ScalingVec)
 	PetscFunctionReturn(0);
 
 }
+*/

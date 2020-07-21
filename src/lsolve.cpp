@@ -190,10 +190,10 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 #define __FUNCT__ "PCStokesBFCreate"
 PetscErrorCode PCStokesBFCreate(PCStokes pc)
 {
-	PC          vpc, ppc;
+	PC          vpc/*, ppc*/;
 	PCStokesBF *bf;
 	JacRes     *jr;
-	PMat	   pm;
+//	PMat	   pm;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -211,21 +211,21 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	ierr = PCStokesBFSetFromOptions(pc); CHKERRQ(ierr);
 
 	// access context
-	pm = pc->pm;
+//	pm = pc->pm;
 	jr = pc->pm->jr;
 
 	// create velocity solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->vksp); CHKERRQ(ierr);
 	ierr = KSPSetOptionsPrefix(bf->vksp,"vs_");    CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(bf->vksp);            CHKERRQ(ierr);
-
-	//ierr = CreateViscMat(pm); CHKERRQ(ierr);// ------------------------------------
+/*
+	ierr = CreateViscMat(pm); CHKERRQ(ierr);
 
 	// create pressure solver
-	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->pksp); CHKERRQ(ierr); // ----------------------------------------------
+	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->pksp); CHKERRQ(ierr);
 	ierr = KSPSetOptionsPrefix(bf->pksp,"ps_");    CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(bf->pksp);            CHKERRQ(ierr);
-
+*/
 	// create & set velocity multigrid preconditioner
 	if(bf->vtype == _VEL_MG_)
 	{
@@ -235,17 +235,18 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 		ierr = PCShellSetContext(vpc, &bf->vmg); CHKERRQ(ierr);
 		ierr = PCShellSetApply(vpc, MGApply);    CHKERRQ(ierr);
 	}
-
+/*
 	// create & set pressure multigrid preconditioner
-	//if(bf->ptype == _P_MG_)
-	//{
+	if(bf->ptype == _P_MG_)
+	{
 		ierr = GetViscMat(pm); 					 CHKERRQ(ierr); // fill K
-	//	ierr = MGCreate(&bf->pmg, jr);           CHKERRQ(ierr);
+		ierr = MGCreate(&bf->pmg, jr);           CHKERRQ(ierr);
 		ierr = KSPGetPC(bf->pksp, &ppc);         CHKERRQ(ierr);
-	//	ierr = PCSetType(ppc, PCSHELL);          CHKERRQ(ierr); // -------------------
-	//	ierr = PCShellSetContext(ppc, &bf->pmg); CHKERRQ(ierr);
-	//	ierr = PCShellSetApply(ppc, MGApply);    CHKERRQ(ierr);
-	//}
+		ierr = PCSetType(ppc, PCSHELL);          CHKERRQ(ierr); // -------------------
+		ierr = PCShellSetContext(ppc, &bf->pmg); CHKERRQ(ierr);
+		ierr = PCShellSetApply(ppc, MGApply);    CHKERRQ(ierr);
+	}
+*/
 
 	PetscFunctionReturn(0);
 }
@@ -270,21 +271,21 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 	if(flg == PETSC_TRUE)
 	{
-		if(!strcmp(pname, "wbfbt"))
+		/*if(!strcmp(pname, "wbfbt"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : wbfbt \n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type       : wbfbt \n");
 
 			bf->type = _wBFBT_;
 		}
-		else if(!strcmp(pname, "upper"))
+		else */if(!strcmp(pname, "upper"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type      : upper \n");
 
 			bf->type = _UPPER_;
 		}
 		else if(!strcmp(pname, "lower"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : lower \n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type      : lower \n");
 
 			bf->type = _LOWER_;
 		}
@@ -292,7 +293,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type      : upper \n");
 
 		bf->type = _UPPER_;
 	}
@@ -304,13 +305,13 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	{
 		if(!strcmp(pname, "mg"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : Galerkin geometric multigrid\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner       : Galerkin geometric multigrid\n");
 
 			bf->vtype = _VEL_MG_;
 		}
 		else if(!strcmp(pname, "user"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner       : user-defined\n");
 
 			bf->vtype = _VEL_USER_;
 		}
@@ -318,7 +319,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner       : user-defined\n");
 
 		bf->vtype = _VEL_USER_;
 	}
@@ -339,7 +340,7 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 	bf = (PCStokesBF*)pc->data;
 
 	ierr = KSPDestroy(&bf->vksp);  CHKERRQ(ierr);
-	ierr = KSPDestroy(&bf->pksp);  CHKERRQ(ierr);
+//	ierr = KSPDestroy(&bf->pksp);  CHKERRQ(ierr);
 
 	if(bf->vtype == _VEL_MG_)
 	{
@@ -366,7 +367,7 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	P  = (PMatBlock*) pc->pm->data;
 
 	ierr = KSPSetOperators(bf->vksp, P->Avv, P->Avv); CHKERRQ(ierr);
-	ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
+//	ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
 
 	if(bf->vtype == _VEL_MG_)
 	{
@@ -374,7 +375,7 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	}
 
 	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
-	ierr = KSPSetUp(bf->pksp); CHKERRQ(ierr);
+//	ierr = KSPSetUp(bf->pksp); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -387,7 +388,58 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	// r - residual vector      (input)
 	// x - approximate solution (output)
 	//======================================================================
+	PCStokes    pc;
+	PCStokesBF *bf;
+	PMatBlock  *P;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
+
+	bf = (PCStokesBF*)pc->data;
+	P  = (PMatBlock*) pc->pm->data;
+
+	// extract residual blocks
+	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
+
+	if(bf->type == _UPPER_)
+	{
+		//=======================
+		// BLOCK UPPER TRIANGULAR
+		//=======================
+
+		// Schur complement already contains negative sign (no negative sign here)
+		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
+
+		ierr = MatMult(P->Avp, P->xp, P->wv);    CHKERRQ(ierr); // wv = Avp*xp
+
+		ierr = VecAXPY(P->rv, -1.0, P->wv);      CHKERRQ(ierr); // rv = rv - wv
+
+		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+	}
+	else if(bf->type == _LOWER_)
+	{
+		//=======================
+		// BLOCK LOWER TRIANGULAR
+		//=======================
+
+		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+
+		ierr = MatMult(P->Apv, P->xv, P->wp);    CHKERRQ(ierr); // wp = Apv*xv
+
+		ierr = VecAXPY(P->rp, -1.0, P->wp);      CHKERRQ(ierr); // rp = rp - wp
+
+		// Schur complement already contains negative sign (no negative sign here)
+		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
+	}
+
+	// compose approximate solution
+	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
+
+
+/*
 	PCStokes    pc;
 	PCStokesBF *bf;
 	PMatBlock  *P;
@@ -480,7 +532,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 
 	// compose approximate solution
 	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

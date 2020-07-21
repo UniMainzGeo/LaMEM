@@ -59,7 +59,7 @@ enum PCStokesType
 // Stokes preconditioner type
 enum PCBFType
 {
-	_wBFBT_,  // scaled BFBT
+//	_wBFBT_,  // scaled BFBT
 	_UPPER_,  // upper triangular factorization
 	_LOWER_   // lower triangular factorization
 
@@ -114,7 +114,7 @@ struct PCStokesBF
 	KSP       vksp;  // velocity solver
 	MG        vmg;   // velocity multigrid context
 	PCBFType  type;  // factorization type
-	KSP 	  pksp;  // pressure solver
+//	KSP 	  pksp;  // pressure solver
 
 };
 

@@ -1237,7 +1237,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xv, &P->wv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->rp);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp);                                  CHKERRQ(ierr);
-
+/*
 	//wBFBT stuff
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp+lnv, PETSC_DETERMINE, &P->xblock); CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xblock, &P->rblock);                                  CHKERRQ(ierr);
@@ -1251,7 +1251,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xp, &P->wp1);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp6);                                  CHKERRQ(ierr);
 	ierr = DMCreateMatrix(fs->DA_CEN,&P->K);	CHKERRQ(ierr);
-
+*/
 	// free counter arrays
 	ierr = PetscFree(Avv_d_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Avv_o_nnz); CHKERRQ(ierr);
@@ -1310,7 +1310,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	// get density gradient stabilization parameters
 	dt   = jr->ts->dt; // time step
 	fssa = jr->ctrl.FSSA;   // density gradient penalty parameter
-    grav = jr->ctrl.grav;   // gravity acceleration
+	grav = jr->ctrl.grav;   // gravity acceleration
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
@@ -1325,7 +1325,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatZeroEntries(P->Avp); CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Apv); CHKERRQ(ierr);
 
-	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
+//	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
@@ -1593,7 +1593,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatAIJAssemble(P->App, bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->iS,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 
-	//ierr = MatAIJAssemble(P->K,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
+//	ierr = MatAIJAssemble(P->K,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1705,7 +1705,7 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = VecDestroy (&P->xp);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp);  CHKERRQ(ierr);
-
+/*
 	// wBFBT stuff
 	ierr = MatDestroy (&P->K); 	 CHKERRQ(ierr);
 	ierr = VecDestroy (&P->C); 	 CHKERRQ(ierr);
@@ -1719,7 +1719,7 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = VecDestroy (&P->wv7); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rblock); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->xblock); CHKERRQ(ierr);
-
+*/
 
 	ierr = PetscFree(P);         CHKERRQ(ierr);
 
@@ -1924,7 +1924,7 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 	// scatter block vectors to monolithic format forward & reverse
 
 	PetscInt     fs,  gs,  bs;
-	PetscScalar *fp, *gp, *bp;
+	PetscScalar *fp, *gp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1942,25 +1942,37 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 	// access vectors
 	ierr = VecGetArray(f, &fp); CHKERRQ(ierr);
 	ierr = VecGetArray(g, &gp); CHKERRQ(ierr);
-	ierr = VecGetArray(b, &bp); CHKERRQ(ierr);
 
 	if(mode == SCATTER_FORWARD)
 	{
+		PetscScalar *bp;
+
+		ierr = VecGetArray(b, &bp); CHKERRQ(ierr);
+
 		// block-to-monolithic
 		ierr = PetscMemcpy(bp,    fp, (size_t)fs*sizeof(PetscScalar)); CHKERRQ(ierr);
 		ierr = PetscMemcpy(bp+fs, gp, (size_t)gs*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+		ierr = VecRestoreArray(b, &bp); CHKERRQ(ierr);
+
 	}
 	if(mode == SCATTER_REVERSE)
 	{
+		const PetscScalar *bp;
+
+		ierr = VecGetArrayRead(b, &bp); CHKERRQ(ierr);
+
 		// monolithic-to-block
 		ierr = PetscMemcpy(fp, bp,    (size_t)fs*sizeof(PetscScalar)); CHKERRQ(ierr);
 		ierr = PetscMemcpy(gp, bp+fs, (size_t)gs*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+		ierr = VecRestoreArrayRead(b, &bp); CHKERRQ(ierr);
+
 	}
 
 	// restore access
 	ierr = VecRestoreArray(f, &fp); CHKERRQ(ierr);
 	ierr = VecRestoreArray(g, &gp); CHKERRQ(ierr);
-	ierr = VecRestoreArray(b, &bp); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
