@@ -86,7 +86,6 @@ typedef struct _p_PMat
 	PetscErrorCode (*Create)  (PMat pm);
 	PetscErrorCode (*Assemble)(PMat pm);
 	PetscErrorCode (*Destroy) (PMat pm);
-	PetscErrorCode (*Picard)  (Mat J, Vec x, Vec y);
 
 	// get cell stiffness matrix
 	void (*getStiffMat)(
@@ -118,17 +117,11 @@ PetscErrorCode PMatDestroy(PMat pm);
 struct PMatMono
 {
 	Mat A; // monolithic matrix
-	Mat M; // penalty terms compensation matrix
-
-	Vec w; // work vector for computing Jacobian action
-
 };
 
 PetscErrorCode PMatMonoCreate(PMat pm);
 
 PetscErrorCode PMatMonoAssemble(PMat pm);
-
-PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
 
 PetscErrorCode PMatMonoDestroy(PMat pm);
 
@@ -145,15 +138,14 @@ struct PMatBlock
 	Vec rv, rp;   // residual blocks
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
-/*
-	// wBFBT stuff
-	Vec rblock, xblock;
-	DM  DA_P;
-	Mat K;
+
+	// wBFBT data
+	DM  DA_P;                         // cell-based grid
+	Mat K;                            // Schur complement preconditioner matrix
 	Vec C;                            // diagonal weighting matrix in vector form velocity space
 	Vec wv0, wv2, wv3, wv4, wv5, wv7; // working vectors in velocity space
 	Vec wp1, wp6;                     // working vectors in pressure space
-*/
+
 };
 
 //---------------------------------------------------------------------------
@@ -161,10 +153,6 @@ struct PMatBlock
 PetscErrorCode PMatBlockCreate(PMat pm);
 
 PetscErrorCode PMatBlockAssemble(PMat pm);
-
-PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec y);
-
-PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec y);
 
 PetscErrorCode PMatBlockDestroy(PMat pm);
 

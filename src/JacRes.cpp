@@ -2177,7 +2177,6 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	BCCtx       *bc;
 	PetscInt    i, num, *list;
 	PetscScalar *fx, *fy, *fz, *c, *res, *iter;
-//	PetscScalar *eta_fx, *eta_fy, *eta_fz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2191,12 +2190,7 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	ierr = VecGetArray(jr->gfz, &fz); CHKERRQ(ierr);
 	ierr = VecGetArray(jr->gc,  &c);  CHKERRQ(ierr);
 	ierr = VecGetArray(f, &res);      CHKERRQ(ierr);
-/*
-	//---------------------
-	ierr = VecGetArray(jr->eta_gfx, &eta_fx); CHKERRQ(ierr);
-	ierr = VecGetArray(jr->eta_gfy, &eta_fy); CHKERRQ(ierr);
-	ierr = VecGetArray(jr->eta_gfz, &eta_fz); CHKERRQ(ierr);
-*/
+
 	// copy vectors component-wise
 	iter = res;
 
@@ -2211,21 +2205,6 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 
 	ierr  = PetscMemcpy(iter, c,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
 
-
-
-/*
-	// ----------------------------------------
-	eta_iter = res;
-
-	ierr  = PetscMemcpy(eta_iter, eta_fx, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
-	iter += fs->nXFace;
-
-	ierr  = PetscMemcpy(eta_iter, eta_fy, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
-	iter += fs->nYFace;
-
-	ierr  = PetscMemcpy(eta_iter, eta_fz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
-	iter += fs->nZFace;
-*/
 	// zero out constrained residuals (velocity)
 	num   = bc->vNumSPC;
 	list  = bc->vSPCList;
@@ -2244,11 +2223,7 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	ierr = VecRestoreArray(jr->gfz,  &fz); CHKERRQ(ierr);
 	ierr = VecRestoreArray(jr->gc,   &c);  CHKERRQ(ierr);
 	ierr = VecRestoreArray(f, &res);       CHKERRQ(ierr);
-/*
-	ierr = VecRestoreArray(jr->eta_gfx,  &eta_fx); CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->eta_gfy,  &eta_fy); CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->eta_gfz,  &eta_fz); CHKERRQ(ierr);
-*/
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

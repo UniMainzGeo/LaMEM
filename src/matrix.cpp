@@ -235,7 +235,6 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 		pm->Create   = PMatMonoCreate;
 		pm->Assemble = PMatMonoAssemble;
 		pm->Destroy  = PMatMonoDestroy;
-		pm->Picard   = PMatMonoPicard;
 	}
 	else if(pm->type == _BLOCK_)
 	{
@@ -243,8 +242,6 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 		pm->Create   = PMatBlockCreate;
 		pm->Assemble = PMatBlockAssemble;
 		pm->Destroy  = PMatBlockDestroy;
-		if(pm->pgamma != 1.0) pm->Picard = PMatBlockPicardSchur;
-		else                  pm->Picard = PMatBlockPicardClean;
 	}
 	// create type-specific context
 	ierr = pm->Create(pm); CHKERRQ(ierr);
@@ -336,8 +333,6 @@ PetscErrorCode PMatAssemble(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-//	PetscPrintf(PETSC_COMM_WORLD, " Starting preconditioner assembly\n");
-
 	bc = pm->jr->bc;
 
 	// shift constrained node indices to global index space
@@ -347,8 +342,6 @@ PetscErrorCode PMatAssemble(PMat pm)
 
 	// shift constrained node indices back to local index space
 	ierr = BCShiftIndices(bc,  _GLOBAL_TO_LOCAL_); CHKERRQ(ierr);
-
-//	PetscPrintf(PETSC_COMM_WORLD, " Finished preconditioner assembly\n");
 
 	PetscFunctionReturn(0);
 }
@@ -583,8 +576,6 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 
 	// create matrices & vectors
 	ierr = MatAIJCreate(ln, ln, 0, d_nnz, 0, o_nnz, &P->A); CHKERRQ(ierr);
-	ierr = MatAIJCreateDiag(ln, start, &P->M);              CHKERRQ(ierr);
-	ierr = VecDuplicate(pm->jr->gsol, &P->w);               CHKERRQ(ierr);
 
 	// clear work arrays
 	ierr = PetscFree(d_nnz); CHKERRQ(ierr);
@@ -607,10 +598,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// all X-Y-Z-P DOF of the first processor
 	// are followed by X-Y-Z-P DOF of the second one, and so on.
 	//
-	// Picard Jacobian (J) can be computed as follows when necessary:
-	// J = P - M
-	// P - preconditioner matrix (computed in this function)
-	// M - inverse viscosity matrix (computed in this function)
 	//======================================================================
 
 	JacRes      *jr;
@@ -656,7 +643,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->A); CHKERRQ(ierr);
-	ierr = MatZeroEntries(P->M); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
@@ -742,7 +728,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 		// update global & penalty compensation matrices
 		ierr = MatSetValues(P->A, 7, idx, 7, idx, v,  ADD_VALUES);    CHKERRQ(ierr);
-		ierr = MatSetValue (P->M, idx[6], idx[6], pt, INSERT_VALUES); CHKERRQ(ierr);
 	}
 	END_STD_LOOP
 
@@ -924,12 +909,11 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 	// assemble velocity-pressure matrix, remove constrained rows
 	ierr = MatAIJAssemble(P->A, bc->numSPC, bc->SPCList, 1.0); CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->M, bc->numSPC, bc->SPCList, 0.0); CHKERRQ(ierr);
 
 	// dump preconditioning matrices to disk to inspect them with MATLAB (mainly for debugging)
 	PetscViewer viewer;
 	PetscBool   flg, flg_name;
-	char        name[_str_len_], name_A[_str_len_], name_M[_str_len_];
+	char        name[_str_len_], name_A[_str_len_];
 
 	ierr = PetscOptionsHasName(NULL, NULL, "-dump_precondition_matrixes", &flg); CHKERRQ(ierr);
 
@@ -944,37 +928,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		MatView(P->A, viewer);
 		PetscViewerDestroy(&viewer);
 
-		// dump the M preconditioning matrix 2 disk
-		sprintf(name_M,"%s_M.bin",name);
-		PetscViewerBinaryOpen(PETSC_COMM_WORLD,name_M,FILE_MODE_WRITE,&viewer);
-		MatView(P->A, viewer);
-		PetscViewerDestroy(&viewer);
 	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatMonoPicard"
-PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
-{
-	// actual operation is: r = J*x = A*x - M*x
-
-	PMatMono *P;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
-
-	// compute action of preconditioner matrix
-	ierr = MatMult(P->A, x, r); CHKERRQ(ierr);
-
-	// compute compensation
-	ierr = MatMult(P->M, x, P->w); CHKERRQ(ierr);
-
-	// update result
-	ierr = VecAXPY(r, -1.0, P->w);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -992,8 +946,6 @@ PetscErrorCode PMatMonoDestroy(PMat pm)
 	P = (PMatMono*)pm->data;
 
 	ierr = MatDestroy (&P->A); CHKERRQ(ierr);
-	ierr = MatDestroy (&P->M); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->w); CHKERRQ(ierr);
 	ierr = PetscFree(P);       CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -1238,9 +1190,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xp, &P->rp);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp);                                  CHKERRQ(ierr);
 /*
-	//wBFBT stuff
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp+lnv, PETSC_DETERMINE, &P->xblock); CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xblock, &P->rblock);                                  CHKERRQ(ierr);
+	// wBFBT matrices & vectors
 	ierr = VecDuplicate(P->xv, &P->wv0);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv2);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv3);                                  CHKERRQ(ierr);
@@ -1250,8 +1200,30 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xv, &P->C);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp1);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp6);                                  CHKERRQ(ierr);
-	ierr = DMCreateMatrix(fs->DA_CEN,&P->K);	CHKERRQ(ierr);
+	ierr = DMCreateMatrix(fs->DA_CEN,&P->K); CHKERRQ(ierr);
+
+	// get cell center grid partitioning
+	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
+
+	// create temperature DMDA
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+		DMDA_STENCIL_STAR,
+		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
+		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+		1, 1, lx, ly, lz, &jr->DA_T); CHKERRQ(ierr);
+
+	// create temperature preconditioner matrix
+	ierr = DMCreateMatrix(jr->DA_T, &jr->Att); CHKERRQ(ierr);
+
+	// set matrix options (development)
+	ierr = MatSetOption(jr->Att, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE); CHKERRQ(ierr);
+	ierr = MatSetOption(jr->Att, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE);   CHKERRQ(ierr);
+	ierr = MatSetOption(jr->Att, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);       CHKERRQ(ierr);
+	ierr = MatSetOption(jr->Att, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);      CHKERRQ(ierr);
 */
+
+
 	// free counter arrays
 	ierr = PetscFree(Avv_d_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Avv_o_nnz); CHKERRQ(ierr);
@@ -1594,90 +1566,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatAIJAssemble(P->iS,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 
 //	ierr = MatAIJAssemble(P->K,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockPicardClean"
-PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec r)
-{
-	//=======================================================================
-	// Get action of the Picard Jacobian
-	//
-	// rv = Avv*xv + Avp*xp
-	// rp = Apv*xv + App*xp
-	//=======================================================================
-
-	PMatBlock *P;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// get context
-	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
-
-	// extract solution blocks
-	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_REVERSE); CHKERRQ(ierr);
-
-	ierr = MatMult(P->Apv, P->xv, P->rp); CHKERRQ(ierr); // rp = Apv*xv
-
-	ierr = MatMult(P->App, P->xp, P->wp); CHKERRQ(ierr); // wp = App*xp
-
-	ierr = VecAXPY(P->rp, 1.0, P->wp);    CHKERRQ(ierr); // rp = rp + wp
-
-	ierr = MatMult(P->Avp, P->xp, P->rv); CHKERRQ(ierr); // rv = Avp*xp
-
-	ierr = MatMult(P->Avv, P->xv, P->wv); CHKERRQ(ierr); // wv = Avv*xv
-
-	ierr = VecAXPY(P->rv, 1.0, P->wv);    CHKERRQ(ierr); // rv = rv + wv
-
-	// compose coupled residual
-	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_FORWARD); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockPicardSchur"
-PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec r)
-{
-	//=======================================================================
-	// Get action of the Picard Jacobian using velocity Schur complement
-	//
-	// rv = Avv*xv + Avp*(xp + (S^-1)*Apv*xv)
-	// rp = Apv*xv + App*xp
-	//=======================================================================
-
-	PMatBlock *P;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// get context
-	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
-
-	// extract solution blocks
-	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_REVERSE); CHKERRQ(ierr);
-
-	ierr = MatMult(P->Apv, P->xv, P->rp); CHKERRQ(ierr); // rp = Apv*xv
-
-	ierr = MatMult(P->iS, P->rp, P->wp);  CHKERRQ(ierr); // wp = (S^-1)*rp
-
-	ierr = VecAXPY(P->wp, 1.0, P->xp);    CHKERRQ(ierr); // wp = wp + xp
-
-	ierr = MatMult(P->Avp, P->wp, P->rv); CHKERRQ(ierr); // rv = Avp*wp
-
-	ierr = MatMult(P->App, P->xp, P->wp); CHKERRQ(ierr); // wp = App*xp
-
-	ierr = VecAXPY(P->rp, 1.0, P->wp);    CHKERRQ(ierr); // rp = rp + wp
-
-	ierr = MatMult(P->Avv, P->xv, P->wv); CHKERRQ(ierr); // wv = Avv*xv
-
-	ierr = VecAXPY(P->rv, 1.0, P->wv);    CHKERRQ(ierr); // rv = rv + wv
-
-	// compose coupled residual
-	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_FORWARD); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

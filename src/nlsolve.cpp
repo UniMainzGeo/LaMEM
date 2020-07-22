@@ -491,9 +491,9 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// setup Jacobian
 	if(nl->jtype == _PICARD_)
 	{
-		// ... Picard
-		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))pm->Picard); CHKERRQ(ierr);
-		ierr = MatShellSetContext(nl->J, pm->data);                                CHKERRQ(ierr);
+		// ... matrix-free Picard
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(nl->J, (void*)jr);                                   CHKERRQ(ierr);
 	}
 	else if(nl->jtype == _MFFD_)
 	{
