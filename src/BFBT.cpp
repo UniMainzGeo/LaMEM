@@ -6,7 +6,7 @@
  */
 
 //---------------------------------------------------------------------------
-//......................   TEMPERATURE FUNCTIONS   ..........................
+//..........................   BFBT FUNCTIONS   .............................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "JacRes.h"
@@ -16,9 +16,10 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "matrix.h"
-#include "surf.h"
-
+#include "multigrid.h"
+#include "lsolve.h"
 #include "BFBT.h"
+
 /*
 //---------------------------------------------------------------------------
 
@@ -35,23 +36,27 @@
 #define GET_VISC_TOTAL buff[k][j][i] = jr->svCell[iter++].svDev.eta;
 
 
-//---------------------------------------------------------------------------
-// actually not used
-#undef __FUNCT__
-#define __FUNCT__ "CreateViscMat"
-PetscErrorCode CreateViscMat(PMat pm)
-{
 
-	PMatBlock *P;
-	JacRes *jr;
-	FDSTAG *fs;
+*/
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PMatBFBTCreate"
+PetscErrorCode PMatBFBTCreate(PMat pm)
+{
+	PMatBlock      *P;
+	JacRes         *jr;
+	FDSTAG         *fs;
 	const PetscInt *lx, *ly, *lz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	P 	 = (PMatBlock*)pm->data;
-	jr   = pm->jr;
+	// BFBT cases only
+	if(pm->stype != _wBFBT_) PetscFunctionReturn(0);
+
+	P  = (PMatBlock*)pm->data;
+	jr = pm->jr;
 	fs = jr->fs;
 
 	// get cell center grid partitioning
@@ -74,26 +79,29 @@ PetscErrorCode CreateViscMat(PMat pm)
 	ierr = MatSetOption(P->K, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);       CHKERRQ(ierr);
 	ierr = MatSetOption(P->K, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);      CHKERRQ(ierr);
 
-	// create temperature diffusion solver
-	//ierr = KSPCreate(PETSC_COMM_WORLD, &bf->pksp); CHKERRQ(ierr);
-	//ierr = KSPSetOptionsPrefix(bf->pksp,"ps_");    CHKERRQ(ierr);
-	//ierr = KSPSetFromOptions(bf->pksp);            CHKERRQ(ierr);
+	// allocate work vectors
+	ierr = VecDuplicate(P->xv, &P->C);    CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv0);  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv2);  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv3);  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv4);  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv5);  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv7);  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp1);  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp6);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "GetViscMat"
-PetscErrorCode GetViscMat(PMat pm)
+#define __FUNCT__ "PMatBFBTAssemble"
+PetscErrorCode PMatBFBTAssemble(PMat pm)
 {
-
 	PMatBlock *P;
 	JacRes 	  *jr;
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
-	//SolVarCell *svCell;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -110,6 +118,10 @@ PetscErrorCode GetViscMat(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// BFBT cases only
+	if(pm->stype != _wBFBT_) PetscFunctionReturn(0);
+
+/*
 	// access residual context variables
 	P 	 = (PMatBlock*)pm->data;
 	jr   = pm->jr;
@@ -123,7 +135,7 @@ PetscErrorCode GetViscMat(PMat pm)
 	my = fs->dsy.tcels - 1;
 	mz = fs->dsz.tcels - 1;
 
-	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_VISC_TOTAL)
+//	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_VISC_TOTAL)
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
@@ -156,12 +168,12 @@ PetscErrorCode GetViscMat(PMat pm)
 		bvy = (lk[k][j][i] + lk[k][Jm1][i])/2.0;      fvy = (lk[k][j][i] + lk[k][Jp1][i])/2.0;
 		bvz = (lk[k][j][i] + lk[Km1][j][i])/2.0;      fvz = (lk[k][j][i] + lk[Kp1][j][i])/2.0;
 
-		// compute squareroot of the viscosity
+		// compute square root of the viscosity
 		sbvx = sqrt(bvx);	sfvx = sqrt(fvx);
 		sbvy = sqrt(bvy);	sfvy = sqrt(fvy);
 		sbvz = sqrt(bvz);	sfvz = sqrt(fvz);
 
-		// compute inverse of the suareroot
+		// compute inverse of the square root
 		ibvx = 1/sbvx;		ifvx = 1/sfvx;
 		ibvy = 1/sbvy;		ifvy = 1/sfvy;
 		ibvz = 1/sbvz;		ifvz = 1/sfvz;
@@ -214,14 +226,8 @@ PetscErrorCode GetViscMat(PMat pm)
 	// assemble temperature matrix
 	ierr = MatAIJAssemble(P->K, num, list, 1.0); CHKERRQ(ierr);
 
-	PetscFunctionReturn(0);
-}
 
 
-#undef __FUNCT__
-#define __FUNCT__ "CopyViscosityToScalingVector"
-PetscErrorCode CopyViscosityToScalingVector(Vec a, Vec b, Vec c, Vec ScalingVec)
-{
 	PetscInt as, bs, cs;
 	PetscScalar *ap, *bp, *cp, *sv;
 
@@ -246,7 +252,162 @@ PetscErrorCode CopyViscosityToScalingVector(Vec a, Vec b, Vec c, Vec ScalingVec)
 	ierr = VecRestoreArray(c, &cp); CHKERRQ(ierr);
 	ierr = VecRestoreArray(ScalingVec, &sv); CHKERRQ(ierr);
 
-	PetscFunctionReturn(0);
-
-}
 */
+
+	/*
+		// ----------------------------viscosity
+		Vec eta_gfx,  eta_gfy, eta_gfz;  // global
+		Vec eta_lfx,  eta_lfy, eta_lfz;  // local (ghosted)
+
+		// -----------------------------------------------viscosity
+		ierr = DMCreateGlobalVector(fs->DA_X, &jr->eta_gfx); CHKERRQ(ierr);
+		ierr = DMCreateGlobalVector(fs->DA_Y, &jr->eta_gfy); CHKERRQ(ierr);
+		ierr = DMCreateGlobalVector(fs->DA_Z, &jr->eta_gfz); CHKERRQ(ierr);
+		ierr = DMCreateLocalVector (fs->DA_X, &jr->eta_lfx); CHKERRQ(ierr);
+		ierr = DMCreateLocalVector (fs->DA_Y, &jr->eta_lfy); CHKERRQ(ierr);
+		ierr = DMCreateLocalVector (fs->DA_Z, &jr->eta_lfz); CHKERRQ(ierr);
+
+		ierr = VecDestroy(&jr->eta_gfx);     CHKERRQ(ierr);//--
+		ierr = VecDestroy(&jr->eta_gfy);     CHKERRQ(ierr);
+		ierr = VecDestroy(&jr->eta_gfz);     CHKERRQ(ierr);
+
+		ierr = VecDestroy(&jr->eta_lfx);     CHKERRQ(ierr);
+		ierr = VecDestroy(&jr->eta_lfy);     CHKERRQ(ierr);
+		ierr = VecDestroy(&jr->eta_lfz);     CHKERRQ(ierr);//--
+
+	 	 PetscScalar  ***eta_fx,  ***eta_fy,  ***eta_fz;
+
+
+		//-------------------------------------------viscosity
+		ierr = VecZeroEntries(jr->eta_lfx); CHKERRQ(ierr);
+		ierr = VecZeroEntries(jr->eta_lfy); CHKERRQ(ierr);
+		ierr = VecZeroEntries(jr->eta_lfz); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_X,   jr->eta_lfx,     &eta_fx);     CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_Y,   jr->eta_lfy,     &eta_fy);     CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_Z,   jr->eta_lfz,     &eta_fz);     CHKERRQ(ierr);
+
+
+
+		// in a loop over cell centers
+			PetscScalar eta,s_eta,i_eta;
+			eta = svDev->eta;
+
+			// compute the inverse of the squareroot of the viscosity
+			s_eta = sqrt(eta);
+			i_eta = 1.0/s_eta;
+
+			// viscosity
+			eta_fx[k][j][i] += i_eta/2.0;   eta_fx[k][j][i+1] += i_eta/2.0;
+			eta_fy[k][j][i] += i_eta/2.0;   eta_fy[k][j+1][i] += i_eta/2.0;
+			eta_fz[k][j][i] += i_eta/2.0;   eta_fz[k+1][j][i] += i_eta/2.0;
+
+
+
+		//--------------------------
+		ierr = DMDAVecRestoreArray(fs->DA_X,   jr->eta_lfx,     &eta_fx);     CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->eta_lfy,     &eta_fy);     CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->eta_lfz,     &eta_fz);     CHKERRQ(ierr);
+
+		LOCAL_TO_GLOBAL(fs->DA_X, jr->eta_lfx, jr->eta_gfx)
+		LOCAL_TO_GLOBAL(fs->DA_Y, jr->eta_lfy, jr->eta_gfy)
+		LOCAL_TO_GLOBAL(fs->DA_Z, jr->eta_lfz, jr->eta_gfz)
+
+	*/
+
+
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PMatBFBTDestroy"
+PetscErrorCode PMatBFBTDestroy(PMat pm)
+{
+	PMatBlock *P;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// BFBT cases only
+	if(pm->stype != _wBFBT_) PetscFunctionReturn(0);
+
+	P = (PMatBlock*)pm->data;
+
+	ierr = DMDestroy (&P->DA_P); CHKERRQ(ierr);
+	ierr = MatDestroy(&P->K); 	 CHKERRQ(ierr);
+	ierr = VecDestroy(&P->C); 	 CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wv0);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wp1);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wv2);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wv3);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wv4);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wv5);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wp6);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wv7);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PCStokesBFBTApply"
+PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y)
+{
+	PCStokes    pc;
+	PCStokesBF *bf;
+	PMatBlock  *P;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
+
+	bf = (PCStokesBF*)pc->data;
+	P  = (PMatBlock*) pc->pm->data;
+
+
+	// ACHTUNG! placeholder
+	ierr = MatMult(P->iS, x, y);     CHKERRQ(ierr); // xp = (S^-1)*rp
+
+
+/*
+		//=======================
+		// BLOCK w-BFBT
+		//=======================
+
+		PMat pm;
+		JacRes *jr;
+		pm = pc->pm;
+		jr = pm->jr;
+
+		//assemble C                                           (get global viscosity like residual in JacRes)
+		ierr = CopyViscosityToScalingVector(jr->eta_gfx, jr->eta_gfy, jr->eta_gfz, P->C); CHKERRQ(ierr);
+
+		// rv = f
+		// wp = B*A⁻1*rv
+		ierr = KSPSolve(bf->vksp, P->rv, P->wv0); 		CHKERRQ(ierr); // wv0 = (Avv⁻1)*rv     | A=Avv | B=Apv | B^T=Avp
+		ierr = MatMult(P->Apv, P->wv0, P->wp); 			CHKERRQ(ierr); // wp  = Apv*wv0
+
+		// p = S⁻1*wp        S⁻1 = (BCB^T)⁻1 * BCACB^T * (BCB^T)⁻1 = K⁻1 * BCACB^T * K⁻1
+		// K = BCB^T
+		ierr = KSPSolve(bf->pksp, P->wp, P->wp1); 		CHKERRQ(ierr); // wp1 = K⁻1*wp     <=> K*wp1 = wp
+		ierr = MatMult(P->Avp, P->wp1, P->wv2); 		CHKERRQ(ierr); // wv2 = Avp*wp1
+		ierr = VecPointwiseMult(P->wv3, P->C, P->wv2); 	CHKERRQ(ierr); // wv3 = C*wv2
+		ierr = MatMult(P->Avv, P->wv3, P->wv4); 		CHKERRQ(ierr); // wv4 = Avv * wv3
+		ierr = VecPointwiseMult(P->wv5, P->C, P->wv4); 	CHKERRQ(ierr); // wv5 = C*wv4
+		ierr = MatMult(P->Apv, P->wv5, P->wp6); 		CHKERRQ(ierr); // wp6 = Apv*wv5
+		ierr = KSPSolve(bf->pksp, P->wp6, P->xp); 		CHKERRQ(ierr); // xp  = K⁻1*wp6     <=> K*xp = wp6
+
+		// u = A⁻1*(wv-B^T*p)
+		ierr = MatMult(P->Avp, P->xp, P->wv7); 			CHKERRQ(ierr); // wv7 = B^T*xp
+		ierr = VecWAXPY(P->rv, -1.0, P->wv7, P->wv); 	CHKERRQ(ierr); // rv  = wv-wv7
+		ierr = KSPSolve(bf->vksp, P->rv, P->xv); 		CHKERRQ(ierr); // xv  = (A⁻1)*rv
+
+
+
+ */
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

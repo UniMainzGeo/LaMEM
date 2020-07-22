@@ -5,15 +5,20 @@
  *      Author: daniel
  */
 
-#ifndef SRC_BFBT_H_
-#define SRC_BFBT_H_
+//---------------------------------------------------------------------------
+#ifndef __bfbt_h__
+#define __bfbt_h__
+//---------------------------------------------------------------------------
+//..........................   BFBT FUNCTIONS   .............................
+//---------------------------------------------------------------------------
 
-/*
-PetscErrorCode GetViscMat(PMat pm);
+PetscErrorCode PMatBFBTCreate(PMat pm);
 
-PetscErrorCode CreateViscMat(PMat pm);
+PetscErrorCode PMatBFBTAssemble(PMat pm);
 
-PetscErrorCode CopyViscosityToScalingVector(Vec a, Vec b, Vec c, Vec ScalingVec);
-*/
+PetscErrorCode PMatBFBTDestroy(PMat pm);
 
-#endif /* SRC_BFBT_H_ */
+PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y);
+
+//---------------------------------------------------------------------------
+#endif

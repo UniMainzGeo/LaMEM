@@ -404,15 +404,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = DMCreateLocalVector (fs->DA_X, &jr->lfx); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_Y, &jr->lfy); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_Z, &jr->lfz); CHKERRQ(ierr);
-/*
-	// -----------------------------------------------viscosity
-	ierr = DMCreateGlobalVector(fs->DA_X, &jr->eta_gfx); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Y, &jr->eta_gfy); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Z, &jr->eta_gfz); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_X, &jr->eta_lfx); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Y, &jr->eta_lfy); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Z, &jr->eta_lfz); CHKERRQ(ierr);
-*/
+
 	// strain-rate components (also used as buffer vectors)
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->ldxx); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->ldyy); CHKERRQ(ierr);
@@ -545,15 +537,7 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->gfx);     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->gfy);     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->gfz);     CHKERRQ(ierr);
-/*
-	ierr = VecDestroy(&jr->eta_gfx);     CHKERRQ(ierr);//--
-	ierr = VecDestroy(&jr->eta_gfy);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->eta_gfz);     CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->eta_lfx);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->eta_lfy);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->eta_lfz);     CHKERRQ(ierr);//--
-*/
 	ierr = VecDestroy(&jr->lfx);     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lfy);     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lfz);     CHKERRQ(ierr);
@@ -1080,7 +1064,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp/*,  ***eta_fx,  ***eta_fy,  ***eta_fz */;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	PetscScalar eta_creep, eta_vp;
 	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
@@ -1142,15 +1126,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
 
-/*
-	//-------------------------------------------viscosity
-	ierr = VecZeroEntries(jr->eta_lfx); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->eta_lfy); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->eta_lfz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->eta_lfx,     &eta_fx);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->eta_lfy,     &eta_fy);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->eta_lfz,     &eta_fz);     CHKERRQ(ierr);
-*/
 	//-------------------------------
 	// central points
 	//-------------------------------
@@ -1275,19 +1250,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
-/*
-		PetscScalar eta,s_eta,i_eta;
-		eta = svDev->eta;
 
-		// compute the inverse of the squareroot of the viscosity
-		s_eta = sqrt(eta);
-		i_eta = 1.0/s_eta;
-
-		// viscosity
-		eta_fx[k][j][i] += i_eta/2.0;   eta_fx[k][j][i+1] += i_eta/2.0;
-		eta_fy[k][j][i] += i_eta/2.0;   eta_fy[k][j+1][i] += i_eta/2.0;
-		eta_fz[k][j][i] += i_eta/2.0;   eta_fz[k+1][j][i] += i_eta/2.0;
-*/
 		//==============================
 		// PRESSURE BOUNDARY CONSTRAINTS
 		//==============================
@@ -1657,17 +1620,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
-/*
-	//--------------------------
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->eta_lfx,     &eta_fx);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->eta_lfy,     &eta_fy);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->eta_lfz,     &eta_fz);     CHKERRQ(ierr);
-
-	LOCAL_TO_GLOBAL(fs->DA_X, jr->eta_lfx, jr->eta_gfx)
-	LOCAL_TO_GLOBAL(fs->DA_Y, jr->eta_lfy, jr->eta_gfy)
-	LOCAL_TO_GLOBAL(fs->DA_Z, jr->eta_lfz, jr->eta_gfz)
-
-*/
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)

@@ -321,6 +321,42 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 		pm->getStiffMat = getStiffMatDevProj;
 	}
 
+	// set Schur preconditiner type
+	ierr = PetscOptionsGetString(NULL, NULL, "-pcmat_schur_type", pname, _str_len_, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		if(!strcmp(pname, "wbfbt"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : wbfbt \n");
+
+			pm->stype = _wBFBT_;
+		}
+		else if(!strcmp(pname, "inv_eta"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : inv_eta\n");
+
+			pm->stype = _INV_ETA_;
+		}
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Schur factorization type: %s", pname);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : inv_eta \n");
+
+		pm->stype = _INV_ETA_;
+	}
+
+	if(pm->stype == _wBFBT_ && pm->pgamma != 1.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "BFBT preconditioner is incompatible with matrix penalty (pcmat_schur_type, pcmat_pgamma)");
+	}
+
+	if(pm->stype == _wBFBT_ && pm->type != _BLOCK_)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "BFBT preconditioner requires block matrix type (pcmat_schur_type, pcmat_type)");
+	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1189,40 +1225,6 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xv, &P->wv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->rp);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp);                                  CHKERRQ(ierr);
-/*
-	// wBFBT matrices & vectors
-	ierr = VecDuplicate(P->xv, &P->wv0);                                  CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xv, &P->wv2);                                  CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xv, &P->wv3);                                  CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xv, &P->wv4);                                  CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xv, &P->wv5);                                  CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xv, &P->wv7);                                  CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xv, &P->C);                                  CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xp, &P->wp1);                                  CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xp, &P->wp6);                                  CHKERRQ(ierr);
-	ierr = DMCreateMatrix(fs->DA_CEN,&P->K); CHKERRQ(ierr);
-
-	// get cell center grid partitioning
-	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
-
-	// create temperature DMDA
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
-		DMDA_STENCIL_STAR,
-		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
-		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-		1, 1, lx, ly, lz, &jr->DA_T); CHKERRQ(ierr);
-
-	// create temperature preconditioner matrix
-	ierr = DMCreateMatrix(jr->DA_T, &jr->Att); CHKERRQ(ierr);
-
-	// set matrix options (development)
-	ierr = MatSetOption(jr->Att, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE); CHKERRQ(ierr);
-	ierr = MatSetOption(jr->Att, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE);   CHKERRQ(ierr);
-	ierr = MatSetOption(jr->Att, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);       CHKERRQ(ierr);
-	ierr = MatSetOption(jr->Att, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);      CHKERRQ(ierr);
-*/
-
 
 	// free counter arrays
 	ierr = PetscFree(Avv_d_nnz); CHKERRQ(ierr);
@@ -1234,6 +1236,9 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	// attach near null space
 	ierr = MatAIJSetNullSpace(P->Avv, dof); CHKERRQ(ierr);
+
+	// create BFBT preconditioner
+	ierr = PMatBFBTCreate(pm); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1296,8 +1301,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatZeroEntries(P->Avv); CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Avp); CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Apv); CHKERRQ(ierr);
-
-//	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
@@ -1565,7 +1568,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatAIJAssemble(P->App, bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->iS,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 
-//	ierr = MatAIJAssemble(P->K,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
+	// assemble BFBT preconditioner
+	ierr = PMatBFBTAssemble(pm); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1593,23 +1597,11 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = VecDestroy (&P->xp);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp);  CHKERRQ(ierr);
-/*
-	// wBFBT stuff
-	ierr = MatDestroy (&P->K); 	 CHKERRQ(ierr);
-	ierr = VecDestroy (&P->C); 	 CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wv0); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wp1); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wv2); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wv3); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wv4); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wv5); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wp6); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wv7); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->rblock); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->xblock); CHKERRQ(ierr);
-*/
 
-	ierr = PetscFree(P);         CHKERRQ(ierr);
+	// destroy BFBT preconditioner
+	ierr = PMatBFBTDestroy(pm); CHKERRQ(ierr);
+
+	ierr = PetscFree(P); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

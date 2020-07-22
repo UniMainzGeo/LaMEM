@@ -64,13 +64,25 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof);
 
 //---------------------------------------------------------------------------
+
 // preconditioning matrix storage format
 enum PMatType
 {
 	_MONOLITHIC_,
 	_BLOCK_
 
-} ;
+};
+
+//---------------------------------------------------------------------------
+
+// Schur preconditioner type
+enum PCSCHURType
+{
+	_wBFBT_,   // scaled BFBT
+	_INV_ETA_, // inverse viscosity
+
+};
+
 //---------------------------------------------------------------------------
 
 typedef struct _p_PMat *PMat;
@@ -80,6 +92,7 @@ typedef struct _p_PMat
 	JacRes     *jr;     // assembly context
 	void       *data;   // type-specific context
 	PMatType    type;   // matrix type
+	PCSCHURType stype;  // Schur preconditiner type
 	PetscScalar pgamma; // penalty parameter
 
 	// operations
