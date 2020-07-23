@@ -155,7 +155,7 @@ struct PMatBlock
 	// wBFBT data
 	DM  DA_P;                         // cell-based grid
 	Mat K;                            // Schur complement preconditioner matrix
-	Vec C;                            // diagonal weighting matrix in vector form velocity space
+	Mat C;                            // diagonal viscosity weighting matrix
 	Vec wv0, wv2, wv3, wv4, wv5, wv7; // working vectors in velocity space
 	Vec wp1, wp6;                     // working vectors in pressure space
 

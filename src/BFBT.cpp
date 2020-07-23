@@ -19,26 +19,6 @@
 #include "multigrid.h"
 #include "lsolve.h"
 #include "BFBT.h"
-
-/*
-//---------------------------------------------------------------------------
-
-#define SCATTER_FIELD(da, vec, FIELD) \
-	ierr = DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr); \
-	ierr = DMDAVecGetArray(da, vec, &buff); CHKERRQ(ierr); \
-	iter = 0; \
-	START_STD_LOOP \
-		FIELD \
-	END_STD_LOOP \
-	ierr = DMDAVecRestoreArray(da, vec, &buff); CHKERRQ(ierr); \
-	LOCAL_TO_LOCAL(da, vec)
-
-#define GET_VISC_TOTAL buff[k][j][i] = jr->svCell[iter++].svDev.eta;
-
-
-
-*/
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PMatBFBTCreate"
@@ -47,6 +27,8 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	PMatBlock      *P;
 	JacRes         *jr;
 	FDSTAG         *fs;
+	DOFIndex       *dof;
+	PetscInt        lnp, startp;
 	const PetscInt *lx, *ly, *lz;
 
 	PetscErrorCode ierr;
@@ -55,9 +37,12 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	// BFBT cases only
 	if(pm->stype != _wBFBT_) PetscFunctionReturn(0);
 
-	P  = (PMatBlock*)pm->data;
-	jr = pm->jr;
-	fs = jr->fs;
+	P      = (PMatBlock*)pm->data;
+	jr     = pm->jr;
+	fs     = jr->fs;
+	dof    = &fs->dof;
+	lnp    = dof->lnp;
+	startp = dof->stp;
 
 	// get cell center grid partitioning
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
@@ -79,8 +64,10 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	ierr = MatSetOption(P->K, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);       CHKERRQ(ierr);
 	ierr = MatSetOption(P->K, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);      CHKERRQ(ierr);
 
+	// create scaling matrix
+	ierr = MatAIJCreateDiag(lnp, startp, &P->C); CHKERRQ(ierr);
+
 	// allocate work vectors
-	ierr = VecDuplicate(P->xv, &P->C);    CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv0);  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv2);  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv3);  CHKERRQ(ierr);
@@ -97,6 +84,193 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 #define __FUNCT__ "PMatBFBTAssemble"
 PetscErrorCode PMatBFBTAssemble(PMat pm)
 {
+
+	PMatBlock  *P;
+	JacRes     *jr;
+	FDSTAG     *fs;
+	BCCtx      *bc;
+	SolVarCell *svCell;
+	PetscInt    iter, num, *list;
+	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
+	PetscScalar bEtaX, fEtaX, bEtaY, fEtaY, bEtaz, fEtaZ, eta;
+	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz;
+	PetscScalar v[7], cfp[6], cfv[6];
+	MatStencil  row[1], col[7];
+	PetscScalar ***lEta, ***bcvx,  ***bcvy,  ***bcvz, ***bcp, ***buff;
+	Vec         lvEtaCen, lvEtaX, lvEtaY, lvEtaZ, gvEtaX, gvEtaY, gvEtaZ;
+
+
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context variables
+	P 	 = (PMatBlock*)pm->data;
+	jr   = pm->jr;
+	fs   = jr->fs;
+	bc   = jr->bc;
+	num  = bc->tNumSPC;
+	list = bc->tSPCList;
+
+	// initialize maximum cell index in all directions
+	mx = fs->dsx.tcels - 1;
+	my = fs->dsy.tcels - 1;
+	mz = fs->dsz.tcels - 1;
+
+
+
+
+	ierr = DMGetLocalVector (fs->DA_CEN, &lvEtaCen); CHKERRQ(ierr);
+	ierr = DMGetLocalVector (fs->DA_X,   &lvEtaX);   CHKERRQ(ierr);
+	ierr = DMGetLocalVector (fs->DA_Y,   &lvEtaY);   CHKERRQ(ierr);
+	ierr = DMGetLocalVector (fs->DA_Z,   &lvEtaZ);   CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(fs->DA_X,   &gvEtaX);   CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(fs->DA_Y,   &gvEtaY);   CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(fs->DA_Z,   &gvEtaZ);   CHKERRQ(ierr);
+
+/*
+
+	ierr = DMDAVecGetArray(fs->DA_X,   lvEtaX, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   lvEtaY, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   lvEtaZ, &bcvz); CHKERRQ(ierr);
+
+	iter = 0;
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		eta = &jr->svCell[iter++].svDev.eta;
+	}
+	END_STD_LOOP
+
+
+
+
+
+
+
+
+
+#define SCATTER_FIELD(da, vec, FIELD) \
+	ierr = DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr); \
+	ierr = DMDAVecGetArray(da, vec, &buff); CHKERRQ(ierr); \
+	iter = 0; \
+	START_STD_LOOP \
+		FIELD \
+	END_STD_LOOP \
+	ierr = DMDAVecRestoreArray(da, vec, &buff); CHKERRQ(ierr); \
+	LOCAL_TO_LOCAL(da, vec)
+
+#define GET_VISC buff[k][j][i] = jr->svCell[iter++].svDev.eta;
+
+
+
+
+
+
+
+
+	// clear matrix coefficients
+	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
+
+	// access work vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lEta); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
+
+
+
+	//---------------
+	// central points
+	//---------------
+	iter = 0;
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+
+
+
+		// check index bounds and TPC multipliers
+		Im1 = i-1; cfp[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcp[k][j][i-1] != DBL_MAX) cfp[0] = -1.0; }
+		Ip1 = i+1; cfp[1] = 1.0; if(Ip1 > mx) { Ip1--; if(bcp[k][j][i+1] != DBL_MAX) cfp[1] = -1.0; }
+		Jm1 = j-1; cfp[2] = 1.0; if(Jm1 < 0)  { Jm1++; if(bcp[k][j-1][i] != DBL_MAX) cfp[2] = -1.0; }
+		Jp1 = j+1; cfp[3] = 1.0; if(Jp1 > my) { Jp1--; if(bcp[k][j+1][i] != DBL_MAX) cfp[3] = -1.0; }
+		Km1 = k-1; cfp[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcp[k-1][j][i] != DBL_MAX) cfp[4] = -1.0; }
+		Kp1 = k+1; cfp[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcp[k+1][j][i] != DBL_MAX) cfp[5] = -1.0; }
+
+		// compute average viscosities
+		bEtaX = (eta + lEta[k][j][Im1])/2.0;   fEtaX = (eta + lEta[k][j][Ip1])/2.0;
+		bEtaY = (eta + lEta[k][Jm1][i])/2.0;   fEtaY = (eta + lEta[k][Jp1][i])/2.0;
+		bEtaZ = (eta + lEta[Km1][j][i])/2.0;   fEtaZ = (eta + lEta[Kp1][j][i])/2.0;
+
+		// get mesh steps
+		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
+		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);
+		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
+
+		// get mesh steps
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+		dz = SIZE_CELL(k, sz, fs->dsz);
+
+		// set row/column indices
+		row[0].k = k;   row[0].j = j;   row[0].i = i;   row[0].c = 0;
+		col[0].k = k;   col[0].j = j;   col[0].i = Im1; col[0].c = 0;
+		col[1].k = k;   col[1].j = j;   col[1].i = Ip1; col[1].c = 0;
+		col[2].k = k;   col[2].j = Jm1; col[2].i = i;   col[2].c = 0;
+		col[3].k = k;   col[3].j = Jp1; col[3].i = i;   col[3].c = 0;
+		col[4].k = Km1; col[4].j = j;   col[4].i = i;   col[4].c = 0;
+		col[5].k = Kp1; col[5].j = j;   col[5].i = i;   col[5].c = 0;
+		col[6].k = k;   col[6].j = j;   col[6].i = i;   col[6].c = 0;
+
+		// set values including TPC multipliers
+		v[0] = -bkx/bdx/dx*cf[0];
+		v[1] = -fkx/fdx/dx*cf[1];
+		v[2] = -bky/bdy/dy*cf[2];
+		v[3] = -fky/fdy/dy*cf[3];
+		v[4] = -bkz/bdz/dz*cf[4];
+		v[5] = -fkz/fdz/dz*cf[5];
+		v[6] =  invdt*rho_Cp
+		+       (bkx/bdx + fkx/fdx)/dx
+		+       (bky/bdy + fky/fdy)/dy
+		+       (bkz/bdz + fkz/fdz)/dz;
+
+		// set matrix coefficients
+		ierr = MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
+
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lEta); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
+
+	// assemble preconditioner  matrix
+	ierr = MatAIJAssemble(P->K, num, list, 1.0); CHKERRQ(ierr);
+
+
+	ierr = DMRestoreLocalVector (fs->DA_CEN, &lvEtaCen); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector (fs->DA_X,   &lvEtaX);   CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector (fs->DA_Y,   &lvEtaY);   CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector (fs->DA_Z,   &lvEtaZ);   CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(fs->DA_X,   &gvEtaX);   CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(fs->DA_Y,   &gvEtaY);   CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(fs->DA_Z,   &gvEtaZ);   CHKERRQ(ierr);
+
+*/
+
+/*
+
 	PMatBlock *P;
 	JacRes 	  *jr;
 
@@ -121,7 +295,7 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	// BFBT cases only
 	if(pm->stype != _wBFBT_) PetscFunctionReturn(0);
 
-/*
+
 	// access residual context variables
 	P 	 = (PMatBlock*)pm->data;
 	jr   = pm->jr;
@@ -226,6 +400,9 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	// assemble temperature matrix
 	ierr = MatAIJAssemble(P->K, num, list, 1.0); CHKERRQ(ierr);
 
+*/
+
+/*
 
 
 	PetscInt as, bs, cs;
@@ -255,27 +432,7 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 */
 
 	/*
-		// ----------------------------viscosity
-		Vec eta_gfx,  eta_gfy, eta_gfz;  // global
-		Vec eta_lfx,  eta_lfy, eta_lfz;  // local (ghosted)
 
-		// -----------------------------------------------viscosity
-		ierr = DMCreateGlobalVector(fs->DA_X, &jr->eta_gfx); CHKERRQ(ierr);
-		ierr = DMCreateGlobalVector(fs->DA_Y, &jr->eta_gfy); CHKERRQ(ierr);
-		ierr = DMCreateGlobalVector(fs->DA_Z, &jr->eta_gfz); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_X, &jr->eta_lfx); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_Y, &jr->eta_lfy); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_Z, &jr->eta_lfz); CHKERRQ(ierr);
-
-		ierr = VecDestroy(&jr->eta_gfx);     CHKERRQ(ierr);//--
-		ierr = VecDestroy(&jr->eta_gfy);     CHKERRQ(ierr);
-		ierr = VecDestroy(&jr->eta_gfz);     CHKERRQ(ierr);
-
-		ierr = VecDestroy(&jr->eta_lfx);     CHKERRQ(ierr);
-		ierr = VecDestroy(&jr->eta_lfy);     CHKERRQ(ierr);
-		ierr = VecDestroy(&jr->eta_lfz);     CHKERRQ(ierr);//--
-
-	 	 PetscScalar  ***eta_fx,  ***eta_fy,  ***eta_fz;
 
 
 		//-------------------------------------------viscosity
@@ -336,7 +493,7 @@ PetscErrorCode PMatBFBTDestroy(PMat pm)
 
 	ierr = DMDestroy (&P->DA_P); CHKERRQ(ierr);
 	ierr = MatDestroy(&P->K); 	 CHKERRQ(ierr);
-	ierr = VecDestroy(&P->C); 	 CHKERRQ(ierr);
+	ierr = MatDestroy(&P->C); 	 CHKERRQ(ierr);
 	ierr = VecDestroy(&P->wv0);  CHKERRQ(ierr);
 	ierr = VecDestroy(&P->wp1);  CHKERRQ(ierr);
 	ierr = VecDestroy(&P->wv2);  CHKERRQ(ierr);
@@ -411,3 +568,29 @@ PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
+#undef __FUNCT__
+#define __FUNCT__ "getViscMat"
+PetscErrorCode getViscMat(JacRes *jr, Vec ex, Vec ey, Vec ez, Mat C)
+{
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+
