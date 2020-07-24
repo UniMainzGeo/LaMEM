@@ -192,6 +192,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 {
 	PC          vpc;
 	PCStokesBF *bf;
+	PMatBlock  *P;
 	JacRes     *jr;
 
 	PetscErrorCode ierr;
@@ -230,10 +231,16 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// create & set pressure Schur complement solver
 	if(pc->pm->stype == _wBFBT_)
 	{
+		// access blocj matrix
+		P = (PMatBlock*)pc->pm->data;
+
 		// create pressure solver
 		ierr = KSPCreate(PETSC_COMM_WORLD, &bf->pksp); CHKERRQ(ierr);
+		ierr = KSPSetDM(bf->pksp, P->DA_P);            CHKERRQ(ierr);
+		ierr = KSPSetDMActive(bf->pksp, PETSC_FALSE);   CHKERRQ(ierr);
 		ierr = KSPSetOptionsPrefix(bf->pksp,"ps_");    CHKERRQ(ierr);
 		ierr = KSPSetFromOptions(bf->pksp);            CHKERRQ(ierr);
+
 	}
 
 	PetscFunctionReturn(0);
@@ -400,13 +407,13 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		// BLOCK UPPER TRIANGULAR
 		//=======================
 
+		// Schur complement applies negative sign internally (no negative sign here)
 		if(pc->pm->stype == _wBFBT_)
 		{
 			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
 		else if(pc->pm->stype == _INV_ETA_)
 		{
-			// Schur complement already contains negative sign (no negative sign here)
 			ierr = MatMult(P->iS, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
 
@@ -428,13 +435,13 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 
 		ierr = VecAXPY(P->rp, -1.0, P->wp);      CHKERRQ(ierr); // rp = rp - wp
 
+		// Schur complement applies negative sign internally (no negative sign here)
 		if(pc->pm->stype == _wBFBT_)
 		{
 			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
 		else if(pc->pm->stype == _INV_ETA_)
 		{
-			// Schur complement already contains negative sign (no negative sign here)
 			ierr = MatMult(P->iS, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
 	}

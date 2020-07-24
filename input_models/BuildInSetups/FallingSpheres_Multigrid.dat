@@ -182,7 +182,7 @@
 	<MaterialStart>
 		ID  = 1   # phase id
 		rho = 2   # density
-		eta = 1000 # viscosity
+		eta = 10 # viscosity
 	<MaterialEnd>
 
 #===============================================================================
@@ -196,32 +196,40 @@
 
 	-js_ksp_type fgmres
 	-js_ksp_max_it 1000
- 	-js_ksp_monitor
+	-js_ksp_monitor
 	-js_ksp_rtol 1e-6
 
 #	-pcmat_type block
-#	-pcmat_pgamma 1.0
+#	-pcmat_pgamma 1e3
 #	-jp_type bf
+#	-bf_type upper
 #	-bf_vs_type user
 #	-vs_ksp_type preonly
 #	-vs_pc_type lu
 #	-vs_pc_factor_mat_solver_package mumps
 
 
-#    -pcmat_type block
-#    -pcmat_pgamma 1.0
-#    -jp_type bf
-#    -bf_type upper
-#    -bf_vs_type mg
-#    -vs_ksp_type gmres
-#    -vs_ksp_rtol 1e-2
-#    -vs_ksp_max_it 10
-    
-       
-#	-bf_type wbfbt
+	-pcmat_type block
+	-pcmat_schur_type wbfbt
+	-jp_type bf
+	-bf_type upper
+	-bf_vs_type mg
+	-vs_ksp_type gmres
+	-vs_ksp_rtol 1e-2
+	-vs_ksp_max_it 10
 
-	-pcmat_type mono
-	-jp_type mg
+	-ps_ksp_type gmres
+	-ps_ksp_rtol 1e-2
+	-ps_ksp_max_it 10
+
+	-ps_pc_type mg
+	-ps_pc_mg_levels 3
+	-ps_pc_mg_galerkin
+	-ps_pc_mg_type multiplicative
+	-ps_pc_mg_cycle_type v
+
+#	-pcmat_type mono
+#	-jp_type mg
 
 	-gmg_pc_type mg
 	-gmg_pc_mg_levels 4
@@ -241,6 +249,7 @@
 
 #-vs_ksp_view
 #-crs_ksp_view
+-ps_ksp_view
 
 
 <PetscOptionsEnd>
