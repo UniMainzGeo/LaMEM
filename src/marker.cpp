@@ -1535,6 +1535,11 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	{
 		VolID = CtrlPoly->VolID[0];
 	}
+	else
+	{
+		VolID = -9999;
+	}
+	
 
 	PetscFunctionReturn(ierr);
 }
