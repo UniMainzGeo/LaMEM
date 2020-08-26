@@ -610,8 +610,8 @@ void interpStretch(
     // interpolate the rest
     for (i=1; i < numCtrlPoly; i++)
     {
-        PetscScalar SxNew[maxSize] = {0};
-        PetscScalar SyNew[maxSize] = {0};
+        PetscScalar SxNew[maxSize];
+        PetscScalar SyNew[maxSize];
         linSpace(Sx[i-1],Sx[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SxNew);
         linSpace(Sy[i-1],Sy[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SyNew);
         for (j = CtrlPoly[i-1], k = 0; j < CtrlPoly[i]+1; j++, k++)
