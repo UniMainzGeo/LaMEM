@@ -575,10 +575,11 @@ void linSpace(
 	PetscInt     N,
 	PetscScalar *outVec)
 {
-    PetscScalar delta = (max-min)/(N-1);
-    for (int i=0; i < N; i++)
+    PetscScalar delta = (max-min)/((PetscScalar)(N-1));
+
+    for(PetscInt i = 0; i < N; i++)
     {
-        outVec[i] = min +i*delta;
+        outVec[i] = min + ((PetscScalar)i)*delta;
     }
 }
 //---------------------------------------------------------------------------
