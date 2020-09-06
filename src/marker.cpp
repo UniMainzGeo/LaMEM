@@ -54,6 +54,7 @@
 #include "tools.h"
 #include "bc.h"
 #include "surf.h"
+#include "BFBT.h"
 
 /*
 #START_DOC#
@@ -968,6 +969,8 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], sphere));
 	}
+
+	ierr = BFBTGaussianSmoothing(actx->jr, fb->nblocks, geom); CHKERRQ(ierr); // viscosity smoothing
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 

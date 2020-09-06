@@ -91,7 +91,7 @@
 		center = 0.9 0.9 0.8  
 		radius = 0.05
 	<SphereEnd>
-	
+
 	# 2
 	<SphereStart>	
 		phase  = 1
@@ -124,36 +124,108 @@
 	<SphereStart>	
 		phase  = 1
 		center = 0.3 0.3 0.3  
-		radius = 0.1
+		radius = 0.05
 	<SphereEnd>
 
 	# 7
 	<SphereStart>	
 		phase  = 1
 		center = 0.6 0.4 0.8  
-		radius = 0.1
+		radius = 0.05
 	<SphereEnd>
 
 	# 8
 	<SphereStart>	
 		phase  = 1
 		center = 0.5 0.8 0.9  
-		radius = 0.1
+		radius = 0.05
 	<SphereEnd>
 
 	# 9
 	<SphereStart>	
 		phase  = 1
 		center = 0.5 0.8 0.6  
-		radius = 0.1
+		radius = 0.05
 	<SphereEnd>
 	
 	# 10
 	<SphereStart>	
 		phase  = 1
 		center = 0.7 0.4 0.6  
-		radius = 0.1
+		radius = 0.05
 	<SphereEnd>
+
+
+	# 11
+	<SphereStart>	
+		phase  = 1
+		center = 0.9 0.4 0.2  
+		radius = 0.05
+	<SphereEnd>
+
+	# 12
+	<SphereStart>	
+		phase  = 1
+		center = 0.1 0.6 0.4  
+		radius = 0.05
+	<SphereEnd>	
+
+	# 13
+	<SphereStart>	
+		phase  = 1
+		center = 0.4 0.3 0.7  
+		radius = 0.05
+	<SphereEnd>	
+
+	# 14
+	<SphereStart>	
+		phase  = 1
+		center = 0.3 0.8 0.9  
+		radius = 0.05
+	<SphereEnd>	
+	
+	# 15
+	<SphereStart>	
+		phase  = 1
+		center = 0.9 0.5 0.4  
+		radius = 0.05
+	<SphereEnd>
+
+	# 16
+	<SphereStart>	
+		phase  = 1
+		center = 0.3 0.4 0.4  
+		radius = 0.05
+	<SphereEnd>
+
+	# 17
+	<SphereStart>	
+		phase  = 1
+		center = 0.1 0.4 0.8  
+		radius = 0.05
+	<SphereEnd>
+
+	# 18
+	<SphereStart>	
+		phase  = 1
+		center = 0.7 0.7 0.9  
+		radius = 0.05
+	<SphereEnd>
+
+	# 19
+	<SphereStart>	
+		phase  = 1
+		center = 0.5 0.2 0.7  
+		radius = 0.05
+	<SphereEnd>
+	
+	# 20
+	<SphereStart>	
+		phase  = 1
+		center = 0.8 0.2 0.8  
+		radius = 0.05
+	<SphereEnd>
+
 
 #===============================================================================
 # Output
@@ -182,7 +254,7 @@
 	<MaterialStart>
 		ID  = 1   # phase id
 		rho = 2   # density
-		eta = 10 # viscosity
+		eta = 100 # viscosity
 	<MaterialEnd>
 
 #===============================================================================
@@ -211,14 +283,19 @@
 
 	-pcmat_type block
 	-pcmat_schur_type wbfbt
+
+#    -BFBT_viscositySmoothing
+#    -BFBT_viscositySmoothing_DynamicRatio 1e3
+#    -BFBT_viscositySmoothing_delta 200
+
 	-jp_type bf
 	-bf_type upper
 	-bf_vs_type mg
-	-vs_ksp_type gmres
+	-vs_ksp_type fgmres
 	-vs_ksp_rtol 1e-2
 	-vs_ksp_max_it 10
 
-	-ps_ksp_type gmres
+	-ps_ksp_type fgmres
 	-ps_ksp_rtol 1e-2
 	-ps_ksp_max_it 10
 
@@ -249,7 +326,7 @@
 
 #-vs_ksp_view
 #-crs_ksp_view
--ps_ksp_view
+#-ps_ksp_view
 
 
 <PetscOptionsEnd>

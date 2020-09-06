@@ -19,6 +19,7 @@
 #include "multigrid.h"
 #include "lsolve.h"
 #include "BFBT.h"
+#include "marker.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PMatBFBTCreate"
@@ -93,6 +94,8 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	PetscScalar v[7], d[6], g[6], cfe[6], cfp[6], cfv[6];
 	PetscScalar ***lEta, ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz;
+	PetscBool	flg;
+	char        pname[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -128,11 +131,24 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	iter = 0;
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	START_STD_LOOP
-	{
-		lEta[k][j][i] = jr->svCell[iter++].svDev.eta;
+	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+	ierr = PetscOptionsGetString(NULL, NULL, "-pcmat_BFBT_viscositySmoothing", pname, _str_len_, &flg); CHKERRQ(ierr);
+	if(flg==PETSC_TRUE){
+		START_STD_LOOP
+		{
+			lEta[k][j][i] = jr->svCell[iter++].eta_smoothed;
+			if(iter%5500==0) PetscPrintf(PETSC_COMM_WORLD, "%lld \n", (LLD)lEta[k][j][i]);
+		}
+		END_STD_LOOP
+	}else{
+		START_STD_LOOP
+		{
+			lEta[k][j][i] = jr->svCell[iter++].svDev.eta;
+			if(iter%5500==0) PetscPrintf(PETSC_COMM_WORLD, "%lld \n", (LLD)lEta[k][j][i]);
+		}
+		END_STD_LOOP
 	}
-	END_STD_LOOP
+	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvEtaCen, &lEta); CHKERRQ(ierr);
 
@@ -244,6 +260,19 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
+		/*
+		if(pm->BFBTtype==_unscaled_){
+
+			g[0] =  1.0/bdx;   d[0] =  cfv[0]/dx;
+			g[1] = -1.0/fdx;   d[1] = -cfv[1]/dx;
+			g[2] =  1.0/bdy;   d[2] =  cfv[2]/dy;
+			g[3] = -1.0/fdy;   d[3] = -cfv[3]/dy;
+			g[4] =  1.0/bdz;   d[4] =  cfv[4]/dz;
+			g[5] = -1.0/fdz;   d[5] = -cfv[5]/dz;
+
+		}else{
+		*/
+
 		// get gradient vector & divergence vector scaled by viscosity and velocity SPC multipliers
 		g[0] =  1.0/bdx;   d[0] =  cfv[0]/dx/cfe[0];
 		g[1] = -1.0/fdx;   d[1] = -cfv[1]/dx/cfe[1];
@@ -251,6 +280,8 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 		g[3] = -1.0/fdy;   d[3] = -cfv[3]/dy/cfe[3];
 		g[4] =  1.0/bdz;   d[4] =  cfv[4]/dz/cfe[4];
 		g[5] = -1.0/fdz;   d[5] = -cfv[5]/dz/cfe[5];
+
+		//}
 
 		// compute matrix row, apply pressure TPC multipliers
 		v[0] = -g[0]*d[0]*cfp[0];
@@ -343,22 +374,129 @@ PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y)
 	// S⁻1 =  (K^⁻1)*B*C*A*C*B^T*(K^⁻1)
 	// K   =  B*C*B^T
 
-	ierr = KSPSolve(bf->pksp, x, P->wp);   CHKERRQ(ierr); // wp = (K^⁻1)*x
 
-	ierr = MatMult(P->Avp, P->wp, P->wv);  CHKERRQ(ierr); // wv = Avp*wp
+//	if(pm->BFBTtype==_unscaled_){
+/*
+		ierr = KSPSolve(bf->pksp, x, P->wp);   CHKERRQ(ierr); // wp = (K^⁻1)*x
+		ierr = MatMult(P->Avp, P->wp, P->wv);  CHKERRQ(ierr); // wv = Avp*wp
+		ierr = MatMult(P->Avv, P->wv, P->wv2); CHKERRQ(ierr); // wv2 = Avv * wv
+		ierr = MatMult(P->Apv, P->wv2, P->wp); CHKERRQ(ierr); // wp = Apv*wv2
+		ierr = KSPSolve(bf->pksp, P->wp, y);   CHKERRQ(ierr); // y = (K^⁻1)*wp
+*/
+	//}else if(pm->BFBTtype==scaled){
 
-	ierr = MatMult(P->C, P->wv, P->wv2);   CHKERRQ(ierr); // wv2 = C*wv
+//	}else{
 
-	ierr = MatMult(P->Avv, P->wv2, P->wv); CHKERRQ(ierr); // wv = Avv * wv2
+		ierr = KSPSolve(bf->pksp, x, P->wp);   CHKERRQ(ierr); // wp = (K^⁻1)*x
 
-	ierr = MatMult(P->C, P->wv, P->wv2);   CHKERRQ(ierr); // wv2 = C*wv
+		ierr = MatMult(P->Avp, P->wp, P->wv);  CHKERRQ(ierr); // wv = Avp*wp
 
-	ierr = MatMult(P->Apv, P->wv2, P->wp); CHKERRQ(ierr); // wp = Apv*wv2
+		ierr = MatMult(P->C, P->wv, P->wv2);   CHKERRQ(ierr); // wv2 = C*wv
 
-	ierr = KSPSolve(bf->pksp, P->wp, y);   CHKERRQ(ierr); // y = (K^⁻1)*wp
+		ierr = MatMult(P->Avv, P->wv2, P->wv); CHKERRQ(ierr); // wv = Avv * wv2
+
+		ierr = MatMult(P->C, P->wv, P->wv2);   CHKERRQ(ierr); // wv2 = C*wv
+
+		ierr = MatMult(P->Apv, P->wv2, P->wp); CHKERRQ(ierr); // wp = Apv*wv2
+
+		ierr = KSPSolve(bf->pksp, P->wp, y);   CHKERRQ(ierr); // y = (K^⁻1)*wp
+
+//	}
+
+
 
 	ierr = VecScale(y, -1.0);              CHKERRQ(ierr); // y = -y
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BFBTGaussianSmoothing"
+PetscErrorCode BFBTGaussianSmoothing(JacRes *jr, PetscInt nSpheres, GeomPrim *geom)
+{
+	FDSTAG     *fs;
+	PetscScalar	DynamicRatio, delta;
+	PetscScalar etamax, etamin, radius;
+	PetscScalar IndicatorValue, center[3], coords[3];
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt	iSpheres, ngeom;
+	PetscScalar maximum, expfunc, vecabs;
+	Discret1D  *dsx, *dsy, *dsz;
+	GeomPrim   *sphere;
+	PetscBool	flg;
+	char        pname[_str_len_];
+	SolVarCell *svCell;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// use smoothed viscosity only if option is activated
+	ierr = PetscOptionsGetString(NULL, NULL, "-BFBT_viscositySmoothing", pname, _str_len_, &flg); CHKERRQ(ierr);
+	if(flg == PETSC_FALSE) PetscFunctionReturn(0);
+
+	// access context variables
+	fs   = jr->fs;
+	dsx  = &fs->dsx;
+	dsy  = &fs->dsy;
+	dsz  = &fs->dsz;
+
+	DynamicRatio 	= 100;								// Default
+	delta 			= 200;								// Default
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-BFBT_viscositySmoothing_DynamicRatio", &DynamicRatio, &flg); 	CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-BFBT_viscositySmoothing_delta", &delta, &flg); 				CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD,"\n");
+	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+	PetscPrintf(PETSC_COMM_WORLD, "   BFBT viscosity pre-smoothing  	: active \n");
+	PetscPrintf(PETSC_COMM_WORLD, "   BFBT viscosity contrast     		: %lld \n", (LLD)DynamicRatio);
+	PetscPrintf(PETSC_COMM_WORLD, "   BFBT smoothing exponential decay	: %lld \n", (LLD)delta);
+	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+
+	etamin 			= 1.0/sqrt(DynamicRatio);
+	etamax 			= 	  sqrt(DynamicRatio);
+	radius 			= 0.05;
+
+	// Loop over central points
+	iter = 0;
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	START_STD_LOOP
+	{
+		// get coordinates of actual cell center
+		coords[0] = dsx->ccoor[iter];
+		coords[1] = dsy->ccoor[iter];
+		coords[2] = dsz->ccoor[iter];
+
+		ngeom = 0;
+		IndicatorValue = 1.0;
+		for(iSpheres = 1; iSpheres < nSpheres; iSpheres++){
+
+			GET_GEOM(sphere, geom, ngeom, _max_geom_);	// get actual sphere
+			center[0]   = sphere->center[0];
+			center[1]   = sphere->center[1];			// get sphere center
+			center[2]   = sphere->center[2];
+			radius 		= sphere->radius;				// get sphere radius
+
+			VEC_ABS(vecabs, center, coords);
+			maximum = vecabs - radius;					// 			 n
+			if(maximum < 0.0){maximum = 0.0;}			// Ind(x):=product[1-exp(-delta*max(0,|center(i)-x|-radius)^2)]
+			maximum = maximum * maximum;				//			i=1
+			expfunc = exp(-delta * maximum);
+			IndicatorValue = IndicatorValue * (1 - expfunc);
+		}
+
+		svCell = &jr->svCell[iter++];
+		svCell->eta_smoothed = (etamax-etamin) * (1-IndicatorValue) + etamin; // store viscosity
+		if(iter%5500==0) PetscPrintf(PETSC_COMM_WORLD, "%lld \n", svCell->eta_smoothed); 							// storing didnt work...
+		if(iter%5500==0) PetscPrintf(PETSC_COMM_WORLD, "%lld \n", (etamax-etamin) * (1-IndicatorValue) + etamin); 	//
+	}
+	END_STD_LOOP
+
+	PetscFunctionReturn(0);
+}
+
+
+
+//---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------
+

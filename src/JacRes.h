@@ -112,6 +112,8 @@ struct SolVarCell
 	PetscScalar  eta_vp;        // viscoplastic viscosity (output)
 	PetscScalar  U[3];          // displacement
 
+	PetscScalar  eta_smoothed;
+
 };
 
 //---------------------------------------------------------------------------
