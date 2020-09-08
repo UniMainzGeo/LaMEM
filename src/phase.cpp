@@ -392,6 +392,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
+	// fluid flow
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "Ss",       &m->Ss,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "ki",       &m->ki,    1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
 	// melt fraction viscosity parametrization
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0); CHKERRQ(ierr);
@@ -545,7 +550,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 	// PRINT (optional)
-	if (PrintOutput){
+	if(PrintOutput)
+	{
 		PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld",(LLD)(m->ID));
 
 		if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"\n   diffusion creep profile  : %s", ndiff);
@@ -618,6 +624,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
 		MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
 		MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
+
+		sprintf(title, "   (fluid)  : "); print_title = 1;
+		MatPrintScalParam(m->Ss,    "Ss",    "[1/Pa]",   scal, title, &print_title);
+		MatPrintScalParam(m->ki,    "ki",    "[m^2]",    scal, title, &print_title);
+
 		PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 	}
 
@@ -667,6 +678,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->Cp     /= scal->cpecific_heat;
 	m->k      /= scal->conductivity;
 	m->A      /= scal->heat_production;
+
+	// fluid
+	m->Ss     *= scal->stress_si;
+	m->ki     /= scal->area_si;
 
 	// phase-temperature
 	if(m->T) m->T = (m->T + scal->Tshift)/scal->temperature;

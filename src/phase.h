@@ -138,6 +138,9 @@ public:
 	PetscScalar  k;                 // thermal conductivity                       [W/m/k]
 	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
 	PetscScalar  T;                 // optional temperature to set within the phase
+	// hydraulic parameters
+	PetscScalar  Ss;                // cpecific storage                           [1/Pa]
+	PetscScalar  ki;                // intrinsic permeability                     [m^2]
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number

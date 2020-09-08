@@ -168,7 +168,10 @@ struct Controls
 	PetscScalar minFr;          // minimum friction
 	PetscScalar tauUlt;         // ultimate yield stress
 
+	PetscInt    actFluid;       // fluid flow activation flag
 	PetscScalar rho_fluid;      // fluid density
+	PetscScalar eta_fluid;      // fluid viscosity
+	PetscInt    fluidPhase;     // fluid phase (if exists in Stokes domain)
 	GWLevelType gwType;         // type of ground water level (none, top, surf, level)
 	PetscScalar gwLevel;        // fixed ground water level
 
@@ -262,6 +265,15 @@ struct JacRes
 	Vec dT;   // temperature increment (global)
 	Vec ge;   // energy residual (global)
 	KSP tksp; // temperature diffusion solver
+
+	//=======================
+	// fluid flow parameters
+	//=======================
+
+	Mat App;  // pressure preconditioner matrix
+	Vec dP;   // pressure increment (global)
+	Vec gf;   // fluid  flow residual (global)
+	KSP pksp; // pressure diffusion solver
 
 	//==========================
 	// 2D integration primitives
@@ -379,6 +391,37 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt);
 
 // assemble temperature preconditioner matrix
 PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt);
+
+//---------------------------------------------------------------------------
+//......................   FLUID FLOW FUNCTIONS   ..........................
+//---------------------------------------------------------------------------
+
+PetscErrorCode JacResGetFlowParam(
+	JacRes      *jr,
+	PetscScalar *phRat,
+	PetscScalar *ki_,   // permeability
+	PetscScalar *Ss_);  // specific storage
+
+	// check whether fluid flow material parameters are properly defined
+PetscErrorCode JacResCheckFlowParam(JacRes *jr);
+
+// setup fluid flow parameters
+PetscErrorCode JacResCreateFlowParam(JacRes *jr);
+
+// destroy fluid flow parameters
+PetscErrorCode JacResDestroyFlowParam(JacRes *jr);
+
+// correct fluid pressure (Newton update)
+PetscErrorCode JacResUpdateFlow(JacRes *jr);
+
+// apply fluid pressure two-point constraints
+PetscErrorCode JacResApplyFlowBC(JacRes *jr);
+
+// compute fluid flow residual vector
+PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt);
+
+// assemble fluid flow preconditioner matrix
+PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt);
 
 //---------------------------------------------------------------------------
 //......................   INTEGRATION FUNCTIONS   ..........................

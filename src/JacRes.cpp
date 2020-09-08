@@ -65,18 +65,20 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	BCCtx      *bc;
 	PetscScalar gx, gy, gz;
 	char        gwtype [_str_len_];
-	PetscInt    i, numPhases, temp_int;
+	PetscInt    i, numPhases, temp_int, mID;
 	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
-	scal      =  jr->scal;
-	ctrl      = &jr->ctrl;
-	surf      =  jr->surf;
-	bc        =  jr->bc;
-	numPhases =  jr->dbm->numPhases;
+	scal       =  jr->scal;
+	ctrl       = &jr->ctrl;
+	surf       =  jr->surf;
+	bc         =  jr->bc;
+	numPhases  =  jr->dbm->numPhases;
+	mID        =  jr->dbm->numPhases-1;
+
 
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;
@@ -101,7 +103,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0  ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,        1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_therm_exp",   &ctrl->actExp,         1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1);   CHKERRQ(ierr);
@@ -120,7 +122,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "min_cohes",       &ctrl->minCh,          1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "min_fric",        &ctrl->minFr,          1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "tau_ult",         &ctrl->tauUlt,         1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_fluid_flow",  &ctrl->actFluid,       1, 1);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",       &ctrl->rho_fluid,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_fluid",       &ctrl->eta_fluid,      1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "fluid_phase",     &ctrl->fluidPhase,     1, mID); CHKERRQ(ierr);
 	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype,                "none"); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",        &ctrl->gwLevel,        1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);   CHKERRQ(ierr);
@@ -190,14 +195,14 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify fluid density (rho_n, rho_c, rp, rho_fluid)\n");
 	}
 
-	if(!need_rho_fluid) ctrl->rho_fluid = 0.0;
+//	if(!need_rho_fluid) ctrl->rho_fluid = 0.0;
 
 	if(need_gw_type && ctrl->gwType == _GW_NONE_)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define ground water level type (rp, gw_level_type)\n");
 	}
 
-	if(!need_gw_type) ctrl->gwType = _GW_NONE_;
+//	if(!need_gw_type) ctrl->gwType = _GW_NONE_;
 
 	if((need_surf || ctrl->gwType == _GW_SURF_) && !surf->UseFreeSurf)
 	{
@@ -277,7 +282,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->minCh)          PetscPrintf(PETSC_COMM_WORLD, "   Minimum cohesion                        : %g %s \n", ctrl->minCh,     scal->lbl_stress_si);
 	if(ctrl->minFr)          PetscPrintf(PETSC_COMM_WORLD, "   Minimum friction                        : %g %s \n", ctrl->minFr,     scal->lbl_angle);
 	if(ctrl->tauUlt)         PetscPrintf(PETSC_COMM_WORLD, "   Ultimate yield stress                   : %g %s \n", ctrl->tauUlt,    scal->lbl_stress_si);
+	if(ctrl->actFluid)       PetscPrintf(PETSC_COMM_WORLD, "   Activate fluid flow                     @ \n");
 	if(ctrl->rho_fluid)      PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid, scal->lbl_density);
+	if(ctrl->eta_fluid)      PetscPrintf(PETSC_COMM_WORLD, "   Fluid viscosity                         : %g %s \n", ctrl->eta_fluid, scal->lbl_viscosity);
+	if(ctrl->fluidPhase)     PetscPrintf(PETSC_COMM_WORLD, "   Fluid phase ID                          : %lld \n",  (LLD)ctrl->fluidPhase);
 	if(ctrl->mfmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum melt fraction (viscosity)       : %g    \n", ctrl->mfmax);
 	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %lld  \n", ctrl->lmaxit);
 	if(ctrl->lrtol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration tolerance            : %g    \n", ctrl->lrtol);
@@ -307,6 +315,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->minFr          /=  scal->angle;
 	ctrl->tauUlt         /=  scal->stress_si;
 	ctrl->rho_fluid      /=  scal->density;
+	ctrl->eta_fluid      /=  scal->viscosity;
 	ctrl->gwLevel        /=  scal->length;
 	ctrl->steadyTempStep /=  scal->time;
 
