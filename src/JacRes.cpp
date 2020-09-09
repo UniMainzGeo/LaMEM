@@ -1025,9 +1025,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz  = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	fssa   =  jr->ctrl.FSSA; // density gradient penalty parameter
-	grav   =  jr->ctrl.grav; // gravity acceleration
-	dt     =  jr->ts->dt;    // time step
+	fssa   =  jr->ctrl.FSSA;   // density gradient penalty parameter
+	grav   =  jr->ctrl.grav;   // gravity acceleration
+	dt     =  jr->ts->dt;      // time step
 
 	// setup constitutive equation evaluation context parameters
 	ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
@@ -1170,7 +1170,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
 		// mass (volume)
-		gc[k][j][i] = gres;
+		gc[k][j][i] = gres - svCell->source;
 
 	}
 	END_STD_LOOP

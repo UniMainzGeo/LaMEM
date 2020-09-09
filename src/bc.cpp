@@ -846,7 +846,6 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
-	SolVarCell  *svCell;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, mcz, AirPhase, fluidPhase;
 	PetscScalar ***bcf, ***p;
 
@@ -858,7 +857,6 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 	fs         = jr->fs;
 	AirPhase   = jr->surf->AirPhase;
 	fluidPhase = jr->ctrl.fluidPhase;
-	svCell     = bc->jr->svCell;
 	mcz        = fs->dsz.tcels - 1;
 
 	// set zero pressure at top boundary
@@ -877,7 +875,6 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 	// set zero pressure in the air
 	if(AirPhase != -1)
 	{
-
 		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 		iter = 0;
@@ -885,7 +882,7 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 		START_STD_LOOP
 		{
 			// check for constrained cell
-			if(svCell[iter++].phRat[AirPhase] > 0.0)
+			if(jr->svCell[iter++].phRat[AirPhase] > 0.0)
 			{
 				bcf[k][j][i] = 0.0;
 			}
@@ -896,7 +893,6 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 	// set pressure in Stokes domain
 	if(fluidPhase != -1)
 	{
-
 		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &p); CHKERRQ(ierr);
 
 		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -906,7 +902,7 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 		START_STD_LOOP
 		{
 			// check for constrained cell
-			if(svCell[iter++].phRat[fluidPhase] > 0.0)
+			if(jr->svCell[iter++].phRat[fluidPhase] > 0.0)
 			{
 				if(p[k][j][i]) bcf[k][j][i] = p[k][j][i];
 			}

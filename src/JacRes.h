@@ -109,6 +109,7 @@ struct SolVarCell
 	PetscScalar  DIIdis;        // relative dislocation creep strain rate
 	PetscScalar  DIIprl;        // relative Peierls creep strain rate
 	PetscScalar  yield;         // average yield stress in control volume
+	PetscScalar  source;        // fluid source
 
 };
 
@@ -427,6 +428,9 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt);
 
 // assemble fluid flow preconditioner matrix
 PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt);
+
+// compute volumetric sources
+PetscErrorCode JacResGetFlowSource(JacRes *jr, PetscScalar dt);
 
 //---------------------------------------------------------------------------
 //......................   INTEGRATION FUNCTIONS   ..........................

@@ -354,6 +354,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	// STEADY STATE solution is activated by setting time step to zero
 
 	FDSTAG     *fs;
+	Controls   *ctrl;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
 	PetscInt    iter;
@@ -363,19 +364,21 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, ki, Ss, pc, pn;
+	PetscScalar invdt, ki, Ss, pc, pn, rho, eta, gz;
 	PetscScalar ***gf, ***lP, ***lk, ***buff;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// access residual context variables
-	fs = jr->fs;
-
-	// initialize maximum cell index in all directions
-	mx = fs->dsx.tcels - 1;
-	my = fs->dsy.tcels - 1;
-	mz = fs->dsz.tcels - 1;
+	// access context
+	fs   = jr->fs;
+	mx   = fs->dsx.tcels - 1;
+	my   = fs->dsy.tcels - 1;
+	mz   = fs->dsz.tcels - 1;
+	ctrl = &jr->ctrl;
+	rho  = ctrl->rho_fluid;
+	eta  = ctrl->eta_fluid;
+	gz   =  PetscAbsScalar(ctrl->grav[2]);
 
 	// compute inverse time step
 	if(dt) invdt = 1.0/dt;
@@ -400,11 +403,11 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		svCell = &jr->svCell[iter++];
 		svBulk = &svCell->svBulk;
 
-		// access
-		pc  = lP[k][j][i]; // current temperature
-		pn  = svBulk->pn;  // temperature history
+		// access pressure
+		pc  = lP[k][j][i]; // current
+		pn  = svBulk->pn;  // history
 
-		// conductivity, heat capacity, radiogenic heat production
+		// permeability, specific storage
 		ierr = JacResGetFlowParam(jr, svCell->phRat, &ki, &Ss); CHKERRQ(ierr);
 
 		// check index bounds
@@ -415,10 +418,10 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; if(Km1 < 0)  Km1++;
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
-		// compute average conductivities
-		bkx = (ki + lk[k][j][Im1])/2.0;      fkx = (ki + lk[k][j][Ip1])/2.0;
-		bky = (ki + lk[k][Jm1][i])/2.0;      fky = (ki + lk[k][Jp1][i])/2.0;
-		bkz = (ki + lk[Km1][j][i])/2.0;      fkz = (ki + lk[Kp1][j][i])/2.0;
+		// compute average permeabilities normalized by viscosity
+		bkx = (ki + lk[k][j][Im1])/2.0/eta;      fkx = (ki + lk[k][j][Ip1])/2.0/eta;
+		bky = (ki + lk[k][Jm1][i])/2.0/eta;      fky = (ki + lk[k][Jp1][i])/2.0/eta;
+		bkz = (ki + lk[Km1][j][i])/2.0/eta;      fkz = (ki + lk[Kp1][j][i])/2.0/eta;
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -426,9 +429,9 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// compute fluid fluxes
-		bqx = bkx*(pc - lP[k][j][i-1])/bdx;   fqx = fkx*(lP[k][j][i+1] - pc)/fdx;
-		bqy = bky*(pc - lP[k][j-1][i])/bdy;   fqy = fky*(lP[k][j+1][i] - pc)/fdy;
-		bqz = bkz*(pc - lP[k-1][j][i])/bdz;   fqz = fkz*(lP[k+1][j][i] - pc)/fdz;
+		bqx = bkx* (pc - lP[k][j][i-1])/bdx;            fqx = fkx*(lP[k][j][i+1]  - pc)/fdx;
+		bqy = bky* (pc - lP[k][j-1][i])/bdy;            fqy = fky*(lP[k][j+1][i]  - pc)/fdy;
+		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -437,6 +440,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 
 		// compute residual
 		gf[k][j][i] = Ss*(invdt*(pc - pn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz;
+
 	}
 	END_STD_LOOP
 
@@ -457,6 +461,7 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
+	Controls   *ctrl;
 	SolVarCell *svCell;
 	PetscInt    iter;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
@@ -464,7 +469,7 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], ki, Ss, invdt;
+	PetscScalar v[7], cf[6], ki, Ss, invdt, eta;
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcf, ***buff;
 
@@ -474,6 +479,11 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	// access residual context variables
 	fs = jr->fs;
 	bc = jr->bc;
+	mx   = fs->dsx.tcels - 1;
+	my   = fs->dsy.tcels - 1;
+	mz   = fs->dsz.tcels - 1;
+	ctrl = &jr->ctrl;
+	eta  = ctrl->eta_fluid;
 
 	// compute inverse time step
 	if(dt) invdt = 1.0/dt;
@@ -504,7 +514,7 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 		// access solution variables
 		svCell = &jr->svCell[iter++];
 
-		// conductivity, heat capacity
+		// permeability, specific storage
 		ierr = JacResGetFlowParam(jr, svCell->phRat, &ki, &Ss); CHKERRQ(ierr);
 
 		// check index bounds and TPC multipliers
@@ -515,10 +525,10 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcf[k-1][j][i] != DBL_MAX) cf[4] = -1.0; }
 		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcf[k+1][j][i] != DBL_MAX) cf[5] = -1.0; }
 
-		// compute average permeabilities
-		bkx = (ki + lk[k][j][Im1])/2.0;      fkx = (ki + lk[k][j][Ip1])/2.0;
-		bky = (ki + lk[k][Jm1][i])/2.0;      fky = (ki + lk[k][Jp1][i])/2.0;
-		bkz = (ki + lk[Km1][j][i])/2.0;      fkz = (ki + lk[Kp1][j][i])/2.0;
+		// compute average permeabilities normalized by viscosity
+		bkx = (ki + lk[k][j][Im1])/2.0/eta;      fkx = (ki + lk[k][j][Ip1])/2.0/eta;
+		bky = (ki + lk[k][Jm1][i])/2.0/eta;      fky = (ki + lk[k][Jp1][i])/2.0/eta;
+		bkz = (ki + lk[Km1][j][i])/2.0/eta;      fkz = (ki + lk[Kp1][j][i])/2.0/eta;
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -564,6 +574,175 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 
 	// assemble fluid pressure matrix
 	ierr = MatAIJAssemble(jr->Att, 0, NULL, 1.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetFlowSource"
+PetscErrorCode JacResGetFlowSource(JacRes *jr)
+{
+	// compute fluid flow Stokes source
+
+	FDSTAG     *fs;
+	Controls   *ctrl;
+	SolVarCell *svCell;
+	PetscInt    iter, fluidPhase;
+	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
+ 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
+	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
+ 	PetscScalar dx, dy, dz, V, tV, fRat, flux, source;
+	PetscScalar ki, Ss, pc, rho, eta, gz;
+	PetscScalar ***lP, ***lk, ***buff, ***vol;
+	Vec         lvol;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// relevant cases only
+	if(jr->ctrl.fluidPhase == -1) PetscFunctionReturn(0);
+
+	// access context
+	fs         = jr->fs;
+	mx         = fs->dsx.tcels - 1;
+	my         = fs->dsy.tcels - 1;
+	mz         = fs->dsz.tcels - 1;
+	ctrl       = &jr->ctrl;
+	rho        = ctrl->rho_fluid;
+	eta        = ctrl->eta_fluid;
+	fluidPhase = ctrl->fluidPhase;
+	gz         =  PetscAbsScalar(ctrl->grav[2]);
+
+	// compute effective cell volumes & total volume
+	ierr = DMGetLocalVector(fs->DA_CEN, &lvol);     CHKERRQ(ierr);
+	ierr = VecZeroEntries(lvol);                    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+	tV   = 0.0;
+
+	START_STD_LOOP
+	{
+		fRat = jr->svCell[iter++].phRat[fluidPhase];
+
+		if(fRat > 0.0)
+		{
+			// compute cell volume, update total volume
+			dx  = SIZE_CELL(i, sx, fs->dsx);
+			dy  = SIZE_CELL(j, sy, fs->dsy);
+			dz  = SIZE_CELL(k, sz, fs->dsz);
+			V   = dx*dy*dz*fRat;
+			tV += V;
+
+			// store volume
+			vol[k][j][i] = V;
+
+		}
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, lvol)
+
+	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
+
+	// access work vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, lvol,        &vol); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+	flux = 0.0;
+
+	START_STD_LOOP
+	{
+		if(vol[k][j][i] == 0.0) continue;
+
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+
+		// access current pressure
+		pc  = lP[k][j][i];
+
+		// permeability, specific storage
+		ierr = JacResGetFlowParam(jr, svCell->phRat, &ki, &Ss); CHKERRQ(ierr);
+
+		// check index bounds
+		Im1 = i-1; if(Im1 < 0)  Im1++;
+		Ip1 = i+1; if(Ip1 > mx) Ip1--;
+		Jm1 = j-1; if(Jm1 < 0)  Jm1++;
+		Jp1 = j+1; if(Jp1 > my) Jp1--;
+		Km1 = k-1; if(Km1 < 0)  Km1++;
+		Kp1 = k+1; if(Kp1 > mz) Kp1--;
+
+		// compute average permeabilities normalized by viscosity
+		bkx = (ki + lk[k][j][Im1])/2.0/eta;      fkx = (ki + lk[k][j][Ip1])/2.0/eta;
+		bky = (ki + lk[k][Jm1][i])/2.0/eta;      fky = (ki + lk[k][Jp1][i])/2.0/eta;
+		bkz = (ki + lk[Km1][j][i])/2.0/eta;      fkz = (ki + lk[Kp1][j][i])/2.0/eta;
+
+		// get mesh steps
+		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
+		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);
+		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
+
+		// compute fluid fluxes
+		bqx = bkx* (pc - lP[k][j][i-1])/bdx;            fqx = fkx* (lP[k][j][i+1] - pc)/fdx;
+		bqy = bky* (pc - lP[k][j-1][i])/bdy;            fqy = fky* (lP[k][j+1][i] - pc)/fdy;
+		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
+
+		// get mesh steps
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+		dz = SIZE_CELL(k, sz, fs->dsz);
+
+		// compute integral
+		if(i > 0)  { if(vol[k]  [j]  [i-1] == 0.0) { flux += bqx*dy*dz; } }
+		if(i < mx) { if(vol[k]  [j]  [i+1] == 0.0) { flux += fqx*dy*dz; } }
+		if(j > 0)  { if(vol[k]  [j-1][i]   == 0.0) { flux += bqy*dx*dz; } }
+		if(j <=my) { if(vol[k]  [j+1][i]   == 0.0) { flux += fqy*dx*dz; } }
+		if(k > 0)  { if(vol[k-1][j]  [i]   == 0.0) { flux += bqz*dx*dy; } }
+		if(k < mz) { if(vol[k+1][j]  [i]   == 0.0) { flux += fqz*dx*dy; } }
+
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol,        &vol); CHKERRQ(ierr);
+
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &lvol);
+
+	// compute source term
+	source = flux/tV;
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	// store source term
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+
+		if(vol[k][j][i] != 0.0)
+		{
+			svCell->source = source;
+		}
+		else
+		{
+			svCell->source = 0.0;
+		}
+	}
+	END_STD_LOOP
 
 	PetscFunctionReturn(0);
 }
