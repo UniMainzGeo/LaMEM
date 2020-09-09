@@ -83,6 +83,7 @@ struct SolVarBulk
 	PetscScalar  alpha;  // effective thermal expansion
 	PetscScalar  Tn;     // history temperature
 	PetscScalar  pn;     // history pressure
+	PetscScalar  fn;     // history fluid pressure
 	PetscScalar  rho_pf; // fluid density from phase diagram
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
@@ -270,10 +271,11 @@ struct JacRes
 	// fluid flow parameters
 	//=======================
 
+	DM  DA_P; // pressure cell-centered grid with star stencil
 	Mat App;  // pressure preconditioner matrix
 	Vec dP;   // pressure increment (global)
-	Vec gf;   // fluid  flow residual (global)
-	KSP pksp; // pressure diffusion solver
+	Vec gf;   // fluid flow residual (global)
+	KSP pksp; // pressure solver
 
 	//==========================
 	// 2D integration primitives
@@ -402,7 +404,7 @@ PetscErrorCode JacResGetFlowParam(
 	PetscScalar *ki_,   // permeability
 	PetscScalar *Ss_);  // specific storage
 
-	// check whether fluid flow material parameters are properly defined
+// check whether fluid flow material parameters are properly defined
 PetscErrorCode JacResCheckFlowParam(JacRes *jr);
 
 // setup fluid flow parameters

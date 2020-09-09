@@ -401,11 +401,10 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	// STEADY STATE solution is activated by setting time step to zero
 
 	FDSTAG     *fs;
-	BCCtx      *bc;
 	SolVarCell *svCell;
 	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
-	PetscInt    iter, num, *list;
+	PetscInt    iter;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
  	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
@@ -414,7 +413,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
 	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha;
-	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
+	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, ***P;
 	PetscScalar ***vx,***vy,***vz;
 
 
@@ -422,10 +421,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscFunctionBegin;
 
 	// access residual context variables
-	fs    = jr->fs;
-	bc    = jr->bc;
-	num   = bc->tNumSPC;
-	list  = bc->tSPCList;
+	fs = jr->fs;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -452,8 +448,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy) ; CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz) ; CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &P );  CHKERRQ(ierr);
-
-
 
 	//---------------
 	// central points
@@ -549,14 +543,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz) ;  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &P)  ;  CHKERRQ(ierr);
 
-
-	// impose primary temperature constraints
-	ierr = VecGetArray(jr->ge, &e); CHKERRQ(ierr);
-
-	for(i = 0; i < num; i++) e[list[i]] = 0.0;
-
-	ierr = VecRestoreArray(jr->ge, &e); CHKERRQ(ierr);
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -571,7 +557,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
-	PetscInt    iter, num, *list;
+	PetscInt    iter;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
@@ -585,10 +571,8 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscFunctionBegin;
 
 	// access residual context variables
-	fs   = jr->fs;
-	bc   = jr->bc;
-	num  = bc->tNumSPC;
-	list = bc->tSPCList;
+	fs = jr->fs;
+	bc = jr->bc;
 
 	// compute inverse time step
 	if(dt) invdt = 1.0/dt;
@@ -679,7 +663,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT);  CHKERRQ(ierr);
 
 	// assemble temperature matrix
-	ierr = MatAIJAssemble(jr->Att, num, list, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(jr->Att, 0, NULL, 1.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

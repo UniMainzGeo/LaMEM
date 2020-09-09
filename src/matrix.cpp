@@ -133,9 +133,11 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 	ierr = MatSetOption(P, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);     CHKERRQ(ierr);
 	ierr = MatSetOption(P, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);    CHKERRQ(ierr);
 
-	// zero out constrained rows, form unit diagonal for the constrained block
-	ierr = MatZeroRows(P, numRows, rows, diag, NULL, NULL); CHKERRQ(ierr);
-
+	if(numRows)
+	{
+		// zero out constrained rows, form unit diagonal for the constrained block
+		ierr = MatZeroRows(P, numRows, rows, diag, NULL, NULL); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }

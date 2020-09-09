@@ -470,20 +470,17 @@ PetscErrorCode BCCreateData(BCCtx *bc)
 	fs  =  bc->fs;
 	dof = &fs->dof;
 
-	// create boundary conditions vectors (velocity, pressure, temperature)
+	// create boundary conditions vectors (velocity, pressure, temperature, fluid pressure)
 	ierr = DMCreateLocalVector(fs->DA_X,   &bc->bcvx);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_Y,   &bc->bcvy);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_Z,   &bc->bcvz);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcp);   CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcT);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcf);   CHKERRQ(ierr);
 
 	// SPC velocity-pressure
 	ierr = makeIntArray (&bc->SPCList, NULL, dof->ln);   CHKERRQ(ierr);
 	ierr = makeScalArray(&bc->SPCVals, NULL, dof->ln);   CHKERRQ(ierr);
-
-	// SPC (temperature)
-	ierr = makeIntArray (&bc->tSPCList, NULL, dof->lnp); CHKERRQ(ierr);
-	ierr = makeScalArray(&bc->tSPCVals, NULL, dof->lnp); CHKERRQ(ierr);
 
 	if(bc->fixCell)
 	{
@@ -506,14 +503,11 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 	ierr = VecDestroy(&bc->bcvz); CHKERRQ(ierr);
 	ierr = VecDestroy(&bc->bcp);  CHKERRQ(ierr);
 	ierr = VecDestroy(&bc->bcT);  CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcf);  CHKERRQ(ierr);
 
 	// SPC velocity-pressure
 	ierr = PetscFree(bc->SPCList);  CHKERRQ(ierr);
 	ierr = PetscFree(bc->SPCVals);  CHKERRQ(ierr);
-
-	// SPC temperature
-	ierr = PetscFree(bc->tSPCList); CHKERRQ(ierr);
-	ierr = PetscFree(bc->tSPCVals); CHKERRQ(ierr);
 
 	// fixed cell IDs
 	ierr = PetscFree(bc->fixCellFlag); CHKERRQ(ierr);
@@ -1556,9 +1550,6 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 
 	// WARNING! primary pressure constraints are not implemented, otherwise compute here
 	bc->pNumSPC = 0;
-
-	// WARNING! primary temperature constraints are not implemented, otherwise compute here
-	bc->tNumSPC = 0;
 
 	// set index (shift) type
 	bc->stype = _GLOBAL_TO_LOCAL_;

@@ -156,8 +156,8 @@ struct BCCtx
 	DBMat    *dbm;  // material database
 	JacRes   *jr;   // Jacobian-residual context (CROSS-REFERENCE!)
 
-	// boundary conditions vectors (velocity, pressure, temperature)
-	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
+	// boundary conditions vectors (velocity, pressure, temperature, fluid pressure)
+	Vec bcvx, bcvy, bcvz, bcp, bcT, bcf; // local (ghosted)
 
 	// single-point constraints
 	ShiftType    stype;   // current index shift type
@@ -174,11 +174,6 @@ struct BCCtx
 	PetscInt     pNumSPC;
 	PetscInt    *pSPCList;
 	PetscScalar *pSPCVals;
-
-	// temperature
-	PetscInt     tNumSPC;
-	PetscInt    *tSPCList;
-	PetscScalar *tSPCVals;
 
 	// two-point constraints
 //	PetscInt     numTPC;       // number of two-point constraints (TPC)
