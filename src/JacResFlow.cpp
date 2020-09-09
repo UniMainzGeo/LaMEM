@@ -210,6 +210,27 @@ PetscErrorCode JacResDestroyFlowParam(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResInitFluid"
+PetscErrorCode JacResInitFluid(JacRes *jr)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// fluid flow cases only
+	if(!jr->ctrl.actFluid) PetscFunctionReturn(0);
+
+	// compute lithostatic pressure
+	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+
+	// compute passive pore pressure
+	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResUpdateFlow"
@@ -271,10 +292,25 @@ PetscErrorCode JacResApplyFlowBC(JacRes *jr)
 	mcy = fs->dsy.tcels - 1;
 	mcz = fs->dsz.tcels - 1;
 
+	// set fluid pressure SPC
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf,     &bcf); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		if(bcf[k][j][i] != DBL_MAX) lP[k][j][i] = bcf[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore,  &lP);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf,      &bcf); CHKERRQ(ierr);
+
 	// exchange internal ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_pore)
 
-	// access local solution & boundary constraints
+	// set fluid pressure TPC
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &lP);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf,      &bcf); CHKERRQ(ierr);
 
@@ -304,7 +340,6 @@ PetscErrorCode JacResApplyFlowBC(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore,  &lP);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf,      &bcf); CHKERRQ(ierr);
 

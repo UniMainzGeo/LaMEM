@@ -279,6 +279,9 @@ PetscErrorCode BCApplyPres(BCCtx *bc);
 // apply temperature constraints
 PetscErrorCode BCApplyTemp(BCCtx *bc);
 
+// apply fluid pressure constraints
+PetscErrorCode BCApplyFluid(BCCtx *bc);
+
 // apply default velocity constraints on the boundaries
 PetscErrorCode BCApplyVelDefault(BCCtx *bc);
 

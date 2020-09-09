@@ -413,6 +413,9 @@ PetscErrorCode JacResCreateFlowParam(JacRes *jr);
 // destroy fluid flow parameters
 PetscErrorCode JacResDestroyFlowParam(JacRes *jr);
 
+// initialize fluid pressure
+PetscErrorCode JacResInitFluid(JacRes *jr);
+
 // correct fluid pressure (Newton update)
 PetscErrorCode JacResUpdateFlow(JacRes *jr);
 

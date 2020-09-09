@@ -812,6 +812,9 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	// initialize temperature
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
+	// initialize fluid pressure
+	ierr = JacResInitFluid(&lm->jr); CHKERRQ(ierr);
+
 	// solve for steady-state temperature (if requested)
 	ierr = LaMEMLibDiffuseTemp(lm); CHKERRQ(ierr);
 

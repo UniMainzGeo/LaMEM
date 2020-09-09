@@ -53,6 +53,7 @@
 #include "tools.h"
 #include "advect.h"
 #include "phase.h"
+#include "surf.h"
 
 //---------------------------------------------------------------------------
 // * open box & Winkler (with tangential viscous friction)
@@ -586,6 +587,7 @@ PetscErrorCode BCApply(BCCtx *bc)
 	ierr = VecSet(bc->bcvz, DBL_MAX); CHKERRQ(ierr);
 	ierr = VecSet(bc->bcp,  DBL_MAX); CHKERRQ(ierr);
 	ierr = VecSet(bc->bcT,  DBL_MAX); CHKERRQ(ierr);
+	ierr = VecSet(bc->bcf,  DBL_MAX); CHKERRQ(ierr);
 
 	//============
 	// TEMPERATURE
@@ -832,6 +834,90 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 	}
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyFlow"
+PetscErrorCode BCApplyFlow(BCCtx *bc)
+{
+	// apply fluid pressure constraints
+
+	FDSTAG      *fs;
+	JacRes      *jr;
+	SolVarCell  *svCell;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, mcz, AirPhase, fluidPhase;
+	PetscScalar ***bcf, ***p;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	jr         = bc->jr;
+	fs         = jr->fs;
+	AirPhase   = jr->surf->AirPhase;
+	fluidPhase = jr->ctrl.fluidPhase;
+	svCell     = bc->jr->svCell;
+	mcz        = fs->dsz.tcels - 1;
+
+	// set zero pressure at top boundary
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf, &bcf);  CHKERRQ(ierr);
+
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		if(k == mcz) { bcf[k+1][j][i] = 0.0; }
+	}
+	END_STD_LOOP
+
+	// set zero pressure in the air
+	if(AirPhase != -1)
+	{
+
+		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		iter = 0;
+
+		START_STD_LOOP
+		{
+			// check for constrained cell
+			if(svCell[iter++].phRat[AirPhase] > 0.0)
+			{
+				bcf[k][j][i] = 0.0;
+			}
+		}
+		END_STD_LOOP
+	}
+
+	// set pressure in Stokes domain
+	if(fluidPhase != -1)
+	{
+
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &p); CHKERRQ(ierr);
+
+		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		iter = 0;
+
+		START_STD_LOOP
+		{
+			// check for constrained cell
+			if(svCell[iter++].phRat[fluidPhase] > 0.0)
+			{
+				if(p[k][j][i]) bcf[k][j][i] = p[k][j][i];
+			}
+		}
+		END_STD_LOOP
+
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp, &p);      CHKERRQ(ierr);
+
+	}
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf, &bcf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

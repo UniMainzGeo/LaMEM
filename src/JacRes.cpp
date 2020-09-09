@@ -91,6 +91,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->mfmax        =  0.15;
 	ctrl->lmaxit       =  25;
 	ctrl->lrtol        =  1e-6;
+	ctrl->fluidPhase   =  -1;
 
 	if(scal->utype != _NONE_)
 	{
@@ -594,8 +595,11 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	// compute lithostatic pressure
 	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
 
-	// compute pore pressure
-	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+	// compute (passive) pore pressure
+	if(!jr->ctrl.actFluid)
+	{
+		ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+	}
 
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);

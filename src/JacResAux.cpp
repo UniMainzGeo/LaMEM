@@ -516,7 +516,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 		// hydrostatic pressure (based on the water column)
 		p_hydro = rho_fluid * g * PetscAbsScalar(depth);
 
-		// compute the pore pressure as product of lithostatic pressure and porepressure ratio of the control volume
+		// compute the pore pressure as product of lithostatic pressure and pore pressure ratio of the control volume
 		lp_pore[k][j][i] =  p_hydro + rp_cv * (lp_lith[k][j][i]-p_hydro);
 	}
 	END_STD_LOOP
