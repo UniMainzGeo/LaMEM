@@ -698,10 +698,9 @@ PetscErrorCode SNESCoupledTest(
 		ierr = KSPSetUp(jr->pksp);                          CHKERRQ(ierr);
 		ierr = KSPSolve(jr->pksp, jr->gf, jr->dP);          CHKERRQ(ierr);
 		ierr = JacResUpdateFlow(jr);                        CHKERRQ(ierr);
+		ierr = JacResGetFlowSource(jr, jr->ts->dt);         CHKERRQ(ierr);
+
 	}
-
-
-
 
 	PetscFunctionReturn(0);
 }

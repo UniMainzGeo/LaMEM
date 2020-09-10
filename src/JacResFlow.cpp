@@ -210,60 +210,6 @@ PetscErrorCode JacResDestroyFlowParam(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
-
-//---------------------------------------------------------------------------
-
-
-/*
-#undef __FUNCT__
-#define __FUNCT__ "JacResInitFlow"
-PetscErrorCode JacResInitFlow(JacRes *jr)
-{
-	// initialize fluid pressure from history
-
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	PetscScalar ***lT, ***bcT, T;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	fs = jr->fs;
-	bc = jr->bc;
-
-	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
-
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
-
-	iter = 0;
-
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		T = bcT[k][j][i];
-
-		if(T == DBL_MAX) T = jr->svCell[iter].svBulk.Tn;
-
-		lT[k][j][i] = T;
-
-		iter++;
-	}
-	END_STD_LOOP
-
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
-
-	// apply two-point constraints
-	ierr = JacResApplyTempBC(jr); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-*/
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResSaveFlow"
@@ -414,10 +360,7 @@ PetscErrorCode JacResApplyFlowBC(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
-
-
 #undef __FUNCT__
 #define __FUNCT__ "JacResInitFlow"
 PetscErrorCode JacResInitFlow(JacRes *jr)
@@ -480,8 +423,6 @@ PetscErrorCode JacResInitFlow(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetFlowRes"
@@ -672,7 +613,7 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 			row[0].c = 0;
 			v  [0]   = 1.0;
 
-			ierr = MatSetValuesStencil(jr->Att, 1, row, 1, row, v, ADD_VALUES); CHKERRQ(ierr);
+			ierr = MatSetValuesStencil(jr->App, 1, row, 1, row, v, ADD_VALUES); CHKERRQ(ierr);
 
 			continue;
 		}
@@ -726,7 +667,7 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 		+       (bkz/bdz + fkz/fdz)/dz;
 
 		// set matrix coefficients
-		ierr = MatSetValuesStencil(jr->Att, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValuesStencil(jr->App, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
 
 	}
 	END_STD_LOOP
@@ -736,14 +677,14 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf,  &bcf);  CHKERRQ(ierr);
 
 	// assemble fluid pressure matrix
-	ierr = MatAIJAssemble(jr->Att, 0, NULL, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(jr->App, 0, NULL, 1.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetFlowSource"
-PetscErrorCode JacResGetFlowSource(JacRes *jr)
+PetscErrorCode JacResGetFlowSource(JacRes *jr, PetscScalar dt)
 {
 	// compute fluid flow Stokes source
 
