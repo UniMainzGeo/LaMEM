@@ -2154,7 +2154,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	// show assembled residual with boundary constraints
 	// WARNING! rewrite this function using coupled residual vector directly
 
-	PetscScalar dinf, d2, e2, fx, fy, fz, f2, div_tol;
+	PetscScalar dinf, d2, e2, f2, mx, my, mz, m2, div_tol;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2167,16 +2167,22 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	ierr = VecNorm(jr->gc,  NORM_INFINITY, &dinf); CHKERRQ(ierr);
 	ierr = VecNorm(jr->gc,  NORM_2,        &d2);   CHKERRQ(ierr);
 
-	ierr = VecNorm(jr->gfx, NORM_2, &fx);   CHKERRQ(ierr);
-	ierr = VecNorm(jr->gfy, NORM_2, &fy);   CHKERRQ(ierr);
-	ierr = VecNorm(jr->gfz, NORM_2, &fz);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gfx, NORM_2, &mx);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gfy, NORM_2, &my);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gfz, NORM_2, &mz);   CHKERRQ(ierr);
 
-	f2 = sqrt(fx*fx + fy*fy + fz*fz);
+	m2 = sqrt(mx*mx + my*my + mz*mz);
 
 	if(jr->ctrl.actTemp)
 	{
-		ierr = JacResGetTempRes(jr,jr->ts->dt);         CHKERRQ(ierr);
-		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
+		ierr = JacResGetTempRes(jr,jr->ts->dt); CHKERRQ(ierr);
+		ierr = VecNorm(jr->ge, NORM_2, &e2);    CHKERRQ(ierr);
+	}
+
+	if(jr->ctrl.actFluid)
+	{
+		ierr = JacResGetFlowRes(jr,jr->ts->dt); CHKERRQ(ierr);
+		ierr = VecNorm(jr->gf, NORM_2, &f2);    CHKERRQ(ierr);
 	}
 
 	// print
@@ -2185,12 +2191,17 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "      |Div|_inf = %12.12e \n", dinf);
 	PetscPrintf(PETSC_COMM_WORLD, "      |Div|_2   = %12.12e \n", d2);
 	PetscPrintf(PETSC_COMM_WORLD, "   Momentum: \n" );
-	PetscPrintf(PETSC_COMM_WORLD, "      |mRes|_2  = %12.12e \n", f2);
+	PetscPrintf(PETSC_COMM_WORLD, "      |mRes|_2  = %12.12e \n", m2);
 
 	if(jr->ctrl.actTemp)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Energy: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "      |eRes|_2  = %12.12e \n", e2);
+	}
+	if(jr->ctrl.actFluid)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Flow: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "      |fRes|_2  = %12.12e \n", f2);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
@@ -2199,7 +2210,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	div_tol = 0.0;
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
 
-	if ((div_tol) && (( dinf > div_tol ) || (f2 > div_tol)))
+	if ((div_tol) && (( dinf > div_tol ) || (m2 > div_tol)))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " *** Emergency stop! Maximum divergence or momentum residual is too large; solver did not converge! *** \n");
 	}

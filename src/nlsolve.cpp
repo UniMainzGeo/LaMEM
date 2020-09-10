@@ -669,11 +669,12 @@ PetscErrorCode SNESCoupledTest(
 	// call default convergence test
 	ierr = SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);
 
+
+	if(!it) PetscFunctionReturn(0);
+
 	//=============================
 	// Temperature diffusion solver
 	//=============================
-
-	if(!it) PetscFunctionReturn(0);
 
 	if(jr->ctrl.actTemp)
 	{
@@ -684,6 +685,23 @@ PetscErrorCode SNESCoupledTest(
 		ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
 		ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
 	}
+
+	//==================
+	// Fluid flow solver
+	//==================
+
+	if(jr->ctrl.actFluid)
+	{
+		ierr = JacResGetFlowRes(jr, jr->ts->dt);            CHKERRQ(ierr);
+		ierr = JacResGetFlowMat(jr, jr->ts->dt);            CHKERRQ(ierr);
+		ierr = KSPSetOperators(jr->pksp, jr->App, jr->App); CHKERRQ(ierr);
+		ierr = KSPSetUp(jr->pksp);                          CHKERRQ(ierr);
+		ierr = KSPSolve(jr->pksp, jr->gf, jr->dP);          CHKERRQ(ierr);
+		ierr = JacResUpdateFlow(jr);                        CHKERRQ(ierr);
+	}
+
+
+
 
 	PetscFunctionReturn(0);
 }
