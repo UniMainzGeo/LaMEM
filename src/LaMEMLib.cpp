@@ -695,6 +695,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================
 
+		// save fluid pressure to history database
+		ierr = JacResSaveFlow(&lm->jr); CHKERRQ(ierr);
+
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
 		
@@ -813,7 +816,10 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
 	// initialize fluid pressure
-	ierr = JacResInitFluid(&lm->jr); CHKERRQ(ierr);
+	ierr = JacResInitFlow(&lm->jr); CHKERRQ(ierr);
+
+	// save fluid pressure to history database
+	ierr = JacResSaveFlow(&lm->jr); CHKERRQ(ierr);
 
 	// solve for steady-state temperature (if requested)
 	ierr = LaMEMLibDiffuseTemp(lm); CHKERRQ(ierr);

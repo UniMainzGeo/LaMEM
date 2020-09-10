@@ -212,21 +212,91 @@ PetscErrorCode JacResDestroyFlowParam(JacRes *jr)
 }
 
 //---------------------------------------------------------------------------
+
+
+/*
 #undef __FUNCT__
-#define __FUNCT__ "JacResInitFluid"
-PetscErrorCode JacResInitFluid(JacRes *jr)
+#define __FUNCT__ "JacResInitFlow"
+PetscErrorCode JacResInitFlow(JacRes *jr)
 {
+	// initialize fluid pressure from history
+
+	FDSTAG      *fs;
+	BCCtx       *bc;
+	PetscScalar ***lT, ***bcT, T;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+	bc = jr->bc;
+
+	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
+
+	iter = 0;
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		T = bcT[k][j][i];
+
+		if(T == DBL_MAX) T = jr->svCell[iter].svBulk.Tn;
+
+		lT[k][j][i] = T;
+
+		iter++;
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
+
+	// apply two-point constraints
+	ierr = JacResApplyTempBC(jr); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+*/
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResSaveFlow"
+PetscErrorCode JacResSaveFlow(JacRes *jr)
+{
+	// save fluid pressure to history database
+
+	FDSTAG      *fs;
+	PetscScalar ***lP;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// fluid flow cases only
 	if(!jr->ctrl.actFluid) PetscFunctionReturn(0);
 
-	// compute lithostatic pressure
-	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+	// access context
+	fs = jr->fs;
 
-	// compute passive pore pressure
-	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		jr->svCell[iter++].svBulk.fn = lP[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -344,6 +414,74 @@ PetscErrorCode JacResApplyFlowBC(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+
+
+#undef __FUNCT__
+#define __FUNCT__ "JacResInitFlow"
+PetscErrorCode JacResInitFlow(JacRes *jr)
+{
+	// initialize pore pressure with hydrostatic pressure
+
+	FDSTAG      *fs;
+	Controls    *ctrl;
+	PetscScalar ***lp_pore;
+	PetscScalar ztop, gz, gwLevel, rho_fluid, depth;
+	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// fluid flow cases only
+	if(!jr->ctrl.actFluid) PetscFunctionReturn(0);
+
+	// initialize
+	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
+
+	// access context
+	fs        =  jr->fs;
+	ctrl      = &jr->ctrl;
+	rho_fluid =  ctrl->rho_fluid;
+	gz        =  PetscAbsScalar(ctrl->grav[2]);
+
+	// get top boundary coordinate
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, NULL, NULL, NULL, &ztop); CHKERRQ(ierr);
+
+	// set ground water level
+	if     (ctrl->gwType == _GW_TOP_)   gwLevel = ztop;
+	else if(ctrl->gwType == _GW_SURF_)  gwLevel = jr->surf->avg_topo;
+	else if(ctrl->gwType == _GW_LEVEL_) gwLevel = ctrl->gwLevel;
+	else                                gwLevel = 0.0;
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// access vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// compute depth of the current control volume
+		depth = gwLevel - COORD_CELL(k, sz, fs->dsz);
+
+		// truncate to subsurface
+		if(depth < 0.0) depth = 0.0;
+
+		// compute hydrostatic pressure (based on the water column)
+		lp_pore[k][j][i] =  rho_fluid * gz * depth;
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
+
+	// set boundary constraints
+	ierr = JacResApplyFlowBC(jr); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetFlowRes"

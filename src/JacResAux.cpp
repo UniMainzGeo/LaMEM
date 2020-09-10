@@ -453,6 +453,9 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// passive fluid pressure cases only
+	if(jr->ctrl.actFluid) PetscFunctionReturn(0);
+
 	// initialize
 	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
 
@@ -543,7 +546,6 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***vz, nZFace, lvel, gvel, dp, eta, ks, bz, ez;
 	char        path[_str_len_];
-
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

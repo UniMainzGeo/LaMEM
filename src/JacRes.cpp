@@ -149,7 +149,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	is_elastic     = 0;
 	need_RUGC      = 0;
 	need_rho_fluid = 0;
-	need_gw_type   = 0;
+	need_gw_type   = ctrl->actFluid;
 	need_surf      = 0;
 	need_top_open  = 0;
 
@@ -196,14 +196,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify fluid density (rho_n, rho_c, rp, rho_fluid)\n");
 	}
 
-//	if(!need_rho_fluid) ctrl->rho_fluid = 0.0;
-
 	if(need_gw_type && ctrl->gwType == _GW_NONE_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define ground water level type (rp, gw_level_type)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define ground water level type (rp, gw_level_type, act_fluid_flow)\n");
 	}
-
-//	if(!need_gw_type) ctrl->gwType = _GW_NONE_;
 
 	if((need_surf || ctrl->gwType == _GW_SURF_) && !surf->UseFreeSurf)
 	{
@@ -605,10 +601,7 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
 
 	// compute (passive) pore pressure
-	if(!jr->ctrl.actFluid)
-	{
-		ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
-	}
+	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
 
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);

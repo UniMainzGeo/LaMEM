@@ -415,7 +415,10 @@ PetscErrorCode JacResCreateFlowParam(JacRes *jr);
 PetscErrorCode JacResDestroyFlowParam(JacRes *jr);
 
 // initialize fluid pressure
-PetscErrorCode JacResInitFluid(JacRes *jr);
+PetscErrorCode JacResInitFlow(JacRes *jr);
+
+// save fluid pressure to history database
+PetscErrorCode JacResSaveFlow(JacRes *jr);
 
 // correct fluid pressure (Newton update)
 PetscErrorCode JacResUpdateFlow(JacRes *jr);

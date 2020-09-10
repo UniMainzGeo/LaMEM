@@ -607,6 +607,12 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	ierr = BCApplyPres(bc); CHKERRQ(ierr);
 
+	//===============
+	// FLUID PRESSURE
+	//===============
+
+	ierr = BCApplyFlow(bc); CHKERRQ(ierr);
+
 	//=============================
 	// VELOCITY (RESTRUCTURE THIS!)
 	//=============================
