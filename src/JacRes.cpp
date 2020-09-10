@@ -255,6 +255,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// check thermal material parameters
 	ierr = JacResCheckTempParam(jr); CHKERRQ(ierr);
 
+	// check fluid flow material parameters
+	ierr = JacResCheckFlowParam(jr); CHKERRQ(ierr);
+
 	if(ctrl->initGuess && !ctrl->eta_ref)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify reference viscosity for initial guess (init_guess, eta_ref) \n");
@@ -459,6 +462,9 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	// setup temperature parameters
 	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
 
+	// setup fluid flow parameters
+	ierr = JacResCreateFlowParam(jr); CHKERRQ(ierr);
+
 	//==========================
 	// 2D integration primitives
 	//==========================
@@ -575,6 +581,9 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 
 	// temperature parameters
 	ierr = JacResDestroyTempParam(jr); CHKERRQ(ierr);
+
+	// fluid flow parameters
+	ierr = JacResDestroyFlowParam(jr); CHKERRQ(ierr);
 
 	// 2D integration primitives
 	ierr = DMDestroy(&jr->DA_CELL_2D); CHKERRQ(ierr);

@@ -179,7 +179,7 @@ PetscErrorCode JacResCreateFlowParam(JacRes *jr)
 	ierr = DMCreateGlobalVector(jr->DA_P, &jr->dP); CHKERRQ(ierr);
 
 	// fluid flow residual
-	ierr = DMCreateGlobalVector(jr->DA_T, &jr->gf); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(jr->DA_P, &jr->gf); CHKERRQ(ierr);
 
 	// pressure solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &jr->pksp); CHKERRQ(ierr);
@@ -227,7 +227,6 @@ PetscErrorCode JacResInitFluid(JacRes *jr)
 
 	// compute passive pore pressure
 	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
-
 
 	PetscFunctionReturn(0);
 }
@@ -365,7 +364,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, ki, Ss, pc, pn, rho, eta, gz;
+	PetscScalar invdt, ki, Ss, pc, fn, rho, eta, gz;
 	PetscScalar ***gf, ***lP, ***lk, ***buff, ***bcf;
 
 	PetscErrorCode ierr;
@@ -415,8 +414,8 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		}
 
 		// access current & history pressure
-		pc  = lP[k][j][i];
-		pn  = svBulk->pn;
+		pc = lP[k][j][i];
+		fn = svBulk->fn;
 
 		// permeability, specific storage
 		ierr = JacResGetFlowParam(jr, svCell->phRat, &ki, &Ss); CHKERRQ(ierr);
@@ -450,7 +449,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
 		// compute residual
-		gf[k][j][i] = Ss*(invdt*(pc - pn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz;
+		gf[k][j][i] = Ss*(invdt*(pc - fn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz;
 
 	}
 	END_STD_LOOP
