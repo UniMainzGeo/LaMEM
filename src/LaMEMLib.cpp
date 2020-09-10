@@ -788,6 +788,9 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 	// initialize temperature
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
+	// initialize fluid pressure
+	ierr = JacResInitFlow(&lm->jr); CHKERRQ(ierr);
+
 	// compute inverse elastic parameters (dependent on dt)
 	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 

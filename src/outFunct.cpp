@@ -414,6 +414,11 @@ PetscErrorCode PVOutWritePorePress(OutVec* outvec)
 
 	cf = scal->stress;
 
+	if(jr->ctrl.actFluid)
+	{
+		iflag.use_bound = 1;
+	}
+
 	INTERPOLATE_ACCESS(jr->lp_pore, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);

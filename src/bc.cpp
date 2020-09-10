@@ -852,7 +852,7 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, mcz, AirPhase, fluidPhase;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, mcz, AirPhase, fluidPhase, initGuess;
 	PetscScalar ***bcf, ***p;
 
 	PetscErrorCode ierr;
@@ -863,6 +863,7 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 	fs         = jr->fs;
 	AirPhase   = jr->surf->AirPhase;
 	fluidPhase = jr->ctrl.fluidPhase;
+	initGuess  = jr->ctrl.initGuess;
 	mcz        = fs->dsz.tcels - 1;
 
 	// set zero pressure at top boundary
@@ -897,7 +898,7 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 	}
 
 	// set pressure in Stokes domain
-	if(fluidPhase != -1)
+	if(fluidPhase != -1 && !initGuess)
 	{
 		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &p); CHKERRQ(ierr);
 
@@ -910,7 +911,7 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 			// check for constrained cell
 			if(jr->svCell[iter++].phRat[fluidPhase] > 0.0)
 			{
-				if(p[k][j][i]) bcf[k][j][i] = p[k][j][i];
+				bcf[k][j][i] = p[k][j][i];
 			}
 		}
 		END_STD_LOOP
@@ -920,6 +921,8 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 	}
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf, &bcf); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcf);
 
 	PetscFunctionReturn(0);
 }

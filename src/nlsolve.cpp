@@ -52,6 +52,8 @@
 #include "nlsolve.h"
 #include "JacRes.h"
 #include "tools.h"
+#include "tools.h"
+#include "bc.h"
 //---------------------------------------------------------------------------
 // * add bound checking for iterative solution vector in SNES
 // * automatically set -snes_type ksponly (for linear problems)
@@ -692,6 +694,7 @@ PetscErrorCode SNESCoupledTest(
 
 	if(jr->ctrl.actFluid)
 	{
+		ierr = BCApplyFlow(jr->bc);                         CHKERRQ(ierr);
 		ierr = JacResGetFlowRes(jr, jr->ts->dt);            CHKERRQ(ierr);
 		ierr = JacResGetFlowMat(jr, jr->ts->dt);            CHKERRQ(ierr);
 		ierr = KSPSetOperators(jr->pksp, jr->App, jr->App); CHKERRQ(ierr);

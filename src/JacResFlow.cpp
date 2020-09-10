@@ -706,7 +706,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr, PetscScalar dt)
 	PetscFunctionBegin;
 
 	// relevant cases only
-	if(jr->ctrl.fluidPhase == -1) PetscFunctionReturn(0);
+	if(jr->ctrl.fluidPhase == -1 && !jr->ctrl.initGuess) PetscFunctionReturn(0);
 
 	// access context
 	fs         = jr->fs;
