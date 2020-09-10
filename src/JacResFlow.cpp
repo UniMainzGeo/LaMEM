@@ -354,6 +354,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	// STEADY STATE solution is activated by setting time step to zero
 
 	FDSTAG     *fs;
+	BCCtx      *bc;
 	Controls   *ctrl;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
@@ -365,13 +366,14 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
  	PetscScalar dx, dy, dz;
 	PetscScalar invdt, ki, Ss, pc, pn, rho, eta, gz;
-	PetscScalar ***gf, ***lP, ***lk, ***buff;
+	PetscScalar ***gf, ***lP, ***lk, ***buff, ***bcf;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
 	fs   = jr->fs;
+	bc   = jr->bc;
 	mx   = fs->dsx.tcels - 1;
 	my   = fs->dsy.tcels - 1;
 	mz   = fs->dsz.tcels - 1;
@@ -390,6 +392,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	ierr = DMDAVecGetArray(jr->DA_P,   jr->gf,       &gf);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &lP);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,     &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf,      &bcf); CHKERRQ(ierr);
 
 	//---------------
 	// central points
@@ -403,9 +406,17 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		svCell = &jr->svCell[iter++];
 		svBulk = &svCell->svBulk;
 
-		// access pressure
-		pc  = lP[k][j][i]; // current
-		pn  = svBulk->pn;  // history
+		// constrain residual
+		if(bcf[k][j][i] != DBL_MAX)
+		{
+			gf[k][j][i] = 0.0;
+
+			continue;
+		}
+
+		// access current & history pressure
+		pc  = lP[k][j][i];
+		pn  = svBulk->pn;
 
 		// permeability, specific storage
 		ierr = JacResGetFlowParam(jr, svCell->phRat, &ki, &Ss); CHKERRQ(ierr);
@@ -448,6 +459,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	ierr = DMDAVecRestoreArray(jr->DA_P,   jr->gf,      &gf);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf,     &bcf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -477,8 +489,8 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	PetscFunctionBegin;
 
 	// access residual context variables
-	fs = jr->fs;
-	bc = jr->bc;
+	fs   = jr->fs;
+	bc   = jr->bc;
 	mx   = fs->dsx.tcels - 1;
 	my   = fs->dsy.tcels - 1;
 	mz   = fs->dsz.tcels - 1;
@@ -513,6 +525,20 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	{
 		// access solution variables
 		svCell = &jr->svCell[iter++];
+
+		// constrain matrix row
+		if(bcf[k][j][i] != DBL_MAX)
+		{
+			row[0].k = k;
+			row[0].j = j;
+			row[0].i = i;
+			row[0].c = 0;
+			v  [0]   = 1.0;
+
+			ierr = MatSetValuesStencil(jr->Att, 1, row, 1, row, v, ADD_VALUES); CHKERRQ(ierr);
+
+			continue;
+		}
 
 		// permeability, specific storage
 		ierr = JacResGetFlowParam(jr, svCell->phRat, &ki, &Ss); CHKERRQ(ierr);
@@ -647,6 +673,11 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
 
+	if(tV == 0.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Fluid Stokes domain cannot have zero volume (fluid_phase)\n");
+	}
+
 	LOCAL_TO_LOCAL(fs->DA_CEN, lvol)
 
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
@@ -654,7 +685,6 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, lvol,        &vol); CHKERRQ(ierr);
 
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -706,7 +736,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 		if(i > 0)  { if(vol[k]  [j]  [i-1] == 0.0) { flux += bqx*dy*dz; } }
 		if(i < mx) { if(vol[k]  [j]  [i+1] == 0.0) { flux += fqx*dy*dz; } }
 		if(j > 0)  { if(vol[k]  [j-1][i]   == 0.0) { flux += bqy*dx*dz; } }
-		if(j <=my) { if(vol[k]  [j+1][i]   == 0.0) { flux += fqy*dx*dz; } }
+		if(j < my) { if(vol[k]  [j+1][i]   == 0.0) { flux += fqy*dx*dz; } }
 		if(k > 0)  { if(vol[k-1][j]  [i]   == 0.0) { flux += bqz*dx*dy; } }
 		if(k < mz) { if(vol[k+1][j]  [i]   == 0.0) { flux += fqz*dx*dy; } }
 
@@ -716,12 +746,12 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol,        &vol); CHKERRQ(ierr);
-
-	ierr = DMRestoreLocalVector(fs->DA_CEN, &lvol);
 
 	// compute source term
 	source = flux/tV;
+
+	// store source term
+	ierr = DMDAVecGetArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
 
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -743,6 +773,9 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 		}
 	}
 	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &lvol);     CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
