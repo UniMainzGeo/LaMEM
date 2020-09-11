@@ -59,7 +59,7 @@ struct PData;
 struct JacRes;
 struct Ph_trans_t;
 struct DBMat;
-
+struct Scaling;
 //---------------------------------------------------------------------------
 
 // constitutive equations evaluation context
@@ -73,6 +73,7 @@ struct ConstEqCtx
 	DBMat       *dbm;
 	Controls    *ctrl;      // parameters and controls
 	PData       *Pd;        // phase diagram data
+	Scaling     *scal;      // scaling
 	PetscScalar  dt;        // time step
 	PetscScalar  stats[3];  // total number of [starts, successes, iterations]
 	PetscScalar  avg_topo;  // average surface topography

@@ -173,6 +173,12 @@ public:
 	PetscScalar  mfc;               // melt fraction viscosity correction
 	PetscInt     nPTr;
 	PetscInt     Ph_tr[_max_tr_]; // Vector that contains all phase transition
+
+	// Melt_Parametrization
+	char         Melt_Parametrization[_str_len_]; // Melt_parametrization
+	PetscScalar  Melt_Water_Par;
+	PetscScalar  Cpx_mode;
+	PetscScalar  rho_melt;
 };
 
 //---------------------------------------------------------------------------
