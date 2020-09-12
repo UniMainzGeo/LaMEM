@@ -907,6 +907,7 @@ PetscErrorCode PVOutWriteContRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritEnergRes"
 PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
@@ -941,4 +942,40 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
+// ACHTUNG
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWritEnergRes"
+PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
+{
+	FDSTAG      *fs;
+	PetscScalar ***lbcen, ***ge;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->dissipation_rate;
+
+	fs = jr->fs;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_P,   jr->gf,         &ge);    CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		lbcen[k][j][i] = ge[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_P,   jr->gf,         &ge);    CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
+
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
+
+	PetscFunctionReturn(0);
+}

@@ -464,6 +464,9 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
 
+// ACHTUNG
+	invdt = 0.0;
+
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
 
 	// access work vectors
@@ -520,7 +523,10 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		// compute fluid fluxes
 		bqx = bkx* (pc - lP[k][j][i-1])/bdx;            fqx = fkx*(lP[k][j][i+1]  - pc)/fdx;
 		bqy = bky* (pc - lP[k][j-1][i])/bdy;            fqy = fky*(lP[k][j+1][i]  - pc)/fdy;
-		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
+
+// ACHTUNG
+//		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
+		bqz = bkz*((pc - lP[k-1][j][i])/bdz);           fqz = fkz*((lP[k+1][j][i] - pc)/fdz);
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -578,6 +584,9 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	// compute inverse time step
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
+
+// ACHTUNG
+	invdt = 0.0;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -684,7 +693,7 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetFlowSource"
-PetscErrorCode JacResGetFlowSource(JacRes *jr, PetscScalar dt)
+PetscErrorCode JacResGetFlowSource(JacRes *jr)
 {
 	// compute fluid flow Stokes source
 
@@ -706,7 +715,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr, PetscScalar dt)
 	PetscFunctionBegin;
 
 	// relevant cases only
-	if(jr->ctrl.fluidPhase == -1 && !jr->ctrl.initGuess) PetscFunctionReturn(0);
+	if(jr->ctrl.fluidPhase == -1 || jr->ctrl.initGuess) PetscFunctionReturn(0);
 
 	// access context
 	fs         = jr->fs;
@@ -805,18 +814,19 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr, PetscScalar dt)
 		bqy = bky* (pc - lP[k][j-1][i])/bdy;            fqy = fky* (lP[k][j+1][i] - pc)/fdy;
 		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
 
+
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
 		dy = SIZE_CELL(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
 		// compute integral
-		if(i > 0)  { if(vol[k]  [j]  [i-1] == 0.0) { flux += bqx*dy*dz; } }
-		if(i < mx) { if(vol[k]  [j]  [i+1] == 0.0) { flux += fqx*dy*dz; } }
-		if(j > 0)  { if(vol[k]  [j-1][i]   == 0.0) { flux += bqy*dx*dz; } }
-		if(j < my) { if(vol[k]  [j+1][i]   == 0.0) { flux += fqy*dx*dz; } }
-		if(k > 0)  { if(vol[k-1][j]  [i]   == 0.0) { flux += bqz*dx*dy; } }
-		if(k < mz) { if(vol[k+1][j]  [i]   == 0.0) { flux += fqz*dx*dy; } }
+		if(i > 0)  { if(vol[k]  [j]  [i-1] == 0.0) { flux += PetscAbsScalar(bqx*dy*dz); } }
+		if(i < mx) { if(vol[k]  [j]  [i+1] == 0.0) { flux += PetscAbsScalar(fqx*dy*dz); } }
+		if(j > 0)  { if(vol[k]  [j-1][i]   == 0.0) { flux += PetscAbsScalar(bqy*dx*dz); } }
+		if(j < my) { if(vol[k]  [j+1][i]   == 0.0) { flux += PetscAbsScalar(fqy*dx*dz); } }
+		if(k > 0)  { if(vol[k-1][j]  [i]   == 0.0) { flux += PetscAbsScalar(bqz*dx*dy); } }
+		if(k < mz) { if(vol[k+1][j]  [i]   == 0.0) { flux += PetscAbsScalar(fqz*dx*dy); } }
 
 	}
 	END_STD_LOOP
@@ -826,7 +836,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr, PetscScalar dt)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
 
 	// compute source term
-	source = flux/tV;
+	source = -flux/tV;
 
 	// store source term
 	ierr = DMDAVecGetArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
@@ -843,7 +853,11 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr, PetscScalar dt)
 
 		if(vol[k][j][i] != 0.0)
 		{
+
+// ACHTUNG
 			svCell->source = source;
+//			svCell->source = 0.0;
+
 		}
 		else
 		{

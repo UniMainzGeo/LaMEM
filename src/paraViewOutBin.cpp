@@ -428,10 +428,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-	// check
-	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0; // heat diffusion is deactivated
-	if( pvout->jr->ctrl.gwType == _GW_NONE_) omask->eff_press = 0; // pore pressure is deactivated
-
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Output parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Output file name                        : %s \n", pvout->outfile);

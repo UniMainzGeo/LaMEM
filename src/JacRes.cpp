@@ -1172,7 +1172,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
 		// mass (volume)
-		gc[k][j][i] = gres - svCell->source;
+		gc[k][j][i] = gres + svCell->source;
 
 	}
 	END_STD_LOOP

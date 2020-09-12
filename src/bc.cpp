@@ -611,7 +611,7 @@ PetscErrorCode BCApply(BCCtx *bc)
 	// FLUID PRESSURE
 	//===============
 
-	ierr = BCApplyFlow(bc); CHKERRQ(ierr);
+//	ierr = BCApplyFlow(bc); CHKERRQ(ierr);
 
 	//=============================
 	// VELOCITY (RESTRUCTURE THIS!)
@@ -875,7 +875,10 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 
 	START_STD_LOOP
 	{
+		// ACHTUNG
 		if(k == mcz) { bcf[k+1][j][i] = 0.0; }
+		if(k == 0)   { bcf[k-1][j][i] = 30.0/jr->scal->stress; }
+
 	}
 	END_STD_LOOP
 
@@ -897,6 +900,9 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 		END_STD_LOOP
 	}
 
+
+	// ACHTUNG
+
 	// set pressure in Stokes domain
 	if(fluidPhase != -1 && !initGuess)
 	{
@@ -911,7 +917,9 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 			// check for constrained cell
 			if(jr->svCell[iter++].phRat[fluidPhase] > 0.0)
 			{
+				// ACHTUNG
 				bcf[k][j][i] = p[k][j][i];
+//				bcf[k][j][i] = 1000;
 			}
 		}
 		END_STD_LOOP

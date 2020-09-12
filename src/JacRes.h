@@ -433,7 +433,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt);
 PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt);
 
 // compute volumetric sources
-PetscErrorCode JacResGetFlowSource(JacRes *jr, PetscScalar dt);
+PetscErrorCode JacResGetFlowSource(JacRes *jr);
 
 //---------------------------------------------------------------------------
 //......................   INTEGRATION FUNCTIONS   ..........................
