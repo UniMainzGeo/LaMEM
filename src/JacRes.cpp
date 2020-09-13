@@ -231,13 +231,18 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adiabatic heating efficiency parameter must be between 0 and 1 (Adiabatic_Heat)");
 	}
 
-
 	if(!ctrl->actTemp) ctrl->shearHeatEff = 0.0;
 
 	if(ctrl->biot < 0.0 || ctrl->biot > 1.0)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Biot pressure parameter must be between 0 and 1 (biot)");
 	}
+
+	if(ctrl->actFluid && ctrl->biot > 0.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Biot pressure parameter must be 0 is fluid flow is activated (biot, act_fluid_flow)");
+	}
+
 
 	if(ctrl->gwType == _GW_NONE_) ctrl->biot = 0.0;
 

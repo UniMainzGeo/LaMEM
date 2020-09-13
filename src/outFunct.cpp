@@ -907,7 +907,6 @@ PetscErrorCode PVOutWriteContRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritEnergRes"
 PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
@@ -942,12 +941,11 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------
-// ACHTUNG
+/*
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWritEnergRes"
-PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
+#define __FUNCT__ "PVOutWritFlowRes"
+PetscErrorCode PVOutWritFlowRes(OutVec* outvec)
 {
 	FDSTAG      *fs;
 	PetscScalar ***lbcen, ***ge;
@@ -979,3 +977,6 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 
 	PetscFunctionReturn(0);
 }
+*/
+//---------------------------------------------------------------------------
+

@@ -852,6 +852,9 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
+	Controls    *ctrl;
+	FreeSurf    *surf;
+	PetscScalar rho_fluid, gwLevel, gz, ztop, zbot, ptop, pbot;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, mcz, AirPhase, fluidPhase, initGuess;
 	PetscScalar ***bcf, ***p;
 
@@ -861,12 +864,28 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 	// access context
 	jr         = bc->jr;
 	fs         = jr->fs;
-	AirPhase   = jr->surf->AirPhase;
-	fluidPhase = jr->ctrl.fluidPhase;
-	initGuess  = jr->ctrl.initGuess;
+	ctrl       = &jr->ctrl;
+	surf       = jr->surf;
+	AirPhase   = surf->AirPhase;
+	fluidPhase = ctrl->fluidPhase;
+	rho_fluid  = ctrl->rho_fluid;
+	initGuess  = ctrl->initGuess;
 	mcz        = fs->dsz.tcels - 1;
+	gz         =  PetscAbsScalar(ctrl->grav[2]);
 
-	// set zero pressure at top boundary
+	// get boundary coordinates
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
+
+	// set ground water level
+	if     (ctrl->gwType == _GW_TOP_)   gwLevel = ztop;
+	else if(ctrl->gwType == _GW_SURF_)  gwLevel = surf->avg_topo;
+	else if(ctrl->gwType == _GW_LEVEL_) gwLevel = ctrl->gwLevel;
+	else                                gwLevel = 0.0;
+
+	// set pressure at top & bottom boundaries
+	ptop = 0.0;
+	pbot = rho_fluid*gz*(gwLevel-zbot);
+
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf, &bcf);  CHKERRQ(ierr);
 
 	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
@@ -875,9 +894,8 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		// ACHTUNG
-		if(k == mcz) { bcf[k+1][j][i] = 0.0; }
-		if(k == 0)   { bcf[k-1][j][i] = 30.0/jr->scal->stress; }
+		if(k == mcz) { bcf[k+1][j][i] = ptop; }
+		if(k == 0)   { bcf[k-1][j][i] = pbot; }
 
 	}
 	END_STD_LOOP
@@ -900,9 +918,6 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 		END_STD_LOOP
 	}
 
-
-	// ACHTUNG
-
 	// set pressure in Stokes domain
 	if(fluidPhase != -1 && !initGuess)
 	{
@@ -917,9 +932,7 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 			// check for constrained cell
 			if(jr->svCell[iter++].phRat[fluidPhase] > 0.0)
 			{
-				// ACHTUNG
 				bcf[k][j][i] = p[k][j][i];
-//				bcf[k][j][i] = 1000;
 			}
 		}
 		END_STD_LOOP

@@ -464,9 +464,6 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
 
-// ACHTUNG
-	invdt = 0.0;
-
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
 
 	// access work vectors
@@ -523,10 +520,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		// compute fluid fluxes
 		bqx = bkx* (pc - lP[k][j][i-1])/bdx;            fqx = fkx*(lP[k][j][i+1]  - pc)/fdx;
 		bqy = bky* (pc - lP[k][j-1][i])/bdy;            fqy = fky*(lP[k][j+1][i]  - pc)/fdy;
-
-// ACHTUNG
-//		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
-		bqz = bkz*((pc - lP[k-1][j][i])/bdz);           fqz = fkz*((lP[k+1][j][i] - pc)/fdz);
+		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -584,9 +578,6 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	// compute inverse time step
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
-
-// ACHTUNG
-	invdt = 0.0;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -814,7 +805,6 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 		bqy = bky* (pc - lP[k][j-1][i])/bdy;            fqy = fky* (lP[k][j+1][i] - pc)/fdy;
 		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
 
-
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
 		dy = SIZE_CELL(j, sy, fs->dsy);
@@ -853,11 +843,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 
 		if(vol[k][j][i] != 0.0)
 		{
-
-// ACHTUNG
 			svCell->source = source;
-//			svCell->source = 0.0;
-
 		}
 		else
 		{
