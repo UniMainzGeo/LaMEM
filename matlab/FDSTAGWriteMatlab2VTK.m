@@ -106,6 +106,7 @@ end
 fprintf(fid,'\t\t\t\t</DataArray>\n');
 
 
+
 fprintf(fid,'\t\t\t</PointData>\n');
 fprintf(fid,'\t\t</Piece>\n');
 fprintf(fid,'\t</RectilinearGrid>\n');
@@ -168,12 +169,27 @@ if  max(A.Phase(:))<256
     offset = offset + 1*sizeof_UInt32 + sizeof_UInt8*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
 
 else
-
     fprintf(fid,'\t\t\t\t<DataArray type=\"Int16\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
     offset = offset + 1*sizeof_UInt32 + sizeof_UInt16*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
 end
 fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Temp\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
 offset = offset + 1*sizeof_UInt32 + sizeof_Float32*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
+
+if isfield(A,'AdditionalFields')
+    % optional: add additional (scalar) fields to the VTK file
+    Names = fieldnames(A.AdditionalFields);
+    
+    for iName=1:length(Names)
+        
+        str = ['\t\t\t\t<DataArray type=\"Float32\" Name=\"',Names{iName},'\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n'];
+        
+        fprintf(fid,str,int64(offset));
+        offset = offset + 1*sizeof_UInt32 + sizeof_Float32*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
+        
+    end
+
+end
+
 
 
 fprintf(fid,'\t\t\t</PointData>\n');
@@ -220,6 +236,20 @@ end
 
 fwrite(fid,int32(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3)*sizeof_Float32),'float32');
 fwrite(fid,(A.Temp(:)),'float32');
+
+
+
+if isfield(A,'AdditionalFields')
+    % optional: add additional (scalar) fields to the VTK file
+    Names   =   fieldnames(A.AdditionalFields);
+    for iName=1:length(Names)
+        % optional: add depth
+        Data    =   getfield( A.AdditionalFields, Names{iName});
+        fwrite(fid,int32(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3)*sizeof_Float32),'float32');
+        fwrite(fid,Data(:),'float32');
+    end
+    
+end
 
 
 fprintf(fid,'</VTKFile>\n');
