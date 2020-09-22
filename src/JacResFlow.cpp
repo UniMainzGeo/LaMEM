@@ -51,6 +51,7 @@
 #include "bc.h"
 #include "matrix.h"
 #include "surf.h"
+#include "tools.h"
 
 //---------------------------------------------------------------------------
 
@@ -697,7 +698,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
  	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
- 	PetscScalar dx, dy, dz, V, tV, fRat, flux, source;
+ 	PetscScalar dx, dy, dz, V, lV, tV, fRat, lflux, flux, source, lbuf[2], gbuf[2];
 	PetscScalar ki, Ss, pc, rho, eta, gz;
 	PetscScalar ***lP, ***lk, ***buff, ***vol;
 	Vec         lvol;
@@ -719,7 +720,10 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	fluidPhase = ctrl->fluidPhase;
 	gz         =  PetscAbsScalar(ctrl->grav[2]);
 
-	// compute effective cell volumes & total volume
+	//===============
+	// compute volume
+	//===============
+
 	ierr = DMGetLocalVector(fs->DA_CEN, &lvol);     CHKERRQ(ierr);
 	ierr = VecZeroEntries(lvol);                    CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
@@ -727,7 +731,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	iter = 0;
-	tV   = 0.0;
+	lV   = 0.0;
 
 	START_STD_LOOP
 	{
@@ -740,7 +744,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 			dy  = SIZE_CELL(j, sy, fs->dsy);
 			dz  = SIZE_CELL(k, sz, fs->dsz);
 			V   = dx*dy*dz*fRat;
-			tV += V;
+			lV += V;
 
 			// store volume
 			vol[k][j][i] = V;
@@ -751,23 +755,22 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
 
-	if(tV == 0.0)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Fluid Stokes domain cannot have zero volume (fluid_phase)\n");
-	}
-
 	LOCAL_TO_LOCAL(fs->DA_CEN, lvol)
+
+	//=============
+	// compute flux
+	//=============
 
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
 
-	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, lvol,        &vol); CHKERRQ(ierr);
 
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	iter = 0;
-	flux = 0.0;
+	iter  = 0;
+	lflux = 0.0;
 
 	START_STD_LOOP
 	{
@@ -811,12 +814,12 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
 		// compute integral
-		if(i > 0)  { if(vol[k]  [j]  [i-1] == 0.0) { flux += PetscAbsScalar(bqx*dy*dz); } }
-		if(i < mx) { if(vol[k]  [j]  [i+1] == 0.0) { flux += PetscAbsScalar(fqx*dy*dz); } }
-		if(j > 0)  { if(vol[k]  [j-1][i]   == 0.0) { flux += PetscAbsScalar(bqy*dx*dz); } }
-		if(j < my) { if(vol[k]  [j+1][i]   == 0.0) { flux += PetscAbsScalar(fqy*dx*dz); } }
-		if(k > 0)  { if(vol[k-1][j]  [i]   == 0.0) { flux += PetscAbsScalar(bqz*dx*dy); } }
-		if(k < mz) { if(vol[k+1][j]  [i]   == 0.0) { flux += PetscAbsScalar(fqz*dx*dy); } }
+		if(i > 0)  { if(vol[k]  [j]  [i-1] == 0.0) { lflux += PetscAbsScalar(bqx*dy*dz); } }
+		if(i < mx) { if(vol[k]  [j]  [i+1] == 0.0) { lflux += PetscAbsScalar(fqx*dy*dz); } }
+		if(j > 0)  { if(vol[k]  [j-1][i]   == 0.0) { lflux += PetscAbsScalar(bqy*dx*dz); } }
+		if(j < my) { if(vol[k]  [j+1][i]   == 0.0) { lflux += PetscAbsScalar(fqy*dx*dz); } }
+		if(k > 0)  { if(vol[k-1][j]  [i]   == 0.0) { lflux += PetscAbsScalar(bqz*dx*dy); } }
+		if(k < mz) { if(vol[k+1][j]  [i]   == 0.0) { lflux += PetscAbsScalar(fqz*dx*dy); } }
 
 	}
 	END_STD_LOOP
@@ -824,6 +827,34 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol,        &vol); CHKERRQ(ierr);
+
+	//===============
+	// compute source
+	//===============
+
+	// compute global sum
+	if(ISParallel(PETSC_COMM_WORLD))
+	{
+		lbuf[0] = lV;
+		lbuf[1] = lflux;
+
+		ierr = MPI_Allreduce(lbuf, gbuf, 2, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+		tV   = gbuf[0];
+		flux = gbuf[1];
+
+	}
+	else
+	{
+		tV   = lV;
+		flux = lflux;
+	}
+
+	if(tV == 0.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Fluid Stokes domain cannot have zero volume (fluid_phase)\n");
+	}
 
 	// compute source term
 	source = -flux/tV;
@@ -853,6 +884,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	END_STD_LOOP
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
+
 	ierr = DMRestoreLocalVector(fs->DA_CEN, &lvol);     CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
