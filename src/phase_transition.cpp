@@ -104,9 +104,15 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr= Set_Clapeyron_Phase_Transition(ph, dbm, fb,ID); CHKERRQ(ierr);
 	}
 
+	if(!strcmp(ph->Type,"Box_type"))
+	{
+		ierr= Set_Box_Within_Transition(ph, dbm, fb,ID); CHKERRQ(ierr);
+	}
+
 	ierr = getIntParam(fb, _OPTIONAL_, "number_phases", &ph->number_phases,1 , _max_num_tr_); CHKERRQ(ierr);
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseBelow", ph->PhaseBelow,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseAbove", ph->PhaseAbove,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "PhaseWithin", ph->PhaseWithin,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "DensityBelow", ph->DensityBelow,ph->number_phases , 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "DensityAbove", ph->DensityAbove,ph->number_phases, 1.0); CHKERRQ(ierr);
 
@@ -202,7 +208,30 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	PetscFunctionReturn(0);
 
 }
+#undef __FUNCT__
+#define __FUNCT__ "Set_Constant_Phase_Transition"
+PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID)
+{
+	Scaling      *scal;
+	PetscInt      it;
 
+	scal = dbm -> scal;
+
+	ierr = getScalarParam(fb, _REQUIRED_, "Geometrical_box", ph->Geometric_box,6, 1.0); CHKERRQ(ierr);
+
+	for(it=0;it<6;it++)
+	{
+		ph->Geometric_box[it]/=scal->length;
+	}
+
+	ierr = getScalarParam(fb, _REQUIRED_, "DeltaT_within", ph->dT_within,1, 1.0); CHKERRQ(ierr);
+
+
+	ph->dT_within/=scal->temperature;
+
+	PetscFunctionReturn(0);
+
+}
 // ---------------------------------------------------------------------------------------------------------- //
 #undef __FUNCT__
 #define __FUNCT__ "Overwrite_Density"
@@ -453,6 +482,30 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 
 	return ph;
 }
+//=========================================================================================================== //
+
+PetscInt Check_Constant_Box_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID) // softening parameter
+{
+	PetscInt ph;
+	PetscScalar X[3];
+
+	if(P->phase == PhaseTrans->PhaseWithin ); return PhaseTrans->PhaseWithin ;
+
+	X[0]=P->X[0];
+	X[1]=P->X[1];
+	X[2]=P->X[2];
+
+	if(X[0]>=PhaseTrans->Geometric_box[0] && X[0]<=PhaseTrans->Geometric_box[1] && X[1]>=PhaseTrans->Geometric_box[2] && X[1]<=PhaseTrans->Geometric_box[3] && X[2]>=PhaseTrans->Geometric_box[4] && X[0]<=PhaseTrans->Geometric_box[5])
+	{
+		ph = PhaseTrans->PhaseWithin;
+	}
+
+	P->T += PhaseTrans->dT_within;
+
+
+	return ph;
+}
+
 // ========================================================================================================== //
 PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_phas)
 {

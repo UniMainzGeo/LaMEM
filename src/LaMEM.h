@@ -166,6 +166,10 @@
 // maximum number of adjoint points
 #define _max_adj_point_ 100
 
+// maximum number of passive tracers
+
+#define _max_passive_tracer 100000
+
 // cast macros
 #define LLD long long int
 

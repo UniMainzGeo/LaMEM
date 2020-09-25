@@ -97,11 +97,13 @@ public:
 	PetscScalar P0_clapeyron[_max_num_eq_] ;
 	PetscScalar T0_clapeyron[_max_num_eq_] ;
 	PetscScalar clapeyron_slope[_max_num_eq_] ;
-
+	PetscScalar Geometric_box[6];
 
 	PetscInt    number_phases;
 	PetscInt    PhaseBelow[_max_tr_];
 	PetscInt    PhaseAbove[_max_tr_];
+	PetscInt    PhaseWithin[_max_tr_];
+	PetscScalar    dT_within;
 	PetscScalar    DensityAbove[_max_tr_];
 	PetscScalar    DensityBelow[_max_tr_];
 
