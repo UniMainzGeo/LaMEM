@@ -112,7 +112,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	ierr = getIntParam(fb, _OPTIONAL_, "number_phases", &ph->number_phases,1 , _max_num_tr_); CHKERRQ(ierr);
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseBelow", ph->PhaseBelow,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseAbove", ph->PhaseAbove,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "PhaseWithin", ph->PhaseWithin,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "PhaseWithin", &ph->PhaseWithin,1 , _max_num_phases_); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "DensityBelow", ph->DensityBelow,ph->number_phases , 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "DensityAbove", ph->DensityAbove,ph->number_phases, 1.0); CHKERRQ(ierr);
 
@@ -208,10 +208,13 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	PetscFunctionReturn(0);
 
 }
+//=========================================================================================//
 #undef __FUNCT__
-#define __FUNCT__ "Set_Constant_Phase_Transition"
-PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID)
+#define __FUNCT__ "Set_Box_Within_Transition"
+PetscErrorCode  Set_Box_Within_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID)
 {
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 	Scaling      *scal;
 	PetscInt      it;
 
@@ -224,7 +227,7 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 		ph->Geometric_box[it]/=scal->length;
 	}
 
-	ierr = getScalarParam(fb, _REQUIRED_, "DeltaT_within", ph->dT_within,1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "DeltaT_within", &ph->dT_within,1, 1.0); CHKERRQ(ierr);
 
 
 	ph->dT_within/=scal->temperature;
@@ -489,7 +492,7 @@ PetscInt Check_Constant_Box_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt
 	PetscInt ph;
 	PetscScalar X[3];
 
-	if(P->phase == PhaseTrans->PhaseWithin ); return PhaseTrans->PhaseWithin ;
+	if(P->phase == PhaseTrans->PhaseWithin ); return ph=PhaseTrans->PhaseWithin ;
 
 	X[0]=P->X[0];
 	X[1]=P->X[1];

@@ -59,7 +59,6 @@
 #include "subgrid.h"
 #include "tools.h"
 #include "phase_transition.h"
-#include "meltextraction.h"
 
 /*
 #START_DOC#
@@ -637,7 +636,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
 	// project melt extraction marker history
-	ierr = MeltExtractionInterpMarkerBackToGrid(actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

@@ -51,7 +51,9 @@
 #include "JacRes.h"
 #include "tools.h"
 #include "phase_transition.h"
-
+#include "meltParamKatz.h"
+#include "scaling.h"
+#include "parsing.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "setUpConstEq"
@@ -68,6 +70,7 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 	ctx->Pd        =  jr-> Pd;            // phase diagram data
 	ctx->dt        =  jr->ts->dt;         // time step
 	ctx->PhaseTrans = jr->dbm->matPhtr;   // phase transition
+	ctx->scal       = jr->scal;           // scaling
 	ctx->stats[0]  =  0.0;                // total number of [starts, ...
 	ctx->stats[1]  =  0.0;                //  ... successes,
 	ctx->stats[2]  =  0.0;                // ... iterations]
@@ -165,11 +168,16 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(mat->pdAct == 1)
 	{
 		// compute melt fraction from phase diagram
-		ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
+		ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn);CHKERRQ(ierr);
 
 		// store melt fraction
 		mf = Pd->mf;
 	}
+
+	//if(strcmp(mat->Melt_Parametrization,"none") & ctrl->melt_feedback == 1)
+//	{
+	//	mf = Compute_Melt_Fraction(p, T ,mat,ctx);
+	//}
 
 	// set RT
 	RT         =  ctrl->Rugc*T;
@@ -621,7 +629,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	PetscInt     i, numPhases;
-	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho, mf;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -655,11 +663,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 		if(phRat[i])
 		{
 
-			if (i==2 && ctx->ctrl->initGuess == 0)
-							{
-//PetscPrintf(PETSC_COMM_WORLD,"PHASE ");
-
-							}
 			// get reference to material parameters table
 			mat = &phases[i];
 
@@ -668,8 +671,10 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				// compute melt fraction from phase diagram
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
-				svBulk->mf     += phRat[i]*Pd->mf;
-				svBulk->rho_pf += phRat[i]*Pd->rho_f;
+
+
+				svBulk->mf     += phRat[i]*mf;
+				svBulk->rho_pf += phRat[i]*mat->rho_melt;
 			}
 
 			// initialize
@@ -710,6 +715,10 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			else if(mat->pdAct == 1)
 			{
 				rho = (Pd->mf * Pd->rho_f) + ((1-Pd->mf) * Pd->rho);
+			}
+			else if(mat->Melt_Parametrization && ctrl->melt_feedback)
+			{
+				rho = (mf * mat->rho_melt) + ((1-mf) * mat->rho);
 			}
 			else
 			{
