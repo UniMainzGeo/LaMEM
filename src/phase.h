@@ -102,7 +102,8 @@ public:
 	PetscInt    number_phases;
 	PetscInt    PhaseBelow[_max_tr_];
 	PetscInt    PhaseAbove[_max_tr_];
-	PetscInt    PhaseWithin;
+	PetscInt    PhaseWithin[_max_tr_];
+	PetscInt    PhaseOutside[_max_tr_];
 	PetscScalar    dT_within;
 	PetscScalar    DensityAbove[_max_tr_];
 	PetscScalar    DensityBelow[_max_tr_];

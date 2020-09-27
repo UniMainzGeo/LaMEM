@@ -112,9 +112,9 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	ierr = getIntParam(fb, _OPTIONAL_, "number_phases", &ph->number_phases,1 , _max_num_tr_); CHKERRQ(ierr);
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseBelow", ph->PhaseBelow,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseAbove", ph->PhaseAbove,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "PhaseWithin", &ph->PhaseWithin,1 , _max_num_phases_); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "DensityBelow", ph->DensityBelow,ph->number_phases , 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "DensityAbove", ph->DensityAbove,ph->number_phases, 1.0); CHKERRQ(ierr);
+
 
 	if (!ph->PhaseAbove || !ph->PhaseBelow)
 	{
@@ -221,6 +221,9 @@ PetscErrorCode  Set_Box_Within_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,P
 	scal = dbm -> scal;
 
 	ierr = getScalarParam(fb, _REQUIRED_, "Geometrical_box", ph->Geometric_box,6, 1.0); CHKERRQ(ierr);
+
+
+
 
 	for(it=0;it<6;it++)
 	{
@@ -334,7 +337,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	Ph_trans_t *PhaseTrans;
 	Marker *P;
 	JacRes *jr;
-	PetscInt     i, ph,nPtr, numPhTrn,below,above,num_phas;
+	PetscInt     i, ph,nPtr, numPhTrn,below,above,num_phas,outside;
 	PetscInt     PH1,PH2;
 
 	jr = actx->jr;
@@ -352,32 +355,44 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 		{
 
 			P=&actx->markers[i];
-
-			if(P->phase==0)
+			if(!strcmp(PhaseTrans->Type,"Box_type"))
 			{
+
 				num_phas=PhaseTrans->number_phases;
 
+				outside  = Check_Phase_above_below(PhaseTrans->PhaseBelow,P,num_phas);
+
+
+				PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,outside);
+				if(outside>=0)
+				{
+					PH1 = PhaseTrans->PhaseAbove[outside];
+					ph = Transition(PhaseTrans, P, PH1, PH2,nPtr);
+					P->phase=ph;
+				}
 			}
-
-			num_phas=PhaseTrans->number_phases;
-			below  = Check_Phase_above_below(PhaseTrans->PhaseBelow,P,num_phas);
-			above  = Check_Phase_above_below(PhaseTrans->PhaseAbove,P,num_phas);
-			if(below >= 0 || above >= 0)
+			else
 			{
-				if(below>=0)
-				{
-					PH1 = PhaseTrans->PhaseBelow[below];
-					PH2 = PhaseTrans->PhaseAbove[below];
-				}
-				else if (above >=0)
-				{
-					PH1 = PhaseTrans->PhaseBelow[above];
-					PH2 = PhaseTrans->PhaseAbove[above];
-				}
-				ph = Transition(PhaseTrans, P, PH1, PH2,nPtr);
+				num_phas=PhaseTrans->number_phases;
+				below  = Check_Phase_above_below(PhaseTrans->PhaseBelow,P,num_phas);
+				above  = Check_Phase_above_below(PhaseTrans->PhaseAbove,P,num_phas);
 
-				P->phase=ph;
+				if(below >= 0 || above >= 0)
+				{
+					if(below>=0)
+					{
+						PH1 = PhaseTrans->PhaseBelow[below];
+						PH2 = PhaseTrans->PhaseAbove[below];
+					}
+					else if (above >=0)
+					{
+						PH1 = PhaseTrans->PhaseBelow[above];
+						PH2 = PhaseTrans->PhaseAbove[above];
+					}
+					ph = Transition(PhaseTrans, P, PH1, PH2,nPtr);
+					P->phase=ph;
 
+				}
 			}
 		}
 		ierr = ADVInterpMarkToCell(actx);
@@ -394,12 +409,17 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	if(!strcmp(PhaseTrans->Type,"Constant"))
 	{
 		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
-		return ph;
 	}
 	else if(!strcmp(PhaseTrans->Type,"Clapeyron"))
 	{
 		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
 	}
+	else
+	{
+		ph = Check_Constant_Box_Transition(PhaseTrans,P,PH1, ID);
+	}
+
+
 	return ph;
 }
 
@@ -487,23 +507,22 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 }
 //=========================================================================================================== //
 
-PetscInt Check_Constant_Box_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID) // softening parameter
+PetscInt Check_Constant_Box_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1,PetscInt ID) // softening parameter
 {
 	PetscInt ph;
 	PetscScalar X[3];
 
-	if(P->phase == PhaseTrans->PhaseWithin ); return ph=PhaseTrans->PhaseWithin ;
 
-	X[0]=P->X[0];
-	X[1]=P->X[1];
-	X[2]=P->X[2];
+		X[0]=P->X[0];
+		X[1]=P->X[1];
+		X[2]=P->X[2];
 
-	if(X[0]>=PhaseTrans->Geometric_box[0] && X[0]<=PhaseTrans->Geometric_box[1] && X[1]>=PhaseTrans->Geometric_box[2] && X[1]<=PhaseTrans->Geometric_box[3] && X[2]>=PhaseTrans->Geometric_box[4] && X[0]<=PhaseTrans->Geometric_box[5])
-	{
-		ph = PhaseTrans->PhaseWithin;
-	}
+		if(X[0]>=PhaseTrans->Geometric_box[0] && X[0]<=PhaseTrans->Geometric_box[1] && X[1]>=PhaseTrans->Geometric_box[2] && X[1]<=PhaseTrans->Geometric_box[3] && X[2]>=PhaseTrans->Geometric_box[4] && X[2]<=PhaseTrans->Geometric_box[5])
+		{
+			ph = PH1;
+		}
 
-	P->T += PhaseTrans->dT_within;
+		P->T += PhaseTrans->dT_within;
 
 
 	return ph;
