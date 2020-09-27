@@ -363,9 +363,9 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				outside  = Check_Phase_above_below(PhaseTrans->PhaseBelow,P,num_phas);
 
 
-				PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,outside);
 				if(outside>=0)
 				{
+
 					PH1 = PhaseTrans->PhaseAbove[outside];
 					ph = Transition(PhaseTrans, P, PH1, PH2,nPtr);
 					P->phase=ph;
@@ -517,10 +517,17 @@ PetscInt Check_Constant_Box_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt
 		X[1]=P->X[1];
 		X[2]=P->X[2];
 
+
 		if(X[0]>=PhaseTrans->Geometric_box[0] && X[0]<=PhaseTrans->Geometric_box[1] && X[1]>=PhaseTrans->Geometric_box[2] && X[1]<=PhaseTrans->Geometric_box[3] && X[2]>=PhaseTrans->Geometric_box[4] && X[2]<=PhaseTrans->Geometric_box[5])
 		{
+
 			ph = PH1;
 		}
+		else
+		{
+			ph = P->phase;
+		}
+
 
 		P->T += PhaseTrans->dT_within;
 
