@@ -3822,7 +3822,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		idx[j] 		=	j;
 		if (P>0)
 		{ // only non-zero positive parameters contribute
-			if (!isnan(grad))
+			if (!PetscIsInfOrNanScalar(grad))
 			{
 				A 	=   A*1.0/(PetscPowScalar(P,Exponent[j]));	// prefactor
 			}
