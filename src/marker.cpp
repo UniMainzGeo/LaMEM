@@ -1042,11 +1042,20 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		
 		// Depending on temperature options, get required input parameters
 		if (box->setTemp==1){
-			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&box->cstTemp, 1, chTemp);     CHKERRQ(ierr); 
+			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&box->cstTemp, 1, 1);     CHKERRQ(ierr); 
+			
+			// take potential shift C->K into account	
+			box->cstTemp = (box->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+
 		}
 		if (box->setTemp>1){
-			ierr = getScalarParam(fb, _REQUIRED_, "topTemp", 	&box->topTemp, 1, chTemp);     CHKERRQ(ierr); 
-			ierr = getScalarParam(fb, _REQUIRED_, "botTemp", 	&box->botTemp, 1, chTemp);     CHKERRQ(ierr); 
+			ierr = getScalarParam(fb, _REQUIRED_, "topTemp", 	&box->topTemp, 1, 1);     CHKERRQ(ierr); 
+			ierr = getScalarParam(fb, _REQUIRED_, "botTemp", 	&box->botTemp, 1, 1);     CHKERRQ(ierr); 
+
+			// take potential shift C->K into account	
+			box->topTemp = (box->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+			box->botTemp = (box->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+
 		}
 		if (box->setTemp==3){
 			
