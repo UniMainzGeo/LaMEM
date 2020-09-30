@@ -126,6 +126,10 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	ierr = SNESSetJacobian(snes, nl->J, nl->P, &FormJacobian, nl);  CHKERRQ(ierr);
 	ierr = SNESSetFromOptions(snes);                                CHKERRQ(ierr);
 
+	// deactivate in this branch, since it is required in current setting
+	// (function do need to increase by orders of magnitude)
+	ierr =  SNESSetDivergenceTolerance(snes, -1.0); CHKERRQ(ierr);
+
 	// setup linear solver & preconditioner
 	ierr = SNESGetKSP(snes, &ksp);         CHKERRQ(ierr);
 	ierr = KSPSetOptionsPrefix(ksp,"js_"); CHKERRQ(ierr);
