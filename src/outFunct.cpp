@@ -867,6 +867,22 @@ PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteFluidFlux"
+PetscErrorCode PVOutWriteFluidFlux(OutVec* outvec)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy density to buffer
+	#define GET_FFLUX buff[k][j][i] = jr->svCell[iter++].fflux;
+
+	cf = scal->velocity;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FFLUX, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // DEBUG VECTORS
 //---------------------------------------------------------------------------
 #undef __FUNCT__

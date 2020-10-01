@@ -112,6 +112,7 @@ PetscErrorCode PVOutWriteYield       (OutVec*);
 PetscErrorCode PVOutWriteRelDIIdif   (OutVec*);
 PetscErrorCode PVOutWriteRelDIIdis   (OutVec*);
 PetscErrorCode PVOutWriteRelDIIprl   (OutVec*);
+PetscErrorCode PVOutWriteFluidFlux   (OutVec*);
 // === debug vectors ===============================================
 PetscErrorCode PVOutWriteMomentRes   (OutVec*);
 PetscErrorCode PVOutWriteContRes     (OutVec*);

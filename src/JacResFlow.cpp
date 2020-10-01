@@ -488,7 +488,8 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		// constrain residual
 		if(bcf[k][j][i] != DBL_MAX)
 		{
-			gf[k][j][i] = 0.0;
+			gf[k][j][i]   = 0.0;
+			svCell->fflux = 0.0;
 
 			continue;
 		}
@@ -530,6 +531,8 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 
 		// compute residual
 		gf[k][j][i] = Ss*(invdt*(pc - fn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz;
+
+		svCell->fflux = PetscSqrtReal(bqx*bqx + fqx*fqx + bqy*bqy + fqy*fqy + bqz*bqz + fqz*fqz);
 
 	}
 	END_STD_LOOP

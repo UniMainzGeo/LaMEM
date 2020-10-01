@@ -158,6 +158,7 @@ struct OutMask
 	PetscInt DIIdif;         // diffusion creep relative strain rate
 	PetscInt DIIdis;         // dislocation creep relative strain rate
 	PetscInt DIIprl;         // Peierls creep relative strain rate
+	PetscInt fflux;          // fluid flux magnitude
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual

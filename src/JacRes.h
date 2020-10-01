@@ -110,6 +110,7 @@ struct SolVarCell
 	PetscScalar  DIIprl;        // relative Peierls creep strain rate
 	PetscScalar  yield;         // average yield stress in control volume
 	PetscScalar  source;        // fluid source
+	PetscScalar  fflux;         // fluid flux magnitude
 
 };
 

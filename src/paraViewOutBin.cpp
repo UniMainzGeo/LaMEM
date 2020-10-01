@@ -330,6 +330,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->DIIdif)         cnt++; // diffusion creep relative strain rate
 	if(omask->DIIdis)         cnt++; // dislocation creep relative strain rate
 	if(omask->DIIprl)         cnt++; // Peierls creep relative strain rate
+	if(omask->fflux)          cnt++; // momentum residual
 
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     cnt++; // momentum residual
@@ -397,6 +398,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_strain",   &omask->plast_strain,      1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_dissip",   &omask->plast_dissip,      1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_displ",      &omask->tot_displ,         1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_flux",     &omask->fflux,             1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_moment_res",     &omask->moment_res,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_cont_res",       &omask->cont_res,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
@@ -464,6 +466,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->plast_strain)   PetscPrintf(PETSC_COMM_WORLD, "   Accumulated Plastic Strain (APS)        @ \n");
 	if(omask->plast_dissip)   PetscPrintf(PETSC_COMM_WORLD, "   Plastic dissipation                     @ \n");
 	if(omask->tot_displ)      PetscPrintf(PETSC_COMM_WORLD, "   Total displacements                     @ \n");
+	if(omask->fflux)          PetscPrintf(PETSC_COMM_WORLD, "   Fluid flux magnitude                    @ \n");
 	if(omask->moment_res)     PetscPrintf(PETSC_COMM_WORLD, "   Momentum residual                       @ \n");
 	if(omask->cont_res)       PetscPrintf(PETSC_COMM_WORLD, "   Continuity residual                     @ \n");
 	if(omask->energ_res)      PetscPrintf(PETSC_COMM_WORLD, "   energy residual                         @ \n");
@@ -549,6 +552,8 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->DIIdif)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_dif_rate",   scal->lbl_unit,             &PVOutWriteRelDIIdif,    1, NULL);
 	if(omask->DIIdis)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_dis_rate",   scal->lbl_unit,             &PVOutWriteRelDIIdis,    1, NULL);
 	if(omask->DIIprl)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_prl_rate",   scal->lbl_unit,             &PVOutWriteRelDIIprl,    1, NULL);
+	if(omask->fflux)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "fluid_flux",     scal->lbl_velocity,         &PVOutWriteFluidFlux,    1, NULL);
+
 	// === debugging vectors ===============================================
 	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1, NULL);
 	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1, NULL);
