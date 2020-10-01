@@ -521,7 +521,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		// compute fluid fluxes
 		bqx = bkx* (pc - lP[k][j][i-1])/bdx;            fqx = fkx*(lP[k][j][i+1]  - pc)/fdx;
 		bqy = bky* (pc - lP[k][j-1][i])/bdy;            fqy = fky*(lP[k][j+1][i]  - pc)/fdy;
-		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
+		bqz = bkz*((pc - lP[k-1][j][i])/bdz + rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz + rho*gz);
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -806,7 +806,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 		// compute fluid fluxes
 		bqx = bkx* (pc - lP[k][j][i-1])/bdx;            fqx = fkx* (lP[k][j][i+1] - pc)/fdx;
 		bqy = bky* (pc - lP[k][j-1][i])/bdy;            fqy = fky* (lP[k][j+1][i] - pc)/fdy;
-		bqz = bkz*((pc - lP[k-1][j][i])/bdz - rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz - rho*gz);
+		bqz = bkz*((pc - lP[k-1][j][i])/bdz + rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz + rho*gz);
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
