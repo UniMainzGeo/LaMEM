@@ -817,12 +817,12 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
 		// compute integral
-		if(i > 0)  { if(vol[k]  [j]  [i-1] == 0.0) { lflux += PetscAbsScalar(bqx*dy*dz); } }
-		if(i < mx) { if(vol[k]  [j]  [i+1] == 0.0) { lflux += PetscAbsScalar(fqx*dy*dz); } }
-		if(j > 0)  { if(vol[k]  [j-1][i]   == 0.0) { lflux += PetscAbsScalar(bqy*dx*dz); } }
-		if(j < my) { if(vol[k]  [j+1][i]   == 0.0) { lflux += PetscAbsScalar(fqy*dx*dz); } }
-		if(k > 0)  { if(vol[k-1][j]  [i]   == 0.0) { lflux += PetscAbsScalar(bqz*dx*dy); } }
-		if(k < mz) { if(vol[k+1][j]  [i]   == 0.0) { lflux += PetscAbsScalar(fqz*dx*dy); } }
+		if(i > 0)  { if(vol[k]  [j]  [i-1] == 0.0) { lflux -= (bqx*dy*dz); } }
+		if(i < mx) { if(vol[k]  [j]  [i+1] == 0.0) { lflux += (fqx*dy*dz); } }
+		if(j > 0)  { if(vol[k]  [j-1][i]   == 0.0) { lflux -= (bqy*dx*dz); } }
+		if(j < my) { if(vol[k]  [j+1][i]   == 0.0) { lflux += (fqy*dx*dz); } }
+		if(k > 0)  { if(vol[k-1][j]  [i]   == 0.0) { lflux -= (bqz*dx*dy); } }
+		if(k < mz) { if(vol[k+1][j]  [i]   == 0.0) { lflux += (fqz*dx*dy); } }
 
 	}
 	END_STD_LOOP
@@ -860,7 +860,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	}
 
 	// compute source term
-	source = -flux/tV;
+	source = flux/tV;
 
 	// store source term
 	ierr = DMDAVecGetArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
