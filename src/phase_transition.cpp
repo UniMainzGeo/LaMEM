@@ -203,7 +203,7 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	{
 		ph->clapeyron_slope[it] *= 1e6*(scal->temperature/scal->stress_si);
 		ph->P0_clapeyron[it]/= (scal->stress_si);
-		ph->T0_clapeyron[it]/= (scal->temperature);
+		ph->T0_clapeyron[it]=(ph->T0_clapeyron[it]+scal->Tshift)/ (scal->temperature);
 	}
 	PetscFunctionReturn(0);
 
@@ -233,7 +233,7 @@ PetscErrorCode  Set_Box_Within_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,P
 	ierr = getScalarParam(fb, _REQUIRED_, "DeltaT_within", &ph->dT_within,1, 1.0); CHKERRQ(ierr);
 
 
-	ph->dT_within/=scal->temperature;
+	ph->dT_within=(ph->dT_within+ scal->Tshift)+scal->temperature;
 
 	PetscFunctionReturn(0);
 
@@ -522,6 +522,8 @@ PetscInt Check_Constant_Box_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt
 		{
 
 			ph = PH1;
+			P->T = PhaseTrans->dT_within;
+
 		}
 		else
 		{
@@ -529,7 +531,6 @@ PetscInt Check_Constant_Box_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt
 		}
 
 
-		P->T += PhaseTrans->dT_within;
 
 
 	return ph;

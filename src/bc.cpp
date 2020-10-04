@@ -238,7 +238,7 @@ PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb)
 	if(dbox->num)
 	{
 		ierr = getScalarParam(fb, _REQUIRED_, "dbox_bounds",  dbox->bounds, 6*dbox->num, scal->length  ); 	CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "dbox_zvel",    &dbox->zvel,   1,          scal->velocity); 	CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "dbox_zvel",    &dbox->zvel,  1,          scal->velocity); 	CHKERRQ(ierr);
 		
 		dbox->advect_box=1;
 		ierr = getIntParam(fb, _OPTIONAL_, "dbox_advect",     &dbox->advect_box,   1,           1); 		CHKERRQ(ierr);	// advect box (=1) or not? Default is yes
@@ -316,15 +316,24 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = DBoxReadCreate(&bc->dbox, scal, fb); CHKERRQ(ierr);
 
 	// boundary velocities
-	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face", &bc->face, 1, -1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face"    , &bc->face, 1, -1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 1, -1); CHKERRQ(ierr);
+
 
 	if(bc->face)
 	{
-		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase",  &bc->phase,  1, mID           ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase",  &bc->phase,  1, mID           ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",    &bc->bot,    1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",    &bc->top,    1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
+
+		if(bc->face_out)
+		{
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_relax_d",&bc->relax_dist,1, scal->length  ); CHKERRQ(ierr);
+		}
+
+
 
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 
@@ -348,6 +357,36 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// fixed cells (no-flow condition)
 	ierr = getIntParam(fb, _OPTIONAL_, "fix_cell", &bc->fixCell, 1, mID); CHKERRQ(ierr);
+
+	// Plume-Like boundary condition
+
+	ierr = getIntParam(fb, _OPTIONAL_, "plume_vel_boundary"    , &bc->plume_like, 1, -1); CHKERRQ(ierr);
+
+	if(bc->plume_like)
+	{
+		ierr = getIntParam(fb, _REQUIRED_, "plume_type"    , &bc->plume_type, 1, -1); CHKERRQ(ierr);
+		ierr = getIntParam(fb, _REQUIRED_, "plume_phase"    , &bc->plume_phase, 1, -1); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "plume_temperature", &bc->plume_temperature, 1, 1); CHKERRQ(ierr);
+		bc->plume_temperature = (bc->plume_temperature+scal->Tshift)/scal->temperature;
+
+
+		if(bc->plume_type == 1)
+		{
+			ierr = getIntParam(fb, _REQUIRED_, "plume_direction"    , &bc->plume_direction, 1, -1); CHKERRQ(ierr);
+			ierr = getScalarParam(fb,_REQUIRED_,"coord_max",&bc->coord_max,1,scal->length);CHKERRQ(ierr);
+			ierr = getScalarParam(fb,_REQUIRED_,"coord_min",&bc->coord_min,1,scal->length);CHKERRQ(ierr);
+		}
+		else if(bc->plume_type == 2)
+		{
+			ierr = getScalarParam(fb,_REQUIRED_,"Center_coordinate",bc->center_plume,2,scal->length);CHKERRQ(ierr);
+			ierr = getScalarParam(fb,_REQUIRED_,"Radius",&bc->radius,1,scal->length);CHKERRQ(ierr);
+		}
+		ierr = getScalarParam(fb,_REQUIRED_,"velin_plume",&bc->velin_plume,1,scal->velocity);CHKERRQ(ierr);
+
+
+	}
+
+
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
@@ -650,6 +689,10 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// fix specific cells
 	ierr = BCApplyCells(bc); CHKERRQ(ierr);
+
+	// plume like boundary condition
+	ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
+
 
 	// synchronize SPC constraints in the internal ghost points
 	// WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
@@ -1241,7 +1284,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	PetscInt    mnx, mny;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar ***bcvx,  ***bcvy;
-	PetscScalar z, bot, top, vel, velin, velout;
+	PetscScalar z, bot, top, vel, velin, velout,relax_dist;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1255,6 +1298,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	top    = bc->top;
 	velin  = bc->velin;
 	velout = bc->velout;
+	relax_dist= bc->relax_dist;
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
@@ -1279,11 +1323,27 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 		{
 			z   = COORD_CELL(k, sz, fs->dsz);
 			vel = 0.0;
-			if(z <= top && z >= bot) vel = velin;
-			if(z < bot)              vel = velout;
+			if(bc->face_out)
+			{
+				if(z <= top && z >= bot) vel = velin;
+				if(z >= top && z<= top+relax_dist) vel = velin-(velin/(relax_dist))*(z-top);
+				if(z <= bot && z>= bot-relax_dist) vel = velin+(velin/(relax_dist))*(z-bot);
 
-			if(bc->face == 1 && i == 0)   { bcvx[k][j][i] = vel; }
-			if(bc->face == 2 && i == mnx) { bcvx[k][j][i] = vel; }
+
+
+				if(i == 0 )   { bcvx[k][j][i] = vel; }
+				if(i == mnx) 	  { bcvx[k][j][i] = vel; }
+
+
+			}
+			else
+			{
+				if(z <= top && z >= bot) vel = velin;
+				if(z < bot)              vel = velout;
+
+				if((bc->face == 1)  && i == 0 )   { bcvx[k][j][i] = vel; }
+				if((bc->face == 2) && i == mnx) { bcvx[k][j][i] = vel; }
+			}
 			iter++;
 		}
 		END_STD_LOOP
@@ -1302,11 +1362,26 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 		{
 			z   = COORD_CELL(k, sz, fs->dsz);
 			vel = 0.0;
-			if(z <= top && z >= bot) vel = velin;
-			if(z < bot)              vel = velout;
+			vel = 0.0;
+			if(bc->face_out)
+			{
+				if(z <= top && z >= bot) vel = velin;
+				if(z >= top && z<= top+relax_dist) vel = velin-(velin/(relax_dist))*(z-top);
+				if(z <= bot && z>= bot-relax_dist) vel = velin+(velin/(relax_dist))*(z-bot);
 
-			if(bc->face == 3 && j == 0)   { bcvy[k][j][i] = vel; }
-			if(bc->face == 4 && j == mny) { bcvy[k][j][i] = vel; }
+
+
+				if(i == 0 )   { bcvy[k][j][i] = vel; }
+				if(i == mnx) { bcvy[k][j][i] = vel; }
+			}
+			else
+			{
+				if(z <= top && z >= bot) vel = velin;
+				if(z < bot)              vel = velout;
+
+				if(bc->face == 3 && j == 0)   { bcvy[k][j][i] = vel; }
+				if(bc->face == 4 && j == mny) { bcvy[k][j][i] = vel; }
+			}
 			iter++;
 		}
 		END_STD_LOOP
@@ -1335,6 +1410,7 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 	// access context
 	fs   = bc->fs;
 	dbox = &bc->dbox;
+	if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
 
 	// check whether dropping box is activated
 	if(!dbox->num) PetscFunctionReturn(0);
@@ -1712,33 +1788,159 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 {
 	FDSTAG     *fs;
-	PetscInt    i, j, k, M, N, mx, my, sx, sy;
+	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz;
 	PetscScalar z;
 
 	PetscFunctionBegin;
 
-	if(!bc->face) PetscFunctionReturn(0);
+	if(!bc->phase && !bc->plume_like) PetscFunctionReturn(0);
+
 
 	fs = bc->fs;
 	M  = fs->dsx.ncels;
 	N  = fs->dsy.ncels;
 	sx = fs->dsx.pstart;
 	sy = fs->dsy.pstart;
+	sz = fs->dsz.pstart;
 	mx = fs->dsx.tcels-1;
 	my = fs->dsy.tcels-1;
 	z  = P->X[2];
 
-	// expand i, j, k cell indices
-	GET_CELL_IJK(cellID, i, j, k, M, N);
 
-	if(((bc->face == 1 && i + sx == 0)
-	||  (bc->face == 2 && i + sx == mx)
-	||  (bc->face == 3 && j + sy == 0)
-	||  (bc->face == 4 && j + sy == my))
-	&&  (z >= bc->bot && z <= bc->top))
+	if(bc->phase)
 	{
-		P->phase = bc->phase;
+	// expand i, j, k cell indices
+		GET_CELL_IJK(cellID, i, j, k, M, N);
+
+		if(((bc->face == 1 && i + sx == 0)
+				||  (bc->face == 2 && i + sx == mx)
+				||  (bc->face == 3 && j + sy == 0)
+				||  (bc->face == 4 && j + sy == my))
+				&&  (z >= bc->bot && z <= bc->top))
+		{
+			P->phase = bc->phase;
+		}
+
 	}
+
+	if(bc->plume_like)
+	{
+		if(k+sz == 0)
+		{
+			P->phase = bc->plume_phase;
+			P->T     = bc->plume_temperature;
+		}
+	}
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BC_Plume_inflow"
+PetscErrorCode BC_Plume_inflow(BCCtx *bc)
+{
+	FDSTAG      *fs;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvz;
+	PetscScalar  x,y, cmin, cmax, vel, velin, velout,center,x_min,x_max,y_min,y_max,d_x,d_y,A;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	if(!bc->plume_like) 	PetscFunctionReturn(0);
+
+	fs = bc->fs;
+
+
+	ierr = FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
+
+
+	d_x = x_max-x_min;
+	d_y = y_max-y_min;
+	A= d_x*d_y;
+	velin = bc->velin_plume;
+
+
+
+	if(bc->plume_type == 1)
+	{
+		cmin = bc->coord_min;
+		cmax = bc->coord_max;
+
+		if(bc->plume_direction==1)
+		{
+			velout = -velin*((cmax-cmin)*d_y)/(A-(cmax-cmin)*d_y);
+		}
+		else
+		{
+			 velout = -velin*((cmax-cmin)*d_x)/(A-(cmax-cmin)*d_x);
+		}
+	}
+	else if(bc->plume_type==2)
+	{
+
+		velout = -velin*(M_PI*bc->radius*bc->radius)/(A-(M_PI*bc->radius*bc->radius));
+	}
+
+
+
+	// access constraint vectors
+		ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+		//=========================================================================
+		// SPC (normal velocities)
+		//=========================================================================
+
+		iter = 0;
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_NODE_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+
+			x   = COORD_CELL(i, sx, fs->dsx);
+			y   = COORD_CELL(j, sy, fs->dsy);
+
+
+			if(bc->plume_type==1)
+			{
+				if(bc->plume_direction == 1)
+				{
+					if(x>=cmin && x<=cmax) vel = velin;
+					if(x<cmin || x>cmax)   vel = velout;
+				}
+				else
+				{
+					if(y>=cmin && y<=cmax) vel = velin;
+					if(y<cmin || y>cmax)   vel = velout;
+				}
+			}
+			else
+			{
+				if(sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2))<=bc->radius) vel = velin;
+				if(sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2))>bc->radius) vel = velout;
+
+			}
+
+			
+	                //PetscPrintf(PETSC_COMM_WORLD, "velin = %6f, velout = %6f  \n", velin,velout);
+			if(k == 0) { bcvz[k][j][i] = vel; }
+
+
+			iter++;
+		}
+		END_STD_LOOP
+
+		// restore access
+		ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+
+
+
+
+
 
 	PetscFunctionReturn(0);
 }

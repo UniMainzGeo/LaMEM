@@ -211,9 +211,23 @@ struct BCCtx
 	DBox         dbox;
 
 	// velocity inflow & outflow boundary condition
-	PetscInt     face, phase;   // face (1-left 2-right 3-front 4-back) & phase identifiers
-	PetscScalar  bot, top;      // bottom & top coordinates of the plate
+	PetscInt     face, phase,face_out;   // face (1-left 2-right 3-front 4-back) & phase identifiers
+	PetscScalar  bot, top,relax_dist;      // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; // inflow & outflow velocities
+
+	// velocity plume-like boundary condition
+	PetscInt plume_like, plume_type;
+
+	PetscInt plume_phase;
+	PetscScalar plume_temperature;
+
+	PetscInt plume_direction;
+	PetscScalar coord_max, coord_min;
+
+	PetscScalar center_plume[2];
+	PetscScalar radius;
+
+	PetscScalar velin_plume;
 
 	// open boundary flag
 	PetscInt     top_open;
@@ -311,6 +325,10 @@ PetscErrorCode BCListSPC(BCCtx *bc);
 
 // apply two-point constraints on the boundaries
 PetscErrorCode BCApplyVelTPC(BCCtx *bc);
+
+// apply plume_open_boundary condition
+
+PetscErrorCode BC_Plume_inflow(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 // Service functions
