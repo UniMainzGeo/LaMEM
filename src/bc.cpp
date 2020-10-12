@@ -382,7 +382,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 			ierr = getScalarParam(fb,_REQUIRED_,"Radius",&bc->radius,1,scal->length);CHKERRQ(ierr);
 		}
 		ierr = getScalarParam(fb,_REQUIRED_,"velin_plume",&bc->velin_plume,1,scal->velocity);CHKERRQ(ierr);
-		ierr = getScalarParam(fb,_REQUIRED_,"delta_Time",&bc->delta_Time,1,scal->time);CHKERRQ(ierr);
 
 
 	}
@@ -1865,7 +1864,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 							if(x>=cmin && x<=cmax)
 							{
 								P->phase = bc->plume_phase;
-							//	P->T     = bc->plume_temperature;
+								P->T     = bc->plume_temperature;
 								PetscPrintf(PETSC_COMM_WORLD, "  Temperature  = %6f bc = %6f  @ \n", (P->T-bc->scal->Tshift)/bc->scal->temperature, (bc->plume_temperature - bc->scal->Tshift)/bc->scal->temperature);
 							}
 
@@ -1875,20 +1874,14 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 						if(y>=cmin && y<=cmax)
 						{
 							P->phase = bc->plume_phase;
-							//P->T     = bc->plume_temperature;
+							P->T     = bc->plume_temperature;
 							//PetscPrintf(PETSC_COMM_WORLD, "  Temperature  = %6f bc = %6f  @ \n", (P->T-bc->scal->Tshift)/bc->scal->temperature, (bc->plume_temperature - bc->scal->Tshift)/bc->scal->temperature);
 						}
 					}
 				}
 				else
 				{
-					if(sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2))<=bc->radius+bc->relax_dist)
-					{
-						P->phase = bc->plume_phase;
-						//P->T     = bc->plume_temperature;
-						//PetscPrintf(PETSC_COMM_WORLD, "  Temperature  = %6f bc = %6f  @ \n", (P->T-bc->scal->Tshift)/bc->scal->temperature, (bc->plume_temperature - bc->scal->Tshift)/bc->scal->temperature);
-
-					}
+					// place holder 3D
 				}
 			}
 
@@ -1907,7 +1900,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	PetscScalar ***bcvz;
 	PetscScalar  x,y, cmin, cmax, vel, velin, velout,x_min,x_max,y_min,y_max,d_x,d_y,A;
 	PetscScalar  a,b,c,inflow_window;
-	PetscScalar  r_in,r_a,r_b,v_1,v_2,v_3,dist,rel_d,center,delta_Time;
+	PetscScalar  r_in,r_a,r_b,v_1,v_2,v_3,dist,rel_d,center;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1925,16 +1918,10 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	A= d_x*d_y;
 
 
-	delta_Time = bc->delta_Time;
 
-	if(bc->jr->ts->time<bc->delta_Time)
-	{
-		velin=(bc->velin/bc->delta_Time)*bc->jr->ts->time;
-	}
-	else
-	{
+
 		velin = bc->velin;
-	}
+
 
 
 
@@ -1965,13 +1952,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	else if(bc->plume_type==2)
 	{
 
-		r_in = bc->radius;
-		r_a  = bc->radius+bc->relax_dist;
-		r_b  = bc->radius+2*bc->relax_dist;
-		v_1 = (r_in*r_in+r_in*r_a+r_a*r_a)*1/3*M_PI;
-		v_2 = (A - M_PI*r_b*r_b);
-		v_3 = ((r_b*r_b+r_a*r_b+r_a*r_a)*1/3*M_PI - M_PI*r_a*r_a);
-		velout = -velin*(v_1)/(v_2+v_3);
+// plume _ 3D place holder
 	}
 
 
@@ -2011,23 +1992,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 			}
 			else
 			{
-				dist = sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2));
-				if(dist<=r_in)
-				{
-					vel = velin;
-				}
-				else if(dist<=r_a && dist>r_in)
-				{
-					vel = velin-(velin/rel_d)*PetscAbsScalar(dist-(r_a-r_in));
-				}
-				else if(dist>r_a && dist<=r_b)
-				{
-					vel = velout-(velout/rel_d)*PetscAbsScalar(dist-(r_b-r_a));
-				}
-				else
-				{
-					vel = velout;
-				}
+			// place holder 3D
 
 			}
 
