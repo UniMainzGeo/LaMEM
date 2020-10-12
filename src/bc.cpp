@@ -364,8 +364,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	if(bc->plume_like)
 	{
-		ierr = getIntParam(fb, _REQUIRED_, "plume_type"    , &bc->plume_type, 1, -1); CHKERRQ(ierr);
-		ierr = getIntParam(fb, _REQUIRED_, "plume_phase"    , &bc->plume_phase, 1, -1); CHKERRQ(ierr);
+		ierr = getIntParam(fb, _REQUIRED_, "plume_type"    , &bc->plume_type, 1, 1); CHKERRQ(ierr);
+		ierr = getIntParam(fb, _REQUIRED_, "plume_phase"    , &bc->plume_phase, 1, 1); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "plume_temperature", &bc->plume_temperature, 1, 1); CHKERRQ(ierr);
 		bc->plume_temperature = (bc->plume_temperature+scal->Tshift)/scal->temperature;
 
@@ -382,6 +382,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 			ierr = getScalarParam(fb,_REQUIRED_,"Radius",&bc->radius,1,scal->length);CHKERRQ(ierr);
 		}
 		ierr = getScalarParam(fb,_REQUIRED_,"velin_plume",&bc->velin_plume,1,scal->velocity);CHKERRQ(ierr);
+		ierr = getScalarParam(fb,_REQUIRED_,"delta_Time",&bc->delta_Time,1,scal->time);CHKERRQ(ierr);
 
 
 	}
@@ -895,23 +896,52 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 			if(Tbot >= 0.0 && k == 0)   { bcT[k-1][j][i] = Tbot; }
 			if(Ttop >= 0.0 && k == mcz) { bcT[k+1][j][i] = Ttop; }
 
-            // add gaussian perturbation @ bottom
-            if(bc->Tbot_gauss == 1 && k==0){
-                PetscScalar x,y,w,maxT,T;
+// add gaussian perturbation @ bottom
+			if(bc->Tbot_gauss == 1 && k==0){
+				PetscScalar x,y,w,maxT,T;
 
-                x       = COORD_CELL(i, sx, fs->dsx);
-			    y       = COORD_CELL(j, sy, fs->dsy);
-                w       = bc->Tbot_gauss_width;
-                maxT    = bc->Tbot_gauss_maxT;
+				x       = COORD_CELL(i, sx, fs->dsx);
+				y       = COORD_CELL(j, sy, fs->dsy);
+				w       = bc->Tbot_gauss_width;
+				maxT    = bc->Tbot_gauss_maxT;
 
-                T       = (maxT-Tbot)* PetscExpScalar(-(x*x + y*y)/(w*w)) + Tbot;
+				T       = (maxT-Tbot)* PetscExpScalar(-(x*x + y*y)/(w*w)) + Tbot;
 
-                bcT[k-1][j][i] = T;
+				bcT[k-1][j][i] = T;
+			}
+			if(bc->plume_like == 1 && k==0)
+			{
+				PetscScalar x,y,cmin,cmax;
 
-            }
-
-
-		
+				x       = COORD_CELL(i, sx, fs->dsx);
+				y       = COORD_CELL(j, sy, fs->dsy);
+				if(bc->plume_type==1)
+				{
+					cmin = bc->coord_min;
+					cmax = bc->coord_max;
+					if(bc->plume_direction == 1)
+					{
+						if(x>=cmin && x<=cmax)
+						{
+							bcT[k-1][j][i]     = bc->plume_temperature;
+						}
+					}
+					else if(bc->plume_direction == 2)
+					{
+						if(y>=cmin && y<=cmax)
+						{
+							bcT[k-1][j][i]     = bc->plume_temperature;
+						}
+					}
+				}
+				else
+				{
+					if(sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2))<=bc->radius)
+						{
+							bcT[k-1][j][i]     = bc->plume_temperature;
+						}
+				}
+			}
 		}
 		END_STD_LOOP
 	}
@@ -1329,10 +1359,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 				if(z >= top && z<= top+relax_dist) vel = velin-(velin/(relax_dist))*(z-top);
 				if(z <= bot && z>= bot-relax_dist) vel = velin+(velin/(relax_dist))*(z-bot);
 
-
-
-				if(i == 0 )   { bcvx[k][j][i] = vel; }
-				if(i == mnx) 	  { bcvx[k][j][i] = vel; }
+				if(i == 0 )    { bcvx[k][j][i] = vel; }
+				if(i == mnx)   { bcvx[k][j][i] = vel; }
 
 
 			}
@@ -1789,49 +1817,83 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 {
 	FDSTAG     *fs;
 	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz;
-	PetscScalar z;
+	PetscScalar z,x,y,cmax,cmin;
 
 	PetscFunctionBegin;
 
-	if(!bc->phase && !bc->plume_like) PetscFunctionReturn(0);
-
-
-	fs = bc->fs;
-	M  = fs->dsx.ncels;
-	N  = fs->dsy.ncels;
-	sx = fs->dsx.pstart;
-	sy = fs->dsy.pstart;
-	sz = fs->dsz.pstart;
-	mx = fs->dsx.tcels-1;
-	my = fs->dsy.tcels-1;
-	z  = P->X[2];
-
-
-	if(bc->phase)
+	if(bc->phase || bc->plume_like)
 	{
-	// expand i, j, k cell indices
+		fs = bc->fs;
+		M  = fs->dsx.ncels;
+		N  = fs->dsy.ncels;
+		sx = fs->dsx.pstart;
+		sy = fs->dsy.pstart;
+		sz = fs->dsz.pstart;
+		mx = fs->dsx.tcels-1;
+		my = fs->dsy.tcels-1;
+		z  = P->X[2];
+		x = P->X[0];
+		y = P->X[1];
+
 		GET_CELL_IJK(cellID, i, j, k, M, N);
 
-		if(((bc->face == 1 && i + sx == 0)
-				||  (bc->face == 2 && i + sx == mx)
-				||  (bc->face == 3 && j + sy == 0)
-				||  (bc->face == 4 && j + sy == my))
-				&&  (z >= bc->bot && z <= bc->top))
+		if(bc->phase)
 		{
-			P->phase = bc->phase;
+		// expand i, j, k cell indices
+
+			if(((bc->face == 1 && i + sx == 0)
+					||  (bc->face == 2 && i + sx == mx)
+					||  (bc->face == 3 && j + sy == 0)
+					||  (bc->face == 4 && j + sy == my))
+					&&  (z >= bc->bot && z <= bc->top))
+			{
+				P->phase = bc->phase;
+			}
+
 		}
 
-	}
-
-	if(bc->plume_like)
-	{
-		if(k+sz == 0)
+		else if(bc->plume_like)
 		{
-			P->phase = bc->plume_phase;
-			P->T     = bc->plume_temperature;
+			if(k+sz == 0 || k+sz == 1)
+			{
+				if(bc->plume_type==1)
+				{
+					cmin = bc->coord_min;
+					cmax = bc->coord_max;
+					if(bc->plume_direction == 1)
+					{
+							if(x>=cmin && x<=cmax)
+							{
+								P->phase = bc->plume_phase;
+							//	P->T     = bc->plume_temperature;
+								PetscPrintf(PETSC_COMM_WORLD, "  Temperature  = %6f bc = %6f  @ \n", (P->T-bc->scal->Tshift)/bc->scal->temperature, (bc->plume_temperature - bc->scal->Tshift)/bc->scal->temperature);
+							}
+
+					}
+					else
+					{
+						if(y>=cmin && y<=cmax)
+						{
+							P->phase = bc->plume_phase;
+							//P->T     = bc->plume_temperature;
+							//PetscPrintf(PETSC_COMM_WORLD, "  Temperature  = %6f bc = %6f  @ \n", (P->T-bc->scal->Tshift)/bc->scal->temperature, (bc->plume_temperature - bc->scal->Tshift)/bc->scal->temperature);
+						}
+					}
+				}
+				else
+				{
+					if(sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2))<=bc->radius+bc->relax_dist)
+					{
+						P->phase = bc->plume_phase;
+						//P->T     = bc->plume_temperature;
+						//PetscPrintf(PETSC_COMM_WORLD, "  Temperature  = %6f bc = %6f  @ \n", (P->T-bc->scal->Tshift)/bc->scal->temperature, (bc->plume_temperature - bc->scal->Tshift)/bc->scal->temperature);
+
+					}
+				}
+			}
+
 		}
 	}
-
 
 	PetscFunctionReturn(0);
 }
@@ -1843,7 +1905,9 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	FDSTAG      *fs;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar ***bcvz;
-	PetscScalar  x,y, cmin, cmax, vel, velin, velout,center,x_min,x_max,y_min,y_max,d_x,d_y,A;
+	PetscScalar  x,y, cmin, cmax, vel, velin, velout,x_min,x_max,y_min,y_max,d_x,d_y,A;
+	PetscScalar  a,b,c,inflow_window;
+	PetscScalar  r_in,r_a,r_b,v_1,v_2,v_3,dist,rel_d,center,delta_Time;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1859,28 +1923,55 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	d_x = x_max-x_min;
 	d_y = y_max-y_min;
 	A= d_x*d_y;
-	velin = bc->velin_plume;
+
+
+	delta_Time = bc->delta_Time;
+
+	if(bc->jr->ts->time<bc->delta_Time)
+	{
+		velin=(bc->velin/bc->delta_Time)*bc->jr->ts->time;
+	}
+	else
+	{
+		velin = bc->velin;
+	}
 
 
 
 	if(bc->plume_type == 1)
 	{
+		// Gaussian perturbation velocity - any thing that creates a rigid plug is a problem
 		cmin = bc->coord_min;
 		cmax = bc->coord_max;
+		center= (cmin+cmax)*0.5;
+
+		inflow_window = cmax-cmin;
+
+		a = 0.5*(sqrt(M_PI)*inflow_window);
 
 		if(bc->plume_direction==1)
 		{
-			velout = -velin*((cmax-cmin)*d_y)/(A-(cmax-cmin)*d_y);
+			b = erf((center-x_min)/inflow_window);
+			c = erf((center-x_max)/inflow_window);
+			velout = -(velin*(a*b-a*c))/(a*c-a*b+x_max-x_min);
 		}
 		else
 		{
-			 velout = -velin*((cmax-cmin)*d_x)/(A-(cmax-cmin)*d_x);
+			b = erf((center-y_min)/inflow_window);
+			c = erf((center-y_max)/inflow_window);
+			velout = -(velin*(a*b-a*c))/(a*c-a*b+y_max-y_min);
 		}
 	}
 	else if(bc->plume_type==2)
 	{
 
-		velout = -velin*(M_PI*bc->radius*bc->radius)/(A-(M_PI*bc->radius*bc->radius));
+		r_in = bc->radius;
+		r_a  = bc->radius+bc->relax_dist;
+		r_b  = bc->radius+2*bc->relax_dist;
+		v_1 = (r_in*r_in+r_in*r_a+r_a*r_a)*1/3*M_PI;
+		v_2 = (A - M_PI*r_b*r_b);
+		v_3 = ((r_b*r_b+r_a*r_b+r_a*r_a)*1/3*M_PI - M_PI*r_a*r_a);
+		velout = -velin*(v_1)/(v_2+v_3);
 	}
 
 
@@ -1908,24 +1999,39 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 			{
 				if(bc->plume_direction == 1)
 				{
-					if(x>=cmin && x<=cmax) vel = velin;
-					if(x<cmin || x>cmax)   vel = velout;
+
+					vel = (velin-velout)*exp(-pow(x-center,2)/(inflow_window*inflow_window))+velout;
+
 				}
 				else
 				{
-					if(y>=cmin && y<=cmax) vel = velin;
-					if(y<cmin || y>cmax)   vel = velout;
+					vel = (velin-velout)*exp(-pow(y-center,2)/(inflow_window*inflow_window))+velout;
+
 				}
 			}
 			else
 			{
-				if(sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2))<=bc->radius) vel = velin;
-				if(sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2))>bc->radius) vel = velout;
+				dist = sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2));
+				if(dist<=r_in)
+				{
+					vel = velin;
+				}
+				else if(dist<=r_a && dist>r_in)
+				{
+					vel = velin-(velin/rel_d)*PetscAbsScalar(dist-(r_a-r_in));
+				}
+				else if(dist>r_a && dist<=r_b)
+				{
+					vel = velout-(velout/rel_d)*PetscAbsScalar(dist-(r_b-r_a));
+				}
+				else
+				{
+					vel = velout;
+				}
 
 			}
 
 			
-	                //PetscPrintf(PETSC_COMM_WORLD, "velin = %6f, velout = %6f  \n", velin,velout);
 			if(k == 0) { bcvz[k][j][i] = vel; }
 
 

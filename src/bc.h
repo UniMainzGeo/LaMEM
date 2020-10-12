@@ -227,7 +227,7 @@ struct BCCtx
 	PetscScalar center_plume[2];
 	PetscScalar radius;
 
-	PetscScalar velin_plume;
+	PetscScalar velin_plume,delta_Time;
 
 	// open boundary flag
 	PetscInt     top_open;
