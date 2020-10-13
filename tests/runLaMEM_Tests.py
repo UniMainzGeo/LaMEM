@@ -24,7 +24,6 @@ sys.path.append(os.path.join(os.environ['PWD'], 't8_AdjointGradients'))
 sys.path.append(os.path.join(os.environ['PWD'], 't9_FB1_Direct_PhaseDiagrams'))
 sys.path.append(os.path.join(os.environ['PWD'], 't10_Compressibility'))
 sys.path.append(os.path.join(os.environ['PWD'], 't11_Subgrid'))
-sys.path.append(os.path.join(os.environ['PWD'], 't12_Temperature_diffusion'))
 sys.path.append(os.path.join(os.environ['PWD'], 't13_Rheology0D'))
 sys.path.append(os.path.join(os.environ['PWD'], 't14_1DStrengthEnvelope'))
 sys.path.append(os.path.join(os.environ['PWD'], 't15_RTI'))
@@ -32,6 +31,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't15_RTI'))
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
     sys.path.append(os.path.join(os.environ['PWD'], 't3_SubductionMATLABinput'))
+    sys.path.append(os.path.join(os.environ['PWD'], 't12_Temperature_diffusion'))
 else:
     print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
 
@@ -45,14 +45,14 @@ import test_8_AdjointGradients  as Adj3
 import test_9_FB_PhaseDiagrams1 as FBPD1
 import test_10_Compressibility as Comp1
 import test_11_SubGrid as Subgrid
-import test_12_TpD as Diffusion
 import test_13_Rheology0D as Rheology0D
 import test_14_1DStrengthEnvelope as StrEnv
 import test_15_RTI as RTI
 
 
 if os.environ.get('MATLAB') != None:
-  import test_3_Subduction1               as Sub1 # import test that requires MATLAB
+  import test_3_Subduction1     as Sub1 # import test that requires MATLAB
+  import test_12_TpD            as Diffusion
 
 def makeLocalPathAbsolute(localRelPath) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
@@ -63,7 +63,7 @@ def run_tests():
 
   registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
-                      Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), Diffusion.test_1D(), 
+                      Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), 
                       Adj1.test_RTI_1(), Adj1.test_RTI_2(),
                       Adj2.SubductionInversion_GD(), Adj2.SubductionInversion_TAO(), Adj2.SubductionInversion_FD_TAO(),
                       Adj2.PSD_Paper_GD_Nonlinear(), Adj2.PSD_Paper_GD_Linear(),
@@ -84,7 +84,8 @@ def run_tests():
     registeredTests.append(Sub1.test_b());
     registeredTests.append(Sub1.test_c());
     registeredTests.append(Sub1.test_d());
-
+    registeredTests.append( Diffusion.test_1D());
+    
 
   # Run the tests:
   h = pthharness.Harness(registeredTests)
