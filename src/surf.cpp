@@ -470,7 +470,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	gtol = fs->gtol;
 
 	// get current background strain rates
-	ierr = BCGetBGStrainRates(jr->bc, &Exx, &Eyy, NULL, &Rxx, &Ryy, NULL); CHKERRQ(ierr);
+	ierr = BCGetBGStrainRates(jr->bc, &Exx, &Eyy, NULL, NULL, NULL, NULL, &Rxx, &Ryy, NULL); CHKERRQ(ierr);
 
 	// access surface topography and velocity
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &advect); CHKERRQ(ierr);
@@ -615,7 +615,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL); CHKERRQ(ierr);
 
 	// get current background strain rates
-	ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz, NULL, NULL, &Rzz); CHKERRQ(ierr);
+	ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz, NULL, NULL, NULL, NULL, NULL, &Rzz); CHKERRQ(ierr);
 
 	// update position of bottom boundary
 	zbot += step*Ezz*(zbot - Rzz);

@@ -285,6 +285,18 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "eyy_num_periods",  &bc->EyyNumPeriods,  1,                   _max_periods_    ); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "eyy_time_delims",   bc->EyyTimeDelims,  bc->EyyNumPeriods-1, scal->time       ); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "eyy_strain_rates",  bc->EyyStrainRates, bc->EyyNumPeriods,   scal->strain_rate); CHKERRQ(ierr);
+
+	// simple shear background strain-rate parameters
+	ierr = getIntParam   (fb, _OPTIONAL_, "exy_num_periods",   &bc->ExyNumPeriods,  1,                   _max_periods_   ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "exy_time_delims",   bc->ExyTimeDelims,  bc->ExyNumPeriods-1, scal->time       ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "exy_strain_rates",  bc->ExyStrainRates, bc->ExyNumPeriods,   scal->strain_rate); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "exz_num_periods",   &bc->ExzNumPeriods,  1,                   _max_periods_   ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "exz_time_delims",   bc->ExzTimeDelims,  bc->ExzNumPeriods-1, scal->time       ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "exz_strain_rates",  bc->ExzStrainRates, bc->ExzNumPeriods,   scal->strain_rate); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "eyz_num_periods",   &bc->EyzNumPeriods,  1,                   _max_periods_   ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "eyz_time_delims",   bc->EyzTimeDelims,  bc->EyzNumPeriods-1, scal->time       ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "eyz_strain_rates",  bc->EyzStrainRates, bc->EyzNumPeriods,   scal->strain_rate); CHKERRQ(ierr);
+
 	ierr = getScalarParam(fb, _OPTIONAL_, "bg_ref_point",      bc->BGRefPoint,     3,                   scal->length);      CHKERRQ(ierr);
 
 	// Bezier blocks
@@ -850,11 +862,15 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	FDSTAG      *fs;
 	PetscScalar Exx, Eyy, Ezz;
-	PetscScalar Rxx, Ryy, Rzz;
-	PetscScalar bx,  by,  bz;
-	PetscScalar ex,  ey,  ez;
-	PetscScalar vbx, vby, vbz;
-	PetscScalar vex, vey, vez;
+	PetscScalar Exy, Eyz, 	Exz;
+	PetscScalar Rxx, Ryy, 	Rzz;
+	PetscScalar bx,  by,  	bz;
+	PetscScalar ex,  ey,  	ez;
+	PetscScalar vbx, vby, 	vbz;
+	PetscScalar vex, vey, 	vez;
+	PetscScalar z,   z_bot, z_top;
+	PetscScalar y,   y_frt, y_bck;
+	PetscScalar x;
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
@@ -877,7 +893,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
 	// get background strain rates
-	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz, &Rxx, &Ryy, &Rzz); CHKERRQ(ierr);
+	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz, &Exy, &Eyz, &Exz, &Rxx, &Ryy, &Rzz); CHKERRQ(ierr);
 
 	// get boundary velocities
 	// reference point is assumed to be fixed
@@ -913,8 +929,26 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx; }
-		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex; }
+		// extract coordinates
+		z       = COORD_CELL(k  , sz, fs->dsz);
+		z_bot   = COORD_CELL(k-1, sz, fs->dsz);
+		z_top   = COORD_CELL(k+1, sz, fs->dsz);
+		
+		y   	= COORD_CELL(j  , sy, fs->dsy);
+		y_frt   = COORD_CELL(j-1, sy, fs->dsy);
+		y_bck   = COORD_CELL(j+1, sy, fs->dsy);
+
+		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx + z*Exz + y*Exy; }
+		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex + z*Exz + y*Exy; }
+
+		// bottom & top | set velocity @ ghost points (unclear where the factor 2 comes from..)
+		if(k == 0     && Exz != 0.0 ) { bcvx[k-1][j][i] = z*Exz + (z_bot-z)*Exz/2.0; }
+		if(k == mnz-1 && Exz != 0.0 ) { bcvx[k+1][j][i] = z*Exz + (z_top-z)*Exz/2.0; }
+		
+		// left & right
+		if(j == 0     && Exy != 0.0 ) { bcvx[k][j-1][i] = y*Exy + (y_frt -y)*Exy/2.0; 	}
+		if(j == mny-1 && Exy != 0.0 ) { bcvx[k][j+1][i] = y*Exy + (y_bck -y)*Exy/2.0;  }
+
 		iter++;
 	}
 	END_STD_LOOP
@@ -928,8 +962,24 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby; }
-		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey; }
+
+		// extract coordinates
+		z   	= COORD_CELL(k, sz, fs->dsz);
+		z_bot   = COORD_CELL(k-1, sz, fs->dsz);
+		z_top   = COORD_CELL(k+1, sz, fs->dsz);
+
+		x   	= COORD_CELL(i, sx, fs->dsx);
+
+		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby + z*Eyz; }
+		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey + z*Eyz; }
+		
+		if(i == 0     && Exy != 0.0) { bcvy[k][j][i] = 0.0; }
+		if(i == mnx-1 && Exy != 0.0) { bcvy[k][j][i] = 0.0; }
+
+		// bottom & top
+		if(k == 0     && Eyz != 0.0 ) { bcvy[k-1][j][i] = z*Eyz + (z_bot-z)*Eyz/2.0; }
+		if(k == mnz-1 && Eyz != 0.0 ) { bcvy[k+1][j][i] = z*Eyz + (z_top-z)*Eyz/2.0; }
+
 		iter++;
 	}
 	END_STD_LOOP
@@ -943,8 +993,22 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	START_STD_LOOP
 	{
+		// extract coordinates
+		y   = COORD_CELL(j, sy, fs->dsy);
+		x   = COORD_CELL(i, sx, fs->dsx);
+
+		// simple shear, side boundaries
+		if(i == 0     && Exz != 0.0) { bcvz[k][j][i] = 0.0; }
+		if(i == mnx-1 && Exz != 0.0) { bcvz[k][j][i] = 0.0; }
+
+		if(j == 0     && Eyz != 0.0) { bcvz[k][j][i] = 0.0; }
+		if(j == mny-1 && Eyz != 0.0) { bcvz[k][j][i] = 0.0; }
+
+		// pure shear		
 		if(k == 0                && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; }
 		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
+
+
 		iter++;
 	}
 	END_STD_LOOP
@@ -1016,6 +1080,7 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 		}
 		END_STD_LOOP
 	}
+
 
 	//-----------------------------------------------------
 	// Y points (TPC only, hence looping over ghost points)
@@ -1583,6 +1648,9 @@ PetscErrorCode BCGetBGStrainRates(
 		PetscScalar *Exx_,
 		PetscScalar *Eyy_,
 		PetscScalar *Ezz_,
+		PetscScalar *Exy_,
+		PetscScalar *Eyz_,
+		PetscScalar *Exz_,
 		PetscScalar *Rxx_,
 		PetscScalar *Ryy_,
 		PetscScalar *Rzz_)
@@ -1590,14 +1658,17 @@ PetscErrorCode BCGetBGStrainRates(
 	// get current background strain rates & reference point coordinates
 
 	PetscInt    jj;
-	PetscScalar time, Exx, Eyy, Ezz;
+	PetscScalar time, Exx, Eyy, Ezz, Exz, Eyz, Exy;
 
 	// initialize
 	time = bc->ts->time;
 	Exx  = 0.0;
 	Eyy  = 0.0;
 	Ezz  = 0.0;
-
+	Exy  = 0.0;
+	Exz  = 0.0;
+	Eyz  = 0.0;
+	
 	// x-direction background strain rate
 	if(bc->ExxNumPeriods)
 	{
@@ -1622,11 +1693,49 @@ PetscErrorCode BCGetBGStrainRates(
 
 	// z-direction background strain rate
 	Ezz = -(Exx+Eyy);
+	
+	// xy-direction background strain rate
+	if(bc->ExyNumPeriods)
+	{
+		for(jj = 0; jj < bc->ExyNumPeriods-1; jj++)
+		{
+			if(time < bc->ExyTimeDelims[jj]) break;
+		}
+
+		// note: we add the factor 2 here, such the the second invariant gives the specified value 
+		Exy = bc->ExyStrainRates[jj]*2.0;		
+	}
+
+	// xz-direction background strain rate
+	if(bc->ExzNumPeriods)
+	{
+		for(jj = 0; jj < bc->ExzNumPeriods-1; jj++)
+		{
+			if(time < bc->ExzTimeDelims[jj]) break;
+		}
+
+		Exz = bc->ExzStrainRates[jj]*2.0;
+	}
+
+	// yz-direction background strain rate
+	if(bc->EyzNumPeriods)
+	{
+		for(jj = 0; jj < bc->EyzNumPeriods-1; jj++)
+		{
+			if(time < bc->EyzTimeDelims[jj]) break;
+		}
+
+		Eyz = bc->EyzStrainRates[jj]*2.0;
+	}
+
 
 	// store result
 	if(Exx_) (*Exx_) = Exx;
 	if(Eyy_) (*Eyy_) = Eyy;
 	if(Ezz_) (*Ezz_) = Ezz;
+	if(Exy_) (*Exy_) = Exy;
+	if(Eyz_) (*Eyz_) = Eyz;
+	if(Exz_) (*Exz_) = Exz;
 	if(Rxx_) (*Rxx_) = bc->BGRefPoint[0];
 	if(Ryy_) (*Ryy_) = bc->BGRefPoint[1];
 	if(Rzz_) (*Rzz_) = bc->BGRefPoint[2];
@@ -1651,6 +1760,8 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 	TSSol       *ts;
 	FDSTAG      *fs;
 	PetscScalar Exx, Eyy, Ezz;
+	PetscScalar Exy, Eyz, Exz;
+	
 	PetscScalar Rxx, Ryy, Rzz;
 
 	PetscErrorCode ierr;
@@ -1661,7 +1772,7 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 	ts = bc->ts;
 
 	// get background strain rates
-	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz, &Rxx, &Ryy, &Rzz); CHKERRQ(ierr);
+	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz, &Exy, &Eyz, &Exz, &Rxx, &Ryy, &Rzz); CHKERRQ(ierr);
 
 	// stretch grid
 	if(Exx) { ierr = Discret1DStretch(&fs->dsx, Exx*ts->dt, Rxx); CHKERRQ(ierr); }

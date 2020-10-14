@@ -799,7 +799,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		// compute velocity gradients
 		dvxdz = (vx[k][j][i] - vx[k-1][j][i])/dz;
 		dvzdx = (vz[k][j][i] - vz[k][j][i-1])/dx;
-
+		
 		// compute & store total strain rate
         xz = 0.5*(dvxdz + dvzdx);
         svEdge->d = xz;
