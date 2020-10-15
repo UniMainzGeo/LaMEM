@@ -47,6 +47,7 @@
 #include "constEq.h"
 #include "phase.h"
 #include "JacRes.h"
+#include "BFBT.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ConstEqCtxSetup"
@@ -510,6 +511,7 @@ PetscErrorCode DevConstEq(
 	svDev->DIIpl = 0.0;
 	(*eta_creep) = 0.0;
 	(*eta_vp)    = 0.0;
+	svDev->eta_smoothed = 0.0;
 
 	svDev->dEta  = 0.0;
 	svDev->fr    = 0.0;

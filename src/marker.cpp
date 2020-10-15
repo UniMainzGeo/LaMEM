@@ -870,6 +870,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	char            TemperatureStructure[_str_len_];
 	PetscInt        jj, ngeom, imark, maxPhaseID;
 	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
+	// AllGeom1		keinpointer;
+	JacRes 			*jr;
+
+	jr = actx->jr;
 
 	// map container to sort primitives in the order of appearance
 	map<PetscInt, GeomPrim*> cgeom;
@@ -944,6 +948,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SphereStart>", "<SphereEnd>"); CHKERRQ(ierr);
 
+	jr->ngeoms = fb->nblocks;
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
 		GET_GEOM(sphere, geom, ngeom, _max_geom_);
@@ -951,6 +956,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &sphere->phase,  1, maxPhaseID); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "radius", &sphere->radius, 1, chLen);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "center",  sphere->center, 3, chLen);      CHKERRQ(ierr);
+		jr->geoms[jj].centerx = sphere->center[0];
+		jr->geoms[jj].centery = sphere->center[1];	// save cell center and radius for later use (BFBT viscosity presmoothing)
+		jr->geoms[jj].centerz = sphere->center[2];
+		jr->geoms[jj].radius  = sphere->radius;
 
 		// Optional temperature options:
 		sphere->setTemp = 0;
@@ -969,8 +978,6 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], sphere));
 	}
-
-	ierr = BFBTGaussianSmoothing(actx->jr, fb->nblocks, geom); CHKERRQ(ierr); // viscosity smoothing
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 

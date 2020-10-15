@@ -22,7 +22,7 @@
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.5   # CFL criterion for elasticity
-	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 10    # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1     # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
@@ -33,9 +33,9 @@
 
 # Number of cells for all segments
 
-	nel_x = 32
-	nel_y = 32
-	nel_z = 32
+	nel_x = 8
+	nel_y = 8
+	nel_z = 8
 
 # Coordinates of all segments (including start and end points)
 
@@ -113,119 +113,119 @@
 		radius = 0.05
 	<SphereEnd>	
 	
-	# 5
-	<SphereStart>	
-		phase  = 1
-		center = 0.2 0.5 0.4  
-		radius = 0.05
-	<SphereEnd>
-
-	# 6
-	<SphereStart>	
-		phase  = 1
-		center = 0.3 0.3 0.3  
-		radius = 0.05
-	<SphereEnd>
-
-	# 7
-	<SphereStart>	
-		phase  = 1
-		center = 0.6 0.4 0.8  
-		radius = 0.05
-	<SphereEnd>
-
-	# 8
-	<SphereStart>	
-		phase  = 1
-		center = 0.5 0.8 0.9  
-		radius = 0.05
-	<SphereEnd>
-
-	# 9
-	<SphereStart>	
-		phase  = 1
-		center = 0.5 0.8 0.6  
-		radius = 0.05
-	<SphereEnd>
-	
-	# 10
-	<SphereStart>	
-		phase  = 1
-		center = 0.7 0.4 0.6  
-		radius = 0.05
-	<SphereEnd>
-
-
-	# 11
-	<SphereStart>	
-		phase  = 1
-		center = 0.9 0.4 0.2  
-		radius = 0.05
-	<SphereEnd>
-
-	# 12
-	<SphereStart>	
-		phase  = 1
-		center = 0.1 0.6 0.4  
-		radius = 0.05
-	<SphereEnd>	
-
-	# 13
-	<SphereStart>	
-		phase  = 1
-		center = 0.4 0.3 0.7  
-		radius = 0.05
-	<SphereEnd>	
-
-	# 14
-	<SphereStart>	
-		phase  = 1
-		center = 0.3 0.8 0.9  
-		radius = 0.05
-	<SphereEnd>	
-	
-	# 15
-	<SphereStart>	
-		phase  = 1
-		center = 0.9 0.5 0.4  
-		radius = 0.05
-	<SphereEnd>
-
-	# 16
-	<SphereStart>	
-		phase  = 1
-		center = 0.3 0.4 0.4  
-		radius = 0.05
-	<SphereEnd>
-
-	# 17
-	<SphereStart>	
-		phase  = 1
-		center = 0.1 0.4 0.8  
-		radius = 0.05
-	<SphereEnd>
-
-	# 18
-	<SphereStart>	
-		phase  = 1
-		center = 0.7 0.7 0.9  
-		radius = 0.05
-	<SphereEnd>
-
-	# 19
-	<SphereStart>	
-		phase  = 1
-		center = 0.5 0.2 0.7  
-		radius = 0.05
-	<SphereEnd>
-	
-	# 20
-	<SphereStart>	
-		phase  = 1
-		center = 0.8 0.2 0.8  
-		radius = 0.05
-	<SphereEnd>
-
+#	# 5
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.2 0.5 0.4  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#	# 6
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.3 0.3 0.3  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#	# 7
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.6 0.4 0.8  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#	# 8
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.5 0.8 0.9  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#	# 9
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.5 0.8 0.6  
+#		radius = 0.05
+#	<SphereEnd>
+#	
+#	# 10
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.7 0.4 0.6  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#
+#	# 11
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.9 0.4 0.2  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#	# 12
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.1 0.6 0.4  
+#		radius = 0.05
+#	<SphereEnd>	
+#
+#	# 13
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.4 0.3 0.7  
+#		radius = 0.05
+#	<SphereEnd>	
+#
+#	# 14
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.3 0.8 0.9  
+#		radius = 0.05
+#	<SphereEnd>	
+#	
+#	# 15
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.9 0.5 0.4  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#	# 16
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.3 0.4 0.4  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#	# 17
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.1 0.4 0.8  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#	# 18
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.7 0.7 0.9  
+#		radius = 0.05
+#	<SphereEnd>
+#
+#	# 19
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.5 0.2 0.7  
+#		radius = 0.05
+#	<SphereEnd>
+#	
+#	# 20
+#	<SphereStart>	
+#		phase  = 1
+#		center = 0.8 0.2 0.8  
+#		radius = 0.05
+#	<SphereEnd>
+#
 
 #===============================================================================
 # Output
@@ -254,7 +254,7 @@
 	<MaterialStart>
 		ID  = 1   # phase id
 		rho = 2   # density
-		eta = 100 # viscosity
+		eta = 1e4 # viscosity
 	<MaterialEnd>
 
 #===============================================================================
@@ -284,8 +284,8 @@
 	-pcmat_type block
 	-pcmat_schur_type wbfbt
 
-#    -BFBT_viscositySmoothing
-#    -BFBT_viscositySmoothing_DynamicRatio 1e3
+    -BFBT_viscositySmoothing
+    -BFBT_viscositySmoothing_DynamicRatio 1e10
 #    -BFBT_viscositySmoothing_delta 200
 
 	-jp_type bf

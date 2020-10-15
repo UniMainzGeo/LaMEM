@@ -13,8 +13,17 @@
 
 struct _p_PMat;
 typedef struct _p_PMat *PMat;
-struct JacRes;
+struct AdvCtx;
+struct FB;
 struct GeomPrim;
+struct JacRes;
+
+struct SphereData{
+	PetscScalar centerx;
+	PetscScalar centery;
+	PetscScalar centerz;
+	PetscScalar radius;
+};
 
 
 
@@ -30,7 +39,8 @@ PetscErrorCode PMatBFBTDestroy(PMat pm);
 
 PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y);
 
-PetscErrorCode BFBTGaussianSmoothing(JacRes *jr, PetscInt nSpheres, GeomPrim *geom);
+//PetscErrorCode BFBTGaussianSmoothing(AdvCtx *actx, FB *fb, GeomPrim *geom, AllGeom1 blubb);
+PetscErrorCode BFBTGaussianSmoothing(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // compute |a-b|, a,b are vectors

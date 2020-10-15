@@ -55,6 +55,7 @@ struct DBMat;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
+struct SphereData;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -75,6 +76,8 @@ struct SolVarDev
 	PetscScalar  yield; // average yield stress in control volume
 	PetscScalar  mf;    // melt fraction
 	PetscScalar  DIId;  // diffusion creep relative strain rate
+
+	PetscScalar  eta_smoothed;
 
 };
 
@@ -111,8 +114,6 @@ struct SolVarCell
 	PetscScalar  eta_creep;     // effective creep viscosity (output)
 	PetscScalar  eta_vp;        // viscoplastic viscosity (output)
 	PetscScalar  U[3];          // displacement
-
-	PetscScalar  eta_smoothed;
 
 };
 
@@ -265,6 +266,13 @@ struct JacRes
 	// 2D integration primitives
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
+
+	//==========================
+	// viscosity smoothing
+	//==========================
+	PetscInt 	ngeoms; // number of geoms/spheres
+	SphereData 	*geoms; // centers and radius of spheres
+
 };
 //---------------------------------------------------------------------------
 
