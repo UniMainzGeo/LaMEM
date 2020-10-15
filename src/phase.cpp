@@ -803,12 +803,12 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	else if (!strcmp(name,"Plagioclase_RybackiDresen_2000"))
 	{
 		// after Rybacki and Dresen, 2000, JGR 
-		m->Bd            =   3.9716e-06;		// A = 10^5.1  B = 1/2*A^(-1/1)
-		m->Ed            =   268e3;
-		m->Vd            =   0.0;
+		m->Bd            =   1.2589e12;		
+		m->Ed            =   460e3;
+		m->Vd            =   24e-6;
 		type             =   _UniAxial_;
 		MPa              =   1;
-		d0               =   3;					// in microns in their paper
+		d0               =   100;					// in microns in their paper
 		p                =   3;
 		C_OH_0           =   1;
 		r                =   0.0;
@@ -1072,7 +1072,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 
 	else if (!strcmp(name,"Plagioclase_RybackiDresen_2000"))
 	{
-		m->Bn            =   2.9217e-05;		// A = 10^12.7, so B=1/2*A^(-1/3.0)
+		m->Bn            =   5.0119e12;		
 		m->n             =   3.0;
 		m->En            =   641e3;
 		m->Vn            =   24e-6;
