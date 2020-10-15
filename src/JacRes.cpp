@@ -85,6 +85,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->shearHeatEff =  1.0;
 	ctrl->biot         =  1.0;
 	ctrl->pLithoVisc   =  1;
+    ctrl->pShift       =  0.0;
 	ctrl->initGuess    =  1;
 	ctrl->mfmax        =  0.15;
 	ctrl->lmaxit       =  25;
@@ -97,37 +98,38 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	}
 
 	// read from options
-	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",          ctrl->grav,           3, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0  ); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,        1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_therm_exp",   &ctrl->actExp,         1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "steady_temp_t",   &ctrl->steadyTempStep, 1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_steady",    &ctrl->steadyNumStep,  1, 0);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "init_lith_pres",  &ctrl->initLithPres,   1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",      &ctrl->initGuess,      1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",    &ctrl->pLithoVisc,     1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",   &ctrl->pLithoPlast,    1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",     &ctrl->pLimPlast,      1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",         &ctrl->eta_min,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",         &ctrl->eta_max,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_ref",         &ctrl->eta_ref,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T_ref",           &ctrl->TRef,           1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "RUGC",            &ctrl->Rugc,           1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "min_cohes",       &ctrl->minCh,          1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "min_fric",        &ctrl->minFr,          1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "tau_ult",         &ctrl->tauUlt,         1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",       &ctrl->rho_fluid,      1, 1.0); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype,                "none"); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",        &ctrl->gwLevel,        1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,         1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "mfmax",           &ctrl->mfmax,          1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",          ctrl->grav,           3, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,        1, 1);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_therm_exp",   &ctrl->actExp,         1, 1);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "steady_temp_t",   &ctrl->steadyTempStep, 1, 1.0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_steady",    &ctrl->steadyNumStep,  1, 0);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "init_lith_pres",  &ctrl->initLithPres,   1, 1);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",      &ctrl->initGuess,      1, 1);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",    &ctrl->pLithoVisc,     1, 1);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",   &ctrl->pLithoPlast,    1, 1);      CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",     &ctrl->pLimPlast,      1, 1);      CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "p_shift",  		 &ctrl->pShift, 		1, 1.0);    CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",         &ctrl->eta_min,        1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",         &ctrl->eta_max,        1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_ref",         &ctrl->eta_ref,        1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "T_ref",           &ctrl->TRef,           1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "RUGC",            &ctrl->Rugc,           1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "min_cohes",       &ctrl->minCh,          1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "min_fric",        &ctrl->minFr,          1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "tau_ult",         &ctrl->tauUlt,         1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",       &ctrl->rho_fluid,      1, 1.0);            CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype,                "none");            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",        &ctrl->gwLevel,        1, 1.0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,         1, 1);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "mfmax",           &ctrl->mfmax,          1, 1.0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);           CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);            CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -169,7 +171,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	if(need_top_open && !bc->top_open)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, Kb, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
+        // whereas this is true, there are still cases that can be computed w/out "true" open top boundary    
+    	PetscPrintf(PETSC_COMM_WORLD, " Warning: True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, Kb, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
 	}
 
 	// fix advection time steps for elasticity or kinematic block BC
@@ -269,6 +272,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->pLithoVisc)     PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for creep      @ \n");
 	if(ctrl->pLithoPlast)    PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for plasticity @ \n");
 	if(ctrl->pLimPlast)      PetscPrintf(PETSC_COMM_WORLD, "   Limit pressure at first iteration       @ \n");
+    if(ctrl->pShift)         PetscPrintf(PETSC_COMM_WORLD, "   Applying a pressure shift               : %g %s \n", ctrl->pShift,    scal->lbl_stress);
 	if(ctrl->eta_min)        PetscPrintf(PETSC_COMM_WORLD, "   Minimum viscosity                       : %g %s \n", ctrl->eta_min,   scal->lbl_viscosity);
 	if(ctrl->eta_max)        PetscPrintf(PETSC_COMM_WORLD, "   Maximum viscosity                       : %g %s \n", ctrl->eta_max,   scal->lbl_viscosity);
 	if(ctrl->eta_ref)        PetscPrintf(PETSC_COMM_WORLD, "   Reference viscosity (initial guess)     : %g %s \n", ctrl->eta_ref,   scal->lbl_viscosity);
@@ -309,6 +313,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->rho_fluid      /=  scal->density;
 	ctrl->gwLevel        /=  scal->length;
 	ctrl->steadyTempStep /=  scal->time;
+    ctrl->pShift         /=  scal->stress;
 
 	// adjoint field based gradient output vector
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
@@ -799,7 +804,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		// compute velocity gradients
 		dvxdz = (vx[k][j][i] - vx[k-1][j][i])/dz;
 		dvzdx = (vz[k][j][i] - vz[k][j][i-1])/dx;
-		
+
 		// compute & store total strain rate
         xz = 0.5*(dvxdz + dvzdx);
         svEdge->d = xz;
@@ -1233,7 +1238,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//=======================
 
 		// access current pressure (x-y plane, i-j indices)
-		pc = 0.25*(p[k][j][i] + p[k][j][i-1] + p[k][j-1][i] + p[k][j-1][i-1]);
+		pc  = 0.25*(p[k][j][i] + p[k][j][i-1] + p[k][j-1][i] + p[k][j-1][i-1]);
 
 		// current temperature (x-y plane, i-j indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);

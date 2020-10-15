@@ -246,14 +246,15 @@
 	p_litho_visc    = 1              # use lithostatic pressure for creep laws
 	p_litho_plast   = 1              # use lithostatic pressure for plasticity
 	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
-	eta_min         = 1e18           # viscosity lower bound
-	eta_max         = 1e25           # viscosity upper limit
-	eta_ref         = 1e20           # reference viscosity (initial guess)
-	T_ref           = 20.0           # reference temperature
+	p_shift 		= 0              # constant [MPa] added to the total pressure field, before evaluating plasticity (e.g., when the domain is located @ some depth within the crust)  	
+	eta_min         = 1e18           # viscosity lower bound [Pas]
+	eta_max         = 1e25           # viscosity upper limit [Pas]
+	eta_ref         = 1e20           # reference viscosity (initial guess) [Pas]
+	T_ref           = 20.0           # reference temperature [C]
 	RUGC            = 8.31           # universal gas constant (required only for non-dimensional setups)
-	min_cohes       = 2e7            # cohesion lower bound
-	min_fric        = 5.0            # friction lower bound
-	tau_ult         = 1e9            # ultimate yield stress
+	min_cohes       = 2e7            # cohesion lower bound  [Pa]
+	min_fric        = 5.0            # friction lower bound  [degree]
+	tau_ult         = 1e9            # ultimate yield stress [Pa]
 	rho_fluid       = 1e3            # fluid density for depth-dependent density model
 	gw_level_type   = top            # ground water level type for pore pressure computation (see below)
 	gw_level        = 10.0           # ground water level at the free surface (if defined)
@@ -363,7 +364,6 @@
 		topTemp     = 0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
 		botTemp     = 1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
 		thermalAge  = 70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
-
 	<BoxEnd>
 
 	<HexStart>

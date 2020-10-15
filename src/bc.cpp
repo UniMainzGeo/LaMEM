@@ -870,7 +870,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscScalar vex, vey, 	vez;
 	PetscScalar z,   z_bot, z_top;
 	PetscScalar y,   y_frt, y_bck;
-	PetscScalar x;
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
@@ -938,16 +937,16 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		y_frt   = COORD_CELL(j-1, sy, fs->dsy);
 		y_bck   = COORD_CELL(j+1, sy, fs->dsy);
 
-		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx + z*Exz + y*Exy; }
-		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex + z*Exz + y*Exy; }
+		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx + (z-Rzz)*Exz + (y-Ryy)*Exy; }
+		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex + (z-Rzz)*Exz + (y-Ryy)*Exy; }
 
 		// bottom & top | set velocity @ ghost points (unclear where the factor 2 comes from..)
-		if(k == 0     && Exz != 0.0 ) { bcvx[k-1][j][i] = z*Exz + (z_bot-z)*Exz/2.0; }
-		if(k == mnz-1 && Exz != 0.0 ) { bcvx[k+1][j][i] = z*Exz + (z_top-z)*Exz/2.0; }
+		if(k == 0     && Exz != 0.0 ) { bcvx[k-1][j][i] = (z-Rzz)*Exz + (z_bot-z)*Exz/2.0; }
+		if(k == mnz-1 && Exz != 0.0 ) { bcvx[k+1][j][i] = (z-Rzz)*Exz + (z_top-z)*Exz/2.0; }
 		
 		// left & right
-		if(j == 0     && Exy != 0.0 ) { bcvx[k][j-1][i] = y*Exy + (y_frt -y)*Exy/2.0; 	}
-		if(j == mny-1 && Exy != 0.0 ) { bcvx[k][j+1][i] = y*Exy + (y_bck -y)*Exy/2.0;  }
+		if(j == 0     && Exy != 0.0 ) { bcvx[k][j-1][i] = (y-Ryy)*Exy + (y_frt -y)*Exy/2.0; 	}
+		if(j == mny-1 && Exy != 0.0 ) { bcvx[k][j+1][i] = (y-Ryy)*Exy + (y_bck -y)*Exy/2.0;  }
 
 		iter++;
 	}
@@ -968,17 +967,15 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		z_bot   = COORD_CELL(k-1, sz, fs->dsz);
 		z_top   = COORD_CELL(k+1, sz, fs->dsz);
 
-		x   	= COORD_CELL(i, sx, fs->dsx);
-
-		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby + z*Eyz; }
-		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey + z*Eyz; }
+		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby + (z-Rzz)*Eyz; }
+		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey + (z-Rzz)*Eyz; }
 		
 		if(i == 0     && Exy != 0.0) { bcvy[k][j][i] = 0.0; }
 		if(i == mnx-1 && Exy != 0.0) { bcvy[k][j][i] = 0.0; }
 
 		// bottom & top
-		if(k == 0     && Eyz != 0.0 ) { bcvy[k-1][j][i] = z*Eyz + (z_bot-z)*Eyz/2.0; }
-		if(k == mnz-1 && Eyz != 0.0 ) { bcvy[k+1][j][i] = z*Eyz + (z_top-z)*Eyz/2.0; }
+		if(k == 0     && Eyz != 0.0 ) { bcvy[k-1][j][i] = (z-Rzz)*Eyz + (z_bot-z)*Eyz/2.0; }
+		if(k == mnz-1 && Eyz != 0.0 ) { bcvy[k+1][j][i] = (z-Rzz)*Eyz + (z_top-z)*Eyz/2.0; }
 
 		iter++;
 	}
@@ -993,9 +990,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		// extract coordinates
-		y   = COORD_CELL(j, sy, fs->dsy);
-		x   = COORD_CELL(i, sx, fs->dsx);
 
 		// simple shear, side boundaries
 		if(i == 0     && Exz != 0.0) { bcvz[k][j][i] = 0.0; }
