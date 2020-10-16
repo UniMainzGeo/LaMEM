@@ -569,6 +569,183 @@ void in_polygon(
 	}
 }
 //---------------------------------------------------------------------------
+void linSpace(
+	PetscScalar  min,
+	PetscScalar  max,
+	PetscInt     N,
+	PetscScalar *outVec)
+{
+    PetscScalar delta = (max-min)/((PetscScalar)(N-1));
+
+    for(PetscInt i = 0; i < N; i++)
+    {
+        outVec[i] = min + ((PetscScalar)i)*delta;
+    }
+}
+//---------------------------------------------------------------------------
+void interpStretch(
+	PetscScalar *Sx,
+    PetscScalar *Sy,
+    PetscInt     numCtrlPoly,
+    PetscInt    *CtrlPoly,
+    PetscInt     numPoly,
+    PetscScalar *SxAll,
+    PetscScalar *SyAll)
+{
+    PetscInt     i,j,k;
+	PetscInt     maxSize = 0;
+    
+    // enter first value
+    SxAll[CtrlPoly[0]] = Sx[0];
+    SyAll[CtrlPoly[0]] = Sy[0];
+
+    // get maximum size for SxNew and SyNew
+    for (i=1; i < numCtrlPoly; i++)
+    {  
+        if (CtrlPoly[i]-CtrlPoly[i-1]+1 > maxSize)
+        {
+            maxSize = CtrlPoly[i]-CtrlPoly[i-1]+1;
+        }
+    }
+
+    // interpolate the rest
+    for (i=1; i < numCtrlPoly; i++)
+    {
+        PetscScalar SxNew[maxSize];
+        PetscScalar SyNew[maxSize];
+        linSpace(Sx[i-1],Sx[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SxNew);
+        linSpace(Sy[i-1],Sy[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SyNew);
+        for (j = CtrlPoly[i-1], k = 0; j < CtrlPoly[i]+1; j++, k++)
+        {
+            SxAll[j] = SxNew[k];
+            SyAll[j] = SyNew[k];
+        }
+    }
+
+    // extend stretch to first and last polygon
+    if (CtrlPoly[0] != 0)
+    {
+        for (i=0; i < CtrlPoly[0]; i++)
+        {
+            SxAll[i] = Sx[0];
+            SyAll[i] = Sy[0];
+        }
+    }
+    if (CtrlPoly[numCtrlPoly-1] != numCtrlPoly-1)
+    {
+        for (i=CtrlPoly[numCtrlPoly-1]; i < numPoly; i++)
+        {
+            SxAll[i] = Sx[numCtrlPoly-1];
+            SyAll[i] = Sy[numCtrlPoly-1];
+        }
+    }
+
+    // no stretchfactor should be smaller than 0.1
+    for (i=0; i < numPoly; i++)
+    {
+    	if (SxAll[i] < 0.1) {SxAll[i] = 0.1;}
+    	if (SyAll[i] < 0.1) {SyAll[i] = 0.1;}
+    }
+}
+//---------------------------------------------------------------------------
+void findCenterMass(
+	PetscScalar *coords,
+	PetscInt     nN,
+	PetscScalar &x_cen,
+	PetscScalar &y_cen)
+{
+    PetscInt    i;
+    PetscScalar sumX = 0;
+    PetscScalar sumY = 0;
+    PetscScalar A = 0;
+    PetscScalar xc = 0; 
+    PetscScalar yc = 0;
+    PetscScalar meanX, meanY;
+    PetscScalar xp[nN], yp[nN], a[nN];
+
+	// split coords into x and y
+	PetscScalar x[nN];
+	PetscScalar y[nN];
+	for (i=0; i < nN; i++)
+	{
+		x[i] = coords[2*i];
+		y[i] = coords[2*i+1];
+	}
+
+    // get mean of all nodes
+    for (i=0; i < nN; i++)
+    {
+        sumX += x[i];
+        sumY += y[i];
+    }
+    meanX = sumX/nN;
+    meanY = sumY/nN;
+
+    // shift nodes by mean for better precision
+    for (i=0; i < nN; i++)
+    {
+        x[i] -= meanX;
+        y[i] -= meanY;
+    }
+
+    // summations for CCW boundary
+    for (i=0; i < nN; i++)
+    {
+        if (i == nN-1) 
+        {
+            xp[i] = x[0];
+            yp[i] = y[0];
+        }
+        else
+        {
+            xp[i] = x[i+1];
+            yp[i] = y[i+1];
+        }
+        a[i]   =  x[i]*yp[i] - xp[i]*y[i];
+        xc    += (x[i]+xp[i])*a[i];
+        yc    += (y[i]+yp[i])*a[i];
+        A     +=  a[i];
+    }
+    A = A/2;
+    xc = xc/(6*A);
+    yc = yc/(6*A);
+
+    // shift back to original coords
+    x_cen = xc + meanX;
+    y_cen = yc + meanY;
+}
+//---------------------------------------------------------------------------
+// stretch Polygon
+void stretchPolygon(
+	PetscScalar *coords,
+	PetscInt nN,
+	PetscScalar Sx,
+	PetscScalar Sy)
+{
+    PetscScalar x_cen, y_cen;    
+    PetscInt    iNode;
+    PetscScalar x,y;
+
+	// find center of mass
+    findCenterMass(coords,nN,x_cen,y_cen);
+
+    // loop over nodes
+    for (iNode = 0; iNode < nN; iNode++)
+    {
+        // transform to relative coordinates
+        x        = coords[2*iNode]   - x_cen;
+        y        = coords[2*iNode+1] - y_cen;
+
+        // stretch
+        x        = x * Sx;
+        y        = y * Sy;
+
+        // transform back to absolute corrdinates
+        coords[2*iNode]   = x + x_cen;
+        coords[2*iNode+1] = y + y_cen;
+    }
+}
+//---------------------------------------------------------------------------
 // indexing functions
 //---------------------------------------------------------------------------
 PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[])

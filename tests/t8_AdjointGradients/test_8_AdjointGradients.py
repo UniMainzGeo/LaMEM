@@ -167,7 +167,7 @@ def FallingSphere_ND_CompareGradients_2():
     unittest.compareFloatingPoint(key,1e-8)
 
     key = re.escape("|  adjoint     2:            n[ 0]")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,2e-6)
 
     key = re.escape("|   Prefactor A               : ")
     unittest.compareFloatingPoint(key,1e-8)
@@ -215,7 +215,7 @@ def SubductionSetup_Dimensional():
     unittest.compareFloatingPoint(key,1e-8)
     
     key = re.escape(" |      log10       eta[  0]")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,2e-3)
     
     key = re.escape(" |       FD     7:           fr[ 2]")
     unittest.compareFloatingPoint(key,1e-8)

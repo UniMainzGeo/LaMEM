@@ -200,6 +200,19 @@ struct BCCtx
 	PetscScalar  EyyTimeDelims [_max_periods_-1];
 	PetscScalar  EyyStrainRates[_max_periods_  ];
 
+	// simple shear background strain-rate parameters
+	PetscInt     ExyNumPeriods;
+	PetscScalar  ExyTimeDelims [_max_periods_-1];
+	PetscScalar  ExyStrainRates[_max_periods_  ];
+	
+	PetscInt     EyzNumPeriods;
+	PetscScalar  EyzTimeDelims [_max_periods_-1];
+	PetscScalar  EyzStrainRates[_max_periods_  ];
+
+	PetscInt     ExzNumPeriods;
+	PetscScalar  ExzTimeDelims [_max_periods_-1];
+	PetscScalar  ExzStrainRates[_max_periods_  ];
+
 	// background strain rate reference point
 	PetscScalar  BGRefPoint[3];
 
@@ -340,6 +353,9 @@ PetscErrorCode BCGetBGStrainRates(
 		PetscScalar *Exx_,
 		PetscScalar *Eyy_,
 		PetscScalar *Ezz_,
+		PetscScalar *Exy_,
+		PetscScalar *Eyz_,
+		PetscScalar *Exz_,
 		PetscScalar *Rxx_,
 		PetscScalar *Ryy_,
 		PetscScalar *Rzz_);

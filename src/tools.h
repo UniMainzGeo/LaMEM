@@ -162,6 +162,41 @@ void in_polygon(
 	PetscInt    *in);    // point location flags (1-inside, 0-outside)
 
 //---------------------------------------------------------------------------
+// Polygon stretching functions
+//---------------------------------------------------------------------------
+
+// generate linearly interpolated values
+void linSpace(
+	PetscScalar  min,
+	PetscScalar  max,
+	PetscInt     N,
+	PetscScalar *outVec);
+
+// interpolate stretch parameters for all polygons
+void interpStretch(
+	PetscScalar *Sx,
+    PetscScalar *Sy,
+    PetscInt     numCtrlPoly,
+    PetscInt    *CtrlPoly,
+    PetscInt     numPoly,
+    PetscScalar *SxAll,
+    PetscScalar *SyAll);
+
+// find center of mass of polygon
+void findCenterMass(
+	PetscScalar *coords,
+	PetscInt     nN,
+	PetscScalar &x_cen,
+	PetscScalar &y_cen);
+
+// stretch Polygon
+void stretchPolygon(
+	PetscScalar *coords,
+	PetscInt nN,
+	PetscScalar Sx,
+	PetscScalar Sy);
+
+//---------------------------------------------------------------------------
 // indexing functions
 //---------------------------------------------------------------------------
 

@@ -865,7 +865,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	PetscScalar     chLen, chTime, chTemp;
 	char            TemperatureStructure[_str_len_];
 	PetscInt        jj, ngeom, imark, maxPhaseID;
-	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
+	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *hex, *layer, *cylinder;
 
 	// map container to sort primitives in the order of appearance
 	map<PetscInt, GeomPrim*> cgeom;
@@ -984,6 +984,40 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
+	//===========
+	// ELLIPSOIDS
+	//===========
+
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<EllipsoidStart>", "<EllipsoidEnd>"); CHKERRQ(ierr);
+
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		GET_GEOM(ellipsoid, geom, ngeom, _max_geom_);
+
+		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &ellipsoid->phase,  1, maxPhaseID); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "axes",    ellipsoid->axes,   3, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "center",  ellipsoid->center, 3, chLen);      CHKERRQ(ierr);
+
+		// Optional temperature options:
+		ellipsoid->setTemp = 0;
+		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		if 		(!strcmp(TemperatureStructure, "constant"))	    {ellipsoid->setTemp=1;}
+		
+		// Depending on temperature options, get required input parameters
+		if (ellipsoid->setTemp==1){
+			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&ellipsoid->cstTemp, 1, 1);     CHKERRQ(ierr); 
+		
+			// take potential shift C->K into account	
+			ellipsoid->cstTemp = (ellipsoid->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		}
+
+		ellipsoid->setPhase = setPhaseEllipsoid;
+
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ellipsoid));	
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
 	//======
 	// BOXES
 	//======
@@ -1009,11 +1043,20 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		
 		// Depending on temperature options, get required input parameters
 		if (box->setTemp==1){
-			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&box->cstTemp, 1, chTemp);     CHKERRQ(ierr); 
+			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&box->cstTemp, 1, 1);     CHKERRQ(ierr); 
+			
+			// take potential shift C->K into account	
+			box->cstTemp = (box->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+
 		}
 		if (box->setTemp>1){
-			ierr = getScalarParam(fb, _REQUIRED_, "topTemp", 	&box->topTemp, 1, chTemp);     CHKERRQ(ierr); 
-			ierr = getScalarParam(fb, _REQUIRED_, "botTemp", 	&box->botTemp, 1, chTemp);     CHKERRQ(ierr); 
+			ierr = getScalarParam(fb, _REQUIRED_, "topTemp", 	&box->topTemp, 1, 1);     CHKERRQ(ierr); 
+			ierr = getScalarParam(fb, _REQUIRED_, "botTemp", 	&box->botTemp, 1, 1);     CHKERRQ(ierr); 
+
+			// take potential shift C->K into account	
+			box->topTemp = (box->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+			box->botTemp = (box->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+
 		}
 		if (box->setTemp==3){
 			
@@ -1146,6 +1189,8 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscInt       nPoly;
 	PetscScalar    atol;
 	PetscScalar    box[4];
+	CtrlP          CtrlPoly;
+	PetscInt       VolID, nCP;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1297,6 +1342,9 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polyin); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X);  CHKERRQ(ierr);
 
+	// read geometry variations
+	ierr = ADVMarkReadCtrlPoly(fb, &CtrlPoly, VolID, nCP); CHKERRQ(ierr);
+
 	// --- loop over all volumes ---
 	for(kvol = 0; kvol < VolN; kvol++)
 	{
@@ -1325,7 +1373,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "The 'Dir' argument is wrong; should be 0, 1 or 2.");
 		}
 
-		// get lengths of polygons (PetscScalar !)
+		// get position of polygons (PetscScalar !)
 		for(kpoly = 0; kpoly < Poly.num; kpoly++)
 		{
 			PolyIdx[kpoly] = PolyFile[Fcount]; Fcount++;
@@ -1335,6 +1383,30 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 		for (kpoly=0; kpoly<Poly.num;kpoly++)
 		{
 			PolyLen[kpoly] = PolyFile[Fcount]; Fcount++;
+		}
+
+		// interpolate stretch parameters
+		PetscScalar SxAll[Poly.num];
+		PetscScalar SyAll[Poly.num];
+		if (kvol == VolID)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"\nVarying volume %d (phase: %d, type: %d) \n", VolID, Poly.phase, Poly.type);
+			
+			// shift index of control polys by 1 to be in line with c indexing
+			PetscInt    i;
+    		for (i=0; i < nCP; ++i)
+    		{
+				// also check if control polygon is out of bounds
+				if (CtrlPoly.Pos[i] > Poly.num)
+				{
+					SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %d polygons", Poly.num);
+				}
+				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %d: Pos: %d, Sx: %.6f, Sy: %.6f \n",i+1,CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
+				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;
+    		}
+
+			// interpolate stretch parameters
+			interpStretch(CtrlPoly.Sx,CtrlPoly.Sy,nCP,CtrlPoly.Pos,Poly.num,SxAll,SyAll);
 		}
 
 		// --- loop through all slices ---
@@ -1352,6 +1424,12 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				for (n=0; n<Poly.len*2;n++)
 				{
 					Poly.X[n] = PolyFile[Fcount]; Fcount++;
+				}
+
+				// vary Polygon geometry
+				if (kvol == VolID)
+				{
+					stretchPolygon(Poly.X,Poly.len,SxAll[kpoly],SyAll[kpoly]);
 				}
 
 				// get local markers that locate on polygon plane
@@ -1419,6 +1497,59 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
 	PrintDone(t);
+
+	PetscFunctionReturn(ierr);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkReadCtrlPoly"
+PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, PetscInt &nCP)
+{
+	PetscInt       jj;
+	
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// find blocks
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<vG_ControlPolyStart>", "<vG_ControlPolyEnd>"); CHKERRQ(ierr);
+	nCP  = fb->nblocks;
+
+	// check number of control polygons
+	if (nCP > _max_ctrl_poly_)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%d exceeds maximum number of control polygons (%d) \n",nCP,_max_ctrl_poly_);
+	}
+
+	// loop over blocks
+	for(jj = 0; jj < nCP; jj++)
+	{
+		fb->ID  = jj;								// allows command-line parsing
+
+		ierr = getIntParam   (fb, _REQUIRED_, "PolyID",  &CtrlPoly->ID[jj],    1, 0);   CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "VolID",   &CtrlPoly->VolID[jj], 1, 0);   CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "PolyPos", &CtrlPoly->Pos[jj],   1, 0);   CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "Sx",      &CtrlPoly->Sx[jj],    1, 1);   CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "Sy",      &CtrlPoly->Sy[jj],    1, 1);   CHKERRQ(ierr);
+
+		if (CtrlPoly->VolID[jj] != CtrlPoly->VolID[0])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "All control polygons should have the same volume ID \n");
+		}
+
+		fb->blockID++;
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	if (nCP > 0)
+	{
+		VolID = CtrlPoly->VolID[0];
+	}
+	else
+	{
+		VolID = -1;
+	}
+	
 
 	PetscFunctionReturn(ierr);
 }
@@ -1672,6 +1803,32 @@ void setPhaseSphere(GeomPrim *sphere, Marker *P)
 			P->T = T; 			// set Temperature
 		}
 	}
+}
+//---------------------------------------------------------------------------
+void setPhaseEllipsoid(GeomPrim *ellipsoid, Marker *P)
+{
+	PetscScalar dx, dy, dz;
+	PetscScalar x2, y2, z2;
+	x2 = (ellipsoid->axes[0])*(ellipsoid->axes[0]);
+	y2 = (ellipsoid->axes[1])*(ellipsoid->axes[1]);
+	z2 = (ellipsoid->axes[2])*(ellipsoid->axes[2]);
+
+	dx = P->X[0] - ellipsoid->center[0];
+	dy = P->X[1] - ellipsoid->center[1];
+	dz = P->X[2] - ellipsoid->center[2];
+
+	if((dx*dx)/x2 + (dy*dy)/y2 + (dz*dz)/z2 <= 1)
+	{
+		P->phase = ellipsoid->phase;
+		if(ellipsoid->setTemp > 0)
+		{
+			PetscScalar T=0;
+			computeTemperature(ellipsoid, P, &T);
+
+			P->T = T; 			// set Temperature
+		}
+	}
+
 }
 //---------------------------------------------------------------------------
 void setPhaseBox(GeomPrim *box, Marker *P)

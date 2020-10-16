@@ -81,9 +81,12 @@ typedef struct GeomPrim GeomPrim;
 struct GeomPrim
 {
 	PetscInt    phase;
-	// sphere & cylinder
+	// sphere & cylinder & ellipsoid
 	PetscScalar center[3];
+	// sphere & cylinder
 	PetscScalar radius;
+	// ellipsoid
+	PetscScalar axes[3];
 	// cylinder
 	PetscScalar base[3], cap[3];
 	// box & hex
@@ -106,6 +109,8 @@ struct GeomPrim
 };
 
 void setPhaseSphere(GeomPrim *sphere, Marker *P);
+
+void setPhaseEllipsoid(GeomPrim *ellipsoid, Marker *P);
 
 void setPhaseBox(GeomPrim *box, Marker *P);
 
@@ -158,6 +163,18 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx);
 
 // Load and set data from phase diagram
 PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i);
+
+// read control polygons
+struct CtrlP
+{
+	PetscInt    ID[_max_ctrl_poly_];
+	PetscInt    VolID[_max_ctrl_poly_];
+	PetscInt    Pos[_max_ctrl_poly_];
+	PetscScalar Sx[_max_ctrl_poly_];
+	PetscScalar Sy[_max_ctrl_poly_];
+};
+
+PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, PetscInt &nCP);
 
 //---------------------------------------------------------------------------
 

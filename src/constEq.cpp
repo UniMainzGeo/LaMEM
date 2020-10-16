@@ -213,7 +213,9 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(ctrl->gwType == _GW_NONE_) p_pore = 0.0;
 
 	// total pressure
-	p_total = p + ctrl->biot*p_pore;
+	// 	  pShift is for cases in which the whole computational domain is located @ some depth [to ensure that p-dependent plasticity is correctly evaluated]
+	p_total = p + ctrl->biot*p_pore + ctrl->pShift; 
+
 
 	// assign pressure for viscous laws
 	if(ctrl->pLithoVisc)  p_visc = p_lith;

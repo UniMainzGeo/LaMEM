@@ -158,6 +158,7 @@ struct Controls
 	PetscInt    pLithoVisc;     // use lithostatic pressure for creep laws
 	PetscInt    pLithoPlast;    // use lithostatic pressure for plasticity
 	PetscInt    pLimPlast;      // limit pressure at first iteration for plasticity
+	PetscScalar pShift;         // shift the pressure by a constant value while evaluating plasticity & for output
 
 	PetscScalar eta_min;        // minimum viscosity
 	PetscScalar eta_max;        // maximum viscosity

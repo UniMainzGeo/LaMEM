@@ -130,7 +130,7 @@
 // maximum number of softening laws
 #define _max_num_soft_ 10
 
-// max char legnth
+// max char length
 #define char_ph_tr 10
 
 // maximum number of phase transition law
@@ -167,8 +167,10 @@
 #define _max_adj_point_ 100
 
 // maximum number of passive tracers
-
 #define _max_passive_tracer 100000
+
+// maximum number of control polygons
+#define _max_ctrl_poly_ 20
 
 // cast macros
 #define LLD long long int

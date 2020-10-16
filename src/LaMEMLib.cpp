@@ -184,6 +184,8 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	if(param) param = NULL;
+
 	// load input file
 	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
 

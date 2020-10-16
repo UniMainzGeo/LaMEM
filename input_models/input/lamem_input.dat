@@ -147,6 +147,18 @@
 	eyy_time_delims  = 1.0
 	eyy_strain_rates = 1e-15 2e-15
 
+	exy_num_periods  = 2                 # same for simple shear components in x/y direction
+	exy_time_delims  = 1.0
+	exy_strain_rates = 1e-15 2e-15
+
+	exz_num_periods  = 2                 # same for simple shear components in x/z direction
+	exz_time_delims  = 1.0
+	exz_strain_rates = 1e-15 2e-15
+
+	eyz_num_periods  = 2                 # same for simple shear components in y/z direction
+	eyz_time_delims  = 1.0
+	eyz_strain_rates = 1e-15 2e-15
+
 	bg_ref_point     = 0.0 0.0 0.0       # background strain rate reference point (fixed)
 	
 # Bezier blocks (single entry per block)
@@ -241,14 +253,15 @@
 	p_litho_visc    = 1              # use lithostatic pressure for creep laws
 	p_litho_plast   = 1              # use lithostatic pressure for plasticity
 	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
-	eta_min         = 1e18           # viscosity lower bound
-	eta_max         = 1e25           # viscosity upper limit
-	eta_ref         = 1e20           # reference viscosity (initial guess)
-	T_ref           = 20.0           # reference temperature
+	p_shift 		= 0              # constant [MPa] added to the total pressure field, before evaluating plasticity (e.g., when the domain is located @ some depth within the crust)  	
+	eta_min         = 1e18           # viscosity lower bound [Pas]
+	eta_max         = 1e25           # viscosity upper limit [Pas]
+	eta_ref         = 1e20           # reference viscosity (initial guess) [Pas]
+	T_ref           = 20.0           # reference temperature [C]
 	RUGC            = 8.31           # universal gas constant (required only for non-dimensional setups)
-	min_cohes       = 2e7            # cohesion lower bound
-	min_fric        = 5.0            # friction lower bound
-	tau_ult         = 1e9            # ultimate yield stress
+	min_cohes       = 2e7            # cohesion lower bound  [Pa]
+	min_fric        = 5.0            # friction lower bound  [degree]
+	tau_ult         = 1e9            # ultimate yield stress [Pa]
 	rho_fluid       = 1e3            # fluid density for depth-dependent density model
 	gw_level_type   = top            # ground water level type for pore pressure computation (see below)
 	gw_level        = 10.0           # ground water level at the free surface (if defined)
@@ -342,6 +355,14 @@
 
 	<SphereEnd>
 
+	<EllipsoidStart>
+		phase       = 1
+		axes        = 2.0 1.5 1.0  # semi-axes of ellipsoid in x, y and z
+		center      = 1.0 2.0 3.0
+		Temperature = constant     # optional: Temperature of the sphere. possibilities: [constant]
+		cstTemp     = 1000         # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+	<EllipsoidEnd>
+
 	<BoxStart>
 		phase       = 1
 		bounds      = 1.0 2.0 1.0 2.0 1.0 2.0 # box bound coordinates: left, right, front, back, bottom, top
@@ -350,7 +371,6 @@
 		topTemp     = 0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
 		botTemp     = 1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
 		thermalAge  = 70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
-
 	<BoxEnd>
 
 	<HexStart>
