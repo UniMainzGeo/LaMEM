@@ -153,8 +153,12 @@
 		ID        	= 	0
 		rho       	= 	3000
 		
-		diff_prof  	=	Plagioclase_RybackiDresen_2000		# Creep law
-		disl_prof 	=	Plagioclase_RybackiDresen_2000
+		#diff_prof  	=	Plagioclase_RybackiDresen_2000		# Creep law
+		#disl_prof 	=	Plagioclase_RybackiDresen_2000
+
+		#diff_prof  	=	Plagioclase_RybackiDresen_2000		# Creep law
+		#disl_prof 	=	Mafic_Granulite-Ranalli_1995
+		disl_prof = Maryland_strong_diabase-Mackwell_et_al_1998
 		
 		
 		Cp        	= 	1000							# Specific heat (capacity)
