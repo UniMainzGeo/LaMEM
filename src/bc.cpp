@@ -315,10 +315,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// dropping boxes
 	ierr = DBoxReadCreate(&bc->dbox, scal, fb); CHKERRQ(ierr);
 
-	// boundary velocities
-	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face"    , &bc->face, 1, -1); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 1, -1); CHKERRQ(ierr);
-
+	// boundary inflow/outflow velocities
+	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face"    , &bc->face, 		1, -1); 	CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 	1, -1); 		CHKERRQ(ierr);
 
 	if(bc->face)
 	{
@@ -333,8 +332,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 			ierr = getScalarParam(fb, _REQUIRED_, "bvel_relax_d",&bc->relax_dist,1, scal->length  ); CHKERRQ(ierr);
 		}
 
-
-
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 
 		// compute outflow velocity (if required)
@@ -347,34 +344,32 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	}
 
 	// open boundary flag
-	ierr = getIntParam(fb, _OPTIONAL_, "open_top_bound", &bc->top_open, 1, -1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "open_top_bound",		&bc->top_open, 		1, -1); 	CHKERRQ(ierr);
 
 	// no-slip boundary condition mask
-	ierr = getIntParam(fb, _OPTIONAL_, "noslip", bc->noslip, 6, -1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "noslip", 				bc->noslip, 		6, -1); 	CHKERRQ(ierr);
 
 	// fixed phase (no-flow condition)
-	ierr = getIntParam(fb, _OPTIONAL_, "fix_phase", &bc->fixPhase, 1, mID); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "fix_phase", 			&bc->fixPhase, 		1, mID); 	CHKERRQ(ierr);
 
 	// fixed cells (no-flow condition)
-	ierr = getIntParam(fb, _OPTIONAL_, "fix_cell", &bc->fixCell, 1, mID); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "fix_cell", 				&bc->fixCell, 		1, mID); 	CHKERRQ(ierr);
 
-	// Plume-Like boundary condition
+	// Plume-like inflow boundary condition @ bottom
 
-	ierr = getIntParam(fb, _OPTIONAL_, "plume_vel_boundary"    , &bc->plume_like, 1, -1); CHKERRQ(ierr);
-
+	ierr = getIntParam(fb, _OPTIONAL_, "plume_vel_boundary", 	&bc->plume_like, 	1, -1); 	CHKERRQ(ierr);
 	if(bc->plume_like)
 	{
-		ierr = getIntParam(fb, _REQUIRED_, "plume_type"    , &bc->plume_type, 1, 1); CHKERRQ(ierr);
-		ierr = getIntParam(fb, _REQUIRED_, "plume_phase"    , &bc->plume_phase, 1, 1); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "plume_temperature", &bc->plume_temperature, 1, 1); CHKERRQ(ierr);
-		bc->plume_temperature = (bc->plume_temperature+scal->Tshift)/scal->temperature;
-
+		ierr = getIntParam   (fb, _REQUIRED_, "plume_type"    		, &bc->plume_type, 			1, 1); 			CHKERRQ(ierr);
+		ierr = getIntParam	 (fb, _REQUIRED_, "plume_phase"    		, &bc->plume_phase, 		1, mID); 		CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "plume_temperature"	, &bc->plume_temperature, 	1, 1); 			CHKERRQ(ierr);
+		bc->plume_temperature = (bc->plume_temperature+scal->Tshift)/scal->temperature;		// to Kelvin & nondimensionalise
 
 		if(bc->plume_type == 1)
 		{
-			ierr = getIntParam(fb, _REQUIRED_, "plume_direction"    , &bc->plume_direction, 1, -1); CHKERRQ(ierr);
-			ierr = getScalarParam(fb,_REQUIRED_,"coord_max",&bc->coord_max,1,scal->length);CHKERRQ(ierr);
-			ierr = getScalarParam(fb,_REQUIRED_,"coord_min",&bc->coord_min,1,scal->length);CHKERRQ(ierr);
+			ierr = getIntParam   (fb, _REQUIRED_,  "plume_direction", 	&bc->plume_direction, 	1, -1); 			CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_,  "coord_max",			&bc->coord_max,			1,	scal->length);	CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_,  "coord_min",			&bc->coord_min,			1,	scal->length);	CHKERRQ(ierr);
 		}
 		else if(bc->plume_type == 2)
 		{
@@ -385,8 +380,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 
 	}
-
-
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
@@ -448,6 +441,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "      Maximum temperature of perturbation     : %g %s \n", bc->Tbot_gauss_maxT, scal->lbl_temperature);
     }
     
+	// TO BE ADDED: Information about inflow/outflow velocities that are specified!
+
+
 	if(bc->ptop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary pressure                      : %g %s \n", bc->ptop, scal->lbl_stress);
 	if(bc->pbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot, scal->lbl_stress);
 
@@ -682,17 +678,16 @@ PetscErrorCode BCApply(BCCtx *bc)
 	ierr = BCApplyBoundVel(bc); CHKERRQ(ierr);
 
 	// apply dropping boxes
-	ierr = BCApplyDBox(bc); CHKERRQ(ierr);
+	//ierr = BCApplyDBox(bc); CHKERRQ(ierr);
 
 	// fix all cells occupied by phase
-	ierr = BCApplyPhase(bc); CHKERRQ(ierr);
+	//ierr = BCApplyPhase(bc); CHKERRQ(ierr);
 
 	// fix specific cells
-	ierr = BCApplyCells(bc); CHKERRQ(ierr);
+	//ierr = BCApplyCells(bc); CHKERRQ(ierr);
 
 	// plume like boundary condition
 	ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
-
 
 	// synchronize SPC constraints in the internal ghost points
 	// WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
@@ -895,7 +890,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 			if(Tbot >= 0.0 && k == 0)   { bcT[k-1][j][i] = Tbot; }
 			if(Ttop >= 0.0 && k == mcz) { bcT[k+1][j][i] = Ttop; }
 
-// add gaussian perturbation @ bottom
+			// add gaussian perturbation @ bottom
 			if(bc->Tbot_gauss == 1 && k==0){
 				PetscScalar x,y,w,maxT,T;
 
@@ -908,6 +903,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 
 				bcT[k-1][j][i] = T;
 			}
+
 			if(bc->plume_like == 1 && k==0)
 			{
 				PetscScalar x,y,cmin,cmax;
@@ -935,7 +931,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 				}
 				else
 				{
-					if(sqrt(pow((x-bc->center_plume[0]),2)+pow((y-bc->center_plume[1]),2))<=bc->radius)
+					if (sqrt(pow((x - bc->center_plume[0]), 2.0)  + pow((y-bc->center_plume[1]),2.0))<=bc->radius)
 						{
 							bcT[k-1][j][i]     = bc->plume_temperature;
 						}
@@ -1852,7 +1848,8 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 		}
 
 		else if(bc->plume_like)
-		{
+		{	
+			// if we have have a inflow condition @ the lower boundary, we change the phase of the particles wi
 			if(k+sz == 0 || k+sz == 1)
 			{
 				if(bc->plume_type==1)
@@ -1865,7 +1862,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 							{
 								P->phase = bc->plume_phase;
 								P->T     = bc->plume_temperature;
-								PetscPrintf(PETSC_COMM_WORLD, "  Temperature  = %6f bc = %6f  @ \n", (P->T-bc->scal->Tshift)/bc->scal->temperature, (bc->plume_temperature - bc->scal->Tshift)/bc->scal->temperature);
+								PetscPrintf(PETSC_COMM_WORLD, "  Temperature  = %6f bc = %6f  @ \n", P->T*bc->scal->temperature - bc->scal->Tshift, bc->plume_temperature*bc->scal->temperature - bc->scal->Tshift);
 							}
 
 					}
@@ -1898,7 +1895,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	FDSTAG      *fs;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar ***bcvz;
-	PetscScalar  x,y, cmin, cmax, vel, velin, velout,x_min,x_max,y_min,y_max,d_x,d_y,A;
+	PetscScalar  x,y, cmin, cmax, vel, velin_plume, velout,x_min,x_max,y_min,y_max,d_x,d_y,A;
 	PetscScalar  a,b,c,inflow_window;
 	PetscScalar  r_in,r_a,r_b,v_1,v_2,v_3,dist,rel_d,center;
 
@@ -1913,16 +1910,12 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	ierr = FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
 
 
-	d_x = x_max-x_min;
-	d_y = y_max-y_min;
-	A= d_x*d_y;
+	d_x 	= 	x_max-x_min;
+	d_y 	= 	y_max-y_min;
+	A	 	= 	d_x*d_y;
 
 
-
-
-		velin = bc->velin;
-
-
+	velin_plume = bc->velin_plume;
 
 
 	if(bc->plume_type == 1)
@@ -1938,21 +1931,23 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
 		if(bc->plume_direction==1)
 		{
-			b = erf((center-x_min)/inflow_window);
-			c = erf((center-x_max)/inflow_window);
-			velout = -(velin*(a*b-a*c))/(a*c-a*b+x_max-x_min);
+			b 		= erf((center-x_min)/inflow_window);
+			c 		= erf((center-x_max)/inflow_window);
+			velout = -(velin_plume*(a*b-a*c))/(a*c-a*b+x_max-x_min);
 		}
 		else
 		{
 			b = erf((center-y_min)/inflow_window);
 			c = erf((center-y_max)/inflow_window);
-			velout = -(velin*(a*b-a*c))/(a*c-a*b+y_max-y_min);
+			velout = -(velin_plume*(a*b-a*c))/(a*c-a*b+y_max-y_min);
 		}
 	}
 	else if(bc->plume_type==2)
 	{
 
-// plume _ 3D place holder
+		// plume _ 3D place holder
+
+
 	}
 
 
@@ -1981,12 +1976,12 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 				if(bc->plume_direction == 1)
 				{
 
-					vel = (velin-velout)*exp(-pow(x-center,2)/(inflow_window*inflow_window))+velout;
+					vel = (velin_plume-velout)*exp(-pow(x-center,2)/(inflow_window*inflow_window)) + velout;
 
 				}
 				else
 				{
-					vel = (velin-velout)*exp(-pow(y-center,2)/(inflow_window*inflow_window))+velout;
+					vel = (velin_plume-velout)*exp(-pow(y-center,2)/(inflow_window*inflow_window)) + velout;
 
 				}
 			}
@@ -1997,7 +1992,11 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 			}
 
 			
-			if(k == 0) { bcvz[k][j][i] = vel; }
+			if(k == 0) { 
+				
+				bcvz[k][j][i] = vel; 
+				
+			}
 
 
 			iter++;
