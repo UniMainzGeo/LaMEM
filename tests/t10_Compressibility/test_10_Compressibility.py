@@ -1,6 +1,3 @@
-import matplotlib
-matplotlib.use('Agg')
-
 import os
 import pyTestHarness.unittest as pth
 import pyTestHarness.launcher as launch
@@ -133,7 +130,9 @@ def PlotData(data,plotName):
   # load required modules for reading data
   try: 
     import matplotlib.pyplot as plt
+    matplotlib.use('Agg')
     import datetime 
+    
   except:
     print('matplotlib toolbox not installed; cannot plot data')
 
