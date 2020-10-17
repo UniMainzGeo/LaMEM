@@ -209,7 +209,7 @@ def interpRuns(*args):
 # make plots
 def makePlot(Runs):
   try: 
-   import matplotlib
+    import matplotlib
     matplotlib.use('Agg')
  
     import numpy as np
