@@ -101,7 +101,7 @@ def SubductionInversion_FD_TAO():
     unittest.compareFloatingPoint(key,1e-3)
 
     key = re.escape("|       FD     2:          rho[ 1]")
-    unittest.compareFloatingPoint(key,1e-5)
+    unittest.compareFloatingPoint(key,2e-5)
 
   # Create unit test object
   ex1 = pth.pthUnitTest('t7_AdjointGradientInversion_3',ranks,launch,expected_file)

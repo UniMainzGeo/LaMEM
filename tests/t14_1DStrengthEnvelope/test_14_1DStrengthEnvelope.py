@@ -1,6 +1,4 @@
 ## test 14 1D Strength Envelope
-import matplotlib
-matplotlib.use('Agg')
 
 import os
 import pyTestHarness.unittest as pth
@@ -210,9 +208,16 @@ def interpRuns(*args):
 #----------------------------------------------------
 # make plots
 def makePlot(Runs):
-  import numpy as np
-  import matplotlib.pyplot as plt
-  import datetime
+  try: 
+    import matplotlib
+    matplotlib.use('Agg')
+ 
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import datetime
+  except:
+    print('matplotlib toolbox not installed; cannot plot data')
+
 
   Time = Runs["Time"]
   Z    = Runs["Z"]
@@ -390,19 +395,21 @@ def test_d():
       VEP5  = LoadData('./t14_1DStrengthEnvelope/OutVEP5')
       VEP10 = LoadData('./t14_1DStrengthEnvelope/OutVEP10')
       VEP50 = LoadData('./t14_1DStrengthEnvelope/OutVEP50')
+      
+      # compute analytical solution from VP run
+      AnSo  = Analytical(VP)
+    
+      # interpolate all runs onto the saem timesteps
+      Runs  = interpRuns(VP,VEP5,VEP10,VEP50,AnSo)
+    
+      # plot
+      makePlot(Runs)
+ 
     except:
       print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
 
     
-    # compute analytical solution from VP run
-    AnSo  = Analytical(VP)
-    
-    # interpolate all runs onto the saem timesteps
-    Runs  = interpRuns(VP,VEP5,VEP10,VEP50,AnSo)
-    
-    # plot
-    makePlot(Runs)
- 
+   
   # Create unit test object
   ex1 = pth.pthUnitTest('t14_1D_VEP50_Direct_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)

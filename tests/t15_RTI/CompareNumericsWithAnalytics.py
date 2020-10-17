@@ -129,7 +129,7 @@ def PlotRT_Data(data,plotName):
   title_str = 'LaMEM vs. analytics \n ' + title_str;
   plt.title(title_str,fontsize='xx-small')
 
-  
+  plotName = './t15_RTI/'+plotName;
   fig1.savefig(plotName,dpi=360)    # save figure to disk
 
   return();
