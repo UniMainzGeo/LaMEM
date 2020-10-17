@@ -1,6 +1,3 @@
-import matplotlib
-matplotlib.use('Agg')
-
 import os
 import pyTestHarness.unittest as pth
 import pyTestHarness.launcher as launch

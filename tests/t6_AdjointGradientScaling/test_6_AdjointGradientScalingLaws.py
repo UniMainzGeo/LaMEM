@@ -27,19 +27,19 @@ def test_RTI_1():
     unittest.compareFloatingPoint(key,1e-4)
 
     key = re.escape("|   Prefactor A               :")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,2e-8)
 
     key = re.escape("|   Velocity check            :")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,2e-8)
 
     key = re.escape("|  adjoint     1:          rho[ 0]")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,2e-8)
 
     key = re.escape("|  adjoint     2:          eta[ 0]")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,2e-8)
     
     key = re.escape("|  adjoint     4:          eta[ 1]")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,2e-8)
     
   # Create unit test object
   ex1 = pth.pthUnitTest('t6_AdjointGradientScalingLaws_p2',ranks,launch,expected_file)

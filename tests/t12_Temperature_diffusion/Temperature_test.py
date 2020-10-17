@@ -1,5 +1,3 @@
-# Simple Python code that retrive P-T conditions of continental crust generation per each timestep 
-
 import sys,os,fnmatch
 import numpy as np
 import vtk
