@@ -3,6 +3,8 @@ import os
 import pyTestHarness.unittest as pth
 import pyTestHarness.launcher as launch
 import re
+from t12_Temperature_diffusion.Temperature_test import *
+
 
 def test_1D():
 
@@ -27,13 +29,21 @@ def test_1D():
     key = re.escape("|mRes|_2")
     unittest.compareFloatingPoint(key,1e-4)
 
+     # Create figures with runnning the python script Temperature_test.py
+    try: 
+      Plot_Analytics_vs_Numerics('./t12_Temperature_diffusion/');
+    
+      print('Created output figures in ./t12_Temperature_diffusion comparing analytics vs. numerics')
+    except:
+      print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
+
   # Create unit test object
   ex1 = pth.pthUnitTest('t12_Diffusion_1D',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
 
-  # Create figures with runnning the python script Temperature_test.py
+ 
 
   return(ex1)
 

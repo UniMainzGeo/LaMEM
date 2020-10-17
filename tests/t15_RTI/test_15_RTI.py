@@ -50,7 +50,7 @@ def RTI_isovisous_NoSlip():
       AnalyticalSolution_FreeSlip(data);
       PlotRT_Data(data,'t15_RTI_isovisous_NoSlip');
 
-      print('Created output figure t15_RTI_isovisous_NoSlip.png comparing analytics vs. numerics')
+      print('Created output figure ./t15_RTI/t15_RTI_isovisous_NoSlip.png comparing analytics vs. numerics')
     except:
       print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
     #----------------------------

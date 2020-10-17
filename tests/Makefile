@@ -27,10 +27,14 @@ clean :
 	@rm -f *.pvd
 	@rm -f *.bin
 	@rm -f *.xml
+	@rm -f *.output
+	@rm -f permea.darcy.dat
 	@rm -rf ./Timestep*
 	@rm -rf ./Strainrate*
 	@rm -rf ./restart
 	@rm -rf ./markers*
+	@rm -rf ./output
+	@rm -rf ./RTwav_*
 	@find . -name *.pyc -delete
 
 purge : clean
