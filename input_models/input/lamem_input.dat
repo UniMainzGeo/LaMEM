@@ -218,12 +218,15 @@
 # linear profile between temp_top and temp_bot
 	init_temp = 1;
 
-# Optional gaussian temperature perturbation @ bottomn	
-	temp_bot_gauss 		  = 1					# optional: add a gaussian temperature distribution @ bottom boundary
-	temp_bot_gauss_x0     = 1					# x location of center of gaussian
-	temp_bot_gauss_y0     = 1					# y location of center of gaussian
-	temp_bot_gauss_width  = 200					# half-width of gaussian curve	
-	temp_bot_gauss_maxT   = 1600				# maximum temperature of gaussian
+# Optional plume inflow @ bottom boundary
+	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
+	Plume_Type         		= 	2D			# 2D or 3D (circular)		
+	Plume_Phase 			=	4			# phase of plume
+	Plume_Temperature 		=	1600		# temperature of inflow plume
+	Plume_Inflow_Velocity 	= 	15			# Inflow velocity			
+	Plume_Center 			=	0 50 		# [X,Y] of center  (2nd only in case of 3D plume)
+	Plume_Radius 			=	100			# Width/Radius of plume
+
 
 # Pressure on the top & bottom boundaries
 

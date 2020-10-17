@@ -224,26 +224,21 @@ struct BCCtx
 	DBox         dbox;
 
 	// velocity inflow & outflow boundary condition
-	PetscInt     face, phase,face_out;   // face (1-left 2-right 3-front 4-back) & phase identifiers
-	PetscScalar  bot, top,relax_dist;      // bottom & top coordinates of the plate
-	PetscScalar  velin, velout; // inflow & outflow velocities
+	PetscInt     face, phase,face_out;   	// face (1-left 2-right 3-front 4-back) & phase identifiers
+	PetscScalar  bot, top,relax_dist;     	// bottom & top coordinates of the plate
+	PetscScalar  velin, velout; 			// inflow & outflow velocities
 
-	// velocity plume-like boundary condition
-	PetscInt plume_like, plume_type;
-
-	PetscInt plume_phase;
-	PetscScalar plume_temperature;
-
-	PetscInt plume_direction;
-	PetscScalar coord_max, coord_min;
-
-	PetscScalar center_plume[2];
-	PetscScalar radius;
-
-	PetscScalar velin_plume,delta_Time;
+	// Plume inflow bottom boundary condition
+	PetscInt		Plume_Inflow;				// Do we have a plume-like inflow boundary?
+	PetscInt 		Plume_Type;					// Type [2D=1, or 3D=2]
+	PetscInt		Plume_Phase;				// Phase of plume
+	PetscScalar		Plume_Temperature;			// Temperature
+	PetscScalar		Plume_Center[2];			// center [x,y] coordinates (for 3D plume)		
+	PetscScalar		Plume_Radius;				// radius of plume (for 3D plume)
+	PetscScalar		Plume_Inflow_Velocity;		// inflow velocity
 
 	// open boundary flag
-	PetscInt     top_open;
+	PetscInt     	top_open;
 
 	// no-slip boundary condition mask
 	PetscInt     noslip[6];
@@ -262,10 +257,6 @@ struct BCCtx
 	// temperature on top and bottom boundaries and initial guess activation flag
 	PetscScalar  Tbot, Ttop;
 	PetscInt     initTemp;
-
-	// optional gaussian temperature perturbation @ bottom
-	PetscInt 	Tbot_gauss;
-	PetscScalar Tbot_gauss_x0, Tbot_gauss_y0, Tbot_gauss_width, Tbot_gauss_maxT;
 
 	//=====================
 	// PRESSURE CONSTRAINTS
