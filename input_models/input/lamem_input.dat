@@ -180,15 +180,18 @@
 	dbox_bounds =  0.0 1.0 0.0 1.0 0.0 1.0  # box bounds (left, right, front, back, bottom, top)
 	dbox_zvel   = -1.0                      # vertical velocity
 
-# Velocity boundary condition
+# Inflow velocity boundary condition
 
-	bvel_face   =  1     # face identifier  (1-left 2-right 3-front 4-back)
-	bvel_phase  =  1     # phase number of inflow material
-	bvel_bot    = -20.0  # bottom coordinate of inflow window
-	bvel_top    = -10.0  # top coordinate of inflow window
-	bvel_velin  =  1.0   # inflow velocity
-	bvel_velout =  0.0   # outflow velocity (if not specified, computed from mass balance)
-	
+	bvel_face       =   1                   #   face identifier  (1-left 2-right 3-front 4-back)
+	bvel_face_out   =   1                   # 	do we have outflow @ opposite boundary?
+	bvel_phase      =   1                   #   phase number of inflow material [if undefined, it uses the phase close to the boundary]
+	bvel_bot        =   -20.0               #   bottom coordinate of inflow window
+	bvel_top        =   -10.0               #   top coordinate of inflow window
+	bvel_velin      =   1.0                 #   inflow velocity
+	bvel_velout     =   0.0                 #   outflow velocity (if not specified, computed from mass balance)
+	bvel_relax_d    =   100                 #   distance over which velocity is reduced
+
+
 # Free surface top boundary flag
 
 	open_top_bound = 1

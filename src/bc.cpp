@@ -272,6 +272,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	bc->pbot    	 	= 	-1.0;
 	bc->ptop     		= 	-1.0;
 	bc->fixPhase 		= 	-1;
+    bc->phase           =   -1;
 	bc->velout   		=  	DBL_MAX;
 	bc->Plume_Inflow 	= 	0;
 
@@ -457,7 +458,23 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     else{                   PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g, %g] %s \n", bc->Plume_Center[0]*scal->length, bc->Plume_Center[1]*scal->length, scal->lbl_length);}
 							PetscPrintf(PETSC_COMM_WORLD, "      Radius of plume                         : %g %s \n", bc->Plume_Radius*scal->length, scal->lbl_length);
 	}
-                            
+
+    if (bc->face>0){
+                            PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
+                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity  boundary               : %i [1-left; 2-right; 3-front; 4-back]\n", bc->face);
+     if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }     
+     if (bc->phase>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
+     else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }     
+
+                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow window [bottom, top]             : [%3.2f,%3.2f] %s \n", bc->bot*scal->length, bc->top*scal->length, scal->lbl_length); 
+                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %1.2f %s \n", bc->velin*scal->velocity, scal->lbl_velocity); 
+     if (bc->velout>0){     PetscPrintf(PETSC_COMM_WORLD, "      Outflow velocity                        : %1.2f %s \n", bc->velout*scal->velocity, scal->lbl_velocity); }
+     else if (!bc->face_out) {                 PetscPrintf(PETSC_COMM_WORLD, "       Outflow velocity from mass balance     @ \n"); }
+    
+     if (bc->relax_dist>0){ PetscPrintf(PETSC_COMM_WORLD, "      Velocity smoothening distance           : %1.2f %s \n", bc->relax_dist*scal->length, scal->lbl_length); }  
+    }
+
+
 	// TO BE ADDED: Information about inflow/outflow lateral velocities that are specified!
 
 
@@ -1907,7 +1924,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 	PetscFunctionBegin;
 
-	if(bc->phase || bc->Plume_Inflow)
+	if( (bc->phase>=0) || bc->Plume_Inflow)
 	{
 		fs = bc->fs;
 		M  = fs->dsx.ncels;
@@ -1923,7 +1940,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 		GET_CELL_IJK(cellID, i, j, k, M, N);
 
-		if(bc->phase)
+		if(bc->phase >= 0)
 		{
 		// expand i, j, k cell indices
 
