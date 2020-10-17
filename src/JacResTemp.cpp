@@ -379,10 +379,22 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcT, lT, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcT, lT, K, j, i, pmdof) }
 
-		if(fi && fj)       SET_EDGE_CORNER(n, lT, k, J, I, k, j, i, pmdof)
-		if(fi && fk)       SET_EDGE_CORNER(n, lT, K, j, I, k, j, i, pmdof)
-		if(fj && fk)       SET_EDGE_CORNER(n, lT, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk) SET_EDGE_CORNER(n, lT, K, J, I, k, j, i, pmdof)
+        // Set BC @ edges and corners
+        if(fi && fj )           SET_EDGE_CORNER(n, lT, k, J, I, k, j, i, pmdof)
+        if(fi && fk )           SET_EDGE_CORNER(n, lT, K, j, I, k, j, i, pmdof)
+		if(fj && fk )           SET_EDGE_CORNER(n, lT, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk )     SET_EDGE_CORNER(n, lT, K, J, I, k, j, i, pmdof)
+
+        /* 
+            Note: a special case occurs for 2D setups, in which nel_y==1
+            In that we need to split the setting of edges & corners in two parts 
+            to ensure that both front & back side are accounted for.
+        */
+       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
+        if(fi && fj )           SET_EDGE_CORNER(n, lT, k, J, I, k, j, i, pmdof)
+        if(fj && fk )           SET_EDGE_CORNER(n, lT, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk   )   SET_EDGE_CORNER(n, lT, K, J, I, k, j, i, pmdof)
+
 	}
 	END_STD_LOOP
 
