@@ -1,6 +1,4 @@
 ## test 14 1D Strength Envelope
-import matplotlib
-matplotlib.use('Agg')
 
 import os
 import pyTestHarness.unittest as pth
@@ -210,9 +208,16 @@ def interpRuns(*args):
 #----------------------------------------------------
 # make plots
 def makePlot(Runs):
-  import numpy as np
-  import matplotlib.pyplot as plt
-  import datetime
+  try: 
+   import matplotlib
+    matplotlib.use('Agg')
+ 
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import datetime
+  except:
+    print('matplotlib toolbox not installed; cannot plot data')
+
 
   Time = Runs["Time"]
   Z    = Runs["Z"]

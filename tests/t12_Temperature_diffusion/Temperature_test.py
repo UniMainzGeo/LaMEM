@@ -2,20 +2,24 @@
 
 import sys,os,fnmatch
 import numpy as np
-import matplotlib.pyplot as plt 
-plt.switch_backend('agg')
-import matplotlib
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 import time
 import glob
-from matplotlib import rcParams
 import time
 import re
 
 
 
 def Plot_Analytics_vs_Numerics(dir):
+    try: 
+        import matplotlib.pyplot as plt 
+        plt.switch_backend('agg')
+        import matplotlib
+        from matplotlib import rcParams
+    except:
+        print('matplotlib toolbox not installed; cannot plot data')
+
 
     ######################################################################################
     # Some useful function
