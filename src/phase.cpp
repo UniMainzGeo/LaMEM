@@ -106,8 +106,12 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// MATERIAL PHASES
 	//================
 	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
 		// print overview of material parameters read from file
 		PetscPrintf(PETSC_COMM_WORLD,"Material parameters: \n");
+
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 
 	// setup block access mode
@@ -135,7 +139,9 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
-
+	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	}
 
 	// setup block access mode
 		ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"); CHKERRQ(ierr);
