@@ -385,7 +385,11 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	JacRes          *jr;
 	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas,outside;
 	PetscInt        PH1,PH2;
+    PetscLogDouble  t;
 
+
+    PrintStart(&t, "Phase_Transition", NULL);
+		
     // Retrieve parameters
 	jr          =   actx->jr;
 	dbm         =   jr->dbm;
@@ -453,6 +457,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 		ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
 
 	}
+    PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
