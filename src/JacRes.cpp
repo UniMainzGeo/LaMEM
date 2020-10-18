@@ -408,7 +408,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 
 	// PSD (adjoint paper)
 	ierr = VecDuplicate(jr->gsol, &jr->phi);               CHKERRQ(ierr);
-	ierr = VecSet(jr->phi, 0.0); CHKERRQ(ierr);
+	ierr = VecSet(jr->phi, 0.0); 						   CHKERRQ(ierr);
 
 	// continuity residual
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc); CHKERRQ(ierr);
@@ -1729,8 +1729,12 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 	ierr = PetscMemcpy(p, iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
 
 	// restore access
-	ierr = VecRestoreArray    (jr->gp, &p);   CHKERRQ(ierr);
-	ierr = VecRestoreArrayRead(x,      &sol); CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gp, &p);   	CHKERRQ(ierr);
+	ierr = VecRestoreArrayRead(x,      &sol); 	CHKERRQ(ierr);
+
+	// add pressure shift (if requested)
+	ierr = VecShift(jr->gp, jr->ctrl.pShift);	CHKERRQ(ierr);
+
 
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)

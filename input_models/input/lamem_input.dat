@@ -423,7 +423,8 @@
 	out_visc_creep      = 1
 	out_velocity        = 1
 	out_pressure        = 1
-	out_eff_press       = 1
+    out_tot_press       = 1  
+    out_eff_press       = 1
 	out_over_press      = 1
 	out_litho_press     = 1
 	out_pore_press      = 1
