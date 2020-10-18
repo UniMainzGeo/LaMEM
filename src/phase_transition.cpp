@@ -79,6 +79,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	Ph_trans_t      *ph;
 	PetscInt        ID, i;
 	PetscErrorCode  ierr;
+    char            str_direction[_str_len_];
 
 	// Phase transition law ID
 	ierr    =   getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
@@ -121,6 +122,13 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb,   _OPTIONAL_, "DensityBelow",     ph->DensityBelow,   ph->number_phases , 1.0);               CHKERRQ(ierr);
 	ierr = getScalarParam(fb,   _OPTIONAL_, "DensityAbove",     ph->DensityAbove,   ph->number_phases,  1.0);               CHKERRQ(ierr);
 
+    ierr = getStringParam(fb, _OPTIONAL_, "PhaseDirection", 	str_direction, "BothWays"); 					            CHKERRQ(ierr);  
+	if     	(!strcmp(str_direction, "BelowToAbove"))    ph->PhaseDirection  = 1;
+	else if (!strcmp(str_direction, "AboveToBelow"))    ph->PhaseDirection  = 2;
+    else if (!strcmp(str_direction, "BothWays"    ))    ph->PhaseDirection  = 0;
+    else{      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Phase direction %s \n", str_direction);  }
+        
+
 	if (!ph->PhaseAbove || !ph->PhaseBelow)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type (Constant) (Clapeyron) ", (LLD)ID);
@@ -133,6 +141,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
     PetscPrintf(PETSC_COMM_WORLD,"     Phase Below        :  ");
     for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseBelow[i])); }
     PetscPrintf(PETSC_COMM_WORLD," \n");
+    PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
     
 	PetscFunctionReturn(0);
 }
@@ -425,9 +434,18 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 						PH2 = PhaseTrans->PhaseAbove[above];
 					}
 					ph          =   Transition(PhaseTrans, P, PH1, PH2,nPtr);
-					P->phase    =   ph;
 
-				}
+                    if (PhaseTrans->PhaseDirection==0){
+                        P->phase    =   ph;
+                    }
+                    else if (PhaseTrans->PhaseDirection==1 & below>=0 ){
+                        P->phase    =   ph;
+                    }
+                    else if (PhaseTrans->PhaseDirection==2 & above>=0 ){
+                        P->phase    =   ph;
+                    }
+                    
+    			}
 			}
 		}
 
@@ -457,7 +475,6 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 		ph = Check_Constant_Box_Transition(PhaseTrans,P,PH1, ID);
 	}
 
-
 	return ph;
 }
 
@@ -473,36 +490,27 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 	if(!strcmp(PhaseTrans->Parameter_transition,"T"))   // NOTE: string comparisons can be slow; optimization possibility
 		{
             // Temperature transition
-            /*  
-                Note that in this way, we do a two-way phase transition, 
-                meaning that the PhaseAbove can transform back to PhaseBelow if its conditions change.
-
-                This is good in most cases; yet, there may also be cases in which we do not want a two-way transformation, 
-                but only a transformation from below->above and not back
-
-            */
-
-			if ( P->T >= PhaseTrans->ConstantValue)     {   ph = PH2; }
+            if ( P->T >= PhaseTrans->ConstantValue)     {   ph = PH2; }
 			else                                        {   ph = PH1; }
 		}
 
 	if(!strcmp(PhaseTrans->Parameter_transition,"P"))
 		{
-			if  ( P->p >= PhaseTrans->ConstantValue)    {   ph = PH2;   }
-			else                                        {   ph = PH1;   }
-
+            if  ( P->p >= PhaseTrans->ConstantValue)    {   ph = PH2;   }
+		    else                                        {   ph = PH1;   }
+          
 		}
 
 	if(!strcmp(PhaseTrans->Parameter_transition,"Depth"))
 		{
-			if ( P->X[2] >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
-			else                                        {   ph = PH1;   }
+          if ( P->X[2] >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
+          else                                        {   ph = PH1;   }
         }
 
 	if(!strcmp(PhaseTrans->Parameter_transition,"APS")) // accumulated plastic strain
 		{
-			if ( P->APS >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
-			else                                       {   ph = PH1;   }
+            if ( P->APS >= PhaseTrans->ConstantValue)  {   ph = PH2;        }
+            else                                       {   ph = PH1;        }
         }
 
 	return ph;
@@ -521,16 +529,16 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 		Pres[ip]    =   (P->T - PhaseTrans->T0_clapeyron[ip]) * PhaseTrans->clapeyron_slope[ip] + PhaseTrans->P0_clapeyron[ip];
 	}
 	if (neq==1)
-	{
-		if  ( P->p >= Pres[0]) {   ph  =   PH2;    }
-		else                   {   ph  =   PH1;    }
+	{   
+        if  ( P->p >= Pres[0]) {   ph  =   PH2;    }
+        else                   {   ph  =   PH1;    }
 	}
 	else
 	{
         // in case we have two equations to describe the phase transition:
-		if  ( (P->p >= Pres[0]) && (P->p >= Pres[1]) )      {   ph  =   PH2;    }
-		else                                                {   ph  =   PH1;    }
-
+        if  ( (P->p >= Pres[0]) && (P->p >= Pres[1]) )      {   ph  =   PH2;    }
+        else                                                {   ph  =   PH1;    }
+      
 	}
 
 	return ph;
@@ -543,25 +551,20 @@ PetscInt Check_Constant_Box_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt
 	PetscScalar X[3];
 
 
-		X[0]=P->X[0];
-		X[1]=P->X[1];
-		X[2]=P->X[2];
+    X[0]=P->X[0];
+	X[1]=P->X[1];
+	X[2]=P->X[2];
 
 
-		if(X[0]>=PhaseTrans->Geometric_box[0] && X[0]<=PhaseTrans->Geometric_box[1] && X[1]>=PhaseTrans->Geometric_box[2] && X[1]<=PhaseTrans->Geometric_box[3] && X[2]>=PhaseTrans->Geometric_box[4] && X[2]<=PhaseTrans->Geometric_box[5])
-		{
-
-			ph = PH1;
-			P->T = PhaseTrans->dT_within;
-
-		}
-		else
-		{
-			ph = P->phase;
-		}
-
-
-
+	if(X[0]>=PhaseTrans->Geometric_box[0] && X[0]<=PhaseTrans->Geometric_box[1] && X[1]>=PhaseTrans->Geometric_box[2] && X[1]<=PhaseTrans->Geometric_box[3] && X[2]>=PhaseTrans->Geometric_box[4] && X[2]<=PhaseTrans->Geometric_box[5])
+	{
+        ph = PH1;
+        P->T = PhaseTrans->dT_within;
+	}
+	else
+	{
+	    ph = P->phase;
+	}
 
 	return ph;
 }

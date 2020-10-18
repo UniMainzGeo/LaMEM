@@ -87,26 +87,28 @@ struct Ph_trans_t
 {
 public:
 
-	PetscInt    ID ;// Phase Transition ID
-	char    Type[_str_len_] ; // Type Constant or Clapeyron
-	char    Parameter_transition[_str_len_] ; // Parameter in Constant
-	char    Name_clapeyron[_str_len_] ; // Type Constant or Clapeyron
-	PetscScalar ConstantValue ; //
+	PetscInt    ID ;				                // Phase Transition ID
+	char        Type[_str_len_] ; 					// Type Constant or Clapeyron
+	char        Parameter_transition[_str_len_] ; 	// Parameter in Constant
+	char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
+	PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
+    PetscScalar ConstantValue ;                     // Value (if Constant) 
 
-	PetscInt    neq ;// number of equation
-	PetscScalar P0_clapeyron[_max_num_eq_] ;
+
+	PetscInt    neq ;                               // number of equation
+	PetscScalar P0_clapeyron[_max_num_eq_] ;        // for clapeyron
 	PetscScalar T0_clapeyron[_max_num_eq_] ;
 	PetscScalar clapeyron_slope[_max_num_eq_] ;
-	PetscScalar Geometric_box[6];
+	PetscScalar Geometric_box[6];                   //
 
 	PetscInt    number_phases;
 	PetscInt    PhaseBelow[_max_tr_];
 	PetscInt    PhaseAbove[_max_tr_];
 	PetscInt    PhaseWithin[_max_tr_];
 	PetscInt    PhaseOutside[_max_tr_];
-	PetscScalar    dT_within;
-	PetscScalar    DensityAbove[_max_tr_];
-	PetscScalar    DensityBelow[_max_tr_];
+	PetscScalar dT_within;
+	PetscScalar DensityAbove[_max_tr_];
+	PetscScalar DensityBelow[_max_tr_];
 
 };
 

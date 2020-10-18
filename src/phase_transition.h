@@ -16,7 +16,7 @@ struct Marker;
 PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb);
 PetscErrorCode Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID);
 PetscErrorCode Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb, PetscInt ID);
-PetscErrorCode  Set_Box_Within_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID);
+PetscErrorCode Set_Box_Within_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID);
 PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph);
 PetscErrorCode Overwrite_density(DBMat *dbm);
 PetscErrorCode Phase_Transition(AdvCtx *actx);

@@ -498,7 +498,8 @@
         
         number_phases           =   1         #     The number of involved phases [default=1]
 		PhaseAbove              =   1         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
-		PhaseBelow              =   3 
+		PhaseBelow              =   3         #       
+        PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
 	<PhaseTransitionEnd>
 
 	#Mantle 2 Lower Mantle	
