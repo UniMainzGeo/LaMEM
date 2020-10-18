@@ -151,25 +151,34 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	ierr = getScalarParam(fb, _REQUIRED_, "ConstantValue",          &ph->ConstantValue,        1,1.0);  CHKERRQ(ierr);
 	if((!ph->Parameter_transition || !ph->ConstantValue))
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a [constant] phase transition you need to specify the parameter: p = Pressure, T = temperature, z = depth", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a [constant] phase transition you need to specify the parameter: P = Pressure, T = temperature, APS = PlasticStrain", (LLD)ID);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Constant \n", (LLD)(ph->ID));
     PetscPrintf(PETSC_COMM_WORLD,"     Parameter          :   %s \n",    ph->Parameter_transition);
     PetscPrintf(PETSC_COMM_WORLD,"     Transition Value   :   %1.3f \n", ph->ConstantValue);
 
-	if(!strcmp(ph->Parameter_transition,"T"))       //  Temperature
+	if(!strcmp(ph->Parameter_transition,"T"))       //  Temperature [Celcius]
 	{
 		ph->ConstantValue   =   (ph->ConstantValue + scal->Tshift)/scal->temperature;
 	}
-	if(!strcmp(ph->Parameter_transition,"P"))       //  Pressure
+	else if(!strcmp(ph->Parameter_transition,"P"))       //  Pressure [Pa]
 	{
 		ph->ConstantValue   /= scal->stress_si;
 	}
-	if(!strcmp(ph->Parameter_transition,"Depth"))   //  Depth
+	else if(!strcmp(ph->Parameter_transition,"Depth"))   //  Depth [km if geo units]
 	{
-		ph->ConstantValue   = scal->length;
+		ph->ConstantValue   /= scal->length;
 	}
+	else if(!strcmp(ph->Parameter_transition,"APS"))   //  accumulated plastic strain
+	{
+		ph->ConstantValue   = ph->ConstantValue;    // is already in nd units
+	}
+    else{
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for [Constant] Phase transition");
+    }
+
+
 	PetscFunctionReturn(0);
 
 }
@@ -269,7 +278,6 @@ PetscErrorCode  Overwrite_density(DBMat *dbm)
 	mat         = dbm->phases;
 	numPhTrn    = dbm->numPhtr;
 
-    
     PetscPrintf(PETSC_COMM_WORLD,"\n   Adjusting density values due to phase transitions: \n");
     for(nPtr=0; nPtr<numPhTrn;  nPtr++)
 	{
@@ -482,13 +490,20 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 		{
 			if  ( P->p >= PhaseTrans->ConstantValue)    {   ph = PH2;   }
 			else                                        {   ph = PH1;   }
+
 		}
 
 	if(!strcmp(PhaseTrans->Parameter_transition,"Depth"))
 		{
 			if ( P->X[2] >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
 			else                                        {   ph = PH1;   }
-		}
+        }
+
+	if(!strcmp(PhaseTrans->Parameter_transition,"APS")) // accumulated plastic strain
+		{
+			if ( P->APS >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
+			else                                       {   ph = PH1;   }
+        }
 
 	return ph;
 }
