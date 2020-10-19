@@ -669,10 +669,10 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 
 			if(mat->pdAct == 1)
 			{
+				mf = 0.0;	
+				
 				// compute melt fraction from phase diagram
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
-
-
 
 				svBulk->mf     += phRat[i]*mf;
 				svBulk->rho_pf += phRat[i]*mat->rho_melt;

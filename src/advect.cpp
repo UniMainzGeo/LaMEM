@@ -78,7 +78,6 @@ Main advection routine
 #define __FUNCT__ "MarkerMerge"
 PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 {
-	PetscInt r;
 	if(A.phase != B.phase)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Attempt to merge markers with different phases");
@@ -2024,8 +2023,7 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 	Marker    *P;
 	PetscInt  jj;
 	PetscInt  numPhases;
-	PetscErrorCode ierr;
-
+	
 	PetscFunctionBegin;
 
 	numPhases = actx->dbm->numPhases;

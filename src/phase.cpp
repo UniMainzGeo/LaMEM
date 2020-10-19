@@ -259,7 +259,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st,Cpx_mode, Water_melt,rho_melt;
+	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st,Cpx_mode, Water_melt;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
@@ -286,9 +286,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	MSN      =  dbm->numSoft - 1;
 	Cpx_mode =  0.17;
 	Water_melt = 0.0;
-	rho_melt   = 0.0;
-
-
+	
 	// phase ID
 	ierr 	 = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
 	fb->ID	 = ID;

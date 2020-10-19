@@ -422,10 +422,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
                  if (PhaseTrans->PhaseDirection==0){
                      P->phase    =   ph;
                  }
-                 else if (PhaseTrans->PhaseDirection==1 & below>=0 ){
+                 else if ( (PhaseTrans->PhaseDirection==1) & (below>=0) ){
                      P->phase    =   ph;
                  }
-                 else if (PhaseTrans->PhaseDirection==2 & above>=0 ){
+                 else if ( (PhaseTrans->PhaseDirection==2) & (above>=0) ){
                      P->phase    =   ph;
                  }
 

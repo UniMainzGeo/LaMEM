@@ -2000,7 +2000,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	FDSTAG      *fs;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar ***bcvz;
-	PetscScalar  x, y, cmin, cmax, vel, velin_plume, velout,x_min,x_max,y_min,y_max,d_x,d_y,A;
+	PetscScalar  cmin, cmax, vel, velin_plume, velout,x_min,x_max,y_min,y_max,x;
 	PetscScalar  a,b,c,inflow_window;
 	PetscScalar  center;
 
@@ -2015,14 +2015,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	ierr = FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
 
 
-	d_x 	= 	x_max-x_min;
-	d_y 	= 	y_max-y_min;
-	A	 	= 	d_x*d_y;
-
-
 	velin_plume = bc->Plume_Inflow_Velocity;
-
-
 	if(bc->Plume_Type == 1)	// 2D
 	{
 		// Gaussian perturbation velocity - any thing that creates a rigid plug is a problem
@@ -2065,9 +2058,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	{
 
 		x   = COORD_CELL(i, sx, fs->dsx);
-		y   = COORD_CELL(j, sy, fs->dsy);
-
-
+		
 		if(bc->Plume_Type==1)
 		{
 			vel = (velin_plume-velout)*PetscExpScalar( -PetscPowScalar(x-center,2.0 ) /(inflow_window*inflow_window)) + velout;
