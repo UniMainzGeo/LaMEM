@@ -79,7 +79,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	Ph_trans_t      *ph;
 	PetscInt        ID, i;
 	PetscErrorCode  ierr;
-    char            str_direction[_str_len_];
+    char            str_direction[_str_len_],Type_[_str_len_];
 
 	// Phase transition law ID
 	ierr    =   getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
@@ -96,25 +96,23 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	// set ID
 	ph->ID  =   ID;
 
-	ierr    =   getStringParam(fb, _REQUIRED_, "Type", ph->Type,0);  CHKERRQ(ierr);
-	if (!ph->Type)
+	ierr    =   getStringParam(fb, _REQUIRED_, "Type",Type_,0);  CHKERRQ(ierr);
+	if (!Type_)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type [Constant; Clapeyron; Box_type] ", (LLD)ID);
 	}
 
-	if(!strcmp(ph->Type,"Constant"))
+	if(!strcmp(Type_,"Constant"))
 	{
+		ph->Type = Constant;
 		ierr    =   Set_Constant_Phase_Transition(ph, dbm, fb,ID);    CHKERRQ(ierr);
 	}
-	if(!strcmp(ph->Type,"Clapeyron"))
+	if(!strcmp(Type_,"Clapeyron"))
 	{
+		ph->Type = Clapeyron;
 		ierr    =   Set_Clapeyron_Phase_Transition(ph, dbm, fb,ID);   CHKERRQ(ierr);
 	}
 
-	if(!strcmp(ph->Type,"Box_type"))
-	{
-		ierr    =   Set_Box_Within_Transition(ph, dbm, fb,ID);        CHKERRQ(ierr);
-	}
 
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
 	ierr = getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
@@ -151,12 +149,30 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID)
 {
 	Scaling      *scal;
+	char         Parameter[_str_len_];
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	scal = dbm -> scal;
 
-	ierr = getStringParam(fb, _REQUIRED_, "Parameter_transition",   ph->Parameter_transition, "none");  CHKERRQ(ierr);
+	ierr = getStringParam(fb, _REQUIRED_, "Parameter_transition",   Parameter, "none");  CHKERRQ(ierr);
+	if(!strcmp(Parameter, "T"))
+	{
+		ph->Parameter_transition = T;
+	}
+	else if(!strcmp(Parameter, "P"))
+	{
+		ph->Parameter_transition = Pressure;
+	}
+	else if(!strcmp(Parameter, "Depth"))
+	{
+		ph->Parameter_transition = Depth;
+	}
+	else if(!strcmp(Parameter, "APS"))
+	{
+		ph->Parameter_transition = APS;
+	}
+
 	ierr = getScalarParam(fb, _REQUIRED_, "ConstantValue",          &ph->ConstantValue,        1,1.0);  CHKERRQ(ierr);
 	if((!ph->Parameter_transition || !ph->ConstantValue))
 	{
@@ -167,19 +183,19 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
     PetscPrintf(PETSC_COMM_WORLD,"     Parameter          :   %s \n",    ph->Parameter_transition);
     PetscPrintf(PETSC_COMM_WORLD,"     Transition Value   :   %1.3f \n", ph->ConstantValue);
 
-	if(!strcmp(ph->Parameter_transition,"T"))       //  Temperature [Celcius]
+	if(ph->Parameter_transition==T)       //  Temperature [Celcius]
 	{
 		ph->ConstantValue   =   (ph->ConstantValue + scal->Tshift)/scal->temperature;
 	}
-	else if(!strcmp(ph->Parameter_transition,"P"))       //  Pressure [Pa]
+	else if(ph->Parameter_transition==Pressure)       //  Pressure [Pa]
 	{
 		ph->ConstantValue   /= scal->stress_si;
 	}
-	else if(!strcmp(ph->Parameter_transition,"Depth"))   //  Depth [km if geo units]
+	else if(ph->Parameter_transition==Depth)   //  Depth [km if geo units]
 	{
 		ph->ConstantValue   /= scal->length;
 	}
-	else if(!strcmp(ph->Parameter_transition,"APS"))   //  accumulated plastic strain
+	else if(ph->Parameter_transition==APS)   //  accumulated plastic strain
 	{
 		ph->ConstantValue   = ph->ConstantValue;    // is already in nd units
 	}
@@ -212,6 +228,12 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
     }
 
 	ierr = getIntParam   (fb, _OPTIONAL_, "numberofequation",   &ph->neq,           1,          2.0); CHKERRQ(ierr);
+	if(ph->neq>2 || ph->neq == 0)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero", (LLD)ID);
+
+	}
+
 	ierr = getScalarParam(fb, _OPTIONAL_, "clapeyron_slope",    ph->clapeyron_slope,ph->neq,    1.0); CHKERRQ(ierr);    // units??
 	ierr = getScalarParam(fb, _OPTIONAL_, "P0_clapeyron",       ph->P0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // units??
 	ierr = getScalarParam(fb, _OPTIONAL_, "T0_clapeyron",       ph->T0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // units??        
@@ -227,42 +249,14 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	{
         PetscPrintf(PETSC_COMM_WORLD,"       eq[%i]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
 
-		ph->clapeyron_slope[it]     *=  1e6*(scal->temperature/scal->stress_si);                    // [C/MPa]??
+		ph->clapeyron_slope[it]     *=  1e6*(scal->temperature/scal->stress_si);                    // [K/MPa]
 		ph->P0_clapeyron[it]        /=  (scal->stress_si);                                          // [Pa]
 		ph->T0_clapeyron[it]        =   (ph->T0_clapeyron[it]+scal->Tshift)/ (scal->temperature);   // [Celcius]
 	}
 	PetscFunctionReturn(0);
 
 }
-//------------------------------------------------------------------------------------------------------------//
-#undef __FUNCT__
-#define __FUNCT__ "Set_Box_Within_Transition"
-PetscErrorCode  Set_Box_Within_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID)
-{
-	
-	PetscFunctionBegin;
 
-	PetscErrorCode  ierr;
-    Scaling         *scal;
-	PetscInt        it;
-
-	scal = dbm -> scal;
-
-	ierr = getScalarParam(fb, _REQUIRED_, "Geometrical_box", ph->Geometric_box,6, 1.0); CHKERRQ(ierr);
-
-	for(it=0; it<6; it++)
-	{
-		ph->Geometric_box[it]   /=  scal->length;
-	}
-
-	ierr = getScalarParam(fb, _REQUIRED_, "DeltaT_within", &ph->dT_within,1, 1.0);      CHKERRQ(ierr);
-
-
-	ph->dT_within   =   (ph->dT_within+ scal->Tshift)+scal->temperature;
-
-	PetscFunctionReturn(0);
-
-}
 // ---------------------------------------------------------------------------------------------------------- //
 #undef __FUNCT__
 #define __FUNCT__ "Overwrite_Density"
@@ -383,7 +377,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	Ph_trans_t      *PhaseTrans;
 	Marker          *P;
 	JacRes          *jr;
-	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas,outside;
+	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas;
 	PetscInt        PH1,PH2;
     PetscLogDouble  t;
 
@@ -405,58 +399,43 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 			P   =   &actx->markers[i];      // retrieve marker
 
-			if (!strcmp(PhaseTrans->Type,"Box_type")) // NOTE: doing a string comparison @ every particle can be time-consuming; if needed this can be changed into an integer check
+
+			num_phas    =   PhaseTrans->number_phases;
+			below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow, P, num_phas);
+			above       =   Check_Phase_above_below(PhaseTrans->PhaseAbove, P, num_phas);
+
+			if  ( (below >= 0) || (above >= 0) )
 			{
-
-				num_phas    =   PhaseTrans->number_phases;
-
-				outside     =   Check_Phase_above_below(PhaseTrans->PhaseBelow,P,num_phas);
-				if(outside>=0)
+                 // the current phase is indeed involved in a phase transition
+				if      (   below>=0    )
 				{
-					PH1         =   PhaseTrans->PhaseAbove[outside];
-					ph          =   Transition(PhaseTrans, P, PH1, PH2,nPtr);
-					P->phase    =   ph;
+					PH1 = PhaseTrans->PhaseBelow[below];
+					PH2 = PhaseTrans->PhaseAbove[below];
 				}
-			}
-			else
-			{
-				num_phas    =   PhaseTrans->number_phases;
-				below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow, P, num_phas);
-				above       =   Check_Phase_above_below(PhaseTrans->PhaseAbove, P, num_phas);
-
-				if  ( (below >= 0) || (above >= 0) )
+				else if (   above >=0   )
 				{
-                    // the current phase is indeed involved in a phase transition    
-					if      (   below>=0    )
-					{
-						PH1 = PhaseTrans->PhaseBelow[below];
-						PH2 = PhaseTrans->PhaseAbove[below];
-					}
-					else if (   above >=0   )
-					{
-						PH1 = PhaseTrans->PhaseBelow[above];
-						PH2 = PhaseTrans->PhaseAbove[above];
-					}
-					ph          =   Transition(PhaseTrans, P, PH1, PH2,nPtr);
+					PH1 = PhaseTrans->PhaseBelow[above];
+					PH2 = PhaseTrans->PhaseAbove[above];
+				}
+				ph          =   Transition(PhaseTrans, P, PH1, PH2,nPtr);
 
-                    if (PhaseTrans->PhaseDirection==0){
-                        P->phase    =   ph;
-                    }
-                    else if (PhaseTrans->PhaseDirection==1 & below>=0 ){
-                        P->phase    =   ph;
-                    }
-                    else if (PhaseTrans->PhaseDirection==2 & above>=0 ){
-                        P->phase    =   ph;
-                    }
-                    
-    			}
+                 if (PhaseTrans->PhaseDirection==0){
+                     P->phase    =   ph;
+                 }
+                 else if (PhaseTrans->PhaseDirection==1 & below>=0 ){
+                     P->phase    =   ph;
+                 }
+                 else if (PhaseTrans->PhaseDirection==2 & above>=0 ){
+                     P->phase    =   ph;
+                 }
+
+
 			}
 		}
 
-        // Interpolate markers to grid (BORIS: does this have to be done after every PhaseTransition of can it be done @ the end of the routine?):
-		ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
-
 	}
+	ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
+
     PrintDone(t);
 
 	PetscFunctionReturn(0);
@@ -467,18 +446,15 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 {
 	PetscInt ph;
 
-	if(!strcmp(PhaseTrans->Type,"Constant"))    // NOTE: string comparisons can be slow; we can change this to integers if needed
+	if(PhaseTrans->Type==Constant)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
 		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
 	}
-	else if(!strcmp(PhaseTrans->Type,"Clapeyron"))
+	else if(PhaseTrans->Type==Clapeyron)
 	{
 		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
 	}
-	else
-	{
-		ph = Check_Constant_Box_Transition(PhaseTrans,P,PH1, ID);
-	}
+
 
 	return ph;
 }
@@ -492,27 +468,27 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
     PetscInt ph;
 
 
-	if(!strcmp(PhaseTrans->Parameter_transition,"T"))   // NOTE: string comparisons can be slow; optimization possibility
+	if((PhaseTrans->Parameter_transition==T))   // NOTE: string comparisons can be slow; optimization possibility
 		{
             // Temperature transition
             if ( P->T >= PhaseTrans->ConstantValue)     {   ph = PH2; }
 			else                                        {   ph = PH1; }
 		}
 
-	if(!strcmp(PhaseTrans->Parameter_transition,"P"))
+	if(PhaseTrans->Parameter_transition==Pressure)
 		{
             if  ( P->p >= PhaseTrans->ConstantValue)    {   ph = PH2;   }
 		    else                                        {   ph = PH1;   }
           
 		}
 
-	if(!strcmp(PhaseTrans->Parameter_transition,"Depth"))
+	if(PhaseTrans->Parameter_transition==Depth)
 		{
           if ( P->X[2] >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
           else                                        {   ph = PH1;   }
         }
 
-	if(!strcmp(PhaseTrans->Parameter_transition,"APS")) // accumulated plastic strain
+	if(PhaseTrans->Parameter_transition==APS) // accumulated plastic strain
 		{
             if ( P->APS >= PhaseTrans->ConstantValue)  {   ph = PH2;        }
             else                                       {   ph = PH1;        }
@@ -522,7 +498,7 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 }
 
 //------------------------------------------------------------------------------------------------------------//
-PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID) 
+PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID)
 {
 	PetscInt ph,ip,neq;
 	PetscScalar Pres[2];
@@ -534,7 +510,7 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 		Pres[ip]    =   (P->T - PhaseTrans->T0_clapeyron[ip]) * PhaseTrans->clapeyron_slope[ip] + PhaseTrans->P0_clapeyron[ip];
 	}
 	if (neq==1)
-	{   
+	{
         if  ( P->p >= Pres[0]) {   ph  =   PH2;    }
         else                   {   ph  =   PH1;    }
 	}
@@ -543,32 +519,7 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
         // in case we have two equations to describe the phase transition:
         if  ( (P->p >= Pres[0]) && (P->p >= Pres[1]) )      {   ph  =   PH2;    }
         else                                                {   ph  =   PH1;    }
-      
-	}
 
-	return ph;
-}
-//------------------------------------------------------------------------------------------------------------//
-
-PetscInt Check_Constant_Box_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1,PetscInt ID) 
-{
-	PetscInt ph;
-	PetscScalar X[3];
-
-
-    X[0]=P->X[0];
-	X[1]=P->X[1];
-	X[2]=P->X[2];
-
-
-	if(X[0]>=PhaseTrans->Geometric_box[0] && X[0]<=PhaseTrans->Geometric_box[1] && X[1]>=PhaseTrans->Geometric_box[2] && X[1]<=PhaseTrans->Geometric_box[3] && X[2]>=PhaseTrans->Geometric_box[4] && X[2]<=PhaseTrans->Geometric_box[5])
-	{
-        ph = PH1;
-        P->T = PhaseTrans->dT_within;
-	}
-	else
-	{
-	    ph = P->phase;
 	}
 
 	return ph;

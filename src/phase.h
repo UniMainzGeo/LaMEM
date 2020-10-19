@@ -83,13 +83,29 @@ public:
 //.......................   Phase Transition Law Parameters  ................
 //---------------------------------------------------------------------------
 
+enum type
+{
+	Constant,
+	Clapeyron
+};
+
+enum Parameter
+{
+	T,
+	Pressure,
+	Depth,
+	APS
+};
+
+
+
 struct Ph_trans_t
 {
 public:
 
 	PetscInt    ID ;				                // Phase Transition ID
-	char        Type[_str_len_] ; 					// Type Constant or Clapeyron
-	char        Parameter_transition[_str_len_] ; 	// Parameter in Constant
+	type        Type ; 					// Type Constant or Clapeyron
+	Parameter   Parameter_transition; 	// Parameter in Constant
 	char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
 	PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
     PetscScalar ConstantValue ;                     // Value (if Constant) 

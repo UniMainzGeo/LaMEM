@@ -12,6 +12,7 @@ struct JacRes;
 struct ConstEqCtx;
 struct Marker;
 
+
 // read phase transition law
 PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb);
 PetscErrorCode Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID);
