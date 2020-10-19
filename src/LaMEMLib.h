@@ -70,7 +70,6 @@ struct LaMEMLib
 	FreeSurf surf;   // free-surface grid
 	BCCtx    bc;     // boundary condition context
 	AdvCtx   actx;   // advection context
-	Passive_Tracers passive_tr;
 	JacRes   jr;     // Jacobian & residual context
 	PVOut    pvout;  // paraview output driver
 	PVSurf   pvsurf; // paraview output driver for surface

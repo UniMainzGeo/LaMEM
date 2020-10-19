@@ -718,7 +718,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			{
 				rho = (Pd->mf * Pd->rho_f) + ((1-Pd->mf) * Pd->rho);
 			}
-			else if(mat->Melt_Parametrization && ctrl->melt_feedback)
+			else if(mat->Melt_Parametrization)
 			{
 				rho = (mf * mat->rho_melt) + ((1-mf) * mat->rho);
 			}
