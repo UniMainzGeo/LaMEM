@@ -952,8 +952,8 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		svCell = &jr->svCell[ID];
 
 		// update pressure & temperature variables
-		P->p += lp[sz+K][sy+J][sx+I] - svCell->svBulk.pn;
-		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
+		P->p += lp[sz+K][sy+J][sx+I]  	- 	svCell->svBulk.pn;
+		P->T += lT[sz+K][sy+J][sx+I] 	-	svCell->svBulk.Tn;
 
 		// override temperature of air phase
 		if(AirPhase != -1 && P->phase == AirPhase) P->T = Ttop;
@@ -1870,7 +1870,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		ierr = getPhaseRatio(numPhases, svCell->phRat, &w); CHKERRQ(ierr);
 
 		// normalize history variables
-		svCell->svBulk.pn /= w;
+		svCell->svBulk.pn /= w;		
 		svCell->svBulk.Tn /= w;
 		svCell->svDev.APS /= w;
 		svCell->ATS       /= w;
@@ -2090,7 +2090,7 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 	{
 		svCell = &jr->svCell[iter++];
 
-		svCell->svBulk.pn = lp[k][j][i];
+		svCell->svBulk.pn = lp[k][j][i] + jr->ctrl.pShift;
 		svCell->svBulk.Tn = lT[k][j][i];
 		svCell->hxx       = svCell->sxx;
 		svCell->hyy       = svCell->syy;

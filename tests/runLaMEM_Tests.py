@@ -27,6 +27,8 @@ sys.path.append(os.path.join(os.environ['PWD'], 't11_Subgrid'))
 sys.path.append(os.path.join(os.environ['PWD'], 't13_Rheology0D'))
 sys.path.append(os.path.join(os.environ['PWD'], 't14_1DStrengthEnvelope'))
 sys.path.append(os.path.join(os.environ['PWD'], 't15_RTI'))
+sys.path.append(os.path.join(os.environ['PWD'], 't16_PhaseTransitions'))
+sys.path.append(os.path.join(os.environ['PWD'], 't17_InflowOutflow'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
@@ -48,6 +50,9 @@ import test_11_SubGrid as Subgrid
 import test_13_Rheology0D as Rheology0D
 import test_14_1DStrengthEnvelope as StrEnv
 import test_15_RTI as RTI
+import test_16_PhaseTransitions as PT
+import test_17_InflowOutflow as InOut
+
 
 
 if os.environ.get('MATLAB') != None:
@@ -75,7 +80,8 @@ def run_tests():
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),
                       StrEnv.test_a(), StrEnv.test_b(), StrEnv.test_c(), StrEnv.test_d(),
-                      RTI.RTI_isovisous_NoSlip()];
+                      RTI.RTI_isovisous_NoSlip(), PT.test_a(),
+                      InOut.test_a()];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)

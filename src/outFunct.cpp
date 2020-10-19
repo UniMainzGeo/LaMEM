@@ -344,13 +344,12 @@ PetscErrorCode PVOutWriteStAngle(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteTotalPress"
 PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 {
-	PetscScalar biot, pShift;
+	PetscScalar biot;
 
 	ACCESS_FUNCTION_HEADER
 
 	biot 	= jr->ctrl.biot;
-	pShift 	= jr->ctrl.pShift; 
-
+	
 	cf  = scal->stress;
 
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
@@ -358,9 +357,6 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 	// compute total pressure [add pore fluid P]
 	ierr = VecWAXPY(outbuf->lbcen, biot, jr->lp_pore, jr->lp); CHKERRQ(ierr);
 	
-	// add pressure shift
-	ierr = VecShift(outbuf->lbcen,pShift); CHKERRQ(ierr);
-
 	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);

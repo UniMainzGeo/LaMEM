@@ -658,10 +658,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
 
-		PrintStart(&t, "Phase_Transition", NULL);
+		// apply phase transitions on particles
 		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
-		PrintDone(t);
-
+		
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
