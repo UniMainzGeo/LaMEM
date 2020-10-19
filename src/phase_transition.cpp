@@ -104,12 +104,12 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 
 	if(!strcmp(Type_,"Constant"))
 	{
-		ph->Type = Constant;
+		ph->Type = _Constant_;
 		ierr    =   Set_Constant_Phase_Transition(ph, dbm, fb,ID);    CHKERRQ(ierr);
 	}
 	if(!strcmp(Type_,"Clapeyron"))
 	{
-		ph->Type = Clapeyron;
+		ph->Type = _Clapeyron_;
 		ierr    =   Set_Clapeyron_Phase_Transition(ph, dbm, fb,ID);   CHKERRQ(ierr);
 	}
 
@@ -158,19 +158,19 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	ierr = getStringParam(fb, _REQUIRED_, "Parameter_transition",   Parameter, "none");  CHKERRQ(ierr);
 	if(!strcmp(Parameter, "T"))
 	{
-		ph->Parameter_transition = T;
+		ph->Parameter_transition = _T_;
 	}
 	else if(!strcmp(Parameter, "P"))
 	{
-		ph->Parameter_transition = Pressure;
+		ph->Parameter_transition = _Pressure_;
 	}
 	else if(!strcmp(Parameter, "Depth"))
 	{
-		ph->Parameter_transition = Depth;
+		ph->Parameter_transition = _Depth_;
 	}
 	else if(!strcmp(Parameter, "APS"))
 	{
-		ph->Parameter_transition = APS;
+		ph->Parameter_transition = _PlasticStrain_;
 	}
 
 	ierr = getScalarParam(fb, _REQUIRED_, "ConstantValue",          &ph->ConstantValue,        1,1.0);  CHKERRQ(ierr);
@@ -180,24 +180,24 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Constant \n", (LLD)(ph->ID));
-    PetscPrintf(PETSC_COMM_WORLD,"     Parameter          :   %s \n",    ph->Parameter_transition);
+    PetscPrintf(PETSC_COMM_WORLD,"     Parameter          :   %s \n",    Parameter);
     PetscPrintf(PETSC_COMM_WORLD,"     Transition Value   :   %1.3f \n", ph->ConstantValue);
 
-	if(ph->Parameter_transition==T)       //  Temperature [Celcius]
+	if(ph->Parameter_transition==_T_)                   //  Temperature [Celcius]
 	{
 		ph->ConstantValue   =   (ph->ConstantValue + scal->Tshift)/scal->temperature;
 	}
-	else if(ph->Parameter_transition==Pressure)       //  Pressure [Pa]
+	else if(ph->Parameter_transition==_Pressure_)       //  Pressure [Pa]
 	{
 		ph->ConstantValue   /= scal->stress_si;
 	}
-	else if(ph->Parameter_transition==Depth)   //  Depth [km if geo units]
+	else if(ph->Parameter_transition==_Depth_)          //  Depth [km if geo units]
 	{
 		ph->ConstantValue   /= scal->length;
 	}
-	else if(ph->Parameter_transition==APS)   //  accumulated plastic strain
+	else if(ph->Parameter_transition==_PlasticStrain_)  //  accumulated plastic strain
 	{
-		ph->ConstantValue   = ph->ConstantValue;    // is already in nd units
+		ph->ConstantValue   = ph->ConstantValue;        // is already in nd units
 	}
     else{
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for [Constant] Phase transition");
@@ -417,17 +417,18 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					PH1 = PhaseTrans->PhaseBelow[above];
 					PH2 = PhaseTrans->PhaseAbove[above];
 				}
+			
 				ph          =   Transition(PhaseTrans, P, PH1, PH2,nPtr);
 
-                 if (PhaseTrans->PhaseDirection==0){
+                if (PhaseTrans->PhaseDirection==0){
                      P->phase    =   ph;
-                 }
-                 else if ( (PhaseTrans->PhaseDirection==1) & (below>=0) ){
-                     P->phase    =   ph;
-                 }
-                 else if ( (PhaseTrans->PhaseDirection==2) & (above>=0) ){
-                     P->phase    =   ph;
-                 }
+                }
+                else if ( (PhaseTrans->PhaseDirection==1) & (below>=0) ){
+                    P->phase    =   ph;
+                }
+                else if ( (PhaseTrans->PhaseDirection==2) & (above>=0) ){
+                    P->phase    =   ph;
+                }
 
 
 			}
@@ -446,11 +447,12 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 {
 	PetscInt ph;
 
-	if(PhaseTrans->Type==Constant)    // NOTE: string comparisons can be slow; we can change this to integers if needed
+	ph = P->phase;
+	if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
 		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
 	}
-	else if(PhaseTrans->Type==Clapeyron)
+	else if(PhaseTrans->Type==_Clapeyron_)
 	{
 		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
 	}
@@ -467,28 +469,28 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
     
     PetscInt ph;
 
-
-	if((PhaseTrans->Parameter_transition==T))   // NOTE: string comparisons can be slow; optimization possibility
+	ph = 0;
+	if((PhaseTrans->Parameter_transition==_T_))   // NOTE: string comparisons can be slow; optimization possibility
 		{
             // Temperature transition
             if ( P->T >= PhaseTrans->ConstantValue)     {   ph = PH2; }
 			else                                        {   ph = PH1; }
 		}
 
-	if(PhaseTrans->Parameter_transition==Pressure)
+	if(PhaseTrans->Parameter_transition==_Pressure_)
 		{
             if  ( P->p >= PhaseTrans->ConstantValue)    {   ph = PH2;   }
 		    else                                        {   ph = PH1;   }
           
 		}
 
-	if(PhaseTrans->Parameter_transition==Depth)
+	if(PhaseTrans->Parameter_transition==_Depth_)
 		{
           if ( P->X[2] >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
           else                                        {   ph = PH1;   }
         }
 
-	if(PhaseTrans->Parameter_transition==APS) // accumulated plastic strain
+	if(PhaseTrans->Parameter_transition==_PlasticStrain_) // accumulated plastic strain
 		{
             if ( P->APS >= PhaseTrans->ConstantValue)  {   ph = PH2;        }
             else                                       {   ph = PH1;        }

@@ -85,16 +85,16 @@ public:
 
 enum type
 {
-	Constant,
-	Clapeyron
+	_Constant_,
+	_Clapeyron_
 };
 
 enum Parameter
 {
-	T,
-	Pressure,
-	Depth,
-	APS
+	_T_,
+	_Pressure_,
+	_Depth_,
+	_PlasticStrain_
 };
 
 

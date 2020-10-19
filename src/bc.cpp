@@ -2002,7 +2002,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	PetscScalar ***bcvz;
 	PetscScalar  cmin, cmax, vel, velin_plume, velout,x_min,x_max,y_min,y_max,x;
 	PetscScalar  a,b,c,inflow_window;
-	PetscScalar  center;
+	PetscScalar  center=0.0;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2014,7 +2014,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
 	ierr = FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
 
-
+	
 	velin_plume = bc->Plume_Inflow_Velocity;
 	if(bc->Plume_Type == 1)	// 2D
 	{
@@ -2034,12 +2034,17 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	}
 	else if(bc->Plume_Type==2)
 	{	
+		inflow_window 	= 	0.0;	
+		velout			=	0.0;
 
 		// plume _ 3D place holder
 
 
 	}
-
+	else{
+		inflow_window 	= 	0.0;	
+		velout			=	0.0;
+	}
 
 
 	// access constraint vectors
@@ -2067,6 +2072,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 		else
 		{
 			// place holder 3D
+			vel = 0.0;
 		}
 
 		if	(k == 0) { 
