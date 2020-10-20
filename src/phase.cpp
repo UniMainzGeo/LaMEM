@@ -172,11 +172,14 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 				fb->blockID++;
 			}
-		}
 
+			// adjust density if needed
+			ierr = Overwrite_density(dbm);CHKERRQ(ierr);
+		
+		}
 		ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-		ierr = Overwrite_density(dbm);CHKERRQ(ierr);
+	
 
     //=================================================
 	// OVERWRITE MATERIAL PARAMETERS WITH GLOBAL VARIABLES
@@ -259,7 +262,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st,Cpx_mode, Water_melt;
+	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st,Cpx_mode, Water_melt, rho_melt;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
@@ -286,6 +289,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	MSN      =  dbm->numSoft - 1;
 	Cpx_mode =  0.17;
 	Water_melt = 0.0;
+    rho_melt   = 0.0;
 	
 	// phase ID
 	ierr 	 = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
@@ -441,32 +445,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
-
 	// melt fraction viscosity parametrization
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nPTr", &m->nPTr, 1, _max_tr_); CHKERRQ(ierr);
-		if(m->nPTr>0)
-		{
-			ierr = getIntParam   (fb, _REQUIRED_, "Ph_id", m->Ph_tr,   m->nPTr,_max_num_tr_);        CHKERRQ(ierr);
-		}
-
-	ierr = getStringParam(fb, _OPTIONAL_, "Melt_Parametrization", m->Melt_Parametrization,"none");  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Cpx_Mode_Melt_Parametrization",      &m->Cpx_mode,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Water_Weight_Melt_Parametrization",  &m->Melt_Water_Par,  1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt",      &m->rho_melt,    1, 1.0); CHKERRQ(ierr);
-
-	if(strcmp(m->Melt_Parametrization, "none") & !m->Cpx_mode)
-	{
-		m->Cpx_mode=Cpx_mode;
-	}
-	if(strcmp(m->Melt_Parametrization, "none") & !m->Melt_Water_Par)
-	{
-		m->Melt_Water_Par=Water_melt;
-	}
-
-
-
+	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0);  CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
 
@@ -497,11 +478,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
 	}
-
-	if(strcmp(m->Melt_Parametrization, "none") & !m->rho_melt)
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "The density of the melting phase is missing %lld (rho_melt)", (LLD)ID);
-	}
+	
 
     m->eta_st   = eta_st;
    

@@ -675,7 +675,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
 				svBulk->mf     += phRat[i]*mf;
-				svBulk->rho_pf += phRat[i]*mat->rho_melt;
+			//	svBulk->rho_pf += phRat[i]*mat->rho_melt;
 			}
 
 			// initialize
@@ -716,10 +716,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			else if(mat->pdAct == 1)
 			{
 				rho = (Pd->mf * Pd->rho_f) + ((1-Pd->mf) * Pd->rho);
-			}
-			else if(mat->Melt_Parametrization)
-			{
-				rho = (mf * mat->rho_melt) + ((1-mf) * mat->rho);
 			}
 			else
 			{

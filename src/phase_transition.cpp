@@ -382,12 +382,15 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
     PetscLogDouble  t;
 
 
-    PrintStart(&t, "Phase_Transition", NULL);
 		
     // Retrieve parameters
 	jr          =   actx->jr;
 	dbm         =   jr->dbm;
 	numPhTrn    =   dbm->numPhtr;
+
+	if (!numPhTrn) 	PetscFunctionReturn(0);		// only execute this function if we have phase transitions
+
+    PrintStart(&t, "Phase_Transition", NULL);
 
 	// loop over all local particles 		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
 	nPtr        =   0;
