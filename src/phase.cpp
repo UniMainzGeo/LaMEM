@@ -854,7 +854,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		C_OH_0           =   1000;
 		r                =   0.8;
 	}
-	else if (!strcmp(name,"Plagioclase_RybackiDresen_2000"))
+	else if (!strcmp(name,"Dry_Plagioclase_RybackiDresen_2000"))
 	{
 		// after Rybacki and Dresen, 2000, JGR 
 		m->Bd            =   1.2589e12;		
@@ -867,7 +867,19 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		C_OH_0           =   1;
 		r                =   0.0;
 	}
-
+	else if (!strcmp(name,"Wet_Plagioclase_RybackiDresen_2000"))
+	{
+		// after Rybacki and Dresen, 2000, JGR 
+		m->Bd            =   0.1995;		
+		m->Ed            =   159e3;
+		m->Vd            =   38e-6;
+		type             =   _UniAxial_;
+		MPa              =   1;
+		d0               =   100;					// in microns in their paper
+		p                =   3;
+		C_OH_0           =   158.4893;				// fugacity water 10^2.2, not sure whether that is implemented correctly
+		r                =   1.0;					// 1.0 in Rybacki paper, but to be checked that units match
+	}
 	else
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such diffusion creep profile: %s! ",name);
@@ -1124,7 +1136,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		r                =   0;
 	}
 
-	else if (!strcmp(name,"Plagioclase_RybackiDresen_2000"))
+	else if (!strcmp(name,"Dry_Plagioclase_RybackiDresen_2000"))
 	{
 		m->Bn            =   5.0119e12;		
 		m->n             =   3.0;
@@ -1134,6 +1146,19 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
+	}
+
+	else if (!strcmp(name,"Wet_Plagioclase_RybackiDresen_2000"))
+	{
+		m->Bn            =   1.5849;		
+		m->n             =   3.0;
+		m->En            =   345e3;
+		m->Vn            =   38e-6;
+		type             =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   158.4893;				// fugacity water 10^2.2, not sure whether that is implemented correctly
+		r                =   1.0;					// 1.0 in Rybacki paper, but to be checked that units match
+
 	}
 
 	else if (!strcmp(name,"Wet_Olivine_disl_creep-Hirth_Kohlstedt_2003"))

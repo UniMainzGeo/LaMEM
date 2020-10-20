@@ -85,9 +85,9 @@ if 1==1
     flow_choice = 1;                % 1- Diff; 2-Disl; 9-Diffusion + Dislocation Creep Assumed
     
     PPa         = 300*1e6*0;          % Pressure in general in Pa
-    pphase      = ['an_dry'];
-    gsiz = 100;
-    TK   = Temp+273.15;
+    pphase      = ['an_wet'];
+    gsiz        = 100;
+    TK          = Temp+273.15;
     
     
     
@@ -96,11 +96,11 @@ if 1==1
 
     subplot(121)
     hold on
-    loglog(eII,Tau_anal,'+')
+    loglog(eII,Tau_anal,'+','MarkerSize',10)
   
     subplot(122)
     hold on
-    loglog(eII,mu,'+')
+    loglog(eII,mu,'+','MarkerSize',10)
     
     flow_choice = 2;                % 1- Diff; 2-Disl; 9-Diffusion 
     [mu]        = fun_visc(1,eII,flow_choice,gsiz,TK,PPa,pphase);
@@ -109,11 +109,11 @@ if 1==1
     
     subplot(121)
     hold on
-    loglog(eII,Tau_anal,'s')
+    h=loglog(eII,Tau_anal,'ks','MarkerSize',10)
   
     subplot(122)
     hold on
-    loglog(eII,mu,'s')
+    loglog(eII,mu,'ks','MarkerSize',10)
   
     
     legend('LaMEM','Matlab routine diffusion creep', 'Matlab routine dislocation creep')

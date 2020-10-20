@@ -153,13 +153,16 @@
 		ID        	= 	0
 		rho       	= 	3000
 		
-		#diff_prof  	=	Plagioclase_RybackiDresen_2000		# Creep law
-		#disl_prof 	=	Plagioclase_RybackiDresen_2000
+		#diff_prof  	=	Dry_Plagioclase_RybackiDresen_2000		# Creep law
+		#disl_prof 	=	Dry_Plagioclase_RybackiDresen_2000
 
 		#diff_prof  	=	Plagioclase_RybackiDresen_2000		# Creep law
 		#disl_prof 	=	Mafic_Granulite-Ranalli_1995
-		disl_prof = Maryland_strong_diabase-Mackwell_et_al_1998
+		#disl_prof = Maryland_strong_diabase-Mackwell_et_al_1998
 		
+		#diff_prof  	=	Wet_Plagioclase_RybackiDresen_2000		# Creep law
+		disl_prof 	=	Wet_Plagioclase_RybackiDresen_2000
+
 		
 		Cp        	= 	1000							# Specific heat (capacity)
 		k         	=	2.5000    						# Thermal conductivity
