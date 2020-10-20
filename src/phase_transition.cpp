@@ -95,22 +95,20 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 
 	// set ID
 	ph->ID  =   ID;
-
-	ierr    =   getStringParam(fb, _REQUIRED_, "Type",Type_,0);  CHKERRQ(ierr);
-	if (!Type_)
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type [Constant; Clapeyron; Box_type] ", (LLD)ID);
-	}
+	ierr    =   getStringParam(fb, _REQUIRED_, "Type",Type_,NULL);  CHKERRQ(ierr);
 
 	if(!strcmp(Type_,"Constant"))
 	{
 		ph->Type = _Constant_;
 		ierr    =   Set_Constant_Phase_Transition(ph, dbm, fb,ID);    CHKERRQ(ierr);
 	}
-	if(!strcmp(Type_,"Clapeyron"))
+	else if(!strcmp(Type_,"Clapeyron"))
 	{
 		ph->Type = _Clapeyron_;
 		ierr    =   Set_Clapeyron_Phase_Transition(ph, dbm, fb,ID);   CHKERRQ(ierr);
+	}
+	else{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type [Constant; Clapeyron; Box_type] ");
 	}
 
 
@@ -409,6 +407,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 			if  ( (below >= 0) || (above >= 0) )
 			{
+				PH2 = P->phase;
+				PH1 = P->phase;
                  // the current phase is indeed involved in a phase transition
 				if      (   below>=0    )
 				{
