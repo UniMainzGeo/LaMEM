@@ -421,7 +421,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					PH2 = PhaseTrans->PhaseAbove[above];
 				}
 			
-				ph          =   Transition(PhaseTrans, P, PH1, PH2,nPtr);
+				ph          =   Transition(PhaseTrans, P, PH1, PH2);
 
                 if (PhaseTrans->PhaseDirection==0){
                      P->phase    =   ph;
@@ -446,18 +446,18 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------------------
-PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2,PetscInt ID)
+PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2)
 {
 	PetscInt ph;
 
 	ph = P->phase;
 	if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
-		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
+		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2);
 	}
 	else if(PhaseTrans->Type==_Clapeyron_)
 	{
-		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
+		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2);
 	}
 
 
@@ -467,7 +467,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 /*------------------------------------------------------------------------------------------------------------
     Sets the values for a phase transition that occurs @ a constant value
 */
-PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID) 
+PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2) 
 {
     
     PetscInt ph;
@@ -503,7 +503,7 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 }
 
 //------------------------------------------------------------------------------------------------------------//
-PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID)
+PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2)
 {
 	PetscInt ph,ip,neq;
 	PetscScalar Pres[2];
