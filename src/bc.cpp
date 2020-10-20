@@ -1974,7 +1974,6 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 				}
 				else
 				{
-					// place holder 3D
                     if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) + 
                         PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
                     {
@@ -2000,9 +1999,9 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	FDSTAG      *fs;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar ***bcvz;
-	PetscScalar  cmin, cmax, vel, velin_plume, velout,x_min,x_max,y_min,y_max,x;
-	PetscScalar  a,b,c,inflow_window;
-	PetscScalar  center=0.0;
+	PetscScalar  cmin, cmax, vel, velin_plume, velout,x_min,x_max,y_min,y_max,x,y;
+	PetscScalar  inflow_window;
+	PetscScalar  center,Area_domain,radius,R;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2025,20 +2024,15 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
 		inflow_window = cmax-cmin;
 
-		a       =   0.5*(sqrt(M_PI)*inflow_window);
 
-		b 		=   erf((center-x_min)/inflow_window);
-		c 		=   erf((center-x_max)/inflow_window);
-		velout  =   -(velin_plume*(a*b-a*c))/(a*c-a*b+x_max-x_min);
+		velout  =  -(velin_plume*2/3*inflow_window)/(x_max-x_min-inflow_window);
 		
 	}
 	else if(bc->Plume_Type==2)
 	{	
-		inflow_window 	= 	0.0;	
-		velout			=	0.0;
-
-		// plume _ 3D place holder
-
+		Area_domain     = (x_max-x_min)*(y_max-y_min);
+		inflow_window 	= M_PI*bc->Plume_Radius*bc->Plume_Radius;
+		velout			= (-0.5*velin_plume*(inflow_window))/(Area_domain-inflow_window);
 
 	}
 	else{
@@ -2063,16 +2057,37 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	{
 
 		x   = COORD_CELL(i, sx, fs->dsx);
+		radius = PetscPowScalar(bc->Plume_Radius,2.0);
+
 		
 		if(bc->Plume_Type==1)
 		{
-			vel = (velin_plume-velout)*PetscExpScalar( -PetscPowScalar(x-center,2.0 ) /(inflow_window*inflow_window)) + velout;
-
+			if(x>=cmin && x<=cmax)
+			{
+				vel = velin_plume*(1-radius/PetscPowScalar((x-bc->Plume_Center[0]),2.0));
+			}
+			else
+			{
+				vel = velout;
+			}
 		}
 		else
 		{
+			y   = COORD_CELL(j, sy, fs->dsy);
+
+
+			R = PetscPowScalar((x-bc->Plume_Center[0]),2.0) + PetscPowScalar((y-bc->Plume_Center[1]),2.0);
+
 			// place holder 3D
-			vel = 0.0;
+			 if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) +
+			      PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
+			 {
+				 vel = velin_plume*(1-radius/R);
+			 }
+			 else
+			 {
+				 vel = velout;
+			 }
 		}
 
 		if	(k == 0) { 
