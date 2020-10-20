@@ -710,13 +710,13 @@ PetscErrorCode BCApply(BCCtx *bc)
 	ierr = BCApplyBoundVel(bc); CHKERRQ(ierr);
 
 	// apply dropping boxes
-	//ierr = BCApplyDBox(bc); CHKERRQ(ierr);
+	ierr = BCApplyDBox(bc); CHKERRQ(ierr);
 
 	// fix all cells occupied by phase
-	//ierr = BCApplyPhase(bc); CHKERRQ(ierr);
+	ierr = BCApplyPhase(bc); CHKERRQ(ierr);
 
 	// fix specific cells
-	//ierr = BCApplyCells(bc); CHKERRQ(ierr);
+	ierr = BCApplyCells(bc); CHKERRQ(ierr);
 
 	// plume like boundary condition
 	ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
