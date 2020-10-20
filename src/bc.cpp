@@ -2017,7 +2017,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	velin_plume = bc->Plume_Inflow_Velocity;
 	if(bc->Plume_Type == 1)	// 2D
 	{
-		// Gaussian perturbation velocity - any thing that creates a rigid plug is a problem
+		// Poiselle flow inflow boundary condition
 		cmin    =   bc->Plume_Center[0] - bc->Plume_Radius;
 		cmax    =   bc->Plume_Center[1] + bc->Plume_Radius;
 		center  =   (cmin+cmax)*0.5;
