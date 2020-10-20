@@ -83,7 +83,7 @@ def run_tests():
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),
                       StrEnv.test_a(), StrEnv.test_b(), StrEnv.test_c(), StrEnv.test_d(),
                       RTI.RTI_isovisous_NoSlip(), PT.test_a(),
-                      InOut.test_a(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz()];
+                      InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz()];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)

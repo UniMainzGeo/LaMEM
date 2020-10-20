@@ -379,7 +379,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL); 					CHKERRQ(ierr);  // must have component
 		if     	(!strcmp(str, "2D"))      bc->Plume_Type=1;		// 2D setup
 		else if (!strcmp(str, "3D"))      bc->Plume_Type=2;		// 3D (circular)
-		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for PlumeType, not %s",str);} 
+		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);} 
 
 		ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"    		, 	&bc->Plume_Phase, 			1, mID); 			CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature"	, 	&bc->Plume_Temperature, 	1, 1); 				CHKERRQ(ierr);
@@ -396,6 +396,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		}
 		ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Radius",			&bc->Plume_Radius,			1,	scal->length);		CHKERRQ(ierr);
 		ierr = getScalarParam(fb,_REQUIRED_,"Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
+
+        // Gaussian or Poiseuille type inflow velocity? Note that outflow is calculated to conserve mass
+        ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType", 	str, "Gaussian"); 					CHKERRQ(ierr);  // must have component
+		if     	(!strcmp(str, "Poiseuille"))    bc->Plume_VelocityType = 0;		// Poiseuille
+		else if (!strcmp(str, "Gaussian"))      bc->Plume_VelocityType = 1;		// Gaussian perturbation (smoother)
+		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);} 
 
 	}
 
@@ -451,6 +457,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding plume inflow bottom condition       @ \n");
 	if(bc->Plume_Type == 1){PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : 2D \n");}
 	else{  					PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : 3D \n");}
+    if(bc->Plume_VelocityType == 0){PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Poiseuille flow (and constant outflow) \n");}
+	else{  				 	        PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Gaussian in/out flow \n");}
 	                        PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, 	 				scal->lbl_temperature);
                             PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %i \n", bc->Plume_Phase);
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %g %s \n", bc->Plume_Inflow_Velocity*scal->velocity, scal->lbl_velocity);
@@ -1996,54 +2004,109 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 #define __FUNCT__ "BC_Plume_inflow"
 PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 {
-	FDSTAG      *fs;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar ***bcvz;
-	PetscScalar  cmin, cmax, vel, velin_plume, velout,x_min,x_max,y_min,y_max,x,y;
-	PetscScalar  inflow_window;
-	PetscScalar  center,Area_domain,radius,R;
+	FDSTAG          *fs;
+	PetscInt        i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar     ***bcvz;
+	PetscScalar     vel, x_min,x_max,y_min,y_max,x,y;
+	PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin;
+    PetscScalar     radius2, R;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	if(!bc->Plume_Inflow) 	PetscFunctionReturn(0);
 
-	fs = bc->fs;
+	fs              =   bc->fs;
 
-
-	ierr = FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
-
+	ierr 			= 	FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
 	
-	velin_plume = bc->Plume_Inflow_Velocity;
-	if(bc->Plume_Type == 1)	// 2D
-	{
-		// Poiselle flow inflow boundary condition
-		cmin    =   bc->Plume_Center[0] - bc->Plume_Radius;
-		cmax    =   bc->Plume_Center[1] + bc->Plume_Radius;
-		center  =   (cmin+cmax)*0.5;
+    V_in            = 	bc->Plume_Inflow_Velocity;                      // max. inflow velocity
+    if(bc->Plume_Type == 1){   // 2D
+        Area_Bottom 	=	(x_max-x_min);
+        Area_Inflow 	= 	2.0*bc->Plume_Radius;		    // inflow length
+        Area_Outflow 	=	Area_Bottom-Area_Inflow;	    // outflow length
+    }
+    else{
+        Area_Bottom 	=	(x_max-x_min)*(y_max-y_min);
+        Area_Inflow 	= 	PETSC_PI*bc->Plume_Radius*bc->Plume_Radius;		// inflow 
+        Area_Outflow 	=	Area_Bottom-Area_Inflow;	
+    }
 
-		inflow_window = cmax-cmin;
+    if ( bc->Plume_VelocityType==0 ){
+        // Poiseuille-type inflow condition
+        //  Note that this results in a velocity discontinuity at the border
+       
+        // We assume Poiseuille flow between plates (2D) or in a pipe (3D):
+        if(bc->Plume_Type == 1)		{	V_avg = V_in*2.0/3.0;	}	// 2D
+        else						{	V_avg = V_in*1.0/2.0; 	}	// 3D	
+
+        // outflow velocity is based on mass conservation (i.e.: Qin+Qout=0)
+        Qin 	=	V_avg*Area_Inflow; 
+        V_out 	= 	-Qin/Area_Outflow;                              // outflow velocity 
+    }
+    else{
+        
+        // Gaussian-like inflow perturbation
+        if(bc->Plume_Type == 1){   // 2D
+            PetscScalar a,b,c, xc;
+            /*  Gaussian perturbation velocity - anything that creates a rigid plug is a problem
+
+                we integrate the velocity profile over the full domain as: 
+                        V = V_out + (V_in-V_out)*exp(-((x-xc)^2)/c^2) from x=xmin..xmax 
+
+                We can do this with sympy, which gives:
+                        V_avg = V_out + (V_in-V_out)*(sqrt(pi)*c*erf((-xc + x_max)/c)/2 - sqrt(pi)*c*erf((-xc + x_min)/c)/2))/(x_max-x_min)
+                        V_avg = V_out + (V_in-V_out)*(a-b)  ->  V_out*(1-(a-b)) = -V_in*(a-b), so V_out =  -V_in*(a-b)/(1-(a-b))
+            */
+
+            xc      =   bc->Plume_Center[0];
+            c 		=   bc->Plume_Radius;
+            a       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_max)/c)/2.0/(x_max-x_min);     //dV
+            b       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_min)/c)/2.0/(x_max-x_min);     //dV
+            
+            V_out   =   -V_in*(a-b)/(1-(a-b));                     // average velocity should be zero
+            
+
+        }
+        else{  // 3D
+            /*  In 3D, the expression for the velocity is:
+
+                     V = V_out + (V_in-V_out)*exp(-((x-xc)^2 + (y-yc)^2)/c^2) from  x = xmin..xmax and y=y_min .. y_max
+            
+            */
 
 
-		velout  =  -(velin_plume*2/3*inflow_window)/(x_max-x_min-inflow_window);
-		
-	}
-	else if(bc->Plume_Type==2)
-	{	
-		Area_domain     = (x_max-x_min)*(y_max-y_min);
-		inflow_window 	= M_PI*bc->Plume_Radius*bc->Plume_Radius;
-		velout			= (-0.5*velin_plume*(inflow_window))/(Area_domain-inflow_window);
+            PetscScalar a,b,d,e,c, xc, yc;
 
-	}
-	else{
-		inflow_window 	= 	0.0;	
-		velout			=	0.0;
-	}
+            xc      =   bc->Plume_Center[0];
+            yc      =   bc->Plume_Center[1];
+            c 		=   bc->Plume_Radius;
+
+            a       =   1.0/4.0 * PETSC_PI*erf((-xc + x_max)/c)*erf((-yc + y_max)/c)/Area_Bottom; 
+            b       =   1.0/4.0 * PETSC_PI*erf((-xc + x_min)/c)*erf((-yc + y_max)/c)/Area_Bottom;
+       
+            d       =   1.0/4.0 * PETSC_PI*erf((-xc + x_min)/c)*erf((-yc + y_min)/c)/Area_Bottom;
+            e       =   1.0/4.0 * PETSC_PI*erf((-xc + x_max)/c)*erf((-yc + y_min)/c)/Area_Bottom;
+       
+            //      so V_avg = V_out + (V_in-V_out)*((a-b)/Area + (d-e)/Area)    
+            // since we want V_avg = 0, we can compute V_out as:
+
+            V_out   =   -V_in*(a-b + d-e)/(1-(a-b + d-e));                     // average velocity should be zero    
+
+            
+           
+
+        }
+
+
+    }
 
 
 	// access constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
 	
+    PetscPrintf(PETSC_COMM_WORLD,"Plume velocity BC: V_in=%e, V_out=%e \n",V_in, V_out);
+
 	//=========================================================================
 	// SPC (normal velocities)
 	//=========================================================================
@@ -2056,39 +2119,51 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	START_STD_LOOP
 	{
 
-		x   = COORD_CELL(i, sx, fs->dsx);
-		radius = PetscPowScalar(bc->Plume_Radius,2.0);
+		x       = COORD_CELL(i, sx, fs->dsx);
+		radius2 = PetscPowScalar(bc->Plume_Radius,2.0);
 
-		
-		if(bc->Plume_Type==1)
-		{
-			if(x>=cmin && x<=cmax)
-			{
-				vel = velin_plume*(1-radius/PetscPowScalar((x-bc->Plume_Center[0]),2.0));
-			}
-			else
-			{
-				vel = velout;
-			}
-		}
-		else
-		{
-			y   = COORD_CELL(j, sy, fs->dsy);
+        if ( bc->Plume_VelocityType==0 ){   
+            // Poiseuille type inflow 
+            if(bc->Plume_Type == 1)   // 2D
+            {
+                R       =   PetscPowScalar((x-bc->Plume_Center[0]),2.0);
+            }
+            else                        // 3D
+            {
+                y       =   COORD_CELL(j, sy, fs->dsy);
+                R       =   PetscPowScalar((x-bc->Plume_Center[0]),2.0) + PetscPowScalar((y-bc->Plume_Center[1]),2.0);
+            }
+            if  ( R <=  radius2 ) {  vel = V_in*(1.0 - R/radius2);   }
+            else                 {   vel = V_out;                    }
+        
+        }
+        
+        else {
+            // Gaussian plume inflow condition
 
+            PetscScalar xc;
 
-			R = PetscPowScalar((x-bc->Plume_Center[0]),2.0) + PetscPowScalar((y-bc->Plume_Center[1]),2.0);
+            xc              =   bc->Plume_Center[0];
 
-			// place holder 3D
-			 if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) +
-			      PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
-			 {
-				 vel = velin_plume*(1-radius/R);
-			 }
-			 else
-			 {
-				 vel = velout;
-			 }
-		}
+            // gaussian type perturbation
+            if(bc->Plume_Type == 1){   // 2D
+               
+             
+                // Gaussian velocity perturbation
+                vel = V_out + (V_in-V_out)*PetscExpScalar( - PetscPowScalar(x-xc,2.0 ) /radius2 ) ;
+
+            }
+            else{
+
+                PetscScalar yc;
+                yc  =   bc->Plume_Center[1];
+                y   =   COORD_CELL(j, sy, fs->dsy);
+
+                // Gaussian velocity perturbation
+                vel = (V_in-V_out)*PetscExpScalar( - ( PetscPowScalar(x-xc,2.0 ) + PetscPowScalar(y-yc,2.0 ) )/radius2 ) + V_out;
+
+            }
+        }
 
 		if	(k == 0) { 
 			bcvz[k][j][i] = vel; 

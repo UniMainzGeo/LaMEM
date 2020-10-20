@@ -222,13 +222,14 @@
 	init_temp = 1;
 
 # Optional plume inflow @ bottom boundary
-	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
-	Plume_Type         		= 	2D			# 2D or 3D (circular)		
-	Plume_Phase 			=	4			# phase of plume
-	Plume_Temperature 		=	1600		# temperature of inflow plume
-	Plume_Inflow_Velocity 	= 	15			# Inflow velocity			
-	Plume_Center 			=	0 50 		# [X,Y] of center  (2nd only in case of 3D plume)
-	Plume_Radius 			=	100			# Width/Radius of plume
+    Plume_InflowBoundary    =   1           # have a plume-like inflow boundary @ bottom
+    Plume_Type              =   2nd         # 2D or 3D (circular)		
+    Plume_Phase             =   4           # phase of plume
+    Plume_Temperature       =   1600        # temperature of inflow plume
+    Plume_Inflow_Velocity   =   15          # Inflow velocity	
+    Plume_VelocityType      =   Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
+    Plume_Center            =   0 50        # [X,Y] of center  (2nd only in case of 3D plume)
+    Plume_Radius            =   100         # Width/Radius of plume
 
 
 # Pressure on the top & bottom boundaries

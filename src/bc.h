@@ -236,7 +236,8 @@ struct BCCtx
 	PetscScalar		Plume_Center[2];			// center [x,y] coordinates (for 3D plume)		
 	PetscScalar		Plume_Radius;				// radius of plume (for 3D plume)
 	PetscScalar		Plume_Inflow_Velocity;		// inflow velocity
-
+	PetscInt 		Plume_VelocityType;			// type of inflow [Gaussian=0=default or Poiseuille=1]
+	
 	// open boundary flag
 	PetscInt     	top_open;
 

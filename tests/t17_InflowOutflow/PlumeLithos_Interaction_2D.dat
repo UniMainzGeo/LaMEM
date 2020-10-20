@@ -23,7 +23,7 @@
 	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
 	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
 	nstep_max = 100  	# maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 10     	# save output every n steps
+	nstep_out = 1     	# save output every n steps
 	nstep_rdb = 2000   	# save restart database every n steps
 
 
@@ -40,7 +40,7 @@
 
 	coord_x = -1400 1400
 	coord_y = -10   10
-	coord_z = -1000 150
+	coord_z = -1000 0
 
 #===============================================================================
 # Free surface
@@ -78,8 +78,9 @@
 	Plume_Phase 			=	4			# phase of plume
 	Plume_Temperature 		=	1600		# temperature of inflow plume
 	Plume_Inflow_Velocity 	= 	15			# Inflow velocity			
-	Plume_Center 			=	0 50 		# [X,Y] of center  (2nd only in case of 3D plume)
-	Plume_Radius 			=	100			# Width/Radius of plume
+	Plume_VelocityType 		=	Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
+	Plume_Center 			=	1000 50 		# [X,Y] of center  (2nd only in case of 3D plume)
+	Plume_Radius 			=	50			# Width/Radius of plume
 
 
 #===============================================================================
@@ -103,8 +104,8 @@
 # Solver options
 #===============================================================================
 	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	superlu_dist			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e3
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e4
 
 #===============================================================================
 # Model setup & advection
@@ -289,7 +290,7 @@
 	# LINEAR & NONLINEAR SOLVER OPTIONS
 #	-snes_ksp_ew
 #	-snes_ksp_ew_rtolmax 1e-4
-	-snes_rtol 1e-4					
+	-snes_rtol 1e-6					
 	-snes_atol 1e-4					
 	-snes_max_it 50					
 	
@@ -301,7 +302,7 @@
 	-js_ksp_monitor 				# display how the inner iterations converge
 	-js_ksp_max_it 20				# inner
 	-js_ksp_atol 1e-8
-	-js_ksp_rtol 1e-4
+	-js_ksp_rtol 1e-5
 
 	-snes_linesearch_type l2
 	-snes_linesearch_monitor
