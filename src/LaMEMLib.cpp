@@ -69,6 +69,7 @@
 #include "objFunct.h"
 #include "adjoint.h"
 #include "LaMEMLib.h"
+#include "phase_transition.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibMain"
@@ -584,6 +585,8 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	step    = ts->istep;
 	bgPhase = lm->actx.bgPhase;
 
+
+
 	// create directory (encode current time & step number)
 	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
 
@@ -655,6 +658,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
 
+		// apply phase transitions on particles
+		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
+		
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
@@ -700,6 +706,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
+
 
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);

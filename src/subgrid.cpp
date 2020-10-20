@@ -59,6 +59,7 @@
 #include "cvi.h"
 #include "Tensor.h"
 #include "tools.h"
+#include "phase_transition.h"
 
 /*
 #START_DOC#

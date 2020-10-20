@@ -180,15 +180,18 @@
 	dbox_bounds =  0.0 1.0 0.0 1.0 0.0 1.0  # box bounds (left, right, front, back, bottom, top)
 	dbox_zvel   = -1.0                      # vertical velocity
 
-# Velocity boundary condition
+# Inflow velocity boundary condition
 
-	bvel_face   =  1     # face identifier  (1-left 2-right 3-front 4-back)
-	bvel_phase  =  1     # phase number of inflow material
-	bvel_bot    = -20.0  # bottom coordinate of inflow window
-	bvel_top    = -10.0  # top coordinate of inflow window
-	bvel_velin  =  1.0   # inflow velocity
-	bvel_velout =  0.0   # outflow velocity (if not specified, computed from mass balance)
-	
+	bvel_face       =   1                   #   face identifier  (1-left 2-right 3-front 4-back)
+	bvel_face_out   =   1                   # 	do we have outflow @ opposite boundary?
+	bvel_phase      =   1                   #   phase number of inflow material [if undefined, it uses the phase close to the boundary]
+	bvel_bot        =   -20.0               #   bottom coordinate of inflow window
+	bvel_top        =   -10.0               #   top coordinate of inflow window
+	bvel_velin      =   1.0                 #   inflow velocity
+	bvel_velout     =   0.0                 #   outflow velocity (if not specified, computed from mass balance)
+	bvel_relax_d    =   100                 #   distance over which velocity is reduced
+
+
 # Free surface top boundary flag
 
 	open_top_bound = 1
@@ -217,6 +220,17 @@
 # temperature initial guess flag
 # linear profile between temp_top and temp_bot
 	init_temp = 1;
+
+# Optional plume inflow @ bottom boundary
+    Plume_InflowBoundary    =   1           # have a plume-like inflow boundary @ bottom
+    Plume_Type              =   2nd         # 2D or 3D (circular)		
+    Plume_Phase             =   4           # phase of plume
+    Plume_Temperature       =   1600        # temperature of inflow plume
+    Plume_Inflow_Velocity   =   15          # Inflow velocity	
+    Plume_VelocityType      =   Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
+    Plume_Center            =   0 50        # [X,Y] of center  (2nd only in case of 3D plume)
+    Plume_Radius            =   100         # Width/Radius of plume
+
 
 # Pressure on the top & bottom boundaries
 
@@ -410,7 +424,8 @@
 	out_visc_creep      = 1
 	out_velocity        = 1
 	out_pressure        = 1
-	out_eff_press       = 1
+    out_tot_press       = 1  
+    out_eff_press       = 1
 	out_over_press      = 1
 	out_litho_press     = 1
 	out_pore_press      = 1
@@ -468,12 +483,36 @@
 # Define softening laws (maximum 10)
 
 	<SofteningStart>
-		ID   = 0   # softening law ID
-		APS1 = 0.1 # begin of softening APS
-		APS2 = 1.0 # end of softening APS
-		A    = 0.7 # reduction ratio
-		Lm   = 0.2 # material length scale (in selected units, e.g. km in geo)
+		ID   		= 0   	# softening law ID
+		APS1 		= 0.1 	# begin of softening APS
+		APS2 		= 1.0 	# end of softening APS
+		A    		= 0.7 	# reduction ratio
+		Lm   		= 0.2 	# material length scale (in selected units, e.g. km in geo)
 	<SofteningEnd>
+	
+# Define Phase Transition laws (maximum 10)
+	
+	<PhaseTransitionStart>
+		IDs                     =   0         #     Phase_transition law ID
+		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
+		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate] parameter that triggers the phase transition
+		ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z]
+        
+        number_phases           =   1         #     The number of involved phases [default=1]
+		PhaseAbove              =   1         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
+		PhaseBelow              =   3         #       
+        PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
+	<PhaseTransitionEnd>
+
+	#Mantle 2 Lower Mantle	
+	<PhaseTransitionStart>
+		ID                      =   1                           # Phase_transition law ID
+		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
+        number_phases           =   3
+		PhaseAbove              =   4 5 7
+		PhaseBelow              =   1 2 3
+	<PhaseTransitionEnd>
 
 # Define material properties for all phases (maximum 32)
 # By default all rheological mechanisms are deactivated

@@ -54,6 +54,7 @@
 #include "tools.h"
 #include "bc.h"
 #include "surf.h"
+#include "phase_transition.h"
 
 /*
 #START_DOC#

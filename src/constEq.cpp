@@ -50,7 +50,10 @@
 #include "phase.h"
 #include "JacRes.h"
 #include "tools.h"
-
+#include "phase_transition.h"
+#include "meltParamKatz.h"
+#include "scaling.h"
+#include "parsing.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "setUpConstEq"
@@ -66,6 +69,8 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 	ctx->ctrl      = &jr->ctrl;           // control parameters
 	ctx->Pd        =  jr-> Pd;            // phase diagram data
 	ctx->dt        =  jr->ts->dt;         // time step
+	ctx->PhaseTrans = jr->dbm->matPhtr;   // phase transition
+	ctx->scal       = jr->scal;           // scaling
 	ctx->stats[0]  =  0.0;                // total number of [starts, ...
 	ctx->stats[1]  =  0.0;                //  ... successes,
 	ctx->stats[2]  =  0.0;                // ... iterations]
@@ -109,6 +114,7 @@ PetscErrorCode setUpCtrlVol(
 	ctx->T      = T;      // temperature
 	ctx->DII    = DII;    // effective strain rate
 	ctx->Le     = Le;     // characteristic element size
+
 
 	// compute depth below the free surface
 	// WARNING! "depth" is loosely defined for large topography variations
@@ -158,14 +164,20 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	T      = ctx->T;
 	mf     = 0.0;
 
+
 	if(mat->pdAct == 1)
 	{
 		// compute melt fraction from phase diagram
-		ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
+		ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn);CHKERRQ(ierr);
 
 		// store melt fraction
 		mf = Pd->mf;
 	}
+
+	//if(strcmp(mat->Melt_Parametrization,"none") & ctrl->melt_feedback == 1)
+//	{
+	//	mf = Compute_Melt_Fraction(p, T ,mat,ctx);
+	//}
 
 	// set RT
 	RT         =  ctrl->Rugc*T;
@@ -201,8 +213,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(ctrl->gwType == _GW_NONE_) p_pore = 0.0;
 
 	// total pressure
-	// 	  pShift is for cases in which the whole computational domain is located @ some depth [to ensure that p-dependent plasticity is correctly evaluated]
-	p_total = p + ctrl->biot*p_pore + ctrl->pShift; 
+	p_total = p + ctrl->biot*p_pore; 
 
 
 	// assign pressure for viscous laws
@@ -225,7 +236,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(mat->Bd)
 	{
 		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
-		ctx->A_dif =  mat->Bd*exp(-Q)*mfd;
+		ctx->A_dif = mat->Bd*exp(-Q)*mfd;
 	}
 
 	// PS-CREEP
@@ -619,7 +630,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	PetscInt     i, numPhases;
-	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho, mf;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -636,6 +647,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	p         = ctx->p;
 	T         = ctx->T;
 
+//
+
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
 	svBulk->rho    = 0.0;
 	svBulk->alpha  = 0.0;
@@ -650,16 +663,19 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 		// update present phases only
 		if(phRat[i])
 		{
+
 			// get reference to material parameters table
 			mat = &phases[i];
 
 			if(mat->pdAct == 1)
 			{
+				mf = 0.0;	
+				
 				// compute melt fraction from phase diagram
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
-				svBulk->mf     += phRat[i]*Pd->mf;
-				svBulk->rho_pf += phRat[i]*Pd->rho_f;
+				svBulk->mf     += phRat[i]*mf;
+			//	svBulk->rho_pf += phRat[i]*mat->rho_melt;
 			}
 
 			// initialize

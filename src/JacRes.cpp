@@ -85,7 +85,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->shearHeatEff =  1.0;
 	ctrl->biot         =  1.0;
 	ctrl->pLithoVisc   =  1;
-    ctrl->pShift       =  0.0;
 	ctrl->initGuess    =  1;
 	ctrl->mfmax        =  0.15;
 	ctrl->lmaxit       =  25;
@@ -128,8 +127,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,         1, 1);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfmax",           &ctrl->mfmax,          1, 1.0);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);           CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);       CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);        CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1);          CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -285,6 +285,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->mfmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum melt fraction (viscosity)       : %g    \n", ctrl->mfmax);
 	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %lld  \n", ctrl->lmaxit);
 	if(ctrl->lrtol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration tolerance            : %g    \n", ctrl->lrtol);
+	if(ctrl->Phasetrans)          PetscPrintf(PETSC_COMM_WORLD, "   Phase transition is active           : %g    \n", ctrl->Phasetrans);
 
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");

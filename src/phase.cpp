@@ -48,6 +48,7 @@
 #include "scaling.h"
 #include "objFunct.h"
 #include "JacRes.h"
+#include "phase_transition.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatCreate"
@@ -99,12 +100,18 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
+
+
 	//================
 	// MATERIAL PHASES
 	//================
 	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
 		// print overview of material parameters read from file
 		PetscPrintf(PETSC_COMM_WORLD,"Material parameters: \n");
+
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 
 	// setup block access mode
@@ -132,6 +139,47 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	}
+
+	// setup block access mode
+		ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"); CHKERRQ(ierr);
+
+		if(fb->nblocks)
+		{
+			// print overview of softening laws from file
+			PetscPrintf(PETSC_COMM_WORLD,"Phase Transition laws: \n");
+
+			// initialize ID for consistency checks
+			for(jj = 0; jj < _max_num_soft_; jj++) dbm->matPhtr[jj].ID = -1;
+
+			// error checking
+			if(fb->nblocks > _max_num_tr_)
+			{
+				SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase_transition specified! Max allowed: %lld", (LLD)_max_num_tr_);
+			}
+
+			// store actual number of Phase Transition laws
+			dbm->numPhtr = fb->nblocks;
+
+			PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+			// read each individual softening law
+			for(jj = 0; jj < fb->nblocks; jj++)
+			{
+				ierr = DBMatReadPhaseTr(dbm, fb); CHKERRQ(ierr);
+
+				fb->blockID++;
+			}
+
+			// adjust density if needed
+			ierr = Overwrite_density(dbm);CHKERRQ(ierr);
+		
+		}
+		ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	
 
     //=================================================
 	// OVERWRITE MATERIAL PARAMETERS WITH GLOBAL VARIABLES
@@ -217,7 +265,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
-	
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -308,6 +355,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		m->pdAct = 0;	// no phase diagram is used
 	}
 	
+	// Default Melt_Parametrization value
+
+
 	//============================================================
 	// Creep profiles
 	//============================================================
@@ -394,7 +444,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//=================================================================================
 	// melt fraction viscosity parametrization
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0);  CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
 
@@ -425,6 +475,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
 	}
+	
 
     m->eta_st   = eta_st;
    
@@ -561,6 +612,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
 		MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);
 		MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal, title, &print_title);
+		MatPrintScalParam(m->rho_melt, "rho",     "[kg/m^3]",      scal, title, &print_title);
+
 
 		sprintf(title, "   (elast)  : "); print_title = 1;
 		MatPrintScalParam(G,     "G",  "[Pa]",  scal, title, &print_title);
@@ -629,6 +682,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->rho    /= scal->density;
 	m->rho_c  *= scal->length_si;
 	m->beta   *= scal->stress_si; // [1/Pa]
+	m->rho_melt /= scal->density;
 
 	// diffusion creep
 	m->Bd     *= scal->viscosity;
@@ -1320,6 +1374,9 @@ PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType t
 
 	PetscFunctionReturn(0);
 }
+//------------------------------------------------------------------
+
+//--------------------------------------------------------------------------
 
 /*
 //---------------------------------------------------------------------------

@@ -130,6 +130,18 @@
 // maximum number of softening laws
 #define _max_num_soft_ 10
 
+// max char length
+#define char_ph_tr 10
+
+// maximum number of phase transition law
+#define _max_num_tr_ 20
+
+// maximum number of equation parameter
+#define _max_num_eq_ 2
+
+// maximum number of phase transition per each phase
+#define _max_tr_ 5
+
 // maximum number of phase diagrams
 #define _max_num_pd_ 8
 
@@ -153,6 +165,9 @@
 
 // maximum number of adjoint points
 #define _max_adj_point_ 100
+
+// maximum number of passive tracers
+#define _max_passive_tracer 100000
 
 // maximum number of control polygons
 #define _max_ctrl_poly_ 20

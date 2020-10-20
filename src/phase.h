@@ -80,6 +80,55 @@ public:
 };
 
 //---------------------------------------------------------------------------
+//.......................   Phase Transition Law Parameters  ................
+//---------------------------------------------------------------------------
+
+enum type
+{
+	_Constant_,
+	_Clapeyron_
+};
+
+enum Parameter
+{
+	_T_,
+	_Pressure_,
+	_Depth_,
+	_PlasticStrain_
+};
+
+
+
+struct Ph_trans_t
+{
+public:
+
+	PetscInt    ID ;				                // Phase Transition ID
+	type        Type ; 					// Type Constant or Clapeyron
+	Parameter   Parameter_transition; 	// Parameter in Constant
+	char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
+	PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
+    PetscScalar ConstantValue ;                     // Value (if Constant) 
+
+
+	PetscInt    neq ;                               // number of equation
+	PetscScalar P0_clapeyron[_max_num_eq_] ;        // for clapeyron
+	PetscScalar T0_clapeyron[_max_num_eq_] ;
+	PetscScalar clapeyron_slope[_max_num_eq_] ;
+	PetscScalar Geometric_box[6];                   //
+
+	PetscInt    number_phases;
+	PetscInt    PhaseBelow[_max_tr_];
+	PetscInt    PhaseAbove[_max_tr_];
+	PetscInt    PhaseWithin[_max_tr_];
+	PetscInt    PhaseOutside[_max_tr_];
+	PetscScalar dT_within;
+	PetscScalar DensityAbove[_max_tr_];
+	PetscScalar DensityBelow[_max_tr_];
+
+};
+
+//---------------------------------------------------------------------------
 //......................   Material parameter table   .......................
 //---------------------------------------------------------------------------
 
@@ -143,6 +192,7 @@ public:
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number
 	PetscInt     pdAct;             // phase diagram activity flag
 	PetscScalar  mfc;               // melt fraction viscosity correction
+	PetscScalar  rho_melt;
 };
 
 //---------------------------------------------------------------------------
@@ -190,6 +240,8 @@ struct DBMat
 	Material_t   phases[_max_num_phases_]; // phase parameters
 	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
+	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
+	PetscInt     numPhtr;                // number material softening laws
 
 };
 
@@ -231,6 +283,8 @@ PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar  n, ExpType type, Pe
 
 // correct experimental stress and strain rate parameters to tensor units
 PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa);
+
+
 
 //---------------------------------------------------------------------------
 

@@ -58,6 +58,7 @@
 #include "cvi.h"
 #include "subgrid.h"
 #include "tools.h"
+#include "phase_transition.h"
 
 /*
 #START_DOC#
@@ -150,6 +151,8 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_lim",       nmark_lim,      2, 0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_avd",       nmark_avd,      3, 0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_sub",      &actx->npmax,    1, 3);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "coordinate_box_passive_tracers", actx->box_passive_tracer,    6, 1.0);  CHKERRQ(ierr);
+
 
 	// CHECK
 
@@ -203,6 +206,12 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	if( actx->interp != STAG_P)  actx->A       = 0.0;
 	if( actx->msetup != _GEOM_)  actx->bgPhase = -1;
+	if (actx->passive_tracer_resolution[0]*actx->passive_tracer_resolution[1]*actx->passive_tracer_resolution[2]>_max_passive_tracer)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The total number of passive tracers must be lower than 30000");
+	}
+
+
 
 
 	if(actx->mctrl != CTRL_NONE)
@@ -564,12 +573,14 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 	if(actx->advect == ADV_NONE)
 	{
+
 		ierr = ADVUpdateHistADVNone(actx); CHKERRQ(ierr);
 
 		PetscFunctionReturn(0);
 	}
 	if(actx->mctrl == CTRL_NONE)
 	{
+
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 	}
@@ -590,7 +601,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	}
 	else if(actx->mctrl == CTRL_AVD)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (updated algorithm)\n");
 
 		// check markers and inject/delete if necessary in all control volumes
 		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
@@ -618,6 +628,8 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 	// project advected history from markers back to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+
+	// project melt extraction marker history
 
 	PetscFunctionReturn(0);
 }
@@ -939,8 +951,8 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		svCell = &jr->svCell[ID];
 
 		// update pressure & temperature variables
-		P->p += lp[sz+K][sy+J][sx+I] - svCell->svBulk.pn;
-		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
+		P->p += lp[sz+K][sy+J][sx+I]  	- 	svCell->svBulk.pn;
+		P->T += lT[sz+K][sy+J][sx+I] 	-	svCell->svBulk.Tn;
 
 		// override temperature of air phase
 		if(AirPhase != -1 && P->phase == AirPhase) P->T = Ttop;
@@ -1857,7 +1869,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		ierr = getPhaseRatio(numPhases, svCell->phRat, &w); CHKERRQ(ierr);
 
 		// normalize history variables
-		svCell->svBulk.pn /= w;
+		svCell->svBulk.pn /= w;		
 		svCell->svBulk.Tn /= w;
 		svCell->svDev.APS /= w;
 		svCell->ATS       /= w;
@@ -2011,17 +2023,17 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 	Marker    *P;
 	PetscInt  jj;
 	PetscInt  numPhases;
-
+	
 	PetscFunctionBegin;
 
 	numPhases = actx->dbm->numPhases;
 
-	// scan all markers
+	// scan all markersPetscPrintf(PETSC_COMM_WORLD," i = %d\n",jj);
+
 	for(jj = 0; jj < actx->nummark; jj++)
 	{
 		// access marker
 		P = &actx->markers[jj];
-
 		// check marker phase
 		if ((P->phase < 0) || (P->phase > numPhases-1))
 		{
@@ -2076,7 +2088,7 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 	{
 		svCell = &jr->svCell[iter++];
 
-		svCell->svBulk.pn = lp[k][j][i];
+		svCell->svBulk.pn = lp[k][j][i] + jr->ctrl.pShift;
 		svCell->svBulk.Tn = lT[k][j][i];
 		svCell->hxx       = svCell->sxx;
 		svCell->hyy       = svCell->syy;
