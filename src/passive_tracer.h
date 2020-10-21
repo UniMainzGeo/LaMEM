@@ -39,7 +39,7 @@ struct DBMat;
  */
 
 
-struct Passive_Tracers
+struct P_Tr
 {
 	PetscInt    nummark ;
 	Vec         ID;    // global identification number
@@ -67,6 +67,9 @@ PetscErrorCode ADVPtrDestroy(AdvCtx *actx);
 
 PetscErrorCode Passive_tracers_save(AdvCtx *actx);
 
+PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp);
+
+PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp);
 
 
 #endif /* PASSIVE_TRACER_H */
