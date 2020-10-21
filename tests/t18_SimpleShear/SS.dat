@@ -174,8 +174,8 @@
 		ID        	= 0
 		rho       	= 3000
 		
-		diff_prof  	= Plagioclase_RybackiDresen_2000 	# DIFFUSION creep profile
-		disl_prof  	= Plagioclase_RybackiDresen_2000    # DISLOCATION creep profile
+		diff_prof  	= Dry_Plagioclase_RybackiDresen_2000 	# DIFFUSION creep profile
+		disl_prof  	= Dry_Plagioclase_RybackiDresen_2000    # DISLOCATION creep profile
 
 		
 		G         	= 5e10   		# Shear modulus
