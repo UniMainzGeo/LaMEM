@@ -37,23 +37,10 @@ struct DBMat;
  * nx,ny,nz are the number of nodes along x,y,z direction contained in each processor.
  * Each time the marker are advected, and interpolated revelant information: e.g. pressure and temperature
  */
-enum Condition
-{	_Always_,
-	_Melt_Fr_,
-	_Temp_ptr_,
-	_Pres_ptr_,
-	_Time_ptr_,
-	_Phase_ptr_
-};
 
-struct P_Tr
+struct Passive_Tracers
 {
-
-	PetscScalar box_passive_tracer[6];
-	PetscInt    passive_tracer_resolution[3];
 	PetscInt    nummark ;
-	Condition   Condition_pr;
-	PetscScalar value_condition;
 	Vec         ID;    // global identification number
 	Vec    phase; // phase identifier
 	Vec    x;      // global coordinates
@@ -61,14 +48,9 @@ struct P_Tr
 	Vec    z;      //
 	Vec    p;     // pressure
 	Vec    T;     // temperature
-	Vec    Melt_fr; // Melt fraction acquired
-	Vec    C_advection; // condition to advect marker /*NB: in the future it could be useful to customize better this vector */
-	Vec    Recv;  // Vector that must be used during synching operation
 };
 
-PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb);
-
-PetscErrorCode ADVPtrReCreateStorage(AdvCtx *actx);
+PetscErrorCode ADVPtrReAllocStorage(AdvCtx *actx);
 
 PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx);
 
@@ -83,15 +65,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx);
 PetscErrorCode ADVPtrDestroy(AdvCtx *actx);
 
 PetscErrorCode Passive_tracers_save(AdvCtx *actx);
-
-PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp);
-
-PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp);
-
-PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark);
-
-PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf);
-
 
 
 #endif /* PASSIVE_TRACER_H */
