@@ -41,37 +41,39 @@ PetscErrorCode ADVPtrReAllocStorage(AdvCtx *actx)
 	// or fixed maximum number markers per cell + deleting excessive markers.
 	// The latter has an advantage of maintaining memory locality).
 
-	Passive_Tracers *passive_tr;
+	P_Tr            *passive_tr;
 	PetscInt        nummark;
-	PetscErrorCode ierr;
+	PetscErrorCode  ierr;
 	PetscFunctionBegin;
 
-	passive_tr = actx->passive_tr;
+	if(!actx->jr->ctrl.Passive_Tracer)	PetscFunctionReturn(0);
+
+	passive_tr = actx->Ptr;
 
 	nummark = actx->passive_tracer_resolution[0]*actx->passive_tracer_resolution[1]*actx->passive_tracer_resolution[2];
 	passive_tr->nummark = nummark;
 	// check whether current storage is insufficient
 
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, actx->passive_tr->nummark  , PETSC_DETERMINE,&actx->passive_tr->ID);      CHKERRQ(ierr);
-	ierr = VecZeroEntries(actx->passive_tr->ID); CHKERRQ(ierr);
+	ierr = VecCreateSeq(PETSC_COMM_WORLD, actx->Ptr->nummark  ,&actx->Ptr->ID);      CHKERRQ(ierr);
+	ierr = VecZeroEntries(actx->Ptr->ID); CHKERRQ(ierr);
 
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, actx->passive_tr->nummark  , PETSC_DETERMINE,&actx->passive_tr->x);      CHKERRQ(ierr);
-	ierr = VecZeroEntries(actx->passive_tr->x); CHKERRQ(ierr);
+	ierr = VecCreateSeq(PETSC_COMM_WORLD, actx->Ptr->nummark  ,&actx->Ptr->x);      CHKERRQ(ierr);
+	ierr = VecZeroEntries(actx->Ptr->x); CHKERRQ(ierr);
 
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, actx->passive_tr->nummark  , PETSC_DETERMINE,&actx->passive_tr->y);      CHKERRQ(ierr);
-	ierr = VecZeroEntries(actx->passive_tr->y); CHKERRQ(ierr);
+	ierr = VecCreateSeq(PETSC_COMM_WORLD, actx->Ptr->nummark  ,&actx->Ptr->y);      CHKERRQ(ierr);
+	ierr = VecZeroEntries(actx->Ptr->y); CHKERRQ(ierr);
 
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, actx->passive_tr->nummark  , PETSC_DETERMINE,&actx->passive_tr->z);      CHKERRQ(ierr);
-	ierr = VecZeroEntries(actx->passive_tr->z); CHKERRQ(ierr);
+	ierr = VecCreateSeq(PETSC_COMM_WORLD, actx->Ptr->nummark  ,&actx->Ptr->z);      CHKERRQ(ierr);
+	ierr = VecZeroEntries(actx->Ptr->z); CHKERRQ(ierr);
 
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, actx->passive_tr->nummark  , PETSC_DETERMINE,&actx->passive_tr->T);      CHKERRQ(ierr);
-	ierr = VecZeroEntries(actx->passive_tr->T); CHKERRQ(ierr);
+	ierr = VecCreateSeq(PETSC_COMM_WORLD, actx->Ptr->nummark  ,&actx->Ptr->T);      CHKERRQ(ierr);
+	ierr = VecZeroEntries(actx->Ptr->T); CHKERRQ(ierr);
 
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, actx->passive_tr->nummark  , PETSC_DETERMINE,&actx->passive_tr->p);      CHKERRQ(ierr);
-	ierr = VecZeroEntries(actx->passive_tr->p); CHKERRQ(ierr);
+	ierr = VecCreateSeq(PETSC_COMM_WORLD, actx->Ptr->nummark  ,&actx->Ptr->p);      CHKERRQ(ierr);
+	ierr = VecZeroEntries(actx->Ptr->p); CHKERRQ(ierr);
 
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, actx->passive_tr->nummark  , PETSC_DETERMINE,&actx->passive_tr->phase);      CHKERRQ(ierr);
-	ierr = VecZeroEntries(actx->passive_tr->phase); CHKERRQ(ierr);
+	ierr = VecCreateSeq(PETSC_COMM_WORLD, actx->Ptr->nummark  ,&actx->Ptr->phase);      CHKERRQ(ierr);
+	ierr = VecZeroEntries(actx->Ptr->phase); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -90,8 +92,6 @@ PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx)
 	PetscFunctionBegin;
 
 	if(actx->jr->ctrl.Passive_Tracer == 0 ) PetscFunctionReturn(0);
-
-	ierr = ADVPtrReAllocStorage(actx); CHKERRQ(ierr);
 
 	ierr = ADVPtrInitCoord(actx); CHKERRQ(ierr);
 
@@ -131,12 +131,10 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 
 	// marker counter
 	imark = 0;
-
-	ierr = VecGetArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->ID, &ID)           ; CHKERRQ(ierr);
-
+	ierr = VecGetArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->ID, &ID)           ; CHKERRQ(ierr);
 
 	// create uniform distribution of markers/cell for variable grid
 	for(k = 0; k < actx->passive_tracer_resolution[2]; k++)
@@ -188,10 +186,10 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	}
 
 
-	ierr = VecRestoreArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->ID, &ID)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->ID, &ID)           ; CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -230,12 +228,12 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
 	dist.reserve(_mark_buff_sz_);
-	ierr = VecGetArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->p, &Pr)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->phase, &phase)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 
 	for(imark=0;imark<numpassive;imark++)
 	{
@@ -291,21 +289,19 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	}
 
 
-	ierr = VecRestoreArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->p, &Pr)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->phase, &phase)           ; CHKERRQ(ierr);
-
-
+	ierr = VecRestoreArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 
 
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = VecGetArray(actx->passive_tr->z, &phase)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->p, &Pr)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
 		for(imark=0;imark<numpassive;imark++)
 		{
 
@@ -330,9 +326,9 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 
 		}
 
-		ierr = VecRestoreArray(actx->passive_tr->p, &Pr)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->phase, &phase)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 
 	}
 
@@ -362,9 +358,12 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 	PetscScalar a,b;
 	PetscScalar *Xp, *Yp,*Zp,*T,*Pr,*phase;
+	PetscLogDouble t;
 
 	AirPhase = -1;
 	Ttop     =  0.0;
+
+	PrintStart(&t, "Advection Passive tracers", NULL);
 
 
 	PetscErrorCode ierr;
@@ -414,14 +413,14 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
 
-	ierr = VecGetArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->p, &Pr)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->phase, &phase)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 	// scan all markers
-	num_part = actx->passive_tr->nummark;
+	num_part = actx->Ptr->nummark;
 
 	for(jj = 0; jj < num_part; jj++)
 	{
@@ -500,12 +499,12 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	}
 
 
-	ierr = VecRestoreArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->p, &Pr)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->phase, &phase)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
@@ -520,11 +519,11 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = VecGetArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->p, &Pr)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
 
 
 		for(jj=0;jj<num_part;jj++)
@@ -558,11 +557,11 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 		}
 
-		ierr = VecRestoreArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->p, &Pr)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
 
 	}
 
@@ -572,7 +571,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = VecGetArray(actx->passive_tr->phase, &phase)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 		for(jj=0;jj<num_part;jj++)
 		{
 			a = phase[jj];
@@ -581,10 +580,11 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			phase[jj]=b;
 		}
 
-	ierr = VecRestoreArray(actx->passive_tr->phase, &phase)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 
 	}
 
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
@@ -646,13 +646,13 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN,    vphase,      &phase);  CHKERRQ(ierr);
 
-	ierr = VecGetArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->passive_tr->phase, &phaseptr)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->phase, &phaseptr)           ; CHKERRQ(ierr);
 
 	// scan all markers
-	for(jj = 0; jj < actx->passive_tr->nummark; jj++)
+	for(jj = 0; jj < actx->Ptr->nummark; jj++)
 	{
 		// access next marker
 		xp = Xp[jj];
@@ -760,11 +760,10 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	}
 
 
-	ierr = VecRestoreArray(actx->passive_tr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->passive_tr->z, &Zp)           ; CHKERRQ(ierr);
-
-	ierr = VecRestoreArray(actx->passive_tr->phase, &phaseptr) ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->phase, &phaseptr) ; CHKERRQ(ierr);
 	// restore access
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN,    vphase,      &phase);  CHKERRQ(ierr);
@@ -792,19 +791,19 @@ PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 
 	// check whether current storage is insufficient
 
-	VecDestroy(&actx->passive_tr->ID);
+	VecDestroy(&actx->Ptr->ID);
 
-	VecDestroy(&actx->passive_tr->x);
+	VecDestroy(&actx->Ptr->x);
 
-	VecDestroy(&actx->passive_tr->y);
+	VecDestroy(&actx->Ptr->y);
 
-	VecDestroy(&actx->passive_tr->z);
+	VecDestroy(&actx->Ptr->z);
 
-	VecDestroy(&actx->passive_tr->T);
+	VecDestroy(&actx->Ptr->T);
 
-	VecDestroy(&actx->passive_tr->p);
+	VecDestroy(&actx->Ptr->p);
 
-	VecDestroy(&actx->passive_tr->phase);
+	VecDestroy(&actx->Ptr->phase);
 
 	PetscFunctionReturn(0);
 }
@@ -816,7 +815,6 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 {	// save new restart database, then delete the original
 
 	Scaling        *scal;
-	Passive_Tracers *ptr;
 	FILE           *fp;
 	PetscMPIInt    rank;
 	char           *fileName;
@@ -832,7 +830,6 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 	if(actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);
 
 	scal = actx->jr->scal;
-	ptr  = actx->passive_tr;
 	step    = actx->jr->ts->istep;
 	time    = actx->jr->ts->time*actx->jr->scal->time;
 	bgPhase = actx->bgPhase;
@@ -850,7 +847,7 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 	// open temporary restart file for writing in binary mode
 		fp = fopen(fileName, "w");
 
-		fprintf(fp,"number_marker = %d \n ", actx->passive_tr->nummark);
+		fprintf(fp,"number_marker = %d \n ", actx->Ptr->nummark);
 
 
 		fprintf(fp,"\n");
@@ -864,28 +861,28 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 
 		fprintf(fp," # ID  X  Y  Z  P  T  PH \r\n");
 
-		ierr = VecGetArray(actx->passive_tr->ID, &ID)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->x, &xp)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->y, &yp)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->z, &zp)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->p, &P)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(actx->passive_tr->phase, &phase)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->ID, &ID)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->x, &xp)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->y, &yp)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->z, &zp)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->p, &P)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 
-		for(ii=0;ii<actx->passive_tr->nummark;ii++)
+		for(ii=0;ii<actx->Ptr->nummark;ii++)
 		{
 
 
 			fprintf(fp," %d %3f   %3f  %3f  %2f  %2f  %d \r\n",PetscInt(ID[ii]),xp[ii]*scal->length,yp[ii]*scal->length,zp[ii]*scal->length,P[ii]*scal->stress,T[ii]*scal->temperature - scal->Tshift, PetscInt(phase[ii]));
 
 		}
-		ierr = VecRestoreArray(actx->passive_tr->ID, &ID)         ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->x, &xp)          ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->y, &yp)          ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->z, &zp)          ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->p, &P)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->T, &T)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->passive_tr->phase, &phase)   ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->ID, &ID)         ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->x, &xp)          ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->y, &yp)          ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->z, &zp)          ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->p, &P)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->phase, &phase)   ; CHKERRQ(ierr);
 
 		fclose(fp);
 
@@ -895,4 +892,59 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 	PetscFunctionReturn(0);
 
 }
+
+//-------------------------------------------------------------------------//
+
+#undef __FUNCT__
+#define __FUNCT__ "Passive_Tracer_WriteRestart"
+PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	if(actx->jr->ctrl.Passive_Tracer)
+	{
+
+	// write solution vectors
+	ierr = VecWriteRestart(actx->Ptr->x, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->y, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->z, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->p, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->T, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->phase, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->ID, fp); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+
+// --------------------------------------------------------------------------------------- //
+
+#undef __FUNCT__
+#define __FUNCT__ "ReadPassive_Tracers"
+PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// read solution vectors
+	if(actx->jr->ctrl.Passive_Tracer)
+	{
+		ierr = ADVPtrReAllocStorage(actx); CHKERRQ(ierr);
+
+	ierr = VecReadRestart(actx->Ptr->x, fp); CHKERRQ(ierr);
+	ierr = VecReadRestart(actx->Ptr->y, fp); CHKERRQ(ierr);
+	ierr = VecReadRestart(actx->Ptr->z, fp); CHKERRQ(ierr);
+	ierr = VecReadRestart(actx->Ptr->p, fp); CHKERRQ(ierr);
+	ierr = VecReadRestart(actx->Ptr->T, fp); CHKERRQ(ierr);
+	ierr = VecReadRestart(actx->Ptr->phase, fp); CHKERRQ(ierr);
+	ierr = VecReadRestart(actx->Ptr->ID, fp); CHKERRQ(ierr);
+	}
+
+
+
+	PetscFunctionReturn(0);
+}
+//=========================================================
+>>>>>>> I commit the first stage of the work. Still need to test it, but at least it compiles nicely.
 

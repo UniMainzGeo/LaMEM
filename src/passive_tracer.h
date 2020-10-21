@@ -38,7 +38,7 @@ struct DBMat;
  * Each time the marker are advected, and interpolated revelant information: e.g. pressure and temperature
  */
 
-struct Passive_Tracers
+struct P_Tr
 {
 	PetscInt    nummark ;
 	Vec         ID;    // global identification number
@@ -66,6 +66,9 @@ PetscErrorCode ADVPtrDestroy(AdvCtx *actx);
 
 PetscErrorCode Passive_tracers_save(AdvCtx *actx);
 
+PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp);
+
+PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp);
 
 #endif /* PASSIVE_TRACER_H */
 

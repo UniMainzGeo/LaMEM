@@ -285,6 +285,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// project initial history from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
+	// initialize the passive tracers if needed
+	ierr = ADVPtrReAllocStorage(actx); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
