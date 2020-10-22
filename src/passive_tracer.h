@@ -48,6 +48,7 @@ struct P_Tr
 	Vec    z;      //
 	Vec    p;     // pressure
 	Vec    T;     // temperature
+	Vec    Recv;  // Vector that must be used during synching operation
 };
 
 PetscErrorCode ADVPtrReAllocStorage(AdvCtx *actx);
@@ -69,6 +70,9 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx);
 PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp);
 
 PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp);
+
+PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark);
+
 
 #endif /* PASSIVE_TRACER_H */
 

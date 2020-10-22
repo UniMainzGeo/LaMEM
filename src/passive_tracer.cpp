@@ -75,6 +75,10 @@ PetscErrorCode ADVPtrReAllocStorage(AdvCtx *actx)
 		ierr = VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->phase);      CHKERRQ(ierr);
 		ierr = VecZeroEntries(actx->Ptr->phase); CHKERRQ(ierr);
 
+		ierr = VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Recv);      CHKERRQ(ierr);
+		ierr = VecZeroEntries(actx->Ptr->Recv); CHKERRQ(ierr);
+
+
 	PetscFunctionReturn(0);
 }
 
@@ -205,10 +209,8 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	vector <spair>    dist;
 	spair d;
 	PetscScalar  X[3],Xm[3],*Xp,*Yp,*Zp,*Pr,*T,*phase;
-	PetscInt     I, J, K, ii, jj, kk,numpassive,imark,ID,M,N,n;
+	PetscInt     I, J, K,ii,numpassive,imark,ID,M,N,n;
 	PetscScalar ex,bx,ey,by,ez,bz;
-	Vec         vbuff;
-	PetscScalar *a,b;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -288,7 +290,6 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 
 	}
 
-
 	ierr = VecRestoreArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
@@ -296,90 +297,21 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD," Here\n");
-
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		// Create a buffer vector: a) it has the same size of the passive tracer one 2) it is used only for the
-		// reduction operation
-		ierr = VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&vbuff);      CHKERRQ(ierr);
-
-		PetscPrintf(PETSC_COMM_WORLD," Here2\n");
-
-		// Syncronize pressure vector
-
-		ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
-
-		ierr = VecGetArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
-
-		ierr = MPI_Allreduce(&Pr, &a,(PetscMPIInt)actx->Ptr->nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-		PetscPrintf(PETSC_COMM_WORLD," Here3\n");
 
 
-		ierr = VecRestoreArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(vbuff, &a)           ; CHKERRQ(ierr);
+		ierr = Sync_Vector(actx->Ptr->p,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
-		ierr = VecCopy(vbuff,actx->Ptr->p);  CHKERRQ(ierr);
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->p); CHKERRQ(ierr);
 
+		ierr = Sync_Vector(actx->Ptr->T,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
-		// Syncronize Temperature vector
-		ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->T); CHKERRQ(ierr);
 
-		ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+		ierr = Sync_Vector(actx->Ptr->phase,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
-		ierr = MPI_Allreduce( &T, &a,(PetscMPIInt)actx->Ptr->nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_SELF); CHKERRQ(ierr);
-
-		ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(vbuff, &a)           ; CHKERRQ(ierr);
-
-		ierr = VecCopy(vbuff,actx->Ptr->T);  CHKERRQ(ierr);
-
-
-		// Syncronize the Phase vector
-
-		ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
-
-		ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
-
-		ierr = MPI_Allreduce( &phase,&a, (PetscMPIInt)actx->Ptr->nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_SELF); CHKERRQ(ierr);
-
-		ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(vbuff, &a)           ; CHKERRQ(ierr);
-		ierr = VecCopy(vbuff,actx->Ptr->phase);  CHKERRQ(ierr);
-
-
-
-		VecDestroy(&vbuff);
-
-
-		/*
-		for(imark=0;imark<numpassive;imark++)
-		{
-
-			a = Pr[imark];
-			b = 0.0;
-			ierr = MPI_Allreduce(&a, &b, 1, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-			Pr[imark]=b;
-
-
-
-			a = T[imark];
-			b = 0.0;
-			ierr = MPI_Allreduce(&a, &b, 1, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-			T[imark]=b;
-
-			a = phase[imark];
-			b = 0.0;
-			ierr = MPI_Allreduce(&a, &b, 1, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-			phase[imark]=b;
-
-
-
-		}
-
-		ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
-*/
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->phase); CHKERRQ(ierr);
 	}
 
 
@@ -398,15 +330,13 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	FDSTAG      *fs;
 	JacRes      *jr;
 	SolVarCell  *svCell;
-	PetscInt    sx, sy, sz, nx, ny,nz,num_ptr,rank;
+	PetscInt    sx, sy, sz, nx, ny,nz,rank;
 	PetscInt    jj, ID, I, J, K, II, JJ, KK, AirPhase, num_part;
 	PetscScalar ex,bx,ey,by,ez,bz;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
 	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop, endx,endy,endz,begx,begy,begz,npx,npy,npz;
-	Vec         vbuff;
-	PetscScalar *a;
 	PetscScalar *Xp, *Yp,*Zp,*T,*Pr,*phase;
 	PetscLogDouble t;
 
@@ -566,69 +496,30 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD," Here1\n");
 
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = VecCreateMPI(PETSC_COMM_WORLD, actx->Ptr->nummark  , PETSC_DETERMINE,&vbuff);      CHKERRQ(ierr);
-		PetscPrintf(PETSC_COMM_WORLD," Here2\n");
 
 
-		// Syncronize pressure vector
+		ierr = Sync_Vector(actx->Ptr->p,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
-		ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->p); CHKERRQ(ierr);
 
-		ierr = VecGetArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
+		ierr = Sync_Vector(actx->Ptr->T,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
-		ierr = MPI_Allreduce(&Pr, &a, (PetscMPIInt)actx->Ptr->nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->T); CHKERRQ(ierr);
 
-		ierr = VecRestoreArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(vbuff, &a)           ; CHKERRQ(ierr);
+		ierr = Sync_Vector(actx->Ptr->x,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
-		PetscPrintf(PETSC_COMM_WORLD," Here3\n");
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->x); CHKERRQ(ierr);
 
-		// Syncronize Temperature vector
-		ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
+		ierr = Sync_Vector(actx->Ptr->y,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
-		ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->y); CHKERRQ(ierr);
 
-		ierr = MPI_Allreduce(&T, &a, (PetscMPIInt)actx->Ptr->nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = Sync_Vector(actx->Ptr->z,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
-		ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(vbuff, &a)           ; CHKERRQ(ierr);
-
-
-		// Syncronize the x vector
-
-		ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
-
-		ierr = VecGetArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
-
-		ierr = MPI_Allreduce(&Xp, &a, (PetscMPIInt)actx->Ptr->nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-		ierr = VecRestoreArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(vbuff, &a)           ; CHKERRQ(ierr);
-
-
-		//Syncronize the y vector
-		ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
-
-		ierr = VecGetArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
-
-		ierr = MPI_Allreduce(&Yp, &a, (PetscMPIInt)actx->Ptr->nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-		ierr = VecRestoreArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(vbuff, &a)           ; CHKERRQ(ierr);
-
-		//Syncronize the z vector
-		ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
-
-		ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
-
-		ierr = MPI_Allreduce(&Zp, &a, (PetscMPIInt)actx->Ptr->nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-		ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(vbuff, &a)           ; CHKERRQ(ierr);
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->z); CHKERRQ(ierr);
 
 	}
 
@@ -638,17 +529,9 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
+		ierr = Sync_Vector(actx->Ptr->phase,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
-		ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
-
-		ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
-
-		ierr = MPI_Allreduce(&phase, &a, (PetscMPIInt)actx->Ptr->nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-		ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
-		ierr = VecRestoreArray(vbuff, &a)           ; CHKERRQ(ierr);
-
-
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->phase); CHKERRQ(ierr);
 	}
 
 	PrintDone(t);
@@ -1012,6 +895,30 @@ PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Sync_Vector"
+PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark)
+{
+	PetscScalar *recv,*send;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecZeroEntries(actx->Ptr->Recv); CHKERRQ(ierr);
+
+	ierr = VecGetArray(x, &send)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->Recv, &recv)           ; CHKERRQ(ierr);
+
+	ierr = MPI_Allreduce(send, recv, (PetscMPIInt)nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(x, &send)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->Recv, &recv)           ; CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+
 //=========================================================
 >>>>>>> I commit the first stage of the work. Still need to test it, but at least it compiles nicely.
 
