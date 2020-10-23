@@ -34,11 +34,10 @@
 #define __FUNCT__ "ADVPtrReAllocStorage"
 PetscErrorCode ADVPtrReAllocStorage(AdvCtx *actx)
 {
-	// WARNING! This is a very crappy approach. Make sure the overhead is
-	// large enough to prevent memory reallocations. Do marker management
-	// before reallocating, or implement different memory model (e.g. paging,
-	// or fixed maximum number markers per cell + deleting excessive markers.
-	// The latter has an advantage of maintaining memory locality).
+/*
+ *  This function creates all the vector required for tracing pressure, temperature, phase and x,y,z position.
+ *  RecvBuf is a vector used only for the synching operation and it has any meaning.
+ */
 
 	P_Tr            *passive_tr;
 	PetscInt        nummark;
@@ -87,8 +86,6 @@ PetscErrorCode ADVPtrReAllocStorage(AdvCtx *actx)
 #define __FUNCT__ "ADVPassiveTracerInit"
 PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx)
 {
-	FDSTAG    *fs;
-	PetscInt  nmarkx, nmarky, nmarkz, nummark;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -107,18 +104,18 @@ PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx)
 #define __FUNCT__ "ADVPtrInitCoord"
 PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 {
-	// initializes coordinates and adds random noise if required for hard-coded setups
+	//Initialize the passive tracer lagrangian grid. The initial passive tracer distribution is a rectangular grid, with a
+	// a variable resolution. After initializing the coordinates, phase, temperature and pressure are interpolated from
+	// the nearest marker (s.s.)
 
-	FDSTAG      *fs;
-	PetscScalar  x, y, z, dx, dy, dz;
-	PetscInt     i, j, k, ii, jj, kk,id_cell,nx,ny,nz;
+	PetscScalar  x, y, z, dx, dy, dz,nx,ny,nz;
+	PetscInt     i, j, k;
 	PetscInt     imark;
 	PetscScalar  *Xp,*Yp,*Zp,*ID;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs = actx->fs;
 	nx = actx->passive_tracer_resolution[0];
 	ny = actx->passive_tracer_resolution[1];
 	nz = actx->passive_tracer_resolution[2];
@@ -197,7 +194,8 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 #define __FUNCT__ "ADV_Assign_Phase"
 PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 {
-	// initializes coordinates and adds random noise if required for hard-coded setups
+	// Initially the marker are phase-less. This routine assign both phase and
+	// initial temperature to the passive tracers.
 
 	FDSTAG      *fs;
 	vector <spair>    dist;
@@ -318,15 +316,24 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 #define __FUNCT__ "ADVAdvectPassiveTracer"
 PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 {
-	// update marker positions from current velocities & time step
-	// WARNING! Forward Euler Explicit algorithm
-	// (need to implement more accurate schemes)
+/*
+ * Warning 1: this routine was copied from the routine of marker advection.
+ * 1st : if something change in the advection routine, it may creates some discrepancies
+ * in this routine (this may cause the failing of t19_passive tracers)
+ * 2nd : In order to mantain a certain degree of consistency between the routine it is necessary
+ * to create a general function for the advection. On the other hand, a potential solution
+ * Function: 1st part: Each timestep the function advect the passive tracers whose coordinate are
+ * belonging to the current processor. The passive tracers that does not belong to the processor
+ * are set to be equal to -DBL_MAX. After that, the x,y,z, Temperature, Pressure are syncronized in
+ * all processor with an All_reduce operation.
+ * 2nd part: The routine check if the passive tracer is below the free surface, changing eventually its phase
+ * and following the same approach for the coordinate and P,T.
+ */
 
 	FDSTAG      *fs;
 	JacRes      *jr;
-	SolVarCell  *svCell;
 	PetscInt    sx, sy, sz, nx, ny,nz,rank;
-	PetscInt    jj, ID, I, J, K, II, JJ, KK, AirPhase, num_part;
+	PetscInt    jj, I, J, K, II, JJ, KK, AirPhase, num_part;
 	PetscScalar ex,bx,ey,by,ez,bz;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
@@ -416,8 +423,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			ierr = Discret1DFindPoint(&fs->dsy, yp, J); CHKERRQ(ierr);
 			ierr = Discret1DFindPoint(&fs->dsz, zp, K); CHKERRQ(ierr);
 
-			GET_CELL_ID(ID, I, J, K, fs->dsx.ncels, fs->dsy.ncels)
-
 			// get coordinates of cell center
 			xc = ccx[I];
 			yc = ccy[J];
@@ -432,9 +437,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			vx = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
 			vy = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
 			vz = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
-
-			// access host cell solution variables
-			svCell = &jr->svCell[ID];
 
 			// update pressure & temperature variables
 			Pr[jj] = lp[sz+K][sy+J][sx+I] ;
@@ -459,6 +461,29 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 				{
 				npz = begz;
 				}
+
+			if(npy > endy)
+				{
+
+				npy = endy;
+				}
+			else if(npy < begy)
+				{
+					npy = begy;
+				}
+
+
+			if(npx > endx)
+				{
+
+				npx = endx;
+				}
+			else if(npx < begx)
+				{
+					npx = begx;
+				}
+
+
 
 			Xp[jj]=npx;
 			Yp[jj]=npy;
@@ -545,15 +570,15 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 #define __FUNCT__ "ADVMarkCrossFreeSurfPassive_Tracers"
 PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 {
-	// change marker phase when crossing free surface
+	// change marker passive tracers when crossing free surface
 
 	Marker           *IP;
 	FDSTAG          *fs;
 	FreeSurf        *surf;
 	Vec             vphase;
-	PetscInt        sx, sy, sz, nx, ny;
+	PetscInt        sx, sy, sz;
 	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
-	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *X, *IX,bz,ez,by,ey,bx,ex,Xm[3];
+	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *IX,bz,ez,by,ey,bx,ex,Xm[3];
 	PetscScalar *Xp, *Yp,*Zp,*phaseptr;
 	spair           d;
 	vector <spair>  dist;
@@ -572,8 +597,8 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	AirPhase  = surf->AirPhase;
 
 	// starting indices & number of cells
-	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
-	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	sx = fs->dsx.pstart;
+	sy = fs->dsy.pstart;
 	sz = fs->dsz.pstart;
 
 	// grid coordinates
@@ -731,13 +756,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 #define __FUNCT__ "ADVPtrDestroy"
 PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 {
-	// WARNING! This is a very crappy approach. Make sure the overhead is
-	// large enough to prevent memory reallocations. Do marker management
-	// before reallocating, or implement different memory model (e.g. paging,
-	// or fixed maximum number markers per cell + deleting excessive markers.
-	// The latter has an advantage of maintaining memory locality).
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 
@@ -770,11 +789,9 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 
 	Scaling        *scal;
 	FILE           *fp;
-	PetscMPIInt    rank;
 	char           *fileName;
 	PetscScalar    time;
-	PetscInt       bgPhase, step;
-	char           *dirName;
+	PetscInt        step;
 	PetscInt       ii;
 	PetscScalar    *xp,*yp,*zp,*P,*T,*phase,*ID;
 	PetscErrorCode ierr;
@@ -786,7 +803,6 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 	scal = actx->jr->scal;
 	step    = actx->jr->ts->istep;
 	time    = actx->jr->ts->time*actx->jr->scal->time;
-	bgPhase = actx->bgPhase;
 
 	if(step==0)
 	{
