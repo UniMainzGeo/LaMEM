@@ -17,8 +17,8 @@ function FDSTAGSaveMarkersParallelMatlab(A, fname, Is64BIT)
 
 % ----------- Function begin ----------- %
 
-if ~isdir('markers')
-    mkdir markers
+if ~isfolder('markers')
+    mkdir('markers')
 end
 
 % No. of properties the markers carry: x,y,z-coord, phase, T

@@ -181,7 +181,6 @@
 	dbox_zvel   = -1.0                      # vertical velocity
 
 # Inflow velocity boundary condition
-
 	bvel_face       =   1                   #   face identifier  (1-left 2-right 3-front 4-back)
 	bvel_face_out   =   1                   # 	do we have outflow @ opposite boundary?
 	bvel_phase      =   1                   #   phase number of inflow material [if undefined, it uses the phase close to the boundary]
@@ -272,9 +271,9 @@
 	rho_fluid       = 1e3            # fluid density for depth-dependent density model
 	gw_level_type   = top            # ground water level type for pore pressure computation (see below)
 	gw_level        = 10.0           # ground water level at the free surface (if defined)
-	biot            = 0.7            # Biot pressure parameer
+	biot            = 0.7            # Biot pressure parameter
 	get_permea      = 1              # effective permeability computation activation flag
-	rescal          = 1              # stensil rescaling flag (for internal constraints)
+	rescal          = 1              # stencil rescaling flag (for internal constraints, for example while computing permeability)
 	mfmax           = 0.1            # maximum melt fraction affecting viscosity reduction
 	lmaxit          = 25             # maximum number of local rheology iterations 
 	lrtol           = 1e-6           # local rheology iterations relative tolerance
@@ -291,7 +290,7 @@
 # Solver options
 #===============================================================================
 	SolverType 			=	direct 		# solver [direct or multigrid]
-	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
+	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix/umfpack  (requires these external PETSc packages to be installed!)	
 	DirectPenalty 		=	1e4			# penalty parameter [employed if we use a direct solver]
 	MGLevels 			=	3			# number of MG levels [default=3]
 	MGSweeps 			=	10			# number of MG smoothening steps per level [default=10]
@@ -615,7 +614,6 @@
         FD_eps          =   1e-5                                    # epsilon 
         log10           =   0                                       # Employ logarithm of value?
     <AdjointParameterEnd>
-
 
     <AdjointObservationPointStart>
         Coordinate          =   0.5 0.5 0.5	                        # coordinates    

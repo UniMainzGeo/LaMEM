@@ -97,8 +97,8 @@ clearvars -except P3D P
 
 %% STORE FILES
 
-if ~isdir('bc')
-    mkdir bc
+if ~isfolder('bc')
+    mkdir('bc')
 end
 
 % get partitioning data

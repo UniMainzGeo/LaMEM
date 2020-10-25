@@ -22,9 +22,9 @@ z = [];
 % create uniform distribution of markers/cell
 for i=1:length(dx)
     for j=1:npartx
-        if (j==1) & (i==1)
+        if (j==1) && (i==1)
             a = dx(i)/npartx*0.5;
-        elseif j==1 & (i~=1)
+        elseif j==1 && (i~=1)
             a = x(end) + dx(i-1)/npartx*0.5 + dx(i)/npartx*0.5;
         else
             a = x(end)+dx(i)/npartx;
@@ -35,9 +35,9 @@ end
 
 for i=1:length(dy)
     for j=1:nparty
-        if (j==1) & (i==1)
+        if (j==1) && (i==1)
             a = dy(i)/nparty*0.5;
-        elseif j==1 & (i~=1)
+        elseif j==1 && (i~=1)
             a = y(end) + dy(i-1)/nparty*0.5 + dy(i)/nparty*0.5;
         else
             a = y(end)+dy(i)/nparty;
@@ -48,9 +48,9 @@ end
 
 for i=1:length(dz)
     for j=1:npartz
-        if (j==1) & (i==1)
+        if (j==1) && (i==1)
             a = dz(i)/npartz*0.5;
-        elseif j==1 & (i~=1)
+        elseif j==1 && (i~=1)
             a = z(end) + dz(i-1)/npartz*0.5 + dz(i)/npartz*0.5;
         else
             a = z(end)+dz(i)/npartz;
