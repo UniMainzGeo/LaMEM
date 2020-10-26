@@ -153,10 +153,13 @@
 		rho        = 2700  # density - if dimensional [kg/m3]
 
 		eta        = 1e21  # Viscosity - dimensional [Pa.s]
+        eta_st     =  2e20   # regularization viscosity
+
 		G          =  5e10
 		Kb         =  8e10
-		ch         =  50e6
-		fr         =  30
+		
+        ch         =  50e6
+        fr         =  30
 		frSoftID   =  0    # softening ID
 		chSoftID   =  0
 	<MaterialEnd>
@@ -204,6 +207,7 @@
     -snes_ksp_ew_rtolmax 1e-1
     -snes_max_linear_solve_fail 10000
  	-snes_max_it 			100
+    -snes_rtol 1e-6
 	
 	-pcmat_pgamma 1e2
    		

@@ -39,10 +39,9 @@ you are wondering how options are called.
 Example of performing a subduction setup, in which the initial model geometry
 and temperature structure is generated from within a MATLAB/OCTAVE script.
 
-4) /LemialeLocalization
+4) /Localization
 Example of a 2D shear localization setup, which is an often-used bench-
 mark for plastic rheologies.
-INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
 
 5) /MCC
 Example of a 3D metamorphic core complex setup/

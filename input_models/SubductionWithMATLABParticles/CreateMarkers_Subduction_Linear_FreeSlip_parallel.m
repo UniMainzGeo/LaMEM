@@ -1,10 +1,9 @@
 % Create a 2D subduction setup with particles & temperature, 
 
-
 clear
 
 
-% Tell the code where the LaMEM matlab routines are 
+% Tell the code where the LaMEM matlab routines are, relative to the current directory 
 addpath('../../matlab')
 
 
@@ -14,44 +13,12 @@ addpath('../../matlab')
 % See model setup in Paraview 1-YES; 0-NO
 Paraview_output        =    1;
 
-% Output parallel files for LaMEM, using a processor distribution file (msetup = parallel)
-% WARNING: Need a valid 'Parallel_partition' file!
 LaMEM_Parallel_output  =    0;
-
-% Mesh from file 1-YES (load uniform or variable mesh from file); 0-NO (create new uniform mesh)
-% WARNING: Need a valid 'Parallel_partition' file!
-LoadMesh               =    1;
 
 % random noise of particles
 RandomNoise             =   logical(0);
 
-Is64BIT                 =   logical(0); % only used for some 
-
-if LaMEM_Parallel_output
-    % We perform a paralell simulation; or this a 'ProcessorPartitioning'
-    % file shoule be created first by running LaMEM on the desired # of
-    % processors as:
-    %   mpiexec -n 2 ../../bin/opt/LaMEM -ParamFile Subduction2D_FreeSlip_MATLABParticles_Linear_DirectSolver.dat -mode save_grid
-     
-    % Define parallel partition file
-    Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin'
-    
-    % Load grid from parallel partitioning file
-    [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise,Is64BIT);
-    
-    % Update other variables
-    nump_x  = size(X,2);
-    nump_y  = size(X,1);
-    nump_z  = size(X,3);
-    
-    % Domain parameters
-    W       =   xcoor(end)-xcoor(1);    % x-dir
-    L       =   ycoor(end)-ycoor(1);    % y-dir
-    H       =   zcoor(end)-zcoor(1);    % z-dir
-    
-
-else
-    
+if ~LaMEM_Parallel_output 
     % In the other case, we create a setup for 1 processor and defined the
     % parameters here. 
     % Important: the resolution you use here should be identical to what
@@ -94,6 +61,30 @@ else
     %
     %----------------------------------------------------------------------
     
+
+else
+    % We perform a paralel simulation; or this a 'ProcessorPartitioning'
+    % file shoule be created first by running LaMEM on the desired # of
+    % processors as:
+    %   mpiexec -n 2 ../../bin/opt/LaMEM -ParamFile Subduction2D_FreeSlip_MATLABParticles_Linear_DirectSolver.dat -mode save_grid
+     
+    % Define parallel partition file
+    Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin'
+    
+    % Load grid from parallel partitioning file
+    [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise,Is64BIT);
+    
+    % Update other variables
+    nump_x  = size(X,2);
+    nump_y  = size(X,1);
+    nump_z  = size(X,3);
+    
+    % Domain parameters
+    W       =   xcoor(end)-xcoor(1);    % x-dir
+    L       =   ycoor(end)-ycoor(1);    % y-dir
+    H       =   zcoor(end)-zcoor(1);    % z-dir
+    
+
 end
 
 %==========================================================================
@@ -224,7 +215,7 @@ end
 
 % SAVE PARALLEL DATA (parallel)
 if (LaMEM_Parallel_output == 1)
-    FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition,Is64BIT);
+    FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition,logical(0));
 end
 
 
