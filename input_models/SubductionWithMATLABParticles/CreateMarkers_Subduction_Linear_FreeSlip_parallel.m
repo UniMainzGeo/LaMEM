@@ -5,18 +5,8 @@ clear
 
 
 % Tell the code where the LaMEM matlab routines are 
-addpath ../../matlab
+addpath('../../matlab')
 
-
-% Define parallel partition file
-Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin'
-
-
-% Number of markers in a grid cell [Note that this needs to be changed if 
-% this is changed in the *.dat file!]
-npart_x = 3;
-npart_y = 3;
-npart_z = 3;
 
 %==========================================================================
 % OUTPUT OPTIONS (standard)
@@ -26,7 +16,7 @@ Paraview_output        =    1;
 
 % Output parallel files for LaMEM, using a processor distribution file (msetup = parallel)
 % WARNING: Need a valid 'Parallel_partition' file!
-LaMEM_Parallel_output  =    1;
+LaMEM_Parallel_output  =    0;
 
 % Mesh from file 1-YES (load uniform or variable mesh from file); 0-NO (create new uniform mesh)
 % WARNING: Need a valid 'Parallel_partition' file!
@@ -37,20 +27,74 @@ RandomNoise             =   logical(0);
 
 Is64BIT                 =   logical(0); % only used for some 
 
-% Load grid from parallel partitioning file
-[X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise,Is64BIT);
+if LaMEM_Parallel_output
+    % We perform a paralell simulation; or this a 'ProcessorPartitioning'
+    % file shoule be created first by running LaMEM on the desired # of
+    % processors as:
+    %   mpiexec -n 2 ../../bin/opt/LaMEM -ParamFile Subduction2D_FreeSlip_MATLABParticles_Linear_DirectSolver.dat -mode save_grid
+     
+    % Define parallel partition file
+    Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin'
+    
+    % Load grid from parallel partitioning file
+    [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise,Is64BIT);
+    
+    % Update other variables
+    nump_x  = size(X,2);
+    nump_y  = size(X,1);
+    nump_z  = size(X,3);
+    
+    % Domain parameters
+    W       =   xcoor(end)-xcoor(1);    % x-dir
+    L       =   ycoor(end)-ycoor(1);    % y-dir
+    H       =   zcoor(end)-zcoor(1);    % z-dir
+    
 
-% Update other variables
-nump_x  = size(X,2);
-nump_y  = size(X,1);
-nump_z  = size(X,3);
+else
+    
+    % In the other case, we create a setup for 1 processor and defined the
+    % parameters here. 
+    % Important: the resolution you use here should be identical to what
+    % is specified in then *.dat file!
+    disp('Creating setup for 1 processor')
+    
+    % Domain parameters
+    W       =   3000;       % x-dir
+    L       =   10;         % y-dir
+    H       =   660;        % z-dir
+    
+    x_left  =   1500;      % coord of the left margin
+    y_front =   0;      % coord of the front margin
+    z_bot   =   -660;      % coord of the bottom margin
 
-
-
-% Domain parameters
-W       =   xcoor(end)-xcoor(1);    % x-dir
-L       =   ycoor(end)-ycoor(1);    % y-dir
-H       =   zcoor(end)-zcoor(1);    % z-dir
+    % Element resolution
+    nel_x   =   256;
+    nel_y   =   2;
+    nel_z   =   128;
+    
+    % Number of markers in a grid cell
+    npart_x = 3;
+    npart_y = 3;
+    npart_z = 3;
+    
+    %-----------------------------------------------------------------
+    % not to be changed
+    % Number of markers
+    nump_x  =   nel_x*npart_x;
+    nump_y  =   nel_y*npart_y;
+    nump_z  =   nel_z*npart_z;
+    
+    dx      =   W/nump_x;
+    dy      =   L/nump_y;
+    dz      =   H/nump_z;
+    x       =   [x_left  + dx*0.5 : dx : x_left+W  - dx*0.5 ];
+    y       =   [y_front + dy*0.5 : dy : y_front+L - dy*0.5 ];
+    z       =   [z_bot   + dz*0.5 : dz : z_bot+H   - dz*0.5 ];
+    [X,Y,Z] =   meshgrid(x,y,z);
+    %
+    %----------------------------------------------------------------------
+    
+end
 
 %==========================================================================
 

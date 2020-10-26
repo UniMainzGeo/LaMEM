@@ -269,8 +269,7 @@
 <PetscOptionsStart>
 
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly
-
+	-snes_type ksponly			# switches off nonlinear iterations
 
 	-js_ksp_monitor # display how the inner iterations converge
 	

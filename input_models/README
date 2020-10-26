@@ -13,9 +13,13 @@ python verify_InputModels.py
 
 If you are a new user of LaMEM, we suggest you to look at the files
 in the order given below. Where appropriate, we have added README files 
-in the directories.
+in the directories with further info.
 
-Boris Kaus, Jan. 2018
+In addition, you can also look at the Wiki page of the LaMEM BitBucket 
+repository:
+https://bitbucket.org/bkaus/lamem/wiki/Home
+
+Boris Kaus, Oct. 2020
 
 
 1) /BuildInSetups
@@ -28,28 +32,18 @@ rheology.
 
 2) /input
 This contains the file lamem_input.dat, which is a generic file
-that lists all specifiable LaMEM options. 
+that lists all available LaMEM options. Always look at this file if
+you are wondering how options are called.  
 
 3) SubductionWithMATLABParticles
 Example of performing a subduction setup, in which the initial model geometry
-and temperature structure is generated from within a MATLAB script.
+and temperature structure is generated from within a MATLAB/OCTAVE script.
 
-4) /FSSA_Benchmark
-Example of a Rayleigh-Taylor bennchmark, showing how the free surface
-stabilization algorithm is useful in allowing larger timesteps. It also
-shows how a MATLAB-based script is used to create the model setup.
-INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
-
-5) /LemialeLocalization
+4) /LemialeLocalization
 Example of a 2D shear localization setup, which is an often-used bench-
 mark for plastic rheologies.
 INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
 
-6) /MCC
+5) /MCC
 Example of a 3D metamorphic core complex setup/
-INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
-
-7) /Bezier
-Gives an example of using a complicated pushing block in a 3D
-setup that changes direction with time
 INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
