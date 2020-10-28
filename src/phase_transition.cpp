@@ -46,7 +46,19 @@
  **			Boris Kaus
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-
+/*	Bibliography reference for the phase transition
+ * All the phase transition listed are coming from [1] (Tab.1).
+ * [1] Manuele Faccenda, Luca Dal Zilio, The role of solid–solid phase transitions in mantle convection, Lithos,
+        Volumes 268–271, 2017,
+ * [2]B.R. Hacker, G.A. Abers, S.M. Peacock Subduction factory 1. Theoretical mineralogy, densities, seismic wave speeds, and H2O contents
+        Journal of Geophysical Research, 108 (2003), 10.1029/2001JB001127
+ * [3] Hydrous solidus of CMAS-pyrolite and melting of mantle plumes at the bottom of the upper mantle
+		Geophysical Research Letters, 30 (2003), 10.1029/2003GL018318
+ * [4] E.R. Hernandez, J. Brodholt, D. Alfè Structural, vibrational and thermodynamic properties of Mg2SiO4 and MgSiO3 minerals from first-principles simulations
+	   Physics of the Earth and Planetary Interiors, 240 (2015), pp. 1-24
+ * [5] The postspinel boundary in pyrolitic compositions determined in the laser-heated diamond anvil cell
+	    Geophysical Research Letters, 41 (2014), pp. 3833-3841
+ */
 /*
 	The routines in this file allow changing the phase of a marker depending on conditions
 	set by the user.
@@ -107,9 +119,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ph->Type = _Clapeyron_;
 		ierr    =   Set_Clapeyron_Phase_Transition(ph, dbm, fb,ID);   CHKERRQ(ierr);
 	}
-	else{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type [Constant; Clapeyron; Box_type] ");
-	}
+
 
 
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
@@ -172,10 +182,7 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	}
 
 	ierr = getScalarParam(fb, _REQUIRED_, "ConstantValue",          &ph->ConstantValue,        1,1.0);  CHKERRQ(ierr);
-	if((!ph->Parameter_transition || !ph->ConstantValue))
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a [constant] phase transition you need to specify the parameter: P = Pressure, T = temperature, APS = PlasticStrain", (LLD)ID);
-	}
+
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Constant \n", (LLD)(ph->ID));
     PetscPrintf(PETSC_COMM_WORLD,"     Parameter          :   %s \n",    Parameter);
@@ -325,7 +332,7 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 	PetscFunctionBegin;
 	if (!strcmp(ph->Name_clapeyron,"Eclogite"))
 	{
-		// Source Faccenda and Dal Zilio et al 2017 [Hacker et al. (2003) Morb+H2O]
+		//[1][2]
 		ph->neq                 =   2;
 		ph->P0_clapeyron[0]     =   2e9;        // Pa
 		ph->T0_clapeyron[0]     =   800;        // C
@@ -335,17 +342,17 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 		ph->T0_clapeyron[1]     =   700;
 		ph->clapeyron_slope[1]  =   -30;
 	}
-	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_410km"))
+	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_WadsleyiteRingwoodite_wet"))
 	{
-		// Source: Faccenda and Dal Zilio et al 2017 [Olivine-Wadseylite Phase transition anhydrous Pyrolite+H2O Litasov and Ohtani (2003)]
+		// [1][3]
 		ph->neq                 =   1;
 		ph->P0_clapeyron[0]     =   13.5e9;
 		ph->T0_clapeyron[0]     =   1537;
 		ph->clapeyron_slope[0]  =   5;
 	}
-	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_510km"))
+	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_WadsleyiteRingwoodite_dry"))
 	{
-		// Source: Faccenda and Dal Zilio et al 2017 [WadsleyiteRingwooditePhase transition anhydrous Fo100(theoretical) Hernandez et al 2015]
+		//[1][4]
 		ph->neq                 =   1;
 		ph->P0_clapeyron[0]     =   18e9;
 		ph->T0_clapeyron[0]     =   1597;
@@ -353,7 +360,7 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 	}
 	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_660km"))
 	{
-		// Source:  Faccenda and Dal Zilio et al 2017 [Post Spinel Phase transition anhydrous Pyrolite Ye et al 2014] 
+		//[1][5]
 		ph->neq                 =   1;
 		ph->P0_clapeyron[0]     =   23e9;
 		ph->T0_clapeyron[0]     =   1667;
