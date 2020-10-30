@@ -2088,7 +2088,7 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 	{
 		svCell = &jr->svCell[iter++];
 
-		svCell->svBulk.pn = lp[k][j][i] + jr->ctrl.pShift;
+		svCell->svBulk.pn = lp[k][j][i];
 		svCell->svBulk.Tn = lT[k][j][i];
 		svCell->hxx       = svCell->sxx;
 		svCell->hyy       = svCell->syy;

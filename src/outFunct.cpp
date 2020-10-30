@@ -367,13 +367,20 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
+	Vec Plocal;
 
 	cf = scal->stress;
 	iflag.use_bound = 1;
 
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
+	VecDuplicate(jr->lp, &Plocal);
+	VecCopy(jr->lp, Plocal);
 
-	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, 0.0)
+	VecShift(Plocal, jr->ctrl.pShift);
+
+	INTERPOLATE_ACCESS(Plocal, InterpCenterCorner, 1, 0, 0.0)
+
+	VecDestroy(&Plocal);
 
 	PetscFunctionReturn(0);
 }

@@ -164,6 +164,8 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	T      = ctx->T;
 	mf     = 0.0;
 
+	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
+
 
 	if(mat->pdAct == 1)
 	{
