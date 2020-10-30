@@ -358,7 +358,6 @@
 		center      = 1.0 2.0 3.0
 		Temperature = constant # optional: Temperature of the sphere. possibilities: [constant]
 		cstTemp     = 1000     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
-
 	<SphereEnd>
 
 	<EllipsoidStart>
@@ -494,8 +493,8 @@
 	<PhaseTransitionStart>
 		IDs                     =   0         #     Phase_transition law ID
 		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
-		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate] parameter that triggers the phase transition
-		ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z]
+		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain] parameter that triggers the phase transition
+		ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z, APS]
         
         number_phases           =   1         #     The number of involved phases [default=1]
 		PhaseAbove              =   1         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
@@ -503,7 +502,6 @@
         PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
 	<PhaseTransitionEnd>
 
-	#Mantle 2 Lower Mantle	
 	<PhaseTransitionStart>
 		ID                      =   1                           # Phase_transition law ID
 		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
