@@ -335,16 +335,18 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	if(bc->face)
 	{
-		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase",  &bc->phase,  1, mID           ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",    &bc->bot,    1, scal->length  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",    &bc->top,    1, scal->length  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
-
-		if(bc->face_out)
-		{
-			ierr = getScalarParam(fb, _REQUIRED_, "bvel_relax_d",&bc->relax_dist,1, scal->length  ); CHKERRQ(ierr);
-		}
+		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase", &bc->phase, 1, mID           ); CHKERRQ(ierr);
+		// inflow phase - TM May 06 2018
+		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phaseinb", &bc->phaseinb, 1, mID           ); CHKERRQ(ierr);
+		// inflow phase - TM May 14 2018
+		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phaseint", &bc->phaseint, 1, mID           ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",   &bc->bot,   1, scal->length  ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",   &bc->top,   1, scal->length  ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin", &bc->velin, 1, scal->velocity); CHKERRQ(ierr);
+		// inflow condition - TM May 06 2018
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr);
+		// inflow condition - TM May 14 2018
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr);
 
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 
@@ -1376,10 +1378,10 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 {
 	FDSTAG      *fs;
-	PetscInt    mnx, mny;
+	PetscInt    mnz, mnx, mny;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar ***bcvx,  ***bcvy;
-	PetscScalar z, bot, top, vel, velin, velout,relax_dist;
+	PetscScalar ***bcvx,  ***bcvy, ***bcvz;
+	PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1394,14 +1396,21 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	velin  = bc->velin;
 	velout = bc->velout;
 	relax_dist= bc->relax_dist;
+	velbot = bc->velbot;
+	veltop = bc->veltop;
+
+	// set open boundary flag
+	top_open = bc->top_open;
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
 	mny = fs->dsy.tnods - 1;
+	mnz = fs->dsz.tnods - 1;
 
 	// access velocity constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	iter = 0;
 
@@ -1438,6 +1447,22 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 				if((bc->face == 2) && i == mnx) { bcvx[k][j][i] = vel; }
 			}
 			iter++;
+		}
+		END_STD_LOOP
+	}
+
+	if(bc->face == 5)
+	{
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = velin;
+
+			if(i == 0)   { bcvx[k][j][i] = vel; }
+			if(i == mnx) { bcvx[k][j][i] = -vel; }
+			iter++;
+
+
 		}
 		END_STD_LOOP
 	}
@@ -1480,9 +1505,42 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 		END_STD_LOOP
 	}
 
+//------------------
+	// Z points - TM 05 May 2018
+	//------------------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	if(bc->face == 5)
+	{
+		START_STD_LOOP
+		{
+			//z   = COORD_CELL(k, sz, fs->dsz);
+			vel = 0.0;
+			//if(z <= top && z >= bot) vel = velin;
+			//if(z < bot)              vel = velout;
+
+			//if(bc->face == 5 && i == 0)   { bcvx[k][j][i] = vel; }
+			//if(bc->face == 5 && i == mnx) { bcvx[k][j][i] = -vel; }
+
+			// added bottom inflow condition - TM 05 May 2018
+			if(k == 0)               vel = velbot;
+			if(k == mnz && !top_open)vel = veltop;
+	
+			if(k == 0)                { bcvz[k][j][i] = vel; }
+			if(k == mnz && !top_open) { bcvz[k][j][i] = vel; }
+			iter++;
+
+
+		}
+		END_STD_LOOP
+	}
+
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -2180,3 +2238,4 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+

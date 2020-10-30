@@ -224,9 +224,10 @@ struct BCCtx
 	DBox         dbox;
 
 	// velocity inflow & outflow boundary condition
-	PetscInt     face, phase,face_out;   	// face (1-left 2-right 3-front 4-back) & phase identifiers
+	PetscInt     face, phase,face_out, phaseinb, phaseint;   	// face (1-left 2-right 3-front 4-back) & phase identifiers | 5-balanced inflow, phase inflow identifier - TM May 06 2018
 	PetscScalar  bot, top,relax_dist;     	// bottom & top coordinates of the plate
 	PetscScalar  velin, velout; 			// inflow & outflow velocities
+	PetscScalar  velbot, veltop; // bottom/top inflow condition - TM May 05 2018
 
 	// Plume inflow bottom boundary condition
 	PetscInt		Plume_Inflow;				// Do we have a plume-like inflow boundary?
@@ -367,3 +368,4 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
 
 //---------------------------------------------------------------------------
 #endif
+
