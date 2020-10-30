@@ -14,15 +14,17 @@ LaMEM has been tested on a variety of machines ranging from laptops to a massive
 
 The main developed of the current version are:
 
-* Anton Popov       (Johannes Gutenberg University Mainz, popov@uni-mainz.de), 2011-
-* Boris Kaus         (JGU Mainz, kaus@uni-mainz.de), 2011-
-* Tobias Baumann     (JGU Mainz), 2011-
-* Georg Reuber       (JGU Mainz), 2015-	
-* Adina Puesoek      (JGU Mainz, UC San Diego), 2012-
-* Naiara Fernandez   (JGU Mainz), 2011-2014
-* Arthur Bauville    (JGU Mainz), 2015
-* Andrea Piccolo     (JGU Mainz), 2015-
-* Beatriz Montesinos (JGU Mainz), 2015-
+* Anton Popov         (Johannes Gutenberg University Mainz, popov@uni-mainz.de), 2011-
+* Boris Kaus          (JGU Mainz, kaus@uni-mainz.de), 2011-
+* Tobias Baumann      (JGU Mainz), 2011-
+* Georg Reuber        (JGU Mainz), 2015-	
+* Adina Puesoek       (JGU Mainz, UC San Diego), 2012-
+* Naiara Fernandez    (JGU Mainz), 2011-2014
+* Arthur Bauville     (JGU Mainz), 2015
+* Andrea Piccolo      (JGU Mainz), 2015-
+* Beatriz Montesinos  (JGU Mainz), 2015-
+* Maximilian Kottwitz (JGU Mainz), 2019-
+* Arne Spang          (JGU Mainz), 2019-
 
 Older versions of LaMEM included a finite element solver as well, 
 and were developed by:
