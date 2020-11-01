@@ -335,18 +335,17 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	if(bc->face)
 	{
-		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase", &bc->phase, 1, mID           ); CHKERRQ(ierr);
-		// inflow phase - TM May 06 2018
-		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phaseinb", &bc->phaseinb, 1, mID           ); CHKERRQ(ierr);
-		// inflow phase - TM May 14 2018
+
 		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phaseint", &bc->phaseint, 1, mID           ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",   &bc->bot,   1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",   &bc->top,   1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin", &bc->velin, 1, scal->velocity); CHKERRQ(ierr);
-		// inflow condition - TM May 06 2018
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr);
-		// inflow condition - TM May 14 2018
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
+
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TM May 14 2018
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TM May 14 2018
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase", &bc->phase, 1, mID           ); CHKERRQ(ierr); // inflow phase - TM May 06 2018
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phaseinb", &bc->phaseinb, 1, mID           ); CHKERRQ(ierr); // inflow phase - TM May 14 2018
 
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 
@@ -1456,7 +1455,9 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 		START_STD_LOOP
 		{
 			z   = COORD_CELL(k, sz, fs->dsz);
-			vel = velin;
+			vel = 0.0;
+			if(z <= top && z >= bot) vel = velin;
+			//vel = velin;
 
 			if(i == 0)   { bcvx[k][j][i] = vel; }
 			if(i == mnx) { bcvx[k][j][i] = -vel; }
@@ -1505,7 +1506,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 		END_STD_LOOP
 	}
 
-//------------------
+	//------------------
 	// Z points - TM 05 May 2018
 	//------------------
 	GET_CELL_RANGE(nx, sx, fs->dsx)
