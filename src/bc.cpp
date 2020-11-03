@@ -1976,7 +1976,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 		}
 
-		else if(bc->Plume_Inflow)
+		if(bc->Plume_Inflow)
 		{	
 			// if we have have a inflow condition @ the lower boundary, we change the phase of the particles within the zone
 			if(k+sz == 0 || k+sz == 1)
