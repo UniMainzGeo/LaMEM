@@ -272,7 +272,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	bc->pbot    	 	= 	-1.0;
 	bc->ptop     		= 	-1.0;
 	bc->fixPhase 		= 	-1;
-    bc->phase           =   -1;
+    bc->num_phase_bc    =   -1;
 	bc->velout   		=  	DBL_MAX;
 	bc->Plume_Inflow 	= 	0;
 
@@ -335,11 +335,15 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	if(bc->face)
 	{
-		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase",  &bc->phase,  1, mID           ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "bvel_num_phase", &bc->num_phase_bc, 1, 5           ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase",  bc->phase, bc->num_phase_bc, mID           ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",    &bc->bot,    1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",    &bc->top,    1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_phase_interval", bc->phase_interval, bc->num_phase_bc+1, scal->length); CHKERRQ(ierr);
+
+
 
 		if(bc->face_out)
 		{
@@ -471,7 +475,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity  boundary               : %i [1-left; 2-right; 3-front; 4-back]\n", bc->face);
      if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }     
-     if (bc->phase>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
+     if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
      else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }     
 
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow window [bottom, top]             : [%3.2f,%3.2f] %s \n", bc->bot*scal->length, bc->top*scal->length, scal->lbl_length); 
@@ -1927,12 +1931,12 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 {
 	FDSTAG     *fs;
-	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz;
+	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz,ip;
 	PetscScalar z,x, y, cmax,cmin;
 
 	PetscFunctionBegin;
 
-	if( (bc->phase>=0) || bc->Plume_Inflow)
+	if( (bc->num_phase_bc>=0) || bc->Plume_Inflow)
 	{
 		fs = bc->fs;
 		M  = fs->dsx.ncels;
@@ -1948,7 +1952,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 		GET_CELL_IJK(cellID, i, j, k, M, N);
 
-		if(bc->phase >= 0)
+		if(bc->num_phase_bc >= 0)
 		{
 		// expand i, j, k cell indices
 
@@ -1956,9 +1960,18 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 					||  (bc->face == 2 && i + sx == mx)
 					||  (bc->face == 3 && j + sy == 0)
 					||  (bc->face == 4 && j + sy == my))
-					&&  (z >= bc->bot && z <= bc->top))
+					&&  (z >= bc->bot-bc->relax_dist && z <= bc->top+bc->relax_dist))
 			{
-				P->phase = bc->phase;
+
+				for(ip=0;ip<bc->num_phase_bc;ip++)
+					{
+						if(z>=bc->phase_interval[ip] && z<bc->phase_interval[ip+1])
+						{
+							P->phase = bc->phase[ip];
+						}
+
+					}
+
 			}
 
 		}

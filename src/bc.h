@@ -224,8 +224,8 @@ struct BCCtx
 	DBox         dbox;
 
 	// velocity inflow & outflow boundary condition
-	PetscInt     face, phase,face_out;   	// face (1-left 2-right 3-front 4-back) & phase identifiers
-	PetscScalar  bot, top,relax_dist;     	// bottom & top coordinates of the plate
+	PetscInt     face,face_out,num_phase_bc,phase[5];   	// face (1-left 2-right 3-front 4-back) & phase identifiers
+	PetscScalar  bot, top,relax_dist,phase_interval[6];     	// bottom & top coordinates of the plate
 	PetscScalar  velin, velout; 			// inflow & outflow velocities
 
 	// Plume inflow bottom boundary condition
