@@ -335,8 +335,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	if(bc->face)
 	{
-
-		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phaseint", &bc->phaseint, 1, mID           ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase",  &bc->phase,  1, mID           ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",   &bc->bot,   1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",   &bc->top,   1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin", &bc->velin, 1, scal->velocity); CHKERRQ(ierr);
@@ -346,6 +345,13 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TM May 14 2018
 		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase", &bc->phase, 1, mID           ); CHKERRQ(ierr); // inflow phase - TM May 06 2018
 		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phaseinb", &bc->phaseinb, 1, mID           ); CHKERRQ(ierr); // inflow phase - TM May 14 2018
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phaseint", &bc->phaseint, 1, mID           ); CHKERRQ(ierr);
+
+
+		if(bc->face_out)
+		{
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_relax_d",&bc->relax_dist,1, scal->length  ); CHKERRQ(ierr);
+		}
 
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 
