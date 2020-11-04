@@ -1,8 +1,20 @@
-function [X,Y,Z,xcoor,ycoor,zcoor, Xpart, Ypart, Zpart] = FDSTAGMeshGeneratorMatlab(npartx,nparty,npartz,fname, RandomNoise, Is64BIT)
+function [X,Y,Z,xcoor,ycoor,zcoor, Xpart, Ypart, Zpart] = FDSTAGMeshGeneratorMatlab(varargin)
 % This function creates a variable mesh for LaMEM setups based on a
 % processor configuration
 %    fname - name of the file with the processor configuration;
 %               in LaMEM this is saved with -SavePartitioning 1
+
+npartx      = varargin{1};
+nparty      = varargin{2};
+npartz      = varargin{3};
+fname       = varargin{4};
+RandomNoise = varargin{5};
+if nargin==6
+    Is64BIT = varargin{6};
+else
+    Is64BIT = logical(0);
+end
+
 
 [P] = GetProcessorPartitioning(fname, Is64BIT);
 
