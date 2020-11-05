@@ -192,7 +192,8 @@ public:
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number
 	PetscInt     pdAct;             // phase diagram activity flag
 	PetscScalar  mfc;               // melt fraction viscosity correction
-	PetscScalar  rho_melt;
+	PetscScalar  rho_melt;			// rho melt
+	PetscInt     Phase_Diagram_melt;// flag that allows only to consider the melt quantity from a phase diagram
 };
 
 //---------------------------------------------------------------------------
