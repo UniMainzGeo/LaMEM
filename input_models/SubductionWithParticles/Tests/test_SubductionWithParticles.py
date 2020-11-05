@@ -60,6 +60,8 @@ def test_2():
    # Copy directory and give it a new name
   os.system('mv -f ./SubductionWithParticles/markers ./SubductionWithParticles/markers_nonlinear')
 
+  os.system('rm -rf ./SubductionWithParticles/markers_nonlinear .')
+
   os.system('cp -r ./SubductionWithParticles/markers_nonlinear .')
 
   os.system('cd ./TestOutput')
@@ -79,7 +81,7 @@ def test_2():
     unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|mRes|_2")
-    unittest.compareFloatingPoint(key,1e-4)
+    unittest.compareFloatingPoint(key,3e-3)
 
   # Create unit test object
   ex1 = pth.pthUnitTest('Sub2_Particles_Direct_opt',ranks,launch,expected_file)
