@@ -29,8 +29,14 @@ else
     Is64BIT = logical(0);
 end
 
-if ~isfolder('markers')
-    mkdir('markers')
+if isOctave
+    if ~isfolder('markers')
+        mkdir('markers')
+    end
+else
+    if ~isdir('markers')
+        mkdir('markers')
+    end
 end
 
 % No. of properties the markers carry: x,y,z-coord, phase, T
