@@ -88,3 +88,45 @@ def test_2():
 
   return(ex1)
 
+
+
+def test_3():
+  # This is a 3D example with multigrid solver (as in test1, bt 3D)
+
+  # Copy directory and give it a new name
+  os.system('cd ./SubductionWithParticles; mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile ./Subduction3D_FreeSlip_MATLABParticles_Linear_Multigrid.dat -nel_x 64 -nel_y 32 -nel_z 16 -mode save_grid > /dev/null')
+
+
+  # 2) Run MATLAB to create the Particles input on one processor (matlab should be in path)
+  os.system('$MATLAB -nojvm -r "cd ./SubductionWithParticles; CreateMarkers_Subduction_Linear_FreeSlip_parallel_3D; exit" > /dev/null')
+  
+  # Copy directory and give it a new name
+  os.system('mv -f ./SubductionWithParticles/markers ./SubductionWithParticles/markers_3D_linear')
+ 
+  os.system('cp -rf ./SubductionWithParticles/markers_3D_linear .')
+
+  os.system('cd ./TestOutput')
+
+  # Run the input script wth matlab-generated particles
+  ranks = 4
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ./SubductionWithParticles/Subduction3D_FreeSlip_MATLABParticles_Linear_Multigrid.dat -mark_load_file ./markers_3D_linear/mdb -nstep_max 2 -nel_x 64 -nel_y 32 -nel_z 16 -dt_out 0 -mode normal') 
+  expected_file = makeLocalPathAbsolute('Subduction3D_FreeSlip_Particles_Linear-MUMPS-p4.expected')
+  
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('Sub3D_Particles_Direct_opt',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)

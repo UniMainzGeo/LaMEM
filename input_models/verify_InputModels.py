@@ -48,8 +48,9 @@ def run_tests():
 
   # Add matlab tests (There should be a better way to do this for a range of files at the same time)
   if os.environ.get('MATLAB') != None:
-    registeredTests.append(SubdMAT.test_1());   # subduction test with free slip
-    registeredTests.append(SubdMAT.test_2());   # subduction test with free surface
+    registeredTests.append(SubdMAT.test_1());   # 2D subduction test with free slip
+    registeredTests.append(SubdMAT.test_2());   # 2D subduction test with free surface
+    registeredTests.append(SubdMAT.test_3());   # 3D subduction test with free slip
 
 
   if os.path.isdir('TestOutput') == False:

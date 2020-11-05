@@ -36,9 +36,8 @@ else
     % Define parallel partition file
     Parallel_partition                          =   'ProcessorPartitioning_4cpu_4.1.1.bin'
     
-    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H]  =   LaMEM_ParseInputFile(LaMEM_input_file);
-    
     % Load grid from parallel partitioning file
+    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H]  =   LaMEM_ParseInputFile(LaMEM_input_file);
     [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] =   FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise);
     
     % Update other variables

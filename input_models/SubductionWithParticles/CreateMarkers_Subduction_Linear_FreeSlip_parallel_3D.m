@@ -1,4 +1,4 @@
-% Create a 2D subduction setup with particlesm but with no temperature structure
+% Create a 3D subduction setup with particles but with no temperature structure
 clear
 
 
@@ -8,11 +8,11 @@ addpath('../../matlab')
 %==========================================================================
 % OUTPUT OPTIONS (standard)
 %==========================================================================
-LaMEM_Parallel_output   =    0;
+LaMEM_Parallel_output   =    1;
 
 RandomNoise             =   logical(0); % add random noise to particles?
 
-LaMEM_input_file        =   'Subduction2D_FreeSlip_Particles_Linear_DirectSolver.dat';
+LaMEM_input_file        =   'Subduction3D_FreeSlip_MATLABParticles_Linear_Multigrid.dat';
 
 %% Compute 3D grid, depending on whether we are on 1 or >1 processors
 if ~LaMEM_Parallel_output 
@@ -37,10 +37,12 @@ else
     %   mpiexec -n 2 ../../bin/opt/LaMEM -ParamFile Subduction2D_FreeSlip_MATLABParticles_Linear_DirectSolver.dat -mode save_grid
      
     % Define parallel partition file
-    Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin'
-    
-    % Load grid from parallel partitioning file
+    Parallel_partition     = 'ProcessorPartitioning_4cpu_2.2.1.bin'
+     
+    % Read info from LaMEM input file & create 3D grid    
     [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H] =   LaMEM_ParseInputFile(LaMEM_input_file);
+     
+    % Load grid from parallel partitioning file
     [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise);
     
     % Update other variables

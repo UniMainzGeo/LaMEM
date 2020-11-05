@@ -45,17 +45,17 @@ following order:
    we employ a free slip upper boundary and a plastic crust.
    Use the MATLAB script CreateMarkers_Subduction_Linear_FreeSlip_parallel.m
    to create the input geometry.
-  
-2) Subduction3D_FreeSlip_MATLABParticles_Linear_Multigrid.dat:    
-   As 1), but with a 3D geometry and a multigrid solver, and with a lower
-   resolution (to make this work on smaller machines as well) 
 
-3) Subduction2D_FreeSurface_MATLABParticles_Nonlinear_DirectSolver.dat: 	   
+2) Subduction2D_FreeSurface_MATLABParticles_Nonlinear_DirectSolver.dat: 	   
    2D subduction setup, but in this case we also have a free surface, set
    the initial temperature structure in MATLAB (based on halfspace cooling)
    and employ a viscoelastoplastic rheology with both dislocation and 
    diffusion creep (where we also show how to override the default value of
    the activation volume)   
 
+  
+3) Subduction3D_FreeSlip_MATLABParticles_Linear_Multigrid.dat:    
+   As 1), but with a 3D geometry and a multigrid solver, and with a lower
+   resolution (to make this work on smaller machines as well) 
 
 Last updated: Boris, 4.11.2020
