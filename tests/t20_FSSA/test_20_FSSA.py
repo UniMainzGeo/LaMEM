@@ -20,7 +20,7 @@ def test_1():
   def comparefunc(unittest):
 
     key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-7)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|Div|_2")
     unittest.compareFloatingPoint(key,1e-5)
