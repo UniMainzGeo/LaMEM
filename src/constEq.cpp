@@ -166,7 +166,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
 
-
 	if(mat->pdAct == 1)
 	{
 		// compute melt fraction from phase diagram
