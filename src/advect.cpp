@@ -150,7 +150,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	ierr = getStringParam(fb, _OPTIONAL_, "mark_ctrl",       mctrl,          "none");          CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_lim",       nmark_lim,      2, 0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_avd",       nmark_avd,      3, 0);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_sub",      &actx->npmax,    1, 3);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_sub",      &actx->npmax,    1, 27);           CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "coordinate_box_passive_tracers", actx->box_passive_tracer,    6, 1.0);  CHKERRQ(ierr);
 
 
