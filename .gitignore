@@ -6,3 +6,14 @@
 /.cproject
 /.project
 /.vscode
+*.pvd
+*.vtr
+*.pvtr
+*.vts
+*.pvts
+*.vtk
+*.out
+/Timestep_*
+*.mat
+*.dat
+

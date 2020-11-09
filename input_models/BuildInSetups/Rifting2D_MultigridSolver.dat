@@ -67,6 +67,7 @@
 	gravity        = 0.0 0.0 -9.81  # gravity vector
 	init_guess     = 1              # initial guess flag
 	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
+	
 	eta_min        = 1e19           # viscosity upper bound
 	eta_max        = 1e24           # viscosity lower limit
 	eta_ref        = 1e22           # reference viscosity (initial guess)

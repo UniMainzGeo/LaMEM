@@ -1,5 +1,7 @@
-function FDSTAGSaveMarkersParallelMatlab(A, fname, Is64BIT)
-% This function saves model setup into a parallel configuration
+function FDSTAGSaveMarkersParallelMatlab(varargin)
+% This function saves the LaMEM model setup to a parallel marker grid
+%   
+% FDSTAGSaveMarkersParallelMatlab(A, fname, [Is64BIT])  
 %
 %  A - structure that contains:
 %            Xpart   - 3D matrix containing the x coordinates of markers
@@ -13,27 +15,55 @@ function FDSTAGSaveMarkersParallelMatlab(A, fname, Is64BIT)
 %
 %   fname   - name of the file with the processor configuration
 %             (in LaMEM this is created with -mode save_grid)
-%   Is64BIT - logical(1) if you are reading a 64 bit file
+%            if your setup is generated on 1 core, pass fname=[]
+%
+%   Is64BIT - [optional] logical(1) if you are reading a 64 bit file
 
 % ----------- Function begin ----------- %
 
-if ~isfolder('markers')
-    mkdir('markers')
+A       = varargin{1};
+fname   = varargin{2};
+if nargin==3
+    Is64BIT = varargin{3};
+else
+    Is64BIT = logical(0);
+end
+
+if isOctave
+    if ~isfolder('markers')
+        mkdir('markers')
+    end
+else
+    if ~isdir('markers')
+        mkdir('markers')
+    end
 end
 
 % No. of properties the markers carry: x,y,z-coord, phase, T
 num_prop = 5;
 
-% Read Processor Partitioning
-[P] = GetProcessorPartitioning(fname, Is64BIT);
-
-% get number of processors and processor coordnate bounds
-Nprocx = P.Nprocx;
-Nprocy = P.Nprocy;
-Nprocz = P.Nprocz;
-xc     = P.xc;
-yc     = P.yc;
-zc     = P.zc;
+if isempty(fname)
+    % in case we run this on 1 processor only
+    Nprocx  = 1;
+    Nprocy  = 1;
+    Nprocz  = 1;
+    xc      = A.x;
+    yc      = A.y;
+    zc      = A.z;
+    
+else
+    
+    % Read Processor Partitioning
+    [P] = GetProcessorPartitioning(fname, Is64BIT);
+    
+    % get number of processors and processor coordnate bounds
+    Nprocx = P.Nprocx;
+    Nprocy = P.Nprocy;
+    Nprocz = P.Nprocz;
+    xc     = P.xc;
+    yc     = P.yc;
+    zc     = P.zc;
+end
 
 Nproc                      = Nprocx*Nprocy*Nprocz;
 [num, num_i, num_j, num_k] = get_numscheme(Nprocx, Nprocy, Nprocz);

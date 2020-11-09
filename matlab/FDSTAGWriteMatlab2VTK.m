@@ -89,7 +89,7 @@ end
 fprintf(fid,'\t\t\t\t</DataArray>\n');
 
 disp(['Writing Temp information... '])
-fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Temp\" NumberOfComponents=\"1\" format=\"ascii\">\n');
+fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Temp [Celcius]\" NumberOfComponents=\"1\" format=\"ascii\">\n');
 p = 0;
 for k=1:size(A.Phase,3)
     % Display progress
@@ -172,7 +172,7 @@ else
     fprintf(fid,'\t\t\t\t<DataArray type=\"Int16\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
     offset = offset + 1*sizeof_UInt32 + sizeof_UInt16*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
 end
-fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Temp\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
+fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Temp [Celcius]\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
 offset = offset + 1*sizeof_UInt32 + sizeof_Float32*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
 
 if isfield(A,'AdditionalFields')

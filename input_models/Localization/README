@@ -25,7 +25,7 @@ Therefore, we can also set the viscosity oin a phase-wise manner.
 
 
 3) localization_eta_st_reg.dat
-This is the same as the previous file, but shows how the stabilization viscosituy can be choosen 
+This is the same as the previous file, but shows how the stabilization viscosity can be chosen 
 in a phase-wise manner 
 
 
