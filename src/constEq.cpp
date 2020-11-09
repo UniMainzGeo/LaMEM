@@ -631,7 +631,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	PetscInt     i, numPhases;
-	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho, mf;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -671,8 +671,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 
 			if(mat->pdAct == 1)
 			{
-				mf = 0.0;	
-				
 				// compute melt fraction from phase diagram
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
