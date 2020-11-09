@@ -21,7 +21,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-6)
 
     key = re.escape("|mRes|_2")
-    unittest.compareFloatingPoint(key,1e-6)
+    unittest.compareFloatingPoint(key,2e-6)
 
   # Create unit test object
   ex1 = pth.pthUnitTest('t9_PhaseDiagrams',ranks,launch,expected_file)
