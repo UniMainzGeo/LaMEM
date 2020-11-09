@@ -677,7 +677,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
 				svBulk->mf     += phRat[i]*Pd->mf;
-			//	svBulk->rho_pf += phRat[i]*mat->rho_melt;
+				svBulk->rho_pf += phRat[i]*Pd->rho_f;
 			}
 
 			// initialize
