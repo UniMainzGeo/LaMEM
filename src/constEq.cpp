@@ -647,6 +647,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	dt        = ctx->dt;
 	p         = ctx->p;
 	T         = ctx->T;
+	p         = p +ctrl->pShift;
 
 //
 
@@ -670,7 +671,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 
 			if(mat->pdAct == 1)
 			{
-				mf = 0.0;	
 				
 				// compute melt fraction from phase diagram
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
