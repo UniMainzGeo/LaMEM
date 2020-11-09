@@ -1022,7 +1022,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	if(top_open)
 	{
-		vbz = 0.0;
 		vez = 0.0;
 	}
 

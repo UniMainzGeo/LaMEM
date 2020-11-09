@@ -112,12 +112,12 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	if(!strcmp(Type_,"Constant"))
 	{
 		ph->Type = _Constant_;
-		ierr    =   Set_Constant_Phase_Transition(ph, dbm, fb,ID);    CHKERRQ(ierr);
+		ierr    =   Set_Constant_Phase_Transition(ph, dbm, fb);    	CHKERRQ(ierr);
 	}
 	else if(!strcmp(Type_,"Clapeyron"))
 	{
 		ph->Type = _Clapeyron_;
-		ierr    =   Set_Clapeyron_Phase_Transition(ph, dbm, fb,ID);   CHKERRQ(ierr);
+		ierr    =   Set_Clapeyron_Phase_Transition(ph, dbm, fb);   	CHKERRQ(ierr);
 	}
 
 
@@ -154,7 +154,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 //----------------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Set_Constant_Phase_Transition"
-PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID)
+PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 {
 	Scaling      *scal;
 	char         Parameter[_str_len_];
@@ -215,7 +215,7 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 //------------------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Set_Constant_Phase_Transition"
-PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb, PetscInt ID)
+PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 {
 	PetscFunctionBegin;
 
@@ -235,7 +235,7 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	ierr = getIntParam   (fb, _OPTIONAL_, "numberofequation",   &ph->neq,           1,          2.0); CHKERRQ(ierr);
 	if(ph->neq>2 || ph->neq == 0)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero");
 
 	}
 
@@ -245,7 +245,7 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 	if((!ph->clapeyron_slope || !ph->T0_clapeyron || !ph->clapeyron_slope   ||  !ph->Name_clapeyron))
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition avaiable you need to specify P0, T0, gamma and the number of equations ( P=(T-T0)*gamma +(P0) ).", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition avaiable you need to specify P0, T0, gamma and the number of equations ( P=(T-T0)*gamma +(P0) ).");
 	}
 
     PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %i    [ P = P0 + gamma*(T-T0) ] \n", ph->neq);
