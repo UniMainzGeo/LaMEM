@@ -349,7 +349,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
 	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop, endx,endy,endz,begx,begy,begz,npx,npy,npz;
 	PetscScalar *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*cond;
-	PetscScalar *pShift,mf;
+	PetscScalar pShift,mf;
 	PetscScalar Xm[3],X[3];
 	PetscLogDouble t;
 	vector <spair>    dist;
