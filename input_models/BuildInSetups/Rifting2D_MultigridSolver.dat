@@ -17,7 +17,7 @@
 	unit_temperature = 1000
 	unit_length      = 1e3
 	unit_viscosity   = 1e19
-	unit_stress      = 1e9
+	unit_stress      = 1e8
 	
 #===============================================================================
 # Time stepping parameters
@@ -27,10 +27,7 @@
 	dt        = 0.001   # initial time step
 	dt_min    = 1e-5    # minimum time step (declare divergence if lower value is attempted)
 	dt_max    = 0.1   	# maximum time step
-	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
-	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
-	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 200      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 200     # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 5       # save output every n steps
 	nstep_rdb = 100     # save restart database every n steps
 
@@ -41,123 +38,128 @@
 
 # Number of cells for all segments
 	nel_x = 256
-	nel_y = 2
+	nel_y = 2                       # number of elements in y-direction (multigrid requires at least 2)
 	nel_z = 128
 
 # Coordinates of all segments (including start and end points)
-
-	coord_x = -300  300
+	coord_x = -300  300             # x-coordinate  [left, right]
 	coord_y = -2.5  2.5
 	coord_z = -120  30
 
 #===============================================================================
-# Free surface
+# Free surface 
 #===============================================================================
-	surf_use           = 1                # free surface activation flag
-	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
-	surf_level         = 0                # initial level
-	surf_air_phase     = 0                # phase ID of sticky air layer
-	surf_max_angle     = 10.0             # maximum angle with horizon (smoothed if larger)
+	surf_use           = 1          # free surface activation flag
+	surf_corr_phase    = 1          # air phase ratio correction flag (due to surface position)
+	surf_level         = 0          # initial level
+	surf_air_phase     = 0          # phase ID of sticky air layer
 	
 #===============================================================================
 # Boundary conditions
 #===============================================================================
-	exx_num_periods  = 1      # number intervals of constant strain rate (x-axis)
-	exx_strain_rates = 1e-15  # strain rates for each interval (positive=extension)
-	
-	#open_top_bound = 1
+	exx_num_periods  = 1
+    exx_strain_rates = 1e-15        # Applied backgound strain rate (positive=extension)
+	open_top_bound 	 = 1            # Stress free boundary on top of the 'sticky-air'		
 
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
-
 	gravity        = 0.0 0.0 -9.81  # gravity vector
-	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	init_guess     = 1              # initial guess flag
-	eta_max        = 1e25           # viscosity lower limit
 	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
-#	p_litho_visc    = 1              # use lithostatic pressure for creep laws
-	p_litho_plast   = 1              # use lithostatic pressure for plasticity
+	
 	eta_min        = 1e19           # viscosity upper bound
-	eta_max        = 1e25           # viscosity lower limit
+	eta_max        = 1e24           # viscosity lower limit
 	eta_ref        = 1e22           # reference viscosity (initial guess)
 	min_cohes      = 1e6            # cohesion lower bound
-	min_fric       = 1.0            # friction lower bound
-	tau_ult        = 1e9            # ultimate yield stress
+	min_fric       = 1.0            # friction angle lower bound
+	tau_ult        = 1e9            # ultimate yield stress [Pa]
 
-	
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 		=	multigrid 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e3
-
-		
+	SolverType 		    =	multigrid 	# solver [direct or multigrid]
+    #DirectSolver 		=	mumps		# mumps/superlu_dist/pastix/umfpack  (requires these external PETSc packages to be installed!)	
+	#DirectPenalty 		=	1e3			# penalty parameter [employed if we use a direct solver]
+	
+	MGLevels 			=	2			# number of MG levels [default=3]
+	MGCoarseSolver 		=   mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
+	
 #===============================================================================
 # Model setup & advection
 #===============================================================================
-
-	msetup         = geom              # setup type
+	msetup         = geom              # setup type (geom=internal geometry)
 	nmark_x        = 3                 # markers per cell in x-direction
 	nmark_y        = 3                 # ...                 y-direction
 	nmark_z        = 3                 # ...                 z-direction
 	bg_phase       = 0                 # background phase ID
 	rand_noise     = 1                 # random noise flag
 	advect         = rk2               # advection scheme
-	interp         = minmod             # velocity interpolation scheme
+	interp         = minmod            # velocity interpolation scheme
 	mark_ctrl      = basic             # marker control type
-	nmark_lim      = 8 100            # min/max number per cell
 	
 
 # Geometric primitives:
 	
 	# sticky air
-	<BoxStart>
-		phase  = 0
-		bounds = -300 300 -25 25 0 30  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-	
-	# Upper lithosphere 1
-	<BoxStart>
-		phase  = 1
-		bounds = -300 300 -25 25 -60 0  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-	
-	# Create layers in upper lithosphere
-	<BoxStart>
-		phase  = 2
-		bounds = -300 300 -25 25 -55 -50  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-	<BoxStart>
-		phase  = 2
-		bounds = -300 300 -25 25 -45 -40  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-	<BoxStart>
-		phase  = 2
-		bounds = -300 300 -25 25 -35 -30  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-	<BoxStart>
-		phase  = 2
-		bounds = -300 300 -25 25 -25 -20  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-	<BoxStart>
-		phase  = 2
-		bounds = -300 300 -25 25 -15 -10  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-	<BoxStart>
-		phase  = 2
-		bounds = -300 300 -25 25 -5 0  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-	
+	<LayerStart>
+		phase       = 0
+		top         = 30.0
+		bottom      = 0.0
+    	Temperature = constant 
+		cstTemp     = 0                 # T of layer     
+	<LayerEnd>
+
+    # full lithosphere (mainly to set the temperature structure)
+	<LayerStart>
+		phase       = 1
+		top         =  0
+		bottom      = -120.0
+    	Temperature = linear 
+        topTemp     = 0        
+		botTemp     = 1300      
+	<LayerEnd>
+
+	# Create layers in upper lithosphere (to better visualize localization)
+    <LayerStart>
+		phase       = 2
+		top         = -50
+		bottom      = -55
+    <LayerEnd>
+    <LayerStart>
+		phase       = 2
+		top         = -40
+		bottom      = -45
+    <LayerEnd>
+    <LayerStart>
+		phase       = 2
+		top         = -30
+		bottom      = -35
+    <LayerEnd>
+    <LayerStart>
+		phase       = 2
+		top         = -20
+		bottom      = -25
+    <LayerEnd>
+    <LayerStart>
+		phase       = 2
+		top         = -10
+		bottom      = -15
+    <LayerEnd>
+   <LayerStart>
+		phase       = 2
+		top         = -0
+		bottom      = -5
+    <LayerEnd>
 	
 	# Lower lithosphere
-	<BoxStart>
-		phase  = 3
-		bounds = -300 300 -25 25 -120 -60  # (left, right, front, back, bottom, top)
-	<BoxEnd>
-
-	# Weak Seed
+	 <LayerStart>
+		phase       = 3
+		top         = -60
+		bottom      = -120
+    <LayerEnd>
+	
+	# Add Weak Seed
 	<BoxStart>
 		phase  = 3
 		bounds = -5 5 -25 25 -60 -55  # (left, right, front, back, bottom, top)
@@ -203,7 +205,8 @@
 	out_surf_velocity   = 1
 	out_surf_topography = 1
 	out_surf_amplitude  = 1
-	
+
+
 #===============================================================================
 # Material phase parameters
 #===============================================================================
@@ -213,17 +216,19 @@
 		A    = 0.87		# reduction ratio = 1-FinalParameter/InitialParameter
 		APS1 = 0.5
 		APS2 = 1.5
+      #  Lm   = 0.5 	# material length scale (in selected units, e.g. km in geo)
 	<SofteningEnd>
 	
 	# Sticky Air
 	<MaterialStart>
-		ID  = 0 	# phase id
-		rho = 0 	# density
-		G   = 5e10
-		eta = 1e18 	# viscosity
+		ID          =   0 	# phase id
+		rho         =   0 	# density
+		G           =   5e10
+		eta         =   1e18 	# viscosity
+	#	eta_st      =   1e21
 		
-		ch  		=  20e6	  # Cohesion
-		fr  		=  15	  # initial friction angle
+		ch  =  20e6	  # Cohesion
+		fr  =  15	  # initial friction angle
 	<MaterialEnd>
 
 	# Upper Lithosphere 1
@@ -231,11 +236,12 @@
 		ID  		= 	1       # phase id
 		rho 		= 	3300    # density
 		eta 		= 	1e24    # viscosity
+        eta_st      =   1e20
 		G   		= 	5e10
 
-		ch  		=  	20e6	  # Cohesion
-		fr  		=  	15	  # initial friction angle
-		frSoftID   	=  	0     # softening ID
+		ch  		=  	20e6	# Cohesion
+		fr  		=  	15	    # initial friction angle
+		frSoftID   	=  	0       # softening ID
 	<MaterialEnd>
 
 	# Upper Lithosphere 2
@@ -243,6 +249,7 @@
 		ID  		= 	2       # phase id
 		rho 		= 	3300    # density
 		eta 		= 	1e24    # viscosity
+        eta_st      =   1e20
 		G   		= 	5e10
 		
 		ch  		=  	20e6	  # Cohesion
@@ -256,7 +263,10 @@
 		rho 		= 	3300    # density
 		eta 		= 	1e21    # viscosity		1e22: symmetric, 1e21: asymmetric
 		G   		= 	5e10
-
+        #eta_st      =   1e21
+		
+        ch  		=  	20e6    # Cohesion
+		fr  		=  	15	  # initial friction angle
 	<MaterialEnd>
 	
 #===============================================================================
@@ -270,7 +280,7 @@
 	-snes_ksp_ew_rtolmax 1e-4
 	-snes_rtol 5e-2					
 	-snes_atol 1e-4					# following Le Pourhiet et al. (EPSL, 2017)
-	-snes_max_it 25					
+	-snes_max_it 200					
 	
 	-snes_PicardSwitchToNewton_rtol 1e-2   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
@@ -283,7 +293,7 @@
 	-js_ksp_rtol 1e-4
 
 	-snes_linesearch_type l2
-	-snes_linesearch_monitor
+	#-snes_linesearch_monitor
 	-snes_linesearch_maxstep 10
 
 <PetscOptionsEnd>

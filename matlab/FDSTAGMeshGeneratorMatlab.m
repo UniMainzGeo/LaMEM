@@ -1,8 +1,20 @@
-function [X,Y,Z,xcoor,ycoor,zcoor, Xpart, Ypart, Zpart] = FDSTAGMeshGeneratorMatlab(npartx,nparty,npartz,fname, RandomNoise, Is64BIT)
+function [X,Y,Z,xcoor,ycoor,zcoor, Xpart, Ypart, Zpart] = FDSTAGMeshGeneratorMatlab(varargin)
 % This function creates a variable mesh for LaMEM setups based on a
 % processor configuration
 %    fname - name of the file with the processor configuration;
 %               in LaMEM this is saved with -SavePartitioning 1
+
+npartx      = varargin{1};
+nparty      = varargin{2};
+npartz      = varargin{3};
+fname       = varargin{4};
+RandomNoise = varargin{5};
+if nargin==6
+    Is64BIT = varargin{6};
+else
+    Is64BIT = logical(0);
+end
+
 
 [P] = GetProcessorPartitioning(fname, Is64BIT);
 
@@ -22,9 +34,9 @@ z = [];
 % create uniform distribution of markers/cell
 for i=1:length(dx)
     for j=1:npartx
-        if (j==1) & (i==1)
+        if (j==1) && (i==1)
             a = dx(i)/npartx*0.5;
-        elseif j==1 & (i~=1)
+        elseif j==1 && (i~=1)
             a = x(end) + dx(i-1)/npartx*0.5 + dx(i)/npartx*0.5;
         else
             a = x(end)+dx(i)/npartx;
@@ -35,9 +47,9 @@ end
 
 for i=1:length(dy)
     for j=1:nparty
-        if (j==1) & (i==1)
+        if (j==1) && (i==1)
             a = dy(i)/nparty*0.5;
-        elseif j==1 & (i~=1)
+        elseif j==1 && (i~=1)
             a = y(end) + dy(i-1)/nparty*0.5 + dy(i)/nparty*0.5;
         else
             a = y(end)+dy(i)/nparty;
@@ -48,9 +60,9 @@ end
 
 for i=1:length(dz)
     for j=1:npartz
-        if (j==1) & (i==1)
+        if (j==1) && (i==1)
             a = dz(i)/npartz*0.5;
-        elseif j==1 & (i~=1)
+        elseif j==1 && (i~=1)
             a = z(end) + dz(i-1)/npartz*0.5 + dz(i)/npartz*0.5;
         else
             a = z(end)+dz(i)/npartz;

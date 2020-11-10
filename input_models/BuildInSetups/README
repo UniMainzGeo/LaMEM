@@ -13,7 +13,9 @@ If you are a new user of LaMEM, we recommend you look & run the files in the
 following order:
 
 1) FallingBlock_IterativeSolver.dat:
-    Nondimensional falling block setup (3D) using PETSc iterative solvers.
+    Nondimensional falling block setup (3D) using PETSc iterative solvers. 
+    This will work with any basic setup of PETSc, and does not require any 
+    additional packages.
 
 2) FallingBlock_DirectSolver.dat:    
     Nondimensional falling block setup (3D) using direct solvers. 
@@ -25,7 +27,7 @@ following order:
     Ten falling spheres with multigrid (useful benchmark to test iterative solvers)
 
 5) Subduction2D_FreeSlip_DirectSolver.dat:
-    2D viscoplastic free subduction setup
+    2D viscoplastic free subduction setup with free slip upper BC
                                        
 6) Subduction2D_FreeSurface_DirectSolver.dat: 
     2D viscous free subduction setup with a free surface

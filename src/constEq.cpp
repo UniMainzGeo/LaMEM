@@ -164,6 +164,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	T      = ctx->T;
 	mf     = 0.0;
 
+	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
 
 	if(mat->pdAct == 1)
 	{
@@ -646,6 +647,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	dt        = ctx->dt;
 	p         = ctx->p;
 	T         = ctx->T;
+	p         = p+ctrl->pShift;
 
 //
 
@@ -674,8 +676,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				// compute melt fraction from phase diagram
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
-				svBulk->mf     += phRat[i]*mf;
-			//	svBulk->rho_pf += phRat[i]*mat->rho_melt;
+				svBulk->mf     += phRat[i]*Pd->mf;
+				svBulk->rho_pf += phRat[i]*Pd->rho_f;
 			}
 
 			// initialize

@@ -84,6 +84,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->AdiabHeat    =  0.0;
 	ctrl->shearHeatEff =  1.0;
 	ctrl->biot         =  1.0;
+	ctrl->pShiftAct    =  1;
 	ctrl->pLithoVisc   =  1;
 	ctrl->initGuess    =  1;
 	ctrl->mfmax        =  0.15;
@@ -107,6 +108,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "steady_temp_t",   &ctrl->steadyTempStep, 1, 1.0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_steady",    &ctrl->steadyNumStep,  1, 0);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",     &ctrl->pShiftAct,      1, 1);   			CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_lith_pres",  &ctrl->initLithPres,   1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",      &ctrl->initGuess,      1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",    &ctrl->pLithoVisc,     1, 1);              CHKERRQ(ierr);
@@ -273,6 +275,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->initGuess)      PetscPrintf(PETSC_COMM_WORLD, "   Compute initial guess                   @ \n");
 	if(ctrl->pLithoVisc)     PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for creep      @ \n");
 	if(ctrl->pLithoPlast)    PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for plasticity @ \n");
+	if(ctrl->pShiftAct)      PetscPrintf(PETSC_COMM_WORLD, "   Enforce zero average pressure on top    @ \n");
 	if(ctrl->pLimPlast)      PetscPrintf(PETSC_COMM_WORLD, "   Limit pressure at first iteration       @ \n");
     if(ctrl->pShift)         PetscPrintf(PETSC_COMM_WORLD, "   Applying a pressure shift               : %g %s \n", ctrl->pShift,    scal->lbl_stress);
 	if(ctrl->eta_min)        PetscPrintf(PETSC_COMM_WORLD, "   Minimum viscosity                       : %g %s \n", ctrl->eta_min,   scal->lbl_viscosity);
@@ -591,6 +594,9 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
+	// get pressure shift to enforce zero pressure in top layer of cells if requested (for free slip setups)
+	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
+
 	// compute lithostatic pressure
 	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
 
@@ -669,6 +675,56 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 		// compute & store inverse viscosity
 		svEdge->svDev.I2Gdt = getI2Gdt(numPhases, phases, svEdge->phRat, dt);
 	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetPressShift"
+PetscErrorCode JacResGetPressShift(JacRes *jr)
+{
+	// get average pressure near the top surface, such that we can shift that
+	// to be, for example, zero
+
+	FDSTAG      *fs;
+	PetscScalar ***p;
+	PetscScalar lpShift, gpShift;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mcz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check if requested
+	if(!jr->ctrl.pShiftAct) PetscFunctionReturn(0);
+
+	fs      = jr->fs;
+	mcz     = fs->dsz.tcels - 1;
+	lpShift = 0.0;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp, &p);  CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		if(k == mcz) lpShift += p[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &p);  CHKERRQ(ierr);
+
+	// synchronize
+	if(ISParallel(PETSC_COMM_WORLD))
+	{
+		ierr = MPI_Allreduce(&lpShift, &gpShift, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	}
+	else
+	{
+		gpShift = lpShift;
+	}
+
+	// store pressure shift
+	jr->ctrl.pShift = -gpShift/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels);		// minus as we need to reduce P @ the top by this amount
 
 	PetscFunctionReturn(0);
 }
@@ -1635,6 +1691,12 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
 
 		if(fj && fk) SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
+
+        /* 
+            Note: a special case occurs for 2D setups, in which nel_y==1
+        */
+       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
+        if(fj && fk )  SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 
@@ -1658,6 +1720,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 
 		if(fi && fk) SET_EDGE_CORNER(n, lvy, K, j, I, k, j, i, pmdof)
+
 	}
 	END_STD_LOOP
 
@@ -1681,7 +1744,12 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 
-		if(fi && fj) SET_EDGE_CORNER(n, lvz, k, J, I, k, j, i, pmdof)
+		/* 
+            Note: a special case occurs for 2D setups with nel_y==1
+        */
+       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
+        if(fi && fj) SET_EDGE_CORNER(n, lvz, k, J, I, k, j, i, pmdof)
+
 	}
 	END_STD_LOOP
 
@@ -1775,6 +1843,20 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 		if(fi && fk)       SET_EDGE_CORNER(n, lp, K, j, I, k, j, i, pmdof)
 		if(fj && fk)       SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
 		if(fi && fj && fk) SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
+
+		 /* 
+            Note: a special case occurs for 2D setups with nel_y==1
+            In that we need to split the setting of edges & corners in two parts 
+            to ensure that both front & back side are accounted for.
+        */
+       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
+        if(fi && fj )           SET_EDGE_CORNER(n, lp, k, J, I, k, j, i, pmdof)
+        if(fj && fk )           SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk   )   SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
+
+
+
+
 	}
 	END_STD_LOOP
 

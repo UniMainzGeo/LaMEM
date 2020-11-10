@@ -16,7 +16,6 @@
 #===============================================================================
 # Time stepping parameters
 #===============================================================================
-	time_end  = 100   	# simulation end time
 	dt        = 0.01   # initial time step
 	dt_min    = 1e-5  	# minimum time step (declare divergence if lower value is attempted)
 	dt_max    = 1   	# maximum time step
@@ -80,7 +79,7 @@
 	#p_shift        = 2.216e4        # pressure shift activation flag (zero pressure in the top cell layer)
     init_lith_pres = 1
 	DII_ref        = 1e-15          # background (reference) strain-rate
-	
+	Phasetrans     = 1	
 #===============================================================================
 # Solver options
 #===============================================================================
@@ -122,7 +121,7 @@
 		bottom 	= 	-1000
 
 		Temperature = halfspace
-		thermalAge  = 30		# thermal age
+		thermalAge  = 100		# thermal age
 	
 		botTemp     = 1300		# bottom T for halfspace cooling
 		topTemp     = 0			# top T for halfspace cooling
@@ -136,11 +135,6 @@
 	<LayerEnd>
 	
 	# Define mantle lithosphere (for Phase)
-	<LayerStart>
-		phase  	= 	2
-		top 	= 	-10  
-		bottom 	= 	-100
-	<LayerEnd>
 	
 	# Define plume (for Phase)
 	<SphereStart>
@@ -296,7 +290,18 @@
 # Define phase transitions
 #===============================================================================
 	<PhaseTransitionStart>
-	    ID   					= 	0   			# Phase_transition law ID
+	    ID   					= 	0  			# Phase_transition law ID
+     	Type 					= 	Constant		# [Constant, Clapeyron, Box_type]
+		Parameter_transition 	= 	T 			# T = Temperature, P = Pressure, Depth = z coordinate
+		ConstantValue 			= 	1200			# The value @ which the phase transition occurs
+		
+	   	number_phases 			= 	1				# Number of phases involved			
+		PhaseAbove 				= 	3 		        # Phases below the phase transition 
+		PhaseBelow 				= 	2               # Phases below
+        PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+	<PhaseTransitionStart>
+	    ID   					= 	1   			# Phase_transition law ID
      	Type 					= 	Constant		# [Constant, Clapeyron, Box_type]
 		Parameter_transition 	= 	Depth 			# T = Temperature, P = Pressure, Depth = z coordinate
 		ConstantValue 			= 	-400			# The value @ which the phase transition occurs
@@ -309,7 +314,7 @@
 
 
 	<PhaseTransitionStart>
-		ID                      =   1                           # Phase_transition law ID
+		ID                      =   2                           # Phase_transition law ID
 		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
 		Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
         number_phases           =   1

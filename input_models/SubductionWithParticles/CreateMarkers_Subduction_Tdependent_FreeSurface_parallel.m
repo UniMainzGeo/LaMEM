@@ -1,60 +1,59 @@
-% Create a 2D subduction setup with particles & temperature, 
-
-
-clear, clf, close all
-
+% Create a 2D subduction setup with particles & temperature
+clear
 
 % Tell the code where the LaMEM matlab routines are 
 addpath ../../matlab
 
+LaMEM_Parallel_output   =    0;
 
-% Define parallel partition file
-Parallel_partition     = 'ProcessorPartitioning_4cpu_4.1.1.bin'
+RandomNoise             =   logical(0); % add random noise to particles?
 
+LaMEM_input_file        =   'Subduction2D_FreeSurface_Particles_Nonlinear_DirectSolver.dat';
 
-% Number of markers in a grid cell [Note that this needs to be changed if 
-% this is changed in the *.dat file!]
-npart_x = 3;
-npart_y = 3;
-npart_z = 3;
+%% Compute 3D grid, depending on whether we are on 1 or >1 processors
+if ~LaMEM_Parallel_output 
+    % In the other case, we create a setup for 1 processor and defined the
+    % parameters here. 
+    % Important: the resolution you use here should be identical to what
+    % is specified in then *.dat file!
+    disp(['Creating setup for 1 processor using LaMEM file: ', LaMEM_input_file])
 
+    % Read info from LaMEM input file & create 3D grid    
+    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H] =   LaMEM_ParseInputFile(LaMEM_input_file);
+    
+    nump_x              =   Grid.nel_x*npart_x;
+    nump_y              =   Grid.nel_y*npart_y;
+    nump_z              =   Grid.nel_z*npart_z;
+    Parallel_partition  =   [];   % since we run this on one code
+    
+else
+    % We perform a paralel simulation; or this a 'ProcessorPartitioning'
+    % file shoule be created first by running LaMEM on the desired # of
+    % processors as:
+    %   mpiexec -n 2 ../../bin/opt/LaMEM -ParamFile Subduction2D_FreeSlip_MATLABParticles_Linear_DirectSolver.dat -mode save_grid
+    disp(['Creating setup in parallel using LaMEM file: ', LaMEM_input_file])
+      
+    % Define parallel partition file
+    Parallel_partition                          =   'ProcessorPartitioning_4cpu_4.1.1.bin'
+    
+    % Load grid from parallel partitioning file
+    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H]  =   LaMEM_ParseInputFile(LaMEM_input_file);
+    [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] =   FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise);
+    
+    % Update other variables
+    nump_x  = size(X,2);
+    nump_y  = size(X,1);
+    nump_z  = size(X,3);
+    
+    % Domain parameters
+    W       =   xcoor(end)-xcoor(1);    % x-dir
+    L       =   ycoor(end)-ycoor(1);    % y-dir
+    H       =   zcoor(end)-zcoor(1);    % z-dir
+end
 %==========================================================================
-% OUTPUT OPTIONS (standard)
-%==========================================================================
-% See model setup in Paraview 1-YES; 0-NO
-Paraview_output        =    1;
-
-% Output parallel files for LaMEM, using a processor distribution file (msetup = parallel)
-% WARNING: Need a valid 'Parallel_partition' file!
-LaMEM_Parallel_output  =    1;
-
-% Mesh from file 1-YES (load uniform or variable mesh from file); 0-NO (create new uniform mesh)
-% WARNING: Need a valid 'Parallel_partition' file!
-LoadMesh               =    1;
-
-% random noise of particles
-RandomNoise             =   logical(0);
-
-Is64BIT                 =   logical(0); % only used for some 
-
-% Load grid from parallel partitioning file
-[X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise,Is64BIT);
-
-% Update other variables
-nump_x  = size(X,2);
-nump_y  = size(X,1);
-nump_z  = size(X,3);
 
 
-
-% Domain parameters
-W       =   xcoor(end)-xcoor(1);    % x-dir
-L       =   ycoor(end)-ycoor(1);    % y-dir
-H       =   zcoor(end)-zcoor(1);    % z-dir
-
-%==========================================================================
-
-
+%%
 %==========================================================================
 % SPECIFY PARAMETERS OF THE SLAB
 %==========================================================================
@@ -66,7 +65,6 @@ Width_Slab          =  1000;    % Width of slab (in case we run a 3D model)
 SubductionAngle     =   34;     % Subduction angle
 ThermalAge_Myrs     =   50;     % Thermal age of the slab in Myrs
 ThicknessCrust      =   10;
-
 z_surface           =   0;      % initial free surface
 
 
@@ -91,10 +89,10 @@ alpha           =   -SubductionAngle*pi/180;
 R               =   [cos(alpha) sin(alpha); -sin(alpha) cos(alpha)];
 
 % Top & Bottom of slab
-SlabInclined    =   [Slab_Top(:,1:ind_T), Slab_Bot(:,1:ind_T)];
-SlabInclined(1,:)    =   SlabInclined(1,:)-Trench_x_location;
-SlabInclined    =   R*SlabInclined;
-SlabInclined(1,:)    =   SlabInclined(1,:)+Trench_x_location;
+SlabInclined        =   [Slab_Top(:,1:ind_T), Slab_Bot(:,1:ind_T)];
+SlabInclined(1,:)	=   SlabInclined(1,:)-Trench_x_location;
+SlabInclined        =   R*SlabInclined;
+SlabInclined(1,:) 	=   SlabInclined(1,:)+Trench_x_location;
 
 Slab_Top(:,1:ind_T) = SlabInclined(:,1:ind_T);
 Slab_Bot        =   [SlabInclined(:,ind_T+1:end), [Slab_Top(1,end); SlabInclined(2,end)]];
@@ -191,14 +189,10 @@ A.npart_y=  npart_y;
 A.npart_z=  npart_z;
 
 % PARAVIEW VISUALIZATION
-if (Paraview_output == 1)
-    FDSTAGWriteMatlab2VTK(A,'BINARY'); % default option
-end
+FDSTAGWriteMatlab2VTK(A,'BINARY'); % default option
 
 % SAVE PARALLEL DATA (parallel)
-if (LaMEM_Parallel_output == 1)
-    FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition,Is64BIT);
-end
+FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition);
 
 
 

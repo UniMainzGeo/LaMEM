@@ -1,10 +1,10 @@
-# This is a simple 3D subduction setup a free slip upper boundary
+# This is a simple 2D subduction setup a free slip upper boundary
 # The geometry is created in MATLAB, and linear rheologies are being used apart from the 
 # crust, which is plastic to allow detachment of the upper boundary
 #
 # The MATLAB file CreateMarkers_Subduction_Linear_FreeSlip_parallel.m is used to create 
 # the input geometry.
-# A multigrid solver is employed
+# A direct solver is employed
 
 #===============================================================================
 # Scaling
@@ -38,14 +38,14 @@
 #===============================================================================
 
 # Number of cells for all segments
-	nel_x = 128
-	nel_y = 64
-	nel_z = 32
+	nel_x = 256
+	nel_y = 2
+	nel_z = 64
 
 # Coordinates of all segments (including start and end points)
 
 	coord_x = -1500 1500
-	coord_y =  0    1500
+	coord_y =  0   10
 	coord_z = -660  0
 
 #===============================================================================
@@ -55,7 +55,6 @@
 
 	noslip = 0 0 0 0 1 0
 	
-
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
@@ -65,17 +64,16 @@
 	init_guess     = 0              # initial guess flag
 	eta_min        = 1e18           # viscosity upper bound
 	eta_ref 	   = 1e20			# reference viscosity for initial guess	
-	eta_max        = 1e25           # viscosity lower limit
-	
-	
+	eta_max        = 1e25           # viscosity lower limit	
+	p_litho_plast   = 1              # use lithostatic pressure for plasticity
+
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 		=	multigrid 		# solver [direct or multigrid]
-	MGLevels 			=	3			# number of MG levels [default=3]
-	MGSweeps 			=	10			# number of MG smoothening steps per level [default=10]
-	MGSmoother 			=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
-	MGCoarseSolver 		=	mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e5
+
 		
 #===============================================================================
 # Model setup & advection
@@ -102,7 +100,7 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = Subduction3D_FreeSlip_direct # output file name
+	out_file_name       = Subduction2D_FreeSlip_direct # output file name
 	out_pvd             = 1       	# activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
@@ -129,14 +127,7 @@
 	out_avd_pvd 		= 1 # activate writing .pvd file
 	out_avd_ref 		= 3 # AVD grid refinement factor
 	
-# Free surface output options (can be activated only if surface tracking is enabled)
 
-	out_surf            = 1 # activate surface output
-	out_surf_pvd        = 1 # activate writing .pvd file
-	out_surf_velocity   = 1
-	out_surf_topography = 1
-	out_surf_amplitude  = 1
-	
 #===============================================================================
 # Material phase parameters
 #===============================================================================
@@ -177,7 +168,7 @@
 <PetscOptionsStart>
 
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_ksp_ew
+	#-snes_ksp_ew
 
 
 	-js_ksp_monitor # display how the inner iterations converge

@@ -1,60 +1,63 @@
-% Create a 2D subduction setup with particles & temperature, 
-
-
+% Create a 2D subduction setup with particlesm but with no temperature structure
 clear
 
 
-% Tell the code where the LaMEM matlab routines are 
-addpath ../../matlab
-
-
-% Define parallel partition file
-Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin'
-
-
-% Number of markers in a grid cell [Note that this needs to be changed if 
-% this is changed in the *.dat file!]
-npart_x = 3;
-npart_y = 3;
-npart_z = 3;
+% Tell the code where the LaMEM matlab routines are, relative to the current directory 
+addpath('../../matlab')
 
 %==========================================================================
 % OUTPUT OPTIONS (standard)
 %==========================================================================
-% See model setup in Paraview 1-YES; 0-NO
-Paraview_output        =    1;
+LaMEM_Parallel_output   =    0;
 
-% Output parallel files for LaMEM, using a processor distribution file (msetup = parallel)
-% WARNING: Need a valid 'Parallel_partition' file!
-LaMEM_Parallel_output  =    1;
+RandomNoise             =   logical(0); % add random noise to particles?
 
-% Mesh from file 1-YES (load uniform or variable mesh from file); 0-NO (create new uniform mesh)
-% WARNING: Need a valid 'Parallel_partition' file!
-LoadMesh               =    1;
+LaMEM_input_file        =   'Subduction2D_FreeSlip_Particles_Linear_DirectSolver.dat';
 
-% random noise of particles
-RandomNoise             =   logical(0);
+%% Compute 3D grid, depending on whether we are on 1 or >1 processors
+if ~LaMEM_Parallel_output 
+    % In the other case, we create a setup for 1 processor and defined the
+    % parameters here. 
+    % Important: the resolution you use here should be identical to what
+    % is specified in then *.dat file!
+    disp(['Creating setup for 1 processor using LaMEM file: ', LaMEM_input_file])
 
-Is64BIT                 =   logical(0); % only used for some 
-
-% Load grid from parallel partitioning file
-[X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise,Is64BIT);
-
-% Update other variables
-nump_x  = size(X,2);
-nump_y  = size(X,1);
-nump_z  = size(X,3);
-
-
-
-% Domain parameters
-W       =   xcoor(end)-xcoor(1);    % x-dir
-L       =   ycoor(end)-ycoor(1);    % y-dir
-H       =   zcoor(end)-zcoor(1);    % z-dir
-
+    % Read info from LaMEM input file & create 3D grid    
+    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H] =   LaMEM_ParseInputFile(LaMEM_input_file);
+    
+    nump_x              =   Grid.nel_x*npart_x;
+    nump_y              =   Grid.nel_y*npart_y;
+    nump_z              =   Grid.nel_z*npart_z;
+    Parallel_partition  =   [];   % since we run this on one code
+    
+else
+    % We perform a paralel simulation; or this a 'ProcessorPartitioning'
+    % file shoule be created first by running LaMEM on the desired # of
+    % processors as:
+    %   mpiexec -n 2 ../../bin/opt/LaMEM -ParamFile Subduction2D_FreeSlip_MATLABParticles_Linear_DirectSolver.dat -mode save_grid
+     
+    % Define parallel partition file
+    Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin'
+    
+    % Load grid from parallel partitioning file
+    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H] =   LaMEM_ParseInputFile(LaMEM_input_file);
+    [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise);
+    
+    % Update other variables
+    nump_x  = size(X,2);
+    nump_y  = size(X,1);
+    nump_z  = size(X,3);
+    
+    % Domain parameters
+    W       =   xcoor(end)-xcoor(1);    % x-dir
+    L       =   ycoor(end)-ycoor(1);    % y-dir
+    H       =   zcoor(end)-zcoor(1);    % z-dir
+end
 %==========================================================================
+%%
 
 
+%% 
 %==========================================================================
 % SPECIFY PARAMETERS OF THE SLAB
 %==========================================================================
@@ -63,35 +66,35 @@ Length_Subduct_Slab =  200;     % length of subducted slab
 Length_Horiz_Slab   =  1500;    % length of overriding plate of slab
 Width_Slab          =  750;     % Width of slab (in case we run a 3D model)         
 
-
 SubductionAngle     =   34;     % Subduction angle
 ThicknessCrust      =   10;
 ThicknessSlab       =   75;    % Thickness of mantle lithosphere
 
 
+%% 
 %==========================================================================
 % DEFINE SLAB
 %==========================================================================
 
-%% 1) Create the top (and bottom) of the slab
+% 1) Create the top (and bottom) of the slab
 
-% Create polygon of crust and mantle lithoshere
+% Create polygon of crust and mantle lithosphere
 x_s             =   Trench_x_location-Length_Subduct_Slab;  % start
 x_t             =   Trench_x_location;                      % trench
 x_e             =   Trench_x_location+Length_Horiz_Slab;    % end
 
-% First create a horizontal crust/slab
+% 1a)First create a horizontal crust/slab
 Slab_Crust(1,:) =   [x_s x_t x_e x_e x_t x_s];
 Slab_Crust(2,:) =   [0   0     0 -ThicknessCrust -ThicknessCrust -ThicknessCrust];
 
 Slab_ML         =   Slab_Crust;
 Slab_ML(2,:)    =   [0   0     0 -ThicknessSlab -ThicknessSlab -ThicknessSlab];
 
-% Next rotate the inclined portions
+% 1b) Next rotate the inclined portions
 alpha           =   -SubductionAngle*pi/180;
 R               =   [cos(alpha) sin(alpha); -sin(alpha) cos(alpha)];
 
-% Crust
+% 2) do the same for the Crust
 Inclined        =   Slab_Crust(:,[1:2 end-1:end]);
 Inclined(1,:)   =   Inclined(1,:)-Trench_x_location;
 Inclined        =   R*Inclined;
@@ -107,13 +110,12 @@ Inclined(1,:)   =   Inclined(1,:)-Trench_x_location;
 Inclined        =   R*Inclined;
 Inclined(1,:)   =   Inclined(1,:)+Trench_x_location;
 
-Slab_ML(:,1:2) = Inclined(:,1:2);
+Slab_ML(:,1:2)   = Inclined(:,1:2);
 Slab_ML(:,end-1:end) = Inclined(:,end-1:end);
-Slab_ML(2,end-2) = Slab_ML(2,end-1);                    % NOTE: the final thickness is no longer the specified slab thicknes!!
+Slab_ML(2,end-2) = Slab_ML(2,end-1);                    
 
-% Now we have a polygon that described the crust and one that describes the
-% mantle lithosphere.
-% You can plot them with
+% Now we have a polygon that described the crust and one that describes the mantle lithosphere.
+% You can plot them with:
 % fill(Slab_ML(1,:),Slab_ML(2,:),'bo-',Slab_Crust(1,:),Slab_Crust(2,:),'ro-'), axis equal
 
 %% Set phases based on whether we are in the crust or in the mantle lithosphere
@@ -132,11 +134,10 @@ ind             =  find(Y>Width_Slab);
 Phase(ind)      =   0;
 
 % Temperature is not used in the setup, so set it to a constant value
-T_mantle    =   1350;
-Temp        =   T_mantle*ones(size(Phase));
+T_mantle        =   1350;
+Temp            =   T_mantle*ones(size(Phase));
 
-
-
+%%
 %==========================================================================
 % PREPARE DATA FOR VISUALIZATION/OUTPUT (no need to change this)
 %==========================================================================
@@ -174,15 +175,11 @@ A.npart_y=  npart_y;
 A.npart_z=  npart_z;
 
 % PARAVIEW VISUALIZATION
-if (Paraview_output == 1)
-    FDSTAGWriteMatlab2VTK(A,'BINARY'); % default option
-end
+FDSTAGWriteMatlab2VTK(A,'BINARY'); % default option
 
-% SAVE PARALLEL DATA (parallel)
-if (LaMEM_Parallel_output == 1)
-    FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition,Is64BIT);
-end
+% SAVE DATA (parallel)
+FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition);
 
 
 
-
+        

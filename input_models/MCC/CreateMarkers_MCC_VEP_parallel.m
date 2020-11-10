@@ -10,7 +10,7 @@ clear
 % add matlab file to create phases
 % addpath /data/ljeff/software/LaMEM/matlab % sith
 % addpath /local/home/ljeff/software/LaMEM/matlab%gaia
-addpath ../../../matlab
+addpath('../../matlab')
 
 %==========================================================================
 % OUTPUT OPTIONS
@@ -165,11 +165,9 @@ end
 % TEMPERATURE - in Celcius
 %==========================================================================
 Tbottom     =   275;
-Temp        =   Tbottom/30.*(30-Z);
-ind         =   find(Z>z_air);
+Temp        =   Tbottom.*(Z/z_bot);     % linear temp gradient between top & bottom
+ind         =   find(Z>z_air);          % air has zero
 Temp(ind)   =   0;
-% ind         =   find(Z>=z_UC4-1 & Z<=z_UC4+1);
-% Temp(ind)   =   TMoho/z_air.*(z_air-Z(ind)) + (rand(size(ind))-0.5)*10;% random noise
                 
 
 %==========================================================================
