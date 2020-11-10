@@ -84,7 +84,7 @@ def run_tests():
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),
                       StrEnv.test_a(), StrEnv.test_b(), StrEnv.test_c(), StrEnv.test_d(),
-                      RTI.RTI_isovisous_NoSlip(), PT.test_a(),
+                      RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(),
                       InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(),
                       FSSA.test_1()];
  
