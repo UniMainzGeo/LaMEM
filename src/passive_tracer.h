@@ -49,6 +49,8 @@ struct P_Tr
 	Vec    z;      //
 	Vec    p;     // pressure
 	Vec    T;     // temperature
+	Vec    Melt_fr; // Melt fraction acquired
+	Vec    C_advection; // condition to advect marker /*NB: in the future it could be useful to customize better this vector */
 	Vec    Recv;  // Vector that must be used during synching operation
 };
 
