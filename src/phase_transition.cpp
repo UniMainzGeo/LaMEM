@@ -428,7 +428,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					PH2 = PhaseTrans->PhaseAbove[above];
 				}
 			
-				ph          =   Transition(PhaseTrans, P, PH1, PH2);
+				ph          =   Transition(PhaseTrans, P, PH1, PH2, jr->ctrl);
 
                 if (PhaseTrans->PhaseDirection==0){
                      P->phase    =   ph;
@@ -453,18 +453,18 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------------------
-PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2)
+PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl)
 {
 	PetscInt ph;
 
 	ph = P->phase;
 	if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
-		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2);
+		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl);
 	}
 	else if(PhaseTrans->Type==_Clapeyron_)
 	{
-		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2);
+		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl);
 	}
 
 
@@ -474,10 +474,18 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 /*------------------------------------------------------------------------------------------------------------
     Sets the values for a phase transition that occurs @ a constant value
 */
-PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2) 
+PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl) 
 {
     
-    PetscInt ph;
+    PetscInt 	ph;
+	PetscScalar pShift;
+	
+	if (ctrl.pShift){
+		pShift = ctrl.pShift;
+	}
+	else{
+		pShift = 0.0;
+	}
 
 	ph = 0;
 	if((PhaseTrans->Parameter_transition==_T_))   // NOTE: string comparisons can be slow; optimization possibility
@@ -489,8 +497,8 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 
 	if(PhaseTrans->Parameter_transition==_Pressure_)
 		{
-            if  ( P->p >= PhaseTrans->ConstantValue)    {   ph = PH2;   }
-		    else                                        {   ph = PH1;   }
+            if  ( (P->p+pShift) >= PhaseTrans->ConstantValue)   {   ph = PH2;   }
+		    else                                       	 		{   ph = PH1;   }
           
 		}
 
@@ -510,11 +518,17 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 }
 
 //------------------------------------------------------------------------------------------------------------//
-PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2)
+PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl)
 {
 	PetscInt ph,ip,neq;
-	PetscScalar Pres[2];
+	PetscScalar Pres[2], pShift;
 
+  	if (ctrl.pShift){
+		pShift = ctrl.pShift;
+	}
+	else{
+		pShift = 0.0;
+	}
 
 	neq = PhaseTrans->neq;
 	for (ip=0; ip<neq; ip++)
@@ -523,14 +537,14 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 	}
 	if (neq==1)
 	{
-        if  ( P->p >= Pres[0]) {   ph  =   PH2;    }
-        else                   {   ph  =   PH1;    }
+        if  ( (P->p+pShift) >= Pres[0]) {   ph  =   PH2;    }
+        else                   			{   ph  =   PH1;    }
 	}
 	else
 	{
         // in case we have two equations to describe the phase transition:
-        if  ( (P->p >= Pres[0]) && (P->p >= Pres[1]) )      {   ph  =   PH2;    }
-        else                                                {   ph  =   PH1;    }
+        if  ( ((P->p+pShift) >= Pres[0]) && ( (P->p+pShift) >= Pres[1]) )	{   ph  =   PH2;    }
+        else                                                				{   ph  =   PH1;    }
 
 	}
 

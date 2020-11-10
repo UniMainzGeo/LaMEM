@@ -287,7 +287,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->minFr)          PetscPrintf(PETSC_COMM_WORLD, "   Minimum friction                        : %g %s \n", ctrl->minFr,     scal->lbl_angle);
 	if(ctrl->tauUlt)         PetscPrintf(PETSC_COMM_WORLD, "   Ultimate yield stress                   : %g %s \n", ctrl->tauUlt,    scal->lbl_stress_si);
 	if(ctrl->rho_fluid)      PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid, scal->lbl_density);
-	if(ctrl->mfmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum melt fraction (viscosity)       : %g    \n", ctrl->mfmax);
+	if(ctrl->mfmax)          PetscPrintf(PETSC_COMM_WORLD, "   Max. melt fraction (viscosity, density) : %g    \n", ctrl->mfmax);
 	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %lld  \n", ctrl->lmaxit);
 	if(ctrl->lrtol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration tolerance            : %g    \n", ctrl->lrtol);
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transition is active           : %g    \n", ctrl->Phasetrans);
