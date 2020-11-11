@@ -150,9 +150,8 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	ierr = getStringParam(fb, _OPTIONAL_, "mark_ctrl",       mctrl,          "none");          CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_lim",       nmark_lim,      2, 0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_avd",       nmark_avd,      3, 0);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_sub",      &actx->npmax,    1, 3);            CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "coordinate_box_passive_tracers", actx->box_passive_tracer,    6, 1.0);  CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "passive_tracer_resolution", actx->passive_tracer_resolution,    3, 0);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_sub",      &actx->npmax,    1, 27);           CHKERRQ(ierr);
+
 
 	// CHECK
 
@@ -284,9 +283,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	// project initial history from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
-
-	// initialize the passive tracers if needed
-	ierr = ADVPtrReAllocStorage(actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

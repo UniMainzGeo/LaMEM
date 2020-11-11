@@ -214,7 +214,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = ADVCreate(&lm->actx, fb); 				CHKERRQ(ierr);
 
 	// create passive tracers
-	ierr = ADVPassiveTracerInit(&lm->actx);			CHKERRQ(ierr);
+	ierr = ADVPtrPassive_Tracer_create(&lm->actx,fb);			CHKERRQ(ierr);
 
 	// create output object for all requested output variables
 	ierr = PVOutCreate(&lm->pvout, fb); 			CHKERRQ(ierr);
