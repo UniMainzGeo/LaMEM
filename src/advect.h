@@ -227,9 +227,6 @@ struct AdvCtx
 	PetscInt  ndel; // number of markers to be deleted from storage
 	PetscInt *idel; // indices of markers to be deleted
 
-	PetscScalar box_passive_tracer[6];
-	PetscInt    passive_tracer_resolution[3];
-
 };
 
 //---------------------------------------------------------------------------
