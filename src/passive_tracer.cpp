@@ -382,8 +382,6 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-
-
 		ierr = Sync_Vector(actx->Ptr->p,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
 		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->p); CHKERRQ(ierr);
@@ -432,7 +430,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
 	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop, endx,endy,endz,begx,begy,begz,npx,npy,npz;
 	PetscScalar *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active;
-	PetscScalar pShift,mf;
+	PetscScalar pShift;
 	PetscScalar Xm[3],X[3];
 	PetscLogDouble t;
 	vector <spair>    dist;
@@ -496,20 +494,20 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp) ; CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT) ; CHKERRQ(ierr);
 
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
 
-	ierr = VecGetArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->Ptr->Melt_fr, &mf_ptr)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->Ptr->C_advection, &Active)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->x, &Xp)              ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->y, &Yp)              ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->z, &Zp)              ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->p, &Pr)              ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->T, &T)               ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->phase, &phase)       ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->Melt_fr, &mf_ptr)    ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->C_advection, &Active); CHKERRQ(ierr);
 
 	// scan all markers
 	num_part = actx->Ptr->nummark;
@@ -518,7 +516,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	{
 
 		// get consecutive index of the host cell
-		mf = 0.0;
 		xp = Xp[jj];
 		yp = Yp[jj];
 		zp = Zp[jj];
@@ -560,8 +557,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 				if(mat[PetscInt(phase[jj])].pdn)
 				{
 					ierr = setDataPhaseDiagram(Pd, Pr[jj], T[jj], mat[PetscInt(phase[jj])].pdn); CHKERRQ(ierr);
-					mf = Pd->mf;
-					mf_ptr[jj]= mf;
+					mf_ptr[jj]= Pd->mf;
 				}
 				else
 				{
@@ -591,43 +587,35 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 					phase[jj]= actx->markers[dist.begin()->second].phase;
 
 					ierr = setDataPhaseDiagram(Pd, Pr[jj], T[jj], mat[PetscInt(phase[jj])].pdn); CHKERRQ(ierr);
-					mf = Pd->mf;
-					mf_ptr[jj]= mf;
+
+					mf_ptr[jj]=Pd->mf;
 
 				}
 			}
 
-			if(jr->ctrl.adv_C)
+
+			if((Active[jj] == 0.0) && actx->Ptr->Condition_pr != _Always_)
 			{
-				if ((mf>jr->ctrl.adv_C) && (Active[jj]==0.0))
-				{
-					Active[jj] = 1.0;
-				}
+				ierr = Check_advection_condition(actx, jj, ID,xp,yp,zp,Pr[jj],T[jj],mf_ptr[jj]); CHKERRQ(ierr);
 			}
+
+
 			// override temperature of air phase
 			if(AirPhase != -1 && phase[jj] == AirPhase) T[jj] = Ttop;
 
 			// advect marker
-			if(jr->ctrl.adv_C)
-			{
-				if(Active[jj]>0.0)
-				{
-					npx = xp + vx*dt;
-					npy = yp + vy*dt;
-					npz = zp + vz*dt;
-				}
-				else
-				{
-					npx = xp;
-					npy = yp;
-					npz = zp;
-				}
-			}
-			else
+
+			if(Active[jj]==1.0 || actx->Ptr->Condition_pr == _Always_)
 			{
 				npx = xp + vx*dt;
 				npy = yp + vy*dt;
 				npz = zp + vz*dt;
+			}
+			else
+			{
+				npx = xp;
+				npy = yp;
+				npz = zp;
 			}
 
 			if(npz > endz)
@@ -742,6 +730,8 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->phase); CHKERRQ(ierr);
 
 	}
+
+	// Check whatever the marker are belonging to rocks phase or not
 
 	ierr = ADVMarkCrossFreeSurfPassive_Tracers(actx); CHKERRQ(ierr);
 
@@ -945,8 +935,92 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------//
+#undef __FUNCT__
+#define __FUNCT__ "Check_advection_condition"
+PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf)
+{
+
+	PetscScalar *phase,*Active;
+	PetscScalar Xm[3],X[3];
+	vector <spair>    dist;
+	spair d;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecGetArray(actx->Ptr->C_advection, &Active); CHKERRQ(ierr);
+
+	if(actx->Ptr->Condition_pr == _Time_ptr_)
+	{
+		if((actx->jr->ts->time>=actx->Ptr->value_condition )&& Active[jj] == 0.0)
+		{
+			Active[jj] = 1.0;
+		}
+	}
+	else if(actx->Ptr->Condition_pr ==_Melt_Fr_)
+	{
+		if((mf>=actx->Ptr->value_condition) && Active[jj] == 0.0)
+		{
+			Active[jj] = 1.0;
+		}
+	}
+	else if(actx->Ptr->Condition_pr ==_Temp_ptr_)
+	{
+		if((T>=actx->Ptr->value_condition) && Active[jj] == 0.0)
+		{
+			Active[jj] = 1.0;
+		}
+	}
+	else if(actx->Ptr->Condition_pr ==_Pres_ptr_)
+	{
+		if((P>=actx->Ptr->value_condition) && Active[jj] == 0.0)
+		{
+			Active[jj] = 1.0;
+		}
+	}
+
+	// overwrite the phase in case of delayed activation or if some condition are met
+
+	if(((actx->Ptr->Condition_pr ==_Pres_ptr_)||(actx->Ptr->Condition_pr ==_Temp_ptr_)||(actx->Ptr->Condition_pr ==_Time_ptr_)) && Active[jj] == 1.0)
+	{
+
+		PetscInt n, ii;
+
+		ierr = VecGetArray(actx->Ptr->phase, &phase); CHKERRQ(ierr);
+
+		X[0]  = xp;
+		X[1]  = yp;
+		X[3]  = zp;
+
+		dist.clear();
+		n = actx->markstart[ID+1] - actx->markstart[ID];
+
+		for (ii = actx->markstart[ID]; ii <actx->markstart[ID]+n; ii++)
+			{
+				Xm[0] =actx->markers[ii].X[0];
+				Xm[1] =actx->markers[ii].X[1];
+				Xm[2] =actx->markers[ii].X[2];
 
 
+				d.first  = EDIST(Xm, X);
+				d.second = ii;
+				dist.push_back(d);
+
+			}
+		sort(dist.begin(), dist.end());
+		phase[jj]= actx->markers[dist.begin()->second].phase;
+		ierr = VecRestoreArray(actx->Ptr->phase, &phase); CHKERRQ(ierr);
+
+
+	}
+
+	ierr = VecRestoreArray(actx->Ptr->C_advection, &Active); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+
+
+//----------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "ADVPtrDestroy"
 PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
