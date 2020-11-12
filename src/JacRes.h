@@ -159,6 +159,7 @@ struct Controls
 	PetscInt    pLithoPlast;    // use lithostatic pressure for plasticity
 	PetscInt    pLimPlast;      // limit pressure at first iteration for plasticity
 	PetscScalar pShift;         // shift the pressure by a constant value while evaluating plasticity & for output
+	PetscInt    pShiftAct;      // pressure shift activation flag (zero pressure in the top cell layer)
 
 	PetscScalar eta_min;        // minimum viscosity
 	PetscScalar eta_max;        // maximum viscosity
@@ -289,6 +290,9 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f);
 
 // compute effective inverse elastic parameter
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
+
+// get average pressure near the top surface
+PetscErrorCode JacResGetPressShift(JacRes *jr);
 
 // evaluate effective strain rate components in basic nodes
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr);

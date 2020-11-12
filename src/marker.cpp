@@ -905,8 +905,8 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		layer->cosine = 0;
 		ierr = getIntParam   (fb, _OPTIONAL_, "cosine",  &layer->cosine,  1, maxPhaseID); CHKERRQ(ierr);
 		if (layer->cosine==1){
-			ierr = getScalarParam   (fb, _REQUIRED_, "wavelength",  &layer->wavelength,  1, maxPhaseID); CHKERRQ(ierr);
-			ierr = getScalarParam   (fb, _REQUIRED_, "amplitude",   &layer->amplitude,   1, maxPhaseID); CHKERRQ(ierr);
+			ierr = getScalarParam   (fb, _REQUIRED_, "wavelength",  &layer->wavelength,  1, chLen    ); CHKERRQ(ierr);
+			ierr = getScalarParam   (fb, _REQUIRED_, "amplitude",   &layer->amplitude,   1, chLen    ); CHKERRQ(ierr);
 		}
 
 		// random noise

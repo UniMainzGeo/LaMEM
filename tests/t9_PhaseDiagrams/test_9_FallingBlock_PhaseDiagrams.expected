@@ -1,12 +1,12 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Mar  6 2020 - Time: 14:25:53 	    
+     Compiled: Date: Nov 10 2020 - Time: 17:40:58 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : ./t9_FB1_Direct_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.dat 
+Parsing input file : ./t9_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.dat 
    Adding PETSc option: -objects_dump
-Finished parsing input file : ./t9_FB1_Direct_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.dat 
+Finished parsing input file : ./t9_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.dat 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 273. [C/K] 
@@ -27,16 +27,21 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
+--------------------------------------------------------------------------
 Material parameters: 
-   Phase ID : 0    dislocation creep profile: Quarzite-Ranalli_1995
+--------------------------------------------------------------------------
+   Phase ID : 0
+   dislocation creep profile: Quarzite-Ranalli_1995
    (dens)   : rho = 3000. [kg/m^3]  - Employing phase diagram: TestPD
    (disl)   : Bn = 8.63279e-20 [1/Pa^n/s]  En = 156000. [J/mol]  n = 2.4 [ ]  
 
-   Phase ID : 1    dislocation creep profile: Quarzite-Ranalli_1995
+   Phase ID : 1
+   dislocation creep profile: Quarzite-Ranalli_1995
    (dens)   : rho = 2500. [kg/m^3]  - Employing phase diagram: TestPD1
    (disl)   : Bn = 8.63279e-20 [1/Pa^n/s]  En = 156000. [J/mol]  n = 2.4 [ ]  
    (temp)   : T = 800. [C]  
 
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 2 
@@ -57,10 +62,11 @@ Solution parameters & controls:
    Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
    Surface stabilization (FSSA)            :  1. 
    Use lithostatic pressure for creep      @ 
+   Enforce zero average pressure on top    @ 
    Minimum viscosity                       : 1e+19 [Pa*s] 
    Maximum viscosity                       : 1e+25 [Pa*s] 
    Universal gas constant                  : 8.31446 [J/mol/K] 
-   Maximum melt fraction (viscosity)       : 0.15    
+   Max. melt fraction (viscosity, density) : 0.15    
    Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
@@ -74,7 +80,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000445604 sec)
+Reading geometric primitives ... done (0.000501871 sec)
 --------------------------------------------------------------------------
 Phase Diagrams: 
    Phase 0,     Phase 1,  --------------------------------------------------------------------------
@@ -105,7 +111,7 @@ Solver parameters specified:
    Solver type                   : parallel direct/lu 
    Solver package                : mumps 
 --------------------------------------------------------------------------
-Saving output ... done (0.0412812 sec)
+Saving output ... done (0.0732019 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -115,65 +121,73 @@ Tentative time step : 0.00001 [Myr]
   0 SNES Function norm 2.332692371613e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 4.880183889037e-02 
-  1 PICARD ||F||/||F0||=2.092082e-02 
+  1 SNES Function norm 1.025108865563e-01 
+  1 PICARD ||F||/||F0||=4.394531e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.459732165623e-03 
-  2 MMFD   ||F||/||F0||=6.257714e-04 
+  2 SNES Function norm 4.575158073866e-02 
+  2 PICARD ||F||/||F0||=1.961321e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 1.110014298156e-02 
+  3 MMFD   ||F||/||F0||=4.758511e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  3 SNES Function norm 1.600390227197e-04 
+  4 SNES Function norm 6.943544177057e-03 
+  4 MMFD   ||F||/||F0||=2.976622e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+  5 SNES Function norm 5.231904536429e-04 
+  5 MMFD   ||F||/||F0||=2.242861e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  6 SNES Function norm 3.056404065181e-05 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
-Number of iterations    : 3
-SNES solution time      : 2.27009 (sec)
+Number of iterations    : 6
+SNES solution time      : 13.8262 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.534342381526e-15 
-      |Div|_2   = 4.859594265322e-14 
+      |Div|_inf = 2.321292468461e-17 
+      |Div|_2   = 7.890487200846e-17 
    Momentum: 
-      |mRes|_2  = 1.600390227197e-04 
+      |mRes|_2  = 3.056404065181e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.039501 sec)
+Advection Passive tracers ... Saving output ... done (0.0808952 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00001 [Myr] 
 Tentative time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.600390227205e-04 
+  0 SNES Function norm 3.056404066584e-05 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.694638442981e-05 
-  1 PICARD ||F||/||F0||=1.058891e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 3.518174386247e-06 
-  2 PICARD ||F||/||F0||=2.198323e-02 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  3 SNES Function norm 8.385391232258e-07 
-  3 MMFD   ||F||/||F0||=5.239592e-03 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  4 SNES Function norm 2.195229589335e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 4.252388050119e-06 
+  1 PICARD ||F||/||F0||=1.391304e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 1.014039862147e-06 
+  2 PICARD ||F||/||F0||=3.317755e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  3 SNES Function norm 2.777898515966e-07 
+  3 MMFD   ||F||/||F0||=9.088780e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+  4 SNES Function norm 7.345481470075e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 4
-SNES solution time      : 2.47908 (sec)
+SNES solution time      : 7.4872 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.943038309112e-18 
-      |Div|_2   = 1.549596345875e-17 
+      |Div|_inf = 1.154082390634e-20 
+      |Div|_2   = 2.787058012152e-20 
    Momentum: 
-      |mRes|_2  = 2.195229589335e-08 
+      |mRes|_2  = 7.345481470075e-08 
 --------------------------------------------------------------------------
 Actual time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0402765 sec)
+Advection Passive tracers ... Saving output ... done (0.0760181 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 5.02929 (sec) 
+Total solution time : 21.6659 (sec) 
 --------------------------------------------------------------------------
-

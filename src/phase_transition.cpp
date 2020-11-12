@@ -46,7 +46,19 @@
  **			Boris Kaus
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-
+/*	Bibliography reference for the phase transition
+ * All the phase transition listed are coming from [1] (Tab.1).
+ * [1] Manuele Faccenda, Luca Dal Zilio, The role of solid–solid phase transitions in mantle convection, Lithos,
+        Volumes 268–271, 2017,
+ * [2]B.R. Hacker, G.A. Abers, S.M. Peacock Subduction factory 1. Theoretical mineralogy, densities, seismic wave speeds, and H2O contents
+        Journal of Geophysical Research, 108 (2003), 10.1029/2001JB001127
+ * [3] Hydrous solidus of CMAS-pyrolite and melting of mantle plumes at the bottom of the upper mantle
+		Geophysical Research Letters, 30 (2003), 10.1029/2003GL018318
+ * [4] E.R. Hernandez, J. Brodholt, D. Alfè Structural, vibrational and thermodynamic properties of Mg2SiO4 and MgSiO3 minerals from first-principles simulations
+	   Physics of the Earth and Planetary Interiors, 240 (2015), pp. 1-24
+ * [5] The postspinel boundary in pyrolitic compositions determined in the laser-heated diamond anvil cell
+	    Geophysical Research Letters, 41 (2014), pp. 3833-3841
+ */
 /*
 	The routines in this file allow changing the phase of a marker depending on conditions
 	set by the user.
@@ -100,16 +112,14 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	if(!strcmp(Type_,"Constant"))
 	{
 		ph->Type = _Constant_;
-		ierr    =   Set_Constant_Phase_Transition(ph, dbm, fb,ID);    CHKERRQ(ierr);
+		ierr    =   Set_Constant_Phase_Transition(ph, dbm, fb);    	CHKERRQ(ierr);
 	}
 	else if(!strcmp(Type_,"Clapeyron"))
 	{
 		ph->Type = _Clapeyron_;
-		ierr    =   Set_Clapeyron_Phase_Transition(ph, dbm, fb,ID);   CHKERRQ(ierr);
+		ierr    =   Set_Clapeyron_Phase_Transition(ph, dbm, fb);   	CHKERRQ(ierr);
 	}
-	else{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type [Constant; Clapeyron; Box_type] ");
-	}
+
 
 
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
@@ -144,7 +154,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 //----------------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Set_Constant_Phase_Transition"
-PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID)
+PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 {
 	Scaling      *scal;
 	char         Parameter[_str_len_];
@@ -172,10 +182,7 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	}
 
 	ierr = getScalarParam(fb, _REQUIRED_, "ConstantValue",          &ph->ConstantValue,        1,1.0);  CHKERRQ(ierr);
-	if((!ph->Parameter_transition || !ph->ConstantValue))
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a [constant] phase transition you need to specify the parameter: P = Pressure, T = temperature, APS = PlasticStrain", (LLD)ID);
-	}
+
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Constant \n", (LLD)(ph->ID));
     PetscPrintf(PETSC_COMM_WORLD,"     Parameter          :   %s \n",    Parameter);
@@ -208,7 +215,7 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 //------------------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Set_Constant_Phase_Transition"
-PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb, PetscInt ID)
+PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 {
 	PetscFunctionBegin;
 
@@ -228,7 +235,7 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	ierr = getIntParam   (fb, _OPTIONAL_, "numberofequation",   &ph->neq,           1,          2.0); CHKERRQ(ierr);
 	if(ph->neq>2 || ph->neq == 0)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero");
 
 	}
 
@@ -238,7 +245,7 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 	if((!ph->clapeyron_slope || !ph->T0_clapeyron || !ph->clapeyron_slope   ||  !ph->Name_clapeyron))
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition avaiable you need to specify P0, T0, gamma and the number of equations ( P=(T-T0)*gamma +(P0) ).", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition avaiable you need to specify P0, T0, gamma and the number of equations ( P=(T-T0)*gamma +(P0) ).");
 	}
 
     PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %i    [ P = P0 + gamma*(T-T0) ] \n", ph->neq);
@@ -325,7 +332,7 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 	PetscFunctionBegin;
 	if (!strcmp(ph->Name_clapeyron,"Eclogite"))
 	{
-		// Source Faccenda and Dal Zilio et al 2017 [Hacker et al. (2003) Morb+H2O]
+		//[1][2]
 		ph->neq                 =   2;
 		ph->P0_clapeyron[0]     =   2e9;        // Pa
 		ph->T0_clapeyron[0]     =   800;        // C
@@ -335,17 +342,17 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 		ph->T0_clapeyron[1]     =   700;
 		ph->clapeyron_slope[1]  =   -30;
 	}
-	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_410km"))
+	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_WadsleyiteRingwoodite_wet"))
 	{
-		// Source: Faccenda and Dal Zilio et al 2017 [Olivine-Wadseylite Phase transition anhydrous Pyrolite+H2O Litasov and Ohtani (2003)]
+		// [1][3]
 		ph->neq                 =   1;
 		ph->P0_clapeyron[0]     =   13.5e9;
 		ph->T0_clapeyron[0]     =   1537;
 		ph->clapeyron_slope[0]  =   5;
 	}
-	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_510km"))
+	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_WadsleyiteRingwoodite_dry"))
 	{
-		// Source: Faccenda and Dal Zilio et al 2017 [WadsleyiteRingwooditePhase transition anhydrous Fo100(theoretical) Hernandez et al 2015]
+		//[1][4]
 		ph->neq                 =   1;
 		ph->P0_clapeyron[0]     =   18e9;
 		ph->T0_clapeyron[0]     =   1597;
@@ -353,7 +360,7 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 	}
 	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_660km"))
 	{
-		// Source:  Faccenda and Dal Zilio et al 2017 [Post Spinel Phase transition anhydrous Pyrolite Ye et al 2014] 
+		//[1][5]
 		ph->neq                 =   1;
 		ph->P0_clapeyron[0]     =   23e9;
 		ph->T0_clapeyron[0]     =   1667;
@@ -421,7 +428,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					PH2 = PhaseTrans->PhaseAbove[above];
 				}
 			
-				ph          =   Transition(PhaseTrans, P, PH1, PH2);
+				ph          =   Transition(PhaseTrans, P, PH1, PH2, jr->ctrl);
 
                 if (PhaseTrans->PhaseDirection==0){
                      P->phase    =   ph;
@@ -446,18 +453,18 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------------------
-PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2)
+PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl)
 {
 	PetscInt ph;
 
 	ph = P->phase;
 	if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
-		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2);
+		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl);
 	}
 	else if(PhaseTrans->Type==_Clapeyron_)
 	{
-		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2);
+		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl);
 	}
 
 
@@ -467,10 +474,18 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 /*------------------------------------------------------------------------------------------------------------
     Sets the values for a phase transition that occurs @ a constant value
 */
-PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2) 
+PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl) 
 {
     
-    PetscInt ph;
+    PetscInt 	ph;
+	PetscScalar pShift;
+	
+	if (ctrl.pShift){
+		pShift = ctrl.pShift;
+	}
+	else{
+		pShift = 0.0;
+	}
 
 	ph = 0;
 	if((PhaseTrans->Parameter_transition==_T_))   // NOTE: string comparisons can be slow; optimization possibility
@@ -482,8 +497,8 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 
 	if(PhaseTrans->Parameter_transition==_Pressure_)
 		{
-            if  ( P->p >= PhaseTrans->ConstantValue)    {   ph = PH2;   }
-		    else                                        {   ph = PH1;   }
+            if  ( (P->p+pShift) >= PhaseTrans->ConstantValue)   {   ph = PH2;   }
+		    else                                       	 		{   ph = PH1;   }
           
 		}
 
@@ -503,11 +518,17 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 }
 
 //------------------------------------------------------------------------------------------------------------//
-PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2)
+PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl)
 {
 	PetscInt ph,ip,neq;
-	PetscScalar Pres[2];
+	PetscScalar Pres[2], pShift;
 
+  	if (ctrl.pShift){
+		pShift = ctrl.pShift;
+	}
+	else{
+		pShift = 0.0;
+	}
 
 	neq = PhaseTrans->neq;
 	for (ip=0; ip<neq; ip++)
@@ -516,14 +537,14 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 	}
 	if (neq==1)
 	{
-        if  ( P->p >= Pres[0]) {   ph  =   PH2;    }
-        else                   {   ph  =   PH1;    }
+        if  ( (P->p+pShift) >= Pres[0]) {   ph  =   PH2;    }
+        else                   			{   ph  =   PH1;    }
 	}
 	else
 	{
         // in case we have two equations to describe the phase transition:
-        if  ( (P->p >= Pres[0]) && (P->p >= Pres[1]) )      {   ph  =   PH2;    }
-        else                                                {   ph  =   PH1;    }
+        if  ( ((P->p+pShift) >= Pres[0]) && ( (P->p+pShift) >= Pres[1]) )	{   ph  =   PH2;    }
+        else                                                				{   ph  =   PH1;    }
 
 	}
 

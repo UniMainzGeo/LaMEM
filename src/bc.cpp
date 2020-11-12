@@ -1018,7 +1018,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	if(top_open)
 	{
-		vbz = 0.0;
 		vez = 0.0;
 	}
 
@@ -2105,7 +2104,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	// access constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
 	
-    PetscPrintf(PETSC_COMM_WORLD,"Plume velocity BC: V_in=%e, V_out=%e \n",V_in, V_out);
+    //PetscPrintf(PETSC_COMM_WORLD,"Plume velocity BC: V_in=%e, V_out=%e \n",V_in, V_out);
 
 	//=========================================================================
 	// SPC (normal velocities)

@@ -21,7 +21,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't5_Perm'))
 sys.path.append(os.path.join(os.environ['PWD'], 't6_AdjointGradientScaling'))
 sys.path.append(os.path.join(os.environ['PWD'], 't7_AdjointGradientInversion'))
 sys.path.append(os.path.join(os.environ['PWD'], 't8_AdjointGradients'))
-sys.path.append(os.path.join(os.environ['PWD'], 't9_FB1_Direct_PhaseDiagrams'))
+sys.path.append(os.path.join(os.environ['PWD'], 't9_PhaseDiagrams'))
 sys.path.append(os.path.join(os.environ['PWD'], 't10_Compressibility'))
 sys.path.append(os.path.join(os.environ['PWD'], 't11_Subgrid'))
 sys.path.append(os.path.join(os.environ['PWD'], 't13_Rheology0D'))
@@ -30,7 +30,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't15_RTI'))
 sys.path.append(os.path.join(os.environ['PWD'], 't16_PhaseTransitions'))
 sys.path.append(os.path.join(os.environ['PWD'], 't17_InflowOutflow'))
 sys.path.append(os.path.join(os.environ['PWD'], 't18_SimpleShear'))
-
+sys.path.append(os.path.join(os.environ['PWD'], 't20_FSSA'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
@@ -55,6 +55,8 @@ import test_15_RTI as RTI
 import test_16_PhaseTransitions as PT
 import test_17_InflowOutflow as InOut
 import test_18_SimpleShear as SS
+import test_20_FSSA as FSSA
+
 
 
 if os.environ.get('MATLAB') != None:
@@ -82,8 +84,9 @@ def run_tests():
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),
                       StrEnv.test_a(), StrEnv.test_b(), StrEnv.test_c(), StrEnv.test_d(),
-                      RTI.RTI_isovisous_NoSlip(), PT.test_a(),
-                      InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz()];
+                      RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(),
+                      InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(),
+                      FSSA.test_1()];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)

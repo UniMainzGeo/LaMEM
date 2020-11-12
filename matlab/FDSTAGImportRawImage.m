@@ -96,10 +96,16 @@ end
 clearvars -except P3D P
 
 %% STORE FILES
-
-if ~isdir('bc')
-    mkdir bc
+if isOctave
+    if ~isfolder('bc')
+        mkdir('bc')
+    end
+else
+    if ~isdir('bc')
+        mkdir('bc')
+    end
 end
+
 
 % get partitioning data
 Nprocx = P.Nprocx;

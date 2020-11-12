@@ -164,6 +164,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	T      = ctx->T;
 	mf     = 0.0;
 
+	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
 
 	if(mat->pdAct == 1)
 	{
@@ -630,7 +631,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	PetscInt     i, numPhases;
-	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho, mf;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -646,6 +647,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	dt        = ctx->dt;
 	p         = ctx->p;
 	T         = ctx->T;
+	p         = p+ctrl->pShift;
 
 //
 
@@ -669,13 +671,11 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 
 			if(mat->pdAct == 1)
 			{
-				mf = 0.0;	
-				
 				// compute melt fraction from phase diagram
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
-				svBulk->mf     += phRat[i]*mf;
-			//	svBulk->rho_pf += phRat[i]*mat->rho_melt;
+				svBulk->mf     += phRat[i]*Pd->mf;
+				svBulk->rho_pf += phRat[i]*Pd->rho_f;
 			}
 
 			// initialize
@@ -715,7 +715,13 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			// phase diagram
 			else if(mat->pdAct == 1)
 			{
-				rho = (Pd->mf * Pd->rho_f) + ((1-Pd->mf) * Pd->rho);
+				// Compute density from phase diagram, while also taking the actual melt content into account
+				PetscScalar mf;
+ 				
+				mf = Pd->mf;
+				if (mf > ctrl->mfmax){ mf = ctrl->mfmax; }
+
+				rho = (mf * Pd->rho_f) + ((1.0 - mf ) * Pd->rho);
 			}
 			else
 			{

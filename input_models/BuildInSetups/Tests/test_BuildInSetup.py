@@ -1,9 +1,9 @@
-
 import os
 import pyTestHarness.unittest as pth
 import pyTestHarness.launcher as launch
 import re
 
+# This file performs tests for the examples in thsi directory
 
 def makeLocalPathAbsolute(localRelPath) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
@@ -328,9 +328,9 @@ def test_10():
 
 #------------------------------------------------------------------------------------------------
 def test_11():
-  # 2D assymmetric rifting setup
+  # 2D asymmetric rifting setup
   ranks = 2
-  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Rifting2D_MultigridSolver.dat -dt_out 0 -nstep_ini 0 -nel_x 64 -nel_z 32 -nstep_max 3 -rand_noise 0') 
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Rifting2D_MultigridSolver.dat -dt_out 0 -nstep_ini 0 -nel_x 64 -nel_z 32 -nstep_max 25 -rand_noise 0') 
   expected_file = makeLocalPathAbsolute('Rifting2D_VEP_MultigridSolver-p2.expected')
 
   def comparefunc(unittest):

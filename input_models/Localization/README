@@ -1,0 +1,35 @@
+This directory contains files to reproduce the Lemiale localization benchmark, which
+if an often-reproduced benchmark to test implementations of brittle rheology in 
+geodynamic codes. 
+
+
+
+1) localization.dat
+Example with viscoelastoplastic rheology and no regularization. Thanks to the use
+of elasticity it does converge during most timesteps, but not during all. This becomes
+apparent after timestep 26 or so. 
+
+
+2) localization_eta_min_reg.dat
+This files contains an example in which we employ the viscosity regularisation 
+which is similar, but not identical, to what Duretz et al. proposed in a series of papers.
+The regularization viscosity needs to be tuned for different setups: 
+    -   If you choose it too small, it results in a shear band width that is smaller 
+        than then grid cells and the regularization has no effect (same as non-regularized case)
+    -   If you use a too large value, the localization is not very good.
+
+Note that in this file, the regularization viscosity is the minimum viscosity which is thus set 
+for the full domain. As a typical required viscosity value is on the order of 1e20-1e21 Pas, this would
+interfere with say the viscosity of the lower crust or asthenosphere. 
+Therefore, we can also set the viscosity oin a phase-wise manner.
+
+
+3) localization_eta_st_reg.dat
+This is the same as the previous file, but shows how the stabilization viscosity can be chosen 
+in a phase-wise manner 
+
+
+
+
+
+
