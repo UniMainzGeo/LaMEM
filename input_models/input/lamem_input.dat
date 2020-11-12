@@ -182,7 +182,7 @@
 
 # Inflow velocity boundary condition
 
-	bvel_face       =   1                   #   face identifier  (1-left 2-right 3-front 4-back)
+	bvel_face       =   1                   #   face identifier  (1-left 2-right 3-front 4-back 5-side outflow and compensated bottom inflow)
 	bvel_face_out   =   1                   # 	do we have outflow @ opposite boundary?
 	bvel_phase      =   1                   #   phase number of inflow material [if undefined, it uses the phase close to the boundary]
 	bvel_bot        =   -20.0               #   bottom coordinate of inflow window
@@ -190,7 +190,8 @@
 	bvel_velin      =   1.0                 #   inflow velocity
 	bvel_velout     =   0.0                 #   outflow velocity (if not specified, computed from mass balance)
 	bvel_relax_d    =   100                 #   distance over which velocity is reduced
-
+	bvel_velbot  =  0   					# bottom inflow velocity for use with bvel->face=5 - TMorrow May 5 2018
+	bvel_veltop  =  0  # top inflow velocity for use with bvel->face=5 - TMorrow May 5 2018
 
 # Free surface top boundary flag
 

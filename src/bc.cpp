@@ -341,12 +341,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin", &bc->velin, 1, scal->velocity); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
 
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TM May 14 2018
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TM May 14 2018
-		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase", &bc->phase, 1, mID           ); CHKERRQ(ierr); // inflow phase - TM May 06 2018
-		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phaseinb", &bc->phaseinb, 1, mID           ); CHKERRQ(ierr); // inflow phase - TM May 14 2018
-		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phaseint", &bc->phaseint, 1, mID           ); CHKERRQ(ierr);
-
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TMorrow May 14 2018
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TMorrow May 14 2018
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase", &bc->phase, 1, mID           ); CHKERRQ(ierr);
 
 		if(bc->face_out)
 		{
@@ -1456,20 +1453,17 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 		END_STD_LOOP
 	}
 
-	if(bc->face == 5)
+	if(bc->face == 5) // TMorrow 05 May 2018
 	{
 		START_STD_LOOP
 		{
 			z   = COORD_CELL(k, sz, fs->dsz);
 			vel = 0.0;
 			if(z <= top && z >= bot) vel = velin;
-			//vel = velin;
 
 			if(i == 0)   { bcvx[k][j][i] = vel; }
 			if(i == mnx) { bcvx[k][j][i] = -vel; }
 			iter++;
-
-
 		}
 		END_STD_LOOP
 	}
@@ -1495,9 +1489,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 				if(z <= bot && z>= bot-relax_dist) vel = velin+(velin/(relax_dist))*(z-bot);
 
 
-
 				if(i == 0 )   { bcvy[k][j][i] = vel; }
-				if(i == mnx) { bcvy[k][j][i] = vel; }
+				if(i == mnx)  { bcvy[k][j][i] = vel; }
 			}
 			else
 			{
@@ -1513,7 +1506,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	}
 
 	//------------------
-	// Z points - TM 05 May 2018
+	// Z points - TMorrow 05 May 2018
 	//------------------
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
@@ -1523,23 +1516,14 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	{
 		START_STD_LOOP
 		{
-			//z   = COORD_CELL(k, sz, fs->dsz);
 			vel = 0.0;
-			//if(z <= top && z >= bot) vel = velin;
-			//if(z < bot)              vel = velout;
 
-			//if(bc->face == 5 && i == 0)   { bcvx[k][j][i] = vel; }
-			//if(bc->face == 5 && i == mnx) { bcvx[k][j][i] = -vel; }
-
-			// added bottom inflow condition - TM 05 May 2018
-			if(k == 0)               vel = velbot;
-			if(k == mnz && !top_open)vel = veltop;
+			if(k == 0)                vel = velbot;
+			if(k == mnz && !top_open) vel = veltop;
 	
 			if(k == 0)                { bcvz[k][j][i] = vel; }
 			if(k == mnz && !top_open) { bcvz[k][j][i] = vel; }
 			iter++;
-
-
 		}
 		END_STD_LOOP
 	}
