@@ -52,10 +52,10 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 
 
 
-	ierr = getScalarParam(fb, _OPTIONAL_, "coordinate_box_passive_tracers", passive_tr->box_passive_tracer,    6, 1.0);  CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "passive_tracer_resolution",         passive_tr->passive_tracer_resolution,    3, 0);  CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "Type",Condition_adv,"Always");  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "value_condition_advection_ptr", &passive_tr->value_condition,    1, 1.0);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "coordinate_box_passive_tracer", passive_tr->box_passive_tracer,6,1.0);       CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, "passive_tracer_resolution",      passive_tr->passive_tracer_resolution,3, 0); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "Passive_tracer_Condition",      Condition_adv,"Always");                     CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Value_advection_passive_tracer", &passive_tr->value_condition,1, 1.0);        CHKERRQ(ierr);
 
 
 	if(strcmp(Condition_adv,"Always") && !passive_tr->value_condition)
@@ -97,10 +97,10 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 
 
 
-	 PetscPrintf(PETSC_COMM_WORLD,"//-----------------------------------Passive Tracers------------------------------// \n");
+	 PetscPrintf(PETSC_COMM_WORLD,"-----------------------------------Passive Tracers------------------------------------------- \n");
 	 PetscPrintf(PETSC_COMM_WORLD," Coordinate_Box x direction min = %6f, max =%6f \n", passive_tr->box_passive_tracer[0],passive_tr->box_passive_tracer[1]);
-	 PetscPrintf(PETSC_COMM_WORLD," Coordinate_Box y direction min = %6f, max =%6f \n", passive_tr->box_passive_tracer[3],passive_tr->box_passive_tracer[2]);
-	 PetscPrintf(PETSC_COMM_WORLD," Coordinate_Box z direction min = %6f, max =%6f \n", passive_tr->box_passive_tracer[5],passive_tr->box_passive_tracer[4]);
+	 PetscPrintf(PETSC_COMM_WORLD," Coordinate_Box y direction min = %6f, max =%6f \n", passive_tr->box_passive_tracer[2],passive_tr->box_passive_tracer[3]);
+	 PetscPrintf(PETSC_COMM_WORLD," Coordinate_Box z direction min = %6f, max =%6f \n", passive_tr->box_passive_tracer[4],passive_tr->box_passive_tracer[5]);
 	 PetscPrintf(PETSC_COMM_WORLD," Resolution number along x = %d, number_along y = %d, number_along z = %d, Total number = %d \n", passive_tr->passive_tracer_resolution[0],passive_tr->passive_tracer_resolution[1],passive_tr->passive_tracer_resolution[2],nummark);
 	 if(passive_tr->Condition_pr==_Always_)
 	 {
@@ -114,7 +114,7 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 		 if(passive_tr->Condition_pr == _Pres_ptr_)    PetscPrintf(PETSC_COMM_WORLD," Passive tracers are advected only if their %s is higher than %g [%s]\n",Condition_adv,passive_tr->value_condition,actx->jr->scal->lbl_stress);
 
 	 }
-	 PetscPrintf(PETSC_COMM_WORLD," //---------------------------------------------------------------------------//\n");
+	 PetscPrintf(PETSC_COMM_WORLD," -------------------------------------------------------------------------------------------\n");
 
 
 	 // Allocate memory
@@ -1062,7 +1062,7 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 	PetscScalar    time;
 	PetscInt        step;
 	PetscInt       ii;
-	PetscScalar    *xp,*yp,*zp,*P,*T,*phase,*ID,*mf_ptr;
+	PetscScalar    *xp,*yp,*zp,*P,*T,*phase,*ID,*mf_ptr,*Active;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -1108,13 +1108,14 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 		ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
 		ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 		ierr = VecGetArray(actx->Ptr->Melt_fr, &mf_ptr)           ; CHKERRQ(ierr);
+		ierr = VecGetArray(actx->Ptr->C_advection, &Active)           ; CHKERRQ(ierr);
 
 
 		for(ii=0;ii<actx->Ptr->nummark;ii++)
 		{
 
 
-			fprintf(fp," %d %3f   %3f  %3f  %2f  %2f  %d, %6f \r\n",PetscInt(ID[ii]),xp[ii]*scal->length,yp[ii]*scal->length,zp[ii]*scal->length,P[ii]*scal->stress,T[ii]*scal->temperature - scal->Tshift, PetscInt(phase[ii]),mf_ptr[ii]);
+			fprintf(fp," %d %3f   %3f  %3f  %2f  %2f  %d, %6f, %d \r\n",PetscInt(ID[ii]),xp[ii]*scal->length,yp[ii]*scal->length,zp[ii]*scal->length,P[ii]*scal->stress,T[ii]*scal->temperature - scal->Tshift, PetscInt(phase[ii]),mf_ptr[ii],PetscInt(Active[ii]));
 
 		}
 		ierr = VecRestoreArray(actx->Ptr->ID, &ID)         ; CHKERRQ(ierr);
@@ -1125,6 +1126,7 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 		ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
 		ierr = VecRestoreArray(actx->Ptr->phase, &phase)   ; CHKERRQ(ierr);
 		ierr = VecRestoreArray(actx->Ptr->Melt_fr, &mf_ptr)           ; CHKERRQ(ierr);
+		ierr = VecRestoreArray(actx->Ptr->C_advection, &Active)           ; CHKERRQ(ierr);
 
 
 		fclose(fp);
