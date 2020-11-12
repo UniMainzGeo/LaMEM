@@ -189,6 +189,10 @@
 	bvel_velin      =   1.0                 #   inflow velocity
 	bvel_velout     =   0.0                 #   outflow velocity (if not specified, computed from mass balance)
 	bvel_relax_d    =   100                 #   distance over which velocity is reduced
+	bvel_thermal_age =   10                 #   In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
+	bvel_temperature_mantle = 1400          #   In dimensional unit. Temperature of the mantle
+	bvel_temperature_top    = 20            #   In dimensional unit. temperature of the top 
+	bvel_constant_temperature = 100         #   Constant temperature inflow. 
 
 
 # Free surface top boundary flag

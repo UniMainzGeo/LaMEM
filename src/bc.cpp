@@ -342,6 +342,15 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_phase_interval", bc->phase_interval, bc->num_phase_bc+1, scal->length); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_thermal_age", &bc->bvel_thermal_age, 1, scal->time); CHKERRQ(ierr);
+		if(bc->bvel_thermal_age >0.0)
+		{
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_mantle", &bc->bvel_potential_temperature, 1, 1.0); CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_top", &bc->bvel_temperature_top, 1, 1.0); CHKERRQ(ierr);
+
+
+		}
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_constant_temperature", &bc->bvel_constant_temperature, 1, scal->time); CHKERRQ(ierr);
 
 
 
@@ -501,7 +510,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     if(bc->ptop != -1.0)                        bc->ptop /= scal->stress;
 	if(bc->pbot != -1.0)                        bc->pbot /= scal->stress;
     bc->Plume_Temperature = (bc->Plume_Temperature+scal->Tshift)/scal->temperature;							// to Kelvin & nondimensionalise
-
+    bc->bvel_potential_temperature = (bc->bvel_potential_temperature+scal->Tshift)/scal->temperature;							// to Kelvin & nondimensionalise
+    bc->bvel_temperature_top       = (bc->bvel_temperature_top+scal->Tshift)/scal->temperature;
+    bc->bvel_constant_temperature  = (bc->bvel_constant_temperature+scal->Tshift)/scal->temperature;
 
 	// allocate vectors and arrays
 	ierr = BCCreateData(bc); CHKERRQ(ierr);
@@ -1931,7 +1942,8 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 {
 	FDSTAG     *fs;
 	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz,ip;
-	PetscScalar z,x, y, cmax,cmin;
+	PetscScalar z,x, y, cmax,cmin,z_plate;
+	PetscScalar Temp_age,k_thermal = 1e-6;
 
 	PetscFunctionBegin;
 
@@ -1961,6 +1973,19 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 					||  (bc->face == 4 && j + sy == my))
 					&&  (z >= bc->bot-bc->relax_dist && z <= bc->top+bc->relax_dist))
 			{
+				k /= PetscPowScalar(bc->scal->length_si,2.0)/(bc->scal->time_si);
+				z_plate = PetscAbs(z-bc->top);
+				if(bc->bvel_constant_temperature>0.0)
+					{
+						P->T=bc->bvel_constant_temperature;
+					}
+				else
+					{
+						Temp_age = (bc->bvel_potential_temperature-bc->bvel_temperature_top)*erf(z_plate/2.0/sqrt(k*bc->bvel_thermal_age)) + bc->bvel_temperature_top;
+						P->T = Temp_age;
+					}
+
+
 
 				for(ip=0;ip<bc->num_phase_bc;ip++)
 					{

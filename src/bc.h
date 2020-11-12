@@ -227,6 +227,8 @@ struct BCCtx
 	PetscInt     face,face_out,num_phase_bc,phase[5];   	// face (1-left 2-right 3-front 4-back) & phase identifiers
 	PetscScalar  bot, top,relax_dist,phase_interval[6];     	// bottom & top coordinates of the plate
 	PetscScalar  velin, velout; 			// inflow & outflow velocities
+	PetscScalar  bvel_thermal_age,bvel_potential_temperature, bvel_temperature_top;
+	PetscScalar  bvel_constant_temperature;
 
 	// Plume inflow bottom boundary condition
 	PetscInt		Plume_Inflow;				// Do we have a plume-like inflow boundary?
