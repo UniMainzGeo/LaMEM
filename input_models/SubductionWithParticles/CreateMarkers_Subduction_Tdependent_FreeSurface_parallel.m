@@ -19,7 +19,7 @@ if ~LaMEM_Parallel_output
     disp(['Creating setup for 1 processor using LaMEM file: ', LaMEM_input_file])
 
     % Read info from LaMEM input file & create 3D grid    
-    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H] =   LaMEM_ParseInputFile(LaMEM_input_file);
+    [npart_x,npart_y,npart_z,Grid,X,Y,Z,W,L,H] =   LaMEM_ParseInputFile(LaMEM_input_file);
     
     nump_x              =   Grid.nel_x*npart_x;
     nump_y              =   Grid.nel_y*npart_y;
@@ -37,7 +37,7 @@ else
     Parallel_partition                          =   'ProcessorPartitioning_4cpu_4.1.1.bin'
     
     % Load grid from parallel partitioning file
-    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H]  =   LaMEM_ParseInputFile(LaMEM_input_file);
+    [npart_x,npart_y,npart_z]  =   LaMEM_ParseInputFile(LaMEM_input_file);
     [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] =   FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise);
     
     % Update other variables
@@ -58,98 +58,53 @@ end
 % SPECIFY PARAMETERS OF THE SLAB
 %==========================================================================
 Trench_x_location   = -500;     % trench location
-Length_Subduct_Slab =  300;     % length of subducted slab
+Length_Subduct_Slab =  200;     % length of subducted slab
 Length_Horiz_Slab   =  1500;    % length of overriding plate of slab
 Width_Slab          =  1000;    % Width of slab (in case we run a 3D model)         
 
-SubductionAngle     =   34;     % Subduction angle
+SubductionAngle     =   20;     % Subduction angle
 ThermalAge_Myrs     =   50;     % Thermal age of the slab in Myrs
 ThicknessCrust      =   10;
+
+ThicknessSlab       =   400;    % Thickness of slab box; 
+
 z_surface           =   0;      % initial free surface
+
+T_mantle            =   1350;
+T_surf              =   20;     
 
 
 %==========================================================================
 % DEFINE SLAB
 %==========================================================================
+Phase               =   ones(size(X));                 % initialize to have mantle phase
+Temp                =   T_mantle*ones(size(Phase));     
 
-%% 1) Create the top (and bottom) of the slab
+% Add horizontal part of slab 
+BoxSides            =   [Trench_x_location (Trench_x_location+Length_Horiz_Slab) min(Y(:)) Width_Slab -ThicknessSlab 0];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 1,...
+                                    'TempType','Halfspace', 'topTemp',T_surf,'botTemp', T_mantle);                         % Set slab to mantle lithosphere phase
 
-dx              =   (Length_Horiz_Slab+Length_Subduct_Slab)/100;
+BoxSides            =   [Trench_x_location (Trench_x_location+Length_Horiz_Slab) min(Y(:)) Width_Slab -ThicknessCrust 0];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 2);               % Add crust (will override the mantle lithosphere phase above)
 
-Slab_Top        =   ndgrid(Trench_x_location-Length_Subduct_Slab:dx:Trench_x_location+Length_Horiz_Slab); 
-Slab_Top        =   unique([Slab_Top; Trench_x_location; Trench_x_location+Length_Horiz_Slab])'; % ensure that the Trench is included
-Slab_Top(2,:)   =   ones(size(Slab_Top))*z_surface;                           % top of slab
-ind_T           =   find(Slab_Top(1,:)==Trench_x_location);                   % trench location
+% Add inclined part of slab
+RotPt               =   [Trench_x_location, 0, 0];
 
-Slab_Bot        =   Slab_Top;
-Slab_Bot(2,:)   =   -500;
+BoxSides            =   [(Trench_x_location-Length_Subduct_Slab) Trench_x_location min(Y(:)) Width_Slab -ThicknessSlab 0];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 1, 'RotationPoint',RotPt, 'DipAngle', -SubductionAngle, ...
+                                    'TempType','Halfspace', 'topTemp',T_surf,'botTemp', T_mantle);                          % mantle lithosphere
 
-% Rotate inclined piece of slab
-alpha           =   -SubductionAngle*pi/180;
-R               =   [cos(alpha) sin(alpha); -sin(alpha) cos(alpha)];
-
-% Top & Bottom of slab
-SlabInclined        =   [Slab_Top(:,1:ind_T), Slab_Bot(:,1:ind_T)];
-SlabInclined(1,:)	=   SlabInclined(1,:)-Trench_x_location;
-SlabInclined        =   R*SlabInclined;
-SlabInclined(1,:) 	=   SlabInclined(1,:)+Trench_x_location;
-
-Slab_Top(:,1:ind_T) = SlabInclined(:,1:ind_T);
-Slab_Bot        =   [SlabInclined(:,ind_T+1:end), [Slab_Top(1,end); SlabInclined(2,end)]];
-
-
-%% 2) Compute the perpendicular distance of all "slab" points to top of slab
-X2d             =   squeeze(X(1,:,:));
-Z2d             =   squeeze(Z(1,:,:));
-
-Distance        =   ones(size(X))*NaN;      % 3D matrix with distance to 
-Dist_2D         =   ones(size(X2d))*NaN;    % in x-z plane
-
-[d_min]         =   p_poly_dist(X2d(:), Z2d(:), Slab_Top(1,:), Slab_Top(2,:), false);
-Dist_2D(find(Dist_2D)) = d_min;
-
-SlabPolygon     =   [Slab_Top, Slab_Bot(:,end:-1:1)];
-in              =   inpolygon(X2d,Z2d,SlabPolygon(1,:),SlabPolygon(2,:));
-Dist_2D(~in)    =   NaN;
-
-for iy=1:size(X,1);
-    Distance(iy,:,:) = Dist_2D;
-end
-
-
-%% Set phases and temperature based on distance of top of slab
-T_surface   =   20;
-T_mantle    =   1350;
-Phase       =   ones(size(X)); % initialize to have mantle phase
-Temp        =   T_mantle*ones(size(Phase));
-
-% Set air
-ind        =    find(Z>z_surface);
-Phase(ind) =    0;
-Temp(ind)  =    0;
-
-% Set Crust
-ind        =    find(Distance<ThicknessCrust);
-Phase(ind) =    2;
-
-% Set 3D temperature based on halfspace cooling & distance to top of slab
-kappa       =   1e-6;
-ThermalAge  =   ThermalAge_Myrs*1e6*(365*24*3600);
-
-% halfspace cooling
-ind         =   ~isnan(Distance);
-Temp(ind)   =   (T_mantle -T_surface) * erf(abs(Distance(ind))*1000/2/sqrt(kappa*ThermalAge)) + T_surface;
+BoxSides            =   [(Trench_x_location-Length_Subduct_Slab) Trench_x_location min(Y(:)) Width_Slab -ThicknessCrust 0];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 2, 'RotationPoint',RotPt, 'DipAngle', -SubductionAngle);       	% crust (will override the slab phase above
 
 % Set Mantle Lithosphere for mantle points that have temperatures < 1200 Celcius
-ind        =    find(Temp<1200 & Phase==1);
-Phase(ind) =    3;
+ind                 =    find(Temp<1200 & Phase==1);
+Phase(ind)          =    3;
 
-
-% Limit lateral size of slab (in 3D cases)
-ind         =   find(Y>Width_Slab & Phase>0);
-Phase(ind)  =   1;
-Temp(ind)   =   T_mantle;
-
+% Add sticky air
+BoxSides            =   [min(X(:)) max(X(:))  min(Y(:)) max(Y(:)) 0 max(Z(:))];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 0,  'TempType','Constant','cstTemp',T_surf);                      % sticky air with constant temperature 
 
 
 %==========================================================================

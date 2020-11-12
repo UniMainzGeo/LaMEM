@@ -18,10 +18,10 @@ def test_1():
   os.system('$MATLAB -nojvm -r "cd ./SubductionWithParticles; CreateMarkers_Subduction_Linear_FreeSlip_parallel; exit" > /dev/null')
   
   # Copy directory and give it a new name
+  os.system('rm -rf ./SubductionWithParticles/markers_linear')
   os.system('mv -f ./SubductionWithParticles/markers ./SubductionWithParticles/markers_linear')
  
   os.system('cp -rf ./SubductionWithParticles/markers_linear .')
-
   os.system('cd ./TestOutput')
 
   # Run the input script wth matlab-generated particles
@@ -58,10 +58,10 @@ def test_2():
   os.system('$MATLAB -nojvm -r "cd ./SubductionWithParticles; CreateMarkers_Subduction_Tdependent_FreeSurface_parallel; exit" > /dev/null')
  
    # Copy directory and give it a new name
+  os.system('rm -rf ./SubductionWithParticles/markers_nonlinear')
   os.system('mv -f ./SubductionWithParticles/markers ./SubductionWithParticles/markers_nonlinear')
 
-  os.system('rm -rf ./SubductionWithParticles/markers_nonlinear .')
-
+  os.system('rm -rf ./markers_nonlinear .')
   os.system('cp -r ./SubductionWithParticles/markers_nonlinear .')
 
   os.system('cd ./TestOutput')
@@ -103,8 +103,10 @@ def test_3():
   os.system('$MATLAB -nojvm -r "cd ./SubductionWithParticles; CreateMarkers_Subduction_Linear_FreeSlip_parallel_3D; exit" > /dev/null')
   
   # Copy directory and give it a new name
+  os.system('rm -rf ./SubductionWithParticles/markers_3D_linear')
   os.system('mv -f ./SubductionWithParticles/markers ./SubductionWithParticles/markers_3D_linear')
  
+  os.system('rm -rf ./markers_3D_linear')
   os.system('cp -rf ./SubductionWithParticles/markers_3D_linear .')
 
   os.system('cd ./TestOutput')
