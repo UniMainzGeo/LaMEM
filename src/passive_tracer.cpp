@@ -1116,7 +1116,7 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 		{
 
 
-			fprintf(fp," %d %3f   %3f  %3f  %2f  %2f  %d, %6f, %d \r\n",PetscInt(ID[ii]),xp[ii]*scal->length,yp[ii]*scal->length,zp[ii]*scal->length,P[ii]*scal->stress,T[ii]*scal->temperature - scal->Tshift, PetscInt(phase[ii]),mf_ptr[ii],PetscInt(Active[ii]));
+			fprintf(fp," %d %3f   %3f  %3f  %2f  %2f  %d %6f %d \r\n",PetscInt(ID[ii]),xp[ii]*scal->length,yp[ii]*scal->length,zp[ii]*scal->length,P[ii]*scal->stress,T[ii]*scal->temperature - scal->Tshift, PetscInt(phase[ii]),mf_ptr[ii],PetscInt(Active[ii]));
 
 		}
 		ierr = VecRestoreArray(actx->Ptr->ID, &ID)         ; CHKERRQ(ierr);
