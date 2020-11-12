@@ -335,8 +335,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	if(bc->face)
 	{
-		ierr = getIntParam   (fb, _REQUIRED_, "bvel_num_phase", &bc->num_phase_bc, 1, 5           ); CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase",  bc->phase, bc->num_phase_bc, mID           ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_num_phase", &bc->num_phase_bc, 1, 5           ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase",  bc->phase, bc->num_phase_bc, mID           ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",    &bc->bot,    1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",    &bc->top,    1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
@@ -1943,11 +1943,11 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	FDSTAG     *fs;
 	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz,ip;
 	PetscScalar z,x, y, cmax,cmin,z_plate;
-	PetscScalar Temp_age,k_thermal = 1e-6;
+	PetscScalar Temp_age,k_thermal;
 
 	PetscFunctionBegin;
 
-	if( (bc->num_phase_bc>=0) || bc->Plume_Inflow)
+	if( (bc->face) || bc->Plume_Inflow)
 	{
 		fs = bc->fs;
 		M  = fs->dsx.ncels;
@@ -1963,6 +1963,29 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 		GET_CELL_IJK(cellID, i, j, k, M, N);
 
+
+		if(((bc->face == 1 && i + sx == 0)
+							||  (bc->face == 2 && i + sx == mx)
+							||  (bc->face == 3 && j + sy == 0)
+							||  (bc->face == 4 && j + sy == my))
+							&&  (z >= bc->bot && z <= bc->top) && (bc->bvel_thermal_age || bc->bvel_constant_temperature))
+		{
+			k_thermal= 1e-6/( (bc->scal->length_si)*(bc->scal->length_si)/(bc->scal->time_si));
+			z_plate = PetscAbs(z-bc->top);
+			Temp_age = (bc->bvel_potential_temperature-bc->bvel_temperature_top)*erf(z_plate/2.0/sqrt(k_thermal*bc->bvel_thermal_age)) + bc->bvel_temperature_top;
+			if(bc->bvel_thermal_age)
+			{
+				P->T = Temp_age;
+			}
+			else
+			{
+
+				P->T=bc->bvel_constant_temperature;
+
+			}
+
+		}
+
 		if(bc->num_phase_bc >= 0)
 		{
 		// expand i, j, k cell indices
@@ -1973,17 +1996,6 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 					||  (bc->face == 4 && j + sy == my))
 					&&  (z >= bc->bot-bc->relax_dist && z <= bc->top+bc->relax_dist))
 			{
-				k /= PetscPowScalar(bc->scal->length_si,2.0)/(bc->scal->time_si);
-				z_plate = PetscAbs(z-bc->top);
-				if(bc->bvel_constant_temperature>0.0)
-					{
-						P->T=bc->bvel_constant_temperature;
-					}
-				else
-					{
-						Temp_age = (bc->bvel_potential_temperature-bc->bvel_temperature_top)*erf(z_plate/2.0/sqrt(k*bc->bvel_thermal_age)) + bc->bvel_temperature_top;
-						P->T = Temp_age;
-					}
 
 
 

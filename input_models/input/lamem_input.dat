@@ -183,7 +183,6 @@
 # Inflow velocity boundary condition
 	bvel_face       =   1                   #   face identifier  (1-left 2-right 3-front 4-back)
 	bvel_face_out   =   1                   # 	do we have outflow @ opposite boundary?
-	bvel_phase      =   1                   #   phase number of inflow material [if undefined, it uses the phase close to the boundary]
 	bvel_bot        =   -20.0               #   bottom coordinate of inflow window
 	bvel_top        =   -10.0               #   top coordinate of inflow window
 	bvel_velin      =   1.0                 #   inflow velocity
@@ -193,7 +192,9 @@
 	bvel_temperature_mantle = 1400          #   In dimensional unit. Temperature of the mantle
 	bvel_temperature_top    = 20            #   In dimensional unit. temperature of the top 
 	bvel_constant_temperature = 100         #   Constant temperature inflow. 
-
+	bvel_num_phase           = 3            # imposes a stratigraphy of phase injected in the inflow boundary [if undefined, it uses the phase close to the boundary]
+	bvel_phase      =     3 2 1 0           #   phase number of inflow material [if undefined, it uses the phase close to the boundary] from bottom to top
+	bvel_phase_interval = -120 -100 -10 0   # Depth interval of injection of the phase (the interval is defined by num_phase+1 coordinates)
 
 # Free surface top boundary flag
 

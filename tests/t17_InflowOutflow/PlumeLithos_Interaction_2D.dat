@@ -68,9 +68,12 @@
 	bvel_face   	        = 	1     	    #   Face identifier  (1-left 2-right 3-front 4-back)
 	bvel_face_out 	        = 	1		    #   Have outflow @ the opposite boundary?
 	bvel_bot    	        =  -100.0  	    #   Bottom coordinate of inflow window
-	bvel_top    	        =  	150.0  	    #   Top coordinate of inflow window
+	bvel_top    	        =  	0.0  	    #   Top coordinate of inflow window
 	bvel_velin  	        =  	5.0   	    #	inflow velocity [cm/yr if geo units]
-	bvel_relax_d            = 	100 			
+	bvel_relax_d            = 	100
+	bvel_thermal_age =   30                 #   In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
+	bvel_temperature_mantle = 1300          #   In dimensional unit. Temperature of the mantle
+	bvel_temperature_top    = 0            #   In dimensional unit. temperature of the top  			
 
 # Plume_like inflow boundary condition
 	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
@@ -91,7 +94,7 @@
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_guess     = 0              # initial guess flag
-	act_temp_diff  = 0  			# activate thermal diffusion
+	act_temp_diff  = 1  			# activate thermal diffusion
 	shear_heat_eff = 0.0  
 	eta_min        = 1e18           # viscosity upper bound
 	eta_ref 	   = 1e20			# reference viscosity for initial guess	
