@@ -100,7 +100,7 @@
 	DII_ref        = 1e-15          # background (reference) strain-rate
 	Phase_melt 	   = 1 
 	mfmax 		   = 0.03			# 	maximum melt fraction used for computation of density & viscosity
-	Passive_Tracer = 1 
+
 
 #===============================================================================
 # Solver options
@@ -123,13 +123,24 @@
 	mark_ctrl      = subgrid           # marker control type
 	nmark_sub      = 10                # max number of same phase markers per subcell (subgrid marker control)
 
-# Passive Tracers Routine
-coordinate_box_passive_tracer = -600 600 -1 1 -300 -50
-passive_tracer_resolution      =  100 1 100
-Passive_tracer_Condition      = Temperature_ptr  # Passive tracers are advected once they record melting at least once
-Value_advection_passive_tracer = 1500                #
 
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+	Passive_Tracer              = 1                             # Activate passive tracers?
+	PassiveTracer_Box           =  -600 600 -1 1 -300 -50       # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  100 1 100                    # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Always                # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.001                        # When this value is exceeded the tracers are being activated 
+    
+    # Passive Tracer activation type specification:
 
+    #	PassiveTracer_ActiveType = Always               # always on
+    #	PassiveTracer_ActiveType = Melt_Fraction        # always on
+    #	PassiveTracer_ActiveType = Temperature          # always on
+    #	PassiveTracer_ActiveType = Pressure             # always on
+    #	PassiveTracer_ActiveType = Time                 # always on
+    
 
 # Geometric primitives to define the initial setup:
 	# sticky air

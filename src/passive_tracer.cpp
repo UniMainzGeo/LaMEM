@@ -49,12 +49,11 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 	passive_tr = actx->Ptr;
 
 
-
-	ierr = getScalarParam(fb, _REQUIRED_, "coordinate_box_passive_tracer", passive_tr->box_passive_tracer,6,1.0);       CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, "passive_tracer_resolution",      passive_tr->passive_tracer_resolution,3, 0); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "Passive_tracer_Condition",      Condition_adv,"Always");                     CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Value_advection_passive_tracer", &passive_tr->value_condition,1, 1.0);        CHKERRQ(ierr);
-
+    // Read input parameters
+	ierr = getScalarParam(fb, _REQUIRED_, "PassiveTracer_Box",          passive_tr->box_passive_tracer,         6,  1.0);       CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, "PassiveTracer_Resolution",   passive_tr->passive_tracer_resolution,  3,  0);         CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "PassiveTracer_ActiveType",   Condition_adv,      "Always");                          CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "PassiveTracer_ActiveValue",  &passive_tr->value_condition,           1, 1.0);        CHKERRQ(ierr);
 
 	if(strcmp(Condition_adv,"Always") && !passive_tr->value_condition)
 	{
@@ -65,22 +64,22 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 	{
 		passive_tr->Condition_pr = _Always_;
 	}
-	else if(!strcmp(Condition_adv,"Melt_Fraction_ptr"))
+	else if(!strcmp(Condition_adv,"Melt_Fraction"))
 	{
 		passive_tr->Condition_pr = _Melt_Fr_;
 	}
-	else if(!strcmp(Condition_adv,"Temperature_ptr"))
+	else if(!strcmp(Condition_adv,"Temperature"))
 	{
 		passive_tr->Condition_pr = _Temp_ptr_;
 		passive_tr->value_condition = (passive_tr->value_condition+actx->jr->scal->Tshift)/(actx->jr->scal->temperature);
 	}
-	else if(!strcmp(Condition_adv,"Time_ptr"))
+	else if(!strcmp(Condition_adv,"Time"))
 	{
 		passive_tr->Condition_pr = _Time_ptr_;
 		passive_tr->value_condition = (passive_tr->value_condition)/(actx->jr->scal->time);
 
 	}
-	else if(!strcmp(Condition_adv,"Pressure_ptr"))
+	else if(!strcmp(Condition_adv,"Pressure"))
 	{
 		passive_tr->Condition_pr = _Pres_ptr_;
 		passive_tr->value_condition = (passive_tr->value_condition)/(actx->jr->scal->stress);
@@ -94,25 +93,28 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 	}
 
 
-
-	 PetscPrintf(PETSC_COMM_WORLD,"-----------------------------------Passive Tracers------------------------------------------- \n");
-	 PetscPrintf(PETSC_COMM_WORLD," Coordinate_Box x direction min = %6f, max =%6f \n", passive_tr->box_passive_tracer[0],passive_tr->box_passive_tracer[1]);
-	 PetscPrintf(PETSC_COMM_WORLD," Coordinate_Box y direction min = %6f, max =%6f \n", passive_tr->box_passive_tracer[2],passive_tr->box_passive_tracer[3]);
-	 PetscPrintf(PETSC_COMM_WORLD," Coordinate_Box z direction min = %6f, max =%6f \n", passive_tr->box_passive_tracer[4],passive_tr->box_passive_tracer[5]);
-	 PetscPrintf(PETSC_COMM_WORLD," Resolution number along x = %d, number_along y = %d, number_along z = %d, Total number = %d \n", passive_tr->passive_tracer_resolution[0],passive_tr->passive_tracer_resolution[1],passive_tr->passive_tracer_resolution[2],nummark);
+     PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+     PetscPrintf(PETSC_COMM_WORLD,"Passive Tracers: \n");
+     PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box x = [Left,Right] : %6f, %6f \n",passive_tr->box_passive_tracer[0],passive_tr->box_passive_tracer[1]);
+     PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box y = [Front,Back] : %6f, %6f \n",passive_tr->box_passive_tracer[2],passive_tr->box_passive_tracer[3]);
+     PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box z = [Bot, Top]   : %6f, %6f \n",passive_tr->box_passive_tracer[4],passive_tr->box_passive_tracer[5]);
+     PetscPrintf(PETSC_COMM_WORLD,"   # of tracers in [x,y,z] direction       : [%d, %d, %d] \n",passive_tr->passive_tracer_resolution[0],passive_tr->passive_tracer_resolution[1],passive_tr->passive_tracer_resolution[2]);
+     PetscPrintf(PETSC_COMM_WORLD,"   Total # of tracers                      : %d \n",nummark);
+     PetscPrintf(PETSC_COMM_WORLD,"   Tracer advection activation type        : ");
+    
 	 if(passive_tr->Condition_pr==_Always_)
 	 {
-		 PetscPrintf(PETSC_COMM_WORLD," Passive tracers are always advected\n");
+		 PetscPrintf(PETSC_COMM_WORLD,"Always active\n");
 	 }
 	 else
 	 {
-		 if(passive_tr->Condition_pr == _Melt_Fr_)     PetscPrintf(PETSC_COMM_WORLD," Passive tracers are advected only if their volumetric melt fraction is higher than %g [n.d.]\n",Condition_adv,passive_tr->value_condition );
-		 if(passive_tr->Condition_pr == _Temp_ptr_)    PetscPrintf(PETSC_COMM_WORLD," Passive tracers are advected only if their %s is higher than %g, [%s] \n", Condition_adv,(passive_tr->value_condition)*actx->jr->scal->temperature-actx->jr->scal->Tshift,actx->jr->scal->lbl_temperature);
-		 if(passive_tr->Condition_pr == _Time_ptr_)    PetscPrintf(PETSC_COMM_WORLD," Passive tracers are advected only after %g [%s] \n", passive_tr->value_condition*actx->jr->scal->time,actx->jr->scal->lbl_time);
-		 if(passive_tr->Condition_pr == _Pres_ptr_)    PetscPrintf(PETSC_COMM_WORLD," Passive tracers are advected only if their %s is higher than %g [%s]\n",Condition_adv,passive_tr->value_condition,actx->jr->scal->lbl_stress);
+		 if(passive_tr->Condition_pr == _Melt_Fr_)     PetscPrintf(PETSC_COMM_WORLD,"Melt_Fraction > %g     \n",    passive_tr->value_condition );
+		 if(passive_tr->Condition_pr == _Temp_ptr_)    PetscPrintf(PETSC_COMM_WORLD,"Temperature > %1.0f %s    \n",    passive_tr->value_condition*actx->jr->scal->temperature-actx->jr->scal->Tshift  ,actx->jr->scal->lbl_temperature    );
+		 if(passive_tr->Condition_pr == _Time_ptr_)    PetscPrintf(PETSC_COMM_WORLD,"Time > %1.1f %s           \n",    passive_tr->value_condition*actx->jr->scal->time                                ,actx->jr->scal->lbl_time           );
+		 if(passive_tr->Condition_pr == _Pres_ptr_)    PetscPrintf(PETSC_COMM_WORLD,"Pressure > %1.0f %s       \n",    passive_tr->value_condition*actx->jr->scal->stress                              ,actx->jr->scal->lbl_stress         );
 
 	 }
-	 PetscPrintf(PETSC_COMM_WORLD," -------------------------------------------------------------------------------------------\n");
+	 PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 
 	 // Allocate memory
@@ -417,34 +419,32 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
  * and following the same approach for the coordinate and P,T.
  */
 
-	FDSTAG      *fs;
-	JacRes      *jr;
-	SolVarCell  *svCell;
-	Material_t  *mat;
-	PData        *Pd;
-	PetscInt    sx, sy, sz, nx, ny,nz,rank;
-	PetscInt    jj, I, J, K, II, JJ, KK, AirPhase, num_part,ID, n, ii ;
-	PetscScalar ex,bx,ey,by,ez,bz;
-	PetscScalar *ncx, *ncy, *ncz;
-	PetscScalar *ccx, *ccy, *ccz;
-	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
-	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop, endx,endy,endz,begx,begy,begz,npx,npy,npz;
-	PetscScalar *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active;
-	PetscScalar pShift;
-	PetscScalar Xm[3],X[3];
+	FDSTAG          *fs;
+	JacRes          *jr;
+	SolVarCell      *svCell;
+	Material_t      *mat;
+	PData           *Pd;
+	PetscInt        sx, sy, sz, nx, ny,nz,rank;
+	PetscInt        jj, I, J, K, II, JJ, KK, AirPhase, num_part,ID, n, ii, numActTracers ;
+	PetscScalar     ex,bx,ey,by,ez,bz;
+	PetscScalar     *ncx, *ncy, *ncz;
+	PetscScalar     *ccx, *ccy, *ccz;
+	PetscScalar     ***lvx, ***lvy, ***lvz, ***lp, ***lT;
+	PetscScalar     vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop, endx,endy,endz,begx,begy,begz,npx,npy,npz;
+	PetscScalar     *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active;
+	PetscScalar     pShift;
+	PetscScalar     Xm[3],X[3];
 	PetscLogDouble t;
 	vector <spair>    dist;
 	spair d;
-
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
 	AirPhase = -1;
 	Ttop     =  0.0;
 
-	PrintStart(&t, "Advection Passive tracers", NULL);
 
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	
 
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
@@ -455,7 +455,10 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	Pd  = jr->Pd;
 
 	if(jr->ctrl.Passive_Tracer == 0)  PetscFunctionReturn(0);
-		if(actx->surf->UseFreeSurf)
+	
+	PrintStart(&t, "Advection Passive tracers", NULL);
+
+	if(actx->surf->UseFreeSurf)
 		{
 			AirPhase = actx->surf->AirPhase;
 			Ttop     = actx->jr->bc->Ttop;
@@ -510,7 +513,8 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	ierr = VecGetArray(actx->Ptr->C_advection, &Active); CHKERRQ(ierr);
 
 	// scan all markers
-	num_part = actx->Ptr->nummark;
+    numActTracers   = 0;
+	num_part        = actx->Ptr->nummark;
 
 	for(jj = 0; jj < num_part; jj++)
 	{
@@ -521,8 +525,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 		zp = Zp[jj];
 
 		// get marker coordinates
-
-
 		if(xp >= bx && xp< ex && yp >= by && yp< ey && zp >= bz && zp< ez)
 		{
 			ierr = Discret1DFindPoint(&fs->dsx, xp, I); CHKERRQ(ierr);
@@ -570,13 +572,14 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 					for (ii = actx->markstart[ID]; ii <actx->markstart[ID]+n; ii++)
 						{
-							Xm[0] =actx->markers[ii].X[0];
-							Xm[1] =actx->markers[ii].X[1];
-							Xm[2] =actx->markers[ii].X[2];
+							Xm[0] = actx->markers[ii].X[0];
+							Xm[1] = actx->markers[ii].X[1];
+							Xm[2] = actx->markers[ii].X[2];
 							X[0]  = xp;
 							X[1]  = yp;
 							X[3]  = zp;
-							if(mat[actx->markers[ii].phase].pdn)
+
+							if (mat[actx->markers[ii].phase].pdn)
 							{
 								d.first  = EDIST(Xm, X);
 								d.second = ii;
@@ -605,8 +608,9 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 			// advect marker
 
-			if(Active[jj]==1.0 || actx->Ptr->Condition_pr == _Always_)
+			if( Active[jj]==1.0 || actx->Ptr->Condition_pr == _Always_)
 			{
+                numActTracers += 1; // keep track of the # of active tracers on this processor
 				npx = xp + vx*dt;
 				npy = yp + vy*dt;
 				npz = zp + vz*dt;
@@ -657,14 +661,14 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 		}
 		else
 		{
-			Xp[jj] = -DBL_MAX;
-			Yp[jj] = -DBL_MAX;
-			Zp[jj] = -DBL_MAX;
-			Pr[jj] =- DBL_MAX;
-			T[jj]=- DBL_MAX;
-			phase[jj] = -DBL_MAX;
-			mf_ptr[jj] = -DBL_MAX;
-			Active[jj] = -DBL_MAX;
+			Xp[jj]      =   -DBL_MAX;
+			Yp[jj]      =   -DBL_MAX;
+			Zp[jj]      =   -DBL_MAX;
+			Pr[jj]      =   -DBL_MAX;
+			T[jj]       =   -DBL_MAX;
+			phase[jj]   =   -DBL_MAX;
+			mf_ptr[jj]  =   -DBL_MAX;
+			Active[jj]  =   -DBL_MAX;
 		}
 
 	}
@@ -689,8 +693,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-
 
 
 	if(ISParallel(PETSC_COMM_WORLD))
@@ -729,7 +731,16 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->phase); CHKERRQ(ierr);
 
+
+        PetscInt numActTracers_0;
+        ierr = MPI_Reduce(&numActTracers, &numActTracers_0, 1, MPIU_INT, MPI_SUM, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+        numActTracers   = numActTracers_0;       // sum of # of active tracers on root
+
 	}
+
+    // print output
+    PetscPrintf(PETSC_COMM_WORLD,"\n Currently active tracers    :  %i \n", numActTracers);
+
 
 	// Check whatever the marker are belonging to rocks phase or not
 
@@ -745,6 +756,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	}
 
 	PrintDone(t);
+	
 
 	PetscFunctionReturn(0);
 }
