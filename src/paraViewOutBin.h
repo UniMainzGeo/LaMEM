@@ -162,6 +162,13 @@ struct OutMask
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
+	PetscInt Tot_ME   ;      // total melt extracted
+	PetscInt Cur_ME   ;      // total melt extracted
+	PetscInt Vol_ME   ;      // volumetric deformation melt extraction
+	PetscInt MeltID0  ;      // volume of melt extracted from ID 0 Melt Extraction
+	PetscInt MeltID1  ;
+	PetscInt MeltID2  ;
+	PetscInt MeltID3  ;
 
 	// phase aggregates
 	PetscInt num_agg;                                              // number of phase aggregates

@@ -52,6 +52,7 @@
 #include "JacRes.h"
 #include "interpolate.h"
 #include "paraViewOutBin.h"
+#include "meltextraction.h"
 
 //---------------------------------------------------------------------------
 // WARNING!
@@ -684,7 +685,6 @@ PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_ATS, 1, 0)
 
-	PetscFunctionReturn(0);
 
 	PetscFunctionReturn(0);
 }
@@ -946,3 +946,217 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteVolME"
+PetscErrorCode PVOutWriteVolME(OutVec* outvec)
+{
+
+	COPY_FUNCTION_HEADER
+
+	// macro to copy diffusion creep relative strain rate to buffer
+
+	#define GET_VolME buff[k][j][i] = jr->svCell[iter++].svBulk.Vol_S;
+
+	cf = scal->strain_rate;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VolME, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteTotME"
+PetscErrorCode PVOutWriteTotME(OutVec* outvec)
+{
+
+	COPY_FUNCTION_HEADER
+
+	// macro to copy diffusion creep relative strain rate to buffer
+
+	#define GET_TotME buff[k][j][i] = jr->svCell[iter++].svBulk.Tot_MExt;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_TotME, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteCurME"
+PetscErrorCode PVOutWriteCurME(OutVec* outvec)
+{
+
+	COPY_FUNCTION_HEADER
+
+	// macro to copy diffusion creep relative strain rate to buffer
+
+	#define GET_CurME buff[k][j][i] = jr->svCell[iter++].svBulk.mfext_cur;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_CurME, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------------
+
+
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteME00"
+PetscErrorCode PVOutWriteME00(OutVec* outvec)
+{
+
+	FDSTAG            *fs;
+	Melt_Extraction_t *Mext;
+	PetscScalar       ***lbcen,***Buf;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+
+	ACCESS_FUNCTION_HEADER
+	Mext = jr->MEPar;
+	fs = jr->fs;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, Mext->MeltID0,  &Buf);    CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+			lbcen[k][j][i] = 0.0;
+			lbcen[k][j][i] = Buf[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, Mext->MeltID0,  &Buf);    CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
+
+
+	cf = scal->volume;
+
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteME01"
+PetscErrorCode PVOutWriteME01(OutVec* outvec)
+{
+
+		FDSTAG            *fs;
+		Melt_Extraction_t *Mext;
+		PetscScalar       ***lbcen,***Buf;
+		PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+
+		ACCESS_FUNCTION_HEADER
+		Mext = jr->MEPar;
+		fs = jr->fs;
+
+		ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, Mext->MeltID1,  &Buf);    CHKERRQ(ierr);
+
+		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		START_STD_LOOP
+		{
+				lbcen[k][j][i] = 0.0;
+				lbcen[k][j][i] = Buf[k][j][i];
+		}
+		END_STD_LOOP
+
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, Mext->MeltID1,  &Buf);    CHKERRQ(ierr);
+
+		LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
+
+
+		cf = scal->volume;
+
+		INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------------
+
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteME02"
+PetscErrorCode PVOutWriteME02(OutVec* outvec)
+{
+
+			FDSTAG            *fs;
+			Melt_Extraction_t *Mext;
+			PetscScalar       ***lbcen,***Buf;
+			PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+
+			ACCESS_FUNCTION_HEADER
+			Mext = jr->MEPar;
+			fs = jr->fs;
+
+			ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(fs->DA_CEN, Mext->MeltID2,  &Buf);    CHKERRQ(ierr);
+
+			ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+					lbcen[k][j][i] = 0.0;
+					lbcen[k][j][i] = Buf[k][j][i];
+			}
+			END_STD_LOOP
+
+			ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+			ierr = DMDAVecRestoreArray(fs->DA_CEN, Mext->MeltID2,  &Buf);    CHKERRQ(ierr);
+
+			LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
+
+
+			cf = scal->volume;
+
+			INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteME03"
+PetscErrorCode PVOutWriteME03(OutVec* outvec)
+{
+	FDSTAG            *fs;
+			Melt_Extraction_t *Mext;
+			PetscScalar       ***lbcen,***Buf;
+			PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+
+			ACCESS_FUNCTION_HEADER
+			Mext = jr->MEPar;
+			fs = jr->fs;
+
+			ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(fs->DA_CEN, Mext->MeltID3,  &Buf);    CHKERRQ(ierr);
+
+			ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+					lbcen[k][j][i] = 0.0;
+					lbcen[k][j][i] = Buf[k][j][i];
+			}
+			END_STD_LOOP
+
+			ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+			ierr = DMDAVecRestoreArray(fs->DA_CEN, Mext->MeltID3,  &Buf);    CHKERRQ(ierr);
+
+			LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
+
+
+			cf = scal->volume;
+
+			INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
+	PetscFunctionReturn(0);
+}
+

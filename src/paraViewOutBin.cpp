@@ -337,6 +337,15 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->cont_res)       cnt++; // continuity residual
 	if(omask->energ_res)      cnt++; // energy residual
 
+	// Melt Extraction Visualization
+
+	if(omask->Vol_ME)           cnt++;
+	if(omask->Tot_ME)           cnt++;
+	if(omask->Cur_ME)           cnt++;
+	if(omask->MeltID0)          cnt++;
+	if(omask->MeltID1)			cnt++;
+	if(omask->MeltID2)			cnt++;
+    if(omask->MeltID3)			cnt++;
 	// phase aggregates
 	cnt += omask->num_agg;
 
@@ -404,6 +413,13 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Melt_Ext_vol",  	&omask->Vol_ME,         1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_total_meltEx",  	&omask->Tot_ME,            1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_cur_meltEx",  	&omask->Cur_ME,            1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Melt_ID0",   	&omask->MeltID0,            1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Melt_ID1",   	&omask->MeltID1,            1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Melt_ID2",   	&omask->MeltID2,            1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Melt_ID3",   	&omask->MeltID3,            1, 1); CHKERRQ(ierr);
 
 	// read phase aggregates
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseAggStart>", "<PhaseAggEnd>"); CHKERRQ(ierr);
@@ -559,7 +575,14 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3, NULL);
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL);
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1, NULL);
-
+    //======Melt Extraction vectors ========================================
+	if(omask->Vol_ME)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "MExt_VolDef",    scal->lbl_strain_rate,      &PVOutWriteVolME,        1, NULL);
+	if(omask->Tot_ME)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Tot_Mext",       scal->lbl_unit,             &PVOutWriteTotME,        1, NULL);
+	if(omask->Cur_ME)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Cur_Mext",       scal->lbl_unit,             &PVOutWriteCurME,        1, NULL);
+	if(omask->MeltID0)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, jr->dbm->matMexT[0].Name,   scal->lbl_volume, &PVOutWriteME00,         1, NULL);
+	if(omask->MeltID1)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, jr->dbm->matMexT[1].Name,   scal->lbl_volume, &PVOutWriteME01,         1, NULL);
+	if(omask->MeltID2)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, jr->dbm->matMexT[2].Name,   scal->lbl_volume, &PVOutWriteME02,         1, NULL);
+	if(omask->MeltID3)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, jr->dbm->matMexT[3].Name,   scal->lbl_volume, &PVOutWriteME03,         1, NULL);
 	// setup phase aggregate output vectors
 	for(i = 0; i < omask->num_agg; i++)
 	{

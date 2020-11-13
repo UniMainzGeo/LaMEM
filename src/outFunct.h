@@ -49,6 +49,7 @@
 
 struct OutBuf;
 struct JacRes;
+struct Melt_Extraction_t;
 
 //---------------------------------------------------------------------------
 //...........  Multi-component output vector data structure .................
@@ -116,6 +117,15 @@ PetscErrorCode PVOutWriteRelDIIprl   (OutVec*);
 PetscErrorCode PVOutWriteMomentRes   (OutVec*);
 PetscErrorCode PVOutWriteContRes     (OutVec*);
 PetscErrorCode PVOutWritEnergRes     (OutVec*);
+//==== melt extraction =============================================
+
+PetscErrorCode PVOutWriteVolME       (OutVec*);
+PetscErrorCode PVOutWriteTotME       (OutVec*);
+PetscErrorCode PVOutWriteCurME       (OutVec*);
+PetscErrorCode PVOutWriteME00        (OutVec*);
+PetscErrorCode PVOutWriteME01        (OutVec*);
+PetscErrorCode PVOutWriteME02        (OutVec*);
+PetscErrorCode PVOutWriteME03        (OutVec*);
 
 // ... add more output functions here
 
