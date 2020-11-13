@@ -353,7 +353,7 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 	cf  	= scal->stress;
 
 	// scale pressure shift
-	pShift 	= cf*jr->ctrl.pShift;
+	pShift 	= -cf*jr->ctrl.pShift;		// minus to be consistent with output routine
 	
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
@@ -377,7 +377,7 @@ PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 	iflag.use_bound = 1;
 
 	// scale pressure shift
-	pShift = cf*jr->ctrl.pShift;
+	pShift = -cf*jr->ctrl.pShift;
 
 	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
 
@@ -394,7 +394,7 @@ PetscErrorCode PVOutWriteOverPress(OutVec* outvec)
 	cf = scal->stress;
 	
 	// scale pressure shift
-	pShift 	= cf*jr->ctrl.pShift;
+	pShift 	= -cf*jr->ctrl.pShift;
 	ierr 	= JacResGetOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
 
 	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
