@@ -268,7 +268,6 @@
 	p_litho_visc    = 1              # use lithostatic pressure for creep laws
 	p_litho_plast   = 1              # use lithostatic pressure for plasticity
 	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
-	Passive_Tracer  = 1              # passive tracer activaction flag 
 	p_shift 		= 0              # constant [MPa] added to the total pressure field, before evaluating plasticity (e.g., when the domain is located @ some depth within the crust)  	
 	act_p_shift     = 1              # pressure shift activation flag (enforce zero pressure on average in the top cell layer); note: this overwrites p_shift above!
 	
@@ -362,15 +361,23 @@
 #	mark_ctrl = avd     # pure AVD for all control volumes
 #	mark_ctrl = subgrid # simple marker control enforced over fine scale grid
 
-# Passive Tracers Routine
-coordinate_box_passive_tracer = #xmin xmax ymin ymax zmin zmax
-passive_tracer_resolution     = #nx ny nz
-Passive_tracer_Condition      = Always             # Passive tracers are always advected
-								 Melt_Fraction_ptr  # Passive tracers are advected once they record melting at least once
-								 Temperature_ptr    # Passive tracers are advected once they reach a certain temperature at least once
-								 Pressure_ptr       # Passive tracers are advected once the pressure recorded in a certain area reaches a value P
-								 Time_ptr           # Passive tracers are advected after a time interval 
-Value_advection_passive_tracer = 0.3                #
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+	Passive_Tracer              = 1                               # Activate passive tracers?
+	PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Melt_Fraction                  # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.1                            # When this value is exceeded the tracers are being activated 
+    
+    # Passive Tracer activation type specification:
+
+    	#	PassiveTracer_ActiveType = Always               # always on
+    	#	PassiveTracer_ActiveType = Melt_Fraction        # always on
+    	#	PassiveTracer_ActiveType = Temperature          # always on
+    	#	PassiveTracer_ActiveType = Pressure             # always on
+    	#	PassiveTracer_ActiveType = Time                 # always on
+    
 
 
 
