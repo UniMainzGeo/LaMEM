@@ -56,12 +56,8 @@ import test_15_RTI as RTI
 import test_16_PhaseTransitions as PT
 import test_17_InflowOutflow as InOut
 import test_18_SimpleShear as SS
-<<<<<<< HEAD
-import test_20_FSSA as FSSA
-
-=======
 import test_19_CompensatedInflow as CI
->>>>>>> balanced_inflow_BC
+import test_20_FSSA as FSSA
 
 
 if os.environ.get('MATLAB') != None:
@@ -89,14 +85,10 @@ def run_tests():
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),
                       StrEnv.test_a(), StrEnv.test_b(), StrEnv.test_c(), StrEnv.test_d(),
-<<<<<<< HEAD
                       RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(),
-                      InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(),
+                      InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), 
+                      CI.test_a(), CI.test_b(),
                       FSSA.test_1()];
-=======
-                      RTI.RTI_isovisous_NoSlip(), PT.test_a(),
-                      InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), CI.test_a(), CI.test_b()];
->>>>>>> balanced_inflow_BC
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
