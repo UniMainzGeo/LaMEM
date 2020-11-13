@@ -71,6 +71,7 @@ struct LaMEMLib
 	BCCtx    bc;     // boundary condition context
 	AdvCtx   actx;   // advection context
 	JacRes   jr;     // Jacobian & residual context
+	Melt_Extraction_t MEPar;
 	PVOut    pvout;  // paraview output driver
 	PVSurf   pvsurf; // paraview output driver for surface
 	PVMark   pvmark; // paraview output driver for markers

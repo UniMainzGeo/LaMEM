@@ -445,6 +445,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// melt fraction viscosity parametrization
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "ID_Melt_Ex", &m->ID_MELTEXT, 1, -1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "PhNext", &m->PhNext, 1, _max_num_phases_); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pMant", &m->pMant, 1, 1); CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
 

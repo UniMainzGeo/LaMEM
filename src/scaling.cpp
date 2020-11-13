@@ -195,6 +195,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[K]");
 		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
 		scal->angle               = angle;                    sprintf(scal->lbl_angle,            "[deg]");   // @
+		scal->volume              = volume; 				  sprintf(scal->lbl_volume,           "[m^3]");
 
 		// secondary units
 		scal->velocity            = length/time;              sprintf(scal->lbl_velocity,         "[m/s]");
@@ -250,6 +251,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		scal->length_si           = length;
 		scal->area_si             = area;                     sprintf(scal->lbl_area_si,          "[m^2]");
 		scal->volume_si           = volume;
+		scal->volume              = volume/(km*km*km);		  sprintf(scal->lbl_volume,           "[km^3]");
 		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[C]");     // @
 		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
 		scal->angle               = angle;                    sprintf(scal->lbl_angle,            "[deg]");   // @

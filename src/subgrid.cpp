@@ -610,6 +610,12 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 				// sedimentation (physical) -> air turns into a prescribed rock
 				P->phase = surf->phase;
 			}
+			 else if(surf->MeltExtraction == 1)
+			{
+				 P->phase = surf->PhExt;
+			     if(P->phase==13) PetscPrintf(PETSC_COMM_SELF, "I'm converting marker to %d \n",P->phase);
+			}
+
 			else
 			{
 				// sedimentation (numerical) -> air turns into closest (reference) rock

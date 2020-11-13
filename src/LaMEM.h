@@ -172,6 +172,11 @@
 // maximum number of control polygons
 #define _max_ctrl_poly_ 20
 
+//maximum number of melt extraction parametrization
+#define _max_ME_par 4
+
+
+
 // cast macros
 #define LLD long long int
 

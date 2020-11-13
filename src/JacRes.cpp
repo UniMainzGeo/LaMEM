@@ -90,6 +90,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->mfmax        =  0.15;
 	ctrl->lmaxit       =  25;
 	ctrl->lrtol        =  1e-6;
+	ctrl->MeltExt      =  0;
 
 	if(scal->utype != _NONE_)
 	{
@@ -132,6 +133,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);       CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);        CHKERRQ(ierr);
     ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1);          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "MeltExt",         &ctrl->MeltExt,         1, 1);   CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -289,6 +291,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %lld  \n", ctrl->lmaxit);
 	if(ctrl->lrtol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration tolerance            : %g    \n", ctrl->lrtol);
 	if(ctrl->Phasetrans)          PetscPrintf(PETSC_COMM_WORLD, "   Phase transition is active           : %g    \n", ctrl->Phasetrans);
+	if(ctrl->MeltExt)      PetscPrintf(PETSC_COMM_WORLD, "   Melt Extraction is active           : %g    \n", ctrl->MeltExt);
 
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");

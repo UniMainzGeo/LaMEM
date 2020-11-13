@@ -60,6 +60,7 @@ struct JacRes;
 struct Ph_trans_t;
 struct DBMat;
 struct Scaling;
+struct Melt_Ex_t;
 //---------------------------------------------------------------------------
 
 // constitutive equations evaluation context
@@ -71,6 +72,7 @@ struct ConstEqCtx
 	Soft_t      *soft;      	// material softening laws
 	Ph_trans_t  *PhaseTrans;    // Phase transition laws
 	DBMat       *dbm;
+	Melt_Ex_t   *Mextpar;   //
 	Controls    *ctrl;      	// parameters and controls
 	PData       *Pd;        	// phase diagram data
 	Scaling     *scal;      	// scaling

@@ -68,6 +68,7 @@
 #include "paraViewOutAVD.h"
 #include "objFunct.h"
 #include "adjoint.h"
+#include "meltextraction.h"
 #include "LaMEMLib.h"
 #include "phase_transition.h"
 //---------------------------------------------------------------------------
@@ -212,6 +213,8 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); 				CHKERRQ(ierr);
 
+	// Melt Extraction Create
+	ierr = MeltExtractionCreate(&lm->jr); CHKERRQ(ierr);
 	// create output object for all requested output variables
 	ierr = PVOutCreate(&lm->pvout, fb); 			CHKERRQ(ierr);
 
@@ -314,6 +317,10 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// markers
 	ierr = ADVReadRestart(&lm->actx, fp); CHKERRQ(ierr);
 
+	// Melt Extraction
+
+	ierr = ReadMelt_Extraction(&lm->jr,fp); CHKERRQ(ierr);
+
 	// main output driver
 	ierr = PVOutCreateData(&lm->pvout); CHKERRQ(ierr);
 
@@ -410,6 +417,10 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	// markers
 	ierr = ADVWriteRestart(&lm->actx, fp); CHKERRQ(ierr);
 
+	// Melt Extraction
+
+	 ierr =  Melt_Extraction__WriteRestart(&lm->jr,fp); CHKERRQ(ierr);
+
 	// close temporary restart file
 	fclose(fp);
 
@@ -481,6 +492,7 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = ADVDestroy     (&lm->actx);   CHKERRQ(ierr);
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
+	ierr = MeltExtractionDestroy(&lm->jr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -552,6 +564,8 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->pvmark.actx = &lm->actx;
 	// PVAVD
 	lm->pvavd.actx  = &lm->actx;
+	// Melt Extraction
+	lm->jr.MEPar    = &lm->MEPar;
 
 	PetscFunctionReturn(0);
 }
@@ -660,6 +674,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// apply phase transitions on particles
 		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
+		PrintStart(&t, "Melt Extraction", NULL);
+        ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		PrintDone(t);
 		
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
@@ -729,6 +746,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
 
+		PrintStart(&t, "MeltExInjectionRoutine", NULL);
+		if(lm->jr.ctrl.initGuess == 0)
+		{
+			ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		}
+	    PrintDone(t);
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
 

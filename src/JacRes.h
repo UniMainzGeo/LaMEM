@@ -55,6 +55,7 @@ struct DBMat;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
+struct Melt_Extraction_t;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -68,6 +69,7 @@ struct SolVarDev
 	PetscScalar  Hr;     // shear heating term contribution
 	PetscScalar  APS;    // accumulated plastic strain
 	PetscScalar  PSR;    // plastic strain-rate contribution
+	PetscScalar  mfext_cur; // current melt extracted
 
 };
 
@@ -86,6 +88,9 @@ struct SolVarBulk
 	PetscScalar  rho_pf; // fluid density from phase diagram
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
+	PetscScalar  Vol_S ;  // mass exchange (must be volume)
+	PetscScalar  mfext_cur; // current extraction stage
+	PetscScalar  Tot_MExt ; // total melt extracted;
 
 };
 
@@ -123,6 +128,7 @@ struct SolVarEdge
 	PetscScalar  d;     // xy, xz, yz total deviatoric strain rate components
 	PetscScalar  ws;    // normalization for distance-dependent interpolation
 	PetscScalar *phRat; // phase ratios in the control volume
+	PetscScalar mfext_cur; // current melt extracted
 
 };
 
@@ -182,7 +188,8 @@ struct Controls
 	PetscInt    lmaxit;         // maximum number of local rheology iterations
 	PetscScalar lrtol;          // local rheology iterations relative tolerance
 	PetscInt    Phasetrans; // Flag to activate passive tracer routines
-
+	PetscInt    MeltExt       ; // Flag to activate melt extraction
+	PetscScalar MinTk         ;
 };
 
 //---------------------------------------------------------------------------
@@ -198,6 +205,7 @@ struct JacRes
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
 	DBMat    *dbm;   // material database
+	Melt_Extraction_t *MEPar; // melt extraction structure
 
 	// parameters and controls
 	Controls ctrl;

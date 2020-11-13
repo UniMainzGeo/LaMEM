@@ -49,6 +49,7 @@
 #include "surf.h"
 #include "phase.h"
 #include "JacRes.h"
+#include "meltextraction.h"
 #include "tools.h"
 #include "phase_transition.h"
 #include "meltParamKatz.h"
@@ -71,6 +72,8 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 	ctx->dt        =  jr->ts->dt;         // time step
 	ctx->PhaseTrans = jr->dbm->matPhtr;   // phase transition
 	ctx->scal       = jr->scal;           // scaling
+	ctx->Mextpar    = jr->dbm->matMexT;   // melt extraction
+
 	ctx->stats[0]  =  0.0;                // total number of [starts, ...
 	ctx->stats[1]  =  0.0;                //  ... successes,
 	ctx->stats[2]  =  0.0;                // ... iterations]
@@ -143,10 +146,11 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	Material_t  *mat;
 	Soft_t      *soft;
 	Controls    *ctrl;
+	Melt_Ex_t   *Mexpar;
 	PData       *Pd;
-	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
-	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
-
+	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn,mfeff;
+	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total,dM;
+	PetscInt     ID_ME;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -163,8 +167,13 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	p_pore = ctx->p_pore;
 	T      = ctx->T;
 	mf     = 0.0;
-
 	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
+	Mexpar = ctx->Mextpar;
+	ID_ME  = mat->ID_MELTEXT;
+	Mexpar = ctx->Mextpar+ID_ME;
+	mfeff  = 0.0;
+	dM = 0.0;
+	mf = 0.0;
 
 	if(mat->pdAct == 1)
 	{
@@ -173,6 +182,15 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 		// store melt fraction
 		mf = Pd->mf;
+
+		if(ctrl->MeltExt && !ctrl->initGuess)
+		{
+			mfeff = Pd->mf - ctx->svDev->mfext_cur;
+			if(mfeff>Mexpar->Mtrs)dM =  Compute_dM(mfeff, Mexpar, ctx->dt);
+			mf = mfeff -dM;
+			if(mf<0.0) mf =0.0;
+
+		}
 	}
 
 	//if(strcmp(mat->Melt_Parametrization,"none") & ctrl->melt_feedback == 1)
@@ -626,12 +644,13 @@ PetscScalar getI2Gdt(
 PetscErrorCode volConstEq(ConstEqCtx *ctx)
 {
 	// evaluate volumetric constitutive equations in control volume
+	Melt_Ex_t   *Mexpar;
 	Controls    *ctrl;
 	PData       *Pd;
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	PetscInt     i, numPhases;
-	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho,mfeff,dM, mf;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -662,6 +681,9 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
+		mfeff          = 0.0;
+		dM             = 0.0;
+		mf             = 0.0;
 		// update present phases only
 		if(phRat[i])
 		{
@@ -674,7 +696,15 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				// compute melt fraction from phase diagram
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
-				svBulk->mf     += phRat[i]*Pd->mf;
+			 if(ctrl->MeltExt && !ctrl->initGuess)
+			 	 {
+					Mexpar    = ctx->Mextpar+mat->ID_MELTEXT;
+					mfeff = Pd->mf - svBulk->mfext_cur;
+					if(mfeff>Mexpar->Mtrs)dM =  Compute_dM(mfeff, Mexpar, ctx->dt);
+					mf = mfeff -dM;
+					if(mf <0.0) mf =0.0;
+			 	 }
+				svBulk->mf     += phRat[i]*mf;
 				svBulk->rho_pf += phRat[i]*Pd->rho_f;
 			}
 
@@ -760,6 +790,7 @@ PetscErrorCode cellConstEq(
 	SolVarBulk  *svBulk;
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
+	PetscScalar  Vol_S; 
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -825,14 +856,25 @@ PetscErrorCode cellConstEq(
 	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
+	if(ctrl->MeltExt ==1)
+	{
+	Vol_S =svBulk->Vol_S/ctx->dt; 
+	}
+	else 
+	{
+	Vol_S = 0.0;
+	}
+
+
+
 	// compute volumetric residual
 	if(ctrl->actExp)
 	{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt+Vol_S;
 	}
 	else
 	{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + Vol_S;
 	}
 
 	// store effective density

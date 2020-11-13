@@ -62,6 +62,16 @@ enum ExpType
 	_None_
 };
 
+//----------------------------------------------------------------------------
+//...............................Melt_Extraction type ........................
+//----------------------------------------------------------------------------
+enum Melt_Extraction_type
+{
+	_Constant_mf_,
+	_Constant_flux_,
+	_Porosity_Dep_flux
+};
+
 //---------------------------------------------------------------------------
 //.......................   Softening Law Parameters  .......................
 //---------------------------------------------------------------------------
@@ -127,7 +137,24 @@ public:
 	PetscScalar DensityBelow[_max_tr_];
 
 };
+struct Melt_Ex_t
+{
+public:
 
+	PetscInt    ID ;// Phase Transition ID
+	char    	Name[_str_len_] ; // Type Constant or Clapeyron
+	Melt_Extraction_type Type   ;
+	PetscScalar    Mleft; // melt extraction rate
+	PetscScalar    Mtrs ; // minimal amount of melt retained by the source
+	PetscScalar    Mmax ; // total melt extraction allowed (to change phase)
+	PetscScalar    IR   ; // relative amount of intrusion wtr the total melt extracted
+	PetscInt       PhExt; // Extrusion Phase
+	PetscInt       PhInt; // Intrusion Phase
+	PetscScalar    TInt ; // Temperature of the intrusion
+	PetscScalar    VolCor; // volumetric correction for melt/solid
+	PetscScalar    DInt  ; // Depth at which the intrusion are emplaced (adimensional number referring to % of the total crustal thickness)
+	PetscScalar    timescale ; // timescale to extract Mleft_quantity
+};
 //---------------------------------------------------------------------------
 //......................   Material parameter table   .......................
 //---------------------------------------------------------------------------
@@ -193,6 +220,9 @@ public:
 	PetscInt     pdAct;             // phase diagram activity flag
 	PetscScalar  mfc;               // melt fraction viscosity correction
 	PetscScalar  rho_melt;
+	PetscInt     PhNext;            // next phase after extraction
+	PetscInt     ID_MELTEXT;        // ID Melt Extraction
+	PetscInt     pMant     ;        // Mantle or crustal phase
 };
 
 //---------------------------------------------------------------------------
@@ -241,8 +271,9 @@ struct DBMat
 	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
 	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
+	Melt_Ex_t    matMexT[_max_ME_par];
 	PetscInt     numPhtr;                // number material softening laws
-
+	PetscInt     numMEPar;                // max number of melt extraction parametrization
 };
 
 // read material database

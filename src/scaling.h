@@ -106,6 +106,7 @@ struct Scaling
 	PetscScalar temperature; // Kelvin (if dimensional)
 	PetscScalar force;       // additional variable for quasi-static case
 	PetscScalar angle;       // radian expressed in degrees (if dimensional)
+	PetscScalar volume;      // volume
 
 	// secondary units
 	PetscScalar velocity;          // length / time
@@ -145,6 +146,7 @@ struct Scaling
 	char lbl_dissipation_rate [_lbl_sz_];
 	char lbl_angular_velocity [_lbl_sz_];
 	char lbl_volumetric_force [_lbl_sz_];
+	char lbl_volume           [_lbl_sz_];
 
 	// material parameters labels
 	char lbl_density          [_lbl_sz_];

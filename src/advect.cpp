@@ -59,6 +59,7 @@
 #include "subgrid.h"
 #include "tools.h"
 #include "phase_transition.h"
+#include "meltextraction.h"
 
 /*
 #START_DOC#
@@ -100,6 +101,8 @@ PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 	C.U[0]  = (A.U[0] + B.U[0])/2.0;
 	C.U[1]  = (A.U[1] + B.U[1])/2.0;
 	C.U[2]  = (A.U[2] + B.U[2])/2.0;
+	C.MExt  = (A.MExt + B.MExt)/2.0;
+	C.MTot  = (A.MTot + B.MTot)/2.0;
 
 	PetscFunctionReturn(0);
 }
@@ -351,6 +354,7 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 {
 	// read advection object from restart database
+	PetscBool LoadPhaseDiagrams;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -379,6 +383,39 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 
 	// project history from markers to grid (initialize solution variables)
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+
+	// Load phase diagrams for the phases where it is required + interpolate the reference density for the first timestep
+		LoadPhaseDiagrams = PETSC_FALSE;
+
+		for(PetscInt i = 0; i < actx->jr->dbm->numPhases; i++)
+		{
+			if(actx->jr->dbm->phases[i].pdAct)
+			{
+				LoadPhaseDiagrams = PETSC_TRUE;
+			}
+		}
+
+		if(LoadPhaseDiagrams)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"Phase Diagrams: \n");
+		}
+
+		for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++)
+		{
+			if(actx->jr->dbm->phases[i].pdAct)
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"   Phase %i,  ", i);
+
+				ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
+			}
+		}
+
+		if(LoadPhaseDiagrams)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+		}
+
+
 
 	PetscFunctionReturn(0);
 }
