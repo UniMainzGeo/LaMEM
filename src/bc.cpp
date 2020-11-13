@@ -258,6 +258,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	Scaling     *scal;
 	PetscInt     jj, mID;
 	PetscScalar  bz;
+	char         inflow_temp[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -275,6 +276,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     bc->num_phase_bc    =   -1;
 	bc->velout   		=  	DBL_MAX;
 	bc->Plume_Inflow 	= 	0;
+	bc->bvel_temperature_inflow = -1;
 
 	//=====================
 	// VELOCITY CONSTRAINTS
@@ -342,17 +344,19 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_phase_interval", bc->phase_interval, bc->num_phase_bc+1, scal->length); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_thermal_age", &bc->bvel_thermal_age, 1, scal->time); CHKERRQ(ierr);
-		if(bc->bvel_thermal_age >0.0)
+		ierr = getStringParam(fb, _OPTIONAL_, "bvel_temperature_inflow", inflow_temp , NULL); 					CHKERRQ(ierr);
+		if     	(!strcmp(inflow_temp, "Constant_T_inflow"))      bc->bvel_temperature_inflow = 1;
+		if     	(!strcmp(inflow_temp, "Fixed_thermal_age"))      bc->bvel_temperature_inflow = 2;
+		if( bc->bvel_temperature_inflow == 2)
 		{
-			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_mantle", &bc->bvel_potential_temperature, 1, 1.0); CHKERRQ(ierr);
-			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_top", &bc->bvel_temperature_top, 1, 1.0); CHKERRQ(ierr);
-
-
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_mantle", &bc->bvel_potential_temperature, 1, 1.0);         CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_top",    &bc->bvel_temperature_top,       1, 1.0);         CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_thermal_age",        &bc->bvel_thermal_age,           1, scal->time);  CHKERRQ(ierr);
 		}
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_constant_temperature", &bc->bvel_constant_temperature, 1, scal->time); CHKERRQ(ierr);
-
-
+		else if(bc->bvel_temperature_inflow == 1)
+		{
+		ierr = getScalarParam(fb, _REQUIRED_,     "bvel_constant_temperature", &bc->bvel_constant_temperature, 1, scal->time);     CHKERRQ(ierr);
+		}
 
 		if(bc->face_out)
 		{
@@ -491,6 +495,16 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %1.2f %s \n", bc->velin*scal->velocity, scal->lbl_velocity); 
      if (bc->velout>0){     PetscPrintf(PETSC_COMM_WORLD, "      Outflow velocity                        : %1.2f %s \n", bc->velout*scal->velocity, scal->lbl_velocity); }
      else if (!bc->face_out) {                 PetscPrintf(PETSC_COMM_WORLD, "       Outflow velocity from mass balance     @ \n"); }
+
+     if (bc->bvel_temperature_inflow > 0)
+     {
+    	 if(bc->bvel_temperature_inflow == 1) PetscPrintf(PETSC_COMM_WORLD, "      Temperature inflow material is constant : T = %3f %s \n",bc->bvel_constant_temperature, scal->lbl_temperature);
+    	 if(bc->bvel_temperature_inflow == 2) PetscPrintf(PETSC_COMM_WORLD, "      Thermal age of plate is constant : Thermal_age = %3f %s, T_mantle = %3f %s, T_top = %3f %s \n",bc->bvel_thermal_age*scal->time, scal->lbl_time,bc->bvel_potential_temperature, scal->lbl_temperature, bc->bvel_temperature_top,scal->lbl_temperature);
+     }
+     else
+     {
+    	 PetscPrintf(PETSC_COMM_WORLD, "      Temperature inflow material is interpolated from the closest marker \n");
+     }
     
      if (bc->relax_dist>0){ PetscPrintf(PETSC_COMM_WORLD, "      Velocity smoothening distance           : %1.2f %s \n", bc->relax_dist*scal->length, scal->lbl_length); }  
     }
@@ -1968,20 +1982,18 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 							||  (bc->face == 2 && i + sx == mx)
 							||  (bc->face == 3 && j + sy == 0)
 							||  (bc->face == 4 && j + sy == my))
-							&&  (z >= bc->bot && z <= bc->top) && (bc->bvel_thermal_age || bc->bvel_constant_temperature))
+							&&  (z >= bc->bot && z <= bc->top) && (bc->bvel_temperature_inflow>0))
 		{
-			k_thermal= 1e-6/( (bc->scal->length_si)*(bc->scal->length_si)/(bc->scal->time_si));
-			z_plate = PetscAbs(z-bc->top);
-			Temp_age = (bc->bvel_potential_temperature-bc->bvel_temperature_top)*erf(z_plate/2.0/sqrt(k_thermal*bc->bvel_thermal_age)) + bc->bvel_temperature_top;
-			if(bc->bvel_thermal_age)
+			if(bc->bvel_temperature_inflow==2)
 			{
+				k_thermal= 1e-6/( (bc->scal->length_si)*(bc->scal->length_si)/(bc->scal->time_si));
+				z_plate = PetscAbs(z-bc->top);
+				Temp_age = (bc->bvel_potential_temperature-bc->bvel_temperature_top)*erf(z_plate/2.0/sqrt(k_thermal*bc->bvel_thermal_age)) + bc->bvel_temperature_top;
 				P->T = Temp_age;
 			}
-			else
+			else if(bc->bvel_temperature_inflow == 1)
 			{
-
 				P->T=bc->bvel_constant_temperature;
-
 			}
 
 		}
