@@ -103,13 +103,16 @@ switch lower(p.Results.TempType)
         Temp(indB) = p.Results.cstTemp;
          
     case 'linear'
+        Ztop = Ztop   - Origin(3);
+        Zbot = Zbot   - Origin(3);
         % Linear T profile between Top & bottom
         Tlin = (Z(indB)-Ztop)/(Zbot-Ztop)*(p.Results.botTemp-p.Results.topTemp) + p.Results.topTemp;      
         
         Temp(indB) = Tlin;
     
     case 'halfspace'
-        
+        Ztop = Ztop   - Origin(3);
+         
         % Set halfspace cooling profile
         kappa       =   1e-6;
         SecYear     =   3600*24*365;
@@ -123,6 +126,11 @@ switch lower(p.Results.TempType)
     case 'spreadingrate'
         % Spreading rate thermal structure, which has a MOR on one side
         % (right, left, front, back)
+        
+        % Shift, in case of rotated box
+        Ztop    = Ztop   - Origin(3);
+        Xleft   = Xleft  - Origin(1);
+        Yfront  = Yfront - Origin(2);
         
         % compute the distance to the ridge
         switch lower(p.Results.MORside)

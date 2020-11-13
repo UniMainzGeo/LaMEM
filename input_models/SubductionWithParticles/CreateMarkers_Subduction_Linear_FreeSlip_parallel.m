@@ -23,7 +23,7 @@ if ~LaMEM_Parallel_output
     disp(['Creating setup for 1 processor using LaMEM file: ', LaMEM_input_file])
 
     % Read info from LaMEM input file & create 3D grid    
-    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H] =   LaMEM_ParseInputFile(LaMEM_input_file);
+    [npart_x,npart_y,npart_z,Grid,X,Y,Z,W,L,H] =   LaMEM_ParseInputFile(LaMEM_input_file);
     
     nump_x              =   Grid.nel_x*npart_x;
     nump_y              =   Grid.nel_y*npart_y;
@@ -31,7 +31,7 @@ if ~LaMEM_Parallel_output
     Parallel_partition  =   [];   % since we run this on one code
     
 else
-    % We perform a paralel simulation; or this a 'ProcessorPartitioning'
+    % We perform a parallel simulation; or this a 'ProcessorPartitioning'
     % file shoule be created first by running LaMEM on the desired # of
     % processors as:
     %   mpiexec -n 2 ../../bin/opt/LaMEM -ParamFile Subduction2D_FreeSlip_MATLABParticles_Linear_DirectSolver.dat -mode save_grid
@@ -40,8 +40,9 @@ else
     Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin'
     
     % Load grid from parallel partitioning file
-    [Grid,X,Y,Z,npart_x,npart_y,npart_z,W,L,H] =   LaMEM_ParseInputFile(LaMEM_input_file);
-    [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise);
+    
+    [npart_x,npart_y,npart_z]                   =   LaMEM_ParseInputFile(LaMEM_input_file);
+    [X,Y,Z,xcoor,ycoor,zcoor,Xpart,Ypart,Zpart] =   FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise);
     
     % Update other variables
     nump_x  = size(X,2);
@@ -67,75 +68,36 @@ Length_Horiz_Slab   =  1500;    % length of overriding plate of slab
 Width_Slab          =  750;     % Width of slab (in case we run a 3D model)         
 
 SubductionAngle     =   34;     % Subduction angle
-ThicknessCrust      =   10;
-ThicknessSlab       =   75;    % Thickness of mantle lithosphere
+ThicknessCrust      =   10;     
+ThicknessSlab       =   75;     % Thickness of mantle lithosphere
+
+T_mantle            =   1350;   % in Celcius
+T_surface           =   0;
 
 
-%% 
 %==========================================================================
 % DEFINE SLAB
 %==========================================================================
+Phase               =   zeros(size(X));                 % initialize to have mantle phase
+Temp                =   T_mantle*ones(size(Phase));     
 
-% 1) Create the top (and bottom) of the slab
+% Add horizontal part of slab 
+BoxSides            =   [Trench_x_location (Trench_x_location+Length_Horiz_Slab) min(Y(:)) max(Y(:)) -ThicknessSlab 0];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 2);               % Set slab to mantle lithosphere phase
 
-% Create polygon of crust and mantle lithosphere
-x_s             =   Trench_x_location-Length_Subduct_Slab;  % start
-x_t             =   Trench_x_location;                      % trench
-x_e             =   Trench_x_location+Length_Horiz_Slab;    % end
+BoxSides            =   [Trench_x_location (Trench_x_location+Length_Horiz_Slab) min(Y(:)) max(Y(:)) -ThicknessCrust 0];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 1);               % Add crust (will override the slab phase above)
 
-% 1a)First create a horizontal crust/slab
-Slab_Crust(1,:) =   [x_s x_t x_e x_e x_t x_s];
-Slab_Crust(2,:) =   [0   0     0 -ThicknessCrust -ThicknessCrust -ThicknessCrust];
+% Add inclined part of slab
+RotPt               =   [Trench_x_location, 0, 0];
 
-Slab_ML         =   Slab_Crust;
-Slab_ML(2,:)    =   [0   0     0 -ThicknessSlab -ThicknessSlab -ThicknessSlab];
+BoxSides            =   [(Trench_x_location-Length_Subduct_Slab) Trench_x_location min(Y(:)) max(Y(:)) -ThicknessSlab 0];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 2, 'RotationPoint',RotPt, 'DipAngle', -SubductionAngle);          % mantle lithosphere
 
-% 1b) Next rotate the inclined portions
-alpha           =   -SubductionAngle*pi/180;
-R               =   [cos(alpha) sin(alpha); -sin(alpha) cos(alpha)];
+BoxSides            =   [(Trench_x_location-Length_Subduct_Slab) Trench_x_location min(Y(:)) max(Y(:)) -ThicknessCrust 0];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 1, 'RotationPoint',RotPt, 'DipAngle', -SubductionAngle);       	% crust (will override the slab phase above
 
-% 2) do the same for the Crust
-Inclined        =   Slab_Crust(:,[1:2 end-1:end]);
-Inclined(1,:)   =   Inclined(1,:)-Trench_x_location;
-Inclined        =   R*Inclined;
-Inclined(1,:)   =   Inclined(1,:)+Trench_x_location;
-Inclined(2,end-1) =   -ThicknessCrust;
 
-Slab_Crust(:,1:2) = Inclined(:,1:2);
-Slab_Crust(:,end-1:end) = Inclined(:,end-1:end);
-
-% rotate slab
-Inclined        =   Slab_ML(:,[1:2 end-1:end]);
-Inclined(1,:)   =   Inclined(1,:)-Trench_x_location;
-Inclined        =   R*Inclined;
-Inclined(1,:)   =   Inclined(1,:)+Trench_x_location;
-
-Slab_ML(:,1:2)   = Inclined(:,1:2);
-Slab_ML(:,end-1:end) = Inclined(:,end-1:end);
-Slab_ML(2,end-2) = Slab_ML(2,end-1);                    
-
-% Now we have a polygon that described the crust and one that describes the mantle lithosphere.
-% You can plot them with:
-% fill(Slab_ML(1,:),Slab_ML(2,:),'bo-',Slab_Crust(1,:),Slab_Crust(2,:),'ro-'), axis equal
-
-%% Set phases based on whether we are in the crust or in the mantle lithosphere
-Phase           =   zeros(size(X)); % initialize to have mantle phase
-
-% Note that the mantle lithosphere should be set first in the way we define
-% the polygons
-in              =   inpolygon(X,Z,Slab_ML(1,:),Slab_ML(2,:));       % ML
-Phase(in)       =   2;
-
-in              =   inpolygon(X,Z,Slab_Crust(1,:),Slab_Crust(2,:)); % crust
-Phase(in)       =   1;
-
-% For 3D setups, take the width of the slab in Y-direction into account
-ind             =  find(Y>Width_Slab);
-Phase(ind)      =   0;
-
-% Temperature is not used in the setup, so set it to a constant value
-T_mantle        =   1350;
-Temp            =   T_mantle*ones(size(Phase));
 
 %%
 %==========================================================================
