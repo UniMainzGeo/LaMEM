@@ -51,6 +51,8 @@
 #include "surf.h"
 #include "JacRes.h"
 #include "tools.h"
+#include "phase.h"
+#include "meltextraction.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVSurfCreate"
@@ -228,6 +230,30 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n", scal->lbl_length);
 	}
 
+	if(pvsurf->Mext_ID0S)
+	{
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[0].Name ,scal->lbl_length);
+	}
+
+	if(pvsurf->Mext_ID1S)
+	{
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[1].Name ,scal->lbl_length);
+	}
+
+	if(pvsurf->Mext_ID2S)
+	{
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[2].Name ,scal->lbl_length);
+	}
+
+	if(pvsurf->Mext_ID3S)
+	{
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[3].Name ,scal->lbl_length);
+	}
+
+	if(pvsurf->Moho)
+		{
+			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Moho %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",scal->lbl_length);
+		}
 	fprintf(fp, "\t\t</PPointData>\n");
 
 	// get total number of free surface sub-domains
@@ -262,6 +288,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 {
 	FILE      *fp;
 	FDSTAG    *fs;
+	DBMat     *dbm;
 	Scaling   *scal;
 	char      *fname;
 	PetscInt   rx, ry, sx, sy, nx, ny;
@@ -273,7 +300,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	// access context
 	fs   = pvsurf->surf->jr->fs;
 	scal = pvsurf->surf->jr->scal;
-
+	dbm  = pvsurf->surf->jr->dbm;
 	fp = PETSC_NULL;
 	// only ranks zero in z direction generate this file
 	if(!fs->dsz.rank)
@@ -342,6 +369,44 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
 		}
 
+		if(pvsurf->Mext_ID0S)
+		{
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",dbm->matMexT[0].Name,
+					scal->lbl_length, (LLD)offset);
+
+			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+		}
+
+		if(pvsurf->Mext_ID1S)
+		{
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",dbm->matMexT[1].Name,
+								scal->lbl_length, (LLD)offset);
+
+			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+		}
+
+		if(pvsurf->Mext_ID2S)
+		{
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",dbm->matMexT[2].Name,
+								scal->lbl_length, (LLD)offset);
+
+			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+		}
+
+		if(pvsurf->Mext_ID3S)
+		{
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",dbm->matMexT[3].Name,
+								scal->lbl_length, (LLD)offset);
+
+			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+		}
+		if(pvsurf->Moho)
+			{
+				fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"Moho %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
+										scal->lbl_length, (LLD)offset);
+
+				offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+			}
 		fprintf(fp, "\t\t</PointData>\n");
 
 		// close sub-domain and grid blocks
@@ -360,6 +425,11 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	if(pvsurf->velocity)   { ierr = PVSurfWriteVel      (pvsurf, fp); CHKERRQ(ierr); }
 	if(pvsurf->topography) { ierr = PVSurfWriteTopo     (pvsurf, fp); CHKERRQ(ierr); }
 	if(pvsurf->amplitude)  { ierr = PVSurfWriteAmplitude(pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->Mext_ID0S)  { ierr = PVSurfWriteMD0S      (pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->Mext_ID1S)  { ierr = PVSurfWriteMD1S      (pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->Mext_ID2S)  { ierr = PVSurfWriteMD2S      (pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->Mext_ID3S)  { ierr = PVSurfWriteMD3S      (pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->Moho)       { ierr = PVSurfWriteMoho      (pvsurf, fp); CHKERRQ(ierr); }
 
 	if(!fs->dsz.rank)
 	{
@@ -572,4 +642,248 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 
 	PetscFunctionReturn(0);
 }
+
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVSurfWriteMD0S"
+PetscErrorCode PVSurfWriteMD0S(PVSurf *pvsurf, FILE *fp)
+{
+	Melt_Extraction_t  *Mext;
+	FDSTAG      *fs;
+	float       *buff;
+	PetscScalar ***magma_l, cf;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	L    = 0;
+	cn   = 0;
+	buff = pvsurf->buff;
+	Mext = pvsurf->surf->jr->MEPar;
+	fs   = pvsurf->surf->jr->fs;
+	cf   = pvsurf->surf->jr->scal->length;
+
+	// retrieve average topography
+
+	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+
+	ierr = VecZeroEntries(Mext->lmagmathick); CHKERRQ(ierr);
+	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID0S,Mext->lmagmathick)
+
+
+
+	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+
+	if(!fs->dsz.rank)
+	{
+		START_PLANE_LOOP
+		{
+			// store topography amplitude
+			buff[cn++] = (float)(cf*(magma_l[L][j][i]));
+		}
+		END_PLANE_LOOP
+	}
+
+	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+
+	OutputBufferWrite(fp, buff, cn);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVSurfWriteMD1S"
+PetscErrorCode PVSurfWriteMD1S(PVSurf *pvsurf, FILE *fp)
+{
+	Melt_Extraction_t  *Mext;
+	FDSTAG      *fs;
+	float       *buff;
+	PetscScalar ***magma_l, cf;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	L    = 0;
+	cn   = 0;
+	buff = pvsurf->buff;
+	Mext = pvsurf->surf->jr->MEPar;
+	fs   = pvsurf->surf->jr->fs;
+	cf   = pvsurf->surf->jr->scal->length;
+
+	// retrieve average topography
+
+	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+
+	ierr = VecZeroEntries(Mext->lmagmathick); CHKERRQ(ierr);
+	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID1S,Mext->lmagmathick)
+
+
+
+	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+
+	if(!fs->dsz.rank)
+	{
+		START_PLANE_LOOP
+		{
+			// store topography amplitude
+			buff[cn++] = (float)(cf*(magma_l[L][j][i]));
+		}
+		END_PLANE_LOOP
+	}
+
+	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+
+	OutputBufferWrite(fp, buff, cn);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVSurfWriteMD2S"
+PetscErrorCode PVSurfWriteMD2S(PVSurf *pvsurf, FILE *fp)
+{
+	Melt_Extraction_t  *Mext;
+	FDSTAG      *fs;
+	float       *buff;
+	PetscScalar ***magma_l, cf;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	L    = 0;
+	cn   = 0;
+	buff = pvsurf->buff;
+	Mext = pvsurf->surf->jr->MEPar;
+	fs   = pvsurf->surf->jr->fs;
+	cf   = pvsurf->surf->jr->scal->length;
+
+	// retrieve average topography
+
+	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+
+	ierr = VecZeroEntries(Mext->lmagmathick); CHKERRQ(ierr);
+	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID2S,Mext->lmagmathick)
+
+
+
+	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+
+	if(!fs->dsz.rank)
+	{
+		START_PLANE_LOOP
+		{
+			// store topography amplitude
+			buff[cn++] = (float)(cf*(magma_l[L][j][i]));
+		}
+		END_PLANE_LOOP
+	}
+
+	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+
+	OutputBufferWrite(fp, buff, cn);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVSurfWriteMD3S"
+PetscErrorCode PVSurfWriteMD3S(PVSurf *pvsurf, FILE *fp)
+{
+	Melt_Extraction_t  *Mext;
+	FDSTAG      *fs;
+	float       *buff;
+	PetscScalar ***magma_l, cf;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	L    = 0;
+	cn   = 0;
+	buff = pvsurf->buff;
+	Mext = pvsurf->surf->jr->MEPar;
+	fs   = pvsurf->surf->jr->fs;
+	cf   = pvsurf->surf->jr->scal->length;
+
+	// retrieve average topography
+
+	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+
+	ierr = VecZeroEntries(Mext->lmagmathick); CHKERRQ(ierr);
+	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID3S,Mext->lmagmathick)
+
+
+
+	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+
+	if(!fs->dsz.rank)
+	{
+		START_PLANE_LOOP
+		{
+			// store topography amplitude
+			buff[cn++] = (float)(cf*(magma_l[L][j][i]));
+		}
+		END_PLANE_LOOP
+	}
+
+	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+
+	OutputBufferWrite(fp, buff, cn);
+
+	PetscFunctionReturn(0);
+}
+//===============================================================================================//
+#undef __FUNCT__
+#define __FUNCT__ "PVSurfWriteMoho"
+PetscErrorCode PVSurfWriteMoho(PVSurf *pvsurf, FILE *fp)
+{
+	Melt_Extraction_t  *Mext;
+	FDSTAG      *fs;
+	float       *buff;
+	PetscScalar  cf,***magma_l;
+	PetscInt i, j, nx, ny, sx, sy,rx,ry,L,cn;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	L  = 0;
+	cn   = 0;
+	buff = pvsurf->buff;
+	Mext = pvsurf->surf->jr->MEPar;
+	fs   = pvsurf->surf->jr->fs;
+	cf   = pvsurf->surf->jr->scal->length;
+
+
+
+
+		GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+		GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+
+		ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF,Mext->LSurfMoho, &magma_l); CHKERRQ(ierr);
+
+			if(!fs->dsz.rank)
+			{
+				START_PLANE_LOOP
+				{
+					// store topography amplitude
+					buff[cn++] = (float)(cf*(magma_l[L][j][i]));
+				}
+				END_PLANE_LOOP
+			}
+
+		ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, Mext->LSurfMoho, &magma_l); CHKERRQ(ierr);
+
+
+	OutputBufferWrite(fp, buff, cn);
+
+	PetscFunctionReturn(0);
+}

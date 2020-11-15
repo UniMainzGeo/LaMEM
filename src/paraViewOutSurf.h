@@ -65,6 +65,11 @@ struct PVSurf
 	PetscInt   velocity;           // velocity output flag
 	PetscInt   topography;         // surface topography output flag
 	PetscInt   amplitude;          // topography amplitude output flag
+	PetscInt   Mext_ID0S;          // cumulative melt extracted
+	PetscInt   Mext_ID1S;          // cumulative melt extracted
+	PetscInt   Mext_ID2S;          // cumulative melt extracted
+	PetscInt   Mext_ID3S;          // cumulative melt extracted
+	PetscInt   Moho;               // Moho
 
 };
 
@@ -102,6 +107,16 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp);
 PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp);
 
 PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteMD0S(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteMD1S(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteMD2S(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteMD3S(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteMoho(PVSurf *pvsurf, FILE *fp);
 
 //---------------------------------------------------------------------------
 #endif

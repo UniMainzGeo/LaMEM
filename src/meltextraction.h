@@ -59,6 +59,7 @@ struct Melt_Extraction_t
 	Vec   DMin, DMax,LDMin,LDMax;
 	Vec   MeltID0,MeltID1,MeltID2,MeltID3;
 	Vec   MeltID0S,MeltID1S,MeltID2S,MeltID3S;
+	Vec   lmagmathick;
 };
 
 

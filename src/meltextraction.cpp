@@ -198,6 +198,7 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr)
 
 	ierr = DMCreateGlobalVector(jr->surf->DA_SURF, &MEPar->SurfMoho)                   ;     CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(jr->surf->DA_SURF, &MEPar->LSurfMoho)                   ;     CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(jr->surf->DA_SURF, &MEPar->lmagmathick)                     ;     CHKERRQ(ierr);
 
 
 
@@ -294,6 +295,8 @@ PetscErrorCode MeltExtractionDestroy(JacRes *jr)
 	ierr = VecDestroy(&MEPar->LDMax)                    ;     CHKERRQ(ierr);
 	ierr = VecDestroy(&MEPar->SurfMoho)                   ;     CHKERRQ(ierr);
 	ierr = VecDestroy(&MEPar->LSurfMoho)                   ;     CHKERRQ(ierr);
+	ierr = VecDestroy(&MEPar->lmagmathick)                   ;     CHKERRQ(ierr);
+
 
 
 
