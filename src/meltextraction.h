@@ -82,7 +82,7 @@ PetscErrorCode ReadMelt_Extraction(JacRes *jr, FILE *fp);
 PetscErrorCode Melt_Extraction__WriteRestart(JacRes *jr, FILE *fp);
 PetscScalar Compute_dM(PetscScalar mf, Melt_Ex_t *M_Ex_t, PetscScalar dt);
 PetscScalar Compute_dMex_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase );
-PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscInt ID_ME,  Melt_Ex_t *M_Ex_t, PetscInt update);
+PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscInt ID_ME,  Melt_Ex_t *M_Ex_t);
 PetscErrorCode Set_to_zero_Volumetric_source(JacRes *jr);
 PetscErrorCode Update_Volumetric_source(JacRes *jr);
 PetscErrorCode Save_Pressure_Temperature_Melt_Extracted(JacRes *jr,PetscInt ID_ME);

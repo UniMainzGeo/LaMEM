@@ -155,8 +155,23 @@ PetscErrorCode DBMatReadMeltExtraction_Par(DBMat *dbm, FB *fb)
 
 	}
 
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	PetscPrintf(PETSC_COMM_WORLD,"   Melt Extraction Law [%lld]                                      \n", (LLD)(melt_par->ID))                                             ;
+	PetscPrintf(PETSC_COMM_WORLD,"   Name                                            :   %s          \n", melt_par->Name)                                                  ;
+	PetscPrintf(PETSC_COMM_WORLD,"   Type                                            :   %s          \n", Type_)                                                           ;
+	PetscPrintf(PETSC_COMM_WORLD,"   Mleft                                           :   %1.3f [n.d.]\n", melt_par->Mleft)                                                 ;
+	PetscPrintf(PETSC_COMM_WORLD,"   Mtrs  (retained melt fraction)                  :   %1.3f [n.d.]\n", melt_par->Mtrs)                                                  ;
+	PetscPrintf(PETSC_COMM_WORLD,"   MMax  (change phase melt extraction threshold)  :   %1.3f [n.d.]\n", melt_par->Mmax)                                                  ;
+	PetscPrintf(PETSC_COMM_WORLD,"   DInt (normalized crustal depth intrusion        :   %1.3f [n.d.]\n", melt_par->DInt)                                                  ;
+	if(melt_par->Type == _Constant_flux_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"   timescale                                       :   %1.3f [%s]  \n", melt_par->timescale*scal->time,scal->lbl_time)    ;
+		PetscPrintf(PETSC_COMM_WORLD,"   volumetric_flux (Mleft/timescale)               :   %1.3f [1/%s]\n", melt_par->Mleft/(melt_par->timescale)*scal->time,scal->lbl_time) ;
+	}
+	PetscPrintf(PETSC_COMM_WORLD,"   T Intrusion                                     :   %1.0f [%s]\n",   melt_par->TInt*scal->temperature - scal->Tshift, scal->lbl_temperature)                           ;
+	PetscPrintf(PETSC_COMM_WORLD,"   IR (proportion of intrusion)                    :   %1.3f [n.d.]\n", melt_par->IR)                           ;
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
-	PetscPrintf(PETSC_COMM_WORLD,"   Melt Extraction Par [%lld] : Name = %s, Mleft = %g, Mtrs = %g, Phase_int = [%lld], Phase_eff = [%lld] T_int = %g, IR = %g\n", (LLD)(melt_par->ID), melt_par->Name, melt_par->Mleft, melt_par->Mtrs,melt_par->PhInt,melt_par->PhExt,melt_par->IR);
 
 
 
@@ -393,7 +408,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 
 		ierr = Set_to_zero_Vector(jr); CHKERRQ(ierr);
 
-		ierr = Compute_Comulative_Melt_Extracted(jr,actx, ID_ME,M_Ex_t, update); CHKERRQ(ierr);
+		ierr = Compute_Comulative_Melt_Extracted(jr,actx, ID_ME,M_Ex_t); CHKERRQ(ierr);
 
 		ierr = MeltExtractionExchangeVolume(jr,ID_ME,update,actx);            CHKERRQ(ierr);
 
@@ -438,7 +453,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 
 			ierr = Set_to_zero_Vector(jr); CHKERRQ(ierr);
 
-			ierr = Compute_Comulative_Melt_Extracted(jr,actx, ID_ME,M_Ex_t, update); CHKERRQ(ierr);
+			ierr = Compute_Comulative_Melt_Extracted(jr,actx, ID_ME,M_Ex_t); CHKERRQ(ierr);
 
 			ierr = Save_Pressure_Temperature_Melt_Extracted(jr,ID_ME);            CHKERRQ(ierr);
 
@@ -468,7 +483,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
     FreeSurf            *surf   ;
 
 
-	PetscInt     i, j, k, sx, sy, sz, nx, ny, nz, L, condition,K1,K2,in;
+	PetscInt     i, j, k, sx, sy, sz, nx, ny, nz, L,K1,K2,in;
 	Vec          global_volume ;
 	PetscScalar  bz, ez;
 	PetscScalar  IR, dx, dy, dz,Z,vol3,DZ,vol2;
@@ -553,7 +568,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 			DZ=0.0;
 			vol2=0.0;
 			vol3=0.0;
-			condition = 0;
 			vol2=IR*vdgmvvecmerge2[L][j][i];
 			D1 =Thickness[L][j][i];
 			D = MohoG[L][j][i] + D1*M_Ex_t[ID_ME].DInt;
@@ -1663,13 +1677,12 @@ PetscScalar Compute_dM(PetscScalar mfeff, Melt_Ex_t *M_Ex_t, PetscScalar dt)
 #define __FUNCT__ "Compute_dMex_Marker"
 PetscScalar Compute_dMex_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase )
 {
-	PetscInt      n,ipn,c=0,phase,nmark;
+	PetscInt      n,ipn,c=0,phase;
 	PetscScalar   Mext_b,Mext;
 
 
 
 	n = actx->markstart[ID+1] - actx->markstart[ID];
-	nmark   = actx->markstart[ID+1] - actx->markstart[ID];
 
 
 	Mext = 0.0;
@@ -1683,7 +1696,6 @@ PetscScalar Compute_dMex_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase )
 
 			c ++;
 		}
-		//if(actx->markstart[ID] == 0 )PetscPrintf(PETSC_COMM_SELF," nmark = %d ipn = %d, markstart = %d, ID = %d\n",c, ipn, actx->markstart[ID],ip);
 	}
 
 	if(c>0)
@@ -1699,10 +1711,8 @@ PetscScalar Compute_dMex_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase )
 //--------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "Compute_Comulative_Melt_Extracted"
-PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscInt ID_ME,  Melt_Ex_t *M_Ex_t, PetscInt update)
+PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscInt ID_ME,  Melt_Ex_t *M_Ex_t)
 {
-
-	SolVarCell     		*svCell ;
 	FDSTAG         		*fs   	;
 	PData          		*pd    	;
 	DBMat        		*dbm	;
@@ -1750,7 +1760,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 		dy = SIZE_CELL(j,sy,fs->dsy);
 		dz = SIZE_CELL(k,sz,fs->dsz);
 
-		svCell=&actx->jr->svCell[iter];
+
 
 		phRat = actx->jr->svCell[iter++].phRat; // take phase ratio on the central node
 		GET_CELL_ID(ID, i-sx, j-sy, k-sz, fs->dsx.ncels, fs->dsy.ncels)
