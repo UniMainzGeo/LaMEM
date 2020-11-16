@@ -69,15 +69,13 @@
 
 	# Velocity boundary condition
 
-	bvel_face    =  5     # face identifier (1-left 2-right 3-front 4-back, 5-inflow balance yourself)
+	bvel_face    =  SymmetricSideFlow_CompensatingBottom     # # Face identifier  (Left; Right; Front; Back; SymmetricSideFlow_CompensatingBottom)
 	bvel_phase   =  1     # phase number of inflow material
 	bvel_bot     =  -50   # bottom coordinate of inflow window
 	bvel_top     =  50    # top coordinate of inflow window
 	bvel_velin   =  -1    # inflow velocity
-	bvel_velbot  =  0.5   # bottom inflow velocity - TM May 5 2018
-	bvel_veltop  =  -0.5  # top inflow velocity (only applied when !open_top_bound- TM May 14 2018)
-	bvel_phaseinb =  3    # bottom inflow phase - TM May 6 2018
-	bvel_phaseint =  0    # top inflow phase - TM May 14 2018 
+	bvel_velbot  =  0.5   # bottom inflow velocity
+	bvel_veltop  =  -0.5  # top inflow velocity
 
 
 # temperature on the top & bottom boundaries

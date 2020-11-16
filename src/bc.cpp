@@ -331,11 +331,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// boundary inflow/outflow velocities
 	ierr = getStringParam(fb, _OPTIONAL_, "bvel_face", str, NULL); CHKERRQ(ierr);  // must have component
-    if     	(!strcmp(str, "Left"))      bc->face=1;	
-	else if (!strcmp(str, "Right"))     bc->face=2;	
-	else if (!strcmp(str, "Front"))     bc->face=3;	
-	else if (!strcmp(str, "Back"))      bc->face=4;	
-	
+    if     	(!strcmp(str, "Left"))                                      bc->face=1;	
+	else if (!strcmp(str, "Right"))                                     bc->face=2;	
+	else if (!strcmp(str, "Front"))                                     bc->face=3;	
+	else if (!strcmp(str, "Back"))                                      bc->face=4;	
+	else if (!strcmp(str, "SymmetricSideFlow_CompensatingBottom"))      bc->face=5;
+		
 	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 	1, -1); 		CHKERRQ(ierr);
 
 	if(bc->face)
@@ -361,9 +362,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		ierr = getScalarParam(fb, _REQUIRED_,     "bvel_temperature_constant", &bc->bvel_constant_temperature, 1, scal->time);     CHKERRQ(ierr);
 		}
 
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TMorrow May 14 2018
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TMorrow May 14 2018
-		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase", &bc->phase, 1, mID           ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr);
+		
 
 		if(bc->face_out)
 		{
@@ -493,8 +494,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
     if (bc->face>0){
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
-                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %i [1-left; 2-right; 3-front; 4-back]\n", bc->face);
-     if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }     
+                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %i [1-left; 2-right; 3-front; 4-back; 5-symmetric side flow with compensating top/bottom]\n", bc->face);
+     if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }
      if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
      else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }     
 
@@ -502,6 +503,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %1.2f %s \n", bc->velin*scal->velocity, scal->lbl_velocity); 
      if (bc->velout>0){     PetscPrintf(PETSC_COMM_WORLD, "      Outflow velocity                        : %1.2f %s \n", bc->velout*scal->velocity, scal->lbl_velocity); }
      else if (!bc->face_out) {                 PetscPrintf(PETSC_COMM_WORLD, "       Outflow velocity from mass balance     @ \n"); }
+     if (bc->face==5){      PetscPrintf(PETSC_COMM_WORLD, "      Bottom flow velocity                    : %1.2f %s \n", bc->velbot*scal->velocity, scal->lbl_velocity); }
+     if (bc->face==5 && !bc->top_open) {     PetscPrintf(PETSC_COMM_WORLD, "      Top flow velocity                       : %1.2f %s \n", bc->veltop*scal->velocity, scal->lbl_velocity); }
 
      if (bc->relax_dist>0){ PetscPrintf(PETSC_COMM_WORLD, "      Velocity smoothening distance           : %1.2f %s \n", bc->relax_dist*scal->length, scal->lbl_length); }  
 
@@ -1493,7 +1496,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 		END_STD_LOOP
 	}
 
-	if(bc->face == 5) // TMorrow 05 May 2018
+	if(bc->face == 5)
 	{
 		START_STD_LOOP
 		{
@@ -1545,9 +1548,9 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 		END_STD_LOOP
 	}
 
-	//------------------
-	// Z points - TMorrow 05 May 2018
-	//------------------
+	//---------
+	// Z points 
+	//---------
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_NODE_RANGE(nz, sz, fs->dsz)
