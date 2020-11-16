@@ -9,7 +9,7 @@ def test_2D():
 
   # Test inflow/outflow conditions in 2D using optimized LaMEM
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t17_InflowOutflow/PlumeLithos_Interaction_2D.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = '../bin/opt/LaMEM -ParamFile ./t17_InflowOutflow/PlumeLithos_Interaction_2D.dat -nstep_max 50' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't17_InflowOutflow/InflowOutflow-2D_p1.expected'
 
   def comparefunc(unittest):
@@ -23,6 +23,9 @@ def test_2D():
     key = re.escape("|mRes|_2")
     unittest.compareFloatingPoint(key,1e-4)
 
+    key = re.escape("|eRes|_2")
+    unittest.compareFloatingPoint(key,1e-7)
+    
   # Create unit test object
   ex1 = pth.pthUnitTest('t17_InflowOutflow2D_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
