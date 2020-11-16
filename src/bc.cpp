@@ -355,7 +355,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		}
 		else if(bc->bvel_temperature_inflow == 1)
 		{
-		ierr = getScalarParam(fb, _REQUIRED_,     "bvel_constant_temperature", &bc->bvel_constant_temperature, 1, scal->time);     CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_,     "bvel_temperature_constant", &bc->bvel_constant_temperature, 1, scal->time);     CHKERRQ(ierr);
 		}
 
 		if(bc->face_out)
