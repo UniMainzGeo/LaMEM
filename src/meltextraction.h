@@ -31,12 +31,10 @@
  **        Anton Popov      [popov@uni-mainz.de]
  **
  **
- **    Main development team:
- **         Anton Popov      [popov@uni-mainz.de]
- **         Boris Kaus       [kaus@uni-mainz.de]
- **         Tobias Baumann
- **         Adina Pusok
- **         Arthur Bauville
+ **    This routine:
+ **         Andrea Piccolo
+ **         Georg Reuber
+ **
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------

@@ -31,34 +31,13 @@
  **        Anton Popov      [popov@uni-mainz.de]
  **
  **
- **    Main development team:
- **         Anton Popov      [popov@uni-mainz.de]
- **         Boris Kaus       [kaus@uni-mainz.de]
- **         Tobias Baumann
- **         Adina Pusok
- **         Arthur Bauville
+ **    This routine:
+ **         Andrea Piccolo
+ **         Georg  Reuber
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 
-/*
- * TODO:
- * - Pay attention local and global might still be inconsistent in Exchange Volume
- *
- * - So far only tested for exactly 1 extraction step
- * - What happens if the melt quantity actually decreases instead of increase? This might be not treated here yet
- * - What pressure and T should the new marker have?
- *   #The temperature is fixed and given as material parameter. The pressure must be interpolated from the surrounding.
- * - Two things are hard-coded (ctrl+F "hard-coded" to find them)
- * - How to handle the actual volume change in injection?:
- * 		1) Delete all markers from cell and inject equally distributed (and volume equal)
- *
- *      2) Reduce volume of existing markers in the cell such that volume is again correct?
- * 		3) Is it phyiscally  correct if it is just corrected for the inflated volumeas is done right now? <?>
- * 		4) Artificially massively increase the injected volume until it is correct? No
- *
- * 	POTENTIAL HELP:
- * 	- Implement a timestep criterium for the melt extraction. Only incrementally move melt up such that velocity doesn't run away.
- */
+
 #include "LaMEM.h"
 #include "cvi.h"
 #include "phase.h"
