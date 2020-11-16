@@ -37,8 +37,6 @@
  **         Boris Kaus       [kaus@uni-mainz.de]
  **			Andrea Piccolo 
  ** 		Jianfeng Yang
- **         Tobias Baumann
- **         Adina Pusok
  **		
  **		Main responsible persons for this routine:
  **			Andrea Piccolo
@@ -65,6 +63,18 @@
 	They thus allow adding phase transitions to a setup in a rahther simple manner.
 	Moreover, a number of phase transitions have been predefined as profiles, such as
 	the basalt-eclogite reaction.
+
+	Routines that deal with phase transitions on particles. We really deal with
+	two kinds of PT:
+		1) change the phase number of a particle once a certain condition is reached
+		   like depth of a particle of P/T conditions. The 'new' phase should
+		   be defined accordingly in the input file
+
+		2) We can take a thermodynamic phase diagram into account while computing 
+			the density of a phase in the code. The same diagram can be used to
+			compute melt fraction and the effective density of the partially molten
+			material (taking into account that the actual melt content may be less
+			than what the phase diagram indicates as a result of melt extraction)   
 */
 
 #include "LaMEM.h"
@@ -119,36 +129,69 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ph->Type = _Clapeyron_;
 		ierr    =   Set_Clapeyron_Phase_Transition(ph, dbm, fb);   	CHKERRQ(ierr);
 	}
-
-
-
+	else if(!strcmp(Type_,"Box"))
+	{
+		ph->Type = _Box_;
+		ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);   		CHKERRQ(ierr);
+	}
+	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
-	ierr = getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
-	ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseAbove",       ph->PhaseAbove,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb,   _OPTIONAL_, "DensityBelow",     ph->DensityBelow,   ph->number_phases , 1.0);               CHKERRQ(ierr);
-	ierr = getScalarParam(fb,   _OPTIONAL_, "DensityAbove",     ph->DensityAbove,   ph->number_phases,  1.0);               CHKERRQ(ierr);
+	
+	if ( ph->Type == _Box_ ){
+		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+	}
+	else{
+		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseAbove",       ph->PhaseAbove,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+		ierr = getScalarParam(fb,   _OPTIONAL_, "DensityBelow",     ph->DensityBelow,   ph->number_phases , 1.0);               CHKERRQ(ierr);
+		ierr = getScalarParam(fb,   _OPTIONAL_, "DensityAbove",     ph->DensityAbove,   ph->number_phases,  1.0);               CHKERRQ(ierr);
+	}
+	
 
     ierr = getStringParam(fb, _OPTIONAL_, "PhaseDirection", 	str_direction, "BothWays"); 					            CHKERRQ(ierr);  
 	if     	(!strcmp(str_direction, "BelowToAbove"))    ph->PhaseDirection  = 1;
-	else if (!strcmp(str_direction, "AboveToBelow"))    ph->PhaseDirection  = 2;
-    else if (!strcmp(str_direction, "BothWays"    ))    ph->PhaseDirection  = 0;
+	else if (!strcmp(str_direction, "OutsideToInside")) ph->PhaseDirection  = 1;
+    else if (!strcmp(str_direction, "AboveToBelow"))    ph->PhaseDirection  = 2;
+	else if (!strcmp(str_direction, "InsideToOutside")) ph->PhaseDirection  = 2;
+	else if (!strcmp(str_direction, "BothWays"    ))    ph->PhaseDirection  = 0;
     else{      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Phase direction %s \n", str_direction);  }
-        
+	
+	
 
 	if (!ph->PhaseAbove || !ph->PhaseBelow)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type (Constant) (Clapeyron) ", (LLD)ID);
 	}
     
-    PetscPrintf(PETSC_COMM_WORLD,"     Phase Above        :  ");
-    for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseAbove[i])); }
-    PetscPrintf(PETSC_COMM_WORLD," \n");
+	if (ph->Type == _Box_ ){
+		
+		if (ph->number_phases>0){
+			PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
+			for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseOutside[i])); }
+			PetscPrintf(PETSC_COMM_WORLD," \n");
 
-    PetscPrintf(PETSC_COMM_WORLD,"     Phase Below        :  ");
-    for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseBelow[i])); }
-    PetscPrintf(PETSC_COMM_WORLD," \n");
-    PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
-    
+			PetscPrintf(PETSC_COMM_WORLD,"     Phase Inside       :  ");
+			for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseInside[i])); }
+			PetscPrintf(PETSC_COMM_WORLD," \n");
+			PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
+		}
+		else{
+			PetscPrintf(PETSC_COMM_WORLD,"     No phase change    @   \n");
+		}
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"     Phase Above        :  ");
+		for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseAbove[i])); }
+		PetscPrintf(PETSC_COMM_WORLD," \n");
+
+		PetscPrintf(PETSC_COMM_WORLD,"     Phase Below        :  ");
+		for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseBelow[i])); }
+		PetscPrintf(PETSC_COMM_WORLD," \n");
+		PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
+	}
+	
 	PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------------------------//
@@ -214,7 +257,80 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 }
 //------------------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
-#define __FUNCT__ "Set_Constant_Phase_Transition"
+#define __FUNCT__ "Set_Box_Phase_Transition"
+PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
+{
+	Scaling      *scal;
+	char         Parameter[_str_len_];
+	PetscScalar  Box[6];
+	PetscInt 	 i;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal = dbm -> scal;
+
+	ierr = getScalarParam(fb, _REQUIRED_, "PTBox_Bounds",   	ph->bounds,  		6, scal->length);    			CHKERRQ(ierr);
+
+	ph->PhaseInside[0] = -1; 	// default
+	
+
+	for (i=0; i<6; i++){ Box[i] = ph->bounds[i]*scal->length; }		// dimensional units 
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Box \n", (LLD)(ph->ID));
+    PetscPrintf(PETSC_COMM_WORLD,"     Box Bounds         :   [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
+
+	if (ph->PhaseInside<0) PetscPrintf(PETSC_COMM_WORLD,"     Don't set phase    @   \n");
+
+	ierr = getStringParam(fb, _OPTIONAL_, "PTBox_TempType",   Parameter,  "none");    			CHKERRQ(ierr);
+	if(!strcmp(Parameter, "none"))
+	{
+		ph->TempType = 0;
+	    ierr = PetscPrintf(PETSC_COMM_WORLD,"     Don't set T inside @   \n");		CHKERRQ(ierr);
+	}
+	else if(!strcmp(Parameter, "constant"))
+	{
+		ph->TempType = 1;
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_cstTemp",   	&ph->cstTemp,  1, 1);    									CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Constant T inside  :   %1.1f %s \n", ph->cstTemp, scal->lbl_temperature);		CHKERRQ(ierr);
+	 	ph->cstTemp = (ph->cstTemp + scal->Tshift)/scal->temperature;
+	}
+	else if(!strcmp(Parameter, "linear"))
+	{
+		ph->TempType = 2;
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",   	&ph->topTemp,  1, 1);    									CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",   	&ph->botTemp,  1, 1);    									CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Linear Temp; bot T :   %1.1f %s \n", ph->botTemp, scal->lbl_temperature);		CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Linear Temp; top T :   %1.1f %s \n", ph->topTemp, scal->lbl_temperature);		CHKERRQ(ierr);
+		
+		ph->topTemp = (ph->topTemp + scal->Tshift)/scal->temperature;
+		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
+
+	}
+	else if(!strcmp(Parameter, "halfspace"))
+	{
+		ph->TempType = 3;
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",   	&ph->topTemp,  		1, 1);    									CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",   	&ph->botTemp,  		1, 1);    									CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_thermalAge", 	&ph->thermalAge,  	1, scal->time);    							CHKERRQ(ierr);
+		
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; top T   :   %1.1f %s \n", ph->topTemp, 				scal->lbl_temperature);		CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; bot T   :   %1.1f %s \n", ph->botTemp, 				scal->lbl_temperature);		CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; Age     :   %1.1f %s \n", ph->thermalAge*scal->time, 	scal->lbl_time);			CHKERRQ(ierr);
+		
+		ph->topTemp = (ph->topTemp + scal->Tshift)/scal->temperature;
+		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
+
+	}
+	else{
+		  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType [none; constant; linear; halfspace]");
+	}
+	
+	PetscFunctionReturn(0);
+
+}
+//------------------------------------------------------------------------------------------------------------//
+#undef __FUNCT__
+#define __FUNCT__ "Set_Clapeyron_Phase_Transition"
 PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 {
 	PetscFunctionBegin;
@@ -402,6 +518,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	{
 		PhaseTrans = jr->dbm->matPhtr+nPtr;
+		PetscPrintf(PETSC_COMM_WORLD," PhaseTrans->Type=%i \n",PhaseTrans->Type);
+				
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
 		{
 
@@ -409,8 +527,14 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 
 			num_phas    =   PhaseTrans->number_phases;
-			below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow, P, num_phas);
-			above       =   Check_Phase_above_below(PhaseTrans->PhaseAbove, P, num_phas);
+			if ( PhaseTrans->Type == _Box_ ){
+				below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
+				above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
+			}
+			else {
+				below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas);
+				above       =   Check_Phase_above_below(PhaseTrans->PhaseAbove,   P, num_phas);
+			}
 
 			if  ( (below >= 0) || (above >= 0) )
 			{
@@ -419,13 +543,25 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
                  // the current phase is indeed involved in a phase transition
 				if      (   below>=0    )
 				{
-					PH1 = PhaseTrans->PhaseBelow[below];
-					PH2 = PhaseTrans->PhaseAbove[below];
+					if ( PhaseTrans->Type == _Box_ ){
+						PH1 = PhaseTrans->PhaseInside[below];
+						PH2 = PhaseTrans->PhaseOutside[below];
+					}
+					else{
+						PH1 = PhaseTrans->PhaseBelow[below];
+						PH2 = PhaseTrans->PhaseAbove[below];
+					}
 				}
 				else if (   above >=0   )
 				{
-					PH1 = PhaseTrans->PhaseBelow[above];
-					PH2 = PhaseTrans->PhaseAbove[above];
+					if ( PhaseTrans->Type == _Box_ ){
+						PH1 = PhaseTrans->PhaseInside[above];
+						PH2 = PhaseTrans->PhaseOutside[above];
+					}
+					else{
+						PH1 = PhaseTrans->PhaseBelow[above];
+						PH2 = PhaseTrans->PhaseAbove[above];
+					}
 				}
 			
 				ph          =   Transition(PhaseTrans, P, PH1, PH2, jr->ctrl);
@@ -466,7 +602,10 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	{
 		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl);
 	}
-
+	else if(PhaseTrans->Type==_Box_)
+	{
+		ph = Check_Box_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl);
+	}
 
 	return ph;
 }
@@ -517,6 +656,33 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 	return ph;
 }
 
+//------------------------------------------------------------------------------------------------------------//
+PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl)
+{
+	PetscInt ph;
+	
+	
+		
+	
+	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
+		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
+		 (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) 	){
+		
+		// We are within the box
+		ph = PH1;
+	
+	//	PetscPrintf(PETSC_COMM_WORLD,"Cec Box = P=[%f,%f,%f] %f %f \n",P->X[0],P->X[1],P->X[2],PhaseTrans->bounds[4],PhaseTrans->bounds[5] );
+		
+	}
+	else{
+		// Outside
+		ph = PH2;
+
+	}
+
+
+	return ph;
+}
 //------------------------------------------------------------------------------------------------------------//
 PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl)
 {
