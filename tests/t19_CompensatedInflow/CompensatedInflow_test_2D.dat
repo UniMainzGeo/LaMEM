@@ -1,0 +1,277 @@
+# This is an example of symmetric versus asymmetric rifting of a crustal setup
+# The model has a viscoelastoplastic rheology and the geometry is created with the build-in 
+# geometry objects. We use a multigrid solver
+#
+# With the parameters provided, you can go from a symmetric mode of rifting to an 
+# asymmetric one by decreasing the viscosity of the lower layer from 1e22 to 1e21
+#
+# This setup is inspired by Huismans et al. (2005), JGR Vol 110, B02406 even though they
+# employed a viscoplastic rheology, rather than a viscoelastoplastic rheology
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units            = geo		# geological units 
+	
+	unit_temperature = 1000
+	unit_length      = 1e3
+	unit_viscosity   = 1e19
+	unit_stress      = 1e9
+	
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 100     # simulation end time
+	dt        = 0.001   # initial time step
+	dt_min    = 1e-5    # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1   	# maximum time step
+	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
+	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 1.0     # CFL criterion for elasticity
+	nstep_max = 70      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 5       # save output every n steps
+	nstep_rdb = 100     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+	nel_x = 32
+	nel_y = 2
+	nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = -100  100
+	coord_y = -2.5  2.5
+	coord_z = -100  100
+
+#===============================================================================
+# Free surface
+#===============================================================================
+	surf_use           = 1                # free surface activation flag
+	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+	surf_level         = 0                # initial level
+	surf_air_phase     = 0                # phase ID of sticky air layer
+	surf_max_angle     = 45.0             # maximum angle with horizon (smoothed if larger)
+	
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+	#exx_num_periods  = 1      # number intervals of constant strain rate (x-axis)
+	#exx_strain_rates = 1e-15  # strain rates for each interval (positive=extension)
+	
+	open_top_bound = 1
+
+	# Velocity boundary condition
+
+	bvel_face    =  CompensatingInflow     # # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
+	bvel_phase   =  1     # phase number of inflow material
+	bvel_bot     =  -50   # bottom coordinate of inflow window
+	bvel_top     =  50    # top coordinate of inflow window
+	bvel_velin   =  -1    # inflow velocity
+	bvel_velbot  =  0.5   # bottom inflow velocity
+	bvel_veltop  =  -0.5  # top inflow velocity
+
+
+# temperature on the top & bottom boundaries
+
+	temp_top  = 0.0
+	temp_bot  = 1300.0
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -9.81  # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 1              # initial guess flag
+	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
+#	p_litho_visc    = 1              # use lithostatic pressure for creep laws
+	p_litho_plast   = 1              # use lithostatic pressure for plasticity
+	eta_min        = 1e19           # viscosity upper bound
+	eta_max        = 1e25           # viscosity lower limit
+	eta_ref        = 1e22           # reference viscosity (initial guess)
+	min_cohes      = 1e6            # cohesion lower bound
+	min_fric       = 1.0            # friction lower bound
+	tau_ult        = 1e9            # ultimate yield stress
+
+	
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	superlu_dist			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e3
+		
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	advect         = rk2               # advection scheme
+	interp         = minmod             # velocity interpolation scheme
+	mark_ctrl      = basic             # marker control type
+	nmark_lim      = 8 100            # min/max number per cell
+	
+
+# Geometric primitives:
+	
+	# sticky air
+	<BoxStart>
+		phase  = 0
+		bounds = -100 100 -2.5 2.5 0 100  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+	
+	# Upper lithosphere 1
+	<BoxStart>
+		phase  = 1
+		bounds = -100 100 -2.5 2.5 -20 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+	
+	# Lower lithosphere
+	<BoxStart>
+		phase  = 3
+		bounds = -100 100 -2.5 2.5 -100 -20  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# Weak Seed
+	<BoxStart>
+		phase  = 3
+		bounds = -5 5 -2.5 2.5 -20 -15  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+	
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = CompensatedInflow2D # output file name
+	out_pvd             = 1       	# activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+	out_eff_press       = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_yield           = 1
+	out_plast_strain    = 1
+	out_plast_dissip    = 1
+	out_tot_displ       = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	
+# AVD phase viewer output options (requires activation)
+
+	out_avd     		= 1 # activate AVD phase output
+	out_avd_pvd 		= 1 # activate writing .pvd file
+	out_avd_ref 		= 3 # AVD grid refinement factor
+	
+# Free surface output options (can be activated only if surface tracking is enabled)
+
+	out_surf            = 1 # activate surface output
+	out_surf_pvd        = 1 # activate writing .pvd file
+	out_surf_velocity   = 1
+	out_surf_topography = 1
+	out_surf_amplitude  = 1
+	
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+	# Strain softening parameters
+	<SofteningStart>
+		ID   = 0
+		A    = 0.87		# reduction ratio = 1-FinalParameter/InitialParameter
+		APS1 = 0.5
+		APS2 = 1.5
+	<SofteningEnd>
+	
+	# Sticky Air
+	<MaterialStart>
+		ID  = 0 	# phase id
+		rho = 0 	# density
+		G   = 5e10
+		eta = 1e18 	# viscosity
+		
+		ch  		=  20e6	  # Cohesion
+		fr  		=  15	  # initial friction angle
+	<MaterialEnd>
+
+	# Upper Lithosphere 1
+	<MaterialStart>
+		ID  		= 	1       # phase id
+		rho 		= 	3300    # density
+		eta 		= 	1e24    # viscosity
+		G   		= 	5e10
+
+		ch  		=  	20e6	  # Cohesion
+		fr  		=  	15	  # initial friction angle
+		frSoftID   	=  	0     # softening ID
+	<MaterialEnd>
+
+	# Upper Lithosphere 2
+	<MaterialStart>
+		ID  		= 	2       # phase id
+		rho 		= 	3300    # density
+		eta 		= 	1e24    # viscosity
+		G   		= 	5e10
+		
+		ch  		=  	20e6	  # Cohesion
+		fr  		=  	15	  # initial friction angle
+		frSoftID   	=  	0     # softening ID
+	<MaterialEnd>
+	
+	# Lower Lithosphere
+	<MaterialStart>
+		ID  		= 	3       # phase id
+		rho 		= 	3300    # density
+		eta 		= 	1e20    # viscosity		1e22: symmetric, 1e21: asymmetric
+		G   		= 	5e10
+
+	<MaterialEnd>
+	
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+#	-snes_ksp_ew
+#	-snes_ksp_ew_rtolmax 1e-4
+	-snes_rtol 1e-4					
+	-snes_atol 1e-4					
+	-snes_max_it 50					
+	
+	-snes_PicardSwitchToNewton_rtol 1e-4   # relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
+
+	
+	-js_ksp_type fgmres
+	-js_ksp_monitor 				# display how the inner iterations converge
+	-js_ksp_max_it 20				# inner
+	-js_ksp_atol 1e-8
+	-js_ksp_rtol 1e-4
+
+	-snes_linesearch_type l2
+	-snes_linesearch_monitor
+	-snes_linesearch_maxstep 10
+	
+<PetscOptionsEnd>
+
+#===============================================================================
