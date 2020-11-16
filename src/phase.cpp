@@ -49,6 +49,7 @@
 #include "objFunct.h"
 #include "JacRes.h"
 #include "phase_transition.h"
+#include "meltextraction.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatCreate"
@@ -178,7 +179,38 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		
 		}
 		ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+		// setup block access mode
+		ierr = FBFindBlocks(fb, _OPTIONAL_, "<Melt_Extraction_Par_Start>", "<Melt_Extraction_Par_End>"); CHKERRQ(ierr);
 
+			if(fb->nblocks)
+			{
+				// print overview of softening laws from file
+				PetscPrintf(PETSC_COMM_WORLD,"Melt Extraction Law: \n");
+
+				// initialize ID for consistency checks
+				for(jj = 0; jj < _max_ME_par; jj++) dbm->matMexT[jj].ID = -1;
+
+				// error checking
+				if(fb->nblocks > _max_ME_par)
+				{
+					SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many melt_extraction law specified specified! Max allowed: %lld", (LLD)_max_num_tr_);
+				}
+
+				// store actual number of Phase Transition laws
+				dbm->numMEPar = fb->nblocks;
+
+				PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------%d\n",dbm->numMEPar);
+
+				// read each individual softening law
+				for(jj = 0; jj < fb->nblocks; jj++)
+				{
+					ierr = DBMatReadMeltExtraction_Par(dbm, fb); CHKERRQ(ierr);
+
+					fb->blockID++;
+				}
+			}
+
+			ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 	
 
     //=================================================

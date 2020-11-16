@@ -567,8 +567,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 				// The grid is assumed to BE uniform.
 
 					vol=-IR*(vdgmvvecmerge2[L][j][i])/(DMax[L][j][i]-DMin[L][j][i]);
-					if(D1> (jr->ctrl.MinTk))
-					{
 
 					// Are the extreme of the interval in the same processor?
 						if(DMin[L][j][i] >= bz && DMin[L][j][i] < ez && DMax[L][j][i] >= bz && DMax[L][j][i] < ez)
@@ -645,11 +643,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 							dz = SIZE_CELL(in,sz,fs->dsz);
 							Mipbuff[in][j][i]+=vol*dz;
 							}
-						}
-					else
-					{
-						condition = 1 ;
-					}
 				}
 			}
 			if(update==1)

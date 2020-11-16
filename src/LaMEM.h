@@ -143,13 +143,13 @@
 #define _max_tr_ 5
 
 // maximum number of phase diagrams
-#define _max_num_pd_ 8
+#define _max_num_pd_ 20
 
 // maximum grid size of phase diagram
 #define _max_pd_sz_ 40100
 
 // length of unique phase diagram name
-#define _pd_name_sz_ 54
+#define _pd_name_sz_ 90
 
 // length of scaling unit label
 #define _lbl_sz_ 23

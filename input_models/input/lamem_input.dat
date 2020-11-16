@@ -280,6 +280,8 @@
 	mfmax           = 0.1            # maximum melt fraction affecting viscosity reduction
 	lmaxit          = 25             # maximum number of local rheology iterations 
 	lrtol           = 1e-6           # local rheology iterations relative tolerance
+	MeltExtraction  = 1              # Melt extraction activaction flag. 
+	
 	
 
 # Groundwater level type specification:
@@ -513,6 +515,38 @@
 		PhaseAbove              =   4 5 7
 		PhaseBelow              =   1 2 3
 	<PhaseTransitionEnd>
+	
+	
+	
+	<Melt_Extraction_Par_Start>
+		ID     = 0                 # ID Melt_Extraction
+		Name   = Mantle_ME         # Name of melt extraction
+		Type   = _Constant_        # Type of melt extraction (_Constant_ = fixed amount of volumetric melt fr extracted, Constant_flux constant velocity of melt extraction
+		M_left = 0.05              # Amount of melt fr allowed to escape each timestep (or, the numerator of the flux)
+		M_trs  = 0.03              # Minimal amount of melt that remains in the source
+		M_Max  = 0.10              # maxima amount of total melt extracted to change phase
+		IR     = 0.6               # Intrusion proportion
+		T_Int  = 1200              # Temperature of intrusion
+		Phase_effusive = 8         # Phase of extrusion
+		Phase_intrusive = 15       # Phase of intrusion
+		DInt             = 0.5     # Depth of injection (i.e. depth/thickness+moho depth)
+		#timescale =      = 0.01   # Mleft/timescale = constant flux. It is a required parameters in case in which the user choose constant flux
+	<Melt_Extraction_Par_End>
+
+	<Melt_Extraction_Par_Start>
+		ID     = 1
+		Name   = MaficCrust_ME
+		Type   = _Constant_
+		M_left = 0.05
+		M_trs  = 0.08
+		M_Max  = 0.15
+		IR     = 1.0
+		T_Int  = 800
+		Phase_effusive = 13
+		Phase_intrusive = 13
+		DInt             = 0.8
+	<Melt_Extraction_Par_End>
+	
 
 # Define material properties for all phases (maximum 32)
 # By default all rheological mechanisms are deactivated
@@ -570,6 +604,9 @@
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
         rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
 		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar)
+		pMant      = 1.0    # mantle or crustal phase (mantle =1.0, crustal phase = 0.0)
+		ID_Melt_Ex = 0      # melt extraction law ID
+		phNext     = 2      # after 0.1 or 0.5 of total melt extracted the phase is changed to phNext
 	<MaterialEnd>
 
 #===============================================================================

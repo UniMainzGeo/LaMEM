@@ -189,7 +189,6 @@ struct Controls
 	PetscScalar lrtol;          // local rheology iterations relative tolerance
 	PetscInt    Phasetrans; // Flag to activate passive tracer routines
 	PetscInt    MeltExt       ; // Flag to activate melt extraction
-	PetscScalar MinTk         ;
 };
 
 //---------------------------------------------------------------------------
