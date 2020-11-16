@@ -335,7 +335,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	else if (!strcmp(str, "Right"))                                     bc->face=2;	
 	else if (!strcmp(str, "Front"))                                     bc->face=3;	
 	else if (!strcmp(str, "Back"))                                      bc->face=4;	
-	else if (!strcmp(str, "SymmetricSideFlow_CompensatingBottom"))      bc->face=5;
+	else if (!strcmp(str, "CompensatingInflow"))                        bc->face=5;
 		
 	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 	1, -1); 		CHKERRQ(ierr);
 

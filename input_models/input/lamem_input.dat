@@ -181,7 +181,7 @@
 	dbox_zvel   = -1.0                      # vertical velocity
 
 # Inflow velocity boundary condition
-	bvel_face                 =          Left                        # Face identifier  (Left; Right; Front; Back; SymmetricSideFlow_CompensatingBottom)
+	bvel_face                 =         Left                         # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
 	bvel_face_out             =         1                            # do we have outflow @ opposite boundary?
 	bvel_bot                  =        -20.0                         # bottom coordinate of inflow window
 	bvel_top                  =        -10.0                         # top coordinate of inflow window
