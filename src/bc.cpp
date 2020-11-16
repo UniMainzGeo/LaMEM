@@ -1,6 +1,6 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    Copyright (c) 2011-2020, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
  **
  **    This software was developed at:
@@ -31,12 +31,10 @@
  **        Anton Popov      [popov@uni-mainz.de]
  **
  **
- **    Main development team:
+ **    This routine:
  **         Anton Popov      [popov@uni-mainz.de]
  **         Boris Kaus       [kaus@uni-mainz.de]
- **         Tobias Baumann
- **         Adina Pusok
- **         Arthur Bauville
+ **         Andrea Piccolo   [piccolo@uni-mainz.de]
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 
