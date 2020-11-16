@@ -188,8 +188,8 @@
 	bvel_velin                =         1.0                          # inflow velocity
 	bvel_velout               =         0.0                          # outflow velocity (if not specified, computed from mass balance)
 	bvel_relax_d              =         100                          # distance over which velocity is reduced
-	bvel_velbot               =         0   					     # bottom inflow velocity for use with bvel->face=5 - TMorrow May 5 2018
-	bvel_veltop               =         0                            # top inflow velocity for use with bvel->face=5 - TMorrow May 5 2018
+	bvel_velbot               =         0   					     # bottom inflow velocity for use with bvel_face=CompensatingInflow
+	bvel_veltop               =         0                            # top inflow velocity for use with bvel_face=CompensatingInflow
 	bvel_temperature_inflow   =        Fixed_thermal_age             # Thermal age of the plate is constant
                               =        Constant_T_inflow             # Temperature of the inflow material is constant everywhere
 	bvel_thermal_age          =        10                            # In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
