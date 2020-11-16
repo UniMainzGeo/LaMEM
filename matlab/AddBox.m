@@ -43,23 +43,19 @@ function [Phase,Temp] = AddBox(Phase,Temp,X,Y,Z,BlockBounds, PhaseBlock, varargi
 %
 %
 
-% Process input parameter
-p = inputParser;
-addRequired(p,'BlockBounds');                       % required input
-addRequired(p,'PhaseBlock');                        % required input    
-addOptional(p,'TempType',   'None');                % optional
-addOptional(p,'cstTemp',    1000);                  % optional
-addOptional(p,'topTemp',    20,     @isscalar);     % optional
-addOptional(p,'botTemp',    1350,   @isscalar);     % optional
-addOptional(p,'thermalAge', 50,   @isscalar);       % optional
-addOptional(p,'MORside',    'Left');                % Side where the ridge is
-addOptional(p,'SpreadingVel', 5,   @isscalar);      % Spreading velocity away from ridge [cm/yr]
-addOptional(p,'AgeRidge',     0,   @isscalar);      % Thermal age of the ridge [0 by default]
-addOptional(p,'DipAngle',     0,   @isscalar);      % the dip angle of the whole box in degrees
-addOptional(p,'RotationPoint',   [0 0 0]);          % the side of the box that acts as origin 
-addOptional(p,'StrikeAngle',  0,   @isscalar);      % the strike angle of the whole box in degrees
-parse(p,BlockBounds, PhaseBlock,varargin{:});
-
+% Process input parameters & set default parameters (see function below)
+p   =   [];
+[p] =   ParseInput(p,varargin,'TempType',       'None'	);   
+[p] =   ParseInput(p,varargin,'cstTemp',        1000  	);   % Temperature in box in case it has a constant T
+[p] =   ParseInput(p,varargin,'botTemp',        1350 	);   % Temperature @ bottom of box
+[p] =   ParseInput(p,varargin,'topTemp',        20   	);   % Temperature @ top of plate
+[p] =   ParseInput(p,varargin,'thermalAge',     50  	);   % Thermal age of plate if it has a halfspace cooling profile
+[p] =   ParseInput(p,varargin,'MORside',        'Left'	);   % Side where the ridge is
+[p] =   ParseInput(p,varargin,'SpreadingVel',   5       );   % Spreading velocity away from ridge [cm/yr]
+[p] =   ParseInput(p,varargin,'AgeRidge',       0       );   % Thermal age of the ridge [0 by default]
+[p] =   ParseInput(p,varargin,'DipAngle',       0       );   % the dip angle of the whole box in degrees
+[p] =   ParseInput(p,varargin,'RotationPoint', [0 0 0]  );   % the point that acts as origin around which we rotate 
+[p] =   ParseInput(p,varargin,'StrikeAngle',    0       );   % the strike angle of the whole box in degrees
 
 
 % Find block indices 
@@ -163,3 +159,32 @@ switch lower(p.Results.TempType)
     otherwise
         error('Unknown TempType')
 end
+
+
+
+
+% -------------------------------------------------------------------------
+function [p] = ParseInput(p,varargin,VariableName,   Value)
+% scans through the input parameters
+
+
+if ~isfield(p,'Results')
+    p.Results = [];
+end
+            
+Found = false;
+for i=1:2:length(varargin) % scan parameters & find VariableName
+    if strcmp(varargin{i},VariableName)
+        % found in argument list; set corresponding value
+        Found       =   true;
+        p.Results   =   setfield(p.Results, varargin{i},varargin{i+1});
+    end
+end
+
+if ~Found
+    % set default
+    p.Results   =   setfield(p.Results,VariableName,Value);
+end
+
+
+
