@@ -1,6 +1,6 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    Copyright (c) 2011-2020, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
  **
  **    This software was developed at:
@@ -31,12 +31,10 @@
  **        Anton Popov      [popov@uni-mainz.de]
  **
  **
- **    Main development team:
+ **    This routine:
  **         Anton Popov      [popov@uni-mainz.de]
  **         Boris Kaus       [kaus@uni-mainz.de]
- **         Tobias Baumann
- **         Adina Pusok
- **         Arthur Bauville
+ **         Andrea Piccolo   [piccolo@uni-mainz.de]
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 
@@ -258,6 +256,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	Scaling     *scal;
 	PetscInt     jj, mID;
 	PetscScalar  bz;
+	char         inflow_temp[_str_len_],str[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -272,9 +271,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	bc->pbot    	 	= 	-1.0;
 	bc->ptop     		= 	-1.0;
 	bc->fixPhase 		= 	-1;
-    bc->phase           =   -1;
+    bc->num_phase_bc    =   -1;
 	bc->velout   		=  	DBL_MAX;
 	bc->Plume_Inflow 	= 	0;
+	bc->bvel_temperature_inflow = -1;
 
 	//=====================
 	// VELOCITY CONSTRAINTS
@@ -330,16 +330,36 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = DBoxReadCreate(&bc->dbox, scal, fb); CHKERRQ(ierr);
 
 	// boundary inflow/outflow velocities
-	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face"    , &bc->face, 		1, -1); 	CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "bvel_face", str, NULL); CHKERRQ(ierr);  // must have component
+    if     	(!strcmp(str, "Left"))      bc->face=1;	
+	else if (!strcmp(str, "Right"))     bc->face=2;	
+	else if (!strcmp(str, "Front"))     bc->face=3;	
+	else if (!strcmp(str, "Back"))      bc->face=4;	
+	
 	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 	1, -1); 		CHKERRQ(ierr);
 
 	if(bc->face)
 	{
-		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase",  &bc->phase,  1, mID           ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",   &bc->bot,   1, scal->length  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",   &bc->top,   1, scal->length  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin", &bc->velin, 1, scal->velocity); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_num_phase", &bc->num_phase_bc, 1, 5           ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase",  bc->phase, bc->num_phase_bc, mID           ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",    &bc->bot,    1, scal->length  ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",    &bc->top,    1, scal->length  ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_phase_interval", bc->phase_interval, bc->num_phase_bc+1, scal->length); CHKERRQ(ierr);
+		ierr = getStringParam(fb, _OPTIONAL_, "bvel_temperature_inflow", inflow_temp , NULL); 					CHKERRQ(ierr);
+		if     	(!strcmp(inflow_temp, "Constant_T_inflow"))      bc->bvel_temperature_inflow = 1;
+		if     	(!strcmp(inflow_temp, "Fixed_thermal_age"))      bc->bvel_temperature_inflow = 2;
+		if( bc->bvel_temperature_inflow == 2)
+		{
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_mantle", &bc->bvel_potential_temperature, 1, 1.0);         CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_top",    &bc->bvel_temperature_top,       1, 1.0);         CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_thermal_age",        &bc->bvel_thermal_age,           1, scal->time);  CHKERRQ(ierr);
+		}
+		else if(bc->bvel_temperature_inflow == 1)
+		{
+		ierr = getScalarParam(fb, _REQUIRED_,     "bvel_temperature_constant", &bc->bvel_constant_temperature, 1, scal->time);     CHKERRQ(ierr);
+		}
 
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TMorrow May 14 2018
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr); // inflow condition - TMorrow May 14 2018
@@ -473,17 +493,36 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
     if (bc->face>0){
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
-                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity  boundary               : %i [1-left; 2-right; 3-front; 4-back]\n", bc->face);
+                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %i [1-left; 2-right; 3-front; 4-back]\n", bc->face);
      if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }     
-     if (bc->phase>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
+     if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
      else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }     
 
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow window [bottom, top]             : [%3.2f,%3.2f] %s \n", bc->bot*scal->length, bc->top*scal->length, scal->lbl_length); 
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %1.2f %s \n", bc->velin*scal->velocity, scal->lbl_velocity); 
      if (bc->velout>0){     PetscPrintf(PETSC_COMM_WORLD, "      Outflow velocity                        : %1.2f %s \n", bc->velout*scal->velocity, scal->lbl_velocity); }
      else if (!bc->face_out) {                 PetscPrintf(PETSC_COMM_WORLD, "       Outflow velocity from mass balance     @ \n"); }
-    
+
      if (bc->relax_dist>0){ PetscPrintf(PETSC_COMM_WORLD, "      Velocity smoothening distance           : %1.2f %s \n", bc->relax_dist*scal->length, scal->lbl_length); }  
+
+     if (bc->bvel_temperature_inflow > 0)
+     {
+    	 if(bc->bvel_temperature_inflow == 1){
+            PetscPrintf(PETSC_COMM_WORLD, "      Temperature type of inflow material     : Constant \n");
+            PetscPrintf(PETSC_COMM_WORLD, "         Temperature                          : %g %s  \n",bc->bvel_constant_temperature*scal->time,    scal->lbl_temperature);
+		 }
+    	 if(bc->bvel_temperature_inflow == 2){
+            PetscPrintf(PETSC_COMM_WORLD, "      Temperature type of inflow material     : Halfspace cooling \n");
+            PetscPrintf(PETSC_COMM_WORLD, "         Thermal Age                          : %1.0f %s  \n",bc->bvel_thermal_age*scal->time,    scal->lbl_time);
+            PetscPrintf(PETSC_COMM_WORLD, "         Temperature @ top                    : %1.1f %s  \n",bc->bvel_temperature_top,           scal->lbl_temperature );
+            PetscPrintf(PETSC_COMM_WORLD, "         Temperature @ bottom                 : %1.1f %s  \n",bc->bvel_potential_temperature,     scal->lbl_temperature );
+        }
+
+     }
+     else
+     {
+    	 PetscPrintf(PETSC_COMM_WORLD, "      Inflow temperature from closest marker  @ \n");
+     }
     }
 
 
@@ -501,7 +540,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     if(bc->ptop != -1.0)                        bc->ptop /= scal->stress;
 	if(bc->pbot != -1.0)                        bc->pbot /= scal->stress;
     bc->Plume_Temperature = (bc->Plume_Temperature+scal->Tshift)/scal->temperature;							// to Kelvin & nondimensionalise
-
+    bc->bvel_potential_temperature = (bc->bvel_potential_temperature+scal->Tshift)/scal->temperature;							// to Kelvin & nondimensionalise
+    bc->bvel_temperature_top       = (bc->bvel_temperature_top+scal->Tshift)/scal->temperature;
+    bc->bvel_constant_temperature  = (bc->bvel_constant_temperature+scal->Tshift)/scal->temperature;
 
 	// allocate vectors and arrays
 	ierr = BCCreateData(bc); CHKERRQ(ierr);
@@ -1975,12 +2016,13 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 {
 	FDSTAG     *fs;
-	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz;
-	PetscScalar z,x, y, cmax,cmin;
+	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz,ip;
+	PetscScalar z,x, y, cmax,cmin,z_plate;
+	PetscScalar Temp_age,k_thermal;
 
 	PetscFunctionBegin;
 
-	if( (bc->phase>=0) || bc->Plume_Inflow)
+	if( (bc->face) || bc->Plume_Inflow)
 	{
 		fs = bc->fs;
 		M  = fs->dsx.ncels;
@@ -1996,7 +2038,28 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 		GET_CELL_IJK(cellID, i, j, k, M, N);
 
-		if(bc->phase >= 0)
+
+		if(((bc->face == 1 && i + sx == 0)
+							||  (bc->face == 2 && i + sx == mx)
+							||  (bc->face == 3 && j + sy == 0)
+							||  (bc->face == 4 && j + sy == my))
+							&&  (z >= bc->bot && z <= bc->top) && (bc->bvel_temperature_inflow>0))
+		{
+			if(bc->bvel_temperature_inflow==2)
+			{
+				k_thermal= 1e-6/( (bc->scal->length_si)*(bc->scal->length_si)/(bc->scal->time_si));
+				z_plate = PetscAbs(z-bc->top);
+				Temp_age = (bc->bvel_potential_temperature-bc->bvel_temperature_top)*erf(z_plate/2.0/sqrt(k_thermal*bc->bvel_thermal_age)) + bc->bvel_temperature_top;
+				P->T = Temp_age;
+			}
+			else if(bc->bvel_temperature_inflow == 1)
+			{
+				P->T=bc->bvel_constant_temperature;
+			}
+
+		}
+
+		if(bc->num_phase_bc >= 0)
 		{
 		// expand i, j, k cell indices
 
@@ -2004,14 +2067,25 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 					||  (bc->face == 2 && i + sx == mx)
 					||  (bc->face == 3 && j + sy == 0)
 					||  (bc->face == 4 && j + sy == my))
-					&&  (z >= bc->bot && z <= bc->top))
+					&&  (z >= bc->bot-bc->relax_dist && z <= bc->top+bc->relax_dist))
 			{
-				P->phase = bc->phase;
+
+
+
+				for(ip=0;ip<bc->num_phase_bc;ip++)
+					{
+						if(z>=bc->phase_interval[ip] && z<bc->phase_interval[ip+1])
+						{
+							P->phase = bc->phase[ip];
+						}
+
+					}
+
 			}
 
 		}
 
-		else if(bc->Plume_Inflow)
+		if(bc->Plume_Inflow)
 		{	
 			// if we have have a inflow condition @ the lower boundary, we change the phase of the particles within the zone
 			if(k+sz == 0 || k+sz == 1)
