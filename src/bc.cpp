@@ -258,7 +258,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	Scaling     *scal;
 	PetscInt     jj, mID;
 	PetscScalar  bz;
-	char         inflow_temp[_str_len_];
+	char         inflow_temp[_str_len_],str[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -332,7 +332,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = DBoxReadCreate(&bc->dbox, scal, fb); CHKERRQ(ierr);
 
 	// boundary inflow/outflow velocities
-	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face"    , &bc->face, 		1, -1); 	CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "bvel_face", str, NULL); CHKERRQ(ierr);  // must have component
+    if     	(!strcmp(str, "Left"))      bc->face=1;	
+	else if (!strcmp(str, "Right"))     bc->face=2;	
+	else if (!strcmp(str, "Front"))     bc->face=3;	
+	else if (!strcmp(str, "Back"))      bc->face=4;	
+	
 	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 	1, -1); 		CHKERRQ(ierr);
 
 	if(bc->face)
@@ -486,7 +491,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
     if (bc->face>0){
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
-                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity  boundary               : %i [1-left; 2-right; 3-front; 4-back]\n", bc->face);
+                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %i [1-left; 2-right; 3-front; 4-back]\n", bc->face);
      if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }     
      if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
      else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }     
@@ -496,17 +501,26 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
      if (bc->velout>0){     PetscPrintf(PETSC_COMM_WORLD, "      Outflow velocity                        : %1.2f %s \n", bc->velout*scal->velocity, scal->lbl_velocity); }
      else if (!bc->face_out) {                 PetscPrintf(PETSC_COMM_WORLD, "       Outflow velocity from mass balance     @ \n"); }
 
+     if (bc->relax_dist>0){ PetscPrintf(PETSC_COMM_WORLD, "      Velocity smoothening distance           : %1.2f %s \n", bc->relax_dist*scal->length, scal->lbl_length); }  
+
      if (bc->bvel_temperature_inflow > 0)
      {
-    	 if(bc->bvel_temperature_inflow == 1) PetscPrintf(PETSC_COMM_WORLD, "      Temperature inflow material is constant : T = %3f %s \n",bc->bvel_constant_temperature, scal->lbl_temperature);
-    	 if(bc->bvel_temperature_inflow == 2) PetscPrintf(PETSC_COMM_WORLD, "      Thermal age of plate is constant : Thermal_age = %3f %s, T_mantle = %3f %s, T_top = %3f %s \n",bc->bvel_thermal_age*scal->time, scal->lbl_time,bc->bvel_potential_temperature, scal->lbl_temperature, bc->bvel_temperature_top,scal->lbl_temperature);
+    	 if(bc->bvel_temperature_inflow == 1){
+            PetscPrintf(PETSC_COMM_WORLD, "      Temperature type of inflow material     : Constant \n");
+            PetscPrintf(PETSC_COMM_WORLD, "         Temperature                          : %g %s  \n",bc->bvel_constant_temperature*scal->time,    scal->lbl_temperature);
+		 }
+    	 if(bc->bvel_temperature_inflow == 2){
+            PetscPrintf(PETSC_COMM_WORLD, "      Temperature type of inflow material     : Halfspace cooling \n");
+            PetscPrintf(PETSC_COMM_WORLD, "         Thermal Age                          : %1.0f %s  \n",bc->bvel_thermal_age*scal->time,    scal->lbl_time);
+            PetscPrintf(PETSC_COMM_WORLD, "         Temperature @ top                    : %1.1f %s  \n",bc->bvel_temperature_top,           scal->lbl_temperature );
+            PetscPrintf(PETSC_COMM_WORLD, "         Temperature @ bottom                 : %1.1f %s  \n",bc->bvel_potential_temperature,     scal->lbl_temperature );
+        }
+
      }
      else
      {
-    	 PetscPrintf(PETSC_COMM_WORLD, "      Temperature inflow material is interpolated from the closest marker \n");
+    	 PetscPrintf(PETSC_COMM_WORLD, "      Inflow temperature from closest marker  @ \n");
      }
-    
-     if (bc->relax_dist>0){ PetscPrintf(PETSC_COMM_WORLD, "      Velocity smoothening distance           : %1.2f %s \n", bc->relax_dist*scal->length, scal->lbl_length); }  
     }
 
 

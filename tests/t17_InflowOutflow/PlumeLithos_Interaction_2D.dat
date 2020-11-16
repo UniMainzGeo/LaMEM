@@ -65,16 +65,16 @@
 	open_top_bound 			= 	0
 
 # In/Out flow BC
-	bvel_face   	        = 	1     	    #   Face identifier  (1-left 2-right 3-front 4-back)
+	bvel_face   	        = 	Left     	#   Face identifier  (Left; Right; Front; Back)
 	bvel_face_out 	        = 	1		    #   Have outflow @ the opposite boundary?
 	bvel_bot    	        =  -100.0  	    #   Bottom coordinate of inflow window
 	bvel_top    	        =  	0.0  	    #   Top coordinate of inflow window
 	bvel_velin  	        =  	5.0   	    #	inflow velocity [cm/yr if geo units]
 	bvel_relax_d            = 	100
 	bvel_temperature_inflow =   Fixed_thermal_age
-	bvel_thermal_age =   30                 #   In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
-	bvel_temperature_mantle = 1300          #   In dimensional unit. Temperature of the mantle
-	bvel_temperature_top    = 0            #   In dimensional unit. temperature of the top  			
+	bvel_thermal_age 		=   30         	#   In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
+	bvel_temperature_mantle = 	1300        #   In dimensional unit. Temperature of the mantle
+	bvel_temperature_top    = 	0           #   In dimensional unit. temperature of the top  			
 
 # Plume_like inflow boundary condition
 	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
@@ -83,7 +83,7 @@
 	Plume_Temperature 		=	1600		# temperature of inflow plume
 	Plume_Inflow_Velocity 	= 	15			# Inflow velocity			
 	Plume_VelocityType 		=	Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
-	Plume_Center 			=	1000 50 		# [X,Y] of center  (2nd only in case of 3D plume)
+	Plume_Center 			=	1000 50		# [X,Y] of center  (2nd only in case of 3D plume)
 	Plume_Radius 			=	50			# Width/Radius of plume
 
 
