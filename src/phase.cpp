@@ -31,14 +31,18 @@
  **        Anton Popov      [popov@uni-mainz.de]
  **
  **
- **    Main development team:
+ **    This routine:
  **         Anton Popov      [popov@uni-mainz.de]
  **         Boris Kaus       [kaus@uni-mainz.de]
- **         Tobias Baumann
- **         Adina Pusok
- **         Arthur Bauville
+ **			Andrea Piccolo
+ **         Georg Reuber
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+/*
+	This file defined various material properties for the phases
+
+*/
+
 //---------------------------------------------------------------------------
 //.................. MATERIAL PARAMETERS READING ROUTINES....................
 //---------------------------------------------------------------------------

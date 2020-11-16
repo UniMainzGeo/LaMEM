@@ -361,27 +361,6 @@
 #	mark_ctrl = avd     # pure AVD for all control volumes
 #	mark_ctrl = subgrid # simple marker control enforced over fine scale grid
 
-#===========================================================================
-# Passive Tracers 
-#===========================================================================
-	Passive_Tracer              = 1                               # Activate passive tracers?
-	PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
-    PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
-    PassiveTracer_ActiveType    =  Melt_Fraction                  # Under which condition are they activated? []  
-    PassiveTracer_ActiveValue   =  0.1                            # When this value is exceeded the tracers are being activated 
-    
-    # Passive Tracer activation type specification:
-
-    	#	PassiveTracer_ActiveType = Always               # always on
-    	#	PassiveTracer_ActiveType = Melt_Fraction        # always on
-    	#	PassiveTracer_ActiveType = Temperature          # always on
-    	#	PassiveTracer_ActiveType = Pressure             # always on
-    	#	PassiveTracer_ActiveType = Time                 # always on
-    
-
-
-
-
 # Geometric primitives:
 
 	<SphereStart>
@@ -440,6 +419,25 @@
 		cstTemp     = 1000     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
 	<CylinderEnd>
 
+
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+	Passive_Tracer              = 1                               # Activate passive tracers?
+	PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Melt_Fraction                  # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.1                            # When this value is exceeded the tracers are being activated 
+    
+    # Passive Tracer activation type specification:
+
+    	#	PassiveTracer_ActiveType = Always               # always on
+    	#	PassiveTracer_ActiveType = Melt_Fraction        # always on
+    	#	PassiveTracer_ActiveType = Temperature          # always on
+    	#	PassiveTracer_ActiveType = Pressure             # always on
+    	#	PassiveTracer_ActiveType = Time                 # always on
+    
+	
 #===============================================================================
 # Output
 #===============================================================================

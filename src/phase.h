@@ -86,7 +86,8 @@ public:
 enum type
 {
 	_Constant_,
-	_Clapeyron_
+	_Clapeyron_,
+	_Box_
 };
 
 enum Parameter
@@ -94,37 +95,45 @@ enum Parameter
 	_T_,
 	_Pressure_,
 	_Depth_,
-	_PlasticStrain_
+	_PlasticStrain_,
+	_MeltFraction_
 };
 
-
-
+// Structure that contains infor for phase transitions
 struct Ph_trans_t
 {
 public:
 
 	PetscInt    ID ;				                // Phase Transition ID
-	type        Type ; 					// Type Constant or Clapeyron
-	Parameter   Parameter_transition; 	// Parameter in Constant
+	type        Type ; 					            // Type Constant or Clapeyron
+	Parameter   Parameter_transition; 	            // Parameter in Constant
 	char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
 	PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
     PetscScalar ConstantValue ;                     // Value (if Constant) 
 
-
+	// Clapeyron slope
 	PetscInt    neq ;                               // number of equation
 	PetscScalar P0_clapeyron[_max_num_eq_] ;        // for clapeyron
 	PetscScalar T0_clapeyron[_max_num_eq_] ;
 	PetscScalar clapeyron_slope[_max_num_eq_] ;
-	PetscScalar Geometric_box[6];                   //
+	
+	// Box-like condition
+	PetscScalar     bounds[6];                      //  left, right etc. of box
+    PetscInt        TempType;                       //  Temp condition [0=none, 1=constant; 2=linear; 3=halfspace]    
 
-	PetscInt    number_phases;
-	PetscInt    PhaseBelow[_max_tr_];
-	PetscInt    PhaseAbove[_max_tr_];
-	PetscInt    PhaseWithin[_max_tr_];
-	PetscInt    PhaseOutside[_max_tr_];
-	PetscScalar dT_within;
-	PetscScalar DensityAbove[_max_tr_];
-	PetscScalar DensityBelow[_max_tr_];
+	PetscInt        number_phases;
+	PetscInt        PhaseBelow[_max_tr_];
+	PetscInt        PhaseAbove[_max_tr_];
+	PetscInt        PhaseInside[_max_tr_];
+	PetscInt        PhaseOutside[_max_tr_];
+	PetscScalar     dT_within;
+	PetscScalar     DensityAbove[_max_tr_];
+	PetscScalar     DensityBelow[_max_tr_];
+
+    PetscScalar     topTemp;
+    PetscScalar     botTemp;
+    PetscScalar     cstTemp;
+    PetscScalar     thermalAge;
 
 };
 
