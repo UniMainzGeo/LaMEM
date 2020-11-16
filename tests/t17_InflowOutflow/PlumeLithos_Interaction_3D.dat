@@ -65,7 +65,7 @@
 	#open_top_bound 			= 	0
 
 # In/Out flow BC
-	bvel_face   	        = 	1     	    #   Face identifier  (1-left 2-right 3-front 4-back)
+	bvel_face   	        = 	Left        #   Face identifier  (Left; Right; Front; Back)
 	bvel_face_out 	        = 	1		    #   Have outflow @ the opposite boundary?
 	bvel_bot    	        =  -100.0  	    #   Bottom coordinate of inflow window
 	bvel_top    	        =  	150.0  	    #   Top coordinate of inflow window
