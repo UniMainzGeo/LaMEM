@@ -521,7 +521,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	{
 		PhaseTrans = jr->dbm->matPhtr+nPtr;
-		PetscPrintf(PETSC_COMM_WORLD," PhaseTrans->Type=%i \n",PhaseTrans->Type);
 				
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
 		{
@@ -720,11 +719,6 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 			d 		=	zTop - P->X[2];
 			T 		= 	(botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
-	
-		
-		
-
-
 	}
 	else{
 		// Outside; keep T
