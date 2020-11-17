@@ -256,7 +256,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	Scaling     *scal;
 	PetscInt     jj, mID;
 	PetscScalar  bz;
-	char         inflow_temp[_str_len_],str[_str_len_];
+	char         inflow_temp[_str_len_],str_inflow[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -330,12 +330,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = DBoxReadCreate(&bc->dbox, scal, fb); CHKERRQ(ierr);
 
 	// boundary inflow/outflow velocities
-	ierr = getStringParam(fb, _OPTIONAL_, "bvel_face", str, NULL); CHKERRQ(ierr);  // must have component
-    if     	(!strcmp(str, "Left"))                                      bc->face=1;	
-	else if (!strcmp(str, "Right"))                                     bc->face=2;	
-	else if (!strcmp(str, "Front"))                                     bc->face=3;	
-	else if (!strcmp(str, "Back"))                                      bc->face=4;	
-	else if (!strcmp(str, "CompensatingInflow"))                        bc->face=5;
+	ierr = getStringParam(fb, _OPTIONAL_, "bvel_face", str_inflow, NULL); CHKERRQ(ierr);  // must have component
+    if     	(!strcmp(str_inflow, "Left"))                                      bc->face=1;	
+	else if (!strcmp(str_inflow, "Right"))                                     bc->face=2;	
+	else if (!strcmp(str_inflow, "Front"))                                     bc->face=3;	
+	else if (!strcmp(str_inflow, "Back"))                                      bc->face=4;	
+	else if (!strcmp(str_inflow, "CompensatingInflow"))                        bc->face=5;
 		
 	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 	1, -1); 		CHKERRQ(ierr);
 
@@ -497,7 +497,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
     if (bc->face>0){
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
-                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %i [1-left; 2-right; 3-front; 4-back; 5-symmetric side flow with compensating top/bottom]\n", bc->face);
+                            PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %s \n", str_inflow);
      if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }
      if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
      else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }     

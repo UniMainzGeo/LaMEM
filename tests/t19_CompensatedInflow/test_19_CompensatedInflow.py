@@ -9,7 +9,7 @@ def test_a():
 
   # Test inflow/outflow conditions using optimized LaMEM
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t19_CompensatedInflow/CompensatedInflow_test_2D.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = '../bin/opt/LaMEM -ParamFile ./t19_CompensatedInflow/CompensatedInflow_test_2D.dat -nstep_max 10' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't19_CompensatedInflow/CompensatedInflow-p1.expected'
 
   def comparefunc(unittest):
