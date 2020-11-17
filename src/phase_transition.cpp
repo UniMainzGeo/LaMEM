@@ -223,6 +223,11 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	{
 		ph->Parameter_transition = _PlasticStrain_;
 	}
+	else if(!strcmp(Parameter, "MeltFraction"))
+	{
+		ph->Parameter_transition = _MeltFraction_;
+	}
+	
 
 	ierr = getScalarParam(fb, _REQUIRED_, "ConstantValue",          &ph->ConstantValue,        1,1.0);  CHKERRQ(ierr);
 
@@ -247,7 +252,11 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	{
 		ph->ConstantValue   = ph->ConstantValue;        // is already in nd units
 	}
-    else{
+	else if(ph->Parameter_transition==_MeltFraction_)   //  melt fraction
+	{
+		ph->ConstantValue   = ph->ConstantValue;        // is already in nd units
+	}
+	else{
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for [Constant] Phase transition");
     }
 
@@ -499,9 +508,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	Marker          *P;
 	JacRes          *jr;
 	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas;
-	PetscInt        PH1,PH2;
+	PetscInt        PH1,PH2, ID;
 	PetscScalar		T;
     PetscLogDouble  t;
+	SolVarCell  	*svCell;
 	Scaling      	*scal;
 
 
@@ -524,10 +534,15 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
 		{
+			// access marker
+			P   =   &actx->markers[i];      
 
-			P   =   &actx->markers[i];      // retrieve marker
+			// get consecutive index of the host cell of marker
+			ID = 	actx->cellnum[i];
 
-
+			// access host cell solution variables
+			svCell = &jr->svCell[ID];
+			
 			num_phas    =   PhaseTrans->number_phases;
 			if ( PhaseTrans->Type == _Box_ ){
 				below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
@@ -567,7 +582,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				}
 
 				ph = P->phase;
-				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, &ph, &T);
+				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T);
 
 
 				if ( (PhaseTrans->Type == _Box_) ){
@@ -597,7 +612,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------------------
-PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out )
+PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out )
 {
 	PetscInt 	ph;
 	PetscScalar T;
@@ -606,7 +621,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	T  = P->T;
 	if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
-		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl);
+		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl, svCell);
 	}
 	else if(PhaseTrans->Type==_Clapeyron_)
 	{
@@ -626,7 +641,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 /*------------------------------------------------------------------------------------------------------------
     Sets the values for a phase transition that occurs @ a constant value
 */
-PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl) 
+PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl, SolVarCell *svCell) 
 {
     
     PetscInt 	ph;
@@ -664,6 +679,21 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 		{
             if ( P->APS >= PhaseTrans->ConstantValue)  {   ph = PH2;        }
             else                                       {   ph = PH1;        }
+        }
+
+	if(PhaseTrans->Parameter_transition==_MeltFraction_) // melt fraction in cell
+		{
+            /* Different than the conditions above, the melt fraction is NOT stored
+			 	on in the marker structure. Instead, it is stored on the grid. 
+			 	We thus have to determine in which cell the current marker is & retrieve 
+				the properties of that cell.
+			*/ 
+			PetscScalar mf;	// melt fraction of current cell
+
+			mf = svCell->svBulk.mf;
+			
+			if (mf >= PhaseTrans->ConstantValue)  {   ph = PH2;        }
+            else                                  {   ph = PH1;        }
         }
 
 	return ph;
