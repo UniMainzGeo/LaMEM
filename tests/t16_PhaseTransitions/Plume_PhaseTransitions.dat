@@ -345,23 +345,23 @@
 	<PhaseTransitionEnd>
 
 	# Box-like region with T-condition
-
-	#<PhaseTransitionStart>
-	#	ID                      =   3                               # Phase_transition law ID
-	#	Type                    =   Box                             # A box-like region
-	#   PTBox_Bounds            =   200 400 -100 100 -500 -100        # box bound coordinates: [left, right, front, back, bottom, top]
-    #    number_phases           =   1
-    #    PhaseInside             =   5							    # Phase within the box [use -1 if you don't want to change the phase inside the box]
-    #    PhaseOutside            =   3							    # Phase outside the box
-    #    PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
+	<PhaseTransitionStart>
+    	ID                      =   3                               # Phase_transition law ID
+		Type                    =   Box                             # A box-like region
+	    PTBox_Bounds            =   200 400 -100 100 -1000 -500        # box bound coordinates: [left, right, front, back, bottom, top]
+        number_phases           =   1
+        PhaseInside             =   7							    # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   3							    # Phase outside the box
+        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
 	
-    #    PTBox_TempType          =	halfspace 					    # Temperature condition witin the box [none, constant, linear, halfspace]
-#		PTBox_thermalAge        =   40                              # Thermal age 
-#        PTBox_topTemp           =   20                              # Temp @ top of box [for linear & halfspace]
-#        PTBox_botTemp           =   1300                            # Temp @ bottom of box [for linear & halfspace]
-#        PTBox_cstTemp           =   800                             # Temp within box [for constant T]
-#        
-#	<PhaseTransitionEnd>
+        PTBox_TempType          =	linear 					        # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_topTemp           =   20                              # Temp @ top of box [for linear & halfspace]
+        PTBox_botTemp           =   1300                            # Temp @ bottom of box [for linear & halfspace]
+        
+        #PTBox_thermalAge        =   100                            # Thermal age 
+        #PTBox_cstTemp          =   1200                            # Temp within box [for constant T]
+       
+	<PhaseTransitionEnd>
 
 
 #===============================================================================
