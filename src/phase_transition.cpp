@@ -530,8 +530,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	{
 		PhaseTrans = jr->dbm->matPhtr+nPtr;
-
-		PetscPrintf(PETSC_COMM_WORLD," PhaseTrans->Type=%i \n",PhaseTrans->Type);
 				
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
 		{
