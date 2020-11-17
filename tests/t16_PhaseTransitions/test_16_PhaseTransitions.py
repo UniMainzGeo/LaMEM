@@ -23,6 +23,7 @@ def test_a():
     key = re.escape("|mRes|_2")
     unittest.compareFloatingPoint(key,1e-4)
 
+
   # Create unit test object
   ex1 = pth.pthUnitTest('t16_PhaseTransitions_OpenTop_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
