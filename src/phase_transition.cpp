@@ -508,9 +508,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	Marker          *P;
 	JacRes          *jr;
 	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas;
-	PetscInt        PH1,PH2;
+	PetscInt        PH1,PH2, ID;
 	PetscScalar		T;
     PetscLogDouble  t;
+	SolVarCell  	*svCell;
 	Scaling      	*scal;
 
 
@@ -582,7 +583,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 				ph = P->phase;
 
-				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, &ph, &T);
+				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T);
 
 
 				if ( (PhaseTrans->Type == _Box_) ){
@@ -612,7 +613,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------------------
-PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out )
+
+PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out )
 
 {
 	PetscInt 	ph;
