@@ -1093,10 +1093,6 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	    ridge->top = ridge->bounds[5];
 
 	    ridge->v_spread = actx->jr->bc->velin;
-	    //	    ridge->timescale = actx->jr->scal->time;
-	    //	    ridge->velscale = actx->jr->scal->velocity;
-
-	    //	    PetscPrintf(PETSC_COMM_WORLD, "velocity 1: %f \n", actx->jr->bc->velin*actx->jr->scal->velocity);
 	    
 	    // Temperature options (actually required to be setTemp==4)
 	    ierr = getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL );    CHKERRQ(ierr);
@@ -2062,9 +2058,8 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	else if (geom->setTemp==4)   // JS, oblique ridge temperature
         {
 
-	  // Half space cooling profile with age function
+	  // Half space cooling profile with age function, oblique possible
 	  PetscScalar x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack, T_top, T_bot, kappa, thermalAgeRidge;
-	  // timescale, velscale
 
 	  y = P->X[1];
 	  x = P->X[0];
@@ -2078,26 +2073,18 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	  z          = PetscAbs(P->X[2]-z_top);
 	  kappa      = geom->kappa;
 	  v_spread   = geom->v_spread;
-	  //	  timescale = geom->timescale;
-	  //	  velscale = geom->velscale;
-	  
-	  //	  	   PetscPrintf(PETSC_COMM_WORLD, "velocity: %f \n", v_spread*velscale);
 	  
 	  if (x_ridgeLeft == x_ridgeRight){
 
 	    thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
 	  }
 	  
-	  else {                       //y-y_ridgeLeft or y-y_ridgeRight instead of only y (Garrett)  NEED TO ASK
+	  else {   
 
 	    x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
 
-	  //	  PetscPrintf(PETSC_COMM_WORLD, "x_oblique: %f \n", x_oblique);
-
 	    thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;	    
 
-	    //	    PetscPrintf(PETSC_COMM_WORLD, "thermalAge: %f \n", thermalAgeRidge*timescale);
-	    
 	  }
 
           (*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
