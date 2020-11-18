@@ -1085,10 +1085,11 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	    GET_GEOM(ridge, geom, ngeom, _max_geom_);
 	    
 	    ridge->setTemp = 0;       //default is no
-	    ierr = getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID); CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen);        CHKERRQ(ierr);
+	    ierr = getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID);    CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen);         CHKERRQ(ierr);
 	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen);     CHKERRQ(ierr);
 	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen);     CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime);          CHKERRQ(ierr);
 	    ridge->bot = ridge->bounds[4];
 	    ridge->top = ridge->bounds[5];
 
@@ -1106,7 +1107,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	      // take potential shift C->K into account
 	      ridge->topTemp = (ridge->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 	      ridge->botTemp = (ridge->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
-	      ridge->kappa      = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/
+	      ridge->kappa   = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/
 	      
 	    }
 	    
@@ -2059,7 +2060,7 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
         {
 
 	  // Half space cooling profile with age function, oblique possible
-	  PetscScalar x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack, T_top, T_bot, kappa, thermalAgeRidge;
+	  PetscScalar x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack, T_top, T_bot, kappa, thermalAgeRidge, age0;
 
 	  y = P->X[1];
 	  x = P->X[0];
@@ -2073,17 +2074,18 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	  z          = PetscAbs(P->X[2]-z_top);
 	  kappa      = geom->kappa;
 	  v_spread   = geom->v_spread;
+	  age0       = geom->age0;
 	  
 	  if (x_ridgeLeft == x_ridgeRight){
 
-	    thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
+	    thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread + age0;
 	  }
 	  
 	  else {   
 
 	    x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
 
-	    thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;	    
+	    thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread + age0;	    
 
 	  }
 
