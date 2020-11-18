@@ -71,13 +71,12 @@ struct LaMEMLib
 	BCCtx    bc;     // boundary condition context
 	AdvCtx   actx;   // advection context
 	JacRes   jr;     // Jacobian & residual context
+	P_Tr     Ptr  ;  // passive tracers
 	PVOut    pvout;  // paraview output driver
 	PVSurf   pvsurf; // paraview output driver for surface
 	PVMark   pvmark; // paraview output driver for markers
 	PVAVD    pvavd;  // paraview output driver for AVD
-	P_Tr     Ptr  ;  // passive tracers
-
-
+	PVPtr    pvptr;  // paraview out passive tracers
 };
 
 //---------------------------------------------------------------------------
