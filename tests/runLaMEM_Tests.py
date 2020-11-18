@@ -32,6 +32,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't17_InflowOutflow'))
 sys.path.append(os.path.join(os.environ['PWD'], 't18_SimpleShear'))
 sys.path.append(os.path.join(os.environ['PWD'], 't19_CompensatedInflow'))
 sys.path.append(os.path.join(os.environ['PWD'], 't20_FSSA'))
+sys.path.append(os.path.join(os.environ['PWD'], 't21_RidgeGeom'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
@@ -58,7 +59,7 @@ import test_17_InflowOutflow as InOut
 import test_18_SimpleShear as SS
 import test_19_CompensatedInflow as CI
 import test_20_FSSA as FSSA
-
+import test_21_RidgeGeom as Ridge
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1     as Sub1 # import test that requires MATLAB
@@ -70,7 +71,8 @@ def makeLocalPathAbsolute(localRelPath) :
 
 def run_tests():
   os.environ['PYTHONUNBUFFERED'] = str('1')
-
+unit_FB2_a 
+  
   registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
                       Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), 
@@ -88,7 +90,8 @@ def run_tests():
                       RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(),
                       InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), 
                       CI.test_a(), CI.test_b(),
-                      FSSA.test_1()];
+                      FSSA.test_1(),
+                      Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique() ];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
