@@ -115,9 +115,6 @@ struct GeomPrim
 	PetscScalar thermalAge;	
         PetscScalar kappa;
 
-  PetscScalar velscale;
-       PetscScalar timescale;
-
 	void (*setPhase)(GeomPrim*, Marker*);
 };
 
