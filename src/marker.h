@@ -108,6 +108,7 @@ struct GeomPrim
         PetscScalar y_ridgeFront;
         PetscScalar y_ridgeBack;
         PetscScalar thermalAgeRidge;
+        PetscScalar age0;
         // temperature
 	PetscInt    setTemp;
 	PetscScalar cstTemp;
