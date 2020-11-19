@@ -322,8 +322,6 @@
 #		rho        	= 	3300			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
         rho         = 3300
-        rho_ph      = PMD_extrapolate
-		Phase_melt  = 1
 		
 
 		# Linear viscous	
@@ -342,8 +340,6 @@
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
 
 		rho         = 3300
-        rho_ph      = PMD_extrapolate
-        Phase_melt  = 1
         
 
 		eta 		= 	1e20
@@ -362,8 +358,6 @@
 		rho        	= 	3400			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
         rho         = 3300
-        rho_ph      = PMD_extrapolate
-        Phase_melt  = 1
 
 
 		# Linear viscous	

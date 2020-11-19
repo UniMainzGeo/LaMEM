@@ -22,7 +22,7 @@
 	dt_max    = 1   	# maximum time step
 	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
 	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
-	nstep_max = 20  	# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 10  	# maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 5     	# save output every n steps
 	nstep_rdb = 2000   	# save restart database every n steps
 
@@ -319,8 +319,6 @@
 #		rho        	= 	3300			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
         rho         = 3300
-        rho_ph      = PMD_extrapolate
-		Phase_melt  = 1
 		
 
 		# Linear viscous	
@@ -339,8 +337,6 @@
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
 
 		rho         = 3300
-        rho_ph      = PMD_extrapolate
-        Phase_melt  = 1
         
 
 		eta 		= 	1e20
@@ -358,11 +354,9 @@
 		
 		rho        	= 	3400			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
-        rho         = 3300
-        rho_ph      = PMD_extrapolate
-        Phase_melt  = 1
 
 
+		rho         = 3300
 		# Linear viscous	
 		eta 		= 	5e21
 		
