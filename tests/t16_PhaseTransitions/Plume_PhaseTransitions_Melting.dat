@@ -21,7 +21,7 @@
 	dt_max    = 1   	# maximum time step
 	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
 	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
-	nstep_max = 70  	# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 60  	# maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 10     	# save output every n steps
 	nstep_rdb = 2000   	# save restart database every n steps
 
@@ -31,15 +31,15 @@
 #===============================================================================
 
 # Number of cells for all segments
-	nel_x 	= 	64
+	nel_x 	= 	32
 	nel_y 	= 	1
-	nel_z 	= 	64
+	nel_z 	= 	32
 
 # Coordinates of all segments (including start and end points)
 
 	coord_x = -500  500
 	coord_y = -10   10
-	coord_z = -1000 50
+	coord_z = -500 50
 
 #===============================================================================
 # Free surface
@@ -60,7 +60,7 @@
 	
 # No-slip boundary flag mask (left right front back bottom top)
 	noslip 					= 	0 0 0 0 1 0
-	open_top_bound 			= 	1
+	open_top_bound 			= 	0
 
 
 #===============================================================================
@@ -70,16 +70,17 @@
 	gravity        = 0.0 0.0 -10    # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
-	init_guess     = 0              # initial guess flag
-	act_temp_diff  = 0  			# activate thermal diffusion
+	init_guess     = 1              # initial guess flag
+	act_temp_diff  = 1  			# activate thermal diffusion
+	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	shear_heat_eff = 0.0  
 	eta_min        = 1e18           # viscosity upper bound
 	eta_ref 	   = 1e20			# reference viscosity for initial guess	
 	eta_max        = 1e24           # viscosity lower limit
-	#p_shift        = 2.216e4        # pressure shift activation flag (zero pressure in the top cell layer)
-    init_lith_pres = 1
+	init_lith_pres = 1
 	DII_ref        = 1e-15          # background (reference) strain-rate
 	Phasetrans     = 1	
+
 #===============================================================================
 # Solver options
 #===============================================================================
@@ -100,7 +101,7 @@
 	interp         = stagp             # velocity interpolation scheme
 	mark_ctrl      = subgrid           # marker control type
 	nmark_lim      = 8 100             # min/max number per cell
-	nmark_sub       = 1                 # max number of same phase markers per subcell (subgrid marker control)
+	nmark_sub      = 10                 # max number of same phase markers per subcell (subgrid marker control)
 
 
 # Geometric primitives to define the initial setup:
@@ -121,7 +122,7 @@
 		bottom 	= 	-1000
 
 		Temperature = halfspace
-		thermalAge  = 100		# thermal age
+		thermalAge  = 20		# thermal age
 	
 		botTemp     = 1300		# bottom T for halfspace cooling
 		topTemp     = 0			# top T for halfspace cooling
@@ -135,15 +136,20 @@
 	<LayerEnd>
 	
 	# Define mantle lithosphere (for Phase)
-	
+	<LayerStart>
+		phase  	= 	2
+		top 	= 	-10  
+		bottom 	= 	-50
+	<LayerEnd>
+
 	# Define plume (for Phase)
 	<SphereStart>
 		phase  		= 	4		# required; phase of sphere
-		center 		= 	0.0 0.0 -550	
+		center 		= 	0.0 0.0 -400	
 		radius 		= 	100		
 		
 		Temperature = 	constant
-		cstTemp     = 	1400		# temperature
+		cstTemp     = 	1800		# temperature
 	<SphereEnd>
 
 
@@ -153,7 +159,7 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = Plume_PhaseTransitions # output file name
+	out_file_name       = Plume_PhaseTransitionsMelt # output file name
 	out_pvd             = 1       	# activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
@@ -175,7 +181,7 @@
 	out_tot_displ       = 1
 	out_moment_res      = 1
 	out_cont_res        = 1
-	
+	out_melt_fraction 	= 1 
 # AVD phase viewer output options (requires activation)
 
 	out_avd     		= 1 # activate AVD phase output
@@ -232,9 +238,11 @@
 	<MaterialStart>
 		ID  		= 	3 				# phase id
 		
-		rho        	= 	3300			# density [kg/m3]
-		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
-		
+		rho 		=	3300
+		rho_ph      = 	./t16_PhaseTransitions/PMD_extrapolate
+        Phase_melt  = 1
+
+
 		# Linear viscous	
 		eta 		= 	1e20
 		
@@ -247,9 +255,10 @@
 	<MaterialStart>
 		ID  		= 	4 	# phase id
 		
-		rho        	= 	3300			# density [kg/m3]
-		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
-		
+		rho         = 3300
+        rho_ph      = ./t16_PhaseTransitions/PMD_extrapolate
+        Phase_melt  = 1
+
 		eta 		= 	1e20
 		
      	# Thermal properties
@@ -261,9 +270,10 @@
 	<MaterialStart>
 		ID  		= 	5 				# phase id
 		
-		rho        	= 	3300			# density [kg/m3]
-		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
-		
+		rho         = 3300
+        rho_ph      = ./t16_PhaseTransitions/PMD_extrapolate
+        Phase_melt  = 1
+
 		# Linear viscous	
 		eta 		= 	1e21
 		
@@ -272,13 +282,14 @@
         Cp          =   1050        	# heat capacity
 	<MaterialEnd>
 
-	# Define properties of plume #2
+	# Define properties of partially molten part of plume
 	<MaterialStart>
 		ID  		= 	6 	# phase id
 		
-		rho        	= 	3350			# density [kg/m3]
-		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
-		
+		rho         = 3300
+        rho_ph      = ./t16_PhaseTransitions/PMD_extrapolate
+        Phase_melt  = 1
+
 		eta 		= 	1e20
 		
      	# Thermal properties
@@ -287,21 +298,7 @@
 	<MaterialEnd>
 
 
-	# Define properties of upper mantle, different color
-	<MaterialStart>
-		ID  		= 	7 				# phase id
-		
-		rho        	= 	3300			# density [kg/m3]
-		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
-		
-		# Linear viscous	
-		eta 		= 	1e20
-		
-     	# Thermal properties
-        k           =   3        		# conductivity
-        Cp          =   1050        	# heat capacity
-	<MaterialEnd>
-
+	
 
 #===============================================================================
 # Define phase transitions
@@ -320,22 +317,9 @@
         PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
 	<PhaseTransitionEnd>
 
-	# Depth-dependent:
-	<PhaseTransitionStart>
-	    ID   					= 	1   			# Phase_transition law ID
-     	Type 					= 	Constant		# [Constant, Clapeyron, Box_type]
-		Parameter_transition 	= 	Depth 			# T = Temperature, P = Pressure, Depth = z coordinate
-		ConstantValue 			= 	-400			# The value @ which the phase transition occurs
-		
-	   	number_phases 			= 	1				# Number of phases involved			
-		PhaseAbove 				= 	6 		        # Phases below the phase transition 
-		PhaseBelow 				= 	4               # Phases below
-        PhaseDirection          =   BelowToAbove    # [BothWays=default; BelowToAbove; AboveToBelow]
-	<PhaseTransitionEnd>
-
 	# Clapeyron slope
 	<PhaseTransitionStart>
-		ID                      =   2                           # Phase_transition law ID
+		ID                      =   1                           # Phase_transition law ID
 		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
 		Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
         number_phases           =   1
@@ -344,26 +328,21 @@
         PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
 	<PhaseTransitionEnd>
 
-	# Box-like region with T-condition
+
+	# Depending on melt fraction
 	<PhaseTransitionStart>
-    	ID                      =   3                               # Phase_transition law ID
-		Type                    =   Box                             # A box-like region
-	    PTBox_Bounds            =   200 400 -100 100 -1000 -500        # box bound coordinates: [left, right, front, back, bottom, top]
-        number_phases           =   1
-        PhaseInside             =   7							    # Phase within the box [use -1 if you don't want to change the phase inside the box]
-        PhaseOutside            =   3							    # Phase outside the box
-        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
-	
-        PTBox_TempType          =	linear 					        # Temperature condition witin the box [none, constant, linear, halfspace]
-        PTBox_topTemp           =   20                              # Temp @ top of box [for linear & halfspace]
-        PTBox_botTemp           =   1300                            # Temp @ bottom of box [for linear & halfspace]
-        
-        #PTBox_thermalAge        =   100                            # Thermal age 
-        #PTBox_cstTemp          =   1200                            # Temp within box [for constant T]
-       
+	    ID   					= 	2   			# Phase_transition law ID
+     	Type 					= 	Constant		# [Constant, Clapeyron, Box_type]
+		Parameter_transition 	= 	MeltFraction 	# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	0.1				# The value @ which the phase transition occurs
+		
+	  	number_phases 			= 	1				# Number of phases involved			
+		PhaseAbove 				= 	6 		        # Phases below the phase transition 
+		PhaseBelow 				= 	4               # Phases below
+        PhaseDirection          =   BelowToAbove    # [BothWays=default; BelowToAbove; AboveToBelow]
 	<PhaseTransitionEnd>
 
-
+	
 
 #===============================================================================
 # PETSc options

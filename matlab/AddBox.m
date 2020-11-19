@@ -32,30 +32,33 @@ function [Phase,Temp] = AddBox(Phase,Temp,X,Y,Z,BlockBounds, PhaseBlock, varargi
 %                   'botTemp'       - temperature @ bottom [Celcius]
 %
 %                'Halfspace' :      Halfspace cooling temperature profile with options:
-%                   'topTemp'       - temperature @ top    [Celcius]
-%                   'botTemp'       - temperature @ bottom [Celcius]
-%                   'thermalAge'    - thermal age of halfspace cooling profile [Myrs]
+%                   'topTemp'           - temperature @ top    [Celcius]
+%                   'botTemp'           - temperature @ bottom [Celcius]
+%                   'thermalAge'        - thermal age of halfspace cooling profile [Myrs]
+%                   'AdiabaticGradient' - Adiabatic gradient within mantle [K/km; 0 by default]                   
 %
 %                'SpreadingRate' :  Mid Oceanic Ridge with spreading rate
-%                   'MORside'       - side @ which the ridge is {'Left','Right','Front','Back'}
-%                   'SpreadingVel'  - Spreading velocity away from ridge [cm/yr]
-%                   'AgeRidge'      - Thermal age of the ridge [0 by default]
-%
+%                   'MORside'           - side @ which the ridge is {'Left','Right','Front','Back'}
+%                   'SpreadingVel'      - Spreading velocity away from ridge [cm/yr]
+%                   'AgeRidge'          - Thermal age of the ridge [0 by default]
+%                   'AdiabaticGradient' - Adiabatic gradient within mantle [K/km; 0 by default]     
 %
 
 % Process input parameters & set default parameters (see function below)
 p   =   [];
-[p] =   ParseInput(p,varargin,'TempType',       'None'	);   
-[p] =   ParseInput(p,varargin,'cstTemp',        1000  	);   % Temperature in box in case it has a constant T
-[p] =   ParseInput(p,varargin,'botTemp',        1350 	);   % Temperature @ bottom of box
-[p] =   ParseInput(p,varargin,'topTemp',        20   	);   % Temperature @ top of plate
-[p] =   ParseInput(p,varargin,'thermalAge',     50  	);   % Thermal age of plate if it has a halfspace cooling profile
-[p] =   ParseInput(p,varargin,'MORside',        'Left'	);   % Side where the ridge is
-[p] =   ParseInput(p,varargin,'SpreadingVel',   5       );   % Spreading velocity away from ridge [cm/yr]
-[p] =   ParseInput(p,varargin,'AgeRidge',       0       );   % Thermal age of the ridge [0 by default]
-[p] =   ParseInput(p,varargin,'DipAngle',       0       );   % the dip angle of the whole box in degrees
-[p] =   ParseInput(p,varargin,'RotationPoint', [0 0 0]  );   % the point that acts as origin around which we rotate 
-[p] =   ParseInput(p,varargin,'StrikeAngle',    0       );   % the strike angle of the whole box in degrees
+[p] =   ParseInput(p,varargin,'TempType',           'None'	);   
+[p] =   ParseInput(p,varargin,'cstTemp',            1000  	);   % Temperature in box in case it has a constant T
+[p] =   ParseInput(p,varargin,'botTemp',            1350 	);   % Temperature @ bottom of box
+[p] =   ParseInput(p,varargin,'topTemp',            20   	);   % Temperature @ top of plate
+[p] =   ParseInput(p,varargin,'thermalAge',         50  	);   % Thermal age of plate if it has a halfspace cooling profile
+[p] =   ParseInput(p,varargin,'AdiabaticGradient',  0       );   % Mantle adiabat [K/km]
+
+[p] =   ParseInput(p,varargin,'MORside',            'Left'	);   % Side where the ridge is
+[p] =   ParseInput(p,varargin,'SpreadingVel',       5       );   % Spreading velocity away from ridge [cm/yr]
+[p] =   ParseInput(p,varargin,'AgeRidge',           0       );   % Thermal age of the ridge [0 by default]
+[p] =   ParseInput(p,varargin,'DipAngle',           0       );   % the dip angle of the whole box in degrees
+[p] =   ParseInput(p,varargin,'RotationPoint',      [0 0 0] );   % the point that acts as origin around which we rotate 
+[p] =   ParseInput(p,varargin,'StrikeAngle',        0       );   % the strike angle of the whole box in degrees
 
 
 % Find block indices 
@@ -110,13 +113,16 @@ switch lower(p.Results.TempType)
         Ztop = Ztop   - Origin(3);
          
         % Set halfspace cooling profile
-        kappa       =   1e-6;
-        SecYear     =   3600*24*365;
-        ThermalAge  =   p.Results.thermalAge*1e6*SecYear;
-        T_surface   =   p.Results.topTemp;
-        T_mantle    =   p.Results.botTemp;
+        kappa               =   1e-6;
+        SecYear             =   3600*24*365;
+        ThermalAge          =   p.Results.thermalAge*1e6*SecYear;
+        T_surface           =   p.Results.topTemp;
+        T_mantle            =   p.Results.botTemp;
+        AdiabaticGradient   =   p.Results.AdiabaticGradient;
         
-        Temp(indB)  =   (T_surface-T_mantle)*erfc((abs(Z(indB)-Ztop)*1e3)./(2*sqrt(kappa*ThermalAge))) + T_mantle;
+        MantleAdiabaticT    =   T_mantle + AdiabaticGradient*abs(Z-Ztop);   % Adiabatic temperature of mantle
+        
+        Temp(indB)          =   (T_surface-T_mantle)*erfc((abs(Z(indB)-Ztop)*1e3)./(2*sqrt(kappa*ThermalAge))) + MantleAdiabaticT(indB);
         
         
     case 'spreadingrate'
@@ -143,16 +149,19 @@ switch lower(p.Results.TempType)
         end
       
         % Translate distance into thermal age
-        ThermalAge  =   (Distance*1e3*1e2)/p.Results.SpreadingVel + p.Results.AgeRidge*1e6;   % Thermal age in years
-        SecYear     =   3600*24*365;
-        ThermalAge  =   ThermalAge*SecYear;                                                   % in s
+        ThermalAge          =   (Distance*1e3*1e2)/p.Results.SpreadingVel + p.Results.AgeRidge*1e6;   % Thermal age in years
+        SecYear             =   3600*24*365;
+        ThermalAge          =   ThermalAge*SecYear;                                                   % in s
         
-        T_surface   =   p.Results.topTemp;
-        T_mantle    =   p.Results.botTemp;
-        kappa       =   1e-6;
+        T_surface           =   p.Results.topTemp;
+        T_mantle            =   p.Results.botTemp;
+        kappa               =   1e-6;
+        
+        AdiabaticGradient   =   p.Results.AdiabaticGradient;
+        MantleAdiabaticT    =   T_mantle + AdiabaticGradient*abs(Z-Ztop);   % Adiabatic temperature of mantle
         
         % Set halfspace cooling temperature
-        Temp(indB)  =   (T_surface-T_mantle).*erfc(abs((Z(indB)-Ztop)*1e3)./(2*sqrt(kappa*ThermalAge))) + T_mantle;
+        Temp(indB)  =   (T_surface-T_mantle).*erfc(abs((Z(indB)-Ztop)*1e3)./(2*sqrt(kappa*ThermalAge))) + + MantleAdiabaticT(indB);
        
         
         

@@ -181,13 +181,15 @@
 	dbox_zvel   = -1.0                      # vertical velocity
 
 # Inflow velocity boundary condition
-	bvel_face                 =          Left                        # Face identifier  (Left; Right; Front; Back)
+	bvel_face                 =         Left                         # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
 	bvel_face_out             =         1                            # do we have outflow @ opposite boundary?
 	bvel_bot                  =        -20.0                         # bottom coordinate of inflow window
 	bvel_top                  =        -10.0                         # top coordinate of inflow window
 	bvel_velin                =         1.0                          # inflow velocity
 	bvel_velout               =         0.0                          # outflow velocity (if not specified, computed from mass balance)
 	bvel_relax_d              =         100                          # distance over which velocity is reduced
+	bvel_velbot               =         0   					     # bottom inflow velocity for use with bvel_face=CompensatingInflow
+	bvel_veltop               =         0                            # top inflow velocity for use with bvel_face=CompensatingInflow
 	bvel_temperature_inflow   =        Fixed_thermal_age             # Thermal age of the plate is constant
                               =        Constant_T_inflow             # Temperature of the inflow material is constant everywhere
 	bvel_thermal_age          =        10                            # In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
@@ -359,27 +361,6 @@
 #	mark_ctrl = avd     # pure AVD for all control volumes
 #	mark_ctrl = subgrid # simple marker control enforced over fine scale grid
 
-#===========================================================================
-# Passive Tracers 
-#===========================================================================
-	Passive_Tracer              = 1                               # Activate passive tracers?
-	PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
-    PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
-    PassiveTracer_ActiveType    =  Melt_Fraction                  # Under which condition are they activated? []  
-    PassiveTracer_ActiveValue   =  0.1                            # When this value is exceeded the tracers are being activated 
-    
-    # Passive Tracer activation type specification:
-
-    	#	PassiveTracer_ActiveType = Always               # always on
-    	#	PassiveTracer_ActiveType = Melt_Fraction        # always on
-    	#	PassiveTracer_ActiveType = Temperature          # always on
-    	#	PassiveTracer_ActiveType = Pressure             # always on
-    	#	PassiveTracer_ActiveType = Time                 # always on
-    
-
-
-
-
 # Geometric primitives:
 
 	<SphereStart>
@@ -438,6 +419,25 @@
 		cstTemp     = 1000     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
 	<CylinderEnd>
 
+
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+	Passive_Tracer              = 1                               # Activate passive tracers?
+	PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Melt_Fraction                  # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.1                            # When this value is exceeded the tracers are being activated 
+    
+    # Passive Tracer activation type specification:
+
+    	#	PassiveTracer_ActiveType = Always               # always on
+    	#	PassiveTracer_ActiveType = Melt_Fraction        # always on
+    	#	PassiveTracer_ActiveType = Temperature          # always on
+    	#	PassiveTracer_ActiveType = Pressure             # always on
+    	#	PassiveTracer_ActiveType = Time                 # always on
+    
+	
 #===============================================================================
 # Output
 #===============================================================================
@@ -534,7 +534,7 @@
 	<PhaseTransitionStart>
 		ID                      =   0         #     Phase_transition law ID
 		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
-		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain] parameter that triggers the phase transition
+		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain, MeltFraction] parameter that triggers the phase transition
 		ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z, APS]
         
         number_phases           =   1         #     The number of involved phases [default=1]
@@ -544,13 +544,32 @@
 	<PhaseTransitionEnd>
 
 	<PhaseTransitionStart>
-		ID                      =   1                           # Phase_transition law ID
+        ID                      =   1                           # Phase_transition law ID
 		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
 		Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
         number_phases           =   3
 		PhaseAbove              =   4 5 7
 		PhaseBelow              =   1 2 3
 	<PhaseTransitionEnd>
+
+    # Box-like region with T-condition
+    <PhaseTransitionStart>
+        ID                      =   2                               # Phase_transition law ID
+        Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   200 400 -100 100 -1000 -500     # box bound coordinates: [left, right, front, back, bottom, top]
+        number_phases           =   1
+        PhaseInside             =   7                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   3                               # Phase outside the box
+        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
+
+        PTBox_TempType          =	linear                          # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_topTemp           =   20                              # Temp @ top of box [for linear & halfspace]
+        PTBox_botTemp           =   1300                            # Temp @ bottom of box [for linear & halfspace]
+        
+        PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
+        PTBox_cstTemp          	=   1200                            # Temp within box [only for constant T]
+	<PhaseTransitionEnd>
+
 
 # Define material properties for all phases (maximum 32)
 # By default all rheological mechanisms are deactivated
