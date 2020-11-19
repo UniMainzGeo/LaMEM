@@ -215,6 +215,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// Melt Extraction Create
 	ierr = MeltExtractionCreate(&lm->jr); CHKERRQ(ierr);
+
 	// create output object for all requested output variables
 	ierr = PVOutCreate(&lm->pvout, fb); 			CHKERRQ(ierr);
 
@@ -316,8 +317,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// markers
 	ierr = ADVReadRestart(&lm->actx, fp); CHKERRQ(ierr);
-
-	// Melt Extraction
 
 	ierr = ReadMelt_Extraction(&lm->jr,fp); CHKERRQ(ierr);
 

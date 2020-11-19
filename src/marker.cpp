@@ -126,14 +126,16 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 
 	if(LoadPhaseDiagrams)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Phase Diagrams: \n");
+		PetscPrintf(PETSC_COMM_WORLD,"Phase Diagrams:  \n");
+		PetscPrintf(PETSC_COMM_WORLD,"   Diagrams employed for phases  : ");
+		
 	}	
 
 	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++)
 	{
 		if(actx->jr->dbm->phases[i].pdAct)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase %i,  ", i);
+			PetscPrintf(PETSC_COMM_WORLD,"%i, ", i);
 
 			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
 		}
@@ -141,6 +143,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 
 	if(LoadPhaseDiagrams)
 	{
+		PetscPrintf(PETSC_COMM_WORLD,"\n");
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 

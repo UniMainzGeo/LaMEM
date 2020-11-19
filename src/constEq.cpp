@@ -666,6 +666,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	dt        = ctx->dt;
 	p         = ctx->p;
 	T         = ctx->T;
+
 	p         = p+ctrl->pShift;
 
 //
@@ -696,6 +697,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				// compute melt fraction from phase diagram
 				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
+
 			 if(ctrl->MeltExt && !ctrl->initGuess)
 			 	 {
 					Mexpar    = ctx->Mextpar+mat->ID_MELTEXT;
@@ -706,6 +708,18 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			 	 }
 				svBulk->mf     += phRat[i]*mf;
 				svBulk->rho_pf += phRat[i]*Pd->rho_f;
+
+				svBulk->mf     += phRat[i]*Pd->mf;
+
+				if(mat->rho_melt)
+				{
+					svBulk->rho_pf += phRat[i]*mat->rho_melt;
+				}
+				else
+				{
+					svBulk->rho_pf += phRat[i]*Pd->rho_f;
+				}
+
 			}
 
 			// initialize
@@ -743,7 +757,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				rho = mat->rho - (mat->rho - ctrl->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
 			}
 			// phase diagram
-			else if(mat->pdAct == 1)
+			else if(mat->pdAct == 1 && !mat->Phase_Diagram_melt)
 			{
 				// Compute density from phase diagram, while also taking the actual melt content into account
 				PetscScalar mf;
@@ -752,6 +766,12 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				if (mf > ctrl->mfmax){ mf = ctrl->mfmax; }
 
 				rho = (mf * Pd->rho_f) + ((1.0 - mf ) * Pd->rho);
+			}
+			else if(mat->pdAct == 1 && mat->Phase_Diagram_melt)
+			{
+				rho = (Pd->mf * mat->rho_melt) + ((1-Pd->mf) * mat->rho);
+
+				rho = rho*cf_comp*cf_therm;
 			}
 			else
 			{

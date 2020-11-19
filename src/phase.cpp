@@ -31,14 +31,18 @@
  **        Anton Popov      [popov@uni-mainz.de]
  **
  **
- **    Main development team:
+ **    This routine:
  **         Anton Popov      [popov@uni-mainz.de]
  **         Boris Kaus       [kaus@uni-mainz.de]
- **         Tobias Baumann
- **         Adina Pusok
- **         Arthur Bauville
+ **			Andrea Piccolo
+ **         Georg Reuber
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+/*
+	This file defined various material properties for the phases
+
+*/
+
 //---------------------------------------------------------------------------
 //.................. MATERIAL PARAMETERS READING ROUTINES....................
 //---------------------------------------------------------------------------
@@ -380,6 +384,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		strcat(m->pdf, ".in");		// add the file ending
 
 		strcpy(m->pdn, PhaseDiagram);
+	    // Take into account only the melt, and not the density from a phase diagram
+		ierr = getIntParam(fb, _OPTIONAL_, "Phase_Melt", &m->Phase_Diagram_melt, 1, 1); CHKERRQ(ierr);
 
 	}
 	else
@@ -480,6 +486,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getIntParam   (fb, _OPTIONAL_, "ID_Melt_Ex", &m->ID_MELTEXT, 1, -1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "PhNext", &m->PhNext, 1, _max_num_phases_); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "pMant", &m->pMant, 1, 1); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
 
@@ -511,6 +518,13 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
 	}
 	
+	if((!m->rho_melt && m->Phase_Diagram_melt))
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You need to specify the density of the melting phase for phase %lld", (LLD)ID);
+	}
+
+
+
 
     m->eta_st   = eta_st;
    
@@ -632,7 +646,14 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// PRINT (optional)
 	if (PrintOutput){
-		PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld",(LLD)(m->ID));
+		if (strlen(m->Name)>0){
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld     --   %s ",(LLD)(m->ID), m->Name);
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld  %s ",(LLD)(m->ID), m->Name);
+			
+		}
 
 		if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"\n   diffusion creep profile  : %s", ndiff);
 		if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"\n   dislocation creep profile: %s", ndisl);
