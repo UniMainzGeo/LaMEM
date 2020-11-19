@@ -1061,6 +1061,9 @@ PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 
 	VecDestroy(&actx->Ptr->C_advection);
 
+	VecDestroy(&actx->Ptr->Recv);
+
+
 
 	PetscFunctionReturn(0);
 }
