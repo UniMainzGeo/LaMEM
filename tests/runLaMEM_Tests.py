@@ -32,7 +32,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't17_InflowOutflow'))
 sys.path.append(os.path.join(os.environ['PWD'], 't18_SimpleShear'))
 sys.path.append(os.path.join(os.environ['PWD'], 't19_CompensatedInflow'))
 sys.path.append(os.path.join(os.environ['PWD'], 't20_FSSA'))
-
+sys.path.append(os.path.join(os.environ['PWD'], 't21_Passive_Tracer'))
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
     sys.path.append(os.path.join(os.environ['PWD'], 't3_SubductionMATLABinput'))
@@ -58,7 +58,7 @@ import test_17_InflowOutflow as InOut
 import test_18_SimpleShear as SS
 import test_19_CompensatedInflow as CI
 import test_20_FSSA as FSSA
-
+import test_21_Passive_Tracer as PTracer
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1     as Sub1 # import test that requires MATLAB
@@ -88,7 +88,7 @@ def run_tests():
                       RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(), PT.test_c(),
                       InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), 
                       CI.test_a(), CI.test_b(),
-                      FSSA.test_1()];
+                      FSSA.test_1(),PTracer.test_a(),PTracer.test_b()];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
