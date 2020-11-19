@@ -577,7 +577,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 							Xm[2] = actx->markers[ii].X[2];
 							X[0]  = xp;
 							X[1]  = yp;
-							X[3]  = zp;
+							X[2]  = zp;
 
 							if (mat[actx->markers[ii].phase].pdn)
 							{
@@ -952,11 +952,12 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf)
 {
 
-	PetscScalar *phase,*Active;
-	PetscScalar Xm[3],X[3];
-	vector <spair>    dist;
-	spair d;
-	PetscErrorCode ierr;
+	PetscScalar 		*phase,*Active;
+	PetscScalar 		Xm[3],X[3];
+	vector <spair>    	dist;
+	spair 				d;
+	PetscErrorCode 		ierr;
+
 	PetscFunctionBegin;
 
 	ierr = VecGetArray(actx->Ptr->C_advection, &Active); CHKERRQ(ierr);
@@ -1001,7 +1002,7 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 
 		X[0]  = xp;
 		X[1]  = yp;
-		X[3]  = zp;
+		X[2]  = zp;
 
 		dist.clear();
 		n = actx->markstart[ID+1] - actx->markstart[ID];
