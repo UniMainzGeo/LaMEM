@@ -65,12 +65,16 @@
 	open_top_bound 			= 	0
 
 # In/Out flow BC
-	bvel_face   	        = 	1     	    #   Face identifier  (1-left 2-right 3-front 4-back)
+	bvel_face   	        = 	Left     	#   Face identifier  (Left; Right; Front; Back)
 	bvel_face_out 	        = 	1		    #   Have outflow @ the opposite boundary?
 	bvel_bot    	        =  -100.0  	    #   Bottom coordinate of inflow window
-	bvel_top    	        =  	150.0  	    #   Top coordinate of inflow window
+	bvel_top    	        =  	0.0  	    #   Top coordinate of inflow window
 	bvel_velin  	        =  	5.0   	    #	inflow velocity [cm/yr if geo units]
-	bvel_relax_d            = 	100 			
+	bvel_relax_d            = 	100
+	bvel_temperature_inflow =   Fixed_thermal_age
+	bvel_thermal_age 		=   30         	#   In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
+	bvel_temperature_mantle = 	1300        #   In dimensional unit. Temperature of the mantle
+	bvel_temperature_top    = 	0           #   In dimensional unit. temperature of the top  			
 
 # Plume_like inflow boundary condition
 	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
@@ -127,11 +131,11 @@
 #===========================================================================
 # Passive Tracers 
 #===========================================================================
-    Passive_Tracer              = 1                             # Activate passive tracers?
-    PassiveTracer_Box           =  -600 600 -1 1 -300 -50       # Dimensions of Box in which we disttribute passive tracers  
+	Passive_Tracer              = 1                             # Activate passive tracers?
+	PassiveTracer_Box           =  -600 600 -1 1 -300 -50       # Dimensions of Box in which we disttribute passive tracers  
     PassiveTracer_Resolution    =  100 1 100                    # The number of passive tracers in every direction
-    PassiveTracer_ActiveType    =  Temperature                # Under which condition are they activated? []  
-    PassiveTracer_ActiveValue   =  1500                        # When this value is exceeded the tracers are being activated 
+    PassiveTracer_ActiveType    =  Always                # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.001                        # When this value is exceeded the tracers are being activated 
     
     # Passive Tracer activation type specification:
 
@@ -195,8 +199,8 @@
 	out_visc_plast      = 1
 	out_velocity        = 1
 	out_pressure        = 1
-    out_tot_press       = 1  
-    out_eff_press       = 1
+	out_tot_press       = 1  
+	out_eff_press       = 1
 	out_temperature     = 1
 	out_dev_stress      = 1
 	out_j2_dev_stress   = 1
@@ -217,6 +221,16 @@
 	out_avd     		= 1 # activate AVD phase output
 	out_avd_pvd 		= 1 # activate writing .pvd file
 	out_avd_ref 		= 3 # AVD grid refinement factor
+# Passive Tracers 
+
+  	out_ptr_ID           = 1   # ID of the passive tracers
+	out_ptr_phase        = 1 # phase of the passive tracers
+  	out_ptr_Pressure     = 1 # interpolated pressure
+	out_ptr_Temperature  = 1 # temperature
+	out_ptr_MeltFraction = 1 # melt fraction
+	out_ptr_Active       = 1 # option that highlight the marker that are currently active
+
+
 	
 
 #===============================================================================
@@ -308,8 +322,6 @@
 #		rho        	= 	3300			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
         rho         = 3300
-        rho_ph      = PMD_extrapolate
-		Phase_melt  = 1
 		
 
 		# Linear viscous	
@@ -328,8 +340,6 @@
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
 
 		rho         = 3300
-        rho_ph      = PMD_extrapolate
-        Phase_melt  = 1
         
 
 		eta 		= 	1e20
@@ -348,8 +358,6 @@
 		rho        	= 	3400			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
         rho         = 3300
-        rho_ph      = PMD_extrapolate
-        Phase_melt  = 1
 
 
 		# Linear viscous	

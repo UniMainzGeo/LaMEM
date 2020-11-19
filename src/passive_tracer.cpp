@@ -577,7 +577,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 							Xm[2] = actx->markers[ii].X[2];
 							X[0]  = xp;
 							X[1]  = yp;
-							X[3]  = zp;
+							X[2]  = zp;
 
 							if (mat[actx->markers[ii].phase].pdn)
 							{
@@ -952,11 +952,12 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf)
 {
 
-	PetscScalar *phase,*Active;
-	PetscScalar Xm[3],X[3];
-	vector <spair>    dist;
-	spair d;
-	PetscErrorCode ierr;
+	PetscScalar 		*phase,*Active;
+	PetscScalar 		Xm[3],X[3];
+	vector <spair>    	dist;
+	spair 				d;
+	PetscErrorCode 		ierr;
+
 	PetscFunctionBegin;
 
 	ierr = VecGetArray(actx->Ptr->C_advection, &Active); CHKERRQ(ierr);
@@ -1001,7 +1002,7 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 
 		X[0]  = xp;
 		X[1]  = yp;
-		X[3]  = zp;
+		X[2]  = zp;
 
 		dist.clear();
 		n = actx->markstart[ID+1] - actx->markstart[ID];
@@ -1061,11 +1062,96 @@ PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 
 	VecDestroy(&actx->Ptr->C_advection);
 
+	VecDestroy(&actx->Ptr->Recv);
+
+
 
 	PetscFunctionReturn(0);
 }
 // --------------------------------------------------------------------------------------- //
 
+//-------------------------------------------------------------------------//
+
+#undef __FUNCT__
+#define __FUNCT__ "Passive_Tracer_WriteRestart"
+PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	if(actx->jr->ctrl.Passive_Tracer)
+	{
+
+	// write solution vectors
+	ierr = VecWriteRestart(actx->Ptr->x, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->y, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->z, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->p, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->T, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->phase, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->Melt_fr, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->C_advection, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->ID, fp); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+
+// --------------------------------------------------------------------------------------- //
+
+#undef __FUNCT__
+#define __FUNCT__ "ReadPassive_Tracers"
+PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// read solution vectors
+	if(actx->jr->ctrl.Passive_Tracer)
+	{
+		ierr = ADVPtrReCreateStorage(actx); CHKERRQ(ierr);
+
+		ierr = VecReadRestart(actx->Ptr->x, fp); CHKERRQ(ierr);
+		ierr = VecReadRestart(actx->Ptr->y, fp); CHKERRQ(ierr);
+		ierr = VecReadRestart(actx->Ptr->z, fp); CHKERRQ(ierr);
+		ierr = VecReadRestart(actx->Ptr->p, fp); CHKERRQ(ierr);
+		ierr = VecReadRestart(actx->Ptr->T, fp); CHKERRQ(ierr);
+		ierr = VecReadRestart(actx->Ptr->phase, fp); CHKERRQ(ierr);
+		ierr = VecReadRestart(actx->Ptr->Melt_fr, fp); CHKERRQ(ierr);
+		ierr = VecReadRestart(actx->Ptr->C_advection, fp); CHKERRQ(ierr);
+		ierr = VecReadRestart(actx->Ptr->ID, fp); CHKERRQ(ierr);
+	}
+
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Sync_Vector"
+PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark)
+{
+	PetscScalar *recv,*send;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecZeroEntries(actx->Ptr->Recv); CHKERRQ(ierr);
+
+	ierr = VecGetArray(x, &send)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->Recv, &recv)           ; CHKERRQ(ierr);
+
+	ierr = MPI_Allreduce(send, recv, (PetscMPIInt)nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(x, &send)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->Recv, &recv)           ; CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+
+//=========================================================
+/*
 #undef __FUNCT__
 #define __FUNCT__ "Passive_tracers_save"
 PetscErrorCode Passive_tracers_save(AdvCtx *actx)
@@ -1150,85 +1236,4 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 	PetscFunctionReturn(0);
 
 }
-//-------------------------------------------------------------------------//
-
-#undef __FUNCT__
-#define __FUNCT__ "Passive_Tracer_WriteRestart"
-PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	if(actx->jr->ctrl.Passive_Tracer)
-	{
-
-	// write solution vectors
-	ierr = VecWriteRestart(actx->Ptr->x, fp); CHKERRQ(ierr);
-	ierr = VecWriteRestart(actx->Ptr->y, fp); CHKERRQ(ierr);
-	ierr = VecWriteRestart(actx->Ptr->z, fp); CHKERRQ(ierr);
-	ierr = VecWriteRestart(actx->Ptr->p, fp); CHKERRQ(ierr);
-	ierr = VecWriteRestart(actx->Ptr->T, fp); CHKERRQ(ierr);
-	ierr = VecWriteRestart(actx->Ptr->phase, fp); CHKERRQ(ierr);
-	ierr = VecWriteRestart(actx->Ptr->Melt_fr, fp); CHKERRQ(ierr);
-	ierr = VecWriteRestart(actx->Ptr->C_advection, fp); CHKERRQ(ierr);
-	ierr = VecWriteRestart(actx->Ptr->ID, fp); CHKERRQ(ierr);
-	}
-
-	PetscFunctionReturn(0);
-}
-
-// --------------------------------------------------------------------------------------- //
-
-#undef __FUNCT__
-#define __FUNCT__ "ReadPassive_Tracers"
-PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// read solution vectors
-	if(actx->jr->ctrl.Passive_Tracer)
-	{
-		ierr = ADVPtrReCreateStorage(actx); CHKERRQ(ierr);
-
-		ierr = VecReadRestart(actx->Ptr->x, fp); CHKERRQ(ierr);
-		ierr = VecReadRestart(actx->Ptr->y, fp); CHKERRQ(ierr);
-		ierr = VecReadRestart(actx->Ptr->z, fp); CHKERRQ(ierr);
-		ierr = VecReadRestart(actx->Ptr->p, fp); CHKERRQ(ierr);
-		ierr = VecReadRestart(actx->Ptr->T, fp); CHKERRQ(ierr);
-		ierr = VecReadRestart(actx->Ptr->phase, fp); CHKERRQ(ierr);
-		ierr = VecReadRestart(actx->Ptr->Melt_fr, fp); CHKERRQ(ierr);
-		ierr = VecReadRestart(actx->Ptr->C_advection, fp); CHKERRQ(ierr);
-		ierr = VecReadRestart(actx->Ptr->ID, fp); CHKERRQ(ierr);
-	}
-
-
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Sync_Vector"
-PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark)
-{
-	PetscScalar *recv,*send;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = VecZeroEntries(actx->Ptr->Recv); CHKERRQ(ierr);
-
-	ierr = VecGetArray(x, &send)           ; CHKERRQ(ierr);
-	ierr = VecGetArray(actx->Ptr->Recv, &recv)           ; CHKERRQ(ierr);
-
-	ierr = MPI_Allreduce(send, recv, (PetscMPIInt)nummark, MPIU_SCALAR, MPI_MAX,PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-	ierr = VecRestoreArray(x, &send)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->Ptr->Recv, &recv)           ; CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-
-
-//=========================================================
-
+*/

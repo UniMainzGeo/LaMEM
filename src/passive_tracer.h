@@ -82,8 +82,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx);
 
 PetscErrorCode ADVPtrDestroy(AdvCtx *actx);
 
-PetscErrorCode Passive_tracers_save(AdvCtx *actx);
-
 PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp);
 
 PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp);
@@ -93,7 +91,7 @@ PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark);
 PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf);
 
 
-
+//PetscErrorCode Passive_tracers_save(AdvCtx *actx);
 #endif /* PASSIVE_TRACER_H */
 
 
