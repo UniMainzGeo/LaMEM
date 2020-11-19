@@ -59,7 +59,7 @@
 #include "subgrid.h"
 #include "tools.h"
 #include "phase_transition.h"
-
+#include "passive_tracer.h"
 /*
 #START_DOC#
 \lamemfunction{\verb- ADVCreate -}
@@ -151,7 +151,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_lim",       nmark_lim,      2, 0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_avd",       nmark_avd,      3, 0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_sub",      &actx->npmax,    1, 27);           CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "coordinate_box_passive_tracers", actx->box_passive_tracer,    6, 1.0);  CHKERRQ(ierr);
+
 
 
 	// CHECK
@@ -206,10 +206,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	if( actx->interp != STAG_P)  actx->A       = 0.0;
 	if( actx->msetup != _GEOM_)  actx->bgPhase = -1;
-	if (actx->passive_tracer_resolution[0]*actx->passive_tracer_resolution[1]*actx->passive_tracer_resolution[2]>_max_passive_tracer)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The total number of passive tracers must be lower than 30000");
-	}
 
 
 

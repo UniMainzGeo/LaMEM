@@ -48,7 +48,7 @@
 //---------------------------------------------------------------------------
 
 #include "Tensor.h" // required for Marker declaration
-
+#include "passive_tracer.h"
 //---------------------------------------------------------------------------
 
 struct FB;
@@ -201,6 +201,7 @@ struct AdvCtx
 	PetscInt  nummark;    // local number of markers
 	PetscInt  markcap;    // capacity of marker storage
 	Marker   *markers;    // storage for local markers
+	P_Tr     *Ptr    ;    // storage for Passive tracers
 
 	//========================
 	// MARKER-CELL INTERACTION
@@ -225,9 +226,6 @@ struct AdvCtx
 
 	PetscInt  ndel; // number of markers to be deleted from storage
 	PetscInt *idel; // indices of markers to be deleted
-
-	PetscScalar box_passive_tracer[6];
-	PetscInt    passive_tracer_resolution[3];
 
 };
 

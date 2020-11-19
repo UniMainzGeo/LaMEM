@@ -268,7 +268,6 @@
 	p_litho_visc    = 1              # use lithostatic pressure for creep laws
 	p_litho_plast   = 1              # use lithostatic pressure for plasticity
 	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
-	
 	p_shift 		= 0              # constant [MPa] added to the total pressure field, before evaluating plasticity (e.g., when the domain is located @ some depth within the crust)  	
 	act_p_shift     = 1              # pressure shift activation flag (enforce zero pressure on average in the top cell layer); note: this overwrites p_shift above!
 	
@@ -420,6 +419,25 @@
 		cstTemp     = 1000     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
 	<CylinderEnd>
 
+
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+	Passive_Tracer              = 1                               # Activate passive tracers?
+	PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Melt_Fraction                  # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.1                            # When this value is exceeded the tracers are being activated 
+    
+    # Passive Tracer activation type specification:
+
+    	#	PassiveTracer_ActiveType = Always               # always on
+    	#	PassiveTracer_ActiveType = Melt_Fraction        # always on
+    	#	PassiveTracer_ActiveType = Temperature          # always on
+    	#	PassiveTracer_ActiveType = Pressure             # always on
+    	#	PassiveTracer_ActiveType = Time                 # always on
+    
+	
 #===============================================================================
 # Output
 #===============================================================================
@@ -505,7 +523,7 @@
 	<PhaseTransitionStart>
 		ID                      =   0         #     Phase_transition law ID
 		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
-		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain] parameter that triggers the phase transition
+		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain, MeltFraction] parameter that triggers the phase transition
 		ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z, APS]
         
         number_phases           =   1         #     The number of involved phases [default=1]
@@ -515,13 +533,32 @@
 	<PhaseTransitionEnd>
 
 	<PhaseTransitionStart>
-		ID                      =   1                           # Phase_transition law ID
+        ID                      =   1                           # Phase_transition law ID
 		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
 		Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
         number_phases           =   3
 		PhaseAbove              =   4 5 7
 		PhaseBelow              =   1 2 3
 	<PhaseTransitionEnd>
+
+    # Box-like region with T-condition
+    <PhaseTransitionStart>
+        ID                      =   2                               # Phase_transition law ID
+        Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   200 400 -100 100 -1000 -500     # box bound coordinates: [left, right, front, back, bottom, top]
+        number_phases           =   1
+        PhaseInside             =   7                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   3                               # Phase outside the box
+        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
+
+        PTBox_TempType          =	linear                          # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_topTemp           =   20                              # Temp @ top of box [for linear & halfspace]
+        PTBox_botTemp           =   1300                            # Temp @ bottom of box [for linear & halfspace]
+        
+        PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
+        PTBox_cstTemp          	=   1200                            # Temp within box [only for constant T]
+	<PhaseTransitionEnd>
+
 
 # Define material properties for all phases (maximum 32)
 # By default all rheological mechanisms are deactivated

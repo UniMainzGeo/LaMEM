@@ -31,14 +31,18 @@
  **        Anton Popov      [popov@uni-mainz.de]
  **
  **
- **    Main development team:
+ **    This routine:
  **         Anton Popov      [popov@uni-mainz.de]
  **         Boris Kaus       [kaus@uni-mainz.de]
- **         Tobias Baumann
- **         Adina Pusok
- **         Arthur Bauville
+ **			Andrea Piccolo
+ **         Georg Reuber
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+/*
+	This file defined various material properties for the phases
+
+*/
+
 //---------------------------------------------------------------------------
 //.................. MATERIAL PARAMETERS READING ROUTINES....................
 //---------------------------------------------------------------------------
@@ -608,7 +612,14 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// PRINT (optional)
 	if (PrintOutput){
-		PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld",(LLD)(m->ID));
+		if (strlen(m->Name)>0){
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld     --   %s ",(LLD)(m->ID), m->Name);
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld  %s ",(LLD)(m->ID), m->Name);
+			
+		}
 
 		if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"\n   diffusion creep profile  : %s", ndiff);
 		if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"\n   dislocation creep profile: %s", ndisl);

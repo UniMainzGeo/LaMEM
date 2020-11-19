@@ -80,6 +80,10 @@ T_surf              =   20;
 Phase               =   ones(size(X));                 % initialize to have mantle phase
 Temp                =   T_mantle*ones(size(Phase));     
 
+BoxSides            =   [min(X(:)) max(X(:)) min(Y(:)) max(Y(:)) min(Z(:))  0];  % [Left Right Front Back Bottom Top] of the box
+[Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 1,'TempType','linear', 'topTemp',T_mantle,'botTemp', T_mantle); % Set slab to mantle lithosphere phase
+
+                                
 % Add horizontal part of slab 
 BoxSides            =   [Trench_x_location (Trench_x_location+Length_Horiz_Slab) min(Y(:)) Width_Slab -ThicknessSlab 0];  % [Left Right Front Back Bottom Top] of the box
 [Phase,Temp]        =   AddBox(Phase,Temp,X,Y,Z,BoxSides, 1,...
