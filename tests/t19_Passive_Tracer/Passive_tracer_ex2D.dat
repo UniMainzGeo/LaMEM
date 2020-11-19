@@ -195,8 +195,8 @@
 	out_visc_plast      = 1
 	out_velocity        = 1
 	out_pressure        = 1
-    out_tot_press       = 1  
-    out_eff_press       = 1
+	out_tot_press       = 1  
+	out_eff_press       = 1
 	out_temperature     = 1
 	out_dev_stress      = 1
 	out_j2_dev_stress   = 1
@@ -217,6 +217,16 @@
 	out_avd     		= 1 # activate AVD phase output
 	out_avd_pvd 		= 1 # activate writing .pvd file
 	out_avd_ref 		= 3 # AVD grid refinement factor
+# Passive Tracers 
+
+  	out_ptr_ID           = 1   # ID of the passive tracers
+	out_ptr_phase        = 1 # phase of the passive tracers
+  	out_ptr_Pressure     = 1 # interpolated pressure
+	out_ptr_Temperature  = 1 # temperature
+	out_ptr_MeltFraction = 1 # melt fraction
+	out_ptr_Active       = 1 # option that highlight the marker that are currently active
+
+
 	
 
 #===============================================================================

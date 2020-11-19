@@ -629,17 +629,14 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	ierr = JacResGetPermea(&lm->jr, bgPhase, step, lm->pvout.outfile); CHKERRQ(ierr);
 
 	// passive tracers paraview output
-
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		// save .dat files// binary of passive tracers
 		ierr = PVPtrWriteTimeStep(&lm->pvptr, dirName, time); CHKERRQ(ierr);
 
 	}
-
 	// clean up
 	free(dirName);
-	ierr = Passive_tracers_save(&lm->actx); CHKERRQ(ierr);
 
 	PrintDone(t);
 

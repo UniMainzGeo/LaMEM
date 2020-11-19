@@ -67,11 +67,15 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 
 	// check activation
 
-
-
+    // Default Values ( if passive tracers are used, there is no point to let someone to not
+	// visualize them)
+	pvptr->ID          = 1;
+	pvptr->Pressure    = 1;
+	pvptr->Temperature = 1;
+	pvptr->outptr      = 1;
+	pvptr->outpvd      = 1;
 	// read
 	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",           filename,    "output"); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_passive_tracer_pvd",  &pvptr->outpvd, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_ID",              &pvptr->ID,   1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Temperature",     &pvptr->Temperature, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Pressure",        &pvptr->Pressure,  1, 1); CHKERRQ(ierr);
@@ -369,7 +373,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 			{
 				ierr = VecGetArray(ptr->ID, &buf)           ; CHKERRQ(ierr);
 
-				length = (int)sizeof(float)*(ptr->nummark);
+				length = (int)sizeof(int)*(ptr->nummark);
 				fwrite( &length,sizeof(int),1, fp);
 
 				for( i = 0; i < ptr->nummark; i++)
@@ -387,7 +391,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 			{
 				ierr = VecGetArray(ptr->C_advection, &buf)           ; CHKERRQ(ierr);
 
-				length = (int)sizeof(float)*(ptr->nummark);
+				length = (int)sizeof(int)*(ptr->nummark);
 				fwrite( &length,sizeof(int),1, fp);
 
 				for( i = 0; i < ptr->nummark; i++)
@@ -486,7 +490,7 @@ PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
 	if(pvptr->Active)
 		{
 				// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Intth32\" Name=\"Active\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
+			fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"Active\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
 		}
 
 	fprintf( fp, "\t\t</PPointData>\n");
