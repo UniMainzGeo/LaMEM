@@ -68,9 +68,11 @@
 #include "paraViewOutAVD.h"
 #include "objFunct.h"
 #include "adjoint.h"
+#include "paraViewOutPassiveTracers.h"
 #include "LaMEMLib.h"
 #include "phase_transition.h"
 #include "passive_tracer.h"
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibMain"
@@ -224,6 +226,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create output object for the markers - for debugging
 	ierr = PVMarkCreate(&lm->pvmark, fb); 			CHKERRQ(ierr);
+
+	// create output object for the passive tracers
+	ierr = PVPtrCreate(&lm->pvptr, fb);              CHKERRQ(ierr);
 
 	// AVD output driver
 	ierr = PVAVDCreate(&lm->pvavd, fb); 			CHKERRQ(ierr);
@@ -562,8 +567,11 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->pvsurf.surf = &lm->surf;
 	// PVMark
 	lm->pvmark.actx = &lm->actx;
+	// PVPTR
+	lm->pvptr.actx  = &lm->actx;
 	// PVAVD
 	lm->pvavd.actx  = &lm->actx;
+
 
 	PetscFunctionReturn(0);
 }
@@ -620,11 +628,15 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	// compute and output effective permeability
 	ierr = JacResGetPermea(&lm->jr, bgPhase, step, lm->pvout.outfile); CHKERRQ(ierr);
 
+	// passive tracers paraview output
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		// save .dat files// binary of passive tracers
+		ierr = PVPtrWriteTimeStep(&lm->pvptr, dirName, time); CHKERRQ(ierr);
+
+	}
 	// clean up
 	free(dirName);
-
-	// save .dat files// binary of passive tracers
-	ierr = Passive_tracers_save(&lm->actx); CHKERRQ(ierr);
 
 	PrintDone(t);
 

@@ -311,7 +311,7 @@ PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName)
 
 	// point data
 	fprintf( fp, "\t\t<PPointData>\n");
-		fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
+	fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
 	fprintf( fp, "\t\t</PPointData>\n");
 
 	for(i = 0; i < actx->nproc; i++){
