@@ -116,7 +116,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 2 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00528193 sec)
+Reading geometric primitives ... done (0.00541091 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : 3D_ridge 
@@ -168,7 +168,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.154819 (sec)
+SNES solution time      : 0.164913 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -177,7 +177,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 3.989781721028e-04 
 --------------------------------------------------------------------------
-Saving output ... done (0.158285 sec)
+Saving output ... done (0.157821 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -242,7 +242,7 @@ Tentative time step : 0.01000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 1.05824 (sec)
+SNES solution time      : 0.879698 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -254,9 +254,9 @@ Residual summary:
 Actual time step : 0.01000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 67 markers in 1.0791e-02 s 
+Marker control [0]: (Corners ) injected 67 markers in 6.8300e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.184375 sec)
+Saving output ... done (0.176405 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -285,7 +285,7 @@ Tentative time step : 0.01100 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.254155 (sec)
+SNES solution time      : 0.270831 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -297,9 +297,9 @@ Residual summary:
 Actual time step : 0.01100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 166 markers in 7.6408e-03 s 
+Marker control [0]: (Corners ) injected 166 markers in 7.5200e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.152687 sec)
+Saving output ... done (0.171276 sec)
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
@@ -328,7 +328,7 @@ Tentative time step : 0.01210 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.255172 (sec)
+SNES solution time      : 0.284618 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -340,11 +340,11 @@ Residual summary:
 Actual time step : 0.01210 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 361 markers in 9.0730e-03 s 
+Marker control [0]: (Corners ) injected 361 markers in 8.6188e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.155227 sec)
+Saving output ... done (0.158922 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 2.67244 (sec) 
+Total solution time : 2.5157 (sec) 
 --------------------------------------------------------------------------
