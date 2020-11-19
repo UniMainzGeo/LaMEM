@@ -147,7 +147,7 @@
 		topTemp     = 0                   # temperature @ top [in Celcius in case of GEO units]
 		botTemp     = 1300                # temperature @ bottom [in Celcius in case of GEO units]
 		Temperature = halfspace_age       # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
-		age0	    = 1                   # initial age right at the ridge in Myr
+		age0	    = 0.001               # initial age right at the ridge in Myr, required
 	<RidgeSegEnd>
 
         # sticky air
