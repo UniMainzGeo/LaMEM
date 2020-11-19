@@ -71,9 +71,8 @@ def makeLocalPathAbsolute(localRelPath) :
 
 def run_tests():
   os.environ['PYTHONUNBUFFERED'] = str('1')
-unit_FB2_a 
-  
-  registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
+
+registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
                       Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), 
                       Adj1.test_RTI_1(), Adj1.test_RTI_2(),
@@ -95,7 +94,7 @@ unit_FB2_a
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
-  if os.environ.get('MATLAB') != None:
+if os.environ.get('MATLAB') != None:
     registeredTests.append(Sub1.test_a());
     registeredTests.append(Sub1.test_b());
     registeredTests.append(Sub1.test_c());
@@ -103,10 +102,10 @@ unit_FB2_a
     registeredTests.append( Diffusion.test_1D());
     
 
-  # Run the tests:
-  h = pthharness.Harness(registeredTests)
-  h.execute()
-  h.verify()
+# Run the tests:
+h = pthharness.Harness(registeredTests)
+h.execute()
+h.verify()
 
 
 if __name__ == "__main__":
