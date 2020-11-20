@@ -88,7 +88,7 @@
 #	exx_strain_rates = 1e-15             # strain rates for each interval
 
 # Inflow velocity boundary condition
-        bvel_face                 =         Left                         # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
+        bvel_face                 =         CompensatingInflow                         # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
 	bvel_face_out             =         1                            # 1-Left, 2-Right, 3-Front, 4-Back
         bvel_bot                  =        -20.0                         # bottom coordinate of inflow window
         bvel_top                  =        -10.0                         # top coordinate of inflow window
