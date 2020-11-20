@@ -69,8 +69,11 @@
 #include "objFunct.h"
 #include "adjoint.h"
 #include "meltextraction.h"
+#include "paraViewOutPassiveTracers.h"
 #include "LaMEMLib.h"
 #include "phase_transition.h"
+#include "passive_tracer.h"
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibMain"
@@ -212,6 +215,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); 				CHKERRQ(ierr);
+	
+	// create passive tracers
+	ierr = ADVPtrPassive_Tracer_create(&lm->actx,fb);			CHKERRQ(ierr);
 
 	// Melt Extraction Create
 	ierr = MeltExtractionCreate(&lm->jr); CHKERRQ(ierr);
@@ -224,6 +230,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create output object for the markers - for debugging
 	ierr = PVMarkCreate(&lm->pvmark, fb); 			CHKERRQ(ierr);
+
+	// create output object for the passive tracers
+	ierr = PVPtrCreate(&lm->pvptr, fb);              CHKERRQ(ierr);
 
 	// AVD output driver
 	ierr = PVAVDCreate(&lm->pvavd, fb); 			CHKERRQ(ierr);
@@ -317,6 +326,9 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// markers
 	ierr = ADVReadRestart(&lm->actx, fp); CHKERRQ(ierr);
+
+	// passive tracers read restart
+	ierr = ReadPassive_Tracers(&lm->actx,fp); CHKERRQ(ierr);
 
 	ierr = ReadMelt_Extraction(&lm->jr,fp); CHKERRQ(ierr);
 
@@ -416,6 +428,9 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	// markers
 	ierr = ADVWriteRestart(&lm->actx, fp); CHKERRQ(ierr);
 
+	// passive tracers
+	ierr = Passive_Tracer_WriteRestart(&lm->actx, fp); CHKERRQ(ierr);
+
 	// Melt Extraction
 
 	 ierr =  Melt_Extraction__WriteRestart(&lm->jr,fp); CHKERRQ(ierr);
@@ -488,6 +503,7 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = FreeSurfDestroy(&lm->surf);   CHKERRQ(ierr);
 	ierr = BCDestroy      (&lm->bc);     CHKERRQ(ierr);
 	ierr = JacResDestroy  (&lm->jr);     CHKERRQ(ierr);
+	ierr = ADVPtrDestroy  (&lm->actx);   CHKERRQ(ierr);
 	ierr = ADVDestroy     (&lm->actx);   CHKERRQ(ierr);
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
@@ -555,16 +571,20 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->actx.jr     = &lm->jr;
 	lm->actx.surf   = &lm->surf;
 	lm->actx.dbm    = &lm->dbm;
+	lm->actx.Ptr    = &lm->Ptr;
 	// PVOut
 	lm->pvout.jr    = &lm->jr;
 	// PVSurf
 	lm->pvsurf.surf = &lm->surf;
 	// PVMark
 	lm->pvmark.actx = &lm->actx;
+	// PVPTR
+	lm->pvptr.actx  = &lm->actx;
 	// PVAVD
 	lm->pvavd.actx  = &lm->actx;
 	// Melt Extraction
 	lm->jr.MEPar    = &lm->MEPar;
+
 
 	PetscFunctionReturn(0);
 }
@@ -621,6 +641,13 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	// compute and output effective permeability
 	ierr = JacResGetPermea(&lm->jr, bgPhase, step, lm->pvout.outfile); CHKERRQ(ierr);
 
+	// passive tracers paraview output
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		// save .dat files// binary of passive tracers
+		ierr = PVPtrWriteTimeStep(&lm->pvptr, dirName, time); CHKERRQ(ierr);
+
+	}
 	// clean up
 	free(dirName);
 
@@ -735,6 +762,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// exchange markers between the processors (after mesh advection)
 		ierr = ADVExchange(&lm->actx); CHKERRQ(ierr);
+
+		// Advect Passive tracers
+			ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
 
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);

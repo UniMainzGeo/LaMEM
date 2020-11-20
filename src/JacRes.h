@@ -188,6 +188,7 @@ struct Controls
 	PetscInt    lmaxit;         // maximum number of local rheology iterations
 	PetscScalar lrtol;          // local rheology iterations relative tolerance
 	PetscInt    Phasetrans; // Flag to activate passive tracer routines
+	PetscInt    Passive_Tracer; // Flag to activate passive tracer routine
 	PetscInt    MeltExt       ; // Flag to activate melt extraction
 };
 

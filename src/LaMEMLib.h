@@ -72,12 +72,12 @@ struct LaMEMLib
 	AdvCtx   actx;   // advection context
 	JacRes   jr;     // Jacobian & residual context
 	Melt_Extraction_t MEPar;
+	P_Tr     Ptr  ;  // passive tracers
 	PVOut    pvout;  // paraview output driver
 	PVSurf   pvsurf; // paraview output driver for surface
 	PVMark   pvmark; // paraview output driver for markers
 	PVAVD    pvavd;  // paraview output driver for AVD
-
-
+	PVPtr    pvptr;  // paraview out passive tracers
 };
 
 //---------------------------------------------------------------------------

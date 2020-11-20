@@ -17,13 +17,13 @@
 # Time stepping parameters
 #===============================================================================
 	time_end  = 100   	# simulation end time
-	dt        = 0.01   # initial time step
+	dt        = 0.1   # initial time step
 	dt_min    = 1e-5  	# minimum time step (declare divergence if lower value is attempted)
 	dt_max    = 1   	# maximum time step
 	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
 	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
-	nstep_max = 400  	# maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 50     	# save output every n steps
+	nstep_max = 10  	# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 5     	# save output every n steps
 	nstep_rdb = 2000   	# save restart database every n steps
 
 
@@ -57,10 +57,10 @@
 	
 # temperature on the top & bottom boundaries
 	temp_top  = 0.0
-	temp_bot  = 1300.0;
+	temp_bot  = 1350.0;
 	
 # No-slip boundary flag mask (left right front back bottom top)
-	noslip 					= 	0 0 0 0 1 0
+	noslip 					= 	0 0 0 0 0 0
 	
 	open_top_bound 			= 	0
 
@@ -80,11 +80,11 @@
 	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
 	Plume_Type         		= 	2D			# 2D or 3D (circular)		
 	Plume_Phase 			=	4			# phase of plume
-	Plume_Temperature 		=	1600		# temperature of inflow plume
+	Plume_Temperature 		=	1700		# temperature of inflow plume
 	Plume_Inflow_Velocity 	= 	15			# Inflow velocity			
 	Plume_VelocityType 		=	Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
-	Plume_Center 			=	1000 50		# [X,Y] of center  (2nd only in case of 3D plume)
-	Plume_Radius 			=	50			# Width/Radius of plume
+	Plume_Center 			=	0 50 		# [X,Y] of center  (2nd only in case of 3D plume)
+	Plume_Radius 			=	100			# Width/Radius of plume
 
 
 #===============================================================================
@@ -94,16 +94,18 @@
 	gravity        = 0.0 0.0 -10    # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
-	init_guess     = 0              # initial guess flag
+	init_guess     = 1              # initial guess flag
 	act_temp_diff  = 1  			# activate thermal diffusion
 	shear_heat_eff = 0.0  
 	eta_min        = 1e18           # viscosity upper bound
 	eta_ref 	   = 1e20			# reference viscosity for initial guess	
 	eta_max        = 1e24           # viscosity lower limit
-	p_shift        = 2.216e4        # pressure shift activation flag (zero pressure in the top cell layer)
     init_lith_pres = 1
 	DII_ref        = 1e-15          # background (reference) strain-rate
-	
+	Phase_melt 	   = 1 
+	mfmax 		   = 0.03			# 	maximum melt fraction used for computation of density & viscosity
+
+
 #===============================================================================
 # Solver options
 #===============================================================================
@@ -123,9 +125,26 @@
 	advect         = rk2               # advection scheme
 	interp         = stagp             # velocity interpolation scheme
 	mark_ctrl      = subgrid           # marker control type
-	nmark_lim      = 8 100             # min/max number per cell
-	nmark_sub       = 1                 # max number of same phase markers per subcell (subgrid marker control)
+	nmark_sub      = 10                # max number of same phase markers per subcell (subgrid marker control)
 
+
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+    Passive_Tracer              = 1                             # Activate passive tracers?
+    PassiveTracer_Box           =  -600 600 -1 1 -990 -550       # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  100 1 100                    # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Temperature                # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  1500                        # When this value is exceeded the tracers are being activated 
+    
+    # Passive Tracer activation type specification:
+
+    #	PassiveTracer_ActiveType = Always               # always on
+    #	PassiveTracer_ActiveType = Melt_Fraction        # always on
+    #	PassiveTracer_ActiveType = Temperature          # always on
+    #	PassiveTracer_ActiveType = Pressure             # always on
+    #	PassiveTracer_ActiveType = Time                 # always on
+    
 
 # Geometric primitives to define the initial setup:
 	# sticky air
@@ -147,7 +166,7 @@
 		Temperature = halfspace
 		thermalAge  = 30		# thermal age
 	
-		botTemp     = 1300		# bottom T for halfspace cooling
+		botTemp     = 1350		# bottom T for halfspace cooling
 		topTemp     = 0			# top T for halfspace cooling
 	<LayerEnd>
 	
@@ -180,8 +199,8 @@
 	out_visc_plast      = 1
 	out_velocity        = 1
 	out_pressure        = 1
-    out_tot_press       = 1  
-    out_eff_press       = 1
+	out_tot_press       = 1  
+	out_eff_press       = 1
 	out_temperature     = 1
 	out_dev_stress      = 1
 	out_j2_dev_stress   = 1
@@ -193,13 +212,52 @@
 	out_tot_displ       = 1
 	out_moment_res      = 1
 	out_cont_res        = 1
+	out_melt_fraction 	= 1 
+
+
 	
 # AVD phase viewer output options (requires activation)
 
 	out_avd     		= 1 # activate AVD phase output
 	out_avd_pvd 		= 1 # activate writing .pvd file
 	out_avd_ref 		= 3 # AVD grid refinement factor
-	
+# Passive Tracers 
+		
+
+  	out_ptr_ID           = 1   # ID of the passive tracers
+	out_ptr_phase        = 1 # phase of the passive tracers
+  	out_ptr_Pressure     = 1 # interpolated pressure
+	out_ptr_Temperature  = 1 # temperature
+	out_ptr_MeltFraction = 1 # melt fraction
+	out_ptr_Active       = 1 # option that highlight the marker that are currently active
+#===============================================================================
+# Phase transitions
+#===============================================================================
+
+	# 660 km PT
+	#<PhaseTransitionStart>
+	#	ID                      =   0         #     Phase_transition law ID
+	#	Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
+	#	Parameter_transition    =   Depth     #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain] parameter that triggers the phase transition
+	#	ConstantValue           =   -660      #     Value of the parameter [unit of T,P,z, APS]
+    #    
+    #    number_phases           =   1         #     The number of involved phases [default=1]
+	#	PhaseAbove              =   3         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
+	#	PhaseBelow              =   5         #       
+    #    PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
+	#<PhaseTransitionEnd>
+
+	<PhaseTransitionStart>
+		ID                      =   0                           # Phase_transition law ID
+		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
+        number_phases           =   1
+		PhaseAbove              =   5
+		PhaseBelow              =   3
+        PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+
 #===============================================================================
 # Material phase parameters
 #===============================================================================
@@ -241,7 +299,11 @@
 		rho        	= 	3300			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
 		
-		eta 	    =  	1e23
+		# dislocation creep		
+		#diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+
+		#eta 	    =  	1e23
 		
      	# Thermal properties
         k           =   3        		# conductivity
@@ -250,15 +312,15 @@
 		
 	<MaterialEnd>
 	
-	
-	
 	# Define properties of upper mantle
 	<MaterialStart>
 		ID  		= 	3 				# phase id
 		
-		rho        	= 	3300			# density [kg/m3]
+#		rho        	= 	3300			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+        rho         = 3300
 		
+
 		# Linear viscous	
 		eta 		= 	1e20
 		
@@ -266,18 +328,17 @@
         k           =   3        		# conductivity
         Cp          =   1050        	# heat capacity
 	<MaterialEnd>
-
-
-
-
 	
 	# Define properties of plume
 	<MaterialStart>
 		ID  		= 	4 	# phase id
 		
-		rho        	= 	3300			# density [kg/m3]
+		#rho        	= 	3300			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
-		
+
+		rho         = 3300
+        
+
 		eta 		= 	1e20
 		
      	# Thermal properties
@@ -285,6 +346,26 @@
         Cp          =   1050        	# heat capacity
 
 	<MaterialEnd>
+
+
+	# Define properties of lower mantle
+	<MaterialStart>
+		ID  		= 	5 				# phase id
+		
+		rho        	= 	3400			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+
+
+		rho         = 3300
+		# Linear viscous	
+		eta 		= 	5e21
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+
 
 #===============================================================================
 # PETSc options

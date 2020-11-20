@@ -59,6 +59,7 @@
 #include "subgrid.h"
 #include "tools.h"
 #include "phase_transition.h"
+#include "passive_tracer.h"
 #include "meltextraction.h"
 
 /*
