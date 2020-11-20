@@ -431,11 +431,11 @@
     
     # Passive Tracer activation type specification:
 
-    	#	PassiveTracer_ActiveType = Always               # always on
-    	#	PassiveTracer_ActiveType = Melt_Fraction        # always on
-    	#	PassiveTracer_ActiveType = Temperature          # always on
-    	#	PassiveTracer_ActiveType = Pressure             # always on
-    	#	PassiveTracer_ActiveType = Time                 # always on
+    	#	PassiveTracer_ActiveType = Always               # always actve
+    	#	PassiveTracer_ActiveType = Melt_Fraction        
+    	#	PassiveTracer_ActiveType = Temperature         
+    	#	PassiveTracer_ActiveType = Pressure             
+    	#	PassiveTracer_ActiveType = Time                
     
 	
 #===============================================================================
@@ -506,12 +506,13 @@
 	
 # Passive Tracers viewer output option (if the Passive Tracers are active, 
 # X,Y,Z, P, T & ID are automatically activated) 
-  	out_ptr_ID           = 1   # ID of the passive tracers
-	out_ptr_phase        = 1 # phase of the passive tracers
-  	out_ptr_Pressure     = 1 # interpolated pressure
-	out_ptr_Temperature  = 1 # temperature
-	out_ptr_MeltFraction = 1 # melt fraction
-	out_ptr_Active       = 1 # option that highlight the marker that are currently active
+    out_ptr              = 1    # activate  
+    out_ptr_ID           = 1    # ID of the passive tracers
+    out_ptr_phase        = 1    # phase of the passive tracers
+    out_ptr_Pressure     = 1    # interpolated pressure
+    out_ptr_Temperature  = 1    # temperature
+    out_ptr_MeltFraction = 1    # melt fraction
+    out_ptr_Active       = 1    # option that highlight the marker that are currently active
 
 
 

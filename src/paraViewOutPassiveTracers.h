@@ -55,9 +55,9 @@ struct AdvCtx;
 struct PVPtr
 {
 	AdvCtx    *actx;              // advection context
-	char      outfile[_str_len_]; // output file name
+	char      outfile[_str_len_+20]; // output file name
 	long int  offset;             // pvd file offset
-	PetscInt  outptr;            // marker output flag
+	PetscInt  outptr;             // marker output flag
 	PetscInt  outpvd;             // pvd file output flag
 	PetscInt  Temperature;
 	PetscInt  Pressure;
