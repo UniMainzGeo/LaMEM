@@ -31,7 +31,6 @@
 //---------------------------------------------------------------------------
 
 #undef __FUNCT__
-
 #define __FUNCT__ "ADVPtrPassive_Tracer_create"
 PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 
@@ -197,7 +196,6 @@ PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx)
 #define __FUNCT__ "ADVPtrInitCoord"
 PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 {
-
 	//Initialize the passive tracer lagrangian grid. The initial passive tracer distribution is a rectangular grid, with a
 	// a variable resolution. After initializing the coordinates, phase, temperature and pressure are interpolated from
 	// the nearest marker (s.s.)
@@ -232,7 +230,6 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 		for(j = 0; j < actx->Ptr->passive_tracer_resolution[1]; j++)
 		{
 			for(i = 0; i < actx->Ptr->passive_tracer_resolution[0]; i++)
-
 			{
 				// spacing of particles
 				// loop over markers in cells
@@ -297,7 +294,6 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	PetscScalar  X[3],Xm[3],*Xp,*Yp,*Zp,*Pr,*T,*phase;
 	PetscInt     I, J, K,ii,numpassive,imark,ID,M,N,n;
 	PetscScalar ex,bx,ey,by,ez,bz;
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -314,6 +310,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	N  = fs->dsy.ncels;
 
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+
 
 	dist.reserve(_mark_buff_sz_);
 	ierr = VecGetArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
@@ -604,6 +601,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 				ierr = Check_advection_condition(actx, jj, ID,xp,yp,zp,Pr[jj],T[jj],mf_ptr[jj]); CHKERRQ(ierr);
 			}
 
+
 			// override temperature of air phase
 			if(AirPhase != -1 && phase[jj] == AirPhase) T[jj] = Ttop;
 
@@ -684,6 +682,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->Melt_fr, &mf_ptr)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->C_advection, &Active)           ; CHKERRQ(ierr);
+
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
@@ -948,7 +947,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------//
-
 #undef __FUNCT__
 #define __FUNCT__ "Check_advection_condition"
 PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf)
@@ -1033,7 +1031,6 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 }
 
 //----------------------------------------------------------------------------//
-
 #undef __FUNCT__
 #define __FUNCT__ "ADVPtrDestroy"
 PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
@@ -1153,9 +1150,7 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 	PetscFunctionReturn(0);
 
 }
-
 //-------------------------------------------------------------------------//
-
 #undef __FUNCT__
 #define __FUNCT__ "Passive_Tracer_WriteRestart"
 PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
@@ -1235,5 +1230,4 @@ PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark)
 
 
 //=========================================================
->>>>>>> I commit the first stage of the work. Still need to test it, but at least it compiles nicely.
 

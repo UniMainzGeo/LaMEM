@@ -92,7 +92,6 @@ PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark);
 
 PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf);
 
-
 #endif /* PASSIVE_TRACER_H */
 
 
