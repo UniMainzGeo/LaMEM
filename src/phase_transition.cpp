@@ -288,7 +288,7 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Box \n", (LLD)(ph->ID));
     PetscPrintf(PETSC_COMM_WORLD,"     Box Bounds         :   [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
 
-	if (ph->PhaseInside<0) PetscPrintf(PETSC_COMM_WORLD,"     Don't set phase    @   \n");
+	if (ph->PhaseInside[0] < 0) PetscPrintf(PETSC_COMM_WORLD,"     Don't set phase    @   \n");
 
 	ierr = getStringParam(fb, _OPTIONAL_, "PTBox_TempType",   Parameter,  "none");    			CHKERRQ(ierr);
 	if(!strcmp(Parameter, "none"))
@@ -631,7 +631,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	}
 	else if(PhaseTrans->Type==_Box_)
 	{
-		Check_Box_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl, scal, &ph, &T);		// compute phase & T within Box
+		Check_Box_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T);		// compute phase & T within Box
 	}
 	
 	*ph_out = ph;
@@ -702,7 +702,7 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 }
 
 //------------------------------------------------------------------------------------------------------------//
-PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl, 
+PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,
 			Scaling *scal, PetscInt *ph_out, PetscScalar *T_out)
 {
 	PetscInt 	ph;
