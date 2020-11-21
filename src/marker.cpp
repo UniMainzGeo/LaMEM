@@ -1096,7 +1096,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	    ridge->bot = ridge->bounds[4];
 	    ridge->top = ridge->bounds[5];
 
-	    ridge->v_spread = actx->jr->bc->velin;
+	    ridge->v_spread=PetscAbs(actx->jr->bc->velin);
 	    
 	    // Temperature options (actually required to be setTemp==4)
 	    ierr = getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL );    CHKERRQ(ierr);
