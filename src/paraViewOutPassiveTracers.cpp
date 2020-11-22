@@ -57,13 +57,17 @@
 #define __FUNCT__ "PVPtrCreate"
 PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 {
-	char filename[_str_len_-5];
+	char filename[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// check activation
+	ierr = getIntParam(fb, _OPTIONAL_, "out_ptr", &pvptr->actx->jr->ctrl.Passive_Tracer, 1, 1); CHKERRQ(ierr);
+
+
 	// check advection type
-	if(pvptr->actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);
+	if (pvptr->actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);
 
 	// check activation
 
