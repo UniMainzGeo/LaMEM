@@ -706,10 +706,11 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 					mf = mfeff -dM;
 					if(mf <0.0) mf =0.0;
 			 	 }
+			 else
+			 	 {
+				 	 mf = Pd->mf;
+			 	 }
 				svBulk->mf     += phRat[i]*mf;
-				svBulk->rho_pf += phRat[i]*Pd->rho_f;
-
-				svBulk->mf     += phRat[i]*Pd->mf;
 
 				if(mat->rho_melt)
 				{
@@ -762,7 +763,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				// Compute density from phase diagram, while also taking the actual melt content into account
 				PetscScalar mf;
  				
-				mf = Pd->mf;
+//				mf = Pd->mf;
 				if (mf > ctrl->mfmax){ mf = ctrl->mfmax; }
 
 				rho = (mf * Pd->rho_f) + ((1.0 - mf ) * Pd->rho);
