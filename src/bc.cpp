@@ -352,7 +352,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		if     	(!strcmp(inflow_temp, "Constant_T_inflow"))      bc->bvel_temperature_inflow = 1;
 		if     	(!strcmp(inflow_temp, "Fixed_thermal_age"))      bc->bvel_temperature_inflow = 2;
 
-		//		if (bc->face == 5){bc->velin = -bc->velin;}
 
 		if( bc->bvel_temperature_inflow == 2)
 		{
