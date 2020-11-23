@@ -582,7 +582,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				}
 
 				ph = P->phase;
-
 				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T);
 
 
@@ -614,7 +613,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 //----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out )
-
 {
 	PetscInt 	ph;
 	PetscScalar T;
@@ -710,7 +708,6 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 	
 	ph = P->phase;
 	T  = P->T;
-
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
 		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
 		 (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) 	){

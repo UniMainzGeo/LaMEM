@@ -351,8 +351,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		ierr = getStringParam(fb, _OPTIONAL_, "bvel_temperature_inflow", inflow_temp , NULL); 					CHKERRQ(ierr);
 		if     	(!strcmp(inflow_temp, "Constant_T_inflow"))      bc->bvel_temperature_inflow = 1;
 		if     	(!strcmp(inflow_temp, "Fixed_thermal_age"))      bc->bvel_temperature_inflow = 2;
-
-
 		if( bc->bvel_temperature_inflow == 2)
 		{
 			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_mantle", &bc->bvel_potential_temperature, 1, 1.0);         CHKERRQ(ierr);

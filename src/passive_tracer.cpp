@@ -33,7 +33,6 @@
 #undef __FUNCT__
 #define __FUNCT__ "ADVPtrPassive_Tracer_create"
 PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
-
 {
 /*
  *  This function creates all the vector required for tracing pressure, temperature, phase and x,y,z position.
@@ -223,6 +222,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
 	ierr = VecGetArray(actx->Ptr->ID, &ID)           ; CHKERRQ(ierr);
 
+
 	// create uniform distribution of markers/cell for variable grid
 	for(k = 0; k < actx->Ptr->passive_tracer_resolution[2]; k++)
 	{
@@ -263,7 +263,6 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				Yp[imark] = y;
 				Zp[imark] = z;
 				ID[imark] = i+ny*j+ny*nx*k;
-
 				// increment local counter
 				imark++;
 			}
@@ -276,6 +275,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	ierr = VecRestoreArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->ID, &ID)           ; CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 }
@@ -294,6 +294,8 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	PetscScalar  X[3],Xm[3],*Xp,*Yp,*Zp,*Pr,*T,*phase;
 	PetscInt     I, J, K,ii,numpassive,imark,ID,M,N,n;
 	PetscScalar ex,bx,ey,by,ez,bz;
+
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -435,7 +437,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	PetscLogDouble t;
 	vector <spair>    dist;
 	spair d;
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -608,7 +609,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			// advect marker
 
 			if( Active[jj]==1.0 || actx->Ptr->Condition_pr == _Always_)
-
 			{
                 numActTracers += 1; // keep track of the # of active tracers on this processor
 				npx = xp + vx*dt;
@@ -1031,6 +1031,8 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 	PetscFunctionReturn(0);
 }
 
+
+
 //----------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "ADVPtrDestroy"
@@ -1184,9 +1186,7 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 
 	// open temporary restart file for writing in binary mode
 		fp = fopen(fileName, "w");
-
 		fprintf(fp,"number_marker = %d \n ", actx->Ptr->nummark);
-
 
 		fprintf(fp,"\n");
 
@@ -1236,6 +1236,4 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 	PetscFunctionReturn(0);
 
 }
-
 */
-
