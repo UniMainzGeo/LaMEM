@@ -548,7 +548,7 @@
 	<PhaseTransitionStart>
 		ID                      =   0         #     Phase_transition law ID
 		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
-		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain, MeltFraction] parameter that triggers the phase transition
+		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coord, X=x-coord, Y=y-coord, APS = accumulated plastic strain, MeltFraction] parameter that triggers the phase transition
 		ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z, APS]
         
         number_phases           =   1         #     The number of involved phases [default=1]
@@ -572,8 +572,8 @@
         Type                    =   Box                             # A box-like region
         PTBox_Bounds            =   200 400 -100 100 -1000 -500     # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   1
-        PhaseInside             =   7                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
-        PhaseOutside            =   3                               # Phase outside the box
+        PhaseInside             =   7                               # Phase within the box  [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   3                               # Phase outside the box [use -1 if you don't want to change the phase outside the box]
         PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
 
         PTBox_TempType          =	linear                          # Temperature condition witin the box [none, constant, linear, halfspace]
