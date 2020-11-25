@@ -93,6 +93,33 @@ function Read_VTR_File(DirName, FileName)
     return data
 end
 
+"Reads a 3D point data from LaMEM timestep (from pVTU file)
+Usage:
+
+data = Read_VTU_File(DirName, FileName)
+    
+Input:
+- `DirName` :    Name of timestep directory (e.g., `Timestep_00000001_1.10000000e-01`)
+- `FileName`:   Filename (e.g., `Subduction2D_direct_passive_tracers.pvtu`)    
+
+Output:
+- `data`    :   data structure containing the full content of the VTU file
+"
+function Read_VTU_File(DirName, FileName)
+    CurDir = pwd();
+
+    # change to directory
+    cd(DirName)
+
+    # read data from parallel rectilinear grid
+    reader  = vtk.vtkXMLPUnstructuredGridReader()
+    reader.SetFileName(FileName)
+    reader.Update()
+    data    = reader.GetOutput()
+    cd(CurDir)
+
+    return data
+end
 
 "
 Reads a 2D slice from a LaMEM timestep (from pVTR file)
