@@ -389,6 +389,19 @@
 		thermalAge  = 70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
 	<BoxEnd>
 
+    <RidgeSegStart>
+        phase       = 1
+        bounds      = 1.0 2.0 1.0 2.0 1.0 2.0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+        ridgeseg_x  = 1.5 1.5                   # coordinate order: left, right [can be different for oblique ridge]
+        ridgeseg_y  = 1.0 2.0                   # coordinate order: front, back [needs to be the same as the front and back of bounds]
+        topTemp     = 0                         # required: temperature @ top [in Celcius in case of GEO units]
+        botTemp     = 1300                      # required: temperature @ bottom [in Celcius in case of GEO units]
+        Temperature = halfspace_age             # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
+        age0        = 0.001                     # minimum age of seafloor at ridge [in Myr in case of GEO units]
+        maxAge      = 60                        # [optional] parameter that indicates the maximum thermal age of a plate 
+        v_spread    = 1                         # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above   
+    <RidgeSegEnd>
+
 	<HexStart>
 		phase = 1
 		coord = 0.25 0.25 0.25   0.5 0.2 0.2   0.6 0.7 0.25   0.3 0.5 0.3   0.2 0.3 0.75   0.6 0.15 0.75   0.5 0.6 0.80   0.2 0.4 0.75
@@ -535,7 +548,7 @@
 	<PhaseTransitionStart>
 		ID                      =   0         #     Phase_transition law ID
 		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
-		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain, MeltFraction] parameter that triggers the phase transition
+		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coord, X=x-coord, Y=y-coord, APS = accumulated plastic strain, MeltFraction] parameter that triggers the phase transition
 		ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z, APS]
         
         number_phases           =   1         #     The number of involved phases [default=1]
@@ -559,8 +572,8 @@
         Type                    =   Box                             # A box-like region
         PTBox_Bounds            =   200 400 -100 100 -1000 -500     # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   1
-        PhaseInside             =   7                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
-        PhaseOutside            =   3                               # Phase outside the box
+        PhaseInside             =   7                               # Phase within the box  [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   3                               # Phase outside the box [use -1 if you don't want to change the phase outside the box]
         PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
 
         PTBox_TempType          =	linear                          # Temperature condition witin the box [none, constant, linear, halfspace]

@@ -95,6 +95,8 @@ enum Parameter
 	_T_,
 	_Pressure_,
 	_Depth_,
+	_X_,
+	_Y_,
 	_PlasticStrain_,
 	_MeltFraction_
 };

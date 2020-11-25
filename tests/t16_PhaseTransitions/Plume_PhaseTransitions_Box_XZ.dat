@@ -153,7 +153,7 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = Plume_PhaseTransitions # output file name
+	out_file_name       = Plume_PhaseTransitions_XZBox # output file name
 	out_pvd             = 1       	# activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
@@ -302,6 +302,21 @@
         Cp          =   1050        	# heat capacity
 	<MaterialEnd>
 
+	# Define properties of upper mantle, different color
+	<MaterialStart>
+		ID  		= 	8				# phase id
+		
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		# Linear viscous	
+		eta 		= 	1e20
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
 
 #===============================================================================
 # Define phase transitions
@@ -350,9 +365,9 @@
 		Type                    =   Box                             # A box-like region
 	    PTBox_Bounds            =   200 400 -100 100 -1000 -500        # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   1
-        PhaseInside             =   7							    # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseInside             =   8							    # Phase within the box [use -1 if you don't want to change the phase inside the box]
         PhaseOutside            =   3							    # Phase outside the box
-        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
+        PhaseDirection          =   InsideToOutside                 # [BothWays=default; OutsideToInside; InsideToOutside]
 	
         PTBox_TempType          =	linear 					        # Temperature condition witin the box [none, constant, linear, halfspace]
         PTBox_topTemp           =   20                              # Temp @ top of box [for linear & halfspace]
@@ -362,6 +377,21 @@
         #PTBox_cstTemp          =   1200                            # Temp within box [for constant T]
        
 	<PhaseTransitionEnd>
+
+
+	# X-dependent
+	<PhaseTransitionStart>
+	    ID   					= 	4   			# Phase_transition law ID
+     	Type 					= 	Constant		# [Constant, Clapeyron, Box_type]
+		Parameter_transition 	= 	X 				# T = Temperature, P = Pressure, Depth = z coordinate
+		ConstantValue 			= 	-400			# The value @ which the phase transition occurs
+		
+	   	number_phases 			= 	1				# Number of phases involved			
+		PhaseAbove 				= 	3 		        # Phases below the phase transition 
+		PhaseBelow 				= 	7               # Phases below
+        #PhaseDirection         =   AboveToBelow    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
 
 #===============================================================================
 # PETSc options
