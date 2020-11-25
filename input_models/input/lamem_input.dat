@@ -389,16 +389,18 @@
 		thermalAge  = 70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
 	<BoxEnd>
 
-       <RidgeSegStart>
-                phase = 1
-		bounds      = 1.0 2.0 1.0 2.0 1.0 2.0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
-                ridgeseg_x  = 1.5 1.5                   # coordinate order: left, right [can be different for oblique ridge]
-                ridgeseg_y  = 1.0 2.0                   # coordinate order: front, back [needs to be the same as the front and back of bounds]
-                topTemp     = 0                         # required: temperature @ top [in Celcius in case of GEO units]
-                botTemp     = 1300                      # required: temperature @ bottom [in Celcius in case of GEO units]
-		Temperature = halfspace_age             # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
-                age0        = 0.001                     # minimum age of seafloor at ridge [in Myr in case of GEO units]
-	<RidgeSegEnd>
+    <RidgeSegStart>
+        phase       = 1
+        bounds      = 1.0 2.0 1.0 2.0 1.0 2.0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+        ridgeseg_x  = 1.5 1.5                   # coordinate order: left, right [can be different for oblique ridge]
+        ridgeseg_y  = 1.0 2.0                   # coordinate order: front, back [needs to be the same as the front and back of bounds]
+        topTemp     = 0                         # required: temperature @ top [in Celcius in case of GEO units]
+        botTemp     = 1300                      # required: temperature @ bottom [in Celcius in case of GEO units]
+        Temperature = halfspace_age             # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
+        age0        = 0.001                     # minimum age of seafloor at ridge [in Myr in case of GEO units]
+        maxAge      = 60                        # [optional] parameter that indicates the maximum thermal age of a plate 
+        v_spread    = 1                         # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above   
+    <RidgeSegEnd>
 
 	<HexStart>
 		phase = 1
