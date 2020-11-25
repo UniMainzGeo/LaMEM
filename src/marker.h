@@ -98,12 +98,23 @@ struct GeomPrim
 	PetscScalar amplitude;
 	PetscScalar wavelength;
 	PetscScalar rand_amplitude;
-	// temperature
+        // ridge
+        PetscScalar v_spread;
+        PetscScalar x_oblique;
+        PetscScalar ridgeseg_x[2];
+        PetscScalar ridgeseg_y[2];
+        PetscScalar x_ridgeLeft;
+        PetscScalar x_ridgeRight;
+        PetscScalar y_ridgeFront;
+        PetscScalar y_ridgeBack;
+        PetscScalar thermalAgeRidge;
+        PetscScalar age0;
+        // temperature
 	PetscInt    setTemp;
 	PetscScalar cstTemp;
 	PetscScalar topTemp, botTemp;
 	PetscScalar thermalAge;	
-	PetscScalar kappa;		
+        PetscScalar kappa;
 
 	void (*setPhase)(GeomPrim*, Marker*);
 };
@@ -113,6 +124,8 @@ void setPhaseSphere(GeomPrim *sphere, Marker *P);
 void setPhaseEllipsoid(GeomPrim *ellipsoid, Marker *P);
 
 void setPhaseBox(GeomPrim *box, Marker *P);
+
+void setPhaseRidge(GeomPrim *ridge, Marker *P);
 
 void setPhaseLayer(GeomPrim *layer, Marker *P);
 
