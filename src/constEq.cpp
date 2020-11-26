@@ -842,14 +842,51 @@ PetscErrorCode cellConstEq(
 
 	// compute volumetric residual
 	if(ctrl->actExp)
-	{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
-	}
+	  {
+	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+	  }
 	else
-	{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
-	}
+	  {
+	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+	  }
+	else if(alpha == some number)  // dike condition, alpha of the dike phase is used as a switch to use the additional term on the RHS,
+	                               // this ensures it is only used in the correct elements
+	                               // M is a new variable in the input file, how much extension is accommodated my magmatism/diking instead of faulting (0-1)
+                               	       // or use ridge bounds somehow?
+	  {
+	    FDSTAG     *fs;
+	    BCCtx      *bc;
+	    Ph_trans_t   *ph // for the phase transition bounds
 
+	    PetscScalar bdx, dsx;
+	    PetscInt sx;
+	    PetscScalar M, Mc, Mf, Mb;  // needs to go in input file
+
+	    front = ph->bounds[2];
+            back = ph->bounds[3];
+	    phase    = dbm->phase;
+	    velin = bc->velin;
+	    bdx = SIZE_NODE(i, sx, fs->dsx); // what is this for?
+	    
+	    if() // perpendicular ridge/dike region
+	      {
+		// linear interpolation between different M values, Mc M in center, Mf is M in front, Mb is M in back, use phase bounds for dike phase
+		M = Mf + (Mc - Mf) * (j / (PetscAbs(x_dike_Left+x_dike_right)/2)); // what is j ?? what do we need it for? Just for looping over z-values?
+		M = Mc - (Mc - Mb) * (j - (PetscAbs(x_ridgeLeft+x_ridgeRight)/2) /(PetscAbs(x_ridgeLeft+x_ridgeRight)/2)); // this follows Sam's approach, might be changed
+	      }
+	    else
+	      {
+		// linear interpolation if the ridge/dike phase is oblique
+		//		not necessary if above is universal
+	      }
+	    
+	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + M * 2 * velin / bdx;
+	  }                                                                                                                // Sam:  Dike->vx / bdx
+
+
+
+
+	
 	// store effective density
 	rho = svBulk->rho;
 
