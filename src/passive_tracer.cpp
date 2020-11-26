@@ -271,7 +271,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				}
 				else
 				{
-					active[imark] = 1.0;
+					active[imark] = 0.0;
 				}
 
 				// increment local counter
