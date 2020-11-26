@@ -21,8 +21,8 @@
 # Import VTK package from python; requires it to be installed in your python distribution
 using PyCall
 vtk     =   pyimport("vtk")
-
-
+dsa     =   pyimport("vtk.numpy_interface.dataset_adapter");
+   
 " Extracts a 3D data field from a pVTR data structure
 Usage:
     output = ReadField_3D_pVTR(data, FieldName, Type)
@@ -124,6 +124,7 @@ end
 "
 Reads a 2D slice from a LaMEM timestep (from pVTR file)
 Usage:
+    ReadField_2D_pVTR(data, FieldName, Type)
 
 Input:
 -   `data`:       Data structure obtained with Read_VTR_File
@@ -159,5 +160,122 @@ function ReadField_2D_pVTR(data, FieldName, Type)
 
 end
 
+"
+Reads data from a VTU data structure
+Usage:
+    data_field = ReadField_VTU(data, FieldName)
+Input:
+-   `data`:       Data structure obtained with Read_VTR_File
+-   `FieldName`:  Exact name of the field as specified in the *.vtr file
+                `coords` gives the coordinates
+
+Output:
+    In case of: 
+- `Scalar`:
+    - `data_field`   1D array with data [3D in case of coordinates]
+    
+"
+function ReadField_VTU(data, FieldName)
+    if      FieldName=="coords"
+        data_Field      =   data.GetPoints().GetData();   
+    else  
+        data_Field      =   data.GetPointData().GetArray(FieldName); 
+    end
+    
+    return data_Field
+end
+
+"
+Writes new (point) to a VTU file, while also includes new data files
+Usage:
+
+Input:
+- `DirName` :   Name of timestep directory (e.g., `Timestep_00000001_1.10000000e-01`)
+- `FileName`:   Filename (e.g., `Subduction2D_direct_passive_tracers.vtu`)    
+- `data`:       Data structure obtained with Read_VTR_File
+- `NewData`:    Exact name of the field as specified in the *.vtr file
+                `coords` gives the coordinates
+    
+"
+function WriteNewPoints_VTU(DirName, FileName, data, New)
+
+   CurDir   =   pwd();  
+   points   =   data.GetPoints();
+
+   # change to directory
+   cd(DirName)
+
+   # Set coordinates of points
+   mesh     = vtk.vtkUnstructuredGrid()
+   mesh.SetPoints(points)              
+
+   # write file back to disk that includes the previous data
+   writer   = vtk.vtkXMLUnstructuredGridWriter()
+   writer.SetFileName(FileName)
+   writer.SetInputData(New.VTKObject)
+   writer.Update()
+
+   cd(CurDir)
+end
 
 
+
+"
+Adds data to a VTU (Point) Dataset
+Usage:
+
+Input:
+-   `data`:       Data structure obtained with Read_VTR_File
+-   `FieldName`:  Exact name of the field as specified in the *.vtr file
+                `coords` gives the coordinates
+
+- `New`:
+    - `data_field`   1D array with data [3D in case of coordinates]
+    
+"
+function AddNewField_VTU(New, data, dataField, dataName)
+    
+    if sizeof(New)==0
+        New  =   dsa.WrapDataObject(data);          # create new field if required
+    end
+    
+    New.PointData.append(dataField,  dataName);     # add data
+
+    return New
+end
+
+
+"
+Writes a PVD file
+Usage:
+
+Input:
+-   `PVDFileName`:      PVD FileName
+-   `OutNames`:         Array with output Output filenames
+-   `Time_vec`:         Array with output times    
+"
+function WritePVD_File(PVDFileName, OutNames, Time_vec)
+    
+  
+
+    # Generate PVD file from the directories & filenames ----------------------------------
+    io = open(PVDFileName, "w")
+    println(io, "<?xml version=\"1.0\"?>")
+    println(io, "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">")
+    println(io, "<Collection>")
+
+    for i=1:length(OutNames)
+        local Time, File;
+
+        Time = @sprintf("%1.6e",Time_vec[i])
+        File = OutNames[i];
+        println(io, "    <DataSet timestep=\"$Time\" file=\"$File\"/>")
+    end
+    println(io, "</Collection>")
+    println(io, "</VTKFile>")
+    close(io)
+
+    # Print    
+    print("Wrote PVD file: $PVDFileName \n")
+
+end
