@@ -565,7 +565,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 			// update pressure & temperature variables
 			Pr[jj] = InterpLin3D(lp, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz) + pShift;
-			T[jj]  += lT[sz+K][sy+J][sx+I]     -    svCell->svBulk.Tn;
+			T[jj]  = InterpLin3D(lT, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
 			GET_CELL_ID(ID, I, J, K, nx, ny)
 
 			svCell = &jr->svCell[ID];
