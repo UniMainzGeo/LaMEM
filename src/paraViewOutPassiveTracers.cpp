@@ -86,6 +86,8 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_phase",           &pvptr->Phase,   1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_MeltFraction",    &pvptr->MeltFraction, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Active",          &pvptr->Active   , 1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Grid_Mf",          &pvptr->Grid_mf   , 1, 1); CHKERRQ(ierr);
+
 
 
 
@@ -214,6 +216,12 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 		offset += sizeof(int) + sizeof(float)*(size_t)ptr->nummark;
 	}
+	if(pvptr->Grid_mf)
+	{
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf_Grid %s\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_unit  ,(LLD)offset);
+		offset += sizeof(int) + sizeof(float)*(size_t)ptr->nummark;
+		}
+
 	if(pvptr->ID)
 	{
 		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"ID\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
@@ -373,6 +381,24 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 		}
 
+	if(pvptr->Grid_mf)
+		{
+			ierr = VecGetArray(ptr->Melt_Grid, &buf)           ; CHKERRQ(ierr);
+
+			length = (int)sizeof(float)*(ptr->nummark);
+			fwrite( &length,sizeof(float),1, fp);
+
+			for( i = 0; i < ptr->nummark; i++)
+			{
+				var = float(buf[i]);
+				fwrite( &var, sizeof(float),1, fp );
+			}
+		// -------------------
+			ierr = VecRestoreArray(ptr->Melt_Grid, &buf)           ; CHKERRQ(ierr);
+
+
+		}
+
 	if(pvptr->ID)
 			{
 				ierr = VecGetArray(ptr->ID, &buf)           ; CHKERRQ(ierr);
@@ -486,6 +512,12 @@ PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
 			// point data
 			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Mf %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_unit);
 		}
+
+	if(pvptr->Grid_mf)
+			{
+				// point data
+				fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Mf_Grid %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_unit);
+			}
 	if(pvptr->ID)
 		{
 			// point data
