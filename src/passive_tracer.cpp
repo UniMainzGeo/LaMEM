@@ -611,7 +611,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 						}
 					sort(dist.begin(), dist.end());
 					phase[jj] = actx->markers[dist.begin()->second].phase;
-					T[jj]     = actx->markers[dist.begin()->second].T;
 
 					ierr = setDataPhaseDiagram(Pd, Pr[jj], T[jj], mat[PetscInt(phase[jj])].pdn); CHKERRQ(ierr);
 
@@ -1002,7 +1001,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf)
 {
 
-	PetscScalar 		*phase,*Active,*Temp;
+	PetscScalar 		*phase,*Active;
 	PetscScalar 		Xm[3],X[3];
 	vector <spair>    	dist;
 	spair 				d;
@@ -1049,7 +1048,6 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 		PetscInt n, ii;
 
 		ierr = VecGetArray(actx->Ptr->phase, &phase); CHKERRQ(ierr);
-		ierr = VecGetArray(actx->Ptr->T, &Temp); CHKERRQ(ierr);
 
 
 		X[0]  = xp;
@@ -1073,9 +1071,7 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 			}
 		sort(dist.begin(), dist.end());
 		phase[jj]= actx->markers[dist.begin()->second].phase;
-		Temp[jj]= actx->markers[dist.begin()->second].T;
 		ierr = VecRestoreArray(actx->Ptr->phase, &phase); CHKERRQ(ierr);
-		ierr = VecRestoreArray(actx->Ptr->T, &Temp); CHKERRQ(ierr);
 
 
 
