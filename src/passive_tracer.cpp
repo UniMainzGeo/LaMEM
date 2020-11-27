@@ -566,6 +566,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			// update pressure & temperature variables
 			Pr[jj] = InterpLin3D(lp, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz) + pShift;
 			T[jj]  = InterpLin3D(lT, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
+
 			GET_CELL_ID(ID, I, J, K, nx, ny)
 
 			svCell = &jr->svCell[ID];
@@ -573,11 +574,12 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			dy = SIZE_CELL(J,sy,fs->dsy);
 			dz = SIZE_CELL(K,sy,fs->dsz);
 
+			melt_grid[jj] = svCell->svBulk.mf;
+
 			if(svCell->svBulk.mf>0.0)
 			{
-				// check if the original phase saved is one that has a phase/melt law associated
+			  //check if the original phase saved is one that has a phase/melt law associated
 
-				melt_grid[jj] = svCell->svBulk.mf;
 
 				if(mat[PetscInt(phase[jj])].pdn)
 				{
@@ -621,15 +623,12 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			else
 			{
 				mf_ptr[jj]=0.0;
-				melt_grid[jj] = 0.0;
-
-
 			}
 
 
 			if((Active[jj] == 0.0) && actx->Ptr->Condition_pr != _Always_)
 			{
-				ierr = Check_advection_condition(actx, jj, ID,xp,yp,zp,Pr[jj],T[jj],mf_ptr[jj]); CHKERRQ(ierr);
+				ierr = Check_advection_condition(actx, jj, ID,xp,yp,zp,Pr[jj],T[jj],melt_grid[jj]); CHKERRQ(ierr);
 			}
 
 
@@ -703,6 +702,8 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			phase[jj]   =   -DBL_MAX;
 			mf_ptr[jj]  =   -DBL_MAX;
 			Active[jj]  =   -DBL_MAX;
+			melt_grid[jj] = -DBL_MAX;
+
 		}
 
 	}
@@ -1042,7 +1043,7 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 
 	// overwrite the phase in case of delayed activation or if some condition are met
 
-	if(((actx->Ptr->Condition_pr ==_Pres_ptr_)||(actx->Ptr->Condition_pr ==_Temp_ptr_)||(actx->Ptr->Condition_pr ==_Time_ptr_) || (actx->Ptr->Condition_pr ==_Melt_Fr_)) && Active[jj] == 1.0)
+	if(((actx->Ptr->Condition_pr ==_Pres_ptr_)||(actx->Ptr->Condition_pr ==_Temp_ptr_)||(actx->Ptr->Condition_pr ==_Time_ptr_)) && Active[jj] == 1.0)
 	{
 
 		PetscInt n, ii;
