@@ -62,6 +62,7 @@ struct P_Tr
 	Vec    p;     // pressure
 	Vec    T;     // temperature
 	Vec    Melt_fr; // Melt fraction acquired
+	Vec    Melt_Grid; // melt quantity effectively seen by the grid
 	Vec    C_advection; // condition to advect marker /*NB: in the future it could be useful to customize better this vector */
 	Vec    Recv;  // Vector that must be used during synching operation
 };
@@ -90,8 +91,8 @@ PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark);
 
 PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf);
 
-
 //PetscErrorCode Passive_tracers_save(AdvCtx *actx);
+
 #endif /* PASSIVE_TRACER_H */
 
 

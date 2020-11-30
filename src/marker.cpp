@@ -868,7 +868,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	PetscScalar     chLen, chTime;
 	char            TemperatureStructure[_str_len_];
 	PetscInt        jj, ngeom, imark, maxPhaseID;
-	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *hex, *layer, *cylinder;
+	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *ridge, *hex, *layer, *cylinder;
 
 	// map container to sort primitives in the order of appearance
 	map<PetscInt, GeomPrim*> cgeom;
@@ -1074,6 +1074,66 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
+
+	//========
+	// RIDGES
+	//========
+
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<RidgeSegStart>", "<RidgeSegEnd>"); CHKERRQ(ierr);
+
+	for(jj = 0; jj < fb->nblocks; jj++)
+	  {
+		PetscScalar v_spread, maxAge;  
+	    fb->ID  = jj;                                                               // allows command-line parsing
+	    GET_GEOM(ridge, geom, ngeom, _max_geom_);
+	    
+	    ridge->setTemp 	= 0;       	//	default is no
+		v_spread   	   	= 0.0;
+		maxAge 			= 1e20;		// max. thermal age a plate can have 		
+	    ierr = getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID);    					CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen);         					CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen);     					CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen);     					CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime);          					CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "v_spread",       &v_spread,    1, actx->jr->scal->velocity);         CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "maxAge",       	&maxAge,      1, actx->jr->scal->time);      		CHKERRQ(ierr);
+		
+	    ridge->bot 		= ridge->bounds[4];
+	    ridge->top 		= ridge->bounds[5];
+		ridge->maxAge 	= maxAge;
+
+		if (v_spread>0){
+			ridge->v_spread=v_spread;		
+		}
+		else{
+	    	ridge->v_spread=PetscAbs(actx->jr->bc->velin);
+		}
+	    
+	    // Temperature options (actually required to be setTemp==4)
+	    ierr = getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL );    CHKERRQ(ierr);
+	    
+	    if (!strcmp(TemperatureStructure, "halfspace_age"))    {ridge->setTemp=4;}
+	    
+	    if (ridge->setTemp==4){
+	      ierr = getScalarParam(fb, _REQUIRED_, "topTemp",  &ridge->topTemp, 1, 1);            CHKERRQ(ierr);
+	      ierr = getScalarParam(fb, _REQUIRED_, "botTemp",  &ridge->botTemp, 1, 1);            CHKERRQ(ierr);
+	      
+	      // take potential shift C->K into account
+	      ridge->topTemp = (ridge->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
+	      ridge->botTemp = (ridge->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
+	      ridge->kappa   = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/
+	      
+	    }
+	    
+	    ridge->setPhase = setPhaseRidge;
+	    
+	    cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ridge));
+	    
+	  }
+	
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	
 	//======
 	// HEXES
 	//======
@@ -1850,6 +1910,24 @@ void setPhaseBox(GeomPrim *box, Marker *P)
 
 	}
 }
+//--------------------------------------------------------------------------- 
+void setPhaseRidge(GeomPrim *ridge, Marker *P)    // JS, ridge temperature  
+{
+  if(P->X[0] >= ridge->bounds[0] && P->X[0] <= ridge->bounds[1]
+     && P->X[1] >= ridge->bounds[2] && P->X[1] <= ridge->bounds[3]
+     && P->X[2] >= ridge->bounds[4] && P->X[2] <= ridge->bounds[5])
+    {
+
+      P->phase = ridge->phase;
+      if(ridge->setTemp>0)
+        {
+          PetscScalar T=0;
+          computeTemperature(ridge, P, &T);
+
+          P->T = T;                     // set Temperature
+        }
+    }
+}
 //---------------------------------------------------------------------------
 void setPhaseLayer(GeomPrim *layer, Marker *P)
 {
@@ -1990,7 +2068,51 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 		kappa      = geom->kappa;
 		(*T)       = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAge)) + T_top;
 	}
+
+
+	else if (geom->setTemp==4)   // Oblique ridge temperature
+        {
+
+	  // Half space cooling profile with age function, oblique possible
+	  PetscScalar   x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack; 
+      PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge;
+
+	  y             = P->X[1];
+	  x             = P->X[0];
+	  y_ridgeFront  = geom->ridgeseg_y[0];
+	  y_ridgeBack   = geom->ridgeseg_y[1];
+	  x_ridgeRight  = geom->ridgeseg_x[1];
+	  x_ridgeLeft   = geom->ridgeseg_x[0];
+	  z_top         = geom->top;
+	  T_top         = geom->topTemp;
+	  T_bot         = geom->botTemp;
+	  z             = PetscAbs(P->X[2]-z_top);
+	  kappa         = geom->kappa;
+	  v_spread      = geom->v_spread;
+	  age0          = geom->age0;
+      maxAge        = geom->maxAge;  
+
+	  if (x_ridgeLeft == x_ridgeRight){
+
+	    thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
+	    thermalAgeRidge = max(thermalAgeRidge,age0);
+	  }
+	  
+	  else {   
+
+	    x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
+
+	    thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;	    
+	    thermalAgeRidge = max(thermalAgeRidge,age0);
+       
+	  }
+
+        thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff
+        (*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
+
+	}
 }
+
 //---------------------------------------------------------------------------
 void HexGetBoundingBox(
 		PetscScalar *coord,  // hex coordinates

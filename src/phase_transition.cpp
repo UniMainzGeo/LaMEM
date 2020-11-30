@@ -219,6 +219,14 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	{
 		ph->Parameter_transition = _Depth_;
 	}
+	else if(!strcmp(Parameter, "X"))
+	{
+		ph->Parameter_transition = _X_;
+	}
+	else if(!strcmp(Parameter, "Y"))
+	{
+		ph->Parameter_transition = _Y_;
+	}
 	else if(!strcmp(Parameter, "APS"))
 	{
 		ph->Parameter_transition = _PlasticStrain_;
@@ -248,9 +256,17 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	{
 		ph->ConstantValue   /= scal->length;
 	}
+	else if(ph->Parameter_transition==_X_)          	//  X-coordinate [km if geo units]
+	{
+		ph->ConstantValue   /= scal->length;
+	}
+	else if(ph->Parameter_transition==_Y_)          	//  Y-coordinate [km if geo units]
+	{
+		ph->ConstantValue   /= scal->length;
+	}
 	else if(ph->Parameter_transition==_PlasticStrain_)  //  accumulated plastic strain
 	{
-		ph->ConstantValue   = ph->ConstantValue;        // is already in nd units
+		ph->ConstantValue   = ph->ConstantValue;        // 	is already in nd units
 	}
 	else if(ph->Parameter_transition==_MeltFraction_)   //  melt fraction
 	{
@@ -590,14 +606,14 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				}
 			
                 if (PhaseTrans->PhaseDirection==0){
-                     P->phase 	=   ph;
-                }
-                else if ( (PhaseTrans->PhaseDirection==1) & (below>=0) ){
                     P->phase    =   ph;
-                }
+				}
+                else if ( (PhaseTrans->PhaseDirection==1) & (below>=0) ){
+				    P->phase    =   ph;
+				}
                 else if ( (PhaseTrans->PhaseDirection==2) & (above>=0) ){
                     P->phase    =   ph;
-                }
+				}
 				P->T = T;	// set T
 
 			}
@@ -668,6 +684,17 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 		    else                                       	 		{   ph = PH1;   }
           
 		}
+	if(PhaseTrans->Parameter_transition==_X_)
+		{
+          if ( P->X[0] >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
+          else                                        {   ph = PH1;   }
+        }
+
+	if(PhaseTrans->Parameter_transition==_Y_)
+		{
+          if ( P->X[1] >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
+          else                                        {   ph = PH1;   }
+        }
 
 	if(PhaseTrans->Parameter_transition==_Depth_)
 		{
