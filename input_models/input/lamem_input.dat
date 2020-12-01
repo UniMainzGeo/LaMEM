@@ -524,8 +524,9 @@
     out_ptr_phase        = 1    # phase of the passive tracers
     out_ptr_Pressure     = 1    # interpolated pressure
     out_ptr_Temperature  = 1    # temperature
-    out_ptr_MeltFraction = 1    # melt fraction
+    out_ptr_MeltFraction = 1    # melt fraction computed using P-T of the marker 
     out_ptr_Active       = 1    # option that highlight the marker that are currently active
+    out_ptr_Grid_Mf      = 1    # option that allow to store the melt fraction seen within the cell 
 
 
 
