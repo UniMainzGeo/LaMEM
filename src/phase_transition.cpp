@@ -666,8 +666,9 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	PetscInt 	ph, InAbove;
 	PetscScalar T;
 
-	ph = P->phase;
-	T  = P->T;
+	ph 		= 	P->phase;
+	T  		= 	P->T;
+	InAbove =	0;
 	if(PhaseTrans->Type==_Constant_)    
 	{
 		Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl, svCell, &ph, &InAbove);
