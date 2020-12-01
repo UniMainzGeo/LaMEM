@@ -845,48 +845,73 @@ PetscErrorCode cellConstEq(
 	  {
 	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
 	  }
-	else
-	  {
-	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
-	  }
-	else if(phase == dike)  // dike condition, alpha of the dike phase is used as a switch to use the additional term on the RHS,
+	
+	else if(alpha == 100)          // dike condition, certain alpha is used as a switch to use the additional term on the RHS
 	                               // this ensures it is only used in the correct elements
-	                               // M is a new variable in the input file, how much extension is accommodated my magmatism/diking instead of faulting (0-1)
-                               	       // or use ridge bounds somehow?
+	                               // or use ridge bounds somehow?
 	  {
-	    FDSTAG       *fs;
-	    BCCtx        *bc;
+	    // all these declaration should go to top of the routine, just for clarity here    
+	    FDSTAG       *fs;          // for the nodes
+	    BCCtx        *bc;          // for the spreading velocity
 	    Ph_trans_t   *ph;          // for the phase transition bounds
-
-	    PetscScalar dsx;
-	    PetscInt    sx;
-	    PetscScalar Mc, Mf, Mb;   // needs to go in input file
-
-	    front = ph->bounds[2];
-            back = ph->bounds[3];
-	    left = ph->bounds[0];
-	    right = ph->bounds[1];
-	    phase = dbm->phase;
-	    velin = bc->velin;
-	    bdx = SIZE_NODE(i, sx, fs->dsx); // what is this for?
+	    Material_t   *m;           // for the M values read in by the material parameters in the input file
 	    
-	    if(j<=PetscAbs(back+front)/) // for loop to compute M depending on the y location inside the dike phase
-	      {
-		// linear interpolation between different M values, Mc M in center, Mf is M in front, Mb is M in back, use phase bounds for dike phase,
-		// --> M depending on the y location
-		M = Mf + (Mc - Mf) * (y/(PetscAbs(front+back)/2);                                // actual location in y/total length of segment between Mf and Mc
-		M = Mc - (Mc - Mb) * (y - (PetscAbs(front+back)/2) /(PetscAbs/front+back)/2)); // this follows Sam's approach, might be changed
-	      }
+	    PetscScalar  dsx;           
+	    PetscInt     sx;            
+	    PetscScalar  Mf, Mb;
+	    PetsScalar   M, front, back, left, right, top, bot, velin; // local variables
+
+
+	    Mf = m->Mf;                 // transfer the inputs for M, from material parameters
+	    Mb = m->Mb;	                // transfer the inputs for M, from material parameters       
+	    top = ph->bounds[4];        // not needed right now
+	    bot = ph->bounds[5];        // not needed right now
+	    front = ph->bounds[2];      // transfer the bounds of the dike phase box 
+            back = ph->bounds[3];       // transfer the bounds of the dike phase box 
+	    left = ph->bounds[0];       // not needed right now
+	    right = ph->bounds[1];      // not needed right now
+	    //	    phase = dbm->phase;
+	    velin = bc->velin;          // transfer the spreading velocity
+	    //  bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring x-cells
+	    //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction 
+	    //  xn = COORD_NODE(i, sx, fs->dsx); // x-coordinate of i-th node 
+	    
+	    START_STD_LOOP{     
+
+	      PetscScalar x,y,z;
+
+	      x       = COORD_CELL(i, sx, fs->dsx);  // coordinate of i-th cell center
+	      y       = COORD_CELL(j, sy, fs->dsy);
+	      z       = COORD_CELL(k, sz, fs->dsz);
+	      
+	      if (front == back){
+		
+		  // linear interpolation between different M values, Mf is M in front, Mb is M in back, use phase bounds for dike phase
+		    
+		  // --> M depending on the y location
+		
+		  M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back));
+		 } 
+	      else
+		 {
+		       // linear interpolation if the ridge/dike phase is oblique
+		 }
+		  
+	      gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + M * 2 * velin / bdx;  // [1/s]
+	      // gc[k][j][i] = gres; in JacRes.cpp 
+
+
+	       }END_STD_LOOP
+
+	     }
+	                                                                           // Sam:  M* 2 * Dike->vx / bdx  
+	                                                                           //       M* full spreading rate / (distance between two cell centers in x-direction)
+	                                 // ?? Question: Why divided bdx?, x alone doesn't make sense but bdx?
+
 	    else
 	      {
-		// linear interpolation if the ridge/dike phase is oblique
-		//		not necessary if above is universal
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
 	      }
-	    
-	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + M * 2 * velin / bdx;  // [1/s]
-	  }                                                                       // Sam:  M* 2 * Dike->vx / bdx  
-	                                                                          //       M* full spreading rate / (amount of nodes in x-direction)
-
 
 	
 	// store effective density
