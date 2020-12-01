@@ -542,6 +542,8 @@
 		PhaseAbove              =   1         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
 		PhaseBelow              =   3         #       
         PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
+
+        ResetParam              =   APS       #     [APS] Parameter to reset on particles below PT or within box
 	<PhaseTransitionEnd>
 
 	<PhaseTransitionStart>
@@ -569,6 +571,7 @@
         
         PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
         PTBox_cstTemp          	=   1200                            # Temp within box [only for constant T]
+						
 	<PhaseTransitionEnd>
 
 
