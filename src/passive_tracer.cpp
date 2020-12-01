@@ -202,7 +202,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	PetscScalar  x, y, z, dx, dy, dz,nx,ny,nz;
 	PetscInt     i, j, k;
 	PetscInt     imark;
-	PetscScalar  *Xp,*Yp,*Zp,*ID;
+	PetscScalar  *Xp,*Yp,*Zp,*ID,*active;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -221,6 +221,8 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	ierr = VecGetArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
 	ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
 	ierr = VecGetArray(actx->Ptr->ID, &ID)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->C_advection, &active)           ; CHKERRQ(ierr);
+
 
 
 	// create uniform distribution of markers/cell for variable grid
@@ -251,7 +253,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				}
 				if(i==0)
 				{
-						x = actx->Ptr->box_passive_tracer[0]/(actx->dbm->scal->length) + dx/2;
+					x = actx->Ptr->box_passive_tracer[0]/(actx->dbm->scal->length) + dx/2;
 				}
 				else
 				{
@@ -263,6 +265,15 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				Yp[imark] = y;
 				Zp[imark] = z;
 				ID[imark] = i+ny*j+ny*nx*k;
+				if(actx->Ptr->Condition_pr == _Always_)
+				{
+					active[imark] = 1.0;
+				}
+				else
+				{
+					active[imark] = 0.0;
+				}
+
 				// increment local counter
 				imark++;
 			}
@@ -271,10 +282,12 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	}
 
 
-	ierr = VecRestoreArray(actx->Ptr->x, &Xp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->Ptr->y, &Yp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(actx->Ptr->ID, &ID)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->x, &Xp)                  ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->y, &Yp)                  ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->z, &Zp)                  ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->ID, &ID)                 ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->C_advection, &active)    ; CHKERRQ(ierr);
+
 
 
 	PetscFunctionReturn(0);
@@ -431,7 +444,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	PetscScalar     *ccx, *ccy, *ccz;
 	PetscScalar     ***lvx, ***lvy, ***lvz, ***lp, ***lT;
 	PetscScalar     vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop, endx,endy,endz,begx,begy,begz,npx,npy,npz;
-	PetscScalar     *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active;
+	PetscScalar     *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active,dx,dy,dz;
 	PetscScalar     pShift;
 	PetscScalar     Xm[3],X[3];
 	PetscLogDouble t;
@@ -552,6 +565,9 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			GET_CELL_ID(ID, I, J, K, nx, ny)
 
 			svCell = &jr->svCell[ID];
+			dx = SIZE_CELL(I,sx,fs->dsx);
+			dy = SIZE_CELL(J,sy,fs->dsy);
+			dz = SIZE_CELL(K,sy,fs->dsz);
 
 			if(svCell->svBulk.mf>0.0)
 			{
@@ -595,6 +611,11 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 				}
 			}
+			else
+			{
+				mf_ptr[jj]=0.0;
+
+			}
 
 
 			if((Active[jj] == 0.0) && actx->Ptr->Condition_pr != _Always_)
@@ -608,7 +629,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 			// advect marker
 
-			if( Active[jj]==1.0 || actx->Ptr->Condition_pr == _Always_)
+			if( Active[jj]==1.0)
 			{
                 numActTracers += 1; // keep track of the # of active tracers on this processor
 				npx = xp + vx*dt;
@@ -624,33 +645,37 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 			if(npz > endz)
 				{
-
-				npz = endz;
+					npz = endz-dz/2;
+					Active[jj]=0.0;
 				}
 			else if(npz < begz)
 				{
-				npz = begz;
+					npz = begz;
+					Active[jj]=0.0;
 				}
 
 			if(npy > endy)
 				{
-
-				npy = endy;
+					npy = endy-dy;
+					Active[jj]=0.0;
 				}
 			else if(npy < begy)
 				{
-					npy = begy;
+				  	npy = begy;
+					Active[jj]=0.0;
 				}
 
 
 			if(npx > endx)
 				{
+					npx = endx-dx;
+					Active[jj]=0.0;
 
-				npx = endx;
 				}
 			else if(npx < begx)
 				{
 					npx = begx;
+					Active[jj]=0.0;
 				}
 
 
