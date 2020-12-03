@@ -50,6 +50,8 @@ struct Scaling;
 struct FB;
 struct JacRes;
 struct ModParam;
+struct BCCtx; // new for dike
+struct FDSTAG; // new for dike
 
 //---------------------------------------------------------------------------
 //.....................   Rheology experiment type  .........................
@@ -196,12 +198,16 @@ public:
 	PetscScalar  k;                 // thermal conductivity                       [W/m/k]
 	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
 	PetscScalar  T;                 // optional temperature to set within the phase
+  PetscScalar  Mf;                // optional for dike phase only, amount of magma-accommodated extenison in front of box
+  PetscScalar  Mb;      	  // optional for dike phase only, amount of magma-accommodated extenison in back of box
+  PetscInt dikeOn;                // Switch to turn on different RHS in case dike region is used
+  PetscScalar dikeRHS;
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number
 	PetscInt     pdAct;             // phase diagram activity flag
 	PetscScalar  mfc;               // melt fraction viscosity correction
-	PetscScalar  rho_melt;			// rho melt
+	PetscScalar  rho_melt;		// rho melt
 	PetscInt     Phase_Diagram_melt;// flag that allows only to consider the melt quantity from a phase diagram
 };
 
@@ -263,6 +269,9 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // read single material phase
 PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput);
+
+// compute additional term for RHS in case of dike region
+PetscErrorCode DikeGetVolRes(BCCtx *bc);
 
 // print single material parameter
 void MatPrintScalParam(

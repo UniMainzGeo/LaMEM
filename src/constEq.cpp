@@ -775,7 +775,7 @@ PetscErrorCode cellConstEq(
 	SolVarBulk  *svBulk;
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
-
+	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -841,79 +841,29 @@ PetscErrorCode cellConstEq(
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
 	// compute volumetric residual
+	/*Material_t   *m;           // for the M values read in by the material parameters in the input file
+	//PetscInt dikeOn;
+	dikeOn = m->dikeOn; */
+
 	if(ctrl->actExp)
 	  {
 	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
 	  }
 	
-	else if(alpha == 100)          // dike condition, certain alpha is used as a switch to use the additional term on the RHS
-	                               // this ensures it is only used in the correct elements
-	                               // or use ridge bounds somehow?
+	/*else if(ctrl->actExp && m->dikeOn == 1)          // used as a switch to use the additional term on the RHS, new material parameter
+
 	  {
-	    // all these declaration should go to top of the routine, just for clarity here    
-	    FDSTAG       *fs;          // for the nodes
-	    BCCtx        *bc;          // for the spreading velocity
-	    Ph_trans_t   *ph;          // for the phase transition bounds
-	    Material_t   *m;           // for the M values read in by the material parameters in the input file
+	    PetscScalar   dikeRHS;      // local variables
+	    dikeRHS = m->dikeRHS;
 	    
-	    PetscScalar  dsx;           
-	    PetscInt     sx;            
-	    PetscScalar  Mf, Mb;
-	    PetsScalar   M, front, back, left, right, top, bot, velin; // local variables
+	    gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;  // [1/s]
+	    }*/
 
+	 else
+	  {
+	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+	  }
 
-	    Mf = m->Mf;                 // transfer the inputs for M, from material parameters
-	    Mb = m->Mb;	                // transfer the inputs for M, from material parameters       
-	    top = ph->bounds[4];        // not needed right now
-	    bot = ph->bounds[5];        // not needed right now
-	    front = ph->bounds[2];      // transfer the bounds of the dike phase box 
-            back = ph->bounds[3];       // transfer the bounds of the dike phase box 
-	    left = ph->bounds[0];       // not needed right now
-	    right = ph->bounds[1];      // not needed right now
-	    //	    phase = dbm->phase;
-	    velin = bc->velin;          // transfer the spreading velocity
-	    //  bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring x-cells
-	    //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction 
-	    //  xn = COORD_NODE(i, sx, fs->dsx); // x-coordinate of i-th node 
-	    
-	    START_STD_LOOP{     
-
-	      PetscScalar x,y,z;
-
-	      x       = COORD_CELL(i, sx, fs->dsx);  // coordinate of i-th cell center
-	      y       = COORD_CELL(j, sy, fs->dsy);
-	      z       = COORD_CELL(k, sz, fs->dsz);
-	      
-	      if (front == back){
-		
-		  // linear interpolation between different M values, Mf is M in front, Mb is M in back, use phase bounds for dike phase
-		    
-		  // --> M depending on the y location
-		
-		  M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back));
-		 } 
-	      else
-		 {
-		       // linear interpolation if the ridge/dike phase is oblique
-		 }
-		  
-	      gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + M * 2 * velin / bdx;  // [1/s]
-	      // gc[k][j][i] = gres; in JacRes.cpp 
-
-
-	       }END_STD_LOOP
-
-	     }
-	                                                                           // Sam:  M* 2 * Dike->vx / bdx  
-	                                                                           //       M* full spreading rate / (distance between two cell centers in x-direction)
-	                                 // ?? Question: Why divided bdx?, x alone doesn't make sense but bdx?
-
-	    else
-	      {
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
-	      }
-
-	
 	// store effective density
 	rho = svBulk->rho;
 
