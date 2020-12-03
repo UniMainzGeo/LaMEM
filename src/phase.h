@@ -271,7 +271,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // compute additional term for RHS in case of dike region
-PetscErrorCode DikeGetVolRes(BCCtx *bc);
+PetscErrorCode DikeGetVolRes(Material_t *m,  Ph_trans_t *ph,  FDSTAG *fs, BCCtx *bc);
 
 // print single material parameter
 void MatPrintScalParam(

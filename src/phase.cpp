@@ -763,17 +763,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 //---------------------------------------------------------------------------  
 #undef __FUNCT__
 #define __FUNCT__ "DikeGetVolRes"
-PetscErrorCode DikeGetVolRes(BCCtx *bc)
+PetscErrorCode DikeGetVolRes(Material_t *m,  Ph_trans_t *ph,  FDSTAG *fs, BCCtx *bc)
 {
 
 	//===================================================================
 	// Dike region: computing additional term for volumetric residual
 	//===================================================================
 
-              FDSTAG *fs;
+  //              FDSTAG *fs;
 	      //BCCtx *bc;
-	    Material_t *m;
-	    Ph_trans_t *ph; 
+  //	    Material_t *m;
+  //	    Ph_trans_t *ph; 
 
             PetscInt     nx, ny, nz, sx, sy, sz, i, j, k;
 	    PetscScalar  y;
@@ -816,27 +816,27 @@ PetscErrorCode DikeGetVolRes(BCCtx *bc)
 		 //		   if(front == back)
 		 //{   */
 
- START_STD_LOOP
-        {
+	    START_STD_LOOP
+	      {
 		   //		   for(j = sy; j < sy+ny; j++) {
-                                y = COORD_CELL(j,sy,fs->dsy); 
-				/*  // linear interpolation between different M values, Mf is M in front, Mb is M in back 
-		       M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
-			  dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km  
-			  //  }
-		   	   else
-		     {
-		       // linear interpolation if the ridge/dike phase is oblique
-		       M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
-		       } */
+		y = COORD_CELL(j,sy,fs->dsy); 
+
+		// linear interpolation between different M values, Mf is M in front, Mb is M in back 
+		M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+		dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km  
+		
+		/*else
+		  {
+		    // linear interpolation if the ridge/dike phase is oblique
+		    M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+		    }*/ 
 		   
 
 		// compute additional term for gres (volumetric residual) in ConstEq.cpp 
 		 //	       dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km   
-}
-END_STD_LOOP
+	      }
+	    END_STD_LOOP
 
-//		} 
 
       PetscFunctionReturn(0);
 }
