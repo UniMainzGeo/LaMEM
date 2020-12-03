@@ -1,4 +1,4 @@
-/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~A~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
  **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
@@ -53,6 +53,8 @@
 #include "objFunct.h"
 #include "JacRes.h"
 #include "phase_transition.h"
+#include "fdstag.h"
+#include "bc.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatCreate"
@@ -290,6 +292,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
     eta_st   =  0.0;
 	chSoftID = -1;
 	frSoftID = -1;
+	//	Mf       = 0.0;        // new for the dike phase: amount of magma-accommodated extension in front of the box
+	//	Mb       = 0.0;         // new for the dike phase: amount of magma-accommodated extension in back of the box 
 	MSN      =  dbm->numSoft - 1;
 
 	// phase ID
@@ -320,7 +324,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	{
 		strcpy(m->Name, Name);
 	}
-
+	
 	//============================================================
 	// density & phase diagram info
 	//============================================================
@@ -450,10 +454,15 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//=================================================================================
 	// melt fraction viscosity parametrization
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,   1, 1.0);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
-
-
+	//==================================================================================
+	// Dike 
+	//==================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "Mf",       &m->Mf,    1, 1.0);  CHKERRQ(ierr);      // amount of magma-accommodated extension in front for dike phase
+	ierr = getScalarParam(fb, _OPTIONAL_, "Mb",       &m->Mb,    1, 1.0);  CHKERRQ(ierr);      // amount of magma-accommodated extension in back for dike phase
+	ierr = getIntParam   (fb, _OPTIONAL_, "dikeOn",   &m->dikeOn,1, 1.0);  CHKERRQ(ierr);      // dike switch for the additional term on RHS
+	
 	// DEPTH-DEPENDENT
 
 	// check depth-dependent density parameters
@@ -749,6 +758,89 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	PetscFunctionReturn(0);
 }
+
+
+//---------------------------------------------------------------------------  
+#undef __FUNCT__
+#define __FUNCT__ "DikeGetVolRes"
+PetscErrorCode DikeGetVolRes(BCCtx *bc)
+{
+
+	//===================================================================
+	// Dike region: computing additional term for volumetric residual
+	//===================================================================
+
+              FDSTAG *fs;
+	      //BCCtx *bc;
+	    Material_t *m;
+	    Ph_trans_t *ph; 
+
+            PetscInt     nx, ny, nz, sx, sy, sz, i, j, k;
+	    PetscScalar  y;
+	    PetscScalar  Mf, Mb;
+            PetscScalar  left, right, front, back; //, top, bot;
+	    PetscScalar  M, dikeRHS;
+	    PetscScalar  v_spread;
+	    PetscInt     dikeOn;
+
+	    PetscFunctionBegin;
+
+	    //	    fs = bc->fs;
+	    dikeOn = m->dikeOn;
+	    Mf = m->Mf;                 // transfer the inputs for M, from material parameters
+	    Mb = m->Mb;                 // transfer the inputs for M, from material parameters
+	    //	     top = ph->bounds[4];        // not needed right now
+	    //      bot = ph->bounds[5];        // not needed right now
+	    front = ph->bounds[2];      // transfer the bounds of the dike phase box
+	    back  = ph->bounds[3];       // transfer the bounds of the dike phase box
+	    left  = ph->bounds[0];       // need to be scaled somehow
+	    right = ph->bounds[1];      // need to be scaled somehow
+
+	    v_spread = bc->velin;          // transfer the spreading velocity
+
+	    //bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction
+	    //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction
+
+	    
+	    /*	    if(dikeOn == 1)   
+	      {
+
+	       //	        PetscPrintf(PETSC_COMM_WORLD, " Here");
+
+		
+	       if(Mf == Mb){
+		 M = Mf;}
+
+	       else
+		 {
+		 //		   if(front == back)
+		 //{   */
+
+ START_STD_LOOP
+        {
+		   //		   for(j = sy; j < sy+ny; j++) {
+                                y = COORD_CELL(j,sy,fs->dsy); 
+				/*  // linear interpolation between different M values, Mf is M in front, Mb is M in back 
+		       M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+			  dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km  
+			  //  }
+		   	   else
+		     {
+		       // linear interpolation if the ridge/dike phase is oblique
+		       M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+		       } */
+		   
+
+		// compute additional term for gres (volumetric residual) in ConstEq.cpp 
+		 //	       dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km   
+}
+END_STD_LOOP
+
+//		} 
+
+      PetscFunctionReturn(0);
+}
+ 
 //---------------------------------------------------------------------------
 void MatPrintScalParam(
 		PetscScalar par,  const char key[],   const char label[],
