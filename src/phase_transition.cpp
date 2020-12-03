@@ -724,13 +724,13 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 		}
 	if(PhaseTrans->Parameter_transition==_X_)
 		{
-          if ( P->X[0] >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
+          if ( P->X[0] >= PhaseTrans->ConstantValue)  {   ph = PH2; 	InAb=1;   }
           else                                        {   ph = PH1;   }
         }
 
 	if(PhaseTrans->Parameter_transition==_Y_)
 		{
-          if ( P->X[1] >= PhaseTrans->ConstantValue)  {   ph = PH2;   }
+          if ( P->X[1] >= PhaseTrans->ConstantValue)  {   ph = PH2; 	InAb=1;   }
           else                                        {   ph = PH1;   }
         }
 
