@@ -112,7 +112,8 @@ public:
 	char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
 	PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
     PetscScalar ConstantValue ;                     // Value (if Constant) 
-
+	PetscInt    Reset;								// Rset parameters 
+	
 	// Clapeyron slope
 	PetscInt    neq ;                               // number of equation
 	PetscScalar P0_clapeyron[_max_num_eq_] ;        // for clapeyron

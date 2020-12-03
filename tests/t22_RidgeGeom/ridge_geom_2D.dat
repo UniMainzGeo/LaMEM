@@ -54,14 +54,14 @@
 #===============================================================================
 
 # Number of cells for all segments
-        nel_x = 32
-        nel_y = 8
-        nel_z = 16
+        nel_x = 64
+        nel_y = 1
+        nel_z = 32
 
 # Coordinates of all segments (including start and end points)
 
         coord_x = -50  50
-        coord_y = -2 2
+        coord_y = -0.5 0.5
         coord_z = -40  10
 
 #===============================================================================
@@ -89,7 +89,7 @@
 
 # Inflow velocity boundary condition
         bvel_face                 =         CompensatingInflow                         # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
-	bvel_face_out             =         1                            # 1-Left, 2-Right, 3-Front, 4-Back
+		bvel_face_out             =         1                            # 1-Left, 2-Right, 3-Front, 4-Back
         bvel_bot                  =        -20.0                         # bottom coordinate of inflow window
         bvel_top                  =        -10.0                         # top coordinate of inflow window
         bvel_velin                =         5.0                         # inflow velocity
@@ -98,6 +98,10 @@
 # temperature on the top & bottom boundaries
 #	temp_top  = 0.0
 #	temp_bot  = 1300.0;
+	
+	
+	open_top_bound = 1
+
 	
 #===============================================================================
 # Solution parameters & controls
@@ -119,7 +123,8 @@
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 		=	multigrid	# solver [direct or multigrid]
+	SolverType 		=	direct	# solver [direct or multigrid]
+	DirectPenalty 		=	1e3			# penalty parameter [employed if we use a direct solver]
 #	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
 	
 #===============================================================================
@@ -162,11 +167,17 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = 3D_ridge    # output file name
+	out_file_name       = 2D_ridge    # output file name
 	out_pvd             = 1                   # activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
 	out_temperature     = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	out_energ_res       = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
 
 # AVD phase viewer output options (requires activation)
 

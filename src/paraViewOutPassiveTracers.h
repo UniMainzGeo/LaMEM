@@ -65,6 +65,7 @@ struct PVPtr
 	PetscInt  MeltFraction;
 	PetscInt  ID;
 	PetscInt  Active;
+	PetscInt  Grid_mf;
 
 };
 
