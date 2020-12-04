@@ -128,7 +128,10 @@ PetscErrorCode DBMatReadMeltExtraction_Par(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _REQUIRED_, "DInt",&melt_par->DInt, 1, 1.0); CHKERRQ(ierr);
 	if(melt_par->Type == _Constant_flux_)
 	{
+		melt_par->mf_cap_flux = -1; // default value
 		ierr = getScalarParam(fb, _REQUIRED_, "timescale",&melt_par->timescale, 1, 1.0); CHKERRQ(ierr);
+		ierr = getIntParam(fb, _OPTIONAL_, "mf_max_flux",&melt_par->mf_cap_flux, 1, 1); CHKERRQ(ierr);
+
 
 		melt_par->timescale = melt_par->timescale* scal->time;
 
@@ -1633,6 +1636,15 @@ PetscScalar Compute_dM(PetscScalar mfeff, Melt_Ex_t *M_Ex_t, PetscScalar dt)
 		PetscScalar dM_flux;
 		dM_flux = M_Ex_t->Mleft/M_Ex_t->timescale;
 		dM =dM_flux * dt;
+		if(M_Ex_t->mf_cap_flux == 1)
+		{
+			if(dM>M_Ex_t->Mleft)
+			{
+				dM = M_Ex_t->Mleft;
+			}
+		}
+
+
 		if(mfeff>M_Ex_t->Mtrs)
 		{
 			mf_temp = mfeff-dM;

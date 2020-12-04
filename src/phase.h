@@ -165,6 +165,7 @@ public:
 	PetscScalar    VolCor; // volumetric correction for melt/solid
 	PetscScalar    DInt  ; // Depth at which the intrusion are emplaced (adimensional number referring to % of the total crustal thickness)
 	PetscScalar    timescale ; // timescale to extract Mleft_quantity
+	PetscInt       mf_cap_flux;
 };
 //---------------------------------------------------------------------------
 //......................   Material parameter table   .......................
