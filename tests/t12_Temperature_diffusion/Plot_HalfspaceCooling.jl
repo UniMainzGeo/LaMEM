@@ -1,7 +1,7 @@
 # This processes all Timestep directories in the current LaMEM 
 # directory and creates visualizations of them all
 
-using SpecialFunctions
+using SpecialFunctions, Printf
 
 # Read LaMEM routines
 include("../../scripts/julia/ReadLaMEM_Timestep.jl")
@@ -40,7 +40,8 @@ T,x,z       =   ReadField_2D_pVTR(data, "temperature [C]",      "Scalar");     #
 # ------------------------------------------------------------------------------------- 
 
 # Compute Analytical solution 
-ThermalAge  = Time_Myrs*(3600*24*365.25*1e6)
+Tstart      = 10;
+ThermalAge  = (Tstart+Time_Myrs)*(3600*24*365.25*1e6)
 kappa       = 3/(3000*1050);
 T_surf      = 20;
 T_mantle    = 1350;
@@ -48,6 +49,6 @@ T_mantle    = 1350;
 T_anal      =   (T_surf-T_mantle).*erfc.((abs.(z).*1e3)./(2*sqrt(kappa*ThermalAge))) .+ T_mantle;
 
 # Create Plot ------------------------------------------------------------------------
-plot(T_anal,z,label="Analytics",title="t13 halfspace cooling after $Time_Myrs Myrs")
+plot(T_anal,z,label="Analytics",title="halfspace cooling after $(@sprintf("%.2f", Time_Myrs)) Myrs with 10 Myrs init diffusion")
 pl = plot!(T[:,1],z, markershape = :auto,  markersize=1, linewidth = 0, xlabel="Temperature [C]",ylabel="Depth [km]",label="LaMEM")
 savefig(pl,"HalfspaceCooling_LaMEM_vs_Analytics.png")

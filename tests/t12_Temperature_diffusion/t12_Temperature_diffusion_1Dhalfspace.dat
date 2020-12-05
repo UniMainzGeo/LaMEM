@@ -59,6 +59,10 @@
 	eta_ref           = 1e20
 	eta_max           = 1e20           # viscosity lower limit
 
+	act_steady_temp = 0              # steady-state temperature initial guess activation flag
+	steady_temp_t   = 10.0           # time for (quasi-)steady-state temperature initial guess
+	nstep_steady    = 100              # number of steps for (quasi-)steady-state temperature initial guess (default = 1
+
 #===============================================================================
 # Solver options
 #===============================================================================
