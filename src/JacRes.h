@@ -160,6 +160,7 @@ struct Controls
 	PetscInt    pLimPlast;      // limit pressure at first iteration for plasticity
 	PetscScalar pShift;         // shift the pressure by a constant value while evaluating plasticity & for output
 	PetscInt    pShiftAct;      // pressure shift activation flag (zero pressure in the top cell layer)
+	PetscInt    printNorms;		// priny norms of velocity/pressure/temperature?
 
 	PetscScalar eta_min;        // minimum viscosity
 	PetscScalar eta_max;        // maximum viscosity
