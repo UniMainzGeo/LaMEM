@@ -19,7 +19,7 @@
                   
 
 # Import VTK package from python; requires it to be installed in your python distribution
-using PyCall
+using PyCall, Printf
 vtk     =   pyimport("vtk")
 dsa     =   pyimport("vtk.numpy_interface.dataset_adapter");
    
