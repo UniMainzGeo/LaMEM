@@ -271,3 +271,36 @@ def test_1D():
 
   return(ex1)
 
+
+
+
+def test_halfspace():
+
+  # Test visco-elasto-plastic localization case on 4 cores, using optimized LaMEM
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t12_Temperature_diffusion/t12_Temperature_diffusion_1Dhalfspace.dat -printNorms 1' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't12_Temperature_diffusion/t12_Temperature_diffusion-p1.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+    
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+
+    key = re.escape("|T|_2")
+    unittest.compareFloatingPoint(key,1e-1)
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t12_DiffusionHalfspace',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
