@@ -198,10 +198,11 @@ public:
 	PetscScalar  k;                 // thermal conductivity                       [W/m/k]
 	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
 	PetscScalar  T;                 // optional temperature to set within the phase
-  PetscScalar  Mf;                // optional for dike phase only, amount of magma-accommodated extenison in front of box
-  PetscScalar  Mb;      	  // optional for dike phase only, amount of magma-accommodated extenison in back of box
-  PetscInt dikeOn;                // Switch to turn on different RHS in case dike region is used
-  PetscScalar dikeRHS;
+        // dike parameters
+        PetscScalar  Mf;                // optional for dike phase only, amount of magma-accommodated extenison in front of box
+        PetscScalar  Mb;      	        // optional for dike phase only, amount of magma-accommodated extenison in back of box
+        PetscInt     dikeOn;            // Switch to turn on different RHS in case dike region is used
+        PetscScalar  dikeRHS;
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number
@@ -271,7 +272,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // compute additional term for RHS in case of dike region
-PetscErrorCode DikeGetVolRes(Material_t *m,  Ph_trans_t *ph,  FDSTAG *fs, BCCtx *bc);
+PetscScalar dikeRHS(Material_t *m,  Ph_trans_t *ph, BCCtx *bc);
 
 // print single material parameter
 void MatPrintScalParam(

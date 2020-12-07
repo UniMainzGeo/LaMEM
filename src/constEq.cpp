@@ -54,6 +54,7 @@
 #include "meltParamKatz.h"
 #include "scaling.h"
 #include "parsing.h"
+#include "bc.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "setUpConstEq"
@@ -758,6 +759,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 #undef __FUNCT__
 #define __FUNCT__ "cellConstEq"
 PetscErrorCode cellConstEq(
+		
 		ConstEqCtx  *ctx,    // evaluation context
 		SolVarCell  *svCell, // solution variables
 		PetscScalar  dxx,    // effective normal strain rate components
@@ -775,6 +777,10 @@ PetscErrorCode cellConstEq(
 	SolVarBulk  *svBulk;
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
+
+	PetscScalar dikeOn, dikeRHS;   // new for dike
+	Material_t *phases;
+	BCCtx *bc; // for dike
 	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -783,7 +789,8 @@ PetscErrorCode cellConstEq(
 	svDev  = ctx->svDev;
 	svBulk = ctx->svBulk;
 	ctrl   = ctx->ctrl;
-
+	phases = ctx->phases; // new for dike RHS
+	
 	// evaluate deviatoric constitutive equation
 	ierr = devConstEq(ctx); CHKERRQ(ierr);
 
@@ -841,26 +848,38 @@ PetscErrorCode cellConstEq(
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
 	// compute volumetric residual
-	/*Material_t   *m;           // for the M values read in by the material parameters in the input file
-	//PetscInt dikeOn;
-	dikeOn = m->dikeOn; */
 
+	// for the dike RHS
+	//	dikeRHS = phases->dikeRHS;
+	dikeOn = phases->dikeOn; 
+
+	//PetscPrintf(PETSC_COMM_WORLD, "dikeRHS %f \n", phases->dikeRHS);
+	PetscPrintf(PETSC_COMM_WORLD, "dikeOn %f \n", phases->dikeOn);    // for testing dike
+
+	// call function that returns the dikeRHS value, its is located in structure Material_t which has pointer phases in this file
+	phases->dikeRHS = dikeRHS(phases, ctx->PhaseTrans, bc); // what goes inside?, need to add bc in this file BCCtx in the beginning of the function or check whether inside any other structure
+
+	
+	//	svCell->svDev.I2Gdt = getI2Gdt(numPhases, phases, svCell->phRat, dt);     example function call in JacRes.cpp
+	
+	//PetscPrintf(PETSC_COMM_WORLD, "dikeRHS %f \n", dikeRHS);   /// DIKE
+	//PetscPrintf(PETSC_COMM_WORLD, "dikeOn %f \n", dikeOn);   /// DIKE
+	
 	if(ctrl->actExp)
 	  {
 	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
 	  }
-	
-	/*else if(ctrl->actExp && m->dikeOn == 1)          // used as a switch to use the additional term on the RHS, new material parameter
 
+	 else if(ctrl->actExp && dikeOn == 1)          // used as a switch to use the additional term on the RHS, new material parameter
 	  {
-	    PetscScalar   dikeRHS;      // local variables
-	    dikeRHS = m->dikeRHS;
-	    
 	    gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;  // [1/s]
-	    }*/
+
+	            PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in gres %f \n", dikeRHS);   /// DIKE                                                                                
+	  }
 
 	 else
 	  {
+	    // PetscPrintf(PETSC_COMM_WORLD, "2nd gres %f \n", gres);   /// DIKE  
 	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
 	  }
 
