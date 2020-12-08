@@ -204,6 +204,9 @@
 
 	open_top_bound = 1
 
+# Permeable lower boundary flag    
+    open_bot_bound = 0
+    
 # No-slip boundary flag mask (left right front back bottom top)
 
 	noslip = 0 0 1 1 0 0
@@ -231,7 +234,8 @@
 
 # Optional plume inflow @ bottom boundary
     Plume_InflowBoundary    =   1           # have a plume-like inflow boundary @ bottom
-    Plume_Type              =   2nd         # 2D or 3D (circular)		
+    Plume_vel_constrained 	=	0           # Do we prescribe an inflow velocity @ the bottom or not?    
+	Plume_Type              =   2D          # 2D or 3D (circular)		
     Plume_Phase             =   4           # phase of plume
     Plume_Temperature       =   1600        # temperature of inflow plume
     Plume_Inflow_Velocity   =   15          # Inflow velocity	

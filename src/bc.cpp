@@ -387,7 +387,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	//open bottom boundary flag
 
-	ierr = getIntParam(fb, _OPTIONAL_, "open_bottom_bound",		&bc->bot_open, 		1, -1); 	CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "open_bot_bound",		&bc->bot_open, 		1, -1); 	CHKERRQ(ierr);
 
 	// no-slip boundary condition mask
 	ierr = getIntParam(fb, _OPTIONAL_, "noslip", 				bc->noslip, 		6, -1); 	CHKERRQ(ierr);
@@ -488,7 +488,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->EyyNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods);
 	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
 	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
-	if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bot boundary                          @ \n");
+	if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                          @ \n");
 	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
 	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
