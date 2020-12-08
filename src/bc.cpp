@@ -385,6 +385,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// open boundary flag
 	ierr = getIntParam(fb, _OPTIONAL_, "open_top_bound",		&bc->top_open, 		1, -1); 	CHKERRQ(ierr);
 
+	//open bottom boundary flag
+
+	ierr = getIntParam(fb, _OPTIONAL_, "open_bottom_bound",		&bc->bot_open, 		1, -1); 	CHKERRQ(ierr);
+
 	// no-slip boundary condition mask
 	ierr = getIntParam(fb, _OPTIONAL_, "noslip", 				bc->noslip, 		6, -1); 	CHKERRQ(ierr);
 
@@ -420,7 +424,13 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 			ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",		bc->Plume_Center,		2,		scal->length);		CHKERRQ(ierr);
 		}
 		ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Radius",			&bc->Plume_Radius,			1,	scal->length);		CHKERRQ(ierr);
-		ierr = getScalarParam(fb,_REQUIRED_,"Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
+		ierr = getIntParam(fb,_REQUIRED_,	"Plume_vel_constrained",			&bc->Plume_flux_ctr,			1,	1);		CHKERRQ(ierr);
+
+		if(bc->Plume_flux_ctr ==1)
+		{
+			ierr = getScalarParam(fb,_REQUIRED_,"Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
+
+		}
 
         // Gaussian or Poiseuille type inflow velocity? Note that outflow is calculated to conserve mass
         ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType", 	str, "Gaussian"); 					CHKERRQ(ierr);  // must have component
@@ -457,6 +467,11 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
 	}
 
+	//if(bc->bot_open && bc->noslip[6])
+	//{
+		//SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with bottom boundary (open_top_bound, noslip) \n");
+//	}
+
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Boundary condition parameters: \n");
 
@@ -473,6 +488,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->EyyNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods);
 	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
 	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
+	if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Bottom top boundary                          @ \n");
 	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
 	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
@@ -775,7 +791,7 @@ PetscErrorCode BCApply(BCCtx *bc)
 	ierr = BCApplyCells(bc); CHKERRQ(ierr);
 
 	// plume like boundary condition
-	ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
+	if(bc->Plume_flux_ctr) ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
 
 	// synchronize SPC constraints in the internal ghost points
 	// WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
@@ -996,7 +1012,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 					
 					if ( (x >= xmin) && (x <= xmax))
 					{
-						bcT[k-1][j][i]     = bc->Plume_Temperature;
+						bcT[k-1][j][i]     =bc->Tbot + (bc->Plume_Temperature-bc->Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
 					}
 					
 				}
@@ -1067,6 +1083,10 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	if(top_open)
 	{
 		vez = 0.0;
+	}
+	else if(bc->bot_open)
+	{
+		vbz = 0.0;
 	}
 
 	// access constraint vectors
@@ -1161,7 +1181,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		if(j == mny-1 && Eyz != 0.0) { bcvz[k][j][i] = 0.0; }
 
 		// pure shear		
-		if(k == 0                && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; }
+		if(k == 0   && !bc->bot_open  && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; }
 		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
 
 
@@ -1555,16 +1575,16 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_NODE_RANGE(nz, sz, fs->dsz)
 
-	if(bc->face == 5)
+	if(bc->face == 5 || bc->face == 4)
 	{
 		START_STD_LOOP
 		{
 			vel = 0.0;
 
-			if(k == 0)                vel = velbot;
-			if(k == mnz && !top_open) vel = veltop;
+			if(k == 0 && !bc->bot_open)  vel = velbot;
+			if(k == mnz && !top_open)    vel = veltop;
 	
-			if(k == 0)                { bcvz[k][j][i] = vel; }
+			if(k == 0 && !bc->bot_open) { bcvz[k][j][i] = vel; }
 			if(k == mnz && !top_open) { bcvz[k][j][i] = vel; }
 			iter++;
 		}
@@ -2111,7 +2131,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
                         PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
                     {
 	                    P->phase = bc->Plume_Phase;
-						P->T     = bc->Plume_Temperature;
+						P->T     = bc->Tbot + (bc->Plume_Temperature-bc->Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
                     }
 
 
@@ -2285,7 +2305,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
                 y   =   COORD_CELL(j, sy, fs->dsy);
 
                 // Gaussian velocity perturbation
-                vel = (V_in-V_out)*PetscExpScalar( - ( PetscPowScalar(x-xc,2.0 ) + PetscPowScalar(y-yc,2.0 ) )/radius2 ) + V_out;
+                vel = V_out+(V_in-V_out)*PetscExpScalar( - ( PetscPowScalar(x-xc,2.0 ) + PetscPowScalar(y-yc,2.0 ) )/radius2 ) + V_out;
 
             }
         }
