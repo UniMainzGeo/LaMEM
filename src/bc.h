@@ -233,7 +233,8 @@ struct BCCtx
 	PetscScalar  bvel_constant_temperature;
 
 	// Plume inflow bottom boundary condition
-	PetscInt		Plume_Inflow,Plume_flux_ctr;// Do we have a plume-like inflow boundary?/ Plume flux is constrained or not?
+	PetscInt		Plume_Inflow;				// Do we have a plume-like inflow boundary?
+	PetscInt 		Plume_flux_ctr;				// Plume flux is constrained or not?
 	PetscInt 		Plume_Type;					// Type [2D=1, or 3D=2]
 	PetscInt		Plume_Phase;				// Phase of plume
 	PetscScalar		Plume_Temperature;			// Temperature
@@ -243,33 +244,34 @@ struct BCCtx
 	PetscInt 		Plume_VelocityType;			// type of inflow [Gaussian=0=default or Poiseuille=1]
 	
 	// open boundary flag
-	PetscInt     	top_open,bot_open;
+	PetscInt     	top_open;
+	PetscInt 		bot_open;
 
 	// no-slip boundary condition mask
-	PetscInt     noslip[6];
+	PetscInt     	noslip[6];
 
 	// fixed phase (no-flow condition)
-	PetscInt     fixPhase;
+	PetscInt     	fixPhase;
 
 	// fixed cells (no-flow condition)
-	PetscInt       fixCell;
-	unsigned char *fixCellFlag;
+	PetscInt       	fixCell;
+	unsigned char 	*fixCellFlag;
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
 	//========================
 
 	// temperature on top and bottom boundaries and initial guess activation flag
-	PetscScalar  Tbot, Ttop;
-	PetscInt     initTemp;
+	PetscScalar  	Tbot, Ttop;
+	PetscInt     	initTemp;
 
 	//=====================
 	// PRESSURE CONSTRAINTS
 	//=====================
 
 	// pressure on top and bottom boundaries and initial guess activation flag
-	PetscScalar  pbot, ptop;
-	PetscInt     initPres;
+	PetscScalar  	pbot, ptop;
+	PetscInt     	initPres;
 
 };
 //---------------------------------------------------------------------------

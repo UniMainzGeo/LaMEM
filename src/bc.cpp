@@ -469,7 +469,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	//if(bc->bot_open && bc->noslip[6])
 	//{
-		//SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with bottom boundary (open_top_bound, noslip) \n");
+		//SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with bottom boundary (open_bot_bound, noslip) \n");
 //	}
 
 	// print summary
@@ -488,7 +488,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->EyyNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods);
 	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
 	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
-	if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Bottom top boundary                          @ \n");
+	if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bot boundary                          @ \n");
 	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
 	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
@@ -1050,7 +1050,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscScalar z,   z_bot, z_top;
 	PetscScalar y,   y_frt, y_bck;
 	PetscInt    mnx, mny, mnz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open, bot_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 
 	PetscErrorCode ierr;
@@ -1061,6 +1061,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	// set open boundary flag
 	top_open = bc->top_open;
+	bot_open = bc->bot_open;
 
 	// initialize index bounds
 	mnx = fs->dsx.tnods - 1;
@@ -1080,11 +1081,11 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	vby = (by - Ryy)*Eyy;   vey = (ey - Ryy)*Eyy;
 	vbz = (bz - Rzz)*Ezz;   vez = (ez - Rzz)*Ezz;
 
-	if(top_open)
+	if		(top_open)
 	{
 		vez = 0.0;
 	}
-	else if(bc->bot_open)
+	else if	(bot_open)
 	{
 		vbz = 0.0;
 	}
@@ -1181,7 +1182,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		if(j == mny-1 && Eyz != 0.0) { bcvz[k][j][i] = 0.0; }
 
 		// pure shear		
-		if(k == 0   && !bc->bot_open  && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; }
+		if(k == 0   && !bot_open && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; }
 		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
 
 
@@ -1446,7 +1447,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	PetscInt    mnz, mnx, mny;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar ***bcvx,  ***bcvy, ***bcvz;
-	PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open;
+	PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open, bot_open;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1466,6 +1467,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 
 	// set open boundary flag
 	top_open = bc->top_open;
+	bot_open = bc->bot_open;
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
@@ -1581,10 +1583,10 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 		{
 			vel = 0.0;
 
-			if(k == 0 && !bc->bot_open)  vel = velbot;
-			if(k == mnz && !top_open)    vel = veltop;
+			if(k == 0   && !bot_open)  vel = velbot;
+			if(k == mnz && !top_open)  vel = veltop;
 	
-			if(k == 0 && !bc->bot_open) { bcvz[k][j][i] = vel; }
+			if(k == 0   && !bot_open) { bcvz[k][j][i] = vel; }
 			if(k == mnz && !top_open) { bcvz[k][j][i] = vel; }
 			iter++;
 		}
