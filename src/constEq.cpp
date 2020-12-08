@@ -778,9 +778,10 @@ PetscErrorCode cellConstEq(
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
 
-	PetscScalar dikeOn, dikeRHS;   // new for dike
+	PetscScalar dikeOn; //, dikeRHS;   // new for dike
 	Material_t *phases;
 	BCCtx *bc; // for dike
+	Ph_trans_t  *PhaseTrans; // for dike
 	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -790,6 +791,8 @@ PetscErrorCode cellConstEq(
 	svBulk = ctx->svBulk;
 	ctrl   = ctx->ctrl;
 	phases = ctx->phases; // new for dike RHS
+        bc = ctx->bc;  // new for dike
+	PhaseTrans = ctx->PhaseTrans;  // new for dike
 	
 	// evaluate deviatoric constitutive equation
 	ierr = devConstEq(ctx); CHKERRQ(ierr);
@@ -854,15 +857,15 @@ PetscErrorCode cellConstEq(
 	dikeOn = phases->dikeOn; 
 
 	//PetscPrintf(PETSC_COMM_WORLD, "dikeRHS %f \n", phases->dikeRHS);
-	PetscPrintf(PETSC_COMM_WORLD, "dikeOn %f \n", phases->dikeOn);    // for testing dike
+	PetscPrintf(PETSC_COMM_WORLD, "dikeOn in Consteq %f \n", phases->dikeOn);    // for testing dike
 
 	// call function that returns the dikeRHS value, its is located in structure Material_t which has pointer phases in this file
-	phases->dikeRHS = dikeRHS(phases, ctx->PhaseTrans, bc); // what goes inside?, need to add bc in this file BCCtx in the beginning of the function or check whether inside any other structure
+	phases->dikeRHS = dikeRHS(phases, PhaseTrans, bc); // what goes inside?, need to add bc in this file BCCtx in the beginning of the function or check whether inside any other structure
 
 	
 	//	svCell->svDev.I2Gdt = getI2Gdt(numPhases, phases, svCell->phRat, dt);     example function call in JacRes.cpp
 	
-	//PetscPrintf(PETSC_COMM_WORLD, "dikeRHS %f \n", dikeRHS);   /// DIKE
+	PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in consteq%f \n", phases->dikeRHS);   /// DIKE
 	//PetscPrintf(PETSC_COMM_WORLD, "dikeOn %f \n", dikeOn);   /// DIKE
 	
 	if(ctrl->actExp)
@@ -870,12 +873,12 @@ PetscErrorCode cellConstEq(
 	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
 	  }
 
-	 else if(ctrl->actExp && dikeOn == 1)          // used as a switch to use the additional term on the RHS, new material parameter
+	/*	 else if(ctrl->actExp && dikeOn == 1)          // used as a switch to use the additional term on the RHS, new material parameter
 	  {
 	    gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;  // [1/s]
 
 	            PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in gres %f \n", dikeRHS);   /// DIKE                                                                                
-	  }
+		    }*/
 
 	 else
 	  {

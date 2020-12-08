@@ -459,7 +459,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//==================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mf",       &m->Mf,    1, 1.0);  CHKERRQ(ierr);      // amount of magma-accommodated extension in front for dike phase
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mb",       &m->Mb,    1, 1.0);  CHKERRQ(ierr);      // amount of magma-accommodated extension in back for dike phase
-	ierr = getIntParam   (fb, _OPTIONAL_, "dikeOn",   &m->dikeOn,1, -1);   CHKERRQ(ierr);       // dike switch for the additional term on RHS
+	ierr = getIntParam   (fb, _OPTIONAL_, "dikeOn",   &m->dikeOn,1, 1);   CHKERRQ(ierr);       // dike switch for the additional term on RHS
+	
+PetscPrintf(PETSC_COMM_WORLD, "read-in dikeOn %f \n", &m->dikeOn);     // dike
+ PetscPrintf(PETSC_COMM_WORLD, "read-in Mb %f \n", &m->Mb);     // dike
+ PetscPrintf(PETSC_COMM_WORLD, "read-in Mf %f \n", &m->Mf);     // dike   
+
 	
 	// DEPTH-DEPENDENT
 
@@ -621,8 +626,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// PRINT (optional)
 	if (PrintOutput){
 
-	  PetscPrintf(PETSC_COMM_WORLD, "read alpha %f \n", m->alpha);    //dike
-	  PetscPrintf(PETSC_COMM_WORLD, "read dikeOn %f \n", m->dikeOn);     // dike
+	  PetscPrintf(PETSC_COMM_WORLD, "read-in alpha %f \n", &m->alpha);    //dike
 
 	  if (strlen(m->Name)>0){
 			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld     --   %s ",(LLD)(m->ID), m->Name);
@@ -788,10 +792,10 @@ PetscScalar dikeRHS(Material_t *m,  Ph_trans_t *ph, BCCtx *bc)
 
 	    // access context
 	    //	    fs = bc->fs;
-	    
-                   PetscPrintf(PETSC_COMM_WORLD, "test");
-		   
+
+	    dikeRHS = m->dikeRHS;
 	    dikeOn = m->dikeOn;
+	     M = 0.0;
 	    Mf = m->Mf;                 // transfer the inputs for M, from material parameters
 	    Mb = m->Mb;                 // transfer the inputs for M, from material parameters  
 	    //	    top = ph->bounds[4];        // not needed right now
@@ -802,8 +806,7 @@ PetscScalar dikeRHS(Material_t *m,  Ph_trans_t *ph, BCCtx *bc)
 	    right = ph->bounds[1];      // need to be scaled somehow  
 
 	    PetscPrintf(PETSC_COMM_WORLD, "left %f \n", left);
-	    PetscPrintf(PETSC_COMM_WORLD, "second Mf %f \n", Mf);
-	    PetscPrintf(PETSC_COMM_WORLD, "third Mf %f \n", m->Mf);
+	    PetscPrintf(PETSC_COMM_WORLD, "outside loop Mf %f \n", Mf);
 	    
 	    v_spread = bc->velin;          // transfer the spreading velocity
 
@@ -811,7 +814,7 @@ PetscScalar dikeRHS(Material_t *m,  Ph_trans_t *ph, BCCtx *bc)
 	    //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction
 
 	    
-	    if(dikeOn == 1)
+	    if(dikeOn)
 	      {
 		//if(Mf == Mb)
 		// {
@@ -819,11 +822,12 @@ PetscScalar dikeRHS(Material_t *m,  Ph_trans_t *ph, BCCtx *bc)
 		    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km }
 		    //}
 	      }
-	    
-		   PetscPrintf(PETSC_COMM_WORLD, "4th Mf %f \n", Mf);
-		   PetscPrintf(PETSC_COMM_WORLD, "second Mb %f \n", Mb);
+
+	           PetscPrintf(PETSC_COMM_WORLD, "v_spread %f \n", v_spread);
+		   PetscPrintf(PETSC_COMM_WORLD, "Mf %f \n", Mf);
+		   PetscPrintf(PETSC_COMM_WORLD, "Mb %f \n", Mb);
 		   PetscPrintf(PETSC_COMM_WORLD, "M %f \n", M);
-		   PetscPrintf(PETSC_COMM_WORLD, "dikeRHS %f \n", dikeRHS);
+		   PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in phase %f \n", dikeRHS);
 		   
 	    //else
 	       

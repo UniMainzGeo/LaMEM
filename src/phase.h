@@ -201,7 +201,7 @@ public:
         // dike parameters
         PetscScalar  Mf;                // optional for dike phase only, amount of magma-accommodated extenison in front of box
         PetscScalar  Mb;      	        // optional for dike phase only, amount of magma-accommodated extenison in back of box
-        PetscInt     dikeOn;            // Switch to turn on different RHS in case dike region is used
+        PetscInt     dikeOn;            // Flag to activate different RHS in case dike region is used
         PetscScalar  dikeRHS;
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
