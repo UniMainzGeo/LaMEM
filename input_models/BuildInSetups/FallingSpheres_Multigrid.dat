@@ -22,7 +22,7 @@
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.5   # CFL criterion for elasticity
-	nstep_max = 10    # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 1    # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1     # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
@@ -33,9 +33,9 @@
 
 # Number of cells for all segments
 
-	nel_x = 8
-	nel_y = 8
-	nel_z = 8
+	nel_x = 16
+	nel_y = 16
+	nel_z = 16
 
 # Coordinates of all segments (including start and end points)
 
@@ -112,7 +112,7 @@
 		center = 0.8 0.8 0.8  
 		radius = 0.05
 	<SphereEnd>	
-	
+#	
 #	# 5
 #	<SphereStart>	
 #		phase  = 1
@@ -139,7 +139,7 @@
 #		phase  = 1
 #		center = 0.5 0.8 0.9  
 #		radius = 0.05
-#	<SphereEnd>
+#   <SphereEnd>
 #
 #	# 9
 #	<SphereStart>	
@@ -254,7 +254,7 @@
 	<MaterialStart>
 		ID  = 1   # phase id
 		rho = 2   # density
-		eta = 1e4 # viscosity
+		eta = 1e3 # viscosity
 	<MaterialEnd>
 
 #===============================================================================
@@ -266,8 +266,8 @@
 	# LINEAR & NONLINEAR SOLVER OPTIONS
 	-snes_type ksponly 		# no nonlinear solver
 
-	-js_ksp_type fgmres
-	-js_ksp_max_it 1000
+	-js_ksp_type fgmres # bei gmres keine konvergenz...
+	-js_ksp_max_it 10000
 	-js_ksp_monitor
 	-js_ksp_rtol 1e-6
 
@@ -281,21 +281,28 @@
 #	-vs_pc_factor_mat_solver_package mumps
 
 
+#========== viscosity Smoothing
+	-BFBT_viscositySmoothing
+	-BFBT_viscositySmoothing_DynamicRatio 1e3 # (same as sphere viscosity)
+#	-BFBT_viscositySmoothing_delta 200
+
+#========== monolithic pmat options
+#	-pcmat_type mono
+#	-jp_type mg
+
+#========== block pmat options
 	-pcmat_type block
 	-pcmat_schur_type wbfbt
 
-    -BFBT_viscositySmoothing
-    -BFBT_viscositySmoothing_DynamicRatio 1e10
-#    -BFBT_viscositySmoothing_delta 200
-
-	-jp_type bf
+    -jp_type bf
 	-bf_type upper
 	-bf_vs_type mg
-	-vs_ksp_type fgmres
+
+	-vs_ksp_type gmres
 	-vs_ksp_rtol 1e-2
 	-vs_ksp_max_it 10
 
-	-ps_ksp_type fgmres
+	-ps_ksp_type gmres
 	-ps_ksp_rtol 1e-2
 	-ps_ksp_max_it 10
 
@@ -305,11 +312,9 @@
 	-ps_pc_mg_type multiplicative
 	-ps_pc_mg_cycle_type v
 
-#	-pcmat_type mono
-#	-jp_type mg
-
+#========== multigrid
 	-gmg_pc_type mg
-	-gmg_pc_mg_levels 4
+	-gmg_pc_mg_levels 3
 	-gmg_pc_mg_galerkin
 	-gmg_pc_mg_type multiplicative
 	-gmg_pc_mg_cycle_type v
@@ -321,7 +326,7 @@
 
 	-crs_ksp_type preonly
 	-crs_pc_type lu
-	-crs_pc_factor_mat_solver_package mumps
+#	-crs_pc_factor_mat_solver_package mumps #warning option...
 
 
 #-vs_ksp_view

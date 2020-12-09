@@ -54,6 +54,7 @@
 #include "constEq.h"
 #include "tools.h"
 #include "advect.h"
+#include "BFBT.h"
 
 //---------------------------------------------------------------------------
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
@@ -442,6 +443,9 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = PetscMemzero(jr->svXZEdge, sizeof(SolVarEdge)*(size_t)fs->nXZEdg); CHKERRQ(ierr);
 	ierr = PetscMemzero(jr->svYZEdge, sizeof(SolVarEdge)*(size_t)fs->nYZEdg); CHKERRQ(ierr);
 
+	ierr = PetscMalloc(sizeof(SphereData)*(size_t)20, &jr->geoms); CHKERRQ(ierr);
+	ierr = PetscMemzero(jr->geoms, sizeof(SphereData)*(size_t)20); CHKERRQ(ierr);
+
 	// compute total size per processor of the solution variables storage buffer
 	svBuffSz = numPhases*(fs->nCells + fs->nXYEdg + fs->nXZEdg + fs->nYZEdg);
 
@@ -568,6 +572,7 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = PetscFree(jr->svXZEdge);  CHKERRQ(ierr);
 	ierr = PetscFree(jr->svYZEdge);  CHKERRQ(ierr);
 	ierr = PetscFree(jr->svBuff);    CHKERRQ(ierr);
+	ierr = PetscFree(jr->geoms);    CHKERRQ(ierr);
 
 	for(i=0; i<jr->dbm->numPhases; i++)
 	{

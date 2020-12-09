@@ -135,19 +135,13 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	iter = 0;
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	//PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	ierr = PetscOptionsGetString(NULL, NULL, "-BFBT_viscositySmoothing", pname, _str_len_, &flg); CHKERRQ(ierr);
 	if(flg==PETSC_TRUE){
-		// compute pre-smoothed viscosity
-		ierr = BFBTGaussianSmoothing(jr); CHKERRQ(ierr);
+		// compute pre-smoothed viscosity // call in matrix.cpp 1321
+		//ierr = BFBTGaussianSmoothing(jr); CHKERRQ(ierr);
 		START_STD_LOOP
 		{
 			lEta[k][j][i] = jr->svCell[iter++].svDev.eta_smoothed;
-			/*if(iter == 15000)
-			{PetscPrintf(PETSC_COMM_WORLD, "%f \n", jr->svCell[iter++].svDev.eta_smoothed); //testing ...
-			PetscPrintf(PETSC_COMM_WORLD, "%f \n", jr->svCell[iter++].svDev.eta); //testing ...
-			PetscPrintf(PETSC_COMM_WORLD, "------------------- \n");
-			}*/
 		}
 		END_STD_LOOP
 	}else{
@@ -157,7 +151,6 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 		}
 		END_STD_LOOP
 	}
-	//PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvEtaCen, &lEta); CHKERRQ(ierr);
 
@@ -404,6 +397,7 @@ PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 	PetscBool	flg;
 	char        pname[_str_len_];
 	SolVarCell *svCell;
+	SolVarEdge *svEdge;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -422,15 +416,9 @@ PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 	delta 			= 200;								// Default
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-BFBT_viscositySmoothing_DynamicRatio", &DynamicRatio, &flg); 	CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-BFBT_viscositySmoothing_delta", &delta, &flg); 					CHKERRQ(ierr);
-/*	PetscPrintf(PETSC_COMM_WORLD,"\n");
-	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD, "   BFBT viscosity pre-smoothing  	: active \n");
-	PetscPrintf(PETSC_COMM_WORLD, "   BFBT viscosity contrast     		: %lld \n", (LLD)DynamicRatio);
-	PetscPrintf(PETSC_COMM_WORLD, "   BFBT smoothing exponential decay	: %lld \n", (LLD)delta);
-	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n"); */
 
-	etamin 			= 1;
-	etamax 			= DynamicRatio;
+	etamin 			= 1;			//1/sqrt(DynamicRatio);
+	etamax 			= DynamicRatio;	//sqrt(DynamicRatio);
 	radius 			= 0.05;
 
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
@@ -439,9 +427,191 @@ PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 	START_STD_LOOP
 	{
-		coords[0] = dsx->ccoor[iter];
-		coords[1] = dsy->ccoor[iter];	// get coordinates of actual cell center
-		coords[2] = dsz->ccoor[iter];
+		coords[0] = dsx->ccoor[i];
+		coords[1] = dsy->ccoor[j];	// get coordinates of actual cell center
+		coords[2] = dsz->ccoor[k];
+
+		IndicatorValue = 1.0;
+		// loop over spheres
+		for(jj = 0; jj < jr->ngeoms; jj++){
+			center[0]   = jr->geoms[jj].centerx;
+			center[1]   = jr->geoms[jj].centery;	// get sphere center
+			center[2]   = jr->geoms[jj].centerz;
+			radius 		= jr->geoms[jj].radius;		// get sphere radius
+//			etamax 		= jr->dbm->phases[jr->geoms[jj].phase].eta;  // eta aus phase auslesen
+
+			VEC_ABS(vecabs, center, coords);			//
+			maximum = vecabs - radius;					// 			 n
+			if(maximum < 0.0){maximum = 0.0;}			// Ind(x):=product[1-exp(-delta*max(0,|center(i)-x|-radius)^2)]
+			maximum = maximum * maximum;				//			i=1
+			expfunc = exp(-delta * maximum);			//
+			IndicatorValue = IndicatorValue * (1 - expfunc);
+		}
+
+		svCell = &jr->svCell[iter];
+		svCell->svDev.eta_smoothed = (etamax-etamin) * (1-IndicatorValue) + etamin; // compute and store smoothed viscosity
+		iter++;
+
+	}
+	END_STD_LOOP
+
+	//XY-Edges
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+	START_STD_LOOP
+		{
+			coords[0] = dsx->ccoor[i];
+			coords[1] = dsy->ccoor[j];	// get coordinates of actual edge
+			coords[2] = dsz->ccoor[k];
+
+			IndicatorValue = 1.0;
+			// loop over spheres
+			for(jj = 0; jj < jr->ngeoms; jj++){
+				center[0]   = jr->geoms[jj].centerx;
+				center[1]   = jr->geoms[jj].centery;	// get sphere center
+				center[2]   = jr->geoms[jj].centerz;
+				radius 		= jr->geoms[jj].radius;		// get sphere radius
+
+				VEC_ABS(vecabs, center, coords);			//
+				maximum = vecabs - radius;					// 			 n
+				if(maximum < 0.0){maximum = 0.0;}			// Ind(x):=product[1-exp(-delta*max(0,|center(i)-x|-radius)^2)]
+				maximum = maximum * maximum;				//			i=1
+				expfunc = exp(-delta * maximum);			//
+				IndicatorValue = IndicatorValue * (1 - expfunc);
+			}
+
+			svEdge = &jr->svXYEdge[iter];
+			svEdge->svDev.eta_smoothed = (etamax-etamin) * (1-IndicatorValue) + etamin; // compute and store smoothed viscosity
+			iter++;
+
+		}
+	END_STD_LOOP
+
+	//XZ-Edges
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+	START_STD_LOOP
+		{
+			coords[0] = dsx->ccoor[i];
+			coords[1] = dsy->ccoor[j];	// get coordinates of actual edge
+			coords[2] = dsz->ccoor[k];
+
+			IndicatorValue = 1.0;
+			// loop over spheres
+			for(jj = 0; jj < jr->ngeoms; jj++){
+				center[0]   = jr->geoms[jj].centerx;
+				center[1]   = jr->geoms[jj].centery;	// get sphere center
+				center[2]   = jr->geoms[jj].centerz;
+				radius 		= jr->geoms[jj].radius;		// get sphere radius
+
+				VEC_ABS(vecabs, center, coords);			//
+				maximum = vecabs - radius;					// 			 n
+				if(maximum < 0.0){maximum = 0.0;}			// Ind(x):=product[1-exp(-delta*max(0,|center(i)-x|-radius)^2)]
+				maximum = maximum * maximum;				//			i=1
+				expfunc = exp(-delta * maximum);			//
+				IndicatorValue = IndicatorValue * (1 - expfunc);
+			}
+
+			svEdge = &jr->svXZEdge[iter];
+			svEdge->svDev.eta_smoothed = (etamax-etamin) * (1-IndicatorValue) + etamin; // compute and store smoothed viscosity
+			iter++;
+
+		}
+	END_STD_LOOP
+
+	//YZ-Edges
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+	START_STD_LOOP
+		{
+			coords[0] = dsx->ccoor[i];
+			coords[1] = dsy->ccoor[j];	// get coordinates of actual edge
+			coords[2] = dsz->ccoor[k];
+
+			IndicatorValue = 1.0;
+			// loop over spheres
+			for(jj = 0; jj < jr->ngeoms; jj++){
+				center[0]   = jr->geoms[jj].centerx;
+				center[1]   = jr->geoms[jj].centery;	// get sphere center
+				center[2]   = jr->geoms[jj].centerz;
+				radius 		= jr->geoms[jj].radius;		// get sphere radius
+
+				VEC_ABS(vecabs, center, coords);			//
+				maximum = vecabs - radius;					// 			 n
+				if(maximum < 0.0){maximum = 0.0;}			// Ind(x):=product[1-exp(-delta*max(0,|center(i)-x|-radius)^2)]
+				maximum = maximum * maximum;				//			i=1
+				expfunc = exp(-delta * maximum);			//
+				IndicatorValue = IndicatorValue * (1 - expfunc);
+			}
+
+			svEdge = &jr->svYZEdge[iter];
+			svEdge->svDev.eta_smoothed = (etamax-etamin) * (1-IndicatorValue) + etamin; // compute and store smoothed viscosity
+			iter++;
+
+		}
+	END_STD_LOOP
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+/*
+#undef __FUNCT__
+#define __FUNCT__ "BFBTGaussianSmoothing"
+PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
+{
+	FDSTAG     *fs;
+	PetscScalar	DynamicRatio, delta;
+	PetscScalar eta, etamax, etamin, radius;
+	PetscScalar IndicatorValue, center[3], coords[3];
+	PetscInt	jj;
+	PetscScalar maximum, expfunc, vecabs;
+	Discret1D  *dsx, *dsy, *dsz;
+	PetscBool	flg;
+	char        pname[_str_len_];
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// use smoothed viscosity only if option is activated
+	ierr = PetscOptionsGetString(NULL, NULL, "-BFBT_viscositySmoothing", pname, _str_len_, &flg); CHKERRQ(ierr);
+	if(flg == PETSC_FALSE) PetscFunctionReturn(0);
+
+	// access context variables
+	fs   = jr->fs;
+	dsx  = &fs->dsx;
+	dsy  = &fs->dsy;
+	dsz  = &fs->dsz;
+
+	DynamicRatio 	= 100;								// Default
+	delta 			= 200;								// Default
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-BFBT_viscositySmoothing_DynamicRatio", &DynamicRatio, &flg); 	CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-BFBT_viscositySmoothing_delta", &delta, &flg); 					CHKERRQ(ierr);
+
+	etamin 			= 1;			//1/sqrt(DynamicRatio);
+	etamax 			= DynamicRatio;	//sqrt(DynamicRatio);
+	radius 			= 0.05;
+
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	// Loop over cells
+	iter = 0;
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	START_STD_LOOP
+	{
+		coords[0] = dsx->ccoor[i];
+		coords[1] = dsy->ccoor[j];	// get coordinates of actual cell center
+		coords[2] = dsz->ccoor[k];
+		if(iter==1) PetscPrintf(PETSC_COMM_WORLD, "   cc0     		: %f \n", coords[0]);
+		if(iter==1) PetscPrintf(PETSC_COMM_WORLD, "   cc1     		: %f \n", coords[1]);
+		if(iter==1) PetscPrintf(PETSC_COMM_WORLD, "   cc2     		: %f \n", coords[2]);
 
 		IndicatorValue = 1.0;
 		// loop over spheres
@@ -460,19 +630,128 @@ PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 		}
 
 		svCell = &jr->svCell[iter];
+		if(iter>4001) PetscPrintf(PETSC_COMM_WORLD, "   eta     		: %f \n", svCell->svDev.eta);
+		//svCell->svDev.eta_smoothed = svCell->svDev.eta;
+		//if(iter>4001) PetscPrintf(PETSC_COMM_WORLD, "   Ind     		: %f \n", IndicatorValue);
 		svCell->svDev.eta_smoothed = (etamax-etamin) * (1-IndicatorValue) + etamin; // compute and store smoothed viscosity
+		if(iter>4001) PetscPrintf(PETSC_COMM_WORLD, "   eta_s     		: %f \n", svCell->svDev.eta_smoothed);
 		iter++;
 
 	}
 	END_STD_LOOP
 
+	//XY-Edges
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+	START_STD_LOOP
+		{
+			coords[0] = dsx->ccoor[i];
+			coords[1] = dsy->ccoor[j];	// get coordinates of actual edge
+			coords[2] = dsz->ccoor[k];
+
+			IndicatorValue = 1.0;
+			// loop over spheres
+			for(jj = 0; jj < jr->ngeoms; jj++){
+				center[0]   = jr->geoms[jj].centerx;
+				center[1]   = jr->geoms[jj].centery;	// get sphere center
+				center[2]   = jr->geoms[jj].centerz;
+				radius 		= jr->geoms[jj].radius;		// get sphere radius
+
+				VEC_ABS(vecabs, center, coords);			//
+				maximum = vecabs - radius;					// 			 n
+				if(maximum < 0.0){maximum = 0.0;}			// Ind(x):=product[1-exp(-delta*max(0,|center(i)-x|-radius)^2)]
+				maximum = maximum * maximum;				//			i=1
+				expfunc = exp(-delta * maximum);			//
+				IndicatorValue = IndicatorValue * (1 - expfunc);
+			}
+
+			svEdge = &jr->svXYEdge[iter];
+			svEdge->svDev.eta_smoothed = (etamax-etamin) * (1-IndicatorValue) + etamin; // compute and store smoothed viscosity
+			iter++;
+
+		}
+	END_STD_LOOP
+
+	//XZ-Edges
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+	START_STD_LOOP
+		{
+			coords[0] = dsx->ccoor[i];
+			coords[1] = dsy->ccoor[j];	// get coordinates of actual edge
+			coords[2] = dsz->ccoor[k];
+
+			IndicatorValue = 1.0;
+			// loop over spheres
+			for(jj = 0; jj < jr->ngeoms; jj++){
+				center[0]   = jr->geoms[jj].centerx;
+				center[1]   = jr->geoms[jj].centery;	// get sphere center
+				center[2]   = jr->geoms[jj].centerz;
+				radius 		= jr->geoms[jj].radius;		// get sphere radius
+
+				VEC_ABS(vecabs, center, coords);			//
+				maximum = vecabs - radius;					// 			 n
+				if(maximum < 0.0){maximum = 0.0;}			// Ind(x):=product[1-exp(-delta*max(0,|center(i)-x|-radius)^2)]
+				maximum = maximum * maximum;				//			i=1
+				expfunc = exp(-delta * maximum);			//
+				IndicatorValue = IndicatorValue * (1 - expfunc);
+			}
+
+			svEdge = &jr->svXZEdge[iter];
+			svEdge->svDev.eta_smoothed = (etamax-etamin) * (1-IndicatorValue) + etamin; // compute and store smoothed viscosity
+			iter++;
+
+		}
+	END_STD_LOOP
+
+	//YZ-Edges
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+	START_STD_LOOP
+		{
+			coords[0] = dsx->ccoor[i];
+			coords[1] = dsy->ccoor[j];	// get coordinates of actual edge
+			coords[2] = dsz->ccoor[k];
+
+			IndicatorValue = 1.0;
+			// loop over spheres
+			for(jj = 0; jj < jr->ngeoms; jj++){
+				center[0]   = jr->geoms[jj].centerx;
+				center[1]   = jr->geoms[jj].centery;	// get sphere center
+				center[2]   = jr->geoms[jj].centerz;
+				radius 		= jr->geoms[jj].radius;		// get sphere radius
+
+				VEC_ABS(vecabs, center, coords);			//
+				maximum = vecabs - radius;					// 			 n
+				if(maximum < 0.0){maximum = 0.0;}			// Ind(x):=product[1-exp(-delta*max(0,|center(i)-x|-radius)^2)]
+				maximum = maximum * maximum;				//			i=1
+				expfunc = exp(-delta * maximum);			//
+				IndicatorValue = IndicatorValue * (1 - expfunc);
+			}
+
+			svEdge = &jr->svYZEdge[iter];
+			svEdge->svDev.eta_smoothed = (etamax-etamin) * (1-IndicatorValue) + etamin; // compute and store smoothed viscosity
+			iter++;
+
+		}
+	END_STD_LOOP
+
 	PetscFunctionReturn(0);
 }
 
+*/
+
+//---------------------------------------------------------------------------
+
+
 
 
 //---------------------------------------------------------------------------
 
-
-//---------------------------------------------------------------------------
 

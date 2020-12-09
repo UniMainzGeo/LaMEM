@@ -1314,6 +1314,12 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
 
+	// option for viscosity presmoothing
+	PetscBool	flg;
+	char        pname[_str_len_];
+	ierr = PetscOptionsGetString(NULL, NULL, "-BFBT_viscositySmoothing", pname, _str_len_, &flg); CHKERRQ(ierr);
+	if(flg==PETSC_TRUE){ierr = BFBTGaussianSmoothing(jr); CHKERRQ(ierr);}
+
 	//---------------
 	// central points
 	//---------------
@@ -1326,7 +1332,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	START_STD_LOOP
 	{
 		// get density, shear & inverse bulk viscosities
-		eta  = jr->svCell[iter].svDev.eta;
+		if(flg==PETSC_TRUE){eta  = jr->svCell[iter].svDev.eta_smoothed;}
+		else{eta  = jr->svCell[iter].svDev.eta;}
 		IKdt = jr->svCell[iter].svBulk.IKdt;
 		rho  = jr->svCell[iter].svBulk.rho;
 
@@ -1408,7 +1415,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	START_STD_LOOP
 	{
 		// get viscosity
-		eta = jr->svXYEdge[iter++].svDev.eta;
+		if(flg==PETSC_TRUE){eta = jr->svXYEdge[iter++].svDev.eta_smoothed;}
+		else{eta = jr->svXYEdge[iter++].svDev.eta;}
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -1459,7 +1467,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	START_STD_LOOP
 	{
 		// get viscosity
-		eta = jr->svXZEdge[iter++].svDev.eta;
+		if(flg==PETSC_TRUE){eta = jr->svXZEdge[iter++].svDev.eta_smoothed;}
+		else{eta = jr->svXZEdge[iter++].svDev.eta;}
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -1510,7 +1519,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	START_STD_LOOP
 	{
 		// get viscosity
-		eta = jr->svYZEdge[iter++].svDev.eta;
+		if(flg==PETSC_TRUE){eta = jr->svYZEdge[iter++].svDev.eta_smoothed;}
+		else{eta = jr->svYZEdge[iter++].svDev.eta;}
 
 		// get mesh steps
 		dy = SIZE_NODE(j, sy, fs->dsy);

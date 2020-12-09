@@ -960,6 +960,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		jr->geoms[jj].centery = sphere->center[1];	// save cell center and radius for later use (BFBT viscosity presmoothing)
 		jr->geoms[jj].centerz = sphere->center[2];
 		jr->geoms[jj].radius  = sphere->radius;
+//		jr->geoms[jj].phase	  = sphere->phase;
 
 		// Optional temperature options:
 		sphere->setTemp = 0;
