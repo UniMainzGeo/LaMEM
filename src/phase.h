@@ -132,7 +132,7 @@ public:
 	PetscScalar     DensityAbove[_max_tr_];
 	PetscScalar     DensityBelow[_max_tr_];
 
-    PetscScalar     topTemp;
+  PetscScalar     topTemp;
     PetscScalar     botTemp;
     PetscScalar     cstTemp;
     PetscScalar     thermalAge;
@@ -201,7 +201,7 @@ public:
         // dike parameters
         PetscScalar  Mf;                // optional for dike phase only, amount of magma-accommodated extenison in front of box
         PetscScalar  Mb;      	        // optional for dike phase only, amount of magma-accommodated extenison in back of box
-        PetscInt     dikeOn;            // Flag to activate different RHS in case dike region is used
+        PetscScalar  M;
         PetscScalar  dikeRHS;
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
@@ -257,9 +257,9 @@ struct DBMat
 	Material_t   phases[_max_num_phases_]; // phase parameters
 	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
-	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
-	PetscInt     numPhtr;                // number material softening laws
-
+	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties                 I don't get this declaration
+        PetscInt     numPhtr;                // number material softening laws
+        BCCtx *bc;                // new for dike, doesn't work to get the velocity velin
 };
 
 // read material database
@@ -270,9 +270,6 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // read single material phase
 PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput);
-
-// compute additional term for RHS in case of dike region
-PetscScalar dikeRHS(Material_t *m,  Ph_trans_t *ph, BCCtx *bc);
 
 // print single material parameter
 void MatPrintScalParam(

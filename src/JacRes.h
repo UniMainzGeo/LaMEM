@@ -86,6 +86,7 @@ struct SolVarBulk
 	PetscScalar  rho_pf; // fluid density from phase diagram
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
+        PetscScalar  dikeRHS; // additional term on RHS in divergence equation
 
 };
 
@@ -181,8 +182,10 @@ struct Controls
 
 	PetscInt    lmaxit;         // maximum number of local rheology iterations
 	PetscScalar lrtol;          // local rheology iterations relative tolerance
-	PetscInt    Phasetrans; // Flag to activate phase transition routines
+	PetscInt    Phasetrans;     // Flag to activate phase transition routines
 	PetscInt    Passive_Tracer; // Flag to activate passive tracer routine
+
+        PetscInt    actDike;         // Flag to activate dike, additional term on RHS of divergence   
 
 };
 

@@ -53,7 +53,6 @@
 #include "objFunct.h"
 #include "JacRes.h"
 #include "phase_transition.h"
-#include "fdstag.h" // new for dike
 #include "bc.h"    // new for dike
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -138,7 +137,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// read each individual phase
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		ierr = DBMatReadPhase(dbm, fb, PrintOutput); CHKERRQ(ierr);
+	  ierr = DBMatReadPhase(dbm, fb, PrintOutput); CHKERRQ(ierr); 
 
 		fb->blockID++;
 
@@ -207,13 +206,13 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Scaling  *scal;
 	Soft_t   *s;
 	PetscInt  ID;
-
+	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
 	scal = dbm->scal;
-
+		
 	// softening law ID
 	ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1); CHKERRQ(ierr);
 	fb->ID  = ID;
@@ -265,19 +264,36 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read material properties from file with error checking
 	Scaling    *scal;
-	Material_t *m;
+       	BCCtx      *bc;  // new for dike
+	Material_t *m;  
+       	Ph_trans_t *matPhtr;  // new for dike
+	
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
-
+	PetscScalar left, right, v_spread;
+	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
 	scal = dbm->scal;
+        bc = dbm->bc;
+	matPhtr = dbm->matPhtr;
+	
+	// access phase transition boundaries
+	left = matPhtr->bounds[0];
+	right = matPhtr->bounds[1];   // this always gives 0
 
+	PetscPrintf(PETSC_COMM_WORLD, "right outside dike rhs %f \n", right);   // this always gives 0
+	
+	// access the velocity
+       	v_spread = bc->velin;                                              // this doesn't work
+
+	PetscPrintf(PETSC_COMM_WORLD, "spreading vel %f \n", bc->velin);   // this doesn't work
+	 
 	// initialize additional parameters
 	eta      =  0.0;
 	eta0     =  0.0;
@@ -459,13 +475,60 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//==================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mf",       &m->Mf,    1, 1.0);  CHKERRQ(ierr);      // amount of magma-accommodated extension in front for dike phase
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mb",       &m->Mb,    1, 1.0);  CHKERRQ(ierr);      // amount of magma-accommodated extension in back for dike phase
-	ierr = getIntParam   (fb, _OPTIONAL_, "dikeOn",   &m->dikeOn,1, 1);   CHKERRQ(ierr);       // dike switch for the additional term on RHS
-	
-PetscPrintf(PETSC_COMM_WORLD, "read-in dikeOn %f \n", &m->dikeOn);     // dike
- PetscPrintf(PETSC_COMM_WORLD, "read-in Mb %f \n", &m->Mb);     // dike
- PetscPrintf(PETSC_COMM_WORLD, "read-in Mf %f \n", &m->Mf);     // dike   
 
-	
+	PetscPrintf(PETSC_COMM_WORLD, "Mb outside %f \n", m->Mb);
+
+
+	if((!m->Mf && m->Mb) || (m->Mf && !m->Mb))
+        {
+                SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Needs both Mb and Mf for dike", (LLD)ID);
+        }
+
+
+
+	// DIKE RHS
+	if(m->Mf){
+
+	  //            PetscScalar  left, right; //, front, back; //, top, bot;
+	  //PetscScalar  v_spread;
+
+	  m->dikeRHS = 8.0;
+	  // m->M = 0.0;
+	    //	    top = ph->bounds[4];        // not needed right now
+	    //      bot = ph->bounds[5];        // not needed right now
+	    //	    front = ph->bounds[2];      // transfer the bounds of the dike phase box
+	    //      back  = ph->bounds[3];       // transfer the bounds of the dike phase box 
+
+	  PetscPrintf(PETSC_COMM_WORLD, "left in dike rhs %f \n", dbm->matPhtr->bounds[0]); // why 0? better way to do this by counting all the cells that have this phase?
+	    	    PetscPrintf(PETSC_COMM_WORLD, "Mf in dikerhs %f \n", m->Mf);		    
+
+	    	    PetscPrintf(PETSC_COMM_WORLD, "v_spread %f \n", bc->velin);
+	    //	    if(m->Mf == m->Mb)
+	    
+	    //	   m->M = m->Mf;
+	    //	   m->dikeRHS = m->M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km }
+	    	   PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in phase %f \n", m->dikeRHS);
+		 
+		   /*		else	       
+		 //		   if(front == back)
+		 {   
+
+		 y = COORD_CELL(j,sy,fs->dsy); 
+
+		// linear interpolation between different M values, Mf is M in front, Mb is M in back 
+		M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+		dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km  
+		 }
+		else
+		  {
+		    // linear interpolation if the ridge/dike phase is oblique
+		    M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+		    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km  
+		
+		    */
+		  		   	} 
+
+
 	// DEPTH-DEPENDENT
 
 	// check depth-dependent density parameters
@@ -626,8 +689,6 @@ PetscPrintf(PETSC_COMM_WORLD, "read-in dikeOn %f \n", &m->dikeOn);     // dike
 	// PRINT (optional)
 	if (PrintOutput){
 
-	  PetscPrintf(PETSC_COMM_WORLD, "read-in alpha %f \n", &m->alpha);    //dike
-
 	  if (strlen(m->Name)>0){
 			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld     --   %s ",(LLD)(m->ID), m->Name);
 		}
@@ -768,9 +829,9 @@ PetscPrintf(PETSC_COMM_WORLD, "read-in dikeOn %f \n", &m->dikeOn);     // dike
 
 
 //---------------------------------------------------------------------------  
-#undef __FUNCT__
+/*#undef __FUNCT__
 #define __FUNCT__ "dikeRHS"
-PetscScalar dikeRHS(Material_t *m,  Ph_trans_t *ph, BCCtx *bc)
+PetscErrorCode GetdikeRHS(Material_t *phases,  Ph_trans_t *PhaseTrans, BCCtx *bc)
 {
 
 	//===================================================================
@@ -781,86 +842,66 @@ PetscScalar dikeRHS(Material_t *m,  Ph_trans_t *ph, BCCtx *bc)
 
   //        PetscInt     nx, ny, nz, sx, sy, sz, i, j, k;
   //	    PetscScalar  y;
-	    PetscScalar  Mf, Mb;
+            PetscScalar  Mf; //, Mb;
             PetscScalar  left, right; //, front, back; //, top, bot;
 	    PetscScalar  M;
-	    PetscScalar  dikeRHS;
+	    //	    PetscScalar  dikeRHS;
 	    PetscScalar  v_spread;
-	    PetscInt     dikeOn;
 
-	    //	    PetscFunctionBegin;
+	    PetscFunctionBegin;
 
 	    // access context
 	    //	    fs = bc->fs;
 
-	    dikeRHS = m->dikeRHS;
-	    dikeOn = m->dikeOn;
-	     M = 0.0;
-	    Mf = m->Mf;                 // transfer the inputs for M, from material parameters
-	    Mb = m->Mb;                 // transfer the inputs for M, from material parameters  
+	    phases->dikeRHS = 0.0;
+	    M = 0.0;
+	    	    Mf = phases->Mf;                 // transfer the inputs for M, from material parameters
+	    // Mb = m->Mb;                 // transfer the inputs for M, from material parameters  
 	    //	    top = ph->bounds[4];        // not needed right now
 	    //      bot = ph->bounds[5];        // not needed right now
 	    //	    front = ph->bounds[2];      // transfer the bounds of the dike phase box
 	    //      back  = ph->bounds[3];       // transfer the bounds of the dike phase box 
-	    left  = ph->bounds[0];       // need to be scaled somehow
-	    right = ph->bounds[1];      // need to be scaled somehow  
+	    left  = PhaseTrans->bounds[0];       // need to be scaled somehow
+	    right = PhaseTrans->bounds[1];      // need to be scaled somehow
+	    	    v_spread = bc->velin;          // transfer the spreading velocity
 
-	    PetscPrintf(PETSC_COMM_WORLD, "left %f \n", left);
-	    PetscPrintf(PETSC_COMM_WORLD, "outside loop Mf %f \n", Mf);
-	    
-	    v_spread = bc->velin;          // transfer the spreading velocity
-
+	    //	    PetscPrintf(PETSC_COMM_WORLD, "left %f \n", left);
+	    //	    	    PetscPrintf(PETSC_COMM_WORLD, "hello I am inside the loopd \n");
+		    
 	    //bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction
 	    //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction
-
 	    
-	    if(dikeOn)
-	      {
-		//if(Mf == Mb)
+	    //if(Mf == Mb)
 		// {
 		    M = Mf;
-		    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km }
-		    //}
-	      }
+		    phases->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km }
+		    //	  }
+	      
 
-	           PetscPrintf(PETSC_COMM_WORLD, "v_spread %f \n", v_spread);
-		   PetscPrintf(PETSC_COMM_WORLD, "Mf %f \n", Mf);
-		   PetscPrintf(PETSC_COMM_WORLD, "Mb %f \n", Mb);
-		   PetscPrintf(PETSC_COMM_WORLD, "M %f \n", M);
-		   PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in phase %f \n", dikeRHS);
+		    //	    	    	           PetscPrintf(PETSC_COMM_WORLD, "v_spread %f \n", bc->velin);
+		    	    	   PetscPrintf(PETSC_COMM_WORLD, "right %f \n",right);
+	    //		   PetscPrintf(PETSC_COMM_WORLD, "Mb %f \n", Mb);
+	    //		   PetscPrintf(PETSC_COMM_WORLD, "M %f \n", M);
+	    //		   PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in phase %f \n", dikeRHS);
 		   
-	    //else
-	       
+			else	       
 		 //		   if(front == back)
-		 //{   
+		 {   
 
-	    /*	    START_STD_LOOP
-	      {
-		   //		   for(j = sy; j < sy+ny; j++) {
-		y = COORD_CELL(j,sy,fs->dsy); 
+		 y = COORD_CELL(j,sy,fs->dsy); 
 
 		// linear interpolation between different M values, Mf is M in front, Mb is M in back 
 		M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
 		dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km  
-		
+		 }
 		else
 		  {
 		    // linear interpolation if the ridge/dike phase is oblique
 		    M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
-		    }*/ 
-		   
-
-		// compute additional term for gres (volumetric residual) in ConstEq.cpp 
-		 //	       dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km   
-	      //	    }
-
-	    // END_STD_LOOP
-
-		   return dikeRHS;
-
-		   
-		   //      PetscFunctionReturn(0);
-}
+		    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km  
+			   
+		       PetscFunctionReturn(0);
+} */
  
 //---------------------------------------------------------------------------
 void MatPrintScalParam(

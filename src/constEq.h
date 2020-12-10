@@ -78,7 +78,7 @@ struct ConstEqCtx
 	PetscScalar  dt;        	// time step
 	PetscScalar  stats[3];  	// total number of [starts, successes, iterations]
 	PetscScalar  avg_topo;  	// average surface topography
-  BCCtx  *bc;                    // for dike
+        BCCtx  *bc;                    // for dike
   
 	// control volume parameters
 	PetscScalar *phRat;  // phase ratios in the control volume

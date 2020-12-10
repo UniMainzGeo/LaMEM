@@ -651,8 +651,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 
 	p         = p+ctrl->pShift;
 
-//
-
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
 	svBulk->rho    = 0.0;
 	svBulk->alpha  = 0.0;
@@ -660,7 +658,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	Kavg           = 0.0;
 	svBulk->mf     = 0.0;
 	svBulk->rho_pf = 0.0;
-
+	svBulk->dikeRHS = 0.0;  // new for dike
+	
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -745,9 +744,20 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				rho = mat->rho*cf_comp*cf_therm;
 			}
 
-			// update density, thermal expansion & inverse bulk elastic parameter
+			// dike
+			if(mat->dikeRHS)
+			 {
+			   svBulk->dikeRHS += phRat[i]*mat->dikeRHS;			  
+			   PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", svBulk->dikeRHS);
+
+			 } 
+
+			// update density, thermal expansion & inverse bulk elastic parameter, and dikeRHS depending on the cell ratios
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
+			//			svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // new for dike
+			//			PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", svBulk->dikeRHS);
+			
 		}
 	}
 
@@ -778,10 +788,6 @@ PetscErrorCode cellConstEq(
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
 
-	PetscScalar dikeOn; //, dikeRHS;   // new for dike
-	Material_t *phases;
-	BCCtx *bc; // for dike
-	Ph_trans_t  *PhaseTrans; // for dike
 	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -790,9 +796,6 @@ PetscErrorCode cellConstEq(
 	svDev  = ctx->svDev;
 	svBulk = ctx->svBulk;
 	ctrl   = ctx->ctrl;
-	phases = ctx->phases; // new for dike RHS
-        bc = ctx->bc;  // new for dike
-	PhaseTrans = ctx->PhaseTrans;  // new for dike
 	
 	// evaluate deviatoric constitutive equation
 	ierr = devConstEq(ctx); CHKERRQ(ierr);
@@ -852,38 +855,19 @@ PetscErrorCode cellConstEq(
 
 	// compute volumetric residual
 
-	// for the dike RHS
-	//	dikeRHS = phases->dikeRHS;
-	dikeOn = phases->dikeOn; 
+	if(ctrl->actExp && ctrl->actDike)    // new for dike
+          {
+	    PetscPrintf(PETSC_COMM_WORLD, "in gres: dikeRHS %f \n", svBulk->dikeRHS);
 
-	//PetscPrintf(PETSC_COMM_WORLD, "dikeRHS %f \n", phases->dikeRHS);
-	PetscPrintf(PETSC_COMM_WORLD, "dikeOn in Consteq %f \n", phases->dikeOn);    // for testing dike
-
-	// call function that returns the dikeRHS value, its is located in structure Material_t which has pointer phases in this file
-	phases->dikeRHS = dikeRHS(phases, PhaseTrans, bc); // what goes inside?, need to add bc in this file BCCtx in the beginning of the function or check whether inside any other structure
-
-	
-	//	svCell->svDev.I2Gdt = getI2Gdt(numPhases, phases, svCell->phRat, dt);     example function call in JacRes.cpp
-	
-	PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in consteq%f \n", phases->dikeRHS);   /// DIKE
-	//PetscPrintf(PETSC_COMM_WORLD, "dikeOn %f \n", dikeOn);   /// DIKE
-	
-	if(ctrl->actExp)
-	  {
-	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
-	  }
-
-	/*	 else if(ctrl->actExp && dikeOn == 1)          // used as a switch to use the additional term on the RHS, new material parameter
-	  {
-	    gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;  // [1/s]
-
-	            PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in gres %f \n", dikeRHS);   /// DIKE                                                                                
-		    }*/
-
+            gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + svBulk->dikeRHS;  // [1/s]
+          }
+	else if(ctrl->actExp)
+          {
+            gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+          }
 	 else
 	  {
-	    // PetscPrintf(PETSC_COMM_WORLD, "2nd gres %f \n", gres);   /// DIKE  
-	    gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+	     gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
 	  }
 
 	// store effective density
