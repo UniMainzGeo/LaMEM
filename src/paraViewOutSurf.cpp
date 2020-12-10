@@ -81,6 +81,13 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_velocity",   &pvsurf->velocity,   1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_topography", &pvsurf->topography, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_amplitude",  &pvsurf->amplitude,  1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_ME_ID0",  &pvsurf->Mext_ID0S,  1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_ME_ID1",  &pvsurf->Mext_ID1S,  1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_ME_ID2",  &pvsurf->Mext_ID2S,  1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_ME_ID3",  &pvsurf->Mext_ID3S,  1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_Moho",  	&pvsurf->Moho,  1, 1); CHKERRQ(ierr);
+
+
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Surface output parameters:\n");
@@ -407,6 +414,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 
 				offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
 			}
+
 		fprintf(fp, "\t\t</PointData>\n");
 
 		// close sub-domain and grid blocks
@@ -430,6 +438,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	if(pvsurf->Mext_ID2S)  { ierr = PVSurfWriteMD2S      (pvsurf, fp); CHKERRQ(ierr); }
 	if(pvsurf->Mext_ID3S)  { ierr = PVSurfWriteMD3S      (pvsurf, fp); CHKERRQ(ierr); }
 	if(pvsurf->Moho)       { ierr = PVSurfWriteMoho      (pvsurf, fp); CHKERRQ(ierr); }
+
 
 	if(!fs->dsz.rank)
 	{
@@ -642,7 +651,7 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 
 	PetscFunctionReturn(0);
 }
-
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVSurfWriteMD0S"
@@ -669,12 +678,12 @@ PetscErrorCode PVSurfWriteMD0S(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = VecZeroEntries(Mext->lmagmathick); CHKERRQ(ierr);
-	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID0S,Mext->lmagmathick)
+	ierr = VecZeroEntries(pvsurf->surf->lmagmathick); CHKERRQ(ierr);
+	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID0S,pvsurf->surf->lmagmathick)
 
 
 
-	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, pvsurf->surf->lmagmathick, &magma_l); CHKERRQ(ierr);
 
 	if(!fs->dsz.rank)
 	{
@@ -686,7 +695,7 @@ PetscErrorCode PVSurfWriteMD0S(PVSurf *pvsurf, FILE *fp)
 		END_PLANE_LOOP
 	}
 
-	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, pvsurf->surf->lmagmathick, &magma_l); CHKERRQ(ierr);
 
 	OutputBufferWrite(fp, buff, cn);
 
@@ -719,12 +728,12 @@ PetscErrorCode PVSurfWriteMD1S(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = VecZeroEntries(Mext->lmagmathick); CHKERRQ(ierr);
-	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID1S,Mext->lmagmathick)
+	ierr = VecZeroEntries(pvsurf->surf->lmagmathick); CHKERRQ(ierr);
+	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID1S,pvsurf->surf->lmagmathick)
 
 
 
-	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, pvsurf->surf->lmagmathick, &magma_l); CHKERRQ(ierr);
 
 	if(!fs->dsz.rank)
 	{
@@ -736,7 +745,7 @@ PetscErrorCode PVSurfWriteMD1S(PVSurf *pvsurf, FILE *fp)
 		END_PLANE_LOOP
 	}
 
-	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, pvsurf->surf->lmagmathick, &magma_l); CHKERRQ(ierr);
 
 	OutputBufferWrite(fp, buff, cn);
 
@@ -769,12 +778,12 @@ PetscErrorCode PVSurfWriteMD2S(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = VecZeroEntries(Mext->lmagmathick); CHKERRQ(ierr);
-	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID2S,Mext->lmagmathick)
+	ierr = VecZeroEntries(pvsurf->surf->lmagmathick); CHKERRQ(ierr);
+	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID2S,pvsurf->surf->lmagmathick)
 
 
 
-	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, pvsurf->surf->lmagmathick, &magma_l); CHKERRQ(ierr);
 
 	if(!fs->dsz.rank)
 	{
@@ -786,7 +795,7 @@ PetscErrorCode PVSurfWriteMD2S(PVSurf *pvsurf, FILE *fp)
 		END_PLANE_LOOP
 	}
 
-	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, pvsurf->surf->lmagmathick, &magma_l); CHKERRQ(ierr);
 
 	OutputBufferWrite(fp, buff, cn);
 
@@ -818,12 +827,12 @@ PetscErrorCode PVSurfWriteMD3S(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = VecZeroEntries(Mext->lmagmathick); CHKERRQ(ierr);
-	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID3S,Mext->lmagmathick)
+	ierr = VecZeroEntries(pvsurf->surf->lmagmathick); CHKERRQ(ierr);
+	GLOBAL_TO_LOCAL(pvsurf->surf->DA_SURF,Mext->MeltID3S,pvsurf->surf->lmagmathick)
 
 
 
-	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(pvsurf->surf->DA_SURF, pvsurf->surf->lmagmathick, &magma_l); CHKERRQ(ierr);
 
 	if(!fs->dsz.rank)
 	{
@@ -835,7 +844,7 @@ PetscErrorCode PVSurfWriteMD3S(PVSurf *pvsurf, FILE *fp)
 		END_PLANE_LOOP
 	}
 
-	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, Mext->lmagmathick, &magma_l); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(pvsurf->surf->DA_SURF, pvsurf->surf->lmagmathick, &magma_l); CHKERRQ(ierr);
 
 	OutputBufferWrite(fp, buff, cn);
 
@@ -849,8 +858,8 @@ PetscErrorCode PVSurfWriteMoho(PVSurf *pvsurf, FILE *fp)
 	Melt_Extraction_t  *Mext;
 	FDSTAG      *fs;
 	float       *buff;
-	PetscScalar  cf,***magma_l;
-	PetscInt i, j, nx, ny, sx, sy,rx,ry,L,cn;
+	PetscScalar ***Moho, cf,***magma_l;
+	PetscInt i, j, nx, ny, sx, sy,rx,ry,L,cn,cnt,gcnt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

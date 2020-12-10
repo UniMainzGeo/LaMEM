@@ -195,7 +195,7 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr)
 
 	ierr = DMCreateGlobalVector(jr->surf->DA_SURF, &MEPar->SurfMoho)                   ;     CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(jr->surf->DA_SURF, &MEPar->LSurfMoho)                   ;     CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(jr->surf->DA_SURF, &MEPar->lmagmathick)                     ;     CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(jr->surf->DA_SURF, &jr->surf->lmagmathick)                     ;     CHKERRQ(ierr);
 
 
 
@@ -468,7 +468,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 	PetscInt     i, j, k, sx, sy, sz, nx, ny, nz, L,K1,K2,in;
 	Vec          global_volume ;
 	PetscScalar  bz, ez;
-	PetscScalar  IR, dx, dy, dz,Z,vol3,DZ,vol2;
+	PetscScalar  IR, dx, dy, dz,Z,DZ;
 	PetscScalar  ***Thickness, D, D1, ***MohoG,***DMin,***DMax,vol;
 	PetscScalar  *vdgmvvec, *vdgmvvecmerge, ***vdgmvvecmerge2, ***vdgmvvec2, ***Mipbuff;
 
@@ -548,15 +548,11 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 		{
 
 			DZ=0.0;
-			vol2=0.0;
-			vol3=0.0;
-			vol2=IR*vdgmvvecmerge2[L][j][i];
 			D1 =Thickness[L][j][i];
 			D = MohoG[L][j][i] + D1*M_Ex_t[ID_ME].DInt;
-			DMin[L][j][i]=D+0.5*IR*(vol2)/(dx*dy);
-			DMax[L][j][i]=D-0.5*IR*(vol2)/(dx*dy);
-			vol=0.0; // Set to 0.0 the vol buffer
-
+			DMin[L][j][i]=D+0.5*IR*vdgmvvecmerge2[L][j][i]/(dx*dy);
+			DMax[L][j][i]=D-0.5*IR*vdgmvvecmerge2[L][j][i]/(dx*dy);
+			vol = 0.0;
 
 			if(vdgmvvecmerge2[L][j][i] < 0.0)
 			{
@@ -594,7 +590,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 									}
 
 									Mipbuff[in][j][i]+=vol*dz;
-									vol3+=vol*dz;
 									DZ+=dz;
 									}
 							}
@@ -1098,10 +1093,10 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 		// store advected topography
 		if(Ext_fraction >0.0 && M_Ex_t[ID_ME].IR<1.0)
 		{
-		topo[L][j][i] = z;
+			topo[L][j][i] = z;
 		}
 
-		Dm_save[L][j][i]=Layer;
+		Dm_save[L][j][i]+=Layer;
 
 	}
 	END_PLANE_LOOP
