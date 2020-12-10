@@ -1003,7 +1003,7 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 
 
 	PetscScalar ***topo,***lmelt,***Dm_save;
-	PetscScalar zbot, ztop, z, Melt[4], Layer,Ext_fraction;
+	PetscScalar zbot, ztop, z, Melt[4],Vol[4],dx,dy ,Layer,Ext_fraction,Vol_t;
 	PetscInt L, cnt, gcnt;
 	PetscInt i, j, nx, ny, sx, sy, I1, I2, J1, J2, mx, my;
 	PetscErrorCode ierr;
@@ -1056,11 +1056,20 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, Mext->ldvecmerge,  &lmelt);  CHKERRQ(ierr);
 	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
 	cnt=0;
+
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+
+
+
+
 	// scan all free surface local points
 	START_PLANE_LOOP
 	{
 		// This function is highly based on the sedimentation routine in surf.cpp. There is no need to
 		// use dt, since the thickness is already in its integral form by default.
+		dx = SIZE_CELL(i,sx,fs->dsx);
+		dy = SIZE_CELL(j,sy,fs->dsy);
 
 		I1 = i;
 		I2 = i-1;
@@ -1077,7 +1086,14 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 		Melt[2] = lmelt[L][J2][I1]; if(Melt[2] < 0.0) Melt[2] = 0.0;
 		Melt[3] = lmelt[L][J2][I2]; if(Melt[3] < 0.0) Melt[3] = 0.0;
 
+		Vol[0] = lmelt[L][J1][I1]*dx*dy; if(Vol[0] < 0.0) Melt[0] = 0.0;
+		Vol[1] = lmelt[L][J1][I2]*dx*dy; if(Vol[1] < 0.0) Melt[1] = 0.0;
+		Vol[2] = lmelt[L][J2][I1]*dx*dy; if(Vol[2] < 0.0) Melt[2] = 0.0;
+		Vol[3] = lmelt[L][J2][I2]*dx*dy; if(Vol[3] < 0.0) Melt[3] = 0.0;
+
+
 		Layer = (Melt[0] + Melt[1] + Melt[2] + Melt[3])/4;
+		Vol_t = (Vol[0] + Vol[1] + Vol[2] + Vol[3])/4;
 		// get topography
 		z = topo[L][j][i];
 		//PetscPrintf(PETSC_COMM_WORLD," Topo Z = %6f\n",z*jr->scal->length);
@@ -1096,7 +1112,7 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 			topo[L][j][i] = z;
 		}
 
-		Dm_save[L][j][i]+=Layer;
+		Dm_save[L][j][i]+=Vol_t;
 
 	}
 	END_PLANE_LOOP
