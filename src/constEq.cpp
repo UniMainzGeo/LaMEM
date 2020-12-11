@@ -628,11 +628,15 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 {
 	// evaluate volumetric constitutive equations in control volume
 	Controls    *ctrl;
+	Scaling     *scal;
 	PData       *Pd;
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
+	Ph_trans_t  *PhaseTrans;   // for dike
 	PetscInt     i, numPhases;
 	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
+	PetscScalar  v_spread, M, left, right;  // for dike
+	BCCtx        *bc;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -648,7 +652,10 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	dt        = ctx->dt;
 	p         = ctx->p;
 	T         = ctx->T;
-
+       	bc        = ctx->bc; // for dike
+	PhaseTrans = ctx->PhaseTrans; // for dike
+	scal      = ctx->scal;   // for dike
+	
 	p         = p+ctrl->pShift;
 
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
@@ -659,6 +666,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	svBulk->mf     = 0.0;
 	svBulk->rho_pf = 0.0;
 	svBulk->dikeRHS = 0.0;  // new for dike
+
 	
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -745,18 +753,36 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			}
 
 			// dike
-			if(mat->dikeRHS)
-			 {
-			   svBulk->dikeRHS += phRat[i]*mat->dikeRHS;			  
-			   PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", svBulk->dikeRHS);
-
-			 } 
+			if(mat->Mb && mat->Mf)
+			{
+			  if(mat->Mb == mat->Mf)
+			    {
+				M = mat->Mf;
+				v_spread = PetscAbs(bc->velin);
+				// need to scale with: scal->velocity  ??
+				left = PhaseTrans->bounds[0]*scal->length;
+				right = PhaseTrans->bounds[1];
+				// need to scale with: scal->length ???
+				
+				//  mat->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km }
+				// PetscPrintf(PETSC_COMM_WORLD, "in volCell: M %f \n", M);
+				PetscPrintf(PETSC_COMM_WORLD, "in volCell: left %f \n", left);
+				//				bc->velin*scal->velocity
+				PetscPrintf(PETSC_COMM_WORLD, "in volCell: v_spread %f \n",v_spread);
+			    }
+			  /*  else
+			      {
+			      } */
+			}
+			else
+		        {
+			    mat->dikeRHS = 0.0;
+			}
 
 			// update density, thermal expansion & inverse bulk elastic parameter, and dikeRHS depending on the cell ratios
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
-			//			svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // new for dike
-			//			PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", svBulk->dikeRHS);
+		       	svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // new for dike
 			
 		}
 	}
@@ -857,7 +883,7 @@ PetscErrorCode cellConstEq(
 
 	if(ctrl->actExp && ctrl->actDike)    // new for dike
           {
-	    PetscPrintf(PETSC_COMM_WORLD, "in gres: dikeRHS %f \n", svBulk->dikeRHS);
+	    //	    PetscPrintf(PETSC_COMM_WORLD, "in gres: dikeRHS %f \n", svBulk->dikeRHS);
 
             gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + svBulk->dikeRHS;  // [1/s]
           }

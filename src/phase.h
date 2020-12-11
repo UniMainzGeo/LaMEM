@@ -249,7 +249,7 @@ struct PData
 
 struct DBMat
 {
-
+        BCCtx *bc;                // new for dike, doesn't work to get the velocity velin  
 	Scaling *scal;
 
 	// phase parameters
@@ -257,9 +257,8 @@ struct DBMat
 	Material_t   phases[_max_num_phases_]; // phase parameters
 	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
-	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties                 I don't get this declaration
+	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties                 
         PetscInt     numPhtr;                // number material softening laws
-        BCCtx *bc;                // new for dike, doesn't work to get the velocity velin
 };
 
 // read material database
