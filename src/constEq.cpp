@@ -64,6 +64,7 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 
 	PetscFunctionBegin;
 
+	ctx->bc = jr->bc;  // boundary conditions for inflow velocity
 	ctx->numPhases =  jr->dbm->numPhases; // number phases
 	ctx->phases    =  jr->dbm->phases;    // phase parameters
 	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
@@ -550,12 +551,14 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
+	//DIIdike                                  // Strain due to Dike opening 
 
+	
 	// residual function (r)
 	// r < 0 if eta > solution (negative on overshoot)
 	// r > 0 if eta < solution (positive on undershoot)
 
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);   // substract additionally DIIdike
 }
 //---------------------------------------------------------------------------
 PetscScalar applyStrainSoft(
@@ -652,9 +655,9 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	dt        = ctx->dt;
 	p         = ctx->p;
 	T         = ctx->T;
-       	bc        = ctx->bc; // for dike
+       	bc        = ctx->bc;          // for dike
 	PhaseTrans = ctx->PhaseTrans; // for dike
-	scal      = ctx->scal;   // for dike
+	scal      = ctx->scal;        // for dike
 	
 	p         = p+ctrl->pShift;
 
@@ -755,35 +758,57 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			// dike
 			if(mat->Mb && mat->Mf)
 			{
+			  //  PetscPrintf(PETSC_COMM_WORLD, "outer loop volCell Mb %f \n", mat->Mb);
+			  
 			  if(mat->Mb == mat->Mf)
 			    {
+			      // constant M
 				M = mat->Mf;
 				v_spread = PetscAbs(bc->velin);
-				// need to scale with: scal->velocity  ??
-				left = PhaseTrans->bounds[0]*scal->length;
+				// need to scale with: scal->velocity for printing
+				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
-				// need to scale with: scal->length ???
-				
-				//  mat->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km }
-				// PetscPrintf(PETSC_COMM_WORLD, "in volCell: M %f \n", M);
-				PetscPrintf(PETSC_COMM_WORLD, "in volCell: left %f \n", left);
-				//				bc->velin*scal->velocity
-				PetscPrintf(PETSC_COMM_WORLD, "in volCell: v_spread %f \n",v_spread);
+				//				PetscPrintf(PETSC_COMM_WORLD, "in volCell: M= Mf %f \n", M);
+						PetscPrintf(PETSC_COMM_WORLD, "in volCell: left*scal_length %f \n", left*scal->length);
+					       	PetscPrintf(PETSC_COMM_WORLD, "in volCell: left in code  %f \n", left);
+						PetscPrintf(PETSC_COMM_WORLD, "in volCell: scaling  %f \n", scal->length);
+						PetscPrintf(PETSC_COMM_WORLD, "in volCell: scaling SI %f \n", scal->length_si);
+						PetscPrintf(PETSC_COMM_WORLD, "in volCell: time %f \n", scal->time);
+						PetscPrintf(PETSC_COMM_WORLD, "in volCell: time SI %f \n", scal->time_si);
+						PetscPrintf(PETSC_COMM_WORLD, "in volCell: scaling velocity %f \n", scal->velocity);
+				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s 
+				PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", mat->dikeRHS);
 			    }
 			  /*  else
-			      {
-			      } */
+
+			  //            FDSTAG *fs;           
+			  // access context        
+			  //      fs = bc->fs;           
+			  //bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction   
+			  //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction 		
+			  if(front == back)    
+			  // linear interpolation between different M values, Mf is M in front, Mb is M in back         
+			  M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));  
+			  dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km
+			  }            
+			  else
+			  {// linear interpolation if the ridge/dike phase is oblique                  
+			  y = COORD_CELL(j,sy,fs->dsy); 
+			  M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+			  dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km 
+			  } */
 			}
 			else
 		        {
 			    mat->dikeRHS = 0.0;
+			    //			    PetscPrintf(PETSC_COMM_WORLD, "no mb and mf option: in volCell: dikeRHS %f \n", mat->dikeRHS);
 			}
 
 			// update density, thermal expansion & inverse bulk elastic parameter, and dikeRHS depending on the cell ratios
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
 		       	svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // new for dike
-			
+			 PetscPrintf(PETSC_COMM_WORLD, "in volCell: svBulk dikeRHS %f \n", svBulk->dikeRHS);
 		}
 	}
 
@@ -883,13 +908,15 @@ PetscErrorCode cellConstEq(
 
 	if(ctrl->actExp && ctrl->actDike)    // new for dike
           {
-	    //	    PetscPrintf(PETSC_COMM_WORLD, "in gres: dikeRHS %f \n", svBulk->dikeRHS);
+	        PetscPrintf(PETSC_COMM_WORLD, "in gres: dikeRHS %f \n", svBulk->dikeRHS);
 
             gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + svBulk->dikeRHS;  // [1/s]
+	    PetscPrintf(PETSC_COMM_WORLD, "in gres: gres dike %f \n", gres);
           }
 	else if(ctrl->actExp)
           {
             gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+	    //	    PetscPrintf(PETSC_COMM_WORLD, "in gres: gres NO dike %f \n", gres);
           }
 	 else
 	  {
