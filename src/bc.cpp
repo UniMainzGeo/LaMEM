@@ -2327,4 +2327,104 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyPres_Plume_Pressure"
+PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
+{
+	// apply pressure constraints
+
+	FDSTAG      *fs;
+	PetscScalar ***litho_p,alpha_plume,alpha_mantle,g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax;
+	PetscInt    mcz,mcx,mcy;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar ***bcp;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = bc->fs;
+
+	// get boundary pressure
+
+	plume_pressure = bc->plume_pressure;
+
+
+	alpha_plume = bc->dbm->phases[bc->Plume_Phase].alpha;
+	alpha_mantle = bc->dbm->phases[bc->Plume_Phase].alpha;
+
+	rho_plume = bc->dbm->phases[bc->Plume_Phase].rho*(1-alpha_plume*(bc->Plume_Temperature-bc->jr->ctrl.TRef));
+	rho_mantle = bc->dbm->phases[bc->Plume_Phase_Mantle].rho*(1-alpha_mantle*(bc->Tbot-bc->jr->ctrl.TRef));
+	g     = bc->jr->ctrl.grav[2];
+	H     = bc->Plume_Depth;
+	dP    =(rho_mantle-rho_mantle)*H*g;
+
+
+	// initialize index bounds
+	mcz = fs->dsz.tcels - 1;
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp_lith, &litho_p);  CHKERRQ(ierr);
+
+
+	//-----------------------------------------------------
+	// P points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			dz      = SIZE_CELL(k,sz,fs->dsz);
+			x       = COORD_CELL(i, sx, fs->dsx);
+			y       = COORD_CELL(j, sy, fs->dsy);
+			xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
+			xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
+			if(k==0)
+			{
+				if(bc->Plume_Type==1)	// 2D plume
+				{
+					xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
+					xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
+					if((i!=0) && (i!=mcx))
+					{
+						if ((x >= xmin) && (x <= xmax))
+						{
+								bcp[k-1][j][i] = litho_p[k][j][i]+(dz/2)*rho_plume*g+dP;
+						}
+						else
+						{
+								bcp[k-1][j][i] = litho_p[k][j][i]+(dz/2)*rho_mantle*g;
+						}
+					}
+				}
+				else	// 3D plume
+				{
+					if((i!=0) && (i!=mcx) && (j!=0) && (j!=mcy))
+					{
+						if ( ( PetscPowScalar( (x - bc->Plume_Center[0]), 2.0)  + PetscPowScalar( (y - bc->Plume_Center[1]),2.0) ) <= PetscPowScalar(bc->Plume_Radius,2.0))
+						{
+							bcp[k-1][j][i] = litho_p[k][j][i]+(dz/2)*rho_plume*g+dP;
+						}
+						else
+						{
+							bcp[k-1][j][i] = litho_p[k][j][i]+(dz/2)*rho_mantle*g;
+						}
+					}
+				}
+			}
+		}
+		END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp_lith, &litho_p);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
 
