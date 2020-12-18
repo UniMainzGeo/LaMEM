@@ -388,8 +388,7 @@ PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y)
 PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 {
 	FDSTAG     *fs;
-	PetscScalar	DynamicRatio, delta;
-	PetscScalar etamax, etamin, radius;
+	PetscScalar etamax, etamin, radius, delta;
 	PetscScalar IndicatorValue, center[3], coords[3];
 	PetscInt	jj;
 	PetscScalar maximum, expfunc, vecabs;
@@ -412,13 +411,10 @@ PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 	dsy  = &fs->dsy;
 	dsz  = &fs->dsz;
 
-	DynamicRatio 	= 100;								// Default
 	delta 			= 200;								// Default
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-BFBT_viscositySmoothing_DynamicRatio", &DynamicRatio, &flg); 	CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-BFBT_viscositySmoothing_delta", &delta, &flg); 					CHKERRQ(ierr);
 
-	etamin 			= 1;			//1/sqrt(DynamicRatio);
-	etamax 			= DynamicRatio;	//sqrt(DynamicRatio);
+	etamin 			= 1;
 	radius 			= 0.05;
 
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
@@ -438,7 +434,7 @@ PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 			center[1]   = jr->geoms[jj].centery;	// get sphere center
 			center[2]   = jr->geoms[jj].centerz;
 			radius 		= jr->geoms[jj].radius;		// get sphere radius
-//			etamax 		= jr->dbm->phases[jr->geoms[jj].phase].eta;  // eta aus phase auslesen
+			etamax 		= 1.0/(2.0*jr->dbm->phases[jr->geoms[jj].phase].Bd);  // get sphere viscosity
 
 			VEC_ABS(vecabs, center, coords);			//
 			maximum = vecabs - radius;					// 			 n
@@ -473,6 +469,7 @@ PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 				center[1]   = jr->geoms[jj].centery;	// get sphere center
 				center[2]   = jr->geoms[jj].centerz;
 				radius 		= jr->geoms[jj].radius;		// get sphere radius
+				etamax 		= 1.0/(2.0*jr->dbm->phases[jr->geoms[jj].phase].Bd);  // get sphere viscosity
 
 				VEC_ABS(vecabs, center, coords);			//
 				maximum = vecabs - radius;					// 			 n
@@ -507,6 +504,7 @@ PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 				center[1]   = jr->geoms[jj].centery;	// get sphere center
 				center[2]   = jr->geoms[jj].centerz;
 				radius 		= jr->geoms[jj].radius;		// get sphere radius
+				etamax 		= 1.0/(2.0*jr->dbm->phases[jr->geoms[jj].phase].Bd);  // get sphere viscosity
 
 				VEC_ABS(vecabs, center, coords);			//
 				maximum = vecabs - radius;					// 			 n
@@ -541,6 +539,7 @@ PetscErrorCode BFBTGaussianSmoothing(JacRes *jr)
 				center[1]   = jr->geoms[jj].centery;	// get sphere center
 				center[2]   = jr->geoms[jj].centerz;
 				radius 		= jr->geoms[jj].radius;		// get sphere radius
+				etamax 		= 1.0/(2.0*jr->dbm->phases[jr->geoms[jj].phase].Bd);  // get sphere viscosity
 
 				VEC_ABS(vecabs, center, coords);			//
 				maximum = vecabs - radius;					// 			 n
