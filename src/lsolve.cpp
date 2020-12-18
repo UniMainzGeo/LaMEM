@@ -190,7 +190,7 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 #define __FUNCT__ "PCStokesBFCreate"
 PetscErrorCode PCStokesBFCreate(PCStokes pc)
 {
-	PC          vpc;
+	PC          vpc, ppc;
 	PCStokesBF *bf;
 	PMatBlock  *P;
 	JacRes     *jr;
@@ -221,25 +221,49 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// create & set velocity multigrid preconditioner
 	if(bf->vtype == _VEL_MG_)
 	{
+/*		ierr = KSPSetOperators(bf->vksp, P->Avv, P->Avv); CHKERRQ(ierr);
+		ierr = KSPGetPC(bf->vksp, &vpc); CHKERRQ(ierr);
+		ierr = PCSetType(vpc, PCGAMG); CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(bf->vksp); CHKERRQ(ierr);
+		*/
+
 		ierr = MGCreate(&bf->vmg, jr);           CHKERRQ(ierr);
 		ierr = KSPGetPC(bf->vksp, &vpc);         CHKERRQ(ierr);
 		ierr = PCSetType(vpc, PCSHELL);          CHKERRQ(ierr);
 		ierr = PCShellSetContext(vpc, &bf->vmg); CHKERRQ(ierr);
 		ierr = PCShellSetApply(vpc, MGApply);    CHKERRQ(ierr);
+
 	}
 
 	// create & set pressure Schur complement solver
 	if(pc->pm->stype == _wBFBT_)
 	{
-		// access blocj matrix
+		// access block matrix
 		P = (PMatBlock*)pc->pm->data;
 
 		// create pressure solver
 		ierr = KSPCreate(PETSC_COMM_WORLD, &bf->pksp); CHKERRQ(ierr);
+/*
 		ierr = KSPSetDM(bf->pksp, P->DA_P);            CHKERRQ(ierr);
 		ierr = KSPSetDMActive(bf->pksp, PETSC_FALSE);   CHKERRQ(ierr);
 		ierr = KSPSetOptionsPrefix(bf->pksp,"ps_");    CHKERRQ(ierr);
 		ierr = KSPSetFromOptions(bf->pksp);            CHKERRQ(ierr);
+*/
+
+		ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
+		ierr = KSPGetPC(bf->pksp, &ppc); CHKERRQ(ierr);
+		ierr = PCSetType(ppc, PCGAMG); CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(bf->pksp); CHKERRQ(ierr);
+
+/*		// maybe in higher petsc-version? hybrid multigrid
+  		ierr = KSPGetPC(bf->pksp, &ppc); CHKERRQ(ierr);
+		ierr = PCSetType(ppc, PCHMG); CHKERRQ(ierr);
+		ierr = PCHMGSetInnerPCType(ppc, PCAMG); CHKERRQ(ierr);
+		ierr = PCHMGSetReuseInterpolation(ppc, PETSC_TRUE); CHKERRQ(ierr);
+		ierr = PCHMGSetUseSubspaceCoarsening(ppc, PETSC_TRUE); CHKERRQ(ierr);
+		ierr = PCHMGUseMatMAIJ(ppc, PETSC_FALSE); CHKERRQ(ierr);
+		ierr = PCHMGSetCoarseningComponent(ppc, 0); CHKERRQ(ierr);
+*/
 
 	}
 
