@@ -23,7 +23,7 @@ struct SphereData{
 	PetscScalar centery;
 	PetscScalar centerz;
 	PetscScalar radius;
-//	PetscScalar phase;
+	PetscInt	phase;
 };
 
 
