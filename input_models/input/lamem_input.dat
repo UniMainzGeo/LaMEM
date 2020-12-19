@@ -234,9 +234,11 @@
 
 # Optional plume inflow @ bottom boundary
     Plume_InflowBoundary    =   1           # have a plume-like inflow boundary @ bottom
-    Plume_vel_constrained 	=	0           # Do we prescribe an inflow velocity @ the bottom or not?    
-	Plume_Type              =   2D          # 2D or 3D (circular)		
+    Plume_Type              =   Inflow_type          # Inflow_type or Pressure_type (circular)		
+	Plume_Dimension         =   2D          # 2D or 3D (circular)		
     Plume_Phase             =   4           # phase of plume
+    Plume_Depth             =   1885        # depth of provenience of the plume (i.e. how far from the bottom of the model the plume source is) 
+    Plume_Mantle_Phase      =   1           # Astenosphere phase (if the inflow occurs outside the plume radius)
     Plume_Temperature       =   1600        # temperature of inflow plume
     Plume_Inflow_Velocity   =   15          # Inflow velocity	
     Plume_VelocityType      =   Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
