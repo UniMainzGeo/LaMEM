@@ -780,7 +780,6 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	ierr = BCApplyPres(bc); CHKERRQ(ierr);
 
-	if(bc->Plume_Type == 2) ierr = BCApplyPres_Plume_Pressure(bc); CHKERRQ(ierr);
 
 
 	//=============================
@@ -1592,7 +1591,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_NODE_RANGE(nz, sz, fs->dsz)
 
-	if(bc->face == 5 || bc->face == 4)
+	if(bc->face == 5 )
 	{
 		START_STD_LOOP
 		{
@@ -2387,7 +2386,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	mcz = fs->dsz.tcels - 1;
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp_lith, &litho_p);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp, &litho_p);  CHKERRQ(ierr);
 
 
 	//-----------------------------------------------------
@@ -2419,7 +2418,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 					{
 						if ((x >= xmin) && (x <= xmax))
 						{
-								bcp[k-1][j][i] = litho_p[k][j][i]+dP+rho_plume*g*dz/2;;
+								bcp[k-1][j][i] = litho_p[k][j][i]+rho_plume*g*dz/2+dP;
 						}
 						else
 						{
@@ -2449,7 +2448,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp_lith, &litho_p);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp, &litho_p);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
