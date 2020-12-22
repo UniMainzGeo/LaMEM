@@ -445,7 +445,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		}
 		if(bc->Plume_Type ==2)
 		{
-			ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Inflow_Velocity,	1,	scal->length);	CHKERRQ(ierr);
+			ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
 
 		}
 
@@ -779,6 +779,9 @@ PetscErrorCode BCApply(BCCtx *bc)
 	// LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
 
 	ierr = BCApplyPres(bc); CHKERRQ(ierr);
+
+	if(bc->Plume_Type == 2 && !bc->jr->ctrl.initGuess) ierr = BCApplyPres_Plume_Pressure(bc); CHKERRQ(ierr);
+
 
 
 
@@ -1188,11 +1191,13 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	START_STD_LOOP
 	{
 
-		inflow_window = 0;
-		x       = COORD_CELL(i, sx, fs->dsx);
-		if ((x > bc->Plume_Center[0]-3*bc->Plume_Radius) && (x < bc->Plume_Center[0]+3*bc->Plume_Radius))
+		if(bc->Plume_Type ==2 && !bc->jr->ctrl.initGuess)
 		{
 			inflow_window = 1;
+
+			x       = COORD_CELL(i, sx, fs->dsx);
+			if(i == 0     ) { inflow_window = 0; }
+			if(i == mnx-1 ) { inflow_window = 0; }
 		}
 
 
@@ -2386,6 +2391,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	g     = bc->jr->ctrl.grav[2];
 	H     = bc->Plume_Depth;
 	dP    =(rho_mantle-rho_mantle)*H*g;
+    PetscPrintf(PETSC_COMM_WORLD, "      dP is     : %6f MPa, rho_plume %6f and rho_mantle %6f H = %6f alpha Plume = %6f alpha_mantle =%6f \n", dP*bc->jr->scal->stress, rho_plume*bc->scal->density,rho_mantle*bc->scal->density, H*bc->scal->length, alpha_plume*bc->scal->expansivity,alpha_mantle*bc->scal->expansivity);
 
 
 	// initialize index bounds
@@ -2423,17 +2429,17 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 					xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
 					//if((k == mcz) ) bcp[k+1][j][i] = 0.0; //&& ((i!=0) && (i!=mcx))
 
-					if( k==0)//(i!=0) && (i!=mcx) &&
+					if( k==0 && ((i!=0) && (i!=mcx)))
 					{
 						if ((x >= xmin) && (x <= xmax))
 						{
-							bcp[k-1][j][i] = litho_p[k][j][i]+rho_plume*g*dz/2+dP;
+							bcp[k-1][j][i] = litho_p[k][j][i]+dP;
 
 
 						}
 						else
 						{
-							bcp[k-1][j][i] = litho_p[k][j][i]+rho_mantle*g*dz/2;
+							bcp[k-1][j][i] = litho_p[k][j][i];
 
 						}
 					}

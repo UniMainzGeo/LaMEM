@@ -1217,7 +1217,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
 
-		if(bc->Plume_Type == 2 && !jr->ctrl.initGuess) ierr = BCApplyPres_Plume_Pressure(bc); CHKERRQ(ierr);
+		//if(bc->Plume_Type == 2 && !jr->ctrl.initGuess) ierr = BCApplyPres_Plume_Pressure(bc); CHKERRQ(ierr);
 
 
 		// pressure boundary constraints
