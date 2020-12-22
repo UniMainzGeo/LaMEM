@@ -1062,8 +1062,8 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscScalar vbx, vby, 	vbz;
 	PetscScalar vex, vey, 	vez;
 	PetscScalar z,   z_bot, z_top;
-	PetscScalar y,   y_frt, y_bck;
-	PetscInt    mnx, mny, mnz;
+	PetscScalar y,   y_frt, y_bck, x;
+	PetscInt    mnx, mny, mnz,inflow_window;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open, bot_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 
@@ -1188,6 +1188,14 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	START_STD_LOOP
 	{
 
+		inflow_window = 0;
+		x       = COORD_CELL(i, sx, fs->dsx);
+		if ((x > bc->Plume_Center[0]-3*bc->Plume_Radius) && (x < bc->Plume_Center[0]+3*bc->Plume_Radius))
+		{
+			inflow_window = 1;
+		}
+
+
 		// simple shear, side boundaries
 		if(i == 0     && Exz != 0.0) { bcvz[k][j][i] = 0.0; }
 		if(i == mnx-1 && Exz != 0.0) { bcvz[k][j][i] = 0.0; }
@@ -1196,8 +1204,9 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		if(j == mny-1 && Eyz != 0.0) { bcvz[k][j][i] = 0.0; }
 
 		// pure shear		
-		if(k == 0   && !bot_open && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; }
+		if(k == 0   && !bot_open && bcp[-1 ][j][i] == DBL_MAX && inflow_window == 0) { bcvz[k][j][i] = vbz; }
 		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
+
 
 
 		iter++;
@@ -2412,17 +2421,20 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 				{
 					xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
 					xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
-					if((k == mcz) && ((i!=0) && (i!=mcx))) bcp[k+1][j][i] = 0.0;
+					//if((k == mcz) ) bcp[k+1][j][i] = 0.0; //&& ((i!=0) && (i!=mcx))
 
-					if((i!=0) && (i!=mcx) && k==0)
+					if( k==0)//(i!=0) && (i!=mcx) &&
 					{
 						if ((x >= xmin) && (x <= xmax))
 						{
-								bcp[k-1][j][i] = litho_p[k][j][i]+rho_plume*g*dz/2+dP;
+							bcp[k-1][j][i] = litho_p[k][j][i]+rho_plume*g*dz/2+dP;
+
+
 						}
 						else
 						{
-								bcp[k-1][j][i] = litho_p[k][j][i]+rho_mantle*g*dz/2;
+							bcp[k-1][j][i] = litho_p[k][j][i]+rho_mantle*g*dz/2;
+
 						}
 					}
 				}
@@ -2430,7 +2442,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 				{
 					if((k == mcz)) bcp[k+1][j][i] = 0.0; //&& ((i!=0) && (i!=mcx) && (j!=0) && (j!=mcy))
 
-					if(((i!=0) && (i!=mcx) && (j!=0) && (j!=mcy)) && k==0)
+					if(  k==0) //((i!=0) && (i!=mcx) && (j!=0) && (j!=mcy))&&
 					{
 						if ( ( PetscPowScalar( (x - bc->Plume_Center[0]), 2.0)  + PetscPowScalar( (y - bc->Plume_Center[1]),2.0) ) <= PetscPowScalar(bc->Plume_Radius,2.0))
 						{
