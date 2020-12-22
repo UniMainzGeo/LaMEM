@@ -2390,8 +2390,8 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	rho_mantle = bc->dbm->phases[bc->Plume_Phase_Mantle].rho*(1-alpha_mantle*(bc->Tbot-bc->jr->ctrl.TRef));
 	g     = bc->jr->ctrl.grav[2];
 	H     = bc->Plume_Depth;
-	dP    =(rho_mantle-rho_mantle)*H*g;
-    PetscPrintf(PETSC_COMM_WORLD, "      dP is     : %6f MPa, rho_plume %6f and rho_mantle %6f H = %6f alpha Plume = %6f alpha_mantle =%6f \n", dP*bc->jr->scal->stress, rho_plume*bc->scal->density,rho_mantle*bc->scal->density, H*bc->scal->length, alpha_plume*bc->scal->expansivity,alpha_mantle*bc->scal->expansivity);
+	dP    =-(rho_mantle-rho_mantle)*H*g;
+    PetscPrintf(PETSC_COMM_WORLD, "      dP is     : %6f MPa, rho_plume %6f and rho_mantle %6f H = %6f alpha Plume = %6f alpha_mantle =%6f g= %6f \n", dP*bc->jr->scal->stress, rho_plume*bc->scal->density,rho_mantle*bc->scal->density, H*bc->scal->length, alpha_plume*bc->scal->expansivity,alpha_mantle*bc->scal->expansivity,g);
 
 
 	// initialize index bounds
