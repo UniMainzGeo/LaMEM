@@ -2388,9 +2388,9 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 
 	rho_plume = bc->dbm->phases[bc->Plume_Phase].rho*(1-alpha_plume*(bc->Plume_Temperature-bc->jr->ctrl.TRef));
 	rho_mantle = bc->dbm->phases[bc->Plume_Phase_Mantle].rho*(1-alpha_mantle*(bc->Tbot-bc->jr->ctrl.TRef));
-	g     = bc->jr->ctrl.grav[2];
+	g     =  PetscAbsScalar(bc->jr->ctrl.grav[2]);
 	H     = bc->Plume_Depth;
-	dP    =-(rho_mantle-rho_mantle)*H*g;
+	dP    =(rho_mantle-rho_plume)*H*g;
     PetscPrintf(PETSC_COMM_WORLD, "      dP is     : %6f MPa, rho_plume %6f and rho_mantle %6f H = %6f alpha Plume = %6f alpha_mantle =%6f g= %6f \n", dP*bc->jr->scal->stress, rho_plume*bc->scal->density,rho_mantle*bc->scal->density, H*bc->scal->length, alpha_plume*bc->scal->expansivity,alpha_mantle*bc->scal->expansivity,g);
 
 
@@ -2401,7 +2401,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	mcz = fs->dsz.tcels - 1;
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp, &litho_p);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp_lith, &litho_p);  CHKERRQ(ierr);
 
 
 	//-----------------------------------------------------
@@ -2433,13 +2433,13 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 					{
 						if ((x >= xmin) && (x <= xmax))
 						{
-							bcp[k-1][j][i] = litho_p[k][j][i]+dP;
+							bcp[k-1][j][i] = litho_p[k][j][i]+dP+dz/2*rho_plume*g;
 
 
 						}
 						else
 						{
-							bcp[k-1][j][i] = litho_p[k][j][i];
+							bcp[k-1][j][i] = litho_p[k][j][i]+dz/2*rho_mantle*g;
 
 						}
 					}
@@ -2466,7 +2466,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp, &litho_p);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp_lith, &litho_p);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
