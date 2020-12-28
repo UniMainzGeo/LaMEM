@@ -239,6 +239,9 @@ struct BCCtx
 	PetscScalar  pbot, ptop;
 	PetscInt     initPres;
 
+	// fluid pressure in Stokes domain
+	PetscScalar  pfluid;
+
 };
 //---------------------------------------------------------------------------
 
@@ -269,18 +272,29 @@ PetscErrorCode BCApplySPC(BCCtx *bc);
 // shift indices of constrained nodes
 PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
 
+
 //---------------------------------------------------------------------------
-// Specific constraints
+// TPC constraints
+//---------------------------------------------------------------------------
+
+// apply pressure TPC
+PetscErrorCode BCApplyPresTPC(BCCtx *bc);
+
+// apply temperature TPC
+PetscErrorCode BCApplyTempTPC(BCCtx *bc);
+
+// apply fluid pressure TPC
+PetscErrorCode BCApplyFlowTPC(BCCtx *bc);
+
+// apply velocity TPC
+PetscErrorCode BCApplyVelTPC(BCCtx *bc);
+
+//---------------------------------------------------------------------------
+// Specific SPC constraints
 //---------------------------------------------------------------------------
 
 // apply pressure constraints
-PetscErrorCode BCApplyPres(BCCtx *bc);
-
-// apply temperature constraints
-PetscErrorCode BCApplyTemp(BCCtx *bc);
-
-// apply fluid pressure constraints
-PetscErrorCode BCApplyFlow(BCCtx *bc);
+PetscErrorCode BCApplyPresSPC(BCCtx *bc);
 
 // apply default velocity constraints on the boundaries
 PetscErrorCode BCApplyVelDefault(BCCtx *bc);
@@ -302,9 +316,6 @@ PetscErrorCode BCApplyCells(BCCtx *bc);
 
 // create SPC constraint lists
 PetscErrorCode BCListSPC(BCCtx *bc);
-
-// apply two-point constraints on the boundaries
-PetscErrorCode BCApplyVelTPC(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 // Service functions

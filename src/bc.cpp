@@ -272,6 +272,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	bc->Ttop     = -1.0;
 	bc->pbot     = -1.0;
 	bc->ptop     = -1.0;
+	bc->pfluid   = -1.0;
 	bc->fixPhase = -1;
 	bc->velout   =  DBL_MAX;
 
@@ -362,9 +363,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// PRESSURE CONSTRAINTS
 	//=====================
 
-	ierr = getScalarParam(fb, _OPTIONAL_, "pres_bot",  &bc->pbot,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "pres_top",  &bc->ptop,     1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "init_pres", &bc->initPres, 1, -1);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "pres_bot",   &bc->pbot,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "pres_top",   &bc->ptop,     1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "init_pres",  &bc->initPres, 1, -1);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "pres_fluid", &bc->pfluid,   1, 1.0); CHKERRQ(ierr);
 
 	// CHECK
 	if((bc->Tbot == bc->Ttop) && bc->initTemp)
@@ -394,18 +396,21 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
 	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
 	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
-	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
-	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
-	if(bc->ptop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary pressure                      : %g %s \n", bc->ptop, scal->lbl_stress);
-	if(bc->pbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot, scal->lbl_stress);
+	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop,   scal->lbl_temperature);
+	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot,   scal->lbl_temperature);
+	if(bc->ptop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary pressure                      : %g %s \n", bc->ptop,   scal->lbl_stress);
+	if(bc->pbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot,   scal->lbl_stress);
+	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop,   scal->lbl_temperature);
+	if(bc->pfluid   != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Fluid pressure in Stokes domain            : %g %s \n", bc->pfluid, scal->lbl_stress);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	// nondimensionalize temperature & pressure
-	if(bc->Ttop != -1.0)  bc->Ttop  = (bc->Ttop + scal->Tshift)/scal->temperature;
-	if(bc->Tbot != -1.0)  bc->Tbot  = (bc->Tbot + scal->Tshift)/scal->temperature;
-	if(bc->ptop != -1.0)  bc->ptop /= scal->stress;
-	if(bc->pbot != -1.0)  bc->pbot /= scal->stress;
+	if(bc->Ttop   != -1.0)  bc->Ttop    = (bc->Ttop + scal->Tshift)/scal->temperature;
+	if(bc->Tbot   != -1.0)  bc->Tbot    = (bc->Tbot + scal->Tshift)/scal->temperature;
+	if(bc->ptop   != -1.0)  bc->ptop   /= scal->stress;
+	if(bc->pbot   != -1.0)  bc->pbot   /= scal->stress;
+	if(bc->pfluid != -1.0)  bc->pfluid /= scal->stress;
 
 	// allocate vectors and arrays
 	ierr = BCCreateData(bc); CHKERRQ(ierr);
@@ -596,22 +601,25 @@ PetscErrorCode BCApply(BCCtx *bc)
 	// WARNING! Synchronization is necessary if SPC constraints are active
 	// LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcT)
 
-	ierr = BCApplyTemp(bc); CHKERRQ(ierr);
+	ierr = BCApplyTempTPC(bc); CHKERRQ(ierr);
 
 	//==========================================
 	// PRESSURE (must be called before velocity)
 	//==========================================
+	ierr = BCApplyPresSPC(bc); CHKERRQ(ierr);
 
-	// WARNING! Synchronization is necessary if SPC constraints are active
-	// LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
+	// synchronize SPC constraints in the internal ghost points
+//	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
 
-	ierr = BCApplyPres(bc); CHKERRQ(ierr);
+	ierr = BCApplyPresTPC(bc); CHKERRQ(ierr);
 
 	//===============
 	// FLUID PRESSURE
 	//===============
 
 //	ierr = BCApplyFlow(bc); CHKERRQ(ierr);
+
+//	BCApplyPresSPC
 
 	//=============================
 	// VELOCITY (RESTRUCTURE THIS!)
@@ -739,11 +747,11 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// Specific constraints
+// TPC constraints
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCApplyPres"
-PetscErrorCode BCApplyPres(BCCtx *bc)
+#define __FUNCT__ "BCApplyPresTPC"
+PetscErrorCode BCApplyPresTPC(BCCtx *bc)
 {
 	// apply pressure constraints
 
@@ -794,8 +802,8 @@ PetscErrorCode BCApplyPres(BCCtx *bc)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCApplyTemp"
-PetscErrorCode BCApplyTemp(BCCtx *bc)
+#define __FUNCT__ "BCApplyTempTPC"
+PetscErrorCode BCApplyTempTPC(BCCtx *bc)
 {
 	// apply temperature constraints
 
@@ -845,8 +853,8 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCApplyFlow"
-PetscErrorCode BCApplyFlow(BCCtx *bc)
+#define __FUNCT__ "BCApplyFlowTPC"
+PetscErrorCode BCApplyFlowTPC(BCCtx *bc)
 {
 	// apply fluid pressure constraints
 
@@ -944,6 +952,161 @@ PetscErrorCode BCApplyFlow(BCCtx *bc)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf, &bcf); CHKERRQ(ierr);
 
 	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcf);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyVelTPC"
+PetscErrorCode BCApplyVelTPC(BCCtx *bc)
+{
+	// apply two-point constraints on the boundaries
+
+	FDSTAG      *fs;
+	PetscInt    mcx, mcy, mcz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscInt    nsLeft, nsRight, nsFront, nsBack, nsBottom, nsTop;
+	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = bc->fs;
+
+	// initialize index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+
+	// initialize no-slip flags
+	nsLeft   = bc->noslip[0];
+	nsRight  = bc->noslip[1];
+	nsFront  = bc->noslip[2];
+	nsBack   = bc->noslip[3];
+	nsBottom = bc->noslip[4];
+	nsTop    = bc->noslip[5];
+
+	//=========================================================================
+	// TPC (no-slip boundary conditions)
+	//=========================================================================
+
+	// access constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	//-----------------------------------------------------
+	// X points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+	if(nsFront || nsBack || nsBottom || nsTop)
+	{
+		GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(nsFront  && j == 0)   { bcvx[k][j-1][i] = 0.0; }
+			if(nsBack   && j == mcy) { bcvx[k][j+1][i] = 0.0; }
+			if(nsBottom && k == 0)   { bcvx[k-1][j][i] = 0.0; }
+			if(nsTop    && k == mcz) { bcvx[k+1][j][i] = 0.0; }
+		}
+		END_STD_LOOP
+	}
+
+	//-----------------------------------------------------
+	// Y points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+	if(nsLeft || nsRight || nsBottom || nsTop)
+	{
+
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(nsLeft   && i == 0)   { bcvy[k][j][i-1] = 0.0; }
+			if(nsRight  && i == mcx) { bcvy[k][j][i+1] = 0.0; }
+			if(nsBottom && k == 0)   { bcvy[k-1][j][i] = 0.0; }
+			if(nsTop    && k == mcz) { bcvy[k+1][j][i] = 0.0; }
+		}
+		END_STD_LOOP
+	}
+
+	//-----------------------------------------------------
+	// Z points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+	if(nsLeft || nsRight || nsFront || nsBack)
+	{
+
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(nsLeft  && i == 0)   { bcvz[k][j][i-1] = 0.0; }
+			if(nsRight && i == mcx) { bcvz[k][j][i+1] = 0.0; }
+			if(nsFront && j == 0)   { bcvz[k][j-1][i] = 0.0; }
+			if(nsBack  && j == mcy) { bcvz[k][j+1][i] = 0.0; }
+		}
+		END_STD_LOOP
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+// Specific SPC constraints
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyPresSPC"
+PetscErrorCode BCApplyPresSPC(BCCtx *bc)
+{
+	// apply pressure constraints
+
+	FDSTAG      *fs;
+	JacRes      *jr;
+	PetscScalar ***bcp;
+	PetscScalar pfluid;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, fluidPhase;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs         = bc->fs;
+	jr         = bc->jr;
+	fluidPhase = jr->ctrl.fluidPhase;
+	pfluid     = bc->pfluid;
+
+	// relevant cases only
+	if(pfluid == -1.0) PetscFunctionReturn(0);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		// check for constrained cell
+		if(jr->svCell[iter++].phRat[fluidPhase] > 0.0)
+		{
+			bcp[k][j][i] = pfluid;
+		}
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1060,113 +1223,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyVelTPC"
-PetscErrorCode BCApplyVelTPC(BCCtx *bc)
-{
-	// apply two-point constraints on the boundaries
-
-	FDSTAG      *fs;
-	PetscInt    mcx, mcy, mcz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscInt    nsLeft, nsRight, nsFront, nsBack, nsBottom, nsTop;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	fs = bc->fs;
-
-	// initialize index bounds
-	mcx = fs->dsx.tcels - 1;
-	mcy = fs->dsy.tcels - 1;
-	mcz = fs->dsz.tcels - 1;
-
-	// initialize no-slip flags
-	nsLeft   = bc->noslip[0];
-	nsRight  = bc->noslip[1];
-	nsFront  = bc->noslip[2];
-	nsBack   = bc->noslip[3];
-	nsBottom = bc->noslip[4];
-	nsTop    = bc->noslip[5];
-
-	//=========================================================================
-	// TPC (no-slip boundary conditions)
-	//=========================================================================
-
-	// access constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
-
-	//-----------------------------------------------------
-	// X points (TPC only, hence looping over ghost points)
-	//-----------------------------------------------------
-	if(nsFront || nsBack || nsBottom || nsTop)
-	{
-		GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
-		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-			if(nsFront  && j == 0)   { bcvx[k][j-1][i] = 0.0; }
-			if(nsBack   && j == mcy) { bcvx[k][j+1][i] = 0.0; }
-			if(nsBottom && k == 0)   { bcvx[k-1][j][i] = 0.0; }
-			if(nsTop    && k == mcz) { bcvx[k+1][j][i] = 0.0; }
-		}
-		END_STD_LOOP
-	}
-
-	//-----------------------------------------------------
-	// Y points (TPC only, hence looping over ghost points)
-	//-----------------------------------------------------
-	if(nsLeft || nsRight || nsBottom || nsTop)
-	{
-
-		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-		GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
-		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-			if(nsLeft   && i == 0)   { bcvy[k][j][i-1] = 0.0; }
-			if(nsRight  && i == mcx) { bcvy[k][j][i+1] = 0.0; }
-			if(nsBottom && k == 0)   { bcvy[k-1][j][i] = 0.0; }
-			if(nsTop    && k == mcz) { bcvy[k+1][j][i] = 0.0; }
-		}
-		END_STD_LOOP
-	}
-
-	//-----------------------------------------------------
-	// Z points (TPC only, hence looping over ghost points)
-	//-----------------------------------------------------
-	if(nsLeft || nsRight || nsFront || nsBack)
-	{
-
-		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-		GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-			if(nsLeft  && i == 0)   { bcvz[k][j][i-1] = 0.0; }
-			if(nsRight && i == mcx) { bcvz[k][j][i+1] = 0.0; }
-			if(nsFront && j == 0)   { bcvz[k][j-1][i] = 0.0; }
-			if(nsBack  && j == mcy) { bcvz[k][j+1][i] = 0.0; }
-		}
-		END_STD_LOOP
-	}
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
