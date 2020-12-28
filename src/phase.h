@@ -50,8 +50,6 @@ struct Scaling;
 struct FB;
 struct JacRes;
 struct ModParam;
-struct BCCtx; // new for dike
-struct FDSTAG; // new for dike
 
 //---------------------------------------------------------------------------
 //.....................   Rheology experiment type  .........................
@@ -249,7 +247,6 @@ struct PData
 
 struct DBMat
 {
-        BCCtx *bc;                // new for dike, doesn't work to get the velocity velin  
 	Scaling *scal;
 
 	// phase parameters

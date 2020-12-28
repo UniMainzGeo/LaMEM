@@ -188,16 +188,16 @@
 	bvel_velin                =         1.0                          # inflow velocity
 	bvel_velout               =         0.0                          # outflow velocity (if not specified, computed from mass balance)
 	bvel_relax_d              =         100                          # distance over which velocity is reduced
-	bvel_velbot               =         0   					     # bottom inflow velocity for use with bvel_face=CompensatingInflow
+	bvel_velbot               =         0   	                 # bottom inflow velocity for use with bvel_face=CompensatingInflow
 	bvel_veltop               =         0                            # top inflow velocity for use with bvel_face=CompensatingInflow
 	bvel_temperature_inflow   =        Fixed_thermal_age             # Thermal age of the plate is constant
-                              =        Constant_T_inflow             # Temperature of the inflow material is constant everywhere
-	bvel_thermal_age          =        10                            # In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
+                                  =        Constant_T_inflow             # Temperature of the inflow material is constant everywhere
+	bvel_thermal_age          =        10        # In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
 	bvel_temperature_mantle   =        1400                          # In dimensional unit. Temperature of the mantle
 	bvel_temperature_top      =        20                            # In dimensional unit. temperature of the top
 	bvel_temperature_constant =        100                           # Constant temperature inflow. 
-	bvel_num_phase            =        3                             # Imposes a stratigraphy of phase injected in the inflow boundary [if undefined, it uses the phase close to the boundary]
-	bvel_phase                =        3 2 1 0                       # phase number of inflow material [if undefined, it uses the phase close to the boundary] from bottom to top
+	bvel_num_phase            =        3        # Imposes a stratigraphy of phase injected in the inflow boundary [if undefined, it uses the phase close to the boundary]
+	bvel_phase                =        3 2 1 0               # phase number of inflow material [if undefined, it uses the phase close to the boundary] from bottom to top
 	bvel_phase_interval       =       -120 -100 -10 0                # Depth interval of injection of the phase (the interval is defined by num_phase+1 coordinates)
                                        
 # Free surface top boundary flag
@@ -594,7 +594,6 @@
 	<MaterialEnd>
 
 	<MaterialStart>
-		dikeOn     = 1      # dike on activation flag, no dike -> 0
 		Mf         = 0.5    # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
 		Mb         = 0.5    # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
 		ID         = 1      # material phase ID

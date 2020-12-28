@@ -53,7 +53,6 @@
 #include "objFunct.h"
 #include "JacRes.h"
 #include "phase_transition.h"
-#include "bc.h"    // new for dike
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatCreate"

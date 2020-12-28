@@ -64,7 +64,7 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 
 	PetscFunctionBegin;
 
-	ctx->bc = jr->bc;  // boundary conditions for inflow velocity
+	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity, for dike phase
 	ctx->numPhases =  jr->dbm->numPhases; // number phases
 	ctx->phases    =  jr->dbm->phases;    // phase parameters
 	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
@@ -558,7 +558,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	// r < 0 if eta > solution (negative on overshoot)
 	// r > 0 if eta < solution (positive on undershoot)
 
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);   // substract additionally DIIdike
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);   // + DIIdike);  substract additionally DIIdike
 }
 //---------------------------------------------------------------------------
 PetscScalar applyStrainSoft(
@@ -765,17 +765,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			      // constant M
 				M = mat->Mf;
 				v_spread = PetscAbs(bc->velin);
-				// need to scale with: scal->velocity for printing
 				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
-				//				PetscPrintf(PETSC_COMM_WORLD, "in volCell: M= Mf %f \n", M);
-						PetscPrintf(PETSC_COMM_WORLD, "in volCell: left*scal_length %f \n", left*scal->length);
-					       	PetscPrintf(PETSC_COMM_WORLD, "in volCell: left in code  %f \n", left);
-						PetscPrintf(PETSC_COMM_WORLD, "in volCell: scaling  %f \n", scal->length);
-						PetscPrintf(PETSC_COMM_WORLD, "in volCell: scaling SI %f \n", scal->length_si);
-						PetscPrintf(PETSC_COMM_WORLD, "in volCell: time %f \n", scal->time);
-						PetscPrintf(PETSC_COMM_WORLD, "in volCell: time SI %f \n", scal->time_si);
-						PetscPrintf(PETSC_COMM_WORLD, "in volCell: scaling velocity %f \n", scal->velocity);
 				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s 
 				PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", mat->dikeRHS);
 			    }
@@ -801,7 +792,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			else
 		        {
 			    mat->dikeRHS = 0.0;
-			    //			    PetscPrintf(PETSC_COMM_WORLD, "no mb and mf option: in volCell: dikeRHS %f \n", mat->dikeRHS);
 			}
 
 			// update density, thermal expansion & inverse bulk elastic parameter, and dikeRHS depending on the cell ratios
@@ -906,7 +896,7 @@ PetscErrorCode cellConstEq(
 
 	// compute volumetric residual
 
-	if(ctrl->actExp && ctrl->actDike)    // new for dike
+	if(ctrl->actExp && ctrl->actDike)    // new option for dike
           {
 	        PetscPrintf(PETSC_COMM_WORLD, "in gres: dikeRHS %f \n", svBulk->dikeRHS);
 
@@ -916,8 +906,7 @@ PetscErrorCode cellConstEq(
 	else if(ctrl->actExp)
           {
             gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
-	    //	    PetscPrintf(PETSC_COMM_WORLD, "in gres: gres NO dike %f \n", gres);
-          }
+	  }
 	 else
 	  {
 	     gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
