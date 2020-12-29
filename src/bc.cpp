@@ -445,7 +445,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		}
 		if(bc->Plume_Type ==2)
 		{
+			bc->Plume_Pressure = -1;
 			ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
+			ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure",&bc->Plume_Pressure,	1,	scal->stress);	CHKERRQ(ierr);
+
 
 		}
 
@@ -1069,6 +1072,8 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscInt    mnx, mny, mnz,inflow_window;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open, bot_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
+	PetscScalar xmin,xmax,xwin_min,xwin_max;
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1193,11 +1198,18 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 		if(bc->Plume_Type ==2 && !bc->jr->ctrl.initGuess)
 		{
+
+
+			xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
+			xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
+			xwin_min = xmin-4.0*bc->Plume_Radius;
+			xwin_max = xmax+4.0*bc->Plume_Radius;
 			inflow_window = 1;
 
 			x       = COORD_CELL(i, sx, fs->dsx);
-			if(i == 0     ) { inflow_window = 0; }
-			if(i == mnx-1 ) { inflow_window = 0; }
+			if(x<xwin_min || x>xwin_max) {inflow_window=0;}
+			//if(i == 0     ) { inflow_window = 0; }
+			//if(i == mnx-1 ) { inflow_window = 0; }
 		}
 
 
@@ -1209,7 +1221,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		if(j == mny-1 && Eyz != 0.0) { bcvz[k][j][i] = 0.0; }
 
 		// pure shear		
-		if(k == 0   && !bot_open && bcp[-1 ][j][i] == DBL_MAX && inflow_window == 0) { bcvz[k][j][i] = vbz; }
+		if((k == 0   && !bot_open && bcp[-1 ][j][i] == DBL_MAX) && inflow_window == 0) { bcvz[k][j][i] = vbz; }//
 		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
 
 
@@ -2368,7 +2380,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	// apply pressure constraints
 
 	FDSTAG      *fs;
-	PetscScalar ***litho_p,alpha_plume,alpha_mantle,g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax;
+	PetscScalar ***litho_p,alpha_plume,alpha_mantle,g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,x_windmin, x_windmax;
 	PetscInt    mcx,mcy,mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcp;
@@ -2401,7 +2413,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	mcz = fs->dsz.tcels - 1;
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp_lith, &litho_p);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp, &litho_p);  CHKERRQ(ierr);
 
 
 	//-----------------------------------------------------
@@ -2417,9 +2429,15 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 			dz      = SIZE_CELL(k,sz,fs->dsz);
 			x       = COORD_CELL(i, sx, fs->dsx);
 			y       = COORD_CELL(j, sy, fs->dsy);
-			xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
-			xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
 
+			if(bc->Plume_Pressure>0.0)
+			{
+				p = bc->Plume_Pressure;
+			}
+			else
+			{
+				p = litho_p[k][j][i];
+			}
 
 
 
@@ -2427,38 +2445,33 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 				{
 					xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
 					xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
-					//if((k == mcz) ) bcp[k+1][j][i] = 0.0; //&& ((i!=0) && (i!=mcx))
+					x_windmin = xmin-2.0*bc->Plume_Radius;
+					x_windmax = xmax+2.0*bc->Plume_Radius;
+				//	if((k == mcz) ) bcp[k+1][j][i] = 0.0; //&& ((i!=0) && (i!=mcx))
 
-					if( k==0 && ((i!=0) && (i!=mcx)))
+					if( k==0)// && ((i!=0) && (i!=mcx)))
 					{
-						if ((x >= xmin) && (x <= xmax))
+						/*
+						if(x>=x_windmin && x<=x_windmax)
 						{
-							bcp[k-1][j][i] = litho_p[k][j][i]+dP+dz/2*rho_plume*g;
-
-
+							if ((x >= xmin) && (x <= xmax))
+							{
+								bcp[k-1][j][i] = p +dP;
+							}
+							else
+							{
+								bcp[k-1][j][i] = p;
+							}
+					    PetscPrintf(PETSC_COMM_WORLD, "      p[j][i ]is     : %6f MPa \n", bcp[k-1][j][i]*bc->jr->scal->stress);
 						}
-						else
-						{
-							bcp[k-1][j][i] = litho_p[k][j][i]+dz/2*rho_mantle*g;
-
-						}
+					*/
 					}
+
 				}
 				else	// 3D plume
 				{
-					if((k == mcz)) bcp[k+1][j][i] = 0.0; //&& ((i!=0) && (i!=mcx) && (j!=0) && (j!=mcy))
 
-					if(  k==0) //((i!=0) && (i!=mcx) && (j!=0) && (j!=mcy))&&
-					{
-						if ( ( PetscPowScalar( (x - bc->Plume_Center[0]), 2.0)  + PetscPowScalar( (y - bc->Plume_Center[1]),2.0) ) <= PetscPowScalar(bc->Plume_Radius,2.0))
-						{
-							bcp[k-1][j][i] = litho_p[k][j][i]+dP;
-						}
-						else
-						{
-							bcp[k-1][j][i] = litho_p[k][j][i];
-						}
-					}
+					// place holder 3d
 				}
 
 		}
@@ -2466,7 +2479,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp_lith, &litho_p);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp, &litho_p);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

@@ -245,7 +245,7 @@ struct BCCtx
 	PetscScalar		Plume_Radius;				// radius of plume (for 3D plume)
 	PetscScalar		Plume_Inflow_Velocity;		// inflow velocity
 	PetscInt 		Plume_VelocityType;			// type of inflow [Gaussian=0=default or Poiseuille=1]
-	
+	PetscScalar     Plume_Pressure ;            // Plume Pressure at the bottom of the model (i.e. the bottom pressure boundary condition)
 	// open boundary flag
 	PetscInt     	top_open;
 	PetscInt 		bot_open;
