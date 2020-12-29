@@ -1646,7 +1646,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 	DOFIndex    *dof;
 	PetscInt    iter, numSPC, *SPCList;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, *SPCVals;
+	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp, *SPCVals;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1662,9 +1662,10 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 	ierr = PetscMemzero(SPCList, sizeof(PetscInt)   *(size_t)dof->ln); CHKERRQ(ierr);
 
 	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
 
 	iter   = 0;
 	numSPC = 0;
@@ -1716,8 +1717,24 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 	bc->vSPCList = SPCList;
 	bc->vSPCVals = SPCVals;
 
-	// WARNING! primary pressure constraints are not implemented, otherwise compute here
-	bc->pNumSPC = 0;
+	//----------------
+	// pressure points
+	//----------------
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		LIST_SPC(bcp, SPCList, SPCVals, numSPC, iter)
+
+		iter++;
+	}
+	END_STD_LOOP
+
+	// store pressure list
+	bc->pNumSPC  = numSPC  - bc->vNumSPC;
+	bc->pSPCList = SPCList + bc->vNumSPC;
+	bc->pSPCVals = SPCVals + bc->vNumSPC;
 
 	// set index (shift) type
 	bc->stype = _GLOBAL_TO_LOCAL_;
@@ -1726,9 +1743,10 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 	bc->numSPC = numSPC;
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
