@@ -609,7 +609,7 @@ PetscErrorCode BCApply(BCCtx *bc)
 	ierr = BCApplyPresSPC(bc); CHKERRQ(ierr);
 
 	// synchronize SPC constraints in the internal ghost points
-//	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
+	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
 
 	ierr = BCApplyPresTPC(bc); CHKERRQ(ierr);
 
