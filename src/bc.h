@@ -345,8 +345,16 @@ PetscErrorCode BCListSPC(BCCtx *bc);
 PetscErrorCode BCApplyVelTPC(BCCtx *bc);
 
 // apply plume_open_boundary condition
-
 PetscErrorCode BC_Plume_inflow(BCCtx *bc);
+
+// Get the average lithostatic pressure at the bottom
+PetscErrorCode GetAverageLithostatic(BCCtx *bc);
+
+// Get the densities of the external material
+
+PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p );
+
+
 
 //---------------------------------------------------------------------------
 // Service functions

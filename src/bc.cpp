@@ -51,6 +51,7 @@
 #include "tools.h"
 #include "advect.h"
 #include "phase.h"
+#include "constEq.h"
 
 //---------------------------------------------------------------------------
 // * open box & Winkler (with tangential viscous friction)
@@ -1196,7 +1197,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	START_STD_LOOP
 	{
 
-		if(bc->Plume_Type ==2 && !bc->jr->ctrl.initGuess)
+		if(bc->Plume_Type ==2)// && !bc->jr->ctrl.initGuess)
 		{
 
 
@@ -1207,7 +1208,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 			inflow_window = 1;
 
 			x       = COORD_CELL(i, sx, fs->dsx);
-			if(x<xwin_min || x>xwin_max) {inflow_window=0;}
+		//	if(x<xwin_min || x>xwin_max) {inflow_window=0;}
 			//if(i == 0     ) { inflow_window = 0; }
 			//if(i == mnx-1 ) { inflow_window = 0; }
 		}
@@ -2380,9 +2381,10 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	// apply pressure constraints
 
 	FDSTAG      *fs;
-	PetscScalar ***litho_p,alpha_plume,alpha_mantle,g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,x_windmin, x_windmax;
-	PetscInt    mcx,mcy,mcz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	SolVarBulk  *svBulk;
+	PetscScalar g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,x_windmin, x_windmax,p_bot,radius2;
+	PetscInt    phase_mantle,phase_plume;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz,iter;
 	PetscScalar ***bcp;
 
 	PetscErrorCode ierr;
@@ -2391,29 +2393,30 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	// access context
 	fs = bc->fs;
 
-	// get boundary pressure
+	phase_mantle = bc->Plume_Phase_Mantle;
+	phase_plume  = bc->Plume_Phase;
 
-
-
-	alpha_plume = bc->dbm->phases[bc->Plume_Phase].alpha;
-	alpha_mantle = bc->dbm->phases[bc->Plume_Phase].alpha;
-
-	rho_plume = bc->dbm->phases[bc->Plume_Phase].rho*(1-alpha_plume*(bc->Plume_Temperature-bc->jr->ctrl.TRef));
-	rho_mantle = bc->dbm->phases[bc->Plume_Phase_Mantle].rho*(1-alpha_mantle*(bc->Tbot-bc->jr->ctrl.TRef));
 	g     =  PetscAbsScalar(bc->jr->ctrl.grav[2]);
 	H     = bc->Plume_Depth;
-	dP    =(rho_mantle-rho_plume)*H*g;
-    PetscPrintf(PETSC_COMM_WORLD, "      dP is     : %6f MPa, rho_plume %6f and rho_mantle %6f H = %6f alpha Plume = %6f alpha_mantle =%6f g= %6f \n", dP*bc->jr->scal->stress, rho_plume*bc->scal->density,rho_mantle*bc->scal->density, H*bc->scal->length, alpha_plume*bc->scal->expansivity,alpha_mantle*bc->scal->expansivity,g);
+
+	// compute the average lithostatic pressure at the bototm
+
+	if(bc->Plume_Pressure>0.0)
+	{
+		p = bc->Plume_Pressure;
+	}
+	else
+	{
+		ierr = GetAverageLithostatic(bc); CHKERRQ(ierr);
+		p = bc->jr->mean_p;
+	}
+
+    PetscPrintf(PETSC_COMM_WORLD, "  average lithostatic pressure is  %6f MPa \n", p*bc->jr->scal->stress);
 
 
 	// initialize index bounds
 
-	mcx = fs->dsx.tcels - 1;
-	mcy = fs->dsy.tcels - 1;
-	mcz = fs->dsz.tcels - 1;
-
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp, &litho_p);  CHKERRQ(ierr);
 
 
 	//-----------------------------------------------------
@@ -2424,47 +2427,47 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
 		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
 
+		iter = 0;
+		radius2 = PetscPowScalar(bc->Plume_Radius,2.0 );
 		START_STD_LOOP
 		{
 			dz      = SIZE_CELL(k,sz,fs->dsz);
 			x       = COORD_CELL(i, sx, fs->dsx);
 			y       = COORD_CELL(j, sy, fs->dsy);
-
-			if(bc->Plume_Pressure>0.0)
-			{
-				p = bc->Plume_Pressure;
-			}
-			else
-			{
-				p = litho_p[k][j][i];
-			}
-
-
-
+			p_bot   = 0.0;
 				if(bc->Plume_Dimension==1)	// 2D plume
 				{
 					xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
 					xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
 					x_windmin = xmin-2.0*bc->Plume_Radius;
 					x_windmax = xmax+2.0*bc->Plume_Radius;
-				//	if((k == mcz) ) bcp[k+1][j][i] = 0.0; //&& ((i!=0) && (i!=mcx))
 
-					if( k==0)// && ((i!=0) && (i!=mcx)))
+					if( k==0)
 					{
-						/*
-						if(x>=x_windmin && x<=x_windmax)
+						if(bc->Plume_Pressure<0.0)
 						{
+							// compute the pressure at the bottom of the numerical box
+							svBulk = &bc->jr->svCell[iter++].svBulk;
+							p_bot = p + (dz/2)*g*svBulk->rho;
+						}
+						else
+						{
+							p_bot = p;
+						}
+
+						rho_mantle =  GetDensity(bc,phase_mantle,bc->Tbot, p_bot);
+						rho_plume  =  GetDensity(bc,phase_plume,bc->Plume_Temperature, p_bot);
+						dP         =  (rho_mantle-rho_plume)*g*H;
+
+
 							if ((x >= xmin) && (x <= xmax))
 							{
-								bcp[k-1][j][i] = p +dP;
+								bcp[k-1][j][i] = p_bot+(dz/2)*g*rho_plume+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
 							}
 							else
 							{
-								bcp[k-1][j][i] = p;
+								bcp[k-1][j][i] = p_bot + (dz/2)*g*rho_mantle;
 							}
-					    PetscPrintf(PETSC_COMM_WORLD, "      p[j][i ]is     : %6f MPa \n", bcp[k-1][j][i]*bc->jr->scal->stress);
-						}
-					*/
 					}
 
 				}
@@ -2479,8 +2482,150 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp, &litho_p);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------------------------
+// Compute the average lithostatic pressure at the bottom of the numerical simulation
+#undef __FUNCT__
+#define __FUNCT__ "GetAverageLithostatic"
+PetscErrorCode GetAverageLithostatic(BCCtx *bc)
+{
+		Vec         send,recv;
+		JacRes      *jr;
+		FDSTAG      *fs;
+		Discret1D   *dsz;
+		PetscScalar ***lp, ***ibuff, *lbuff,*lbuff2 ,mean_p;
+		PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L;
+		PetscErrorCode ierr;
+		PetscFunctionBegin;
+
+
+
+		jr  = bc->jr;
+		fs  =  jr->fs;
+		dsz = &fs->dsz;
+		L   =  (PetscInt)dsz->rank;
+
+
+	    GET_CELL_RANGE(nx, sx, fs->dsx)
+	    GET_CELL_RANGE(ny, sy, fs->dsy)
+	    GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		// Create the vector to save the lithostatic pressure
+		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &send); CHKERRQ(ierr);
+
+		ierr = VecZeroEntries(send); CHKERRQ(ierr);
+
+		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &recv); CHKERRQ(ierr);
+
+		ierr = VecZeroEntries(recv); CHKERRQ(ierr);
+
+		// retrieve the lithostatic pressure at the bottom of the domain (i.e. the largest value of the array along z direction)
+
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
+
+		ierr = DMDAVecGetArray(jr->DA_CELL_2D, send, &ibuff); CHKERRQ(ierr);
+
+
+		ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+
+
+		START_STD_LOOP
+		{
+			if(ibuff[L][j][i]< lp[k][j][i])
+			{
+				ibuff[L][j][i]= lp[k][j][i];
+
+			}
+
+
+		}
+		END_STD_LOOP
+
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
+
+		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, send, &ibuff); CHKERRQ(ierr);
+
+
+		if(dsz->nproc != 1 )
+		{
+			ierr = VecGetArray(send, &lbuff); CHKERRQ(ierr);
+			ierr = VecGetArray(recv, &lbuff2); CHKERRQ(ierr);
+			ierr = MPI_Allreduce(lbuff, lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_MAX, dsz->comm); CHKERRQ(ierr);
+
+			ierr = VecRestoreArray(send, &lbuff); CHKERRQ(ierr);
+			ierr = VecRestoreArray(recv, &lbuff2); CHKERRQ(ierr);
+
+
+		}
+		else
+		{
+			ierr = VecCopy(send,recv);  CHKERRQ(ierr);
+		}
+
+		ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &send); CHKERRQ(ierr);
+
+		// Compute the average lithostatic pressure
+
+		ierr = VecSum(recv, &mean_p); CHKERRQ(ierr);
+
+
+
+		bc->jr->mean_p =mean_p/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels*fs->dsz.nproc);
+
+		ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &recv); CHKERRQ(ierr);
+
+		PetscFunctionReturn(0);
+
+
+
+}
+// Get the density of the material below the numerical mode
+//---------------------------------------------------------------------------------------------
+// Compute the average lithostatic pressure at the bottom of the numerical simulation
+PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p )
+{
+	Material_t *mat;
+	PData      *Pd;
+	PetscScalar cf_therm,cf_comp;
+	PetscScalar rho;
+	PetscErrorCode ierr;
+
+	mat = bc->dbm->phases;
+	rho = mat[Phase].rho;
+	Pd  = bc->jr->Pd;
+
+
+	cf_comp  = 1.0;
+	cf_therm = 1.0;
+
+	if(mat[Phase].beta)
+	{
+		// negative sign as compressive pressures (increasing depth) is negative in LaMEM
+		cf_comp = 1.0 + p*mat->beta;
+	}
+
+	if(mat[Phase].alpha)
+	{
+		cf_therm  = 1.0 - mat->alpha*(T - bc->jr->ctrl.TRef);
+	}
+
+	if(mat[Phase].pdAct == 1)
+	{
+		ierr = setDataPhaseDiagram(Pd, p, T, mat[Phase].pdn); CHKERRQ(ierr);
+
+		rho = Pd->rho;
+	}
+	else
+	{
+		rho = rho*cf_comp*cf_therm;
+	}
+
+
+
+	return rho;
+}
+
+
 
