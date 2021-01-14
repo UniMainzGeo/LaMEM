@@ -389,11 +389,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	//open bottom boundary flag
 
 	ierr = getIntParam(fb, _OPTIONAL_, "permeable_bot_bound",		&bc->bot_open, 		1, -1); 	CHKERRQ(ierr);
-	if(bc->bot_open && !bc->jr->ctrl.initLithPres)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The permeable boundary require to compute the lithostatic pressure");
 
-	}
 	if(bc->bot_open)
 	{
 		ierr = getIntParam(fb, _REQUIRED_, "permeable_phase_inflow",		&bc->phase_inflow_bot, 		1, -1); 	CHKERRQ(ierr);
@@ -418,8 +414,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		// Type of plume (2D or 3D)
 
 		ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL); 					CHKERRQ(ierr);  // must have component
-		if(!strcmp(str, "Influx_type"))      bc->Plume_Type=1;		        //  velocity flux
-		else if (!strcmp(str, "Pressure_type"))      bc->Plume_Type=2;		//  pressure adjusted flux
+		if(!strcmp(str, "Inflow_Type"))      bc->Plume_Type=1;		        //  velocity flux
+		else if (!strcmp(str, "Pressure_Type"))      bc->Plume_Type=2;		//  pressure adjusted flux
 		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Pressure_type] as parameter for Plume_Type, not %s",str);}
 		ierr = getStringParam(fb, _REQUIRED_, "Plume_Dimension", 	str, NULL); 					CHKERRQ(ierr);  // must have component
 		if     	(!strcmp(str, "2D"))      bc->Plume_Dimension=1;		// 2D setup
@@ -427,7 +423,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);} 
 
 		ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"    		, 	&bc->Plume_Phase, 			1, mID); 			CHKERRQ(ierr);
-		ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , 	&bc->Plume_Phase_Mantle, 			1, mID); 			CHKERRQ(ierr);
 
 		ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature"	, 	&bc->Plume_Temperature, 	1, 1); 				CHKERRQ(ierr);
 		
@@ -457,6 +452,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 			bc->Plume_Pressure = -1;
 			ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
 			ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure",&bc->Plume_Pressure,	1,	scal->stress);	CHKERRQ(ierr);
+			ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , 	&bc->Plume_Phase_Mantle, 			1, mID); 			CHKERRQ(ierr);
+
 			bc->bot_open = 1;
 		}
 
@@ -490,10 +487,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
 	}
 
-	//if(bc->bot_open && bc->noslip[6])
-	//{
-		//SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with bottom boundary (open_bot_bound, noslip) \n");
-//	}
+
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Boundary condition parameters: \n");
@@ -2458,18 +2452,18 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 					{
 						xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
 						xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
-						if(x>=xmin && x<=xmax)rhog = (dz/2)*g*rho_plume;
+						if(x>=xmin && x<=xmax)rhog = (dz/2)*g*rho_plume+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
 						// Gaussian perturbation of dP
-						bcp[k-1][j][i] = p_bot+rhog+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
+						bcp[k-1][j][i] = p_bot+rhog;
 					}
 					else
 					{
 						if(PetscPowScalar((x - bc->Plume_Center[0]),2.0) + PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0))
 						{
-							rhog = (dz/2)*g*rho_plume;
+							rhog = (dz/2)*g*rho_plume+dP*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/radius2);
 						}
 						// Gaussian perturbation of dP
-						bcp[k-1][j][i] = p_bot+rhog+dP*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/radius2);
+						bcp[k-1][j][i] = p_bot+rhog;
 					}
 				}
 				else
