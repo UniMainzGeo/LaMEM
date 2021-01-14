@@ -197,8 +197,8 @@ public:
 	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
 	PetscScalar  T;                 // optional temperature to set within the phase
         // dike parameters
-        PetscScalar  Mf;                // optional for dike phase only, amount of magma-accommodated extenison in front of box
-        PetscScalar  Mb;      	        // optional for dike phase only, amount of magma-accommodated extenison in back of box
+        PetscScalar  Mf;                // for dike phase only, amount of magma-accommodated extenison in front of box
+        PetscScalar  Mb;      	        // for dike phase only, amount of magma-accommodated extenison in back of box
         PetscScalar  M;
         PetscScalar  dikeRHS;
 	// phase diagram

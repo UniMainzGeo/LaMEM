@@ -459,7 +459,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mb",       &m->Mb,    1, 1.0);  CHKERRQ(ierr);      // amount of magma-accommodated extension in back for dike phase
 
 
-
 	// FOR DIKE PHASE
 	if((!m->Mf && m->Mb) || (m->Mf && !m->Mb))
         {

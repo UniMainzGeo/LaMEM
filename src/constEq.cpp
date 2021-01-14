@@ -758,8 +758,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			// dike
 			if(mat->Mb && mat->Mf)
 			{
-			  //  PetscPrintf(PETSC_COMM_WORLD, "outer loop volCell Mb %f \n", mat->Mb);
-			  
 			  if(mat->Mb == mat->Mf)
 			    {
 			      // constant M
@@ -768,7 +766,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
 				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s 
-				PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", mat->dikeRHS);
+				//PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", mat->dikeRHS);
 			    }
 			  /*  else
 
@@ -798,7 +796,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
 		       	svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // new for dike
-			 PetscPrintf(PETSC_COMM_WORLD, "in volCell: svBulk dikeRHS %f \n", svBulk->dikeRHS);
+			//PetscPrintf(PETSC_COMM_WORLD, "in volCell: svBulk dikeRHS %f \n", svBulk->dikeRHS);
 		}
 	}
 
@@ -898,10 +896,8 @@ PetscErrorCode cellConstEq(
 
 	if(ctrl->actExp && ctrl->actDike)    // new option for dike
           {
-	        PetscPrintf(PETSC_COMM_WORLD, "in gres: dikeRHS %f \n", svBulk->dikeRHS);
-
             gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + svBulk->dikeRHS;  // [1/s]
-	    PetscPrintf(PETSC_COMM_WORLD, "in gres: gres dike %f \n", gres);
+	    //PetscPrintf(PETSC_COMM_WORLD, "in gres: gres dike %f \n", gres);
           }
 	else if(ctrl->actExp)
           {
