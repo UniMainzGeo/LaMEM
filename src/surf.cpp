@@ -71,6 +71,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	// initialize
 	surf->phaseCorr   =  1;
 	surf->AirPhase    = -1;
+	//	surf->DikePhaseID    = -1; // NECESSARY FOR DIKE PHASE ID AS WELL??
 
 	// check whether free surface is activated
 	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
@@ -86,8 +87,8 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "surf_corr_phase",    &surf->phaseCorr,     1,  1);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",         &surf->InitLevel,     1,  scal->length); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",     &surf->AirPhase,      1,  maxPhaseID);   CHKERRQ(ierr);
-//NEW   ierr = getIntParam   (fb, _REQUIRED_, "dike_air_phase_ID",  &surf->DikePhaseID,   1,  maxPhaseID); CHKERRQ(ierr); // phase ID of dike phase that extends into the\
- sticky air layer 
+	//        ierr = getIntParam   (fb, _REQUIRED_, "dike_air_phase_ID",  &surf->DikePhaseID,   1,  maxPhaseID);   CHKERRQ(ierr);
+	// phase ID of dike phase that extends into the	sticky air layer 
 	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",     &surf->MaxAngle,      1,  scal->angle);  CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  2);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  3);            CHKERRQ(ierr);

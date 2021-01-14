@@ -70,7 +70,7 @@ struct FreeSurf
 	PetscInt    phaseCorr;   // free surface phase correction flag
 	PetscScalar InitLevel;   // initial level
 	PetscInt    AirPhase;    // air phase number
-        PetscInt    DikePhaseID;    // dike phase ID of dike that extends into air phase 
+  //        PetscInt    DikePhaseID;    // dike phase ID of dike that extends into air phase 
 	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
 
 	// erosion/sedimentation parameters

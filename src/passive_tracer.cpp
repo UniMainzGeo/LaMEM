@@ -772,7 +772,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	FreeSurf        *surf;
 	Vec             vphase;
 	PetscInt        sx, sy, sz;
-	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
+	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid; // DikePhaseID;
 	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *IX,bz,ez,by,ey,bx,ex,Xm[3];
 	PetscScalar *Xp, *Yp,*Zp,*phaseptr;
 	spair           d;
@@ -790,9 +790,8 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	fs        = actx->fs;
 	L         = fs->dsz.rank;
 	AirPhase  = surf->AirPhase;
-	// for dike add context: DikePhaseID = surf->DikePhaseID;
+	//	DikePhaseID = surf->DikePhaseID;  // NEW for dike phase in the sticky air layer
 
-	
 	// starting indices & number of cells
 	sx = fs->dsx.pstart;
 	sy = fs->dsy.pstart;
@@ -848,18 +847,13 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
 
 			// check whether rock marker is above the free surface
-			if(phaseptr[jj] != AirPhase && zp > topo) 
+			//if(phaseptr[jj] !=DikePhaseID && phaseptr[jj] != AirPhase && zp > topo) 
+      			if(phaseptr[jj] != AirPhase && zp > topo) 
 			{
 				// erosion (physical or numerical) -> rock turns into air
 				phaseptr[jj]= AirPhase;
+
 			}
-
-
-			// add if-condition to exclude dike phase from turning into air phase
-			// if(phaseptr[jj] !=DikePhaseID && phaseptr[jj] != AirPhase && zp > topo)
-			// (check for dike by looking for Mf and Mb, probably need more additions in the code)
-
-
 			
 			// check whether air marker is below the free surface
 			if(phaseptr[jj] == AirPhase && zp < topo)
