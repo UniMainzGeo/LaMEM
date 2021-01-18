@@ -2365,7 +2365,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 	PetscScalar g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,p_bot,radius2, rhog;
 	PetscInt    phase_mantle,phase_plume;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz,iter;
-	PetscScalar ***bcp;
+	PetscScalar ***bcp,***lp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2410,6 +2410,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 	// initialize index bounds
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
 
 
 	//-----------------------------------------------------
@@ -2435,9 +2436,14 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 				// Lithostatic pressure is stored in the central node, to obtain the pressure at the bottom a factor rho*g*dz/2 must be applied
 				svBulk = &bc->jr->svCell[iter++].svBulk;
 
-				if(bc->Plume_Pressure!=0.0)
+				if(bc->Plume_Pressure==0.0)
 				{
-				p_bot = p + (dz/2)*g*svBulk->rho;
+					p_bot = lp[k][j][i] + (dz/2)*g*svBulk->rho;
+
+				}
+				else
+				{
+					p_bot = p + (dz/2)*g*svBulk->rho;
 				}
 				rho_mantle =  GetDensity(bc,phase_mantle,bc->Tbot, p_bot);
 				// To compute the pressure outside the domain, a factor of dz/2*rho_ext*g must applied. It is assumed that the density is constant outside
@@ -2477,6 +2483,8 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 }
