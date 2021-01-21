@@ -2458,9 +2458,9 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 					{
 						xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
 						xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
-						if(x>=xmin && x<=xmax)rhog = (dz/2)*g*rho_plume+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
+						if(x>=xmin && x<=xmax)rhog = (dz/2)*g*rho_plume;
 						// Gaussian perturbation of dP
-						bcp[k-1][j][i] = p_bot+rhog;
+						bcp[k-1][j][i] = p_bot+rhog+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
 					}
 					else
 					{
