@@ -1,4 +1,4 @@
-/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/*@ ~~~~~~~~~~~~  if~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
  **    Copyright (c) 2011-2020, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
@@ -454,7 +454,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 			ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure",&bc->Plume_Pressure,	1,	scal->stress);	CHKERRQ(ierr);
 			ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , 	&bc->Plume_Phase_Mantle, 			1, mID); 			CHKERRQ(ierr);
 
-			bc->bot_open = 1;
 		}
 
 
@@ -2066,10 +2065,12 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz,ip;
 	PetscScalar z,x, y, cmax,cmin,z_plate;
 	PetscScalar Temp_age,k_thermal;
+	PetscInt phase_inflow;
+	PetscScalar T_inflow;
 
 	PetscFunctionBegin;
 
-	if( (bc->face) || bc->Plume_Inflow)
+	if( (bc->face) || bc->Plume_Inflow || bc->bot_open)
 	{
 		fs = bc->fs;
 		M  = fs->dsx.ncels;
@@ -2132,42 +2133,54 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 		}
 
-		if(bc->Plume_Inflow)
-		{	
+
 			// if we have have a inflow condition @ the lower boundary, we change the phase of the particles within the zone
-			if(k+sz == 0 || k+sz == 1)
+		if(k+sz == 0 || k+sz == 1)
+		{
+			if (bc->Plume_Inflow == 1)
 			{
+
+
+				phase_inflow = bc->Plume_Phase_Mantle;
+
 				if(bc->Plume_Dimension==1)
 				{
+					T_inflow     = bc->Tbot + (bc->Plume_Temperature-bc->Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
+
+
 					cmin = bc->Plume_Center[0] - bc->Plume_Radius;
 					cmax = bc->Plume_Center[0] + bc->Plume_Radius;
-					
+
 					if(x>=cmin && x<=cmax)
 					{
-						P->phase = bc->Plume_Phase;
-						P->T     = bc->Plume_Temperature;
-					}
+						phase_inflow = bc->Plume_Phase;
+						PetscPrintf(PETSC_COMM_WORLD,"Plume Temperature P->T=%6f \n",T_inflow*bc->scal->temperature-bc->scal->Tshift);
 
+					}
 				}
 				else
 				{
-                    if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) + 
-                        PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
-                    {
-	                    P->phase = bc->Plume_Phase;
-						P->T     = bc->Tbot + (bc->Plume_Temperature-bc->Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
-                    }
-                    else
-                    {
-                    	P->phase = bc->Plume_Phase_Mantle;
-                    	P->T     = bc->Tbot;
-                    }
+					T_inflow     = bc->Tbot + (bc->Plume_Temperature-bc->Tbot)*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/(PetscPowScalar(bc->Plume_Radius,2.0)));
 
-
+					if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) +
+						PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
+					{
+						phase_inflow = bc->Plume_Phase;
+					}
 				}
-			}
 
+				P->phase  = phase_inflow;
+				P->T      = T_inflow;
+				PetscPrintf(PETSC_COMM_WORLD,"Plume Temperature P->T=%6f \n",P->T*bc->scal->temperature-bc->scal->Tshift);
+
+			}
+			else if(bc->bot_open)
+			{
+				P->phase = bc->phase_inflow_bot;
+				P->T     = bc->Tbot;
+			}
 		}
+
 	}
 
 	PetscFunctionReturn(0);
