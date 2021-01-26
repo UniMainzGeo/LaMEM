@@ -52,6 +52,7 @@
 #include "advect.h"
 #include "phase.h"
 #include "constEq.h"
+#include "surf.h"
 
 //---------------------------------------------------------------------------
 // * open box & Winkler (with tangential viscous friction)
@@ -2064,7 +2065,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	FDSTAG     *fs;
 	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz,ip;
 	PetscScalar z,x, y, cmax,cmin,z_plate;
-	PetscScalar Temp_age,k_thermal;
+	PetscScalar Temp_age,k_thermal,dT_adiabatic,Z_Top;
 	PetscInt phase_inflow;
 	PetscScalar T_inflow;
 
@@ -2093,12 +2094,33 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 							||  (bc->face == 4 && j + sy == my))
 							&&  (z >= bc->bot && z <= bc->top) && (bc->bvel_temperature_inflow>0))
 		{
+
+			if(bc->jr->ctrl.Adiabatic_gr > 0.0)
+			{
+				if(bc->jr->surf->UseFreeSurf)
+				{
+					Z_Top = bc->jr->surf->InitLevel;
+				}
+				else
+				{
+					Z_Top = bc->fs->dsz.gcrdend;
+				}
+
+
+
+				dT_adiabatic= bc->jr->ctrl.Adiabatic_gr*PetscAbs(z-Z_Top);
+			}
+			else
+			{
+				dT_adiabatic = 0.0;
+			}
+
 			if(bc->bvel_temperature_inflow==2)
 			{
 				k_thermal= 1e-6/( (bc->scal->length_si)*(bc->scal->length_si)/(bc->scal->time_si));
 				z_plate = PetscAbs(z-bc->top);
 				Temp_age = (bc->bvel_potential_temperature-bc->bvel_temperature_top)*erf(z_plate/2.0/sqrt(k_thermal*bc->bvel_thermal_age)) + bc->bvel_temperature_top;
-				P->T = Temp_age;
+				P->T = Temp_age+dT_adiabatic;
 			}
 			else if(bc->bvel_temperature_inflow == 1)
 			{
@@ -2473,6 +2495,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 						xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
 						if(x>=xmin && x<=xmax)rhog = (dz/2)*g*rho_plume;
 						// Gaussian perturbation of dP
+
 						bcp[k-1][j][i] = p_bot+rhog+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
 					}
 					else

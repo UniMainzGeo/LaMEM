@@ -184,6 +184,7 @@ struct Controls
 	PetscScalar lrtol;          // local rheology iterations relative tolerance
 	PetscInt    Phasetrans; // Flag to activate phase transition routines
 	PetscInt    Passive_Tracer; // Flag to activate passive tracer routine
+	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 };
 
