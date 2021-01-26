@@ -2159,7 +2159,6 @@ PetscErrorCode ADVMarkerAdiabatic(AdvCtx *actx)
 	PetscScalar Z, Z_Top, dT;
 	PetscInt    jj;
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 	if(actx->jr->ctrl.Adiabatic_gr==0.0) PetscFunctionReturn(0);
 
