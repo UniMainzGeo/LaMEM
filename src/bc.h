@@ -55,6 +55,9 @@ struct Marker;
 struct DBMat;
 struct JacRes;
 
+// maximum number of fluid sources
+#define _max_num_source_ 10
+
 //---------------------------------------------------------------------------
 // index shift type
 enum ShiftType
@@ -241,6 +244,17 @@ struct BCCtx
 
 	// fluid pressure in Stokes domain
 	PetscScalar  pfluid;
+
+	// fluid sources values and coordinates
+	PetscInt    nsource;
+	PetscScalar xsource[4*_max_num_source_];
+	PetscScalar vsource[  _max_num_source_];
+
+	// hydraulic head values for domain corners [left-front, front-right, right-back, back-left]
+	PetscScalar head[4];
+
+	// no-flow boundary condition mask [left, right, front, back]
+	PetscInt noflow[4];
 
 };
 //---------------------------------------------------------------------------

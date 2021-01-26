@@ -368,6 +368,28 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_pres",  &bc->initPres, 1, -1);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "pres_fluid", &bc->pfluid,   1, 1.0); CHKERRQ(ierr);
 
+
+	//=================
+	// FLUID PARAMETERS
+	//=================
+
+	ierr = getIntParam(fb, _OPTIONAL_, "nsource", &bc->nsource, 1, _max_num_source_); CHKERRQ(ierr);
+
+	// fluid sources values and coordinates
+	if(bc->nsource)
+	{
+		PetscScalar volume_rate = scal->volume_si/scal->time_si;
+
+		ierr = getScalarParam(fb, _REQUIRED_, "xsources", bc->xsource, 3*bc->nsource, scal->length); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "vsources", bc->vsource, 3*bc->nsource, volume_rate);  CHKERRQ(ierr);
+	}
+
+	// hydraulic head values for domain corners [left-front, front-right, right-back, back-left]
+	ierr = getScalarParam(fb, _REQUIRED_, "head", bc->head, 4, scal->length); CHKERRQ(ierr);
+
+	// no-flow boundary condition mask [left, right, front, back]
+	ierr = getIntParam(fb, _OPTIONAL_, "noflow", bc->noflow, 4, -1); CHKERRQ(ierr);
+
 	// CHECK
 	if((bc->Tbot == bc->Ttop) && bc->initTemp)
 	{
@@ -402,6 +424,14 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->pbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot,   scal->lbl_stress);
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop,   scal->lbl_temperature);
 	if(bc->pfluid   != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Fluid pressure in Stokes domain            : %g %s \n", bc->pfluid, scal->lbl_stress);
+	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of fluid sources                    : %lld \n",  (LLD)bc->nsource);
+
+	PetscPrintf(PETSC_COMM_WORLD, "   No-flow boundary mask [lt rt ft bk]        : ");
+
+	for(jj = 0; jj < 4; jj++)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "%lld ", (LLD)bc->noflow[jj]);
+	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
