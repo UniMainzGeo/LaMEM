@@ -195,6 +195,9 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
 		1, 1, lx, ly, lz, &jr->DA_T); CHKERRQ(ierr);
 
+	// set proper interpolation type for multigrid
+	ierr = DMDASetInterpolationType(jr->DA_T, DMDA_Q0); CHKERRQ(ierr);
+
 	// create temperature preconditioner matrix
 	ierr = DMCreateMatrix(jr->DA_T, &jr->Att); CHKERRQ(ierr);
 
@@ -212,10 +215,17 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	// create temperature diffusion solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &jr->tksp); CHKERRQ(ierr);
+
+	// enable geometric multigrid
+	ierr = KSPSetDM(jr->tksp, jr->DA_T);           CHKERRQ(ierr);
+	ierr = KSPSetDMActive(jr->tksp, PETSC_FALSE);  CHKERRQ(ierr);
+
+	// set options
 	ierr = KSPSetOptionsPrefix(jr->tksp,"ts_");    CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(jr->tksp);            CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
+
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__

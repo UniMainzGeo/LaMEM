@@ -167,6 +167,9 @@ PetscErrorCode JacResCreateFlowParam(JacRes *jr)
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
 		1, 1, lx, ly, lz, &jr->DA_P); CHKERRQ(ierr);
 
+	// set proper interpolation type for multigrid
+	ierr = DMDASetInterpolationType(jr->DA_P, DMDA_Q0); CHKERRQ(ierr);
+
 	// create fluid pressure preconditioner matrix
 	ierr = DMCreateMatrix(jr->DA_P, &jr->App); CHKERRQ(ierr);
 
@@ -184,6 +187,12 @@ PetscErrorCode JacResCreateFlowParam(JacRes *jr)
 
 	// pressure solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &jr->pksp); CHKERRQ(ierr);
+
+	// enable geometric multigrid
+	ierr = KSPSetDM(jr->pksp, jr->DA_P);           CHKERRQ(ierr);
+	ierr = KSPSetDMActive(jr->pksp, PETSC_FALSE);  CHKERRQ(ierr);
+
+	// set options
 	ierr = KSPSetOptionsPrefix(jr->pksp,"ps_");    CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(jr->pksp);            CHKERRQ(ierr);
 
