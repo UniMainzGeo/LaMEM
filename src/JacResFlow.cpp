@@ -446,9 +446,9 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	Controls   *ctrl;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
-	PetscInt    iter;
+	PetscInt    iter, cellID, I, J, K;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, jj;
  	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
@@ -545,6 +545,20 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 
 	}
 	END_STD_LOOP
+
+	// apply point fluid sources
+	for(jj = 0; jj < bc->nsource; jj++)
+	{
+		cellID = bc->isource[jj];
+
+		if(cellID != -1)
+		{
+			// get I, J, K cell indices
+			GET_CELL_IJK(cellID, I, J, K, nx, ny);
+
+			gf[sz+K][sy+J][sx+I] += bc->vsource[jj];
+		}
+	}
 
 	// restore access
 	ierr = DMDAVecRestoreArray(jr->DA_P,   jr->gf,      &gf);  CHKERRQ(ierr);

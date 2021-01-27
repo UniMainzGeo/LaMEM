@@ -694,7 +694,7 @@ PetscErrorCode SNESCoupledTest(
 
 	if(jr->ctrl.actFluid)
 	{
-		ierr = BCApplyFlowTPC(jr->bc);                      CHKERRQ(ierr);
+		ierr = BCApplyFlowBC(jr->bc);                       CHKERRQ(ierr);
 		ierr = JacResApplyFlowBC(jr);                       CHKERRQ(ierr);
 		ierr = JacResGetFlowRes(jr, jr->ts->dt);            CHKERRQ(ierr);
 		ierr = JacResGetFlowMat(jr, jr->ts->dt);            CHKERRQ(ierr);

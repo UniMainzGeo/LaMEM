@@ -245,16 +245,17 @@ struct BCCtx
 	// fluid pressure in Stokes domain
 	PetscScalar  pfluid;
 
-	// fluid sources values and coordinates
+	// fluid sources values, coordinates, and host cell indices
 	PetscInt    nsource;
-	PetscScalar xsource[4*_max_num_source_];
+	PetscScalar xsource[3*_max_num_source_];
 	PetscScalar vsource[  _max_num_source_];
+	PetscInt    isource[  _max_num_source_];
 
-	// hydraulic head values for domain corners [left-front, front-right, right-back, back-left]
-	PetscScalar head[4];
+	// potentiometric surface elevation at domain corners [left-front, front-right, right-back, back-left]
+	PetscScalar psurf[4];
 
-	// no-flow boundary condition mask [left, right, front, back]
-	PetscInt noflow[4];
+	// open flow boundary condition mask [left, right, front, back]
+	PetscInt openFlow[4];
 
 };
 //---------------------------------------------------------------------------
@@ -286,6 +287,12 @@ PetscErrorCode BCApplySPC(BCCtx *bc);
 // shift indices of constrained nodes
 PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
 
+//---------------------------------------------------------------------------
+// Flow constraints
+//---------------------------------------------------------------------------
+
+// apply fluid pressure SPC/TPC constraints, and fluid sources
+PetscErrorCode BCApplyFlowBC(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 // TPC constraints
@@ -296,9 +303,6 @@ PetscErrorCode BCApplyPresTPC(BCCtx *bc);
 
 // apply temperature TPC
 PetscErrorCode BCApplyTempTPC(BCCtx *bc);
-
-// apply fluid pressure TPC
-PetscErrorCode BCApplyFlowTPC(BCCtx *bc);
 
 // apply velocity TPC
 PetscErrorCode BCApplyVelTPC(BCCtx *bc);
