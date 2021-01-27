@@ -482,6 +482,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	// current time step
 	dt = jr->ts->dt;
 
+//	if(jr->ts->istep == 1 )ierr = ADV_Assign_Phase(actx); CHKERRQ(ierr);
 	if(jr->ctrl.pShift)
 	{
 		pShift = jr->ctrl.pShift;
@@ -653,36 +654,36 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 			if(npz > endz)
 				{
-					npz = endz-dz/2;
+					npz = zp;
 					Active[jj]=0.0;
 				}
 			else if(npz < begz)
 				{
-					npz = begz;
+					npz = zp;
 					Active[jj]=0.0;
 				}
 
 			if(npy > endy)
 				{
-					npy = endy-dy;
+					npy = yp;
 					Active[jj]=0.0;
 				}
 			else if(npy < begy)
 				{
-				  	npy = begy;
+				  	npy = yp;
 					Active[jj]=0.0;
 				}
 
 
 			if(npx > endx)
 				{
-					npx = endx-dx;
+					npx = xp;
 					Active[jj]=0.0;
 
 				}
 			else if(npx < begx)
 				{
-					npx = begx;
+					npx = xp;
 					Active[jj]=0.0;
 				}
 
