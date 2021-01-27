@@ -86,6 +86,7 @@ struct SolVarBulk
 	PetscScalar  rho_pf; // fluid density from phase diagram
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
+	PetscScalar  Ha ;    // Adiabatic heating
 
 };
 
