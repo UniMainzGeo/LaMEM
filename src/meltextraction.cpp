@@ -1679,22 +1679,23 @@ PetscScalar Compute_dM(PetscScalar mfeff, Melt_Ex_t *M_Ex_t, PetscScalar dt)
 #define __FUNCT__ "Compute_dMex_Marker"
 PetscScalar Compute_dMex_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase )
 {
-	PetscInt      n,ipn,c=0,phase;
+	PetscInt      n,ipn,c=0,phase,*mark_id,id_m;
 	PetscScalar   Mext_b,Mext;
 
 
 
 	n = actx->markstart[ID+1] - actx->markstart[ID];
+	mark_id = actx->markind + actx->markstart[ID];
 
 
 	Mext = 0.0;
 	for(ipn=0;ipn<n;ipn++)
 	{
-
-		phase = actx->markers[ipn].phase;
+		id_m = mark_id[ipn];
+		phase = actx->markers[id_m].phase;
 		if(phase == iphase)
 		{
-			Mext += actx->markers[ipn].MExt;
+			Mext += actx->markers[id_m].MExt;
 
 			c ++;
 		}
@@ -1765,7 +1766,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 
 
 		phRat = actx->jr->svCell[iter++].phRat; // take phase ratio on the central node
-		GET_CELL_ID(ID, i-sx, j-sy, k-sz, fs->dsx.ncels, fs->dsy.ncels)
+		GET_CELL_ID(ID, i, j, k, fs->dsx.ncels, fs->dsy.ncels)
 
 
 
