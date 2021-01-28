@@ -17,6 +17,10 @@ module ReadLaMEM_Timestep
 #           ENV["PYTHON"] = "/Users/kausb/anaconda3/bin/python"
 #      b) Compile PyCall
 #           Pkg.add("PyCall")
+#
+# 3) Packages:
+# 
+#       pyimport("pip")["main"](["install","--user","vtk"])
                   
 # Make these routines easily available outside the module:
 export ReadField_3D_pVTR, Read_VTR_File, Read_VTU_File, ReadField_2D_pVTR;
