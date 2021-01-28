@@ -245,10 +245,11 @@ struct BCCtx
 	PetscScalar		Plume_Radius;				// radius of plume (for 3D plume)
 	PetscScalar		Plume_Inflow_Velocity;		// inflow velocity
 	PetscInt 		Plume_VelocityType;			// type of inflow [Gaussian=0=default or Poiseuille=1]
-	
+	PetscScalar     Plume_Pressure ;            // Plume Pressure at the bottom of the model (i.e. the bottom pressure boundary condition)
 	// open boundary flag
 	PetscInt     	top_open;
 	PetscInt 		bot_open;
+	PetscInt        phase_inflow_bot;
 
 	// no-slip boundary condition mask
 	PetscInt     	noslip[6];
@@ -345,8 +346,18 @@ PetscErrorCode BCListSPC(BCCtx *bc);
 PetscErrorCode BCApplyVelTPC(BCCtx *bc);
 
 // apply plume_open_boundary condition
-
 PetscErrorCode BC_Plume_inflow(BCCtx *bc);
+
+// apply pressure permeable boundary condition
+PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc);
+
+// Get the average lithostatic pressure at the bottom
+PetscErrorCode GetAverageLithostatic(BCCtx *bc);
+
+// Get the densities of the external material
+PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p );
+
+
 
 //---------------------------------------------------------------------------
 // Service functions

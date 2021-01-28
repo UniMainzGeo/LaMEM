@@ -282,6 +282,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// check marker distribution
 	ierr = ADVMarkCheckMarkers(actx); CHKERRQ(ierr);
 
+	// Adiabatic Gradient
+	ierr = ADVMarkerAdiabatic(actx);CHKERRQ(ierr);
+
 	// project initial history from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
@@ -2147,3 +2150,43 @@ PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkerAdiabatic"
+PetscErrorCode ADVMarkerAdiabatic(AdvCtx *actx)
+{
+	Marker      *P;
+	PetscScalar Ad_gr;
+	PetscScalar Z, Z_Top, dT;
+	PetscInt    jj;
+
+	PetscFunctionBegin;
+	if(actx->jr->ctrl.Adiabatic_gr==0.0) PetscFunctionReturn(0);
+
+	if(actx->jr->surf->UseFreeSurf)
+	{
+		Z_Top = actx->jr->surf->InitLevel;
+	}
+	else
+	{
+		Z_Top = actx->fs->dsz.gcrdend;
+	}
+
+	Ad_gr = actx->jr->ctrl.Adiabatic_gr;
+
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		dT = 0.0;
+		P = &actx->markers[jj];
+		Z=PetscAbs(P->X[2]-Z_Top);
+		if(P->phase != actx->surf->AirPhase)
+		{
+			dT = Ad_gr*Z;
+		}
+		// access marker
+		P->T+=dT;
+	}
+	PetscFunctionReturn(0);
+
+
+
+}

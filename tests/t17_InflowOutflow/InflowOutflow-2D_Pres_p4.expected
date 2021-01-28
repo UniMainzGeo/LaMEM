@@ -4,7 +4,7 @@
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : PlumeLithos_Interaction_3D.dat 
+Parsing input file : PlumeLithos_Interaction_3D_Pres.dat 
    Adding PETSc option: -snes_rtol 1e-4
    Adding PETSc option: -snes_atol 1e-3
    Adding PETSc option: -snes_max_it 30
@@ -18,7 +18,7 @@ Parsing input file : PlumeLithos_Interaction_3D.dat
    Adding PETSc option: -snes_linesearch_type l2
    Adding PETSc option: -snes_linesearch_monitor
    Adding PETSc option: -snes_linesearch_maxstep 10
-Finished parsing input file : PlumeLithos_Interaction_3D.dat 
+Finished parsing input file : PlumeLithos_Interaction_3D_Pres.dat 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -124,7 +124,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.666667 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0687728 sec)
+Reading geometric primitives ... done (2.04204 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : PlumeLithosphereInteraction_3D 
@@ -169,7 +169,7 @@ Solver parameters specified:
    Coarse level PC               : lu 
    Coarse level solver package   : (null) 
 --------------------------------------------------------------------------
-Initializing pressure with lithostatic pressure ... done (0.0177507 sec)
+Initializing pressure with lithostatic pressure ... done (0.0161912 sec)
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
@@ -182,38 +182,38 @@ Initializing pressure with lithostatic pressure ... done (0.0177507 sec)
     3 KSP Residual norm 7.515886526212e+00 
     4 KSP Residual norm 3.495088704578e+00 
     5 KSP Residual norm 3.915270432352e-01 
-    6 KSP Residual norm 7.530252454913e-02 
+    6 KSP Residual norm 7.530252454914e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 6
       Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0753025, 399.926, 799.851]
       Line search terminated: lambda = 1., fnorms = 0.0753025
-  1 SNES Function norm 7.530252454919e-02 
+  1 SNES Function norm 7.530252454917e-02 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 5.52114 (sec)
+SNES solution time      : 7.33336 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.542118939725e-03 
+      |Div|_inf = 3.542118939737e-03 
       |Div|_2   = 7.029361277274e-02 
    Momentum: 
-      |mRes|_2  = 2.700515148705e-02 
+      |mRes|_2  = 2.700515148696e-02 
 --------------------------------------------------------------------------
-Saving output ... done (0.944422 sec)
+Saving output ... done (1.77583 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.849517501885e+02 
+  0 SNES Function norm 1.849517501889e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.849517501885e+02 
-    1 KSP Residual norm 1.447030653237e+00 
-    2 KSP Residual norm 8.899349533352e-02 
-    3 KSP Residual norm 2.057590710078e-02 
-    4 KSP Residual norm 1.112426695411e-02 
+    0 KSP Residual norm 1.849517501889e+02 
+    1 KSP Residual norm 1.447030653240e+00 
+    2 KSP Residual norm 8.899349533355e-02 
+    3 KSP Residual norm 2.057590710077e-02 
+    4 KSP Residual norm 1.112426695412e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 4
       Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0111243, 92.4759, 184.952]
       Line search terminated: lambda = 1., fnorms = 0.0111243
@@ -221,55 +221,55 @@ Tentative time step : 0.00100000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 2.97114 (sec)
+SNES solution time      : 2.48131 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.589153889297e-04 
-      |Div|_2   = 8.878084148542e-03 
+      |Div|_inf = 1.589153889292e-04 
+      |Div|_2   = 8.878084148541e-03 
    Momentum: 
-      |mRes|_2  = 6.702905125383e-03 
+      |mRes|_2  = 6.702905125385e-03 
 --------------------------------------------------------------------------
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 222 markers and merged 223 markers in 7.3354e-02 s
+Marker control [0]: (subgrid) cloned 222 markers and merged 223 markers in 7.2732e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.864422 sec)
+Saving output ... done (1.00808 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00110000 [Myr] 
 Tentative time step : 0.00110000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 7.407693618030e-02 
+  0 SNES Function norm 7.407693618032e-02 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.407693618030e-02 
-    1 KSP Residual norm 1.610040595852e-02 
+    0 KSP Residual norm 7.407693618032e-02 
+    1 KSP Residual norm 1.610040595859e-02 
     2 KSP Residual norm 5.792133050725e-03 
-    3 KSP Residual norm 1.840069103212e-03 
-    4 KSP Residual norm 9.136201374795e-04 
+    3 KSP Residual norm 1.840069103215e-03 
+    4 KSP Residual norm 9.136201374773e-04 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 4
       Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00091362, 0.0370469, 0.0740769]
       Line search terminated: lambda = 1., fnorms = 0.00091362
-  1 SNES Function norm 9.136201374803e-04 
+  1 SNES Function norm 9.136201374785e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 2.98056 (sec)
+SNES solution time      : 2.50911 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
       |Div|_inf = 2.307688820324e-04 
-      |Div|_2   = 7.610522074078e-04 
+      |Div|_2   = 7.610522074058e-04 
    Momentum: 
-      |mRes|_2  = 5.054713574569e-04 
+      |mRes|_2  = 5.054713574566e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00121 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 534 markers and merged 533 markers in 7.4248e-02 s
+Marker control [0]: (subgrid) cloned 534 markers and merged 533 markers in 7.3785e-02 s
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
@@ -280,31 +280,31 @@ Tentative time step : 0.00121000 [Myr]
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 1.488030628936e-01 
-    1 KSP Residual norm 2.508759675058e-03 
-    2 KSP Residual norm 1.170789312722e-03 
-    3 KSP Residual norm 3.887903028826e-04 
+    1 KSP Residual norm 2.508759675061e-03 
+    2 KSP Residual norm 1.170789312723e-03 
+    3 KSP Residual norm 3.887903028823e-04 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 3
       Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00038879, 0.0744023, 0.148803]
       Line search terminated: lambda = 1., fnorms = 0.00038879
-  1 SNES Function norm 3.887903028814e-04 
+  1 SNES Function norm 3.887903028828e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 2.42915 (sec)
+SNES solution time      : 2.15922 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 9.144029255655e-05 
-      |Div|_2   = 3.498829032492e-04 
+      |Div|_inf = 9.144029255668e-05 
+      |Div|_2   = 3.498829032490e-04 
    Momentum: 
-      |mRes|_2  = 1.695283269207e-04 
+      |mRes|_2  = 1.695283269244e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00133 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 589 markers and merged 586 markers in 7.4469e-02 s
+Marker control [0]: (subgrid) cloned 589 markers and merged 586 markers in 7.4016e-02 s
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 21.7404 (sec) 
+Total solution time : 27.6918 (sec) 
 --------------------------------------------------------------------------
