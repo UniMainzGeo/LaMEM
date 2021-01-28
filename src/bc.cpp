@@ -848,6 +848,54 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	}
 
 
+	PetscScalar xp, yp, zp, cxb, cyb, cxe, cye, s, ps;
+	PetscScalar *psurf ;
+
+	// potentiometric surface elevation at domain corners [left-front, front-right, right-back, back-left]
+
+
+	psurf = bc->psurf;
+
+
+	// get local coordinate bounds
+	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+
+
+	// open flow boundary condition mask [left, right, front, back]
+	PetscInt openFlow[4];
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		xp = COORD_CELL(i, sx, fs->dsx);
+		yp = COORD_CELL(j, sy, fs->dsy);
+		zp = COORD_CELL(k, sz, fs->dsz);
+
+//		if(k == mcz) { bcf[k+1][j][i] = ptop; }
+//		if(k == 0)   { bcf[k-1][j][i] = pbot; }
+
+		// get relative coordinates
+		cxe = (xp - bx)/(ex - bx); cxb = 1.0 - cxe;
+		cye = (yp - by)/(ey - by); cyb = 1.0 - cye;
+
+		s = psurf[0]*cxb*cyb +
+			psurf[1]*cxe*cyb +
+			psurf[2]*cxe*cye +
+			psurf[3]*cxb*cye;
+
+		ps = rho_fluid*gz*(s - zp);
+
+		if(ps < 0.0) { ps = 0.0; }
+
+
+	}
+	END_STD_LOOP
+
+
+
+
+
 
 
 
@@ -855,15 +903,6 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 
 	// get local coordinate bounds
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
-
-
-
-
-
-
-
-
-
 
 
 	// set ground water level
@@ -909,8 +948,6 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		}
 		END_STD_LOOP
 	}
-
-
 
 
 
