@@ -263,11 +263,13 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 					x = actx->Ptr->box_passive_tracer[0]/(actx->dbm->scal->length) + dx/2+i*dx;
 				}
 
+
 				// set marker coordinates
 				Xp[imark] = x;
 				Yp[imark] = y;
 				Zp[imark] = z;
 				ID[imark] = i+ny*j+ny*nx*k;
+
 				if(actx->Ptr->Condition_pr == _Always_)
 				{
 					active[imark] = 1.0;
@@ -276,6 +278,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				{
 					active[imark] = 0.0;
 				}
+
 
 				// increment local counter
 				imark++;
@@ -307,8 +310,9 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	FDSTAG      *fs;
 	vector <spair>    dist;
 	spair d;
+	Marker   *IP;
 	PetscScalar  X[3],Xm[3],*Xp,*Yp,*Zp,*Pr,*T,*phase;
-	PetscInt     I, J, K,ii,numpassive,imark,ID,M,N,n;
+	PetscInt     I, J, K,ii,numpassive,imark,ID,nx,ny,n,*markind,id_m;
 	PetscScalar ex,bx,ey,by,ez,bz;
 
 
@@ -320,12 +324,14 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 
 	numpassive = actx->Ptr->nummark;
 
-	// marker counter
-	imark = 0;
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
 	// get context
 	fs = actx->fs;
-	M  = fs->dsx.ncels;
-	N  = fs->dsy.ncels;
+
+	// starting indices & number of cells
+	nx = fs->dsx.ncels;
+	ny = fs->dsy.ncels;
 
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
@@ -355,31 +361,35 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 			ierr = Discret1DFindPoint(&fs->dsz, X[2], K); CHKERRQ(ierr);
 
 			// compute and store consecutive index
-			GET_CELL_ID(ID, I, J, K, M, N);
+			GET_CELL_ID(ID, I, J, K, nx, ny);
 
 			dist.clear();
 
 
 			n = actx->markstart[ID+1] - actx->markstart[ID];
+			markind = actx->markind + actx->markstart[ID];
 
-			for (ii = actx->markstart[ID]; ii <actx->markstart[ID]+n; ii++)
+			for (ii = 0; ii < n; ii++)
 			{
-				Xm[0] =actx->markers[ii].X[0];
-				Xm[1] =actx->markers[ii].X[1];
-				Xm[2] =actx->markers[ii].X[2];
+				id_m=markind[ii];
+				Xm[0] = actx->markers[id_m].X[0];
+				Xm[1] = actx->markers[id_m].X[1];
+				Xm[2] = actx->markers[id_m].X[2];
 
-				d.first  = EDIST(Xm, X);
-				d.second = ii;
+
+				d.first  = EDIST(X, Xm);
+				d.second = id_m;
 				dist.push_back(d);
 			}
 
 			// sort markers by distance
 			sort(dist.begin(), dist.end());
+			IP = &actx->markers[dist.begin()->second];
 
 			// clone closest marker
-			phase[imark]= actx->markers[dist.begin()->second].phase;
-			T[imark]= actx->markers[dist.begin()->second].T;
-			Pr[imark]= actx->markers[dist.begin()->second].p;
+			phase[imark]= IP->phase;
+			T[imark]= IP->T;
+			Pr[imark]= IP->p;
 			}
 			else
 			{
@@ -441,13 +451,13 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	Material_t      *mat;
 	PData           *Pd;
 	PetscInt        sx, sy, sz, nx, ny,nz,rank;
-	PetscInt        jj, I, J, K, II, JJ, KK, AirPhase, num_part,ID, n, ii, numActTracers ;
+	PetscInt        jj, I, J, K, II, JJ, KK, AirPhase, num_part,ID, n, ii, numActTracers,*markind,id_m ;
 	PetscScalar     ex,bx,ey,by,ez,bz;
 	PetscScalar     *ncx, *ncy, *ncz;
 	PetscScalar     *ccx, *ccy, *ccz;
 	PetscScalar     ***lvx, ***lvy, ***lvz, ***lp, ***lT;
 	PetscScalar     vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop, endx,endy,endz,begx,begy,begz,npx,npy,npz;
-	PetscScalar     *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active,dx,dy,dz,*melt_grid;
+	PetscScalar     *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active,*melt_grid;
 	PetscScalar     pShift;
 	PetscScalar     Xm[3],X[3];
 	PetscLogDouble t;
@@ -571,9 +581,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			GET_CELL_ID(ID, I, J, K, nx, ny)
 
 			svCell = &jr->svCell[ID];
-			dx = SIZE_CELL(I,sx,fs->dsx);
-			dy = SIZE_CELL(J,sy,fs->dsy);
-			dz = SIZE_CELL(K,sy,fs->dsz);
+
 
 			melt_grid[jj] = svCell->svBulk.mf;
 
@@ -595,23 +603,26 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 					// sort markers by distance
 					dist.clear();
 					n = actx->markstart[ID+1] - actx->markstart[ID];
+					markind = actx->markind + actx->markstart[ID];
 
-					for (ii = actx->markstart[ID]; ii <actx->markstart[ID]+n; ii++)
+
+					for (ii = 0; ii < n; ii++)
+					{
+						id_m=markind[ii];
+						Xm[0] = actx->markers[id_m].X[0];
+						Xm[1] = actx->markers[id_m].X[1];
+						Xm[2] = actx->markers[id_m].X[2];
+						X[0]  = xp;
+						X[1]  = yp;
+						X[2]  = zp;
+
+						if (mat[actx->markers[ii].phase].pdn)
 						{
-							Xm[0] = actx->markers[ii].X[0];
-							Xm[1] = actx->markers[ii].X[1];
-							Xm[2] = actx->markers[ii].X[2];
-							X[0]  = xp;
-							X[1]  = yp;
-							X[2]  = zp;
-
-							if (mat[actx->markers[ii].phase].pdn)
-							{
-								d.first  = EDIST(Xm, X);
-								d.second = ii;
-								dist.push_back(d);
-							}
+							d.first  = EDIST(Xm, X);
+							d.second = id_m;
+							dist.push_back(d);
 						}
+					}
 					sort(dist.begin(), dist.end());
 					phase[jj] = actx->markers[dist.begin()->second].phase;
 
@@ -1047,7 +1058,7 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 	if(((actx->Ptr->Condition_pr ==_Pres_ptr_)||(actx->Ptr->Condition_pr ==_Temp_ptr_)||(actx->Ptr->Condition_pr ==_Time_ptr_)) && Active[jj] == 1.0)
 	{
 
-		PetscInt n, ii;
+		PetscInt n, ii,id_m,*markind;
 
 		ierr = VecGetArray(actx->Ptr->phase, &phase); CHKERRQ(ierr);
 
@@ -1058,19 +1069,22 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 
 		dist.clear();
 		n = actx->markstart[ID+1] - actx->markstart[ID];
-
-		for (ii = actx->markstart[ID]; ii <actx->markstart[ID]+n; ii++)
-			{
-				Xm[0] =actx->markers[ii].X[0];
-				Xm[1] =actx->markers[ii].X[1];
-				Xm[2] =actx->markers[ii].X[2];
+		markind = actx->markind + actx->markstart[ID];
 
 
-				d.first  = EDIST(Xm, X);
-				d.second = ii;
-				dist.push_back(d);
+		for (ii = 0; ii < n; ii++)
+		{
+			id_m=markind[ii];
+			Xm[0] =actx->markers[id_m].X[0];
+			Xm[1] =actx->markers[id_m].X[1];
+			Xm[2] =actx->markers[id_m].X[2];
 
-			}
+
+			d.first  = EDIST(Xm, X);
+			d.second = id_m;
+			dist.push_back(d);
+
+		}
 		sort(dist.begin(), dist.end());
 		phase[jj]= actx->markers[dist.begin()->second].phase;
 		ierr = VecRestoreArray(actx->Ptr->phase, &phase); CHKERRQ(ierr);
