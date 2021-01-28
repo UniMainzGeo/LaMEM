@@ -1766,7 +1766,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 
 
 		phRat = actx->jr->svCell[iter++].phRat; // take phase ratio on the central node
-		GET_CELL_ID(ID, i, j, k, fs->dsx.ncels, fs->dsy.ncels)
+		GET_CELL_ID(ID, i-sx, j-sy, k-sz, fs->dsx.ncels, fs->dsy.ncels)
 
 
 
