@@ -788,11 +788,13 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	JacRes      *jr;
 	Controls    *ctrl;
 	FreeSurf    *surf;
-	PetscScalar bx, by, bz, ex, ey, ez, *X, hx, hy, hz;
-	PetscScalar rho_fluid, gwLevel, gz;
-	PetscInt    i, j, k,  nx, ny, nz, sx, sy, sz, iter, M, N;
-	PetscInt    jj, I, J, K, cellID, mcz, AirPhase, fluidPhase, initGuess;
-	PetscScalar ***bcf, ***p;
+	PetscInt    *openFlow;
+	PetscScalar ***bcf, ***p, *psurf, *X;
+	PetscScalar rho_fluid, gz;
+	PetscScalar bx, by, bz, ex, ey, ez, hx, hy, hz;
+	PetscScalar xp, yp, zp, cxb, cyb, cxe, cye, s, ps;
+	PetscInt    i, j, k,  nx, ny, nz, sx, sy, sz, iter, mcx, mcy;
+	PetscInt    jj, I, J, K, cellID, AirPhase, fluidPhase, initGuess;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -806,10 +808,11 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	fluidPhase = ctrl->fluidPhase;
 	rho_fluid  = ctrl->rho_fluid;
 	initGuess  = ctrl->initGuess;
-	mcz        = fs->dsz.tcels - 1;
+	mcx        = fs->dsx.tcels - 1;
+	mcy        = fs->dsy.tcels - 1;
 	gz         =  PetscAbsScalar(ctrl->grav[2]);
-	M          = fs->dsx.ncels;
-	N          = fs->dsy.ncels;
+	psurf      = bc->psurf;
+	openFlow   = bc->openFlow;
 
 	// get local coordinate bounds
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
@@ -847,91 +850,9 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		bc->vsource[jj] /= hx*hy*hz;
 	}
 
-
-	PetscScalar xp, yp, zp, cxb, cyb, cxe, cye, s, ps;
-	PetscScalar *psurf ;
-
-	// potentiometric surface elevation at domain corners [left-front, front-right, right-back, back-left]
-
-
-	psurf = bc->psurf;
-
-
-	// get local coordinate bounds
-	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
-
-
-	// open flow boundary condition mask [left, right, front, back]
-	PetscInt openFlow[4];
-
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		xp = COORD_CELL(i, sx, fs->dsx);
-		yp = COORD_CELL(j, sy, fs->dsy);
-		zp = COORD_CELL(k, sz, fs->dsz);
-
-//		if(k == mcz) { bcf[k+1][j][i] = ptop; }
-//		if(k == 0)   { bcf[k-1][j][i] = pbot; }
-
-		// get relative coordinates
-		cxe = (xp - bx)/(ex - bx); cxb = 1.0 - cxe;
-		cye = (yp - by)/(ey - by); cyb = 1.0 - cye;
-
-		s = psurf[0]*cxb*cyb +
-			psurf[1]*cxe*cyb +
-			psurf[2]*cxe*cye +
-			psurf[3]*cxb*cye;
-
-		ps = rho_fluid*gz*(s - zp);
-
-		if(ps < 0.0) { ps = 0.0; }
-
-
-	}
-	END_STD_LOOP
-
-
-
-
-
-
-
-
-/*
-
-	// get local coordinate bounds
-	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
-
-
-	// set ground water level
-	if     (ctrl->gwType == _GW_TOP_)   gwLevel = ztop;
-	else if(ctrl->gwType == _GW_SURF_)  gwLevel = surf->avg_topo;
-	else if(ctrl->gwType == _GW_LEVEL_) gwLevel = ctrl->gwLevel;
-	else                                gwLevel = 0.0;
-
-	// set pressure at top & bottom boundaries
-	ptop = 0.0;
-	pbot = rho_fluid*gz*(gwLevel-zbot);
-
+	// set zero pressure in the air
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf, &bcf);  CHKERRQ(ierr);
 
-	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		if(k == mcz) { bcf[k+1][j][i] = ptop; }
-		if(k == 0)   { bcf[k-1][j][i] = pbot; }
-
-	}
-	END_STD_LOOP
-
-
-
-	// set zero pressure in the air
 	if(AirPhase != -1)
 	{
 		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -948,15 +869,6 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		}
 		END_STD_LOOP
 	}
-
-
-
-*/
-
-
-
-
-
 
 	// set pressure in Stokes domain
 	if(fluidPhase != -1 && !initGuess)
@@ -983,7 +895,52 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf, &bcf); CHKERRQ(ierr);
 
+	// exchange ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcf);
+
+	// get global coordinate bounds
+	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+
+	// set pressure on lateral boundaries
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf, &bcf);  CHKERRQ(ierr);
+
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// get cell coordinates
+		xp = COORD_CELL(i, sx, fs->dsx);
+		yp = COORD_CELL(j, sy, fs->dsy);
+		zp = COORD_CELL(k, sz, fs->dsz);
+
+		// get relative coordinates
+		cxe = (xp - bx)/(ex - bx); cxb = 1.0 - cxe;
+		cye = (yp - by)/(ey - by); cyb = 1.0 - cye;
+
+		// get potentiometric surface elevation
+		s = psurf[0]*cxb*cyb +
+			psurf[1]*cxe*cyb +
+			psurf[2]*cxe*cye +
+			psurf[3]*cxb*cye;
+
+		// get fluid pressure
+		ps = rho_fluid*gz*(s - zp);
+
+		// set zero pressure in the air
+		if(ps < 0.0 || bcf[k][j][i] == 0.0) { ps = 0.0; }
+
+		// set boundary pressure
+		if(openFlow[0] && i == 0)   { bcf[k][j][i-1] = ps; }
+		if(openFlow[1] && i == mcx) { bcf[k][j][i+1] = ps; }
+		if(openFlow[2] && j == 0)   { bcf[k][j-1][i] = ps; }
+		if(openFlow[3] && j == mcy) { bcf[k][j+1][i] = ps; }
+
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf, &bcf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
