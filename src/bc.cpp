@@ -850,9 +850,9 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		bc->vsource[jj] /= hx*hy*hz;
 	}
 
-	// set zero pressure in the air
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf, &bcf);  CHKERRQ(ierr);
 
+	// set zero pressure in the air
 	if(AirPhase != -1)
 	{
 		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);

@@ -498,8 +498,6 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 		if(bcf[k][j][i] != DBL_MAX)
 		{
 			gf[k][j][i]   = 0.0;
-			svCell->fflux = 0.0;
-
 			continue;
 		}
 
@@ -540,23 +538,23 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 
 		// compute residual
 		gf[k][j][i] = Ss*(invdt*(pc - fn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz;
-
-		svCell->fflux = PetscSqrtReal(bqx*bqx + fqx*fqx + bqy*bqy + fqy*fqy + bqz*bqz + fqz*fqz);
-
 	}
 	END_STD_LOOP
 
 	// apply point fluid sources
-	for(jj = 0; jj < bc->nsource; jj++)
+	if(!ctrl->initGuess)
 	{
-		cellID = bc->isource[jj];
-
-		if(cellID != -1)
+		for(jj = 0; jj < bc->nsource; jj++)
 		{
-			// get I, J, K cell indices
-			GET_CELL_IJK(cellID, I, J, K, nx, ny);
+			cellID = bc->isource[jj];
 
-			gf[sz+K][sy+J][sx+I] += bc->vsource[jj];
+			if(cellID != -1)
+			{
+				// get I, J, K cell indices
+				GET_CELL_IJK(cellID, I, J, K, nx, ny);
+
+				gf[sz+K][sy+J][sx+I] += bc->vsource[jj];
+			}
 		}
 	}
 
@@ -731,9 +729,6 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// relevant cases only
-	if(jr->ctrl.fluidPhase == -1 || jr->ctrl.initGuess) PetscFunctionReturn(0);
 
 	// access context
 	fs         = jr->fs;
@@ -916,6 +911,110 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetFlowFlux"
+PetscErrorCode JacResGetFlowFlux(JacRes *jr, Vec lvx, Vec lvy, Vec lvz)
+{
+
+	// compute fluid flow Stokes source
+
+	FDSTAG     *fs;
+	Controls   *ctrl;
+	SolVarCell *svCell;
+	PetscInt    iter;
+	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
+ 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
+	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
+	PetscScalar ki, Ss, pc, rho, eta, gz;
+	PetscScalar ***lP, ***lk, ***buff, ***vx, ***vy, ***vz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// relevant cases only
+	if(jr->ctrl.fluidPhase == -1 || jr->ctrl.initGuess) PetscFunctionReturn(0);
+
+	// access context
+	fs         = jr->fs;
+	mx         = fs->dsx.tcels - 1;
+	my         = fs->dsy.tcels - 1;
+	mz         = fs->dsz.tcels - 1;
+	ctrl       = &jr->ctrl;
+	rho        = ctrl->rho_fluid;
+	eta        = ctrl->eta_fluid;
+	gz         =  PetscAbsScalar(ctrl->grav[2]);
+
+	//===============
+	// compute fluxes
+	//===============
+
+	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, lvx,         &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, lvy,         &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, lvz,         &vz);  CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter  = 0;
+
+	START_STD_LOOP
+	{
+
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+
+		// access current pressure
+		pc  = lP[k][j][i];
+
+		// permeability, specific storage
+		ierr = JacResGetFlowParam(jr, svCell->phRat, &ki, &Ss); CHKERRQ(ierr);
+
+		// check index bounds
+		Im1 = i-1; if(Im1 < 0)  Im1++;
+		Ip1 = i+1; if(Ip1 > mx) Ip1--;
+		Jm1 = j-1; if(Jm1 < 0)  Jm1++;
+		Jp1 = j+1; if(Jp1 > my) Jp1--;
+		Km1 = k-1; if(Km1 < 0)  Km1++;
+		Kp1 = k+1; if(Kp1 > mz) Kp1--;
+
+		// compute average permeabilities normalized by viscosity
+		bkx = (ki + lk[k][j][Im1])/2.0/eta;      fkx = (ki + lk[k][j][Ip1])/2.0/eta;
+		bky = (ki + lk[k][Jm1][i])/2.0/eta;      fky = (ki + lk[k][Jp1][i])/2.0/eta;
+		bkz = (ki + lk[Km1][j][i])/2.0/eta;      fkz = (ki + lk[Kp1][j][i])/2.0/eta;
+
+		// get mesh steps
+		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
+		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);
+		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
+
+		// compute fluid fluxes
+		bqx = bkx* (pc - lP[k][j][i-1])/bdx;            fqx = fkx* (lP[k][j][i+1] - pc)/fdx;
+		bqy = bky* (pc - lP[k][j-1][i])/bdy;            fqy = fky* (lP[k][j+1][i] - pc)/fdy;
+		bqz = bkz*((pc - lP[k-1][j][i])/bdz + rho*gz);  fqz = fkz*((lP[k+1][j][i] - pc)/fdz + rho*gz);
+
+		// store velocities
+		vx[k][j][i] = (bqx + fqx)/2.0;
+		vy[k][j][i] = (bqy + fqy)/2.0;
+		vz[k][j][i] = (bqz + fqz)/2.0;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvx,         &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvy,         &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvz,         &vz);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
 /*
 Diffusion term expansion
 

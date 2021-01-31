@@ -871,14 +871,31 @@ PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteFluidFlux"
 PetscErrorCode PVOutWriteFluidFlux(OutVec* outvec)
 {
-	COPY_FUNCTION_HEADER
+	FDSTAG *fs;
+	Vec    lvx, lvy, lvz;
 
-	// macro to copy density to buffer
-	#define GET_FFLUX buff[k][j][i] = jr->svCell[iter++].fflux;
+	ACCESS_FUNCTION_HEADER
 
+	fs = jr->fs;
 	cf = scal->velocity;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FFLUX, 1, 0)
+	ierr = DMGetLocalVector(fs->DA_CEN, &lvx); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_CEN, &lvy); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_CEN, &lvz); CHKERRQ(ierr);
+
+	ierr = JacResGetFlowFlux(jr,  lvx,  lvy,  lvz);
+
+	LOCAL_TO_LOCAL(fs->DA_X, lvx)
+	LOCAL_TO_LOCAL(fs->DA_Y, lvy)
+	LOCAL_TO_LOCAL(fs->DA_Z, lvz)
+
+	INTERPOLATE_ACCESS(lvx, InterpCenterCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(lvy, InterpCenterCorner, 3, 1, 0.0)
+	INTERPOLATE_ACCESS(lvz, InterpCenterCorner, 3, 2, 0.0)
+
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &lvx); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &lvy); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &lvz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

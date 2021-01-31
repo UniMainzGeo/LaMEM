@@ -110,7 +110,6 @@ struct SolVarCell
 	PetscScalar  DIIprl;        // relative Peierls creep strain rate
 	PetscScalar  yield;         // average yield stress in control volume
 	PetscScalar  source;        // fluid source
-	PetscScalar  fflux;         // fluid flux magnitude
 
 };
 
@@ -279,6 +278,7 @@ struct JacRes
 	Vec gf;   // fluid flow residual (global)
 	KSP pksp; // pressure solver
 
+
 	//==========================
 	// 2D integration primitives
 	//==========================
@@ -435,6 +435,9 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt);
 
 // compute volumetric sources
 PetscErrorCode JacResGetFlowSource(JacRes *jr);
+
+// compute fluid fluxes
+PetscErrorCode JacResGetFlowFlux(JacRes *jr, Vec vx, Vec vy, Vec vz);
 
 //---------------------------------------------------------------------------
 //......................   INTEGRATION FUNCTIONS   ..........................
