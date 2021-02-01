@@ -392,44 +392,21 @@ PetscErrorCode JacResInitFlow(JacRes *jr)
 	// initialize
 	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
 
-	// access context
-	fs        =  jr->fs;
-	ctrl      = &jr->ctrl;
-	rho_fluid =  ctrl->rho_fluid;
-	gz        =  PetscAbsScalar(ctrl->grav[2]);
-
-	// get top boundary coordinate
-	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, NULL, NULL, NULL, &ztop); CHKERRQ(ierr);
-
-	// set ground water level
-	if     (ctrl->gwType == _GW_TOP_)   gwLevel = ztop;
-	else if(ctrl->gwType == _GW_SURF_)  gwLevel = jr->surf->avg_topo;
-	else if(ctrl->gwType == _GW_LEVEL_) gwLevel = ctrl->gwLevel;
-	else                                gwLevel = 0.0;
-
-	// get local grid sizes
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		// compute depth of the current control volume
-		depth = gwLevel - COORD_CELL(k, sz, fs->dsz);
-
-		// truncate to subsurface
-		if(depth < 0.0) depth = 0.0;
-
-		// compute hydrostatic pressure (based on the water column)
-		lp_pore[k][j][i] =  rho_fluid * gz * depth;
-	}
-	END_STD_LOOP
-
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
-
 	// set boundary constraints
+	ierr = BCApplyFlowBC(jr->bc); CHKERRQ(ierr);
 	ierr = JacResApplyFlowBC(jr); CHKERRQ(ierr);
+
+	// assemble residual and jacobian (steady-state)
+	ierr = JacResGetFlowRes(jr, 0.0); CHKERRQ(ierr);
+	ierr = JacResGetFlowMat(jr, 0.0); CHKERRQ(ierr);
+
+	// solve for steady-state pressure distriution
+	ierr = KSPSetOperators(jr->pksp, jr->App, jr->App); CHKERRQ(ierr);
+	ierr = KSPSetUp(jr->pksp);                          CHKERRQ(ierr);
+	ierr = KSPSolve(jr->pksp, jr->gf, jr->dP);          CHKERRQ(ierr);
+
+	// store initial guess
+	ierr = JacResUpdateFlow(jr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -729,6 +706,9 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// relevant cases only
+	if(jr->ctrl.fluidPhase == -1 || jr->ctrl.initGuess) PetscFunctionReturn(0);
 
 	// access context
 	fs         = jr->fs;
