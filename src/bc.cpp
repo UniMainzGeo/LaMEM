@@ -275,6 +275,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	bc->pfluid   = -1.0;
 	bc->fixPhase = -1;
 	bc->velout   =  DBL_MAX;
+	bc->psurf[0] =  DBL_MAX;
+	bc->psurf[1] =  DBL_MAX;
+	bc->psurf[2] =  DBL_MAX;
+	bc->psurf[3] =  DBL_MAX;
 
 	//=====================
 	// VELOCITY CONSTRAINTS

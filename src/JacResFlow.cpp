@@ -377,12 +377,6 @@ PetscErrorCode JacResInitFlow(JacRes *jr)
 {
 	// initialize pore pressure with hydrostatic pressure
 
-	FDSTAG      *fs;
-	Controls    *ctrl;
-	PetscScalar ***lp_pore;
-	PetscScalar ztop, gz, gwLevel, rho_fluid, depth;
-	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 

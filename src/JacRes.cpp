@@ -148,8 +148,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// check phase parameters
 	is_elastic     = 0;
 	need_RUGC      = 0;
-	need_rho_fluid = 0;
-	need_gw_type   = ctrl->actFluid;
+	need_rho_fluid = ctrl->actFluid;
+	need_gw_type   = 0;
 	need_surf      = 0;
 	need_top_open  = 0;
 
@@ -198,7 +198,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	if(need_gw_type && ctrl->gwType == _GW_NONE_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define ground water level type (rp, gw_level_type, act_fluid_flow)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define ground water level type (rp, gw_level_type)\n");
 	}
 
 	if((need_surf || ctrl->gwType == _GW_SURF_) && !surf->UseFreeSurf)
@@ -243,6 +243,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Biot pressure parameter must be 0 is fluid flow is activated (biot, act_fluid_flow)");
 	}
 
+	if(ctrl->actFluid && bc->psurf[0] == DBL_MAX)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Potentiometric surfce must be initialized (potentio_surf, act_fluid_flow)");
+	}
 
 	if(ctrl->gwType == _GW_NONE_) ctrl->biot = 0.0;
 
