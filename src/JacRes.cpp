@@ -1213,9 +1213,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// momentum
-		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
-		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
-		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+		fx[k][j][i] -= (sxx + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1] + vy[k][j][i+1] + vz[k][j][i+1])*tx)/fdx - gx/2.0;
+		fy[k][j][i] -= (syy + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vx[k][j+1][i] + vy[k][j+1][i] + vz[k][j+1][i])*ty)/fdy - gy/2.0;
+		fz[k][j][i] -= (szz + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vx[k+1][j][i] + vy[k+1][j][i] + vz[k+1][j][i])*tz)/fdz - gz/2.0;
 
 		//if(bc->Plume_Type == 2 && !jr->ctrl.initGuess) ierr = BCApplyPres_Plume_Pressure(bc); CHKERRQ(ierr);
 
