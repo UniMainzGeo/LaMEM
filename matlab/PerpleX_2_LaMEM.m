@@ -11,6 +11,8 @@
 %   2)  using werami, you need to make sure to create an output file that
 %       includes, in the following order:
 %           bulk density     | melt fraction   | melt density
+%       or:
+%           bulk density
 %
 %   Once it is generated, you can inspect the diagram with
 %   Visualize_LaMEM_PhaseDiagram('YOUR_PHASE_DIAGRAM_NAME_HERE.in')
@@ -37,6 +39,7 @@ numCol        = 5;
 fID = fopen(filename);
 
 % loop through top of the file and check for expected format
+meltFree      = 0;
 for i = 1 : 13
   line = fgetl(fID);
   
@@ -56,6 +59,14 @@ for i = 1 : 13
     line = strsplit(line);
     numP = str2double(line(2));
   end
+  
+  if i == 13
+    % no need to split here because it was already done in the format check
+    if length(line) < 5
+      fprintf('Did not find 5 columns. Assuming a melt free diagram! \n')
+      meltFree = 1;
+    end
+  end
 end
 
 % preallocate vectors
@@ -73,17 +84,32 @@ rho_melt = zeros(nLines,1);
 % read the matrix
 iter = 0;
 fprintf('Reading values...\n')
-for i = 1 : nLines
-  line = fgetl(fID);
-  line = strsplit(line);
-  T(i)        = str2double(line(2));
-  P(i)        = str2double(line(3));
-  rho(i)      = str2double(line(4));
-  f_melt(i)   = str2double(line(5));
-  rho_melt(i) = str2double(line(6));
-  if mod(i,tenPer) == 0
-    iter = iter + 10;
-    fprintf('%d%% done \n',iter)
+if meltFree
+  for i = 1 : nLines
+    line = fgetl(fID);
+    line = strsplit(line);
+    T(i)        = str2double(line(2));
+    P(i)        = str2double(line(3));
+    rho(i)      = str2double(line(4));
+    if mod(i,tenPer) == 0
+      iter = iter + 10;
+      fprintf('%d%% done \n',iter)
+    end
+  end
+   rho_melt(:) = fake_rho_melt;
+else  
+  for i = 1 : nLines
+    line = fgetl(fID);
+    line = strsplit(line);
+    T(i)        = str2double(line(2));
+    P(i)        = str2double(line(3));
+    rho(i)      = str2double(line(4));
+    f_melt(i)   = str2double(line(5));
+    rho_melt(i) = str2double(line(6));
+    if mod(i,tenPer) == 0
+      iter = iter + 10;
+      fprintf('%d%% done \n',iter)
+    end
   end
 end
 fprintf('100%% done! \n')
