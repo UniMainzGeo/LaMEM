@@ -845,6 +845,7 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf, &bcf);  CHKERRQ(ierr);
 
+/*
 	// set zero pressure in the air
 	if(AirPhase != -1)
 	{
@@ -862,6 +863,8 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		}
 		END_STD_LOOP
 	}
+*/
+
 
 	// set pressure in Stokes domain
 	if(fluidPhase != -1 && !initGuess)
@@ -923,8 +926,11 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		pb = rho_fluid*gz*(s - zp + SIZE_CELL(k, sz, fs->dsz)/2.0);
 
 		// set zero pressure in the air
-		if(pc < 0.0 || bcf[k][j][i] == 0.0) { pc = 0.0; }
-		if(pb < 0.0 || bcf[k][j][i] == 0.0) { pb = 0.0; }
+//		if(pc < 0.0 || bcf[k][j][i] == 0.0) { pc = 0.0; }
+//		if(pb < 0.0 || bcf[k][j][i] == 0.0) { pb = 0.0; }
+
+		if(pc < 0.0) { pc = 0.0; }
+		if(pb < 0.0) { pb = 0.0; }
 
 		// set boundary pressure
 		if(i == 0)   { bcf[k][j][i-1] = pc; }
