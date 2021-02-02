@@ -885,9 +885,9 @@ PetscErrorCode PVOutWriteFluidFlux(OutVec* outvec)
 
 	ierr = JacResGetFlowFlux(jr,  lvx,  lvy,  lvz);
 
-	LOCAL_TO_LOCAL(fs->DA_X, lvx)
-	LOCAL_TO_LOCAL(fs->DA_Y, lvy)
-	LOCAL_TO_LOCAL(fs->DA_Z, lvz)
+	LOCAL_TO_LOCAL(fs->DA_CEN, lvx)
+	LOCAL_TO_LOCAL(fs->DA_CEN, lvy)
+	LOCAL_TO_LOCAL(fs->DA_CEN, lvz)
 
 	INTERPOLATE_ACCESS(lvx, InterpCenterCorner, 3, 0, 0.0)
 	INTERPOLATE_ACCESS(lvy, InterpCenterCorner, 3, 1, 0.0)

@@ -390,9 +390,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	//  potentiometric surface elevation at domain corners [left-front, front-right, right-back, back-left]
 	ierr = getScalarParam(fb, _OPTIONAL_, "potentio_surf", bc->psurf, 4, scal->length); CHKERRQ(ierr);
 
-	// open flow boundary condition mask [left, right, front, back]
-	ierr = getIntParam(fb, _OPTIONAL_, "open_flow", bc->openFlow, 4, -1); CHKERRQ(ierr);
-
 	// CHECK
 	if((bc->Tbot == bc->Ttop) && bc->initTemp)
 	{
@@ -428,13 +425,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop,   scal->lbl_temperature);
 	if(bc->pfluid   != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Fluid pressure in Stokes domain            : %g %s \n", bc->pfluid, scal->lbl_stress);
 	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of fluid sources                    : %lld \n",  (LLD)bc->nsource);
-
-	PetscPrintf(PETSC_COMM_WORLD, "   Open flow boundary mask [lt rt ft bk]      : ");
-
-	for(jj = 0; jj < 4; jj++)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "%lld ", (LLD)bc->openFlow[jj]);
-	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
@@ -792,12 +782,11 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	JacRes      *jr;
 	Controls    *ctrl;
 	FreeSurf    *surf;
-	PetscInt    *openFlow;
 	PetscScalar ***bcf, ***p, *psurf, *X;
 	PetscScalar rho_fluid, gz;
 	PetscScalar bx, by, bz, ex, ey, ez, hx, hy, hz;
-	PetscScalar xp, yp, zp, cxb, cyb, cxe, cye, s, ps;
-	PetscInt    i, j, k,  nx, ny, nz, sx, sy, sz, iter, mcx, mcy;
+	PetscScalar xp, yp, zp, cxb, cyb, cxe, cye, s, pc, pb;
+	PetscInt    i, j, k,  nx, ny, nz, sx, sy, sz, iter, mcx, mcy, mcz;
 	PetscInt    jj, I, J, K, cellID, AirPhase, fluidPhase, initGuess;
 
 	PetscErrorCode ierr;
@@ -814,9 +803,9 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	initGuess  = ctrl->initGuess;
 	mcx        = fs->dsx.tcels - 1;
 	mcy        = fs->dsy.tcels - 1;
+	mcz        = fs->dsz.tcels - 1;
 	gz         =  PetscAbsScalar(ctrl->grav[2]);
 	psurf      = bc->psurf;
-	openFlow   = bc->openFlow;
 
 	// get local coordinate bounds
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
@@ -919,7 +908,7 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		yp = COORD_CELL(j, sy, fs->dsy);
 		zp = COORD_CELL(k, sz, fs->dsz);
 
-		// get relative coordinates
+    	// get relative coordinates
 		cxe = (xp - bx)/(ex - bx); cxb = 1.0 - cxe;
 		cye = (yp - by)/(ey - by); cyb = 1.0 - cye;
 
@@ -929,18 +918,21 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 			psurf[2]*cxe*cye +
 			psurf[3]*cxb*cye;
 
-		// get fluid pressure
-		ps = rho_fluid*gz*(s - zp);
+		// get fluid pressure at cell center and bottom
+		pc = rho_fluid*gz*(s - zp);
+		pb = rho_fluid*gz*(s - zp + SIZE_CELL(k, sz, fs->dsz)/2.0);
 
 		// set zero pressure in the air
-		if(ps < 0.0 || bcf[k][j][i] == 0.0) { ps = 0.0; }
+		if(pc < 0.0 || bcf[k][j][i] == 0.0) { pc = 0.0; }
+		if(pb < 0.0 || bcf[k][j][i] == 0.0) { pb = 0.0; }
 
 		// set boundary pressure
-		if(openFlow[0] && i == 0)   { bcf[k][j][i-1] = ps; }
-		if(openFlow[1] && i == mcx) { bcf[k][j][i+1] = ps; }
-		if(openFlow[2] && j == 0)   { bcf[k][j-1][i] = ps; }
-		if(openFlow[3] && j == mcy) { bcf[k][j+1][i] = ps; }
-
+		if(i == 0)   { bcf[k][j][i-1] = pc; }
+		if(i == mcx) { bcf[k][j][i+1] = pc; }
+		if(j == 0)   { bcf[k][j-1][i] = pc; }
+		if(j == mcy) { bcf[k][j+1][i] = pc; }
+		if(k == 0)   { bcf[k-1][j][i] = pb; }
+		if(k == mcz) { bcf[k+1][j][i] = pc; }
 	}
 	END_STD_LOOP
 

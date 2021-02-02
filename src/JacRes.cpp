@@ -193,7 +193,11 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	if(need_rho_fluid && !ctrl->rho_fluid)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify fluid density (rho_n, rho_c, rp, rho_fluid)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify fluid density (act_fluid_flow, rho_n, rho_c, rp, rho_fluid)\n");
+	}
+	if(ctrl->actFluid && !ctrl->eta_fluid)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify fluid viscosity (act_fluid_flow, eta_fluid)\n");
 	}
 
 	if(need_gw_type && ctrl->gwType == _GW_NONE_)

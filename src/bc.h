@@ -254,9 +254,6 @@ struct BCCtx
 	// potentiometric surface elevation at domain corners [left-front, front-right, right-back, back-left]
 	PetscScalar psurf[4];
 
-	// open flow boundary condition mask [left, right, front, back]
-	PetscInt openFlow[4];
-
 };
 //---------------------------------------------------------------------------
 

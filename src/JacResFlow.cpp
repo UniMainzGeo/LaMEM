@@ -376,12 +376,15 @@ PetscErrorCode JacResApplyFlowBC(JacRes *jr)
 PetscErrorCode JacResInitFlow(JacRes *jr)
 {
 	// initialize pore pressure with hydrostatic pressure
+	PetscLogDouble t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// fluid flow cases only
 	if(!jr->ctrl.actFluid) PetscFunctionReturn(0);
+
+	PrintStart(&t,"Computing steady-state fluid pressure distribution", NULL);
 
 	// initialize
 	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
@@ -402,6 +405,8 @@ PetscErrorCode JacResInitFlow(JacRes *jr)
 	// store initial guess
 	ierr = JacResUpdateFlow(jr); CHKERRQ(ierr);
 
+	PrintDone(t);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -417,6 +422,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	Controls   *ctrl;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
+	Vec         vki;
 	PetscInt    iter, cellID, I, J, K;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, jj;
@@ -445,12 +451,14 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
 
-	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
+	ierr = DMGetLocalVector(fs->DA_CEN, &vki); CHKERRQ(ierr);
+
+	SCATTER_FIELD(fs->DA_CEN, vki, GET_KI)
 
 	// access work vectors
 	ierr = DMDAVecGetArray(jr->DA_P,   jr->gf,       &gf);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &lP);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,     &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, vki,          &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf,      &bcf); CHKERRQ(ierr);
 
 	//---------------
@@ -512,6 +520,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	}
 	END_STD_LOOP
 
+/*
 	// apply point fluid sources
 	if(!ctrl->initGuess)
 	{
@@ -528,12 +537,14 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 			}
 		}
 	}
-
+*/
 	// restore access
 	ierr = DMDAVecRestoreArray(jr->DA_P,   jr->gf,      &gf);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, vki,         &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf,     &bcf); CHKERRQ(ierr);
+
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &vki); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -549,6 +560,7 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	BCCtx      *bc;
 	Controls   *ctrl;
 	SolVarCell *svCell;
+	Vec         vki;
 	PetscInt    iter;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -575,19 +587,21 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
 
+	ierr = DMGetLocalVector(fs->DA_CEN, &vki); CHKERRQ(ierr);
+
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
 	my = fs->dsy.tcels - 1;
 	mz = fs->dsz.tcels - 1;
 
-	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
+	SCATTER_FIELD(fs->DA_CEN, vki, GET_KI)
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(jr->App); CHKERRQ(ierr);
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf,  &bcf); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, vki,     &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf, &bcf); CHKERRQ(ierr);
 
 	//---------------
 	// central points
@@ -669,8 +683,10 @@ PetscErrorCode JacResGetFlowMat(JacRes *jr, PetscScalar dt)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf,  &bcf);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, vki,     &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcf, &bcf); CHKERRQ(ierr);
+
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &vki); CHKERRQ(ierr);
 
 	// assemble fluid pressure matrix
 	ierr = MatAIJAssemble(jr->App, 0, NULL, 1.0); CHKERRQ(ierr);
@@ -687,6 +703,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	FDSTAG     *fs;
 	Controls   *ctrl;
 	SolVarCell *svCell;
+	Vec         vki;
 	PetscInt    iter, fluidPhase;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -714,6 +731,8 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	eta        = ctrl->eta_fluid;
 	fluidPhase = ctrl->fluidPhase;
 	gz         =  PetscAbsScalar(ctrl->grav[2]);
+
+	ierr = DMGetLocalVector(fs->DA_CEN, &vki); CHKERRQ(ierr);
 
 	//===============
 	// compute volume
@@ -756,10 +775,10 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 	// compute flux
 	//=============
 
-	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
+	SCATTER_FIELD(fs->DA_CEN, vki, GET_KI)
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, vki,         &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, lvol,        &vol); CHKERRQ(ierr);
 
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -821,7 +840,7 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, vki,         &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol,        &vol); CHKERRQ(ierr);
 
 	//===============
@@ -880,7 +899,8 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvol, &vol); CHKERRQ(ierr);
 
-	ierr = DMRestoreLocalVector(fs->DA_CEN, &lvol);     CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &lvol); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &vki);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -889,12 +909,12 @@ PetscErrorCode JacResGetFlowSource(JacRes *jr)
 #define __FUNCT__ "JacResGetFlowFlux"
 PetscErrorCode JacResGetFlowFlux(JacRes *jr, Vec lvx, Vec lvy, Vec lvz)
 {
-
 	// compute fluid flow Stokes source
 
 	FDSTAG     *fs;
 	Controls   *ctrl;
 	SolVarCell *svCell;
+	Vec         vki;
 	PetscInt    iter;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -907,9 +927,6 @@ PetscErrorCode JacResGetFlowFlux(JacRes *jr, Vec lvx, Vec lvy, Vec lvz)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// relevant cases only
-	if(jr->ctrl.fluidPhase == -1 || jr->ctrl.initGuess) PetscFunctionReturn(0);
-
 	// access context
 	fs         = jr->fs;
 	mx         = fs->dsx.tcels - 1;
@@ -920,14 +937,16 @@ PetscErrorCode JacResGetFlowFlux(JacRes *jr, Vec lvx, Vec lvy, Vec lvz)
 	eta        = ctrl->eta_fluid;
 	gz         =  PetscAbsScalar(ctrl->grav[2]);
 
+	ierr = DMGetLocalVector(fs->DA_CEN, &vki); CHKERRQ(ierr);
+
 	//===============
 	// compute fluxes
 	//===============
 
-	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KI)
+	SCATTER_FIELD(fs->DA_CEN, vki, GET_KI)
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, vki     ,    &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, lvx,         &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, lvy,         &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, lvz,         &vz);  CHKERRQ(ierr);
@@ -975,15 +994,18 @@ PetscErrorCode JacResGetFlowFlux(JacRes *jr, Vec lvx, Vec lvy, Vec lvz)
 		vx[k][j][i] = (bqx + fqx)/2.0;
 		vy[k][j][i] = (bqy + fqy)/2.0;
 		vz[k][j][i] = (bqz + fqz)/2.0;
+
 	}
 	END_STD_LOOP
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lP);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, vki,         &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvx,         &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvy,         &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvz,         &vz);  CHKERRQ(ierr);
+
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &vki); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
