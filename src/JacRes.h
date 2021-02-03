@@ -101,6 +101,7 @@ struct SolVarCell
 	PetscScalar  hxx, hyy, hzz; // history stress (elastic)
 	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
 	PetscScalar *phRat;         // phase ratios in the control volume
+	PetscInt     FreeSurf;      // indicates whether the control volume contains the internal free surface
 	PetscScalar  U[3];          // total displacement
 	PetscScalar  ATS;           // accumulated total strain
 	PetscScalar  eta_cr;        // creep viscosity
@@ -144,6 +145,7 @@ struct Controls
 {
 	PetscScalar grav[3];       // global gravity components
 	PetscScalar FSSA;          // free surface stabilization parameter [0 - 1]
+	PetscInt    FSSA_allVel;   // Use all velocity components for FSSA?
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
