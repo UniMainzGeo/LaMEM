@@ -389,13 +389,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	//open bottom boundary flag
 
-	ierr = getIntParam(fb, _OPTIONAL_, "permeable_bot_bound",		&bc->bot_open, 		1, -1); 	CHKERRQ(ierr);
-
+	ierr = getIntParam(fb, _OPTIONAL_, "open_bot_bound",		&bc->bot_open, 		1, -1); 	CHKERRQ(ierr);
 	if(bc->bot_open)
 	{
 		ierr = getIntParam(fb, _REQUIRED_, "permeable_phase_inflow",		&bc->phase_inflow_bot, 		1, -1); 	CHKERRQ(ierr);
-
 	}
+
 
 	// no-slip boundary condition mask
 	ierr = getIntParam(fb, _OPTIONAL_, "noslip", 				bc->noslip, 		6, -1); 	CHKERRQ(ierr);
@@ -783,9 +782,10 @@ PetscErrorCode BCApply(BCCtx *bc)
 	// WARNING! Synchronization is necessary if SPC constraints are active
 	// LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
 
-	ierr = BCApplyPres(bc); CHKERRQ(ierr);
 
-	if(bc->Plume_Type == 2 || bc->bot_open) ierr = BCApply_Permeable_Pressure(bc); CHKERRQ(ierr);
+//	if(bc->Plume_Type == 2 || bc->bot_open) ierr = BCApply_Permeable_Pressure(bc); CHKERRQ(ierr);
+
+	ierr = BCApplyPres(bc); CHKERRQ(ierr);
 
 	//=============================
 	// VELOCITY (RESTRUCTURE THIS!)
