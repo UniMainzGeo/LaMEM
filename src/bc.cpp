@@ -781,11 +781,11 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// WARNING! Synchronization is necessary if SPC constraints are active
 	// LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
+	ierr = BCApplyPres(bc); CHKERRQ(ierr);
 
 
 //	if(bc->Plume_Type == 2 || bc->bot_open) ierr = BCApply_Permeable_Pressure(bc); CHKERRQ(ierr);
 
-	ierr = BCApplyPres(bc); CHKERRQ(ierr);
 
 	//=============================
 	// VELOCITY (RESTRUCTURE THIS!)
@@ -2193,7 +2193,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 				P->phase  = phase_inflow;
 				P->T      = T_inflow;
-				PetscPrintf(PETSC_COMM_WORLD,"Plume Temperature P->T=%6f \n",P->T*bc->scal->temperature-bc->scal->Tshift);
+			//	PetscPrintf(PETSC_COMM_WORLD,"Plume Temperature P->T=%6f \n",P->T*bc->scal->temperature-bc->scal->Tshift);
 
 			}
 			else if(bc->bot_open)
