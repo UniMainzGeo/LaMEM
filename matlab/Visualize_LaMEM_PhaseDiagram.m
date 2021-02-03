@@ -24,8 +24,9 @@ M           =   dlmread(PD_name, ' ', 55, 0);
 rho         =   reshape(M(:,3),np,nt);
 rho_fluid   =   reshape(M(:,1),np,nt);
 melt        =   reshape(M(:,2),np,nt);
-T           =   reshape(M(:,4),np,nt);       % degree C
-P           =   reshape(M(:,5),np,nt)./1e3;  % kbar  - LaMEM input must be bar!
+T           =   reshape(M(:,4),np,nt)-273.15;       % (LaMEM: degree K), Here: Celcius
+P           =   reshape(M(:,5),np,nt)./1e3;         % kbar  - LaMEM input must be bar!
+
 
 % Clear strange values in the PD and give warnings
 ind = find(rho == 0);
