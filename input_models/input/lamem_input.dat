@@ -493,6 +493,8 @@
 	out_moment_res      = 1
 	out_cont_res        = 1
 	out_energ_res       = 1
+	out_melt_fraction 	= 1
+	out_fluid_density   = 1	
 
 # Phase aggregate output paramter
 # Phase ratios of listed phases are summed up and output as a scalar vector
