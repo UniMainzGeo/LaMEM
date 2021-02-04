@@ -127,7 +127,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	if(LoadPhaseDiagrams)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Phase Diagrams:  \n");
-		PetscPrintf(PETSC_COMM_WORLD,"   Diagrams employed for phases  : ");
+		PetscPrintf(PETSC_COMM_WORLD,"   Diagrams employed for phases  : \n ");
 		
 	}	
 
@@ -135,7 +135,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	{
 		if(actx->jr->dbm->phases[i].pdAct)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"%i, ", i);
+			PetscPrintf(PETSC_COMM_WORLD,"        %i:  ", i);
 
 			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
 		}
@@ -1781,6 +1781,10 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	
 	n = pd->nT[i_pd]*pd->nP[i_pd]; // number of points
 
+	// Print info:
+	PetscPrintf(PETSC_COMM_WORLD," P range=[%1.1f-%1.1f] kbar, T range = [%1.1f-%1.1f] K \n", pd->minP[i_pd]*scal->stress_si/1e8, pd->maxP[i_pd]*scal->stress_si/1e8, pd->minT[i_pd]*scal->temperature, pd->maxT[i_pd]*scal->temperature);
+
+
 	/*
 	Check what data is available:
 	1 column = rho fluid [kg/m3]
@@ -1839,7 +1843,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	fclose(fp);
 
 	// Uncomment to debug values
-	// PetscPrintf(PETSC_COMM_WORLD,"RHO = %.20f ; scal = %lf\n 2 = %lf\n  3 = %lf\n 3m = %lf\n  4 = %.20f ; scal = %lf\n 5 = %lf\n 6 = %lf\n 6m = %lf\n n = %i ; scal = %lf\n",pd->rho_v[20000][0], scal.temperature,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd], scal.stress_si,pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],n, scal.density);
+	//PetscPrintf(PETSC_COMM_WORLD,"RHO = %.20f ; scal = %lf\n 2 = %lf\n  3 = %lf\n 3m = %lf\n  4 = %.20f ; scal = %lf\n 5 = %lf\n 6 = %lf\n 6m = %lf\n n = %i ; scal = %lf\n",pd->rho_v[2][0], scal.temperature,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd], scal.stress_si,pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],n);
 
 	PetscFunctionReturn(0);
 }

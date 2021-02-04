@@ -194,10 +194,8 @@ Pvec         = P2D(:);              % [bar]
 MATRIX       = [rhoMeltvec, Meltvec, rhovec, Tvec, Pvec];
 
 % grid stepping
-dT1 = diff(T_K); 
-dT  = mean(dT1); 
-dP1 = diff(P_bar);
-dP  = mean(dP1);
+dT  = T_interp(2)-T_interp(1); 
+dP  = P_interp(2)-P_interp(1);
 
 % structure of output file:
 % % Line 1:           Number of columns (5)
