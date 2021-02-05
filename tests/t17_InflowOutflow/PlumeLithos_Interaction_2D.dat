@@ -22,7 +22,7 @@
 	dt_max    = 1   	# maximum time step
 	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
 	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
-	nstep_max = 100  	# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 50  	# maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 10     	# save output every n steps
 	nstep_rdb = 2000   	# save restart database every n steps
 
@@ -125,7 +125,7 @@
 	interp         = stagp             # velocity interpolation scheme
 	mark_ctrl      = subgrid           # marker control type
 	nmark_lim      = 8 100             # min/max number per cell
-	nmark_sub       = 1                 # max number of same phase markers per subcell (subgrid marker control)
+	nmark_sub       = 10                 # max number of same phase markers per subcell (subgrid marker control)
 
 
 # Geometric primitives to define the initial setup:
