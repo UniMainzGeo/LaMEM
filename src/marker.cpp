@@ -506,7 +506,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	BCCtx       *bc;
 	Marker      *P;
 	PetscInt     imark, nummark;
-	PetscScalar  dTdz, zbot, ztop, zp;
+	PetscScalar  dTdz, zbot, ztop, zp, Tbot;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -518,6 +518,9 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	// return if not set
 	if(!bc->initTemp) PetscFunctionReturn(0);
 
+	// get time-dependent Tbot
+	ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		
+	
 	// get grid coordinate bounds in z-direction
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
 
@@ -528,7 +531,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	}
 
 	// get temperature gradient in z-direction
-	dTdz = (bc->Ttop - bc->Tbot)/(ztop - zbot);
+	dTdz = (bc->Ttop - Tbot)/(ztop - zbot);
 
 	// set temperature based on temperature gradient
 	for(imark = 0; imark < nummark; imark++)
@@ -541,7 +544,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 
 		// set temperature
 		if(zp > ztop) P->T = bc->Ttop;
-		else          P->T = bc->Tbot + dTdz*(zp - zbot);
+		else          P->T = Tbot + dTdz*(zp - zbot);
 	}
 
 	PetscFunctionReturn(ierr);

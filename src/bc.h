@@ -265,7 +265,12 @@ struct BCCtx
 	//========================
 
 	// temperature on top and bottom boundaries and initial guess activation flag
-	PetscScalar  	Tbot, Ttop;
+	// bottom T can change with time
+	PetscInt     	TbotNumPeriods;
+	PetscScalar  	TbotTimeDelims [_max_periods_-1];
+	PetscScalar  	Tbot[_max_periods_  ];
+
+	PetscScalar  	Ttop;
 	PetscInt     	initTemp;
 
 	//=====================
@@ -364,6 +369,11 @@ PetscErrorCode BCGetBGStrainRates(
 		PetscScalar *Rxx_,
 		PetscScalar *Ryy_,
 		PetscScalar *Rzz_);
+
+// Get current bottom temperature
+PetscErrorCode BCGetTempBound(
+		BCCtx       *bc,
+		PetscScalar *Tbot);
 
 // stretch staggered grid if background strain rates are defined
 PetscErrorCode BCStretchGrid(BCCtx *bc);

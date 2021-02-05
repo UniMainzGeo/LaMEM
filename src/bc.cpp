@@ -266,7 +266,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	mID  = bc->dbm->numPhases-1;
 
 	// initialize
-	bc->Tbot     		= 	-1.0;
+	bc->Tbot[0]  		= 	-1.0;
 	bc->Ttop     		= 	-1.0;
 	bc->pbot    	 	= 	-1.0;
 	bc->ptop     		= 	-1.0;
@@ -449,14 +449,21 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 		}
 
-
 	}
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
 	//========================
 
-	ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot",   &bc->Tbot,     1, 1.0); CHKERRQ(ierr);
+	bc->TbotNumPeriods = 1;
+	ierr = getIntParam   (fb, _OPTIONAL_, "temp_bot_num_periods",  &bc->TbotNumPeriods,  1,                   _max_periods_    	); CHKERRQ(ierr);
+	if (bc->TbotNumPeriods>1){
+		ierr = getScalarParam(fb, _REQUIRED_, "temp_bot_time_delim",   	bc->TbotTimeDelims,  	bc->TbotNumPeriods-1, scal->time	); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "temp_bot",  				bc->Tbot, 				bc->TbotNumPeriods,   1.0); 							   CHKERRQ(ierr);
+	}
+	else{
+		ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot",  bc->Tbot, 1,   1.0); CHKERRQ(ierr);
+	}
 	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top",   &bc->Ttop,     1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_temp",  &bc->initTemp, 1, -1);  CHKERRQ(ierr);
 
@@ -469,7 +476,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_pres", &bc->initPres, 1, -1);  CHKERRQ(ierr);
 
 	// CHECK
-	if((bc->Tbot == bc->Ttop) && bc->initTemp)
+	if((bc->Tbot[0] == bc->Ttop) && bc->initTemp)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Top and bottom temperatures give zero initial gradient (Tbot, Ttop, initTemp) \n");
 	}
@@ -503,8 +510,25 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                          @ \n");
 	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
-	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
     
+	if (bc->TbotNumPeriods==1){
+		if(bc->Tbot[0]   != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot[0], scal->lbl_temperature);
+	}
+	else{
+		// We have a Tbot that changes with time
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", bc->TbotNumPeriods);
+		PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperatures               : ");
+		for (jj=0; jj<bc->TbotNumPeriods; jj++){
+			PetscPrintf(PETSC_COMM_WORLD, "%g ", bc->Tbot[jj]);
+		}		
+		PetscPrintf(PETSC_COMM_WORLD, " %s \n", scal->lbl_temperature);
+		PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temp time periods          :     ");
+		for (jj=0; jj<bc->TbotNumPeriods-1; jj++){
+			PetscPrintf(PETSC_COMM_WORLD, "%g ", bc->TbotTimeDelims[jj]*scal->time);
+		}		
+		PetscPrintf(PETSC_COMM_WORLD, " %s \n", scal->lbl_time);
+
+	}
 	
     if(bc->Plume_Inflow == 1){
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding plume inflow bottom condition       @ \n");
@@ -567,11 +591,16 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// nondimensionalize temperature & pressure
 	if(bc->Ttop != -1.0)                        bc->Ttop  = (bc->Ttop + scal->Tshift)/scal->temperature;
-	if(bc->Tbot != -1.0)                        bc->Tbot  = (bc->Tbot + scal->Tshift)/scal->temperature;
+	if(bc->Tbot[0] != -1.0){                        
+		for (jj=0; jj<bc->TbotNumPeriods; jj++){
+			bc->Tbot[jj]  = (bc->Tbot[jj]  + scal->Tshift)/scal->temperature;
+		}
+	}
+
     if(bc->ptop != -1.0)                        bc->ptop /= scal->stress;
 	if(bc->pbot != -1.0)                        bc->pbot /= scal->stress;
     bc->Plume_Temperature = (bc->Plume_Temperature+scal->Tshift)/scal->temperature;							// to Kelvin & nondimensionalise
-    bc->bvel_potential_temperature = (bc->bvel_potential_temperature+scal->Tshift)/scal->temperature;							// to Kelvin & nondimensionalise
+    bc->bvel_potential_temperature = (bc->bvel_potential_temperature+scal->Tshift)/scal->temperature;		// to Kelvin & nondimensionalise
     bc->bvel_temperature_top       = (bc->bvel_temperature_top+scal->Tshift)/scal->temperature;
     bc->bvel_constant_temperature  = (bc->bvel_constant_temperature+scal->Tshift)/scal->temperature;
 
@@ -987,7 +1016,9 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 	fs = bc->fs;
 
 	// get boundary temperatures
-	Tbot = bc->Tbot;
+	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);
+
+	//Tbot = bc->Tbot;
 	Ttop = bc->Ttop;
 
 	// initialize index bounds
@@ -1029,7 +1060,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 					
 					if ( (x >= xmin) && (x <= xmax))
 					{
-						bcT[k-1][j][i]     =bc->Tbot + (bc->Plume_Temperature-bc->Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
+						bcT[k-1][j][i]     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
 					}
 					
 				}
@@ -2024,6 +2055,39 @@ PetscErrorCode BCGetBGStrainRates(
 
 	PetscFunctionReturn(0);
 }
+
+#undef __FUNCT__
+#define __FUNCT__ "BCGetTempBound"
+PetscErrorCode BCGetTempBound(
+		BCCtx       *bc,
+		PetscScalar *Tbot)
+{
+	// get current bottom temperature
+
+	PetscInt    jj;
+	PetscScalar time, Tbot_val;
+
+	// initialize
+	time  		= bc->ts->time;
+	Tbot_val  	= 0.0;
+
+	// 
+	if(bc->TbotNumPeriods)
+	{
+		for(jj = 0; jj < bc->TbotNumPeriods-1; jj++)
+		{
+			if(time < bc->TbotTimeDelims[jj]) break;
+		}
+
+		Tbot_val = bc->Tbot[jj];
+	}
+
+	// store result
+	*Tbot = Tbot_val;
+
+	PetscFunctionReturn(0);
+}
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCStretchGrid"
@@ -2068,12 +2132,15 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 #define __FUNCT__ "BCOverridePhase"
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 {
-	FDSTAG     *fs;
-	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz,ip;
-	PetscScalar z,x, y, cmax,cmin,z_plate;
-	PetscScalar Temp_age,k_thermal;
+	FDSTAG     	*fs;
+	PetscInt    	i, j, k, M, N, mx, my, sx, sy,sz,ip;
+	PetscScalar 	z,x, y, cmax,cmin,z_plate, Tbot;
+	PetscScalar 	Temp_age,k_thermal;
+	PetscErrorCode ierr;
 
 	PetscFunctionBegin;
+	
+	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
 
 	if( (bc->face) || bc->Plume_Inflow)
 	{
@@ -2161,12 +2228,12 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
                         PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
                     {
 	                    P->phase = bc->Plume_Phase;
-						P->T     = bc->Tbot + (bc->Plume_Temperature-bc->Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
+						P->T     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
                     }
                     else
                     {
                     	P->phase = bc->Plume_Phase_Mantle;
-                    	P->T     = bc->Tbot;
+                    	P->T     = Tbot;
                     }
 
 
@@ -2187,14 +2254,16 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	FDSTAG          *fs;
 	PetscInt        i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar     ***bcvz;
-	PetscScalar     vel, x_min,x_max,y_min,y_max,x,y;
+	PetscScalar     vel, x_min,x_max,y_min,y_max,x,y, Tbot;
 	PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin;
     PetscScalar     radius2, R;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	
 	if(!bc->Plume_Inflow) 	PetscFunctionReturn(0);
+
 
 	fs              =   bc->fs;
 
@@ -2368,7 +2437,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	// apply pressure constraints
 
 	FDSTAG      *fs;
-	PetscScalar ***litho_p,alpha_plume,alpha_mantle,g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax;
+	PetscScalar ***litho_p,alpha_plume,alpha_mantle,g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,Tbot;
 	PetscInt    mcx,mcy,mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcp;
@@ -2379,15 +2448,14 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	// access context
 	fs = bc->fs;
 
+	ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
+	
 	// get boundary pressure
-
-
-
 	alpha_plume = bc->dbm->phases[bc->Plume_Phase].alpha;
 	alpha_mantle = bc->dbm->phases[bc->Plume_Phase].alpha;
 
 	rho_plume = bc->dbm->phases[bc->Plume_Phase].rho*(1-alpha_plume*(bc->Plume_Temperature-bc->jr->ctrl.TRef));
-	rho_mantle = bc->dbm->phases[bc->Plume_Phase_Mantle].rho*(1-alpha_mantle*(bc->Tbot-bc->jr->ctrl.TRef));
+	rho_mantle = bc->dbm->phases[bc->Plume_Phase_Mantle].rho*(1-alpha_mantle*(Tbot-bc->jr->ctrl.TRef));
 	g     =  PetscAbsScalar(bc->jr->ctrl.grav[2]);
 	H     = bc->Plume_Depth;
 	dP    =(rho_mantle-rho_plume)*H*g;
