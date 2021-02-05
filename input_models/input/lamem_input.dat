@@ -205,8 +205,8 @@
 	open_top_bound = 1
 
 # Permeable lower boundary flag    
-    permeable_bot_bound = 0
-	permeable_phase_inflow = 1 # Phase of the inflow material from the bottom
+    open_bot_bound = 0
+	permeable_phase_inflow = 1 # Phase of the inflow material from the bottom (The temperature of the inflow phase it is the same of the bottom boundary)
 
     
 # No-slip boundary flag mask (left right front back bottom top)
@@ -236,8 +236,8 @@
 
 # Optional plume inflow @ bottom boundary
     Plume_InflowBoundary    =   1           # have a plume-like inflow boundary @ bottom
-    Plume_Type              =   Inflow_type          # Inflow_type or Pressure_type (circular)	
-	                        =   Pressure_Type        # Pressure type allow active exchange 	
+    Plume_Type              =   Inflow_Type          # Inflow_type or Pressure_type (circular)	
+	                        =   Permeable_Type       # Combine the open bot boundary with the plume boundary condition (the option herein listed overwrite open_bot, so do not activate) 	
 	Plume_Dimension         =   2D          # 2D or 3D (circular)		
     Plume_Phase             =   4           # phase of plume
     Plume_Depth             =   1885        # depth of provenience of the plume (i.e. how far from the bottom of the model the plume source is) 
@@ -248,7 +248,6 @@
     Plume_Center            =   0 50        # [X,Y] of center  (2nd only in case of 3D plume)
     Plume_Radius            =   100         # Width/Radius of plume
     Plume_Phase_Mantle      =   1			# Inflow phase. If the velocity happens to be positive in the domain, the inflow material has a constant phase and the temperature of the bottom 
-	Plume_Pressure          =  -1.0         # Pressure flag: -1.0 average lithostatic pressure, 0.0 lithostatic pressure, value above 0.0, constant pressure decided by the user) 
 
 # Pressure on the top & bottom boundaries
 

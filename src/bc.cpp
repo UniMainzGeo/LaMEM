@@ -413,17 +413,19 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		
 		// Type of plume (2D or 3D)
 
-		ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL); 					CHKERRQ(ierr);  // must have component
-		if(!strcmp(str, "Inflow_Type"))      bc->Plume_Type=1;		        //  velocity flux
-		else if (!strcmp(str, "Pressure_Type"))      bc->Plume_Type=2;		//  pressure adjusted flux
-		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Pressure_type] as parameter for Plume_Type, not %s",str);}
+		ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL);          CHKERRQ(ierr);  // must have component
+		if(!strcmp(str, "Inflow_Type"))             bc->Plume_Type=1;                                // velocity flux
+		else if (!strcmp(str, "Permeable_Type"))
+		{
+			bc->Plume_Type = 2;                                // activate open_bot boundary condition
+			bc->bot_open   = 1;                                // open the bottom boundary
+		}
+		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);}
 		ierr = getStringParam(fb, _REQUIRED_, "Plume_Dimension", 	str, NULL); 					CHKERRQ(ierr);  // must have component
 		if     	(!strcmp(str, "2D"))      bc->Plume_Dimension=1;		// 2D setup
 		else if (!strcmp(str, "3D"))      bc->Plume_Dimension=2;		// 3D (circular)
 		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);} 
-
 		ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"    		, 	&bc->Plume_Phase, 			1, mID); 			CHKERRQ(ierr);
-
 		ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature"	, 	&bc->Plume_Temperature, 	1, 1); 				CHKERRQ(ierr);
 		
 		if(bc->Plume_Dimension == 1)
@@ -449,10 +451,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		}
 		if(bc->Plume_Type ==2)
 		{
-			bc->Plume_Pressure = -1;
-			ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
-			ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure",&bc->Plume_Pressure,	1,	scal->stress);	CHKERRQ(ierr);
-			ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , 	&bc->Plume_Phase_Mantle, 			1, mID); 			CHKERRQ(ierr);
+			//bc->Plume_Pressure = -1;
+			//ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
+			//ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure",&bc->Plume_Pressure,	1,	scal->stress);	CHKERRQ(ierr);
+			ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , &bc->phase_inflow_bot,        1, mID);            CHKERRQ(ierr);
 
 		}
 
@@ -505,15 +507,17 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
 	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
 	if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                          @ \n");
+	if(bc->bot_open && bc->Plume_Type == 2)
+	{
+
+	}
 	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
 	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
-    
-	
     if(bc->Plume_Inflow == 1){
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding plume inflow bottom condition       @ \n");
-	if(bc->Plume_Dimension == 1){PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : 2D \n");}
-	else{  					PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : 3D \n");}
+	if(bc->Plume_Type == 1){PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : Inflow \n");}
+	else{  					PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : Open Bottom \n");}
     if(bc->Plume_VelocityType == 0){PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Poiseuille flow (and constant outflow) \n");}
 	else{  				 	        PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Gaussian in/out flow \n");}
 	                        PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, 	 				scal->lbl_temperature);
@@ -2157,13 +2161,17 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 
 			// if we have have a inflow condition @ the lower boundary, we change the phase of the particles within the zone
-		if(k+sz == 0 || k+sz == 1)
+		if(k+sz == 0)
 		{
 			if (bc->Plume_Inflow == 1)
 			{
+				/*
+				 * This routine handle the inflow and outflow. If the Plume boundary is "permeable" type, within the plume radius the phase that are
+				 * injected is the one prescribed for the plume. The particle injected has the same temperature of the TBot (i.e. according to a gaussian thermal
+				 * perturbation). Otherwise has the phase and temperature of the background mantle.
+				 */
 
-
-				phase_inflow = bc->Plume_Phase_Mantle;
+				phase_inflow = bc->phase_inflow_bot;
 
 				if(bc->Plume_Dimension==1)
 				{
@@ -2388,6 +2396,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
 	PetscFunctionReturn(0);
 }
+/*
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApply_Permeable_Pressure"
@@ -2665,6 +2674,6 @@ PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p )
 
 	return rho;
 }
-
+*/
 
 
