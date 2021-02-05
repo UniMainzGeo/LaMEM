@@ -772,6 +772,27 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 //---------------------------------------------------------------------------
 // Flow constraints
 //---------------------------------------------------------------------------
+
+PetscScalar getp(
+		PetscScalar *psurf, PetscScalar rho_fluid, PetscScalar gz,
+		PetscScalar bx, PetscScalar by, PetscScalar ex, PetscScalar ey,
+		PetscScalar xp, PetscScalar yp, PetscScalar zp)
+{
+	PetscScalar cxb, cyb, cxe, cye, s;
+
+	// get relative coordinates
+	cxe = (xp - bx)/(ex - bx); cxb = 1.0 - cxe;
+	cye = (yp - by)/(ey - by); cyb = 1.0 - cye;
+
+	// get potentiometric surface elevation
+	s = psurf[0]*cxb*cyb +
+		psurf[1]*cxe*cyb +
+		psurf[2]*cxe*cye +
+		psurf[3]*cxb*cye;
+
+	return rho_fluid*gz*(s - zp);
+}
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApplyFlowBC"
 PetscErrorCode BCApplyFlowBC(BCCtx *bc)
@@ -781,13 +802,12 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	FDSTAG      *fs;
 	JacRes      *jr;
 	Controls    *ctrl;
-	FreeSurf    *surf;
 	PetscScalar ***bcf, ***p, *psurf, *X;
 	PetscScalar rho_fluid, gz;
 	PetscScalar bx, by, bz, ex, ey, ez, hx, hy, hz;
-	PetscScalar xp, yp, zp, cxb, cyb, cxe, cye, s, pc, pb;
+	PetscScalar xp, yp, zp, dx, dy, dz;
 	PetscInt    i, j, k,  nx, ny, nz, sx, sy, sz, iter, mcx, mcy, mcz;
-	PetscInt    jj, I, J, K, cellID, AirPhase, fluidPhase, initGuess;
+	PetscInt    jj, I, J, K, cellID, fluidPhase, initGuess;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -796,8 +816,6 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	jr         = bc->jr;
 	fs         = jr->fs;
 	ctrl       = &jr->ctrl;
-	surf       = jr->surf;
-	AirPhase   = surf->AirPhase;
 	fluidPhase = ctrl->fluidPhase;
 	rho_fluid  = ctrl->rho_fluid;
 	initGuess  = ctrl->initGuess;
@@ -845,27 +863,6 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf, &bcf);  CHKERRQ(ierr);
 
-/*
-	// set zero pressure in the air
-	if(AirPhase != -1)
-	{
-		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-		iter = 0;
-
-		START_STD_LOOP
-		{
-			// check for constrained cell
-			if(jr->svCell[iter++].phRat[AirPhase] > 0.0)
-			{
-				bcf[k][j][i] = 0.0;
-			}
-		}
-		END_STD_LOOP
-	}
-*/
-
-
 	// set pressure in Stokes domain
 	if(fluidPhase != -1 && !initGuess)
 	{
@@ -911,34 +908,17 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		yp = COORD_CELL(j, sy, fs->dsy);
 		zp = COORD_CELL(k, sz, fs->dsz);
 
-    	// get relative coordinates
-		cxe = (xp - bx)/(ex - bx); cxb = 1.0 - cxe;
-		cye = (yp - by)/(ey - by); cyb = 1.0 - cye;
-
-		// get potentiometric surface elevation
-		s = psurf[0]*cxb*cyb +
-			psurf[1]*cxe*cyb +
-			psurf[2]*cxe*cye +
-			psurf[3]*cxb*cye;
-
-		// get fluid pressure at cell center and bottom
-		pc = rho_fluid*gz*(s - zp);
-		pb = rho_fluid*gz*(s - zp + SIZE_CELL(k, sz, fs->dsz)/2.0);
-
-		// set zero pressure in the air
-//		if(pc < 0.0 || bcf[k][j][i] == 0.0) { pc = 0.0; }
-//		if(pb < 0.0 || bcf[k][j][i] == 0.0) { pb = 0.0; }
-
-		if(pc < 0.0) { pc = 0.0; }
-		if(pb < 0.0) { pb = 0.0; }
+		dx = SIZE_CELL(i, sx, fs->dsx)/2.0;
+		dy = SIZE_CELL(j, sy, fs->dsy)/2.0;
+		dz = SIZE_CELL(k, sz, fs->dsz)/2.0;
 
 		// set boundary pressure
-		if(i == 0)   { bcf[k][j][i-1] = pc; }
-		if(i == mcx) { bcf[k][j][i+1] = pc; }
-		if(j == 0)   { bcf[k][j-1][i] = pc; }
-		if(j == mcy) { bcf[k][j+1][i] = pc; }
-		if(k == 0)   { bcf[k-1][j][i] = pb; }
-		if(k == mcz) { bcf[k+1][j][i] = pc; }
+		if(i == 0)   { bcf[k][j][i-1] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp - dx, yp,      zp); }
+		if(i == mcx) { bcf[k][j][i+1] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp + dx, yp,      zp); }
+		if(j == 0)   { bcf[k][j-1][i] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp,      yp - dy, zp); }
+		if(j == mcy) { bcf[k][j+1][i] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp,      yp + dy, zp); }
+		if(k == 0)   { bcf[k-1][j][i] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp,      yp,      zp - dz); }
+		if(k == mcz) { bcf[k+1][j][i] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp,      yp,      zp + dz); }
 	}
 	END_STD_LOOP
 
@@ -1978,4 +1958,24 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+/*
+	// set zero pressure in the air
+	if(AirPhase != -1)
+	{
+		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		iter = 0;
+
+		START_STD_LOOP
+		{
+			// check for constrained cell
+			if(jr->svCell[iter++].phRat[AirPhase] > 0.0)
+			{
+				bcf[k][j][i] = 0.0;
+			}
+		}
+		END_STD_LOOP
+	}
+*/
 //---------------------------------------------------------------------------

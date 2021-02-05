@@ -410,8 +410,14 @@ PetscErrorCode PVOutWriteLithoPress(OutVec* outvec)
 #define __FUNCT__ "PVOutWritePorePress"
 PetscErrorCode PVOutWritePorePress(OutVec* outvec)
 {
+	FDSTAG      *fs;
+	Vec         pf;
+	PetscScalar ***lp;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
 	ACCESS_FUNCTION_HEADER
 
+	fs = jr->fs;
 	cf = scal->stress;
 
 	if(jr->ctrl.actFluid)
@@ -419,7 +425,28 @@ PetscErrorCode PVOutWritePorePress(OutVec* outvec)
 		iflag.use_bound = 1;
 	}
 
-	INTERPOLATE_ACCESS(jr->lp_pore, InterpCenterCorner, 1, 0, 0.0)
+	ierr = DMGetLocalVector(fs->DA_CEN, &pf); CHKERRQ(ierr);
+
+	ierr =  VecCopy(jr->lp_pore, pf); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, pf, &lp); CHKERRQ(ierr);
+
+	ierr = DMDAGetGhostCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		if(lp[k][j][i] < 0.0)
+		{
+			lp[k][j][i] = 0.0;
+		}
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, pf, &lp); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(pf, InterpCenterCorner, 1, 0, 0.0)
+
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &pf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -882,6 +909,10 @@ PetscErrorCode PVOutWriteFluidFlux(OutVec* outvec)
 	ierr = DMGetLocalVector(fs->DA_CEN, &lvx); CHKERRQ(ierr);
 	ierr = DMGetLocalVector(fs->DA_CEN, &lvy); CHKERRQ(ierr);
 	ierr = DMGetLocalVector(fs->DA_CEN, &lvz); CHKERRQ(ierr);
+
+	ierr = VecZeroEntries(lvx); CHKERRQ(ierr);
+	ierr = VecZeroEntries(lvy); CHKERRQ(ierr);
+	ierr = VecZeroEntries(lvz); CHKERRQ(ierr);
 
 	ierr = JacResGetFlowFlux(jr,  lvx,  lvy,  lvz);
 
