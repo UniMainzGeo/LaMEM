@@ -21,7 +21,7 @@
 	dt_max    = 1   	# maximum time step
 	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
 	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
-	nstep_max = 100  	# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 200  	# maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 10     	# save output every n steps
 	nstep_rdb = 2000   	# save restart database every n steps
 
@@ -59,10 +59,12 @@
 	temp_bot  = 1300.0;
 	
 # No-slip boundary flag mask (left right front back bottom top)
-	noslip 					= 	0 0 0 0 0 0
+	noslip 					= 	0 0 0 0 1 0
 	open_top_bound 			= 	0
 
 
+	 open_bot_bound = 1
+	permeable_phase_inflow = 3 # Phase of the inflow material from the bottom
 
 
 
@@ -71,7 +73,7 @@
 #===============================================================================
 
 	gravity        = 0.0 0.0 -10    # gravity vector
-	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	FSSA           = 0.0            # free surface stabilization parameter [0 - 1]
 	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_guess     = 1              # initial guess flag
 	act_temp_diff  = 0  			# activate thermal diffusion
@@ -106,8 +108,6 @@
 	nmark_sub       = 1                 # max number of same phase markers per subcell (subgrid marker control)
 
 
-	 permeable_bot_bound = 1
-	permeable_phase_inflow = 1 # Phase of the inflow material from the bottom
 # Geometric primitives to define the initial setup:
 	# sticky air
 	<LayerStart>
@@ -158,7 +158,7 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = Plume_PhaseTransitions # output file name
+	out_file_name       = Permeable # output file name
 	out_pvd             = 1       	# activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
@@ -241,7 +241,7 @@
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
 		
 		# Linear viscous	
-		eta 		= 	1e20
+		eta 		= 	1e21
 		
      	# Thermal properties
         k           =   3        		# conductivity
@@ -255,7 +255,7 @@
 		rho        	= 	3600			# density [kg/m3]
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
 		
-		eta 		= 	1e20
+		eta 		= 	1e23
 		
      	# Thermal properties
         k           =   3        		# conductivity

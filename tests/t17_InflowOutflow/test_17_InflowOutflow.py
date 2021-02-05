@@ -64,8 +64,8 @@ def test_2D_Pres():
 
   # Test inflow/outflow conditions in 2D using optimized LaMEM
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t17_InflowOutflow/PlumeLithos_Interaction_2D_Pres.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't17_InflowOutflow/InflowOutflow-2D_Pres_p1.expected'
+  launch = '../bin/opt/LaMEM -ParamFile ./t17_InflowOutflow/PlumeLithos_Interaction_2D_Perm.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't17_InflowOutflow/InflowOutflow-2D_Perm_p1.expected'
 
   def comparefunc(unittest):
 
@@ -94,8 +94,8 @@ def test_3D_Pres():
 
   # Test inflow/outflow conditions in 2D using optimized LaMEM
   ranks = 4
-  launch = '../bin/opt/LaMEM -ParamFile ./t17_InflowOutflow/PlumeLithos_Interaction_3D_Pres.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't17_InflowOutflow/InflowOutflow-3D_Pres_p4.expected'
+  launch = '../bin/opt/LaMEM -ParamFile ./t17_InflowOutflow/PlumeLithos_Interaction_3D_Perm.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't17_InflowOutflow/InflowOutflow-3D_Perm_p4.expected'
 
   def comparefunc(unittest):
 

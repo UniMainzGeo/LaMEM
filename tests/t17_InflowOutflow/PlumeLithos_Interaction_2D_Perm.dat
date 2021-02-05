@@ -22,7 +22,7 @@
 	dt_max    = 1   	# maximum time step
 	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
 	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
-	nstep_max = 400  	# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 100  	# maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 50     	# save output every n steps
 	nstep_rdb = 2000   	# save restart database every n steps
 
@@ -78,17 +78,13 @@
 
 # Plume_like inflow boundary condition
 	Plume_InflowBoundary 	 	= 	1			# have a plume-like inflow boundary @ bottom
-	Plume_Type                      =       Pressure_Type
+	Plume_Type                      =       Permeable_Type
 	Plume_Dimension         	= 	2D			# 2D or 3D (circular)		
 	Plume_Phase 			=	4			# phase of plume
 	Plume_Temperature 		=	1600		# temperature of inflow plume
-	Plume_Inflow_Velocity 	= 	15			# Inflow velocity			
-	Plume_VelocityType 		=	Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
 	Plume_Center 			=	0.0 0.0		# [X,Y] of center  (2nd only in case of 3D plume)
 	Plume_Radius 			=	50.0			# Width/Radius of plume
-	Plume_Depth                     =      1000.0 
 	Plume_Phase_Mantle              =      3
-	Plume_Pressure                  =      -1.0
 
 #===============================================================================
 # Solution parameters & controls

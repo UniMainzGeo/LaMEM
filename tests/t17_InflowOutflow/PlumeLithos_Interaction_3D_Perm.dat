@@ -68,15 +68,13 @@
 # Plume_like inflow boundary condition
 
 	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
-	Plume_Type              =     Pressure_Type
+	Plume_Type              =     Permeable_Type
 	Plume_Dimension         		= 	3D			# 2D or 3D (circular)		
 	Plume_Phase 			=	4			# phase of plume
 	Plume_Temperature 		=	1600		# temperature of inflow plume
 	Plume_Center 			=	0.0 0.0		# [X,Y] of center  (2nd only in case of 3D plume)
 	Plume_Radius 			=	50			# Width/Radius of plume
-	Plume_Depth			=       100
 	Plume_Phase_Mantle		=       2
-	Plume_Pressure                 =   -1.0
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================

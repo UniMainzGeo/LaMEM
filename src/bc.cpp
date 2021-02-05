@@ -2184,8 +2184,6 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 					if(x>=cmin && x<=cmax)
 					{
 						phase_inflow = bc->Plume_Phase;
-						PetscPrintf(PETSC_COMM_WORLD,"Plume Temperature P->T=%6f \n",T_inflow*bc->scal->temperature-bc->scal->Tshift);
-
 					}
 				}
 				else
