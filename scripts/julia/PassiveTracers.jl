@@ -62,7 +62,6 @@ function ExtractPTpaths()
         local DirName, data, points_coord, ID, Active, P,T,zCoord, xCoord, New, id, Time
         local OutFileName;
         global minZ, OutNames, Time_vec, P_mat, T_mat, x_mat, z_mat;
-        global maxP, maxT;
 
         DirName     =   Directories[iStep];
         print("Processing directory $DirName \n")
@@ -92,14 +91,7 @@ function ExtractPTpaths()
             x_mat           =   Array{Float32}(undef,   numP, nMax);
             z_mat           =   Array{Float32}(undef,   numP, nMax);
         end 
-
-        # Max P & T
-        id          =   findall(x->x==1, Active);
-        if sizeof(id)>0
-            maxP[id]   =   max.(maxP[id],P[id]);                  
-            maxT[id]   =   max.(maxT[id],T[id]);                  
-        end
-
+        
         # Save Data in matrix
         numP                =   length(P);
         Time_vec[iStep]     =   Time;

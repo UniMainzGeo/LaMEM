@@ -17,13 +17,18 @@ module ReadLaMEM_Timestep
 #           ENV["PYTHON"] = "/Users/kausb/anaconda3/bin/python"
 #      b) Compile PyCall
 #           Pkg.add("PyCall")
+#
+# 3) Packages:
+# 
+#       pyimport("pip")["main"](["install","--user","vtk"])
                   
 # Make these routines easily available outside the module:
 export ReadField_3D_pVTR, Read_VTR_File, Read_VTU_File, ReadField_2D_pVTR;
-export ReadField_VTU, WriteNewPoints_VTU, AddNewField_VTU, WritePVD_File, TransferVTK2MAT;
+export ReadField_VTU, WriteNewPoints_VTU, AddNewField_VTU, WritePVD_File;
+export TransferVTK2MAT, TransferMAT2VTK;
 
 # Import VTK package from python; requires it to be installed in your python distribution
-using PyCall, Printf, MAT
+using PyCall, Printf, MAT, WriteVTK
 
 
 function __init__()
@@ -293,7 +298,6 @@ function AddNewField_VTU(New, data, dataField, dataName)
     return New
 end
 
-
 "
 Writes a PVD file
 Usage:
@@ -340,7 +344,6 @@ end
 "
 function TransferVTK2MAT(FileName)
     
-
     # define a macro that finds all directories with a certain pattern
     searchdir(path,key) = filter(x->occursin(key,x), readdir(path))
     
@@ -431,9 +434,6 @@ function TransferVTK2MAT(FileName)
             MeltFrac        =   [];
         end
 
-        
-
-
         # ------------------------------------------------------------------------------------- 
         # Save data in matlab format
         CurDir   =   pwd();  
@@ -487,6 +487,94 @@ function TransferVTK2MAT(FileName)
     end
     print("Saved data to matlab file: LaMEM_Data.mat in all directories above \n") 
 
+end
+
+
+
+
+
+"
+    This processes all LaMEM Timestep directories within the current directory, reads the 
+    matlab files called NewLaMEM_Fields.mat, and saves that as a VTR file
+"
+function TransferMAT2VTK()
+    
+    # define a macro that finds all directories with a certain pattern
+    searchdir(path,key) = filter(x->occursin(key,x), readdir(path))
+    
+    #if length(FileName)==0
+    #    error("No VTR filename given on command-line; please specify one! \n")
+    #else
+    #    
+    #    FileName    = "$FileName.pvtr";
+    #end
+
+    FileName = "NewLaMEM_Fields";
+
+    print("Postprocessing vtrfiles $FileName \n")
+
+    # Go over all Timestep subdirectories in the current directory
+    Directories         =   searchdir(pwd(),"Timestep_")
+    pvd                 =   paraview_collection("NewLaMEM_Fields")
+
+    nMax                =   length(Directories)
+    for iStep=1:nMax
+        global Vx,Vy,Vz,x,y,z, T_C, Eta_tot, Phase, Rho, E2nd, T2nd_MPa, P_MPa, Eta_creep, P_lithos, APS, MeltFrac;
+
+        DirName     =   Directories[iStep];
+        print("Processing directory $DirName \n")
+
+        # Extract the timestep info from the directory directory name 
+        id      =   findlast("_",DirName);
+        Time    =   parse(Float64,DirName[id[1]+1:length(DirName)]);
+
+        # ------------------------------------------------------------------------------------- 
+        # Read data in matlab file NewLaMEM_Fields.mat from timestep directory
+        CurDir      =   pwd();
+        try
+            vars        =   matread("$DirName/NewLaMEM_Fields.mat")
+
+            x           =   get(vars,"x_km",0);
+            y           =   get(vars,"y_km",0);
+            z           =   get(vars,"z_km",0);
+            
+            VarNames    =   collect(keys(vars));    # Names
+
+            
+            # ------------------------------------------------------------------------------------- 
+            # Save all data fields in the matlab file to VTK format
+            vtkfile = vtk_grid("$DirName/NewLaMEM_Fields", x[:], y[:], z[:]); # 3D rectlinear grid
+
+            for i=1:length(VarNames)
+                Var = VarNames[i];
+
+                if (Var=="x_km" || Var=="y_km" || Var=="z_km")
+                    # coordinates; not to be added        
+                else
+                    print("Adding Field $Var to VTK file\n")
+                    
+                    Data_new     =  get(vars,Var,0);            # extract data from matlab filename 
+                    vtkfile[Var] =  Data_new;                   # add it to VTK file
+                end
+         
+            end
+
+            outfiles    = vtk_save(vtkfile);                       # save file
+            pvd[Time]   = vtkfile;                                 # add to PVD file
+
+        catch
+            print("No file: NewLaMEM_Fields.mat in directory so not creating a VTR file here \n")
+            
+        end    
+
+    end
+    
+    # generate PVD file
+    vtk_save(pvd)       
+    
+    
+    print("\nSaved data to VTK file: NewLaMEM_Fields.vtk in all directories above \n") 
+    print("Created PVD file NewLaMEM_Fields.pvd with time-step info in current directory \n") 
 
 end
 
