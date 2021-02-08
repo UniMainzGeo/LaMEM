@@ -1243,7 +1243,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
 
 
-
 		iter++;
 	}
 	END_STD_LOOP
@@ -2253,7 +2252,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	FDSTAG          *fs;
 	PetscInt        i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar     ***bcvz;
-	PetscScalar     vel, x_min,x_max,y_min,y_max,x,y, Tbot;
+	PetscScalar     vel, x_min,x_max,y_min,y_max,x,y;
 	PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin;
     PetscScalar     radius2, R;
 
@@ -2437,7 +2436,7 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 
 	FDSTAG      *fs;
 	PetscScalar ***litho_p,alpha_plume,alpha_mantle,g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,Tbot;
-	PetscInt    mcx,mcy,mcz;
+	PetscInt    mcx,mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcp;
 
@@ -2464,7 +2463,6 @@ PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc)
 	// initialize index bounds
 
 	mcx = fs->dsx.tcels - 1;
-	mcy = fs->dsy.tcels - 1;
 	mcz = fs->dsz.tcels - 1;
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
