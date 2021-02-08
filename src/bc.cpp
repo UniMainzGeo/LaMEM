@@ -1096,7 +1096,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscScalar vbx, vby, 	vbz;
 	PetscScalar vex, vey, 	vez;
 	PetscScalar z,   z_bot, z_top;
-	PetscScalar y,   y_frt, y_bck, x;
+	PetscScalar y,   y_frt, y_bck;
 	PetscInt    mnx, mny, mnz,inflow_window;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open, bot_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
@@ -1226,7 +1226,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		{
 			inflow_window = 1;
 
-			x       = COORD_CELL(i, sx, fs->dsx);
 			if(i == 0     ) { inflow_window = 0; }
 			if(i == mnx-1 ) { inflow_window = 0; }
 		}
