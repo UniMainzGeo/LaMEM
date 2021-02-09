@@ -1230,7 +1230,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	START_STD_LOOP
 	{
 
-
 		// simple shear, side boundaries
 		if(i == 0     && Exz != 0.0) { bcvz[k][j][i] = 0.0; }
 		if(i == mnx-1 && Exz != 0.0) { bcvz[k][j][i] = 0.0; }
@@ -1241,7 +1240,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		// pure shear		
 		if((k == 0   && !bot_open && bcp[-1 ][j][i] == DBL_MAX)) { bcvz[k][j][i] = vbz; }//
 		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
-
 
 
 		iter++;
@@ -2289,7 +2287,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	FDSTAG          *fs;
 	PetscInt        i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar     ***bcvz;
-	PetscScalar     vel, x_min,x_max,y_min,y_max,x,y, Tbot;
+	PetscScalar     vel, x_min,x_max,y_min,y_max,x,y;
 	PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin;
     PetscScalar     radius2, R;
 
@@ -2472,18 +2470,12 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 	// apply pressure constraints
 
 	FDSTAG      *fs;
-<<<<<<< HEAD
 	SolVarBulk  *svBulk;
-	PetscScalar g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,p_bot,radius2, rhog;
+	PetscScalar g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,p_bot,radius2, rhog,Tbot;
 	PetscInt    phase_mantle,phase_plume;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz,iter;
 	PetscScalar ***bcp,***lp;
-=======
-	PetscScalar ***litho_p,alpha_plume,alpha_mantle,g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,Tbot;
-	PetscInt    mcx,mcy,mcz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***bcp;
->>>>>>> master
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2491,7 +2483,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 	// access context
 	fs = bc->fs;
 
-<<<<<<< HEAD
+	ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
 
 	if(bc->Plume_Type == 2)
 	{
@@ -2509,20 +2501,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 		H     = bc->Plume_Depth;
 
 		// compute the average lithostatic pressure at the bototm
-=======
-	ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
 	
-	// get boundary pressure
-	alpha_plume = bc->dbm->phases[bc->Plume_Phase].alpha;
-	alpha_mantle = bc->dbm->phases[bc->Plume_Phase].alpha;
-
-	rho_plume = bc->dbm->phases[bc->Plume_Phase].rho*(1-alpha_plume*(bc->Plume_Temperature-bc->jr->ctrl.TRef));
-	rho_mantle = bc->dbm->phases[bc->Plume_Phase_Mantle].rho*(1-alpha_mantle*(Tbot-bc->jr->ctrl.TRef));
-	g     =  PetscAbsScalar(bc->jr->ctrl.grav[2]);
-	H     = bc->Plume_Depth;
-	dP    =(rho_mantle-rho_plume)*H*g;
-    PetscPrintf(PETSC_COMM_WORLD, "      dP is     : %6f MPa, rho_plume %6f and rho_mantle %6f H = %6f alpha Plume = %6f alpha_mantle =%6f g= %6f \n", dP*bc->jr->scal->stress, rho_plume*bc->scal->density,rho_mantle*bc->scal->density, H*bc->scal->length, alpha_plume*bc->scal->expansivity,alpha_mantle*bc->scal->expansivity,g);
->>>>>>> master
 
 		if(bc->Plume_Pressure>0.0)
 		{
@@ -2578,7 +2557,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 				{
 					p_bot = p + (dz/2)*g*svBulk->rho;
 				}
-				rho_mantle =  GetDensity(bc,phase_mantle,bc->Tbot, p_bot);
+				rho_mantle =  GetDensity(bc,phase_mantle,Tbot, p_bot);
 				// To compute the pressure outside the domain, a factor of dz/2*rho_ext*g must applied. It is assumed that the density is constant outside
 				// the domain and equal to the density of the bottom of the numerical box
 				rhog = (dz/2)*g*rho_mantle;

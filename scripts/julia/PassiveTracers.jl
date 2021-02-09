@@ -58,47 +58,54 @@ function ExtractPTpaths()
     nMax                =   length(Directories)
     #nMax                =   20;
     minZ                =   [];
-    for iStep=1:nMax
+    iStep               =   0;
+    for ii=1:nMax
         local DirName, data, points_coord, ID, Active, P,T,zCoord, xCoord, New, id, Time
         local OutFileName;
         global minZ, OutNames, Time_vec, P_mat, T_mat, x_mat, z_mat;
 
-        DirName     =   Directories[iStep];
-        print("Processing directory $DirName \n")
+        DirName     =   Directories[ii];
+      
 
         # Extract the timestep info from the directory directory name 
         id      =   findlast("_",DirName);
         Time    =   parse(Float64,DirName[id[1]+1:length(DirName)]);
 
-        # ------------------------------------------------------------------------------------- 
-        # Read data from timestep
-        data        =   Read_VTU_File(DirName, FileName);
-        
-        points_coord =  ReadField_VTU(data,"coords");                   # coordinate array
-        ID          =   ReadField_VTU(data,"ID");                       # ID of all points
-        Active      =   ReadField_VTU(data,"Active");                   # Active or not?
-        P           =   ReadField_VTU(data,"Pressure [MPa]");           # Pressure
-        T           =   ReadField_VTU(data,"Temperature [C]");          # Temperature
-        MeltFrac    =   ReadField_VTU(data,"Mf_Grid [ ]");              # Melt fraction
-        zCoord      =   points_coord[:,3];   
-        xCoord      =   points_coord[:,1];   
+        if Time != 0
+            iStep = iStep+1;
+            print("Processing directory $DirName with Time=$Time \n")
 
-        numP        =   length(P);
-        if iStep==1
-            Time_vec        =   Array{Float64}(undef,   nMax);
-            P_mat           =   Array{Float32}(undef,   numP, nMax);
-            T_mat           =   Array{Float32}(undef,   numP, nMax);
-            x_mat           =   Array{Float32}(undef,   numP, nMax);
-            z_mat           =   Array{Float32}(undef,   numP, nMax);
-        end 
-        
-        # Save Data in matrix
-        numP                =   length(P);
-        Time_vec[iStep]     =   Time;
-        P_mat[:,iStep]      =   P[:];
-        T_mat[:,iStep]      =   T[:];
-        x_mat[:,iStep]      =   xCoord[:]; 
-        z_mat[:,iStep]      =   zCoord[:]; 
+            # ------------------------------------------------------------------------------------- 
+            # Read data from timestep
+            data        =   Read_VTU_File(DirName, FileName);
+            
+            points_coord =  ReadField_VTU(data,"coords");                   # coordinate array
+            ID          =   ReadField_VTU(data,"ID");                       # ID of all points
+            Active      =   ReadField_VTU(data,"Active");                   # Active or not?
+            P           =   ReadField_VTU(data,"Pressure [MPa]");           # Pressure
+            T           =   ReadField_VTU(data,"Temperature [C]");          # Temperature
+            MeltFrac    =   ReadField_VTU(data,"Mf_Grid [ ]");              # Melt fraction
+            zCoord      =   points_coord[:,3];   
+            xCoord      =   points_coord[:,1];   
+
+            numP        =   length(P);
+            if iStep==1
+                Time_vec        =   Array{Float64}(undef,   nMax);
+                P_mat           =   Array{Float32}(undef,   numP, nMax);
+                T_mat           =   Array{Float32}(undef,   numP, nMax);
+                x_mat           =   Array{Float32}(undef,   numP, nMax);
+                z_mat           =   Array{Float32}(undef,   numP, nMax);
+            end 
+            
+            # Save Data in matrix
+            numP                =   length(P);
+            Time_vec[iStep]     =   Time;
+            P_mat[:,iStep]      =   P[:];
+            T_mat[:,iStep]      =   T[:];
+            x_mat[:,iStep]      =   xCoord[:]; 
+            z_mat[:,iStep]      =   zCoord[:]; 
+
+        end
     end
 
     # Generate MATLAB file that saves all the info on the particles
@@ -142,14 +149,13 @@ function PostProcess_PassiveTracers()
 
     nMax                =   length(Directories)
     #nMax                =   20;
-    minZ                =   [];
+    minZ                =   [];0;
     for iStep=1:nMax
         local DirName, data, points_coord, ID, Active, P,T,zCoord, New, id, Time
         local OutFileName;
         global minZ, OutNames, Time_vec;
 
         DirName     =   Directories[iStep];
-        print("Processing directory $DirName \n")
 
         # Extract the timestep info from the directory directory name 
         id      =   findlast("_",DirName);
@@ -158,7 +164,7 @@ function PostProcess_PassiveTracers()
         # ------------------------------------------------------------------------------------- 
         # Read data from timestep
         data        =   Read_VTU_File(DirName, FileName);
-        
+            
         points_coord =  ReadField_VTU(data,"coords");                   # coordinate array
         ID          =   ReadField_VTU(data,"ID");                       # ID of all points
         Active      =   ReadField_VTU(data,"Active");                   # Active or not?
@@ -185,21 +191,20 @@ function PostProcess_PassiveTracers()
         end
 
         # Save data to new files --------------------------------------------------------------
-    
+        
         # Add data to object
         New = [];
         New = AddNewField_VTU(New, data, zCoord, "zCoord");        
         New = AddNewField_VTU(New, data, minZ,   "minZ");
         New = AddNewField_VTU(New, data, Active, "Active");             # will overwrite the previous "Active" field in file
-    
+        
         # write file back to disk
         OutFileName     =   "PassiveTracers_modified.vtu"
         WriteNewPoints_VTU(DirName, OutFileName, data, New);
-        
+            
         # Store filename and timestep info (for PVD files) ------------------------------------
         Time_vec[iStep]     =   Time;
         OutNames[iStep]     =   "$DirName/$OutFileName";
-
     end
 
     # Generate PVD file from the directories & filenames ----------------------------------
