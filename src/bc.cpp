@@ -392,7 +392,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getIntParam(fb, _OPTIONAL_, "open_bot_bound",		&bc->bot_open, 		1, -1); 	CHKERRQ(ierr);
 	if(bc->bot_open)
 	{
-		ierr = getIntParam(fb, _REQUIRED_, "permeable_phase_inflow",		&bc->phase_inflow_bot, 		1, -1); 	CHKERRQ(ierr);
+		ierr = getIntParam(fb, _OPTIONAL_, "permeable_phase_inflow",		&bc->phase_inflow_bot, 		1, -1); 	CHKERRQ(ierr);
 	}
 
 
@@ -457,6 +457,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 			ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , &bc->phase_inflow_bot,        1, mID);            CHKERRQ(ierr);
 
 		}
+
+	}
+
+	if((bc->bot_open || bc->Plume_Type == 2) && !bc->phase_inflow_bot )
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The permeable inflow phase or the mantle plume phase must be defiened\n");
 
 	}
 
