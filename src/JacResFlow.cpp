@@ -992,7 +992,6 @@ PetscErrorCode JacResGetFlowFlux(JacRes *jr, Vec lvx, Vec lvy, Vec lvz)
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
 		// compute average permeabilities normalized by viscosity
-
 		bkx = (ki + lk[k][j][Im1])/2.0/eta;      fkx = (ki + lk[k][j][Ip1])/2.0/eta;
 		bky = (ki + lk[k][Jm1][i])/2.0/eta;      fky = (ki + lk[k][Jp1][i])/2.0/eta;
 		bkz = (ki + lk[Km1][j][i])/2.0/eta;      fkz = (ki + lk[Kp1][j][i])/2.0/eta;

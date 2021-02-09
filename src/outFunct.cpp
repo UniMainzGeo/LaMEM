@@ -427,7 +427,7 @@ PetscErrorCode PVOutWritePorePress(OutVec* outvec)
 
 	ierr = DMGetLocalVector(fs->DA_CEN, &pf); CHKERRQ(ierr);
 
-	ierr =  VecCopy(jr->lp_pore, pf); CHKERRQ(ierr);
+	ierr = VecCopy(jr->lp_pore, pf); CHKERRQ(ierr);
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, pf, &lp); CHKERRQ(ierr);
 

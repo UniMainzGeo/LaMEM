@@ -301,11 +301,15 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 // get coordinate of i-th CELL (center)
 #define COORD_CELL(i, s, ds) (ds.ccoor[(i-s)])
 
+#define COORD_CELL_GHOST(i, ds) (ds.ccoor[(i-ds.pstart)])
+
 // get coordinate of i-th NODE
 #define COORD_NODE(i, s, ds) (ds.ncoor[(i-s)])
 
 // get size of i-th CELL control volume (distance between two bounding nodes)
 #define SIZE_CELL(i, s, ds) (ds.ncoor[(i-s)+1] - ds.ncoor[(i-s)])
+
+#define SIZE_CELL_GHOST(i, ds) (ds.ncoor[(i-ds.pstart)+1] - ds.ncoor[(i-ds.pstart)])
 
 // get size of i-th NODE control volume (distance between two neighboring cell centers)
 #define SIZE_NODE(i, s, ds) (ds.ccoor[(i-s)] - ds.ccoor[(i-s)-1])

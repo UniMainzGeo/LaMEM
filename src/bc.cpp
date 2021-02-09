@@ -899,13 +899,13 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	START_STD_LOOP
 	{
 		// get cell coordinates
-		xp = COORD_CELL(i, sx, fs->dsx);
-		yp = COORD_CELL(j, sy, fs->dsy);
-		zp = COORD_CELL(k, sz, fs->dsz);
+		xp = COORD_CELL_GHOST(i, fs->dsx);
+		yp = COORD_CELL_GHOST(j, fs->dsy);
+		zp = COORD_CELL_GHOST(k, fs->dsz);
 
-		dx = SIZE_CELL(i, sx, fs->dsx)/2.0;
-		dy = SIZE_CELL(j, sy, fs->dsy)/2.0;
-		dz = SIZE_CELL(k, sz, fs->dsz)/2.0;
+		dx = SIZE_CELL_GHOST(i, fs->dsx)/2.0;
+		dy = SIZE_CELL_GHOST(j, fs->dsy)/2.0;
+		dz = SIZE_CELL_GHOST(k, fs->dsz)/2.0;
 
 		// set boundary pressure
 		if(i == 0)   { bcf[k][j][i-1] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp - dx, yp,      zp); }
@@ -914,6 +914,7 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		if(j == mcy) { bcf[k][j+1][i] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp,      yp + dy, zp); }
 		if(k == 0)   { bcf[k-1][j][i] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp,      yp,      zp - dz); }
 		if(k == mcz) { bcf[k+1][j][i] = getp(psurf, rho_fluid, gz, bx, by, ex, ey, xp,      yp,      zp + dz); }
+
 	}
 	END_STD_LOOP
 
