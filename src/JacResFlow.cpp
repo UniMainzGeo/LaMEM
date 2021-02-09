@@ -423,13 +423,13 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
 	Vec         vki;
-	PetscInt    iter, cellID, I, J, K;
+	PetscInt    iter, cellID, I, J, K, M, N;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, jj;
  	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
- 	PetscScalar dx, dy, dz;
+ 	PetscScalar dx, dy, dz, hx, hy, hz;
 	PetscScalar invdt, ki, Ss, pc, fn, rho, eta, gz;
 	PetscScalar ***gf, ***lP, ***lk, ***buff, ***bcf;
 
@@ -442,6 +442,8 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 	mx       = fs->dsx.tcels - 1;
 	my       = fs->dsy.tcels - 1;
 	mz       = fs->dsz.tcels - 1;
+	M        = fs->dsx.ncels;
+	N        = fs->dsy.ncels;
 	ctrl     = &jr->ctrl;
 	rho      = ctrl->rho_fluid;
 	eta      = ctrl->eta_fluid;
@@ -531,9 +533,15 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 			if(cellID != -1)
 			{
 				// get I, J, K cell indices
-				GET_CELL_IJK(cellID, I, J, K, nx, ny);
+				GET_CELL_IJK(cellID, I, J, K, M, N);
 
-				gf[sz+K][sy+J][sx+I] += bc->vsource[jj];
+				// get cell sizes
+				hx = SIZE_CELL(I, 0, fs->dsx);
+				hy = SIZE_CELL(J, 0, fs->dsy);
+				hz = SIZE_CELL(K, 0, fs->dsz);
+
+				// add source scaled by cell volume
+				gf[sz+K][sy+J][sx+I] -= bc->vsource[jj]/hx*hy*hz;
 			}
 		}
 	}

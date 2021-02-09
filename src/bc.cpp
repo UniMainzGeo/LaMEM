@@ -804,10 +804,10 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	Controls    *ctrl;
 	PetscScalar ***bcf, ***p, *psurf, *X;
 	PetscScalar rho_fluid, gz;
-	PetscScalar bx, by, bz, ex, ey, ez, hx, hy, hz;
+	PetscScalar bx, by, bz, ex, ey, ez;
 	PetscScalar xp, yp, zp, dx, dy, dz;
 	PetscInt    i, j, k,  nx, ny, nz, sx, sy, sz, iter, mcx, mcy, mcz;
-	PetscInt    jj, I, J, K, cellID, fluidPhase, initGuess;
+	PetscInt    jj, I, J, K, M, N, cellID, fluidPhase, initGuess;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -822,6 +822,8 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 	mcx        = fs->dsx.tcels - 1;
 	mcy        = fs->dsy.tcels - 1;
 	mcz        = fs->dsz.tcels - 1;
+	M          = fs->dsx.ncels;
+	N          = fs->dsy.ncels;
 	gz         =  PetscAbsScalar(ctrl->grav[2]);
 	psurf      = bc->psurf;
 
@@ -849,16 +851,9 @@ PetscErrorCode BCApplyFlowBC(BCCtx *bc)
 		ierr = Discret1DFindPoint(&fs->dsz, X[2], K); CHKERRQ(ierr);
 
 		// compute and store consecutive index
-		GET_CELL_ID(cellID, I, J, K, nx, ny);
+		GET_CELL_ID(cellID, I, J, K, M, N);
 
 		cellID = bc->isource[jj] = cellID;
-
-		// scale source values by cell size
-		hx = SIZE_CELL(I, 0, fs->dsx);
-		hy = SIZE_CELL(J, 0, fs->dsy);
-		hz = SIZE_CELL(K, 0, fs->dsz);
-
-		bc->vsource[jj] /= hx*hy*hz;
 	}
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcf, &bcf);  CHKERRQ(ierr);
