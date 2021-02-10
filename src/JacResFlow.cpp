@@ -541,7 +541,7 @@ PetscErrorCode JacResGetFlowRes(JacRes *jr, PetscScalar dt)
 				hz = SIZE_CELL(K, 0, fs->dsz);
 
 				// add source scaled by cell volume
-				gf[sz+K][sy+J][sx+I] -= bc->vsource[jj]/hx*hy*hz;
+				gf[sz+K][sy+J][sx+I] -= bc->vsource[jj]/(hx*hy*hz);
 			}
 		}
 	}
