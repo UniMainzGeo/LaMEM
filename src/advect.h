@@ -315,5 +315,8 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx);
 // get maximum inverse time step (CFL)
 PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart);
 
+// add adiabatic gradient to the current temperature distribution
+PetscErrorCode ADVMarkerAdiabatic(AdvCtx *actx);
+
 //---------------------------------------------------------------------------
 #endif
