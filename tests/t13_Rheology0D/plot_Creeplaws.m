@@ -7,7 +7,7 @@
 clear
 
 
-Strainrate_vec = -18:.5:-12;
+Strainrate_vec = -22:.5:-12;
 
 T_vec = 400:50:900;
 T_vec = 650;
@@ -85,14 +85,16 @@ if 1==1
     flow_choice = 1;                % 1- Diff; 2-Disl; 9-Diffusion + Dislocation Creep Assumed
     
     PPa         = 300*1e6*0;          % Pressure in general in Pa
-    pphase      = ['an_wet'];
+%     pphase      = ['an_wet'];
+    pphase      = ['an_dry'];
+    
     gsiz        = 100;
     TK          = Temp+273.15;
     
     
     
-    [mu]        = fun_visc(1,eII,flow_choice,gsiz,TK,PPa,pphase);
-    Tau_anal    = 2.*mu.*eII/1e6;   % in MPa
+    [mu_d]        = fun_visc(1,eII,flow_choice,gsiz,TK,PPa,pphase);
+    Tau_anal    = 2.*mu_d.*eII/1e6;   % in MPa
 
     subplot(121)
     hold on
@@ -100,11 +102,11 @@ if 1==1
   
     subplot(122)
     hold on
-    loglog(eII,mu,'+','MarkerSize',10)
+    loglog(eII,mu_d,'+','MarkerSize',10)
     
     flow_choice = 2;                % 1- Diff; 2-Disl; 9-Diffusion 
-    [mu]        = fun_visc(1,eII,flow_choice,gsiz,TK,PPa,pphase);
-    Tau_anal    = 2.*mu.*eII/1e6;   % in MPa
+    [mu_n]        = fun_visc(1,eII,flow_choice,gsiz,TK,PPa,pphase);
+    Tau_anal    = 2.*mu_n.*eII/1e6;   % in MPa
     
     
     subplot(121)
@@ -113,7 +115,7 @@ if 1==1
   
     subplot(122)
     hold on
-    loglog(eII,mu,'ks','MarkerSize',10)
+    loglog(eII,mu_n,'ks','MarkerSize',10)
   
     
     legend('LaMEM','Matlab routine diffusion creep', 'Matlab routine dislocation creep')
@@ -130,5 +132,7 @@ if 1==1
     
     
 end
+
+
 
 
