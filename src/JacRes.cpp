@@ -90,7 +90,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->mfmax        =  0.15;
 	ctrl->lmaxit       =  25;
 	ctrl->lrtol        =  1e-6;
+	ctrl->actTemp	   =  0;			// diffusion is not active by default (otherwise we have to define thermal properties in all cases)
+	ctrl->printNorms   =  0;
 	ctrl->MeltExt      =  0;
+// print norms of velocity/pressure/temperature?
 
 	if(scal->utype != _NONE_)
 	{
@@ -130,11 +133,14 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,         1, 1);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfmax",           &ctrl->mfmax,          1, 1.0);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);       CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);        CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1);          CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Passive_Tracer", &ctrl->Passive_Tracer, 1, 1);          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);       	CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);        	CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1);          	CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "Passive_Tracer",  &ctrl->Passive_Tracer, 1, 1);          	CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms,     1, 1);          	CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "MeltExt",         &ctrl->MeltExt,         1, 1);   CHKERRQ(ierr);
+
+
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -2232,7 +2238,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	// show assembled residual with boundary constraints
 	// WARNING! rewrite this function using coupled residual vector directly
 
-	PetscScalar dinf, d2, e2, fx, fy, fz, f2, div_tol;
+	PetscScalar dinf, d2, e2, fx, fy, fz, f2, div_tol, T2, vx2, vy2, vz2, p2;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2249,12 +2255,19 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	ierr = VecNorm(jr->gfy, NORM_2, &fy);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfz, NORM_2, &fz);   CHKERRQ(ierr);
 
+	ierr = VecNorm(jr->gvx, NORM_2, &vx2);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gvy, NORM_2, &vy2);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gvz, NORM_2, &vz2);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gp,  NORM_2, &p2);    CHKERRQ(ierr);		// pressure
+
 	f2 = sqrt(fx*fx + fy*fy + fz*fz);
 
 	if(jr->ctrl.actTemp)
 	{
 		ierr = JacResGetTempRes(jr,jr->ts->dt);         CHKERRQ(ierr);
 		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
+		ierr = VecNorm(jr->lT, NORM_2, &T2); CHKERRQ(ierr);
+		
 	}
 
 	// print
@@ -2265,10 +2278,25 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "   Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "      |mRes|_2  = %12.12e \n", f2);
 
+	if (jr->ctrl.printNorms)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Velocity: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "      |Vx|_2    = %12.12e \n", vx2);
+		PetscPrintf(PETSC_COMM_WORLD, "      |Vy|_2    = %12.12e \n", vy2);
+		PetscPrintf(PETSC_COMM_WORLD, "      |Vz|_2    = %12.12e \n", vz2);
+		PetscPrintf(PETSC_COMM_WORLD, "   Pressure: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "      |P|_2     = %12.12e \n", p2);
+	}
+
 	if(jr->ctrl.actTemp)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Energy: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "      |eRes|_2  = %12.12e \n", e2);
+		if (jr->ctrl.printNorms)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Temperature: \n" );
+			PetscPrintf(PETSC_COMM_WORLD, "      |T|_2     = %12.12e \n", T2);
+		}
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");

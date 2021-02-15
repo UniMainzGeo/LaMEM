@@ -102,6 +102,8 @@ if os.environ.get('MATLAB') != None:
     registeredTests.append(Sub1.test_c());
     registeredTests.append(Sub1.test_d());
     registeredTests.append( Diffusion.test_1D());
+    registeredTests.append( Diffusion.test_halfspace());
+    
     
 
 # Run the tests:

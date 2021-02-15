@@ -331,6 +331,9 @@
 		PhaseAbove 				= 	6 		        # Phases below the phase transition 
 		PhaseBelow 				= 	4               # Phases below
         PhaseDirection          =   BelowToAbove    # [BothWays=default; BelowToAbove; AboveToBelow]
+		
+		ResetParam 				=	APS				# Set APS to zero if we are above the constant value
+
 	<PhaseTransitionEnd>
 
 	# Clapeyron slope
@@ -342,6 +345,7 @@
 		PhaseAbove              =   5
 		PhaseBelow              =   3
         PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
+	
 	<PhaseTransitionEnd>
 
 	# Box-like region with T-condition
@@ -361,6 +365,8 @@
         #PTBox_thermalAge        =   100                            # Thermal age 
         #PTBox_cstTemp          =   1200                            # Temp within box [for constant T]
        
+	   	ResetParam 				=	APS
+
 	<PhaseTransitionEnd>
 
 #===============================================================================
