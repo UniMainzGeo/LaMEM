@@ -195,6 +195,11 @@
 
 	open_top_bound = 1
 
+# Permeable lower boundary flag    
+    open_bot_bound = 0
+	permeable_phase_inflow = 1 # Phase of the inflow material from the bottom (The temperature of the inflow phase it is the same of the bottom boundary)
+
+    
 # No-slip boundary flag mask (left right front back bottom top)
 
 	noslip = 0 0 1 1 0 0
@@ -211,10 +216,14 @@
 
 	fix_cell_file = ./bc/cdb 
 	
-# temperature on the top & bottom boundaries
+# temperature on the top & bottom boundaries [usually constant]
 
-	temp_top  = 0.0
-	temp_bot  = 1300.0;
+    temp_top                =   0.0
+    temp_bot                =   1300.0                              # if only one value is given, it is assumed to be constant with time
+
+    temp_bot_num_periods    =   2                                   # How many periods with different temp_bot do we have? 
+    temp_bot_time_delim     =   1.2                                 # At which time do we switch from one to the next period?
+
 
 # temperature initial guess flag
 # linear profile between temp_top and temp_bot
@@ -222,14 +231,18 @@
 
 # Optional plume inflow @ bottom boundary
     Plume_InflowBoundary    =   1           # have a plume-like inflow boundary @ bottom
-    Plume_Type              =   2nd         # 2D or 3D (circular)		
+    Plume_Type              =   Inflow_Type          # Inflow_type or Pressure_type (circular)	
+	                        =   Permeable_Type       # Combine the open bot boundary with the plume boundary condition (the option herein listed overwrite open_bot, so do not activate) 	
+	Plume_Dimension         =   2D          # 2D or 3D (circular)		
     Plume_Phase             =   4           # phase of plume
+    Plume_Depth             =   1885        # depth of provenience of the plume (i.e. how far from the bottom of the model the plume source is) 
+    Plume_Mantle_Phase      =   1           # Astenosphere phase (if the inflow occurs outside the plume radius)
     Plume_Temperature       =   1600        # temperature of inflow plume
-    Plume_Inflow_Velocity   =   15          # Inflow velocity	
-    Plume_VelocityType      =   Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
+    Plume_Inflow_Velocity   =   15          # Inflow velocity	(not required if Pressure_Type)
+    Plume_VelocityType      =   Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better (not required if Pressure_Type) 			
     Plume_Center            =   0 50        # [X,Y] of center  (2nd only in case of 3D plume)
     Plume_Radius            =   100         # Width/Radius of plume
-
+    Plume_Phase_Mantle      =   1			# Inflow phase. If the velocity happens to be positive in the domain, the inflow material has a constant phase and the temperature of the bottom 
 
 # Pressure on the top & bottom boundaries
 
@@ -240,7 +253,7 @@
 # linear profile between pres_top and pres_bot in the unconstrained cells
 
 	init_pres = 1
-	
+
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
@@ -433,7 +446,7 @@
 	Passive_Tracer              = 1                               # Activate passive tracers?
 	PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
     PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
-    PassiveTracer_ActiveType    =  Melt_Fraction                  # Under which condition are they activated? []  
+    PassiveTracer_ActiveType    =  Always                  		  # Under which condition are they activated? []  
     PassiveTracer_ActiveValue   =  0.1                            # When this value is exceeded the tracers are being activated 
     
     # Passive Tracer activation type specification:
@@ -481,6 +494,8 @@
 	out_moment_res      = 1
 	out_cont_res        = 1
 	out_energ_res       = 1
+	out_melt_fraction 	= 1
+	out_fluid_density   = 1	
 
 # Phase aggregate output paramter
 # Phase ratios of listed phases are summed up and output as a scalar vector
@@ -674,6 +689,7 @@
 		pMant      = 1.0    # mantle or crustal phase (mantle =1.0, crustal phase = 0.0)
 		ID_Melt_Ex = 0      # melt extraction law ID
 		phNext     = 2      # after 0.1 or 0.5 of total melt extracted the phase is changed to phNext
+
 	<MaterialEnd>
 
 #===============================================================================

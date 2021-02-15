@@ -44,7 +44,7 @@
 //...................   PARAMETERIZED MELT FRACTION   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "meltParamKatz.h"
+#include "meltParam.h"
 
 // The original code for Katz et al., 2003, G3. A new parameterization of hydrous mantle melting.
 // Modified to solve the problem of solidus line curl back at large pressure.

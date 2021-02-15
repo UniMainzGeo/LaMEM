@@ -3,16 +3,18 @@
 # It is handy to see how new code features impact the results
 
 using Plots
-using CSV
+using CSV, DataFrames
 
 
 
 # Read LaMEM routines
-include("../../scripts/julia/ReadLaMEM_Timestep.jl")
+push!(LOAD_PATH, "../../scripts/julia/");   # path to julia scripts
+#using ReadLaMEM_Timestep
+
 include("ReadMinCoord.jl")
 
 # Import reference solution from paper (50)
-Analytics = CSV.read("Analytics.csv");
+Analytics = convert(Matrix{Float64},DataFrame(CSV.File("Analytics.csv")));
 Time_anal = Analytics[:,1];
 Zmin_anal = Analytics[:,2];
 
@@ -27,5 +29,8 @@ Zmin_anal = Analytics[:,2];
 Time_vec, Zmin_vec = ReadMinZ("RT_FSSA.pvtr")
 
 
-plot(Time_anal,Zmin_anal)
-plot!(Time_vec, Zmin_vec)
+plot(Time_anal,Zmin_anal,label = "Reference solution")
+plot!(Time_vec, Zmin_vec,label = "LaMEM")
+xlabel!("Time [Myrs]")
+ylabel!("Depth")
+

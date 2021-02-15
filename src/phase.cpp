@@ -384,6 +384,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		strcat(m->pdf, ".in");		// add the file ending
 
 		strcpy(m->pdn, PhaseDiagram);
+
 	    // Take into account only the melt, and not the density from a phase diagram
 		ierr = getIntParam(fb, _OPTIONAL_, "Phase_Melt", &m->Phase_Diagram_melt, 1, 1); CHKERRQ(ierr);
 

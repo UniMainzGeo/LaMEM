@@ -78,7 +78,8 @@
 
 # Plume_like inflow boundary condition
 	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
-	Plume_Type         		= 	2D			# 2D or 3D (circular)		
+	Plume_Type         		= 	Inflow_Type			# 2D or 3D (circular)
+	Plume_Dimension                 =       2D		
 	Plume_Phase 			=	4			# phase of plume
 	Plume_Temperature 		=	1700		# temperature of inflow plume
 	Plume_Inflow_Velocity 	= 	15			# Inflow velocity			

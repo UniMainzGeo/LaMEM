@@ -91,6 +91,7 @@ struct SolVarBulk
 	PetscScalar  Vol_S ;  // mass exchange (must be volume)
 	PetscScalar  mfext_cur; // current extraction stage
 	PetscScalar  Tot_MExt ; // total melt extracted;
+	PetscScalar  Ha ;    // Adiabatic heating
 
 };
 
@@ -106,6 +107,7 @@ struct SolVarCell
 	PetscScalar  hxx, hyy, hzz; // history stress (elastic)
 	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
 	PetscScalar *phRat;         // phase ratios in the control volume
+	PetscInt     FreeSurf;      // indicates whether the control volume contains the internal free surface
 	PetscScalar  U[3];          // total displacement
 	PetscScalar  ATS;           // accumulated total strain
 	PetscScalar  eta_cr;        // creep viscosity
@@ -150,6 +152,7 @@ struct Controls
 {
 	PetscScalar grav[3];       // global gravity components
 	PetscScalar FSSA;          // free surface stabilization parameter [0 - 1]
+	PetscInt    FSSA_allVel;   // Use all velocity components for FSSA?
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
@@ -191,6 +194,7 @@ struct Controls
 	PetscInt    Phasetrans; // Flag to activate passive tracer routines
 	PetscInt    Passive_Tracer; // Flag to activate passive tracer routine
 	PetscInt    MeltExt       ; // Flag to activate melt extraction
+	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 };
 
 //---------------------------------------------------------------------------
@@ -256,6 +260,7 @@ struct JacRes
 	SolVarEdge  *svXZEdge; // XZ edges
 	SolVarEdge  *svYZEdge; // YZ edges
 	PetscScalar *svBuff;   // storage for phRat
+	PetscScalar  mean_p;  // average lithostatic pressure
 
 	// Phase diagram
 	PData       *Pd;

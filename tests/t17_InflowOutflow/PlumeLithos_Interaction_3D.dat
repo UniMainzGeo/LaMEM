@@ -17,7 +17,7 @@
 # Time stepping parameters
 #===============================================================================
 	time_end  = 100   	# simulation end time
-	dt        = 0.01   # initial time step
+	dt        = 0.001   # initial time step
 	dt_min    = 1e-5  	# minimum time step (declare divergence if lower value is attempted)
 	dt_max    = 1   	# maximum time step
 	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
@@ -60,7 +60,7 @@
 	temp_bot  = 1300.0;
 	
 # No-slip boundary flag mask (left right front back bottom top)
-	noslip 					= 	0 0 0 0 1 0
+	noslip 					= 	0 0 0 0 0 0
 	
 	#open_top_bound 			= 	0
 
@@ -73,15 +73,16 @@
 	bvel_relax_d            = 	100 			
 
 # Plume_like inflow boundary condition
+
 	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
-	Plume_Type         		= 	3D			# 2D or 3D (circular)		
+	Plume_Type              =     Inflow_Type
+	Plume_Dimension         		= 	3D			# 2D or 3D (circular)		
 	Plume_Phase 			=	4			# phase of plume
 	Plume_Temperature 		=	1600		# temperature of inflow plume
-	Plume_Inflow_Velocity 	= 	15			# Inflow velocity			
-	Plume_Center 			=	0 0 		# [X,Y] of center  (Y only in case of 3D plume)
-	Plume_Radius 			=	100			# Width/Radius of plume
-	Plume_VelocityType 		=	Poiseuille  # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
-
+	Plume_Inflow_Velocity 	= 	5.0			# Inflow velocity			
+	Plume_VelocityType 		=	Poiseuille    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
+	Plume_Center 			=	0.0 0.0		# [X,Y] of center  (2nd only in case of 3D plume)
+	Plume_Radius 			=	50			# Width/Radius of plume
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
@@ -89,20 +90,21 @@
 	gravity        = 0.0 0.0 -10    # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
-	init_guess     = 0              # initial guess flag
+	init_guess     = 1              # initial guess flag
 	act_temp_diff  = 0  			# activate thermal diffusion
 	shear_heat_eff = 0.0  
 	eta_min        = 1e18           # viscosity upper bound
 	eta_ref 	   = 1e20			# reference viscosity for initial guess	
 	eta_max        = 1e24           # viscosity lower limit
-	p_shift        = 2.216e4        # pressure shift activation flag (zero pressure in the top cell layer)
-    init_lith_pres = 1
+	#p_shift        = 2.216e4        # pressure shift activation flag (zero pressure in the top cell layer)
+	act_p_shift     = 1              # pressure shift activation flag (enforce zero pressure on average in the top cell layer); note: this overwrites p_shift above!
+ init_lith_pres = 1
 	DII_ref        = 1e-15          # background (reference) strain-rate
 	
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 		=	multigrid 			# solver [direct or multigrid]
+	SolverType 		=	multigrid			# solver [direct or multigrid]
 	
 #===============================================================================
 # Model setup & advection
@@ -288,8 +290,8 @@
 #	-snes_ksp_ew
 #	-snes_ksp_ew_rtolmax 1e-4
 	-snes_rtol 1e-4					
-	-snes_atol 1e-4					
-	-snes_max_it 50					
+	-snes_atol 1e-3					
+	-snes_max_it 30					
 	
 	-snes_PicardSwitchToNewton_rtol 1e-4   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
@@ -298,7 +300,7 @@
 	-js_ksp_type fgmres
 	-js_ksp_monitor 				# display how the inner iterations converge
 	-js_ksp_max_it 20				# inner
-	-js_ksp_atol 1e-8
+	-js_ksp_atol 1e-3
 	-js_ksp_rtol 1e-4
 
 	-snes_linesearch_type l2

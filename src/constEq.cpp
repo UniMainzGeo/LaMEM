@@ -50,9 +50,9 @@
 #include "phase.h"
 #include "JacRes.h"
 #include "meltextraction.h"
+#include "meltParam.h"
 #include "tools.h"
 #include "phase_transition.h"
-#include "meltParamKatz.h"
 #include "scaling.h"
 #include "parsing.h"
 //---------------------------------------------------------------------------
@@ -770,9 +770,13 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			}
 			else if(mat->pdAct == 1 && mat->Phase_Diagram_melt)
 			{
-				rho = (Pd->mf * mat->rho_melt) + ((1-Pd->mf) * mat->rho);
+				PetscScalar mf;
 
-				rho = rho*cf_comp*cf_therm;
+				mf = Pd->mf;
+				if (mf > ctrl->mfmax){ mf = ctrl->mfmax; }
+				rho = mat->rho*cf_comp*cf_therm;
+				rho = (Pd->mf * mat->rho_melt) + ((1-Pd->mf) * rho);
+
 			}
 			else
 			{
