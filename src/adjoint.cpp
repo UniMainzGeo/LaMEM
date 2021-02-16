@@ -195,6 +195,7 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 
 	Par[iP] 		=  	value;
 	Parameter_SetFDgrad_Option(&FDgrad[iP], type_name[iP]);	
+
 	FDeps[iP] 		=	0.0;
 }
 
@@ -210,7 +211,8 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		PetscInt 	*phsar,
 		PetscScalar *Par,
 		PetscInt    *FDgrad,
-		PetscScalar *FDeps)
+		PetscScalar *FDeps,
+		PetscInt 	FDonly)
 {
 	PetscFunctionBegin;
 	PetscErrorCode 	ierr;
@@ -223,8 +225,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	Material_t 		m;
 
 	
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"); CHKERRQ(ierr);
-
+	ierr 	= FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"); CHKERRQ(ierr);
 	// error checking
 	if(fb->nblocks > _MAX_PAR_)
 	{
@@ -241,8 +242,8 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		ierr = getStringParam(fb, _OPTIONAL_, "Type", par_str, NULL); CHKERRQ(ierr);
 		if (!strcmp(par_str,"AllMaterialParameters")){ 
 			ReadAllMatParams=PETSC_TRUE;	
-			
 
+			
 			/* if we have a block in which we specify AllMaterialParameters, check if we indicate phases to be excluded */
 			char     	*ptr, *line, **lines, *par_str, *pch, par_val[_str_len_];
 			PetscInt  	i, lnbeg, lnend;
@@ -282,6 +283,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 						
 						numExcludedPhases++;
 					}
+				
 				}
 			}
 			
@@ -349,6 +351,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 						
 						// ADD them to the database
 						AddParamToList(ID, value, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps);
+						if (FDonly==1){	FDgrad[*iP]=1; }
 						
 						*iP             =  *iP + 1;
 
@@ -468,6 +471,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	IOparam->ReferenceDensity 	= 0;
 	IOparam->SCF 				= 0; 	
 	IOparam->DII_ref 			= 0.0;	
+	IOparam->FDonly 			= 0;	
+	
 	
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
@@ -490,8 +495,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef"     , &IOparam->OFdef,     		1, 1 ); CHKERRQ(ierr);  // Objective function defined by hand?
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_PrintScalingLaws"     	 , &IOparam->ScalLaws,  		1, 1 ); CHKERRQ(ierr);  // Print scaling laws (combined with AdjointGradients)
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_UseInitialAdjointParams"  , &IOparam->SetInitAdjParam,  	1, 1 ); CHKERRQ(ierr);  // Use InitialGuess specified in AdjointParamsStart/End as initial value?
-	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename"     	 , str,  "ScalingLaw.dat"  ); 		   CHKERRQ(ierr);  // Scaling law filename
-	ierr = getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref"       			 , &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);  // Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
+	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename"     	 , str,  "ScalingLaw.dat"  ); 		   CHKERRQ(ierr);  	// Scaling law filename
+	ierr = getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref"       			 , &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);  	// Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FDonly"       			 , &IOparam->FDonly,   1, 1        ); CHKERRQ(ierr);  	// Only use finite differences?
+	
 	if (IOparam->DII_ref==0.0 && IOparam->FS)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "%d For Kernel calculation you have to explicitly set DII_ref (equal to the one in forward LaMEM) with 'Adjoint_DII_ref'",1);
@@ -617,7 +624,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 
 	// 1) Check whether we want to take ALL material parameters into account
 	iStart 	= 0;
-	ierr 	= Adjoint_ScanForMaterialParameters(fb, &scal, &iStart, type_name, phsar, Par, FDgrad, FDeps); CHKERRQ(ierr);
+	if (IOparam->FDonly==1){
+		PetscPrintf(PETSC_COMM_WORLD, "|    Ony using FD to compute gradients \n");
+	}
+	ierr 	= Adjoint_ScanForMaterialParameters(fb, &scal, &iStart, type_name, phsar, Par, FDgrad, FDeps, IOparam->FDonly); CHKERRQ(ierr);
 	for(j = 0; j < iStart; j++){vec_log10[j]=0; }	// initialize (no log10 in LaMEM material parameters)
 
 	// 2) Check the AdjointParameter blocks for additional parameters
@@ -694,14 +704,21 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 			grad = -1;
 			ierr = getIntParam(fb, _OPTIONAL_, "FD_gradient", &grad, 1,1); CHKERRQ(ierr);  // must have component
 			if (grad<0){
-				// Retrieve scaling for the parameter
-				ierr = Parameter_SetFDgrad_Option(&FDgrad[i], par_str);	CHKERRQ(ierr);
+
+				if (IOparam->FDonly==0){
+					// Retrieve scaling for the parameter
+					ierr = Parameter_SetFDgrad_Option(&FDgrad[i], par_str);	CHKERRQ(ierr);
+				}
+				else{
+					FDgrad[i] = 1;
+				}
+
 			}
 			else{
 				FDgrad[i] = grad;
 			}
 
-			// do we cpmpute with the log10(param) internally (implying that the parameter value )
+			// do we compute with the log10(param) internally (implying that the parameter value )
 			p 		=	0;
 			ierr 	= getIntParam(fb, _OPTIONAL_, "log10", &p, 1, 1 ); CHKERRQ(ierr);	// eps for brute force FD gradients
 			vec_log10[i] = p;
@@ -2009,6 +2026,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
  		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
  	}
 
+
     // Set the FD step-size for computing dr/dp (or override it with a command-line option, which is more for advanced users/testing)
     aop->FD_epsilon = 1e-6;
     ierr = PetscOptionsGetScalar(NULL, NULL,"-FD_epsilon_adjoint",&aop->FD_epsilon,&flg); CHKERRQ(ierr);
@@ -2590,11 +2608,11 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	{
 		for(ii = 0; ii < 3; ii++)
 		{
-			if(IOparam->Av[ii] == 1)        // vx velocity
+			if(IOparam->Av[ii] == 1)        // Vx velocity
 			{
 				ierr = VecSet(lproX,1);
 			}
-			else if(IOparam->Av[ii] == 2)  // vy velocity
+			else if(IOparam->Av[ii] == 2)  // Vy velocity
 			{
 				ierr = VecSet(lproY,1);
 			}
@@ -3718,6 +3736,7 @@ PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 	else if  (!strcmp("G",name))		{ found=PETSC_TRUE; *FD_grad=0; }
 	else if  (!strcmp("Kb",name))		{ found=PETSC_TRUE; *FD_grad=0; }
 	else if  (!strcmp("nu",name))		{ found=PETSC_TRUE; *FD_grad=0; }
+	else if  (!strcmp("E",name))		{ found=PETSC_TRUE; *FD_grad=0; }
 	
 	// plasticity
 	else if  (!strcmp("ch",name))		{ found=PETSC_TRUE; *FD_grad=1; }
@@ -3925,6 +3944,8 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			if 		(IOparam->Av[j]==1){strcpy(comp_str, "Vx");	}
 			else if (IOparam->Av[j]==2){strcpy(comp_str, "Vy");	}
 			else if (IOparam->Av[j]==3){strcpy(comp_str, "Vz");	}
+			else if (IOparam->Av[j]==3){strcpy(comp_str, "Vz");	}
+			
 		
 			fprintf(db,"# %3i %- 14.5f %- 14.5f %- 14.5f   %s         %- 14.5e\n",j+1, IOparam->Ax[j], IOparam->Ay[j], IOparam->Az[j], comp_str, IOparam->Avel_num[j]);
 		}

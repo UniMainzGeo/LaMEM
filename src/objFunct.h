@@ -102,7 +102,8 @@ struct ModParam
 	PetscInt 		 par_log10[_MAX_PAR_];				// Is the value indicated log10(par)
 	PetscScalar      grd[_MAX_PAR_];                    // gradient value
 	PetscBool 		 BruteForce_FD;						// indicate whether we compute Brute force FD or not
-
+	PetscInt 		 FDonly;							// indicate whether we only compute parameters with finite differences
+	
 	PetscScalar     *val;                               // model value
 	PetscScalar      mfit, mfitCenter;                  // misfit value for current model parameters
     DBMat            dbm_modified;                      // holds the (modified) LaMEM material database

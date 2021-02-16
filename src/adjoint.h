@@ -94,7 +94,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam);
 
 // Initialize & read input
 PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs *Adjoint_Vectors);
-PetscErrorCode Adjoint_ScanForMaterialParameters(FB*, Scaling*, PetscInt*, char, PetscInt* ,PetscScalar*,PetscInt*, PetscScalar*);
+PetscErrorCode Adjoint_ScanForMaterialParameters(FB*, Scaling*, PetscInt*, char, PetscInt* ,PetscScalar*,PetscInt*, PetscScalar*, PetscInt);
 
 
 // Create & Destroy Adjoint_Vectors object
