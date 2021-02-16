@@ -86,6 +86,7 @@ struct SolVarBulk
 	PetscScalar  rho_pf; // fluid density from phase diagram
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
+	PetscScalar  Ha ;    // Adiabatic heating
 
 };
 
@@ -186,6 +187,7 @@ struct Controls
 	PetscScalar lrtol;          // local rheology iterations relative tolerance
 	PetscInt    Phasetrans;     // Flag to activate phase transition routines
 	PetscInt    Passive_Tracer; // Flag to activate passive tracer routine
+	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 };
 
@@ -251,6 +253,7 @@ struct JacRes
 	SolVarEdge  *svXZEdge; // XZ edges
 	SolVarEdge  *svYZEdge; // YZ edges
 	PetscScalar *svBuff;   // storage for phRat
+	PetscScalar  mean_p;  // average lithostatic pressure
 
 	// Phase diagram
 	PData       *Pd;

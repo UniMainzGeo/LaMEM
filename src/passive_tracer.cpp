@@ -491,8 +491,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 		}
 	// current time step
 	dt = jr->ts->dt;
-
-//	if(jr->ts->istep == 1 )ierr = ADV_Assign_Phase(actx); CHKERRQ(ierr);
 	if(jr->ctrl.pShift)
 	{
 		pShift = jr->ctrl.pShift;
