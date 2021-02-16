@@ -2286,7 +2286,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
                 PetscScalar x,y,z,CostFunc;
 
 				if (IOparam->MfitType == 0)
-				{
+				{	
 					if (IOparam->Av[j] == 1){strcpy(vel_com, "Vx"); }
 					if (IOparam->Av[j] == 2){strcpy(vel_com, "Vy"); }
 					if (IOparam->Av[j] == 3){strcpy(vel_com, "Vz"); }
@@ -3940,14 +3940,17 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		
 		// Print observation points info
 		for(j = 0; j < IOparam->mdI; j++)
-		{
-			if 		(IOparam->Av[j]==1){strcpy(comp_str, "Vx");	}
-			else if (IOparam->Av[j]==2){strcpy(comp_str, "Vy");	}
-			else if (IOparam->Av[j]==3){strcpy(comp_str, "Vz");	}
-			else if (IOparam->Av[j]==3){strcpy(comp_str, "Vz");	}
-			
-		
-			fprintf(db,"# %3i %- 14.5f %- 14.5f %- 14.5f   %s         %- 14.5e\n",j+1, IOparam->Ax[j], IOparam->Ay[j], IOparam->Az[j], comp_str, IOparam->Avel_num[j]);
+		{	
+			if 		(IOparam->MfitType == 0){
+				if 		(IOparam->Av[j]==1){strcpy(comp_str, "Vx");	}
+				else if (IOparam->Av[j]==2){strcpy(comp_str, "Vy");	}
+				else if (IOparam->Av[j]==3){strcpy(comp_str, "Vz");	}
+			}
+			else if (IOparam->MfitType == 1){
+				strcpy(comp_str, IOparam->ObsName[j]);
+			}
+
+			fprintf(db,"# %3i %- 14.5f %- 14.5f %- 14.5f   %s         %- 14.5e \n",j+1, IOparam->Ax[j], IOparam->Ay[j], IOparam->Az[j], comp_str, IOparam->Avel_num[j]);
 		}
 		fprintf(db,"#  \n");
 		fprintf(db,"#  \n");
