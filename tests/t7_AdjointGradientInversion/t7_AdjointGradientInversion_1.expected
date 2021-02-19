@@ -31,7 +31,7 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 3.1782342166e-02
+| Current Cost function = 3.1782342167e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -39,8 +39,8 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]            5.324045e-02 
-|  adjoint     2:          rho[ 1]           -1.027798e-03 
+|  adjoint     1:   log10  eta[ 0]            5.323656e-02 
+|  adjoint     2:          rho[ 1]           -1.027791e-03 
 | 
 | 
 | Observation points: 
@@ -49,7 +49,7 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 |       --------------------------------- --- ------------- ------------- 
 | 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -1.05957e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=5.324045e-02, [1]=-1.027798e-03 
+| AdjointOptimisation: Gradients. [0]=5.323656e-02, [1]=-1.027791e-03 
 | ------------------------------------------------------------------------ 
 | 1. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.00000e+00
 | 
@@ -70,7 +70,7 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 9.7357940574e+01
+| Current Cost function = 9.7357846425e+01
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -78,25 +78,25 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]            2.200384e+02 
-|  adjoint     2:          rho[ 1]           -6.764586e-01 
+|  adjoint     1:   log10  eta[ 0]           -4.110339e+01 
+|  adjoint     2:          rho[ 1]            5.812966e-01 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -1.44210e+01 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -1.44209e+01 
 | 
-| AdjointOptimisation: Gradients. [0]=2.200384e+02, [1]=-6.764586e-01 
+| AdjointOptimisation: Gradients. [0]=-4.110339e+01, [1]=5.812966e-01 
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 |               LINE SEARCH IT 1                       
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.5853528644e-02
+| Current Cost function = 2.5856199613e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -104,26 +104,26 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]            5.776892e-02 
-|  adjoint     2:          rho[ 1]           -1.141250e-03 
+|  adjoint     1:   log10  eta[ 0]            5.776753e-02 
+|  adjoint     2:          rho[ 1]           -1.141286e-03 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -1.30872e-01 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -1.30861e-01 
 | 
-|    F = 2.585353e-02,  Fold = 3.178234e-02                      
+|    F = 2.585620e-02,  Fold = 3.178234e-02                      
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 | ------------------------------------------------------------------------ 
-| 2. IT INVERSION RESULT: line search its = 1 ; F / FINI = 8.13456e-01
+| 2. IT INVERSION RESULT: line search its = 1 ; F / FINI = 8.13540e-01
 | 
 | Fold = 3.17823e-02 
-|    F = 2.58535e-02
+|    F = 2.58562e-02
 | 
-| 1. Diff parameter value = -1.15538e-01
-| 2. Diff parameter value = 2.28250e-03
+| 1. Diff parameter value = -1.15535e-01
+| 2. Diff parameter value = 2.28257e-03
 | 
 | 1. Parameter value = 2.07780e+01
 | 2. Parameter value = 3.22000e+03
@@ -132,11 +132,11 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | LS factor for 2.Parameter = 2.20000e+00
 | 
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.9016326291e-02
+| Current Cost function = 1.9019648404e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -144,25 +144,25 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]            5.989416e-02 
-|  adjoint     2:          rho[ 1]           -1.218757e-03 
+|  adjoint     1:   log10  eta[ 0]            5.989479e-02 
+|  adjoint     2:          rho[ 1]           -1.218837e-03 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -1.63490e-01 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -1.63473e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=5.989416e-02, [1]=-1.218757e-03 
+| AdjointOptimisation: Gradients. [0]=5.989479e-02, [1]=-1.218837e-03 
 | ------------------------------------------------------------------------ 
-| 3. IT INVERSION RESULT: line search its = 0 ; F / FINI = 5.98330e-01
+| 3. IT INVERSION RESULT: line search its = 0 ; F / FINI = 5.98434e-01
 | 
-| Fold = 2.58535e-02 
-|    F = 1.90163e-02
+| Fold = 2.58562e-02 
+|    F = 1.90196e-02
 | 
-| 1. Diff parameter value = -1.31767e-01
-| 2. Diff parameter value = 2.68127e-03
+| 1. Diff parameter value = -1.31769e-01
+| 2. Diff parameter value = 2.68144e-03
 | 
 | 1. Parameter value = 2.06462e+01
 | 2. Parameter value = 3.22001e+03
@@ -171,11 +171,11 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | LS factor for 2.Parameter = 2.42000e+00
 | 
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.1272605879e-02
+| Current Cost function = 1.1276181405e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -183,25 +183,25 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]            5.624270e-02 
-|  adjoint     2:          rho[ 1]           -1.193914e-03 
+|  adjoint     1:   log10  eta[ 0]            5.624777e-02 
+|  adjoint     2:          rho[ 1]           -1.194090e-03 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -2.08701e-01 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -2.08677e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=5.624270e-02, [1]=-1.193914e-03 
+| AdjointOptimisation: Gradients. [0]=5.624777e-02, [1]=-1.194090e-03 
 | ------------------------------------------------------------------------ 
-| 4. IT INVERSION RESULT: line search its = 0 ; F / FINI = 3.54681e-01
+| 4. IT INVERSION RESULT: line search its = 0 ; F / FINI = 3.54794e-01
 | 
-| Fold = 1.90163e-02 
-|    F = 1.12726e-02
+| Fold = 1.90196e-02 
+|    F = 1.12762e-02
 | 
-| 1. Diff parameter value = -1.36107e-01
-| 2. Diff parameter value = 2.88927e-03
+| 1. Diff parameter value = -1.36120e-01
+| 2. Diff parameter value = 2.88970e-03
 | 
 | 1. Parameter value = 2.05101e+01
 | 2. Parameter value = 3.22001e+03
@@ -210,11 +210,11 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | LS factor for 2.Parameter = 2.66200e+00
 | 
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 4.4300376122e-03
+| Current Cost function = 4.4327743947e-03
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -222,25 +222,25 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]            4.220816e-02 
-|  adjoint     2:          rho[ 1]           -9.481552e-04 
+|  adjoint     1:   log10  eta[ 0]            4.221933e-02 
+|  adjoint     2:          rho[ 1]           -9.484705e-04 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -2.65152e-01 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -2.65123e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=4.220816e-02, [1]=-9.481552e-04 
+| AdjointOptimisation: Gradients. [0]=4.221933e-02, [1]=-9.484705e-04 
 | ------------------------------------------------------------------------ 
-| 5. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.39387e-01
+| 5. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.39473e-01
 | 
-| Fold = 1.12726e-02 
-|    F = 4.43004e-03
+| Fold = 1.12762e-02 
+|    F = 4.43277e-03
 | 
-| 1. Diff parameter value = -1.12358e-01
-| 2. Diff parameter value = 2.52399e-03
+| 1. Diff parameter value = -1.12388e-01
+| 2. Diff parameter value = 2.52483e-03
 | 
 | 1. Parameter value = 2.03977e+01
 | 2. Parameter value = 3.22001e+03
@@ -249,11 +249,11 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | LS factor for 2.Parameter = 2.92820e+00
 | 
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 8.1265071044e-04
+| Current Cost function = 8.1369135874e-04
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -261,38 +261,38 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]            2.048950e-02 
-|  adjoint     2:          rho[ 1]           -4.881595e-04 
+|  adjoint     1:   log10  eta[ 0]            2.050246e-02 
+|  adjoint     2:          rho[ 1]           -4.885138e-04 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.19376e-01 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.19350e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=2.048950e-02, [1]=-4.881595e-04 
+| AdjointOptimisation: Gradients. [0]=2.050246e-02, [1]=-4.885138e-04 
 | ------------------------------------------------------------------------ 
-| 6. IT INVERSION RESULT: line search its = 0 ; F / FINI = 2.55693e-02
+| 6. IT INVERSION RESULT: line search its = 0 ; F / FINI = 2.56020e-02
 | 
-| Fold = 4.43004e-03 
-|    F = 8.12651e-04
+| Fold = 4.43277e-03 
+|    F = 8.13691e-04
 | 
-| 1. Diff parameter value = -5.99974e-02
-| 2. Diff parameter value = 1.42943e-03
+| 1. Diff parameter value = -6.00353e-02
+| 2. Diff parameter value = 1.43047e-03
 | 
-| 1. Parameter value = 2.03378e+01
+| 1. Parameter value = 2.03377e+01
 | 2. Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 3.22102e+00
 | LS factor for 2.Parameter = 3.22102e+00
 | 
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 3.9526093500e-05
+| Current Cost function = 3.9639047468e-05
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -300,38 +300,38 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]            4.784392e-03 
-|  adjoint     2:          rho[ 1]           -1.182211e-04 
+|  adjoint     1:   log10  eta[ 0]            4.791347e-03 
+|  adjoint     2:          rho[ 1]           -1.184078e-04 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.51041e-01 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.51028e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=4.784392e-03, [1]=-1.182211e-04 
+| AdjointOptimisation: Gradients. [0]=4.791347e-03, [1]=-1.184078e-04 
 | ------------------------------------------------------------------------ 
-| 7. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.24365e-03
+| 7. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.24720e-03
 | 
-| Fold = 8.12651e-04 
-|    F = 3.95261e-05
+| Fold = 8.13691e-04 
+|    F = 3.96390e-05
 | 
-| 1. Diff parameter value = -1.54106e-02
-| 2. Diff parameter value = 3.80792e-04
+| 1. Diff parameter value = -1.54330e-02
+| 2. Diff parameter value = 3.81394e-04
 | 
-| 1. Parameter value = 2.03223e+01
+| 1. Parameter value = 2.03222e+01
 | 2. Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 3.54312e+00
 | LS factor for 2.Parameter = 3.54312e+00
 | 
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.4303720090e-07
+| Current Cost function = 1.4429058902e-07
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -339,38 +339,38 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]            2.917256e-04 
-|  adjoint     2:          rho[ 1]           -7.280678e-06 
+|  adjoint     1:   log10  eta[ 0]            2.930138e-04 
+|  adjoint     2:          rho[ 1]           -7.313874e-06 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.59461e-01 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.59459e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=2.917256e-04, [1]=-7.280678e-06 
+| AdjointOptimisation: Gradients. [0]=2.930138e-04, [1]=-7.313874e-06 
 | ------------------------------------------------------------------------ 
-| 8. IT INVERSION RESULT: line search its = 0 ; F / FINI = 4.50052e-06
+| 8. IT INVERSION RESULT: line search its = 0 ; F / FINI = 4.53996e-06
 | 
-| Fold = 3.95261e-05 
-|    F = 1.43037e-07
+| Fold = 3.96390e-05 
+|    F = 1.44291e-07
 | 
-| 1. Diff parameter value = -1.03362e-03
-| 2. Diff parameter value = 2.57963e-05
+| 1. Diff parameter value = -1.03818e-03
+| 2. Diff parameter value = 2.59139e-05
 | 
-| 1. Parameter value = 2.03213e+01
+| 1. Parameter value = 2.03212e+01
 | 2. Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 3.89743e+00
 | LS factor for 2.Parameter = 3.89743e+00
 | 
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 4.3926015601e-10
+| Current Cost function = 4.4036153022e-10
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -378,8 +378,8 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]           -1.618068e-05 
-|  adjoint     2:          rho[ 1]            4.040995e-07 
+|  adjoint     1:   log10  eta[ 0]           -1.620172e-05 
+|  adjoint     2:          rho[ 1]            4.046842e-07 
 | 
 | 
 | Observation points: 
@@ -388,17 +388,17 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 |       --------------------------------- --- ------------- ------------- 
 | 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.60030e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=-1.618068e-05, [1]=4.040995e-07 
+| AdjointOptimisation: Gradients. [0]=-1.620172e-05, [1]=4.046842e-07 
 | ------------------------------------------------------------------------ 
-| 9. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.38209e-08
+| 9. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.38555e-08
 | 
-| Fold = 1.43037e-07 
-|    F = 4.39260e-10
+| Fold = 1.44291e-07 
+|    F = 4.40362e-10
 | 
-| 1. Diff parameter value = 6.30631e-05
-| 2. Diff parameter value = -1.57495e-06
+| 1. Diff parameter value = 6.31451e-05
+| 2. Diff parameter value = -1.57723e-06
 | 
-| 1. Parameter value = 2.03213e+01
+| 1. Parameter value = 2.03212e+01
 | 2. Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 4.28718e+00
@@ -410,21 +410,21 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Number of inversion iterations: 10
 | F/Fini:
 | 1.00000e+00
-| 8.13456e-01
-| 5.98330e-01
-| 3.54681e-01
-| 1.39387e-01
-| 2.55693e-02
-| 1.24365e-03
-| 4.50052e-06
-| 1.38209e-08
+| 8.13540e-01
+| 5.98434e-01
+| 3.54794e-01
+| 1.39473e-01
+| 2.56020e-02
+| 1.24720e-03
+| 4.53996e-06
+| 1.38555e-08
 | 
 | Final cost function:
-| 4.39260e-10
+| 4.40362e-10
 | 
 | Final Parameters: 
-| eta[0] = 2.03213e+01
+| eta[0] = 2.03212e+01
 | rho[1] = 3.22001e+03
 | ------------------------------------------------------------------------- 
-| Adjoint computation was successful & took 3.62672 s                         	 
+| Adjoint computation was successful & took 3.07526 s                         	 
 | ************************************************************************ 
