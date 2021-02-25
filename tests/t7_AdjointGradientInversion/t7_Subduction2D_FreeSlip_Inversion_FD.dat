@@ -256,9 +256,7 @@
 <PetscOptionsStart>
 
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_ksp_ew
 
-	
 	
 	-js_ksp_monitor # display how the inner iterations converge
 

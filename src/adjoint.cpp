@@ -2004,10 +2004,20 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
  		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
  		ierr = KSPGetPC(ksp_as, &ipc_as);            	CHKERRQ(ierr);
  		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
- 		ierr = KSPSetOperators(ksp_as,nl->J,nl->P);	CHKERRQ(ierr);
- 		ierr = KSPSolve(ksp_as,aop->dPardu,psiPar);	CHKERRQ(ierr);
+ 		ierr = KSPSetOperators(ksp_as,nl->J,nl->P);		CHKERRQ(ierr);
+ 		ierr = KSPSolve(ksp_as,aop->dPardu,psiPar);		CHKERRQ(ierr);
  		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
  	}
+
+	// Check error
+	{ 
+		PetscBool 	flag;
+	 	ierr =  SNESKSPGetUseEW(snes, &flag); 			CHKERRQ(ierr);
+		if (flag){
+			SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER,"|     Adjoint: Cannot combine adjoint method with Eisenstatt-Walker! \n");
+		}
+	} 
+
 
     // Set the FD step-size for computing dr/dp (or override it with a command-line option, which is more for advanced users/testing)
     aop->FD_epsilon = 1e-6;

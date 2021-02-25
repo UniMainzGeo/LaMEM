@@ -34,6 +34,8 @@ sys.path.append(os.path.join(os.environ['PWD'], 't19_CompensatedInflow'))
 sys.path.append(os.path.join(os.environ['PWD'], 't20_FSSA'))
 sys.path.append(os.path.join(os.environ['PWD'], 't21_Passive_Tracer'))
 sys.path.append(os.path.join(os.environ['PWD'], 't22_RidgeGeom'))
+sys.path.append(os.path.join(os.environ['PWD'], 't23_Permeable'))
+
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
@@ -62,6 +64,7 @@ import test_19_CompensatedInflow as CI
 import test_20_FSSA as FSSA
 import test_21_Passive_Tracer as PTracer
 import test_22_RidgeGeom as Ridge
+import test_23_Permeable as Permeable
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1     as Sub1 # import test that requires MATLAB
@@ -88,11 +91,11 @@ registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),
                       StrEnv.test_a(), StrEnv.test_b(), StrEnv.test_c(), StrEnv.test_d(),
-                      RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(), PT.test_c(), PT.test_d(),
-                      InOut.test_2D(), InOut.test_3D(), SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), 
+                      RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(), PT.test_c(), PT.test_d(), PT.test_e(),
+                      InOut.test_2D(), InOut.test_3D(),InOut.test_2D_Pres(), InOut.test_3D_Pres(),SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), 
                       CI.test_a(), CI.test_b(),
                       FSSA.test_1(),PTracer.test_a(),PTracer.test_b(),
-                      Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique()];
+                      Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique(),Permeable.test_a()];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
