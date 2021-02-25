@@ -363,7 +363,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	Controls    *ctrl;
 	PetscScalar *phRat;
 	SolVarDev   *svDev; 
-	Material_t  *phases;  // might need to add mat for dike if condition here  NEW FOR DIKE
+	Material_t  *phases;  
 	PetscInt     i, numPhases;
 
 	PetscErrorCode ierr;
@@ -384,7 +384,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	ctx->DIIprl = 0.0; // Peierls creep strain rate
 	ctx->DIIpl  = 0.0; // plastic strain rate
 	ctx->yield  = 0.0; // yield stress
-	//ctx->DIIdike =0.0; // strain rate due to dike //NEW FOR DIKE
+	//ctx->DIIdike =0.0; // strain rate due to dike //NEW FOR DIKE, MIGHT BE ABLE TO REMOVE FROM HERE
 	
 	// zero out stabilization viscosity
 	svDev->eta_st = 0.0;
@@ -411,9 +411,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 			// compute phase viscosities and strain rate partitioning
 			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
 
-			// NEW FOR DIKE call function where dike strain rate is computed (either in getPhaseVisc or new function or in volConstEq)
-			// use mat->Mb and mat->Mf as condition 
-			
 			// update stabilization viscosity
 			svDev->eta_st += phRat[i]*phases->eta_st;
 		}
@@ -426,7 +423,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 		ctx->DIIdis /= ctx->DII;
 		ctx->DIIprl /= ctx->DII;
 		ctx->DIIpl  /= ctx->DII;
-		//		ctx->DIIdike/= ctx->DII; // NEW FOR DIKE
+		//		ctx->DIIdike/= ctx->DII; // NOT NECESSARY BECASUE AFTER STRAIN REMOVAL
 	}
 
 	PetscFunctionReturn(0);
@@ -441,7 +438,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	Controls    *ctrl;
 	PetscInt    it, conv;
 	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
-	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat; // DIIdike;  // NEW FOR DIKE  PROBABLY NOT NECESSARY
+	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat; // DIIdike;  // NEW FOR DIKE  PROBABLY NOT NECESSARY AND CAN BE REOMVED
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
 
 	
@@ -508,7 +505,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		if(inv_eta_max > inv_eta_min) inv_eta_min = inv_eta_max;
 		if(inv_eta_dis > inv_eta_min) inv_eta_min = inv_eta_dis;
 		if(inv_eta_prl > inv_eta_min) inv_eta_min = inv_eta_prl;
-		// NECESSARY TO ADD DIKE STRAINRATE HERE TOO??? NEW FOR DIKE
+
 		eta_min = 1.0/inv_eta_min;
 
 		// get quasi-harmonic mean (lower bound)
@@ -535,8 +532,8 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	//	DIIdike = ctx->dikeDxx^2 + ctx->dikeDyy^2 + ctx->dikeDzz^2;      // strain rate due to dike //  NEW FOR DIKE , PROBABLY NOT NECeSSARY IN THIS FUNCTION
-	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)                                          JUST IN CASE WE WANT TO DO THE PHASE RATIO THING
+	//	DIIdike = ctx->dikeDxx^2 + ctx->dikeDyy^2 + ctx->dikeDzz^2;      // NOT NECESSARY HERE BECAUSE AFTER PLASTIC STRAIN REMOVAL
+	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)                                       
 	
 	// compute creep viscosity
 	if(DIIvs) eta_cr = tauII/DIIvs/2.0;
@@ -548,7 +545,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	ctx->DIIdis += phRat*DIIdis; // dislocation creep strain rate
 	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
 	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
-	// ctx->DIIdike += phRat*DIIdike; // strain rate due to dike // NEW FOR DIKE , makes sure the phase ratio is correct in the cells
+	// ctx->DIIdike += phRat*DIIdike; // strain rate due to dike // NOT NECESSARY BECASUE AFTER STRAIN REMOVAL
 	ctx->yield  += phRat*taupl;  // plastic yield stress
 
 	PetscFunctionReturn(0);
@@ -558,7 +555,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 {
 	// compute residual of the nonlinear visco-elastic constitutive equation
 
-        PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl;  //DIIdike;  // nEW FOR DIKE
+        PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl;  //DIIdike;  // NEW FOR DIKE
 
 	// access context
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
@@ -572,7 +569,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	//DIIdike = ctx->DIIdike;   //ctx->dikeDxx + ctx->dikeDyy + ctx->dikeDzz; // Strain due to Dike opening   //NEW FOR DIKE 
+	//DIIdike = ctx->DIIdike // ctx->dikeDxx^2 + ctx->dikeDyy^2 + ctx->dikeDzz^2; // Strain due to Dike opening   //NEW FOR DIKE 
 
 	getConsEqRes
 	// residual function (r)

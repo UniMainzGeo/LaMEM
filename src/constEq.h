@@ -101,7 +101,10 @@ struct ConstEqCtx
 	PetscScalar  A_prl;  // Peierls constant
 	PetscScalar  N_prl;  // Peierls exponent
 	PetscScalar  taupl;  // plastic yield stress
-
+        PetscScalar  dikeDxx;  // xx component of strain rate due to dike
+        PetscScalar  dikeDyy;  // yy component of strain rate due to dike
+        PetscScalar  dikeDzz;  // zz component of strain rate due to dike
+  
 	// control volume results
 	PetscScalar  eta;    // effective viscosity
 	PetscScalar  eta_cr; // creep viscosity
@@ -109,7 +112,8 @@ struct ConstEqCtx
 	PetscScalar  DIIdis; // dislocation creep strain rate
 	PetscScalar  DIIprl; // Peierls creep strain rate
 	PetscScalar  DIIpl;  // plastic strain rate
-	PetscScalar  yield;  // yield stress
+        PetscScalar  DIIdike; // strain rate due to dike openening   NEW FOR DIKE
+        PetscScalar  yield;  // yield stress
 };
 
 //---------------------------------------------------------------------------
