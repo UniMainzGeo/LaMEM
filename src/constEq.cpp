@@ -195,9 +195,9 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctx->A_prl = 0.0; // Peierls constant
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
-/*      ctx->dikeDxx = 0.0; // dike DII x, NEW FOR DIKE
-	ctx->dikeDyy = 0.0; // dike DII y, NEW FOR DIKE  
-	ctx->dikeDzz = 0.0; // dike DII z, NEW FOR DIKE  */
+	       ctx->dikeDxx = 0.0; // dike DII x, NEW FOR DIKE
+		ctx->dikeDyy = 0.0; // dike DII y, NEW FOR DIKE  
+		ctx->dikeDzz = 0.0; // dike DII z, NEW FOR DIKE  
 	
 	// MELT FRACTION
 	mfd = 1.0;
@@ -344,12 +344,12 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
 
 	// FOR STRAIN RATE REMOVAL DUE TO DIKE      //NEW FOR DIKE
-	/*	if(mat->Mf && mat->Mb){
+			if(mat->Mf && mat->Mb){
 
 	  ctx->dikeDxx = 2/3 * mat->dikeRHS;  // 2nd invariant strainrate component x
 	  ctx->dikeDyy = 1/3 * mat->dikeRHS;  // 2nd invariant strainrate component y
 	  ctx->dikeDzz = 1/3 * mat->dikeRHS;  // 2nd invariant strainrate component z
-	  } */
+	  } 
 
 	PetscFunctionReturn(0);
 }
@@ -384,7 +384,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	ctx->DIIprl = 0.0; // Peierls creep strain rate
 	ctx->DIIpl  = 0.0; // plastic strain rate
 	ctx->yield  = 0.0; // yield stress
-	//ctx->DIIdike =0.0; // strain rate due to dike //NEW FOR DIKE, MIGHT BE ABLE TO REMOVE FROM HERE
+		ctx->DIIdike = 0.0; // strain rate due to dike //NEW FOR DIKE, MIGHT BE ABLE TO REMOVE FROM HERE
 	
 	// zero out stabilization viscosity
 	svDev->eta_st = 0.0;
@@ -555,7 +555,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 {
 	// compute residual of the nonlinear visco-elastic constitutive equation
 
-        PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl;  //DIIdike;  // NEW FOR DIKE
+  PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl, DIIdike, DIIres;  // NEW FOR DIKE, DIIres just for testing and printing
 
 	// access context
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
@@ -569,15 +569,20 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	//DIIdike = ctx->DIIdike // ctx->dikeDxx^2 + ctx->dikeDyy^2 + ctx->dikeDzz^2; // Strain due to Dike opening   //NEW FOR DIKE 
+	DIIdike =  pow(ctx->dikeDxx,2) + pow(ctx->dikeDyy,2) + pow(ctx->dikeDzz,2); // Strain due to Dike opening   //NEW FOR DIKE 
 
-	getConsEqRes
 	// residual function (r)
 	// r < 0 if eta > solution (negative on overshoot)
 	// r > 0 if eta < solution (positive on undershoot)
 
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);   // + DIIdike);  substract additionally DIIdike
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike); // substract additionally DIIdike NEW FOR DIKE
+DIIres= ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
+PetscPrintf(PETSC_COMM_WORLD, " DII incl DII dike  %f \n", DIIres);
+DIIres=  ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
+PetscPrintf(PETSC_COMM_WORLD, " DII without DII dike %f \n", DIIres);
+	  
 }
+
 //---------------------------------------------------------------------------
 PetscScalar applyStrainSoft(
 		Soft_t      *soft, // material softening laws
