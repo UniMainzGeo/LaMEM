@@ -157,7 +157,7 @@ struct BCCtx
 	JacRes   *jr;   // Jacobian-residual context (CROSS-REFERENCE!)
 
 	// boundary conditions vectors (velocity, pressure, temperature)
-	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
+	Vec bcvx, bcvy, bcvz, bcp,bcr_ext ,bcT; // local (ghosted)
 
 	// single-point constraints
 	ShiftType    stype;   // current index shift type

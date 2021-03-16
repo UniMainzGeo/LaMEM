@@ -451,9 +451,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		}
 		if(bc->Plume_Type ==2)
 		{
-			//bc->Plume_Pressure = -1;
-			//ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
-			//ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure",&bc->Plume_Pressure,	1,	scal->stress);	CHKERRQ(ierr);
+			bc->Plume_Pressure = -1;
+			ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
+			ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure",&bc->Plume_Pressure,	1,	scal->stress);	CHKERRQ(ierr);
 			ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , &bc->phase_inflow_bot,        1, mID);            CHKERRQ(ierr);
 
 		}
@@ -688,6 +688,7 @@ PetscErrorCode BCCreateData(BCCtx *bc)
 	ierr = DMCreateLocalVector(fs->DA_Y,   &bc->bcvy);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_Z,   &bc->bcvz);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcp);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcr_ext);   CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcT);   CHKERRQ(ierr);
 
 	// SPC velocity-pressure
@@ -719,6 +720,8 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 	ierr = VecDestroy(&bc->bcvz); CHKERRQ(ierr);
 	ierr = VecDestroy(&bc->bcp);  CHKERRQ(ierr);
 	ierr = VecDestroy(&bc->bcT);  CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcr_ext);  CHKERRQ(ierr);
+
 
 	// SPC velocity-pressure
 	ierr = PetscFree(bc->SPCList);  CHKERRQ(ierr);
@@ -824,7 +827,7 @@ PetscErrorCode BCApply(BCCtx *bc)
 	ierr = BCApplyPres(bc); CHKERRQ(ierr);
 
 
-//	if(bc->Plume_Type == 2 || bc->bot_open) ierr = BCApply_Permeable_Pressure(bc); CHKERRQ(ierr);
+	if(bc->Plume_Type == 2 || bc->bot_open) ierr = BCApply_Permeable_Pressure(bc); CHKERRQ(ierr);
 
 
 	//=============================
@@ -2467,7 +2470,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
 	PetscFunctionReturn(0);
 }
-/*
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApply_Permeable_Pressure"
@@ -2480,7 +2483,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 	PetscScalar g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,p_bot,radius2, rhog,Tbot;
 	PetscInt    phase_mantle,phase_plume;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz,iter;
-	PetscScalar ***bcp,***lp;
+	PetscScalar ***bcp,***lp,***rho_ext;
 
 
 	PetscErrorCode ierr;
@@ -2490,20 +2493,16 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 	fs = bc->fs;
 
 	ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
+	g     =  PetscAbsScalar(bc->jr->ctrl.grav[2]);
 
-	if(bc->Plume_Type == 2)
-	{
-		phase_mantle = bc->Plume_Phase_Mantle;
-	}
-	else
-	{
-		phase_mantle = bc->phase_inflow_bot;
-	}
+
+
+	phase_mantle = bc->phase_inflow_bot;
+
 	if(bc->Plume_Type==2)
 	{
 		phase_plume  = bc->Plume_Phase;
 
-		g     =  PetscAbsScalar(bc->jr->ctrl.grav[2]);
 		H     = bc->Plume_Depth;
 
 		// compute the average lithostatic pressure at the bototm
@@ -2528,6 +2527,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 	// initialize index bounds
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &rho_ext);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
 
 
@@ -2572,11 +2572,23 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 				{
 					rho_plume  =  GetDensity(bc,phase_plume,bc->Plume_Temperature, p_bot);
 					dP         =  (rho_mantle-rho_plume)*g*H;
+					PetscPrintf(PETSC_COMM_WORLD,"Plume Temperature dP = %6f, rho_plume = %6f, rho_mantle = %6f, phase_mantle = %d\n",dP*bc->scal->stress,rho_plume*bc->scal->density,rho_mantle*bc->scal->density, phase_mantle);
 					if(bc->Plume_Dimension ==1)
 					{
 						xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
 						xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
-						if(x>=xmin && x<=xmax)rhog = (dz/2)*g*rho_plume;
+						if(x>=xmin && x<=xmax)
+						{
+							rhog = (dz/2)*g*rho_plume;
+							rho_ext[k-1][j][i]=g*rho_plume;
+
+						}
+						else
+						{
+							rho_ext[k-1][j][i]=g*rho_mantle;
+//							PetscPrintf(PETSC_COMM_WORLD,"Plume Temperature rho_ext = %6f\n",(rho_ext[k-1][j][i]/g)*bc->scal->density);
+						}
+
 						// Gaussian perturbation of dP
 
 						bcp[k-1][j][i] = p_bot+rhog+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
@@ -2585,15 +2597,23 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 					{
 						if(PetscPowScalar((x - bc->Plume_Center[0]),2.0) + PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0))
 						{
-							rhog = (dz/2)*g*rho_plume+dP*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/radius2);
+							rhog = (dz/2)*g*rho_plume;
+							rho_ext[k-1][j][i]=g*rho_plume;
+
+						}
+						else
+						{
+							rho_ext[k-1][j][i]=g*rho_mantle;
+
 						}
 						// Gaussian perturbation of dP
-						bcp[k-1][j][i] = p_bot+rhog;
+						bcp[k-1][j][i] = p_bot+rhog+dP*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/radius2);
 					}
 				}
 				else
 				{
 					bcp[k-1][j][i] = p_bot + rhog;
+					rho_ext[k-1][j][i]=g*rho_mantle;
 
 				}
 			}
@@ -2603,6 +2623,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcr_ext, &rho_ext);  CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);
@@ -2748,6 +2769,6 @@ PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p )
 
 	return rho;
 }
-*/
+
 
 
