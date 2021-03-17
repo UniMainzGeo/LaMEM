@@ -56,6 +56,9 @@
 	   Physics of the Earth and Planetary Interiors, 240 (2015), pp. 1-24
  * [5] The postspinel boundary in pyrolitic compositions determined in the laser-heated diamond anvil cell
 	    Geophysical Research Letters, 41 (2014), pp. 3833-3841
+ * [6] Akaogi, M., Hashimoto, S., amp; Kojitani, H. (2018). Thermodynamic properties of ZrSiO 4 zircon and
+ *  	reidite and of cotunnite-type ZrO 2 with application to high-pressure high-temperature phase relations
+ *  	 in ZrSiO 4. Physics of the Earth and Planetary Interiors, 281,
  */
 /*
 	The routines in this file allow changing the phase of a marker depending on conditions
@@ -90,6 +93,7 @@
 #include "constEq.h"
 #include "parsing.h"
 #include "objFunct.h"
+#include "tssolve.h"
 //-----------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhaseTr"
@@ -248,6 +252,10 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	{
 		ph->Parameter_transition = _MeltFraction_;
 	}
+	else if(!strcmp(Parameter, "t"))
+	{
+		ph->Parameter_transition = _Time_;
+	}
 	
 
 	ierr = getScalarParam(fb, _REQUIRED_, "ConstantValue",          &ph->ConstantValue,        1,1.0);  CHKERRQ(ierr);
@@ -284,6 +292,10 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	else if(ph->Parameter_transition==_MeltFraction_)   //  melt fraction
 	{
 		ph->ConstantValue   = ph->ConstantValue;        // is already in nd units
+	}
+	else if(ph->Parameter_transition==_Time_)       //  Time [s]
+	{
+		ph->ConstantValue   /= scal->time;
 	}
 	else{
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for [Constant] Phase transition");
@@ -520,6 +532,14 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 		ph->T0_clapeyron[0]     =   1667;
 		ph->clapeyron_slope[0]  =   -2.5;
 	}
+	else if(!strcmp(ph->Name_clapeyron,"Zircon_Reidite"))
+	{
+			//[6]
+			ph->neq                 =   1;
+			ph->P0_clapeyron[0]     =   8e9;
+			ph->T0_clapeyron[0]     =   25;
+			ph->clapeyron_slope[0]  =   1.9;
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -538,7 +558,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	JacRes          *jr;
 	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas;
 	PetscInt        PH1,PH2, ID, InsideAbove;
-	PetscScalar		T;
+	PetscScalar		T, time;
     PetscLogDouble  t;
 	SolVarCell  	*svCell;
 	Scaling      	*scal;
@@ -550,6 +570,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	dbm         =   jr->dbm;
 	numPhTrn    =   dbm->numPhtr;
 	scal 		=	dbm->scal;
+	time        =   jr->bc->ts->time;
 
 	if (!numPhTrn) 	PetscFunctionReturn(0);		// only execute this function if we have phase transitions
 
@@ -612,7 +633,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 				ph 			= P->phase;
 				InsideAbove = 0;
-				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove);
+				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time);
 
 
 				if ( (PhaseTrans->Type == _Box_) ){
@@ -661,7 +682,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 //----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, 
-					SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove )
+					SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time)
 {
 	PetscInt 	ph, InAbove;
 	PetscScalar T;
@@ -671,7 +692,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	InAbove =	0;
 	if(PhaseTrans->Type==_Constant_)    
 	{
-		Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl, svCell, &ph, &InAbove);
+		Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl, svCell, &ph, &InAbove, time);
 	}
 	else if(PhaseTrans->Type==_Clapeyron_)
 	{
@@ -694,7 +715,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
     Sets the values for a phase transition that occurs @ a constant value
 */
 PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, 
-						Controls ctrl, SolVarCell *svCell, PetscInt *ph_out, PetscInt *InAbove) 
+						Controls ctrl, SolVarCell *svCell, PetscInt *ph_out, PetscInt *InAbove, PetscScalar time) 
 {
     
     PetscInt 	ph, InAb;
@@ -760,6 +781,12 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 			if (mf >= PhaseTrans->ConstantValue)  {   ph = PH2;   InAb=1;  }
             else                                  {   ph = PH1; 			}
         }
+	if(PhaseTrans->Parameter_transition==_Time_)
+		{
+            if  ( time >= PhaseTrans->ConstantValue)   {   ph = PH2; InAb=1; 	}
+		    else                                       	 		{   ph = PH1;  			}
+          
+		}
 
 	// return
 	*ph_out 	= ph;

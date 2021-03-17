@@ -1,4 +1,5 @@
-# The routines specified here read a LaMEM timestep and return 2D or 3D
+module ReadLaMEM_Timestep
+# The routines specified in this module read a LaMEM timestep and return 2D or 3D
 # Scalar or Vector Data to julia, for further quantitative analysis
 # 
 #         
@@ -16,12 +17,62 @@
 #           ENV["PYTHON"] = "/Users/kausb/anaconda3/bin/python"
 #      b) Compile PyCall
 #           Pkg.add("PyCall")
+#
+# 3) Packages:
+# 
+#       pyimport("pip")["main"](["install","--user","vtk"])
                   
+# Make these routines easily available outside the module:
+export ReadField_3D_pVTR, Read_VTR_File, Read_VTU_File, ReadField_2D_pVTR;
+export ReadField_VTU, WriteNewPoints_VTU, AddNewField_VTU, WritePVD_File;
+export TransferVTK2MAT, TransferMAT2VTK;
 
 # Import VTK package from python; requires it to be installed in your python distribution
-using PyCall, Printf
-vtk     =   pyimport("vtk")
-dsa     =   pyimport("vtk.numpy_interface.dataset_adapter");
+using PyCall, Printf, MAT, WriteVTK
+
+
+function __init__()
+    py"""
+    import vtk as vtk;
+    import vtk.numpy_interface.dataset_adapter as dsa;
+
+    def vtkXMLPUnstructuredGridReader(FileName):
+        reader  = vtk.vtkXMLPUnstructuredGridReader()
+        reader.SetFileName(FileName)
+        reader.Update()
+        data    = reader.GetOutput()
+        return data
+    
+    def vtkXMLPRectilinearGridReader(FileName):
+        reader1  = vtk.vtkXMLPRectilinearGridReader()
+        reader1.SetFileName(FileName)
+        reader1.Update()
+        data    = reader1.GetOutput()
+        return data
+
+    def WriteNewPoints_VTU(FileName, points, New):
+        mesh     = vtk.vtkUnstructuredGrid()
+        mesh.SetPoints(points)              
+
+        # write file back to disk that includes the previous data
+        writer   = vtk.vtkXMLUnstructuredGridWriter()
+        writer.SetFileName(FileName)
+        writer.SetInputData(New.VTKObject)
+        writer.Update()
+
+    def  WrapDataObject(data): 
+        New  =   dsa.WrapDataObject(data);          # create new field if required
+        return New
+    
+    def AppendPointData(New, dataField, dataName):
+        New.PointData.append(dataField,  dataName) 
+        return New
+    """
+end
+
+
+#vtk     =   pyimport("vtk")
+#dsa     =   pyimport("vtk.numpy_interface.dataset_adapter");
    
 " Extracts a 3D data field from a pVTR data structure
 Usage:
@@ -84,10 +135,7 @@ function Read_VTR_File(DirName, FileName)
     cd(DirName)
 
     # read data from parallel rectilinear grid
-    reader  = vtk.vtkXMLPRectilinearGridReader()
-    reader.SetFileName(FileName)
-    reader.Update()
-    data    = reader.GetOutput()
+    data = py"vtkXMLPRectilinearGridReader"(FileName);      # this is how it should be done within modules
     cd(CurDir)
 
     return data
@@ -112,10 +160,11 @@ function Read_VTU_File(DirName, FileName)
     cd(DirName)
 
     # read data from parallel rectilinear grid
-    reader  = vtk.vtkXMLPUnstructuredGridReader()
-    reader.SetFileName(FileName)
-    reader.Update()
-    data    = reader.GetOutput()
+    data = py"vtkXMLPUnstructuredGridReader"(FileName);      # this is how it should be done within modules
+    #reader  = vtk.vtkXMLPUnstructuredGridReader()
+    #reader.SetFileName(FileName)
+    #reader.Update()
+    #data    = reader.GetOutput()
     cd(CurDir)
 
     return data
@@ -206,14 +255,16 @@ function WriteNewPoints_VTU(DirName, FileName, data, New)
    cd(DirName)
 
    # Set coordinates of points
-   mesh     = vtk.vtkUnstructuredGrid()
-   mesh.SetPoints(points)              
+   py"WriteNewPoints_VTU"(FileName, points, New);
+
+   #mesh     = vtk.vtkUnstructuredGrid()
+   #mesh.SetPoints(points)              
 
    # write file back to disk that includes the previous data
-   writer   = vtk.vtkXMLUnstructuredGridWriter()
-   writer.SetFileName(FileName)
-   writer.SetInputData(New.VTKObject)
-   writer.Update()
+   #writer   = vtk.vtkXMLUnstructuredGridWriter()
+   #writer.SetFileName(FileName)
+   #writer.SetInputData(New.VTKObject)
+   #writer.Update()
 
    cd(CurDir)
 end
@@ -236,14 +287,16 @@ Input:
 function AddNewField_VTU(New, data, dataField, dataName)
     
     if sizeof(New)==0
-        New  =   dsa.WrapDataObject(data);          # create new field if required
+        #New  =   dsa.WrapDataObject(data);          # create new field if required
+        New = py"WrapDataObject"(data);
     end
     
-    New.PointData.append(dataField,  dataName);     # add data
+    New = py"AppendPointData"(New, dataField, dataName);
+
+   # New.PointData.append(dataField,  dataName);     # add data
 
     return New
 end
-
 
 "
 Writes a PVD file
@@ -279,3 +332,250 @@ function WritePVD_File(PVDFileName, OutNames, Time_vec)
     print("Wrote PVD file: $PVDFileName \n")
 
 end
+
+
+
+
+
+"
+    This processes all LaMEM Timestep directories within the current directory, reads the 
+    VTR files within those directories, reads in some of the most common data fields
+    into julia and saves those as matlab files
+"
+function TransferVTK2MAT(FileName)
+    
+    # define a macro that finds all directories with a certain pattern
+    searchdir(path,key) = filter(x->occursin(key,x), readdir(path))
+    
+    if length(FileName)==0
+        error("No VTR filename given on command-line; please specify one! \n")
+    else
+        
+        FileName    = "$FileName.pvtr";
+    end
+
+
+    print("Postprocessing vtrfiles $FileName \n")
+
+    # Go over all Timestep subdirectories in the current directory
+    Directories         =   searchdir(pwd(),"Timestep_")
+
+    nMax                =   length(Directories)
+    for iStep=1:nMax
+        global Vx,Vy,Vz,x,y,z, T_C, Eta_tot, Phase, Rho, E2nd, T2nd_MPa, P_MPa, Eta_creep, P_lithos, APS, MeltFrac;
+
+        DirName     =   Directories[iStep];
+        print("Processing directory $DirName \n")
+
+        # Extract the timestep info from the directory directory name 
+        id      =   findlast("_",DirName);
+        Time    =   parse(Float64,DirName[id[1]+1:length(DirName)]);
+
+        # ------------------------------------------------------------------------------------- 
+        # Read data from timestep
+        data            =   Read_VTR_File(DirName, FileName);
+
+        Vx,Vy,Vz,x,y,z      =   ReadField_3D_pVTR(data, "velocity [cm/yr]",     "Vector");  # always read
+
+        # Read fields if available
+        try 
+            P_MPa,x,y,z     =   ReadField_3D_pVTR(data, "pressure [MPa]",       "Scalar");
+        catch
+            P_MPa           =   [];
+        end
+        try
+            T_C,x,y,z       =   ReadField_3D_pVTR(data, "temperature [C]",      "Scalar");
+        catch 
+            T_C             =   [];
+        end
+        try 
+            Eta_tot,x,y,z   =   ReadField_3D_pVTR(data, "visc_total [Pa*s]",    "Scalar");
+        catch 
+            Eta_tot         =   [];
+        end
+        try
+            Phase,x,y,z     =   ReadField_3D_pVTR(data, "phase [ ]",            "Scalar");
+        catch
+            Phase           =   [];
+        end
+        try
+            Rho,x,y,z       =   ReadField_3D_pVTR(data, "density [kg/m^3]",     "Scalar");
+        catch
+            Rho             =   [];
+        end
+        try
+            E2nd,x,y,z      =   ReadField_3D_pVTR(data, "j2_strain_rate [1/s]", "Scalar");
+        catch
+            E2nd            =   [];
+        end
+        try
+            T2nd_MPa,x,y,z  =   ReadField_3D_pVTR(data, "j2_dev_stress [MPa]1",  "Scalar");
+        catch
+            T2nd_MPa        =   [];
+        end
+        try 
+            Eta_creep,x,y,z =   ReadField_3D_pVTR(data, "visc_creep [Pa*s]",    "Scalar");
+        catch 
+            Eta_creep       =   [];
+        end
+        try 
+            P_lithos,x,y,z  =   ReadField_3D_pVTR(data, "litho_press [MPa]",    "Scalar");
+        catch 
+            P_lithos        =   [];
+        end
+        try 
+            APS,x,y,z       =   ReadField_3D_pVTR(data, "plast_strain [ ]",     "Scalar");
+        catch 
+            APS             =   [];
+        end
+        try 
+            MeltFrac,x,y,z  =   ReadField_3D_pVTR(data, "melt_fraction [ ]",     "Scalar");
+        catch 
+            MeltFrac        =   [];
+        end
+
+        # ------------------------------------------------------------------------------------- 
+        # Save data in matlab format
+        CurDir   =   pwd();  
+        cd(DirName)
+     
+        # Generate MATLAB file that saves all the info on the particles
+        file = matopen("LaMEM_Data.mat", "w")
+        write(file, "Time_Myrs",    Time);
+        # We are making the assumption that velocity is always written to file
+        write(file, "x_km",         x);
+        write(file, "y_km",         y);
+        write(file, "z_km",         z);
+        write(file, "Vx_cmYr",      Vx);
+        write(file, "Vy_cmYr",      Vy);
+        write(file, "Vz_cmYr",      Vz);
+
+        # The following variables may or may not be present
+        if length(P_MPa)>0
+            write(file, "P_MPa",            P_MPa);
+        end
+        if length(T_C)>0
+            write(file, "T_C",              T_C);
+        end
+        if length(Eta_tot)>0
+            write(file, "Eta_tot",          Eta_tot);
+        end
+        if length(Phase)>0
+            write(file, "Phase",            Phase);
+        end
+        if length(Rho)>0
+            write(file, "Rho_kgm3",         Rho );
+        end
+        if length(T2nd_MPa)>0
+            write(file, "T2nd_MPa",         T2nd_MPa);
+        end
+        if length(Eta_creep)>0
+            write(file, "Eta_creep",        Eta_creep);
+        end
+        if length(P_lithos)>0
+            write(file, "Plithos_MPa",      P_lithos);
+        end
+        if length(APS)>0
+            write(file, "PlasticStrain",    APS);
+        end
+        if length(MeltFrac)>0
+            write(file, "MeltFraction",     MeltFrac);
+        end
+        close(file)
+
+        cd(CurDir)
+    end
+    print("Saved data to matlab file: LaMEM_Data.mat in all directories above \n") 
+
+end
+
+
+
+
+
+"
+    This processes all LaMEM Timestep directories within the current directory, reads the 
+    matlab files called NewLaMEM_Fields.mat, and saves that as a VTR file
+"
+function TransferMAT2VTK()
+    
+    # define a macro that finds all directories with a certain pattern
+    searchdir(path,key) = filter(x->occursin(key,x), readdir(path))
+    
+    #if length(FileName)==0
+    #    error("No VTR filename given on command-line; please specify one! \n")
+    #else
+    #    
+    #    FileName    = "$FileName.pvtr";
+    #end
+
+    FileName = "NewLaMEM_Fields";
+
+    print("Postprocessing vtrfiles $FileName \n")
+
+    # Go over all Timestep subdirectories in the current directory
+    Directories         =   searchdir(pwd(),"Timestep_")
+    pvd                 =   paraview_collection("NewLaMEM_Fields")
+
+    nMax                =   length(Directories)
+    for iStep=1:nMax
+        global Vx,Vy,Vz,x,y,z, T_C, Eta_tot, Phase, Rho, E2nd, T2nd_MPa, P_MPa, Eta_creep, P_lithos, APS, MeltFrac;
+
+        DirName     =   Directories[iStep];
+        print("Processing directory $DirName \n")
+
+        # Extract the timestep info from the directory directory name 
+        id      =   findlast("_",DirName);
+        Time    =   parse(Float64,DirName[id[1]+1:length(DirName)]);
+
+        # ------------------------------------------------------------------------------------- 
+        # Read data in matlab file NewLaMEM_Fields.mat from timestep directory
+        CurDir      =   pwd();
+        try
+            vars        =   matread("$DirName/NewLaMEM_Fields.mat")
+
+            x           =   get(vars,"x_km",0);
+            y           =   get(vars,"y_km",0);
+            z           =   get(vars,"z_km",0);
+            
+            VarNames    =   collect(keys(vars));    # Names
+
+            
+            # ------------------------------------------------------------------------------------- 
+            # Save all data fields in the matlab file to VTK format
+            vtkfile = vtk_grid("$DirName/NewLaMEM_Fields", x[:], y[:], z[:]); # 3D rectlinear grid
+
+            for i=1:length(VarNames)
+                Var = VarNames[i];
+
+                if (Var=="x_km" || Var=="y_km" || Var=="z_km")
+                    # coordinates; not to be added        
+                else
+                    print("Adding Field $Var to VTK file\n")
+                    
+                    Data_new     =  get(vars,Var,0);            # extract data from matlab filename 
+                    vtkfile[Var] =  Data_new;                   # add it to VTK file
+                end
+         
+            end
+
+            outfiles    = vtk_save(vtkfile);                       # save file
+            pvd[Time]   = vtkfile;                                 # add to PVD file
+
+        catch
+            print("No file: NewLaMEM_Fields.mat in directory so not creating a VTR file here \n")
+            
+        end    
+
+    end
+    
+    # generate PVD file
+    vtk_save(pvd)       
+    
+    
+    print("\nSaved data to VTK file: NewLaMEM_Fields.vtk in all directories above \n") 
+    print("Created PVD file NewLaMEM_Fields.pvd with time-step info in current directory \n") 
+
+end
+
+end # end of module definition

@@ -68,7 +68,7 @@
 	p_litho_plast  = 1              # use lithostatic pressure for plasticity
 	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
 	eta_min        = 1e15           # viscosity upper bound
-	eta_max        = 1e26           # viscosity lower limit
+	eta_max        = 1e28           # viscosity lower limit
 	eta_ref        = 1e20           # reference viscosity (initial guess)
 	DII_ref        = 1e-15          # background (reference) strain-rate
 	tau_ult        = 1e11            # ultimate yield stress
@@ -153,15 +153,15 @@
 		ID        	= 	0
 		rho       	= 	3000
 		
-		#diff_prof  	=	Dry_Plagioclase_RybackiDresen_2000		# Creep law
-		#disl_prof 	=	Dry_Plagioclase_RybackiDresen_2000
+		diff_prof  	=	Dry_Plagioclase_RybackiDresen_2000		# Creep law
+		disl_prof 	=	Dry_Plagioclase_RybackiDresen_2000
 
 		#diff_prof  	=	Plagioclase_RybackiDresen_2000		# Creep law
 		#disl_prof 	=	Mafic_Granulite-Ranalli_1995
 		#disl_prof = Maryland_strong_diabase-Mackwell_et_al_1998
 		
 		#diff_prof  	=	Wet_Plagioclase_RybackiDresen_2000		# Creep law
-		disl_prof 	=	Wet_Plagioclase_RybackiDresen_2000
+		#disl_prof 	=	Wet_Plagioclase_RybackiDresen_2000
 
 		
 		Cp        	= 	1000							# Specific heat (capacity)

@@ -233,43 +233,54 @@ struct BCCtx
 	PetscScalar  bvel_constant_temperature;
 
 	// Plume inflow bottom boundary condition
-	PetscInt		Plume_Inflow;				// Do we have a plume-like inflow boundary?
-	PetscInt 		Plume_Type;					// Type [2D=1, or 3D=2]
+	PetscInt        Plume_Inflow;
+	PetscInt		Plume_Type;				// Do we have a plume-like inflow boundary?
+	PetscInt 		Plume_flux_ctr;				// Plume flux is constrained or not?
+	PetscInt 		Plume_Dimension;		    // Type [2D=1, or 3D=2]
 	PetscInt		Plume_Phase;				// Phase of plume
+	PetscInt        Plume_Phase_Mantle;         // Mantle phase (astenosphere)
+	PetscScalar     Plume_Depth;                // Column plume height
 	PetscScalar		Plume_Temperature;			// Temperature
 	PetscScalar		Plume_Center[2];			// center [x,y] coordinates (for 3D plume)		
 	PetscScalar		Plume_Radius;				// radius of plume (for 3D plume)
 	PetscScalar		Plume_Inflow_Velocity;		// inflow velocity
 	PetscInt 		Plume_VelocityType;			// type of inflow [Gaussian=0=default or Poiseuille=1]
-	
+	PetscScalar     Plume_Pressure ;            // Plume Pressure at the bottom of the model (i.e. the bottom pressure boundary condition)
 	// open boundary flag
 	PetscInt     	top_open;
+	PetscInt 		bot_open;
+	PetscInt        phase_inflow_bot;
 
 	// no-slip boundary condition mask
-	PetscInt     noslip[6];
+	PetscInt     	noslip[6];
 
 	// fixed phase (no-flow condition)
-	PetscInt     fixPhase;
+	PetscInt     	fixPhase;
 
 	// fixed cells (no-flow condition)
-	PetscInt       fixCell;
-	unsigned char *fixCellFlag;
+	PetscInt       	fixCell;
+	unsigned char 	*fixCellFlag;
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
 	//========================
 
 	// temperature on top and bottom boundaries and initial guess activation flag
-	PetscScalar  Tbot, Ttop;
-	PetscInt     initTemp;
+	// bottom T can change with time
+	PetscInt     	TbotNumPeriods;
+	PetscScalar  	TbotTimeDelims [_max_periods_-1];
+	PetscScalar  	Tbot[_max_periods_  ];
+
+	PetscScalar  	Ttop;
+	PetscInt     	initTemp;
 
 	//=====================
 	// PRESSURE CONSTRAINTS
 	//=====================
 
 	// pressure on top and bottom boundaries and initial guess activation flag
-	PetscScalar  pbot, ptop;
-	PetscInt     initPres;
+	PetscScalar  	pbot, ptop;
+	PetscInt     	initPres;
 
 };
 //---------------------------------------------------------------------------
@@ -300,6 +311,10 @@ PetscErrorCode BCApplySPC(BCCtx *bc);
 
 // shift indices of constrained nodes
 PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
+
+// plume pressure like boundary condition
+PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc);
+
 
 //---------------------------------------------------------------------------
 // Specific constraints
@@ -336,8 +351,18 @@ PetscErrorCode BCListSPC(BCCtx *bc);
 PetscErrorCode BCApplyVelTPC(BCCtx *bc);
 
 // apply plume_open_boundary condition
-
 PetscErrorCode BC_Plume_inflow(BCCtx *bc);
+
+// apply pressure permeable boundary condition
+PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc);
+
+// Get the average lithostatic pressure at the bottom
+PetscErrorCode GetAverageLithostatic(BCCtx *bc);
+
+// Get the densities of the external material
+PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p );
+
+
 
 //---------------------------------------------------------------------------
 // Service functions
@@ -355,6 +380,11 @@ PetscErrorCode BCGetBGStrainRates(
 		PetscScalar *Rxx_,
 		PetscScalar *Ryy_,
 		PetscScalar *Rzz_);
+
+// Get current bottom temperature
+PetscErrorCode BCGetTempBound(
+		BCCtx       *bc,
+		PetscScalar *Tbot);
 
 // stretch staggered grid if background strain rates are defined
 PetscErrorCode BCStretchGrid(BCCtx *bc);

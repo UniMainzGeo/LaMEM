@@ -1,4 +1,4 @@
-/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/*@ ~~~~~~~~~~~~  if~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
  **    Copyright (c) 2011-2020, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
@@ -51,6 +51,8 @@
 #include "tools.h"
 #include "advect.h"
 #include "phase.h"
+#include "constEq.h"
+#include "surf.h"
 
 //---------------------------------------------------------------------------
 // * open box & Winkler (with tangential viscous friction)
@@ -266,7 +268,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	mID  = bc->dbm->numPhases-1;
 
 	// initialize
-	bc->Tbot     		= 	-1.0;
+	bc->Tbot[0]  		= 	-1.0;
 	bc->Ttop     		= 	-1.0;
 	bc->pbot    	 	= 	-1.0;
 	bc->ptop     		= 	-1.0;
@@ -385,6 +387,15 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// open boundary flag
 	ierr = getIntParam(fb, _OPTIONAL_, "open_top_bound",		&bc->top_open, 		1, -1); 	CHKERRQ(ierr);
 
+	//open bottom boundary flag
+
+	ierr = getIntParam(fb, _OPTIONAL_, "open_bot_bound",		&bc->bot_open, 		1, -1); 	CHKERRQ(ierr);
+	if(bc->bot_open)
+	{
+		ierr = getIntParam(fb, _OPTIONAL_, "permeable_phase_inflow",		&bc->phase_inflow_bot, 		1, -1); 	CHKERRQ(ierr);
+	}
+
+
 	// no-slip boundary condition mask
 	ierr = getIntParam(fb, _OPTIONAL_, "noslip", 				bc->noslip, 		6, -1); 	CHKERRQ(ierr);
 
@@ -401,32 +412,57 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		char             str[_str_len_];
 		
 		// Type of plume (2D or 3D)
-		ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL); 					CHKERRQ(ierr);  // must have component
-		if     	(!strcmp(str, "2D"))      bc->Plume_Type=1;		// 2D setup
-		else if (!strcmp(str, "3D"))      bc->Plume_Type=2;		// 3D (circular)
-		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);} 
 
+		ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL);          CHKERRQ(ierr);  // must have component
+		if(!strcmp(str, "Inflow_Type"))             bc->Plume_Type=1;                                // velocity flux
+		else if (!strcmp(str, "Permeable_Type"))
+		{
+			bc->Plume_Type = 2;                                // activate open_bot boundary condition
+			bc->bot_open   = 1;                                // open the bottom boundary
+		}
+		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);}
+		ierr = getStringParam(fb, _REQUIRED_, "Plume_Dimension", 	str, NULL); 					CHKERRQ(ierr);  // must have component
+		if     	(!strcmp(str, "2D"))      bc->Plume_Dimension=1;		// 2D setup
+		else if (!strcmp(str, "3D"))      bc->Plume_Dimension=2;		// 3D (circular)
+		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);} 
 		ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"    		, 	&bc->Plume_Phase, 			1, mID); 			CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature"	, 	&bc->Plume_Temperature, 	1, 1); 				CHKERRQ(ierr);
 		
-		if(bc->Plume_Type == 1)
+		if(bc->Plume_Dimension == 1)
 		{	
 			// 2D perturbation in x-direction
 			ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",		bc->Plume_Center,		1,		scal->length);		CHKERRQ(ierr);
 		}
-		else if(bc->Plume_Type == 2)
+		else if(bc->Plume_Dimension == 2)
 		{
 			// 3D circular inflow a given [X,Y] coordinates
 			ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",		bc->Plume_Center,		2,		scal->length);		CHKERRQ(ierr);
 		}
 		ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Radius",			&bc->Plume_Radius,			1,	scal->length);		CHKERRQ(ierr);
-		ierr = getScalarParam(fb,_REQUIRED_,"Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
 
-        // Gaussian or Poiseuille type inflow velocity? Note that outflow is calculated to conserve mass
-        ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType", 	str, "Gaussian"); 					CHKERRQ(ierr);  // must have component
-		if     	(!strcmp(str, "Poiseuille"))    bc->Plume_VelocityType = 0;		// Poiseuille
-		else if (!strcmp(str, "Gaussian"))      bc->Plume_VelocityType = 1;		// Gaussian perturbation (smoother)
-		else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);} 
+		if(bc->Plume_Type ==1)
+		{
+			ierr = getScalarParam(fb,_REQUIRED_,"Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
+			ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType", 	str, "Gaussian"); 					CHKERRQ(ierr);  // must have component
+			if     	(!strcmp(str, "Poiseuille"))    bc->Plume_VelocityType = 0;		// Poiseuille
+			else if (!strcmp(str, "Gaussian"))      bc->Plume_VelocityType = 1;		// Gaussian perturbation (smoother)
+			else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);}
+
+		}
+		if(bc->Plume_Type ==2)
+		{
+			//bc->Plume_Pressure = -1;
+			//ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
+			//ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure",&bc->Plume_Pressure,	1,	scal->stress);	CHKERRQ(ierr);
+			ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , &bc->phase_inflow_bot,        1, mID);            CHKERRQ(ierr);
+
+		}
+
+	}
+
+	if((bc->bot_open || bc->Plume_Type == 2) && !bc->phase_inflow_bot )
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The permeable inflow phase or the mantle plume phase must be defiened\n");
 
 	}
 
@@ -434,7 +470,15 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// TEMPERATURE CONSTRAINTS
 	//========================
 
-	ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot",   &bc->Tbot,     1, 1.0); CHKERRQ(ierr);
+	bc->TbotNumPeriods = 1;
+	ierr = getIntParam   (fb, _OPTIONAL_, "temp_bot_num_periods",  &bc->TbotNumPeriods,  1,                   _max_periods_    	); CHKERRQ(ierr);
+	if (bc->TbotNumPeriods>1){
+		ierr = getScalarParam(fb, _REQUIRED_, "temp_bot_time_delim",   	bc->TbotTimeDelims,  	bc->TbotNumPeriods-1, scal->time	); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "temp_bot",  				bc->Tbot, 				bc->TbotNumPeriods,   1.0); 							   CHKERRQ(ierr);
+	}
+	else{
+		ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot",  bc->Tbot, 1,   1.0); CHKERRQ(ierr);
+	}
 	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top",   &bc->Ttop,     1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_temp",  &bc->initTemp, 1, -1);  CHKERRQ(ierr);
 
@@ -447,7 +491,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_pres", &bc->initPres, 1, -1);  CHKERRQ(ierr);
 
 	// CHECK
-	if((bc->Tbot == bc->Ttop) && bc->initTemp)
+	if((bc->Tbot[0] == bc->Ttop) && bc->initTemp)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Top and bottom temperatures give zero initial gradient (Tbot, Ttop, initTemp) \n");
 	}
@@ -456,6 +500,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
 	}
+
+
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Boundary condition parameters: \n");
@@ -473,21 +519,42 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->EyyNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods);
 	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
 	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
+	if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                          @ \n");
+	if(bc->bot_open && bc->Plume_Type == 2)
+	{
+
+	}
 	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
-	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
-    
+	if (bc->TbotNumPeriods==1){
+		if(bc->Tbot[0]   != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot[0], scal->lbl_temperature);
+	}
+	else{
+		// We have a Tbot that changes with time
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", bc->TbotNumPeriods);
+		PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperatures               : ");
+		for (jj=0; jj<bc->TbotNumPeriods; jj++){
+			PetscPrintf(PETSC_COMM_WORLD, "%g ", bc->Tbot[jj]);
+		}		
+		PetscPrintf(PETSC_COMM_WORLD, " %s \n", scal->lbl_temperature);
+		PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temp time periods          :     ");
+		for (jj=0; jj<bc->TbotNumPeriods-1; jj++){
+			PetscPrintf(PETSC_COMM_WORLD, "%g ", bc->TbotTimeDelims[jj]*scal->time);
+		}		
+		PetscPrintf(PETSC_COMM_WORLD, " %s \n", scal->lbl_time);
+
+	}
 	
     if(bc->Plume_Inflow == 1){
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding plume inflow bottom condition       @ \n");
-	if(bc->Plume_Type == 1){PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : 2D \n");}
-	else{  					PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : 3D \n");}
+	if(bc->Plume_Type == 1){PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : Inflow \n");}
+	else{  					PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : Open Bottom \n");}
     if(bc->Plume_VelocityType == 0){PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Poiseuille flow (and constant outflow) \n");}
 	else{  				 	        PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Gaussian in/out flow \n");}
 	                        PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, 	 				scal->lbl_temperature);
                             PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %i \n", bc->Plume_Phase);
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %g %s \n", bc->Plume_Inflow_Velocity*scal->velocity, scal->lbl_velocity);
-    if(bc->Plume_Type == 1){PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g] %s \n", bc->Plume_Center[0]*scal->length,       scal->lbl_length);}
+    if(bc->Plume_Dimension == 1){PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g] %s \n", bc->Plume_Center[0]*scal->length,       scal->lbl_length);}
     else{                   PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g, %g] %s \n", bc->Plume_Center[0]*scal->length, bc->Plume_Center[1]*scal->length, scal->lbl_length);}
 							PetscPrintf(PETSC_COMM_WORLD, "      Radius of plume                         : %g %s \n", bc->Plume_Radius*scal->length, scal->lbl_length);
 	}
@@ -539,11 +606,16 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// nondimensionalize temperature & pressure
 	if(bc->Ttop != -1.0)                        bc->Ttop  = (bc->Ttop + scal->Tshift)/scal->temperature;
-	if(bc->Tbot != -1.0)                        bc->Tbot  = (bc->Tbot + scal->Tshift)/scal->temperature;
+	if(bc->Tbot[0] != -1.0){                        
+		for (jj=0; jj<bc->TbotNumPeriods; jj++){
+			bc->Tbot[jj]  = (bc->Tbot[jj]  + scal->Tshift)/scal->temperature;
+		}
+	}
+
     if(bc->ptop != -1.0)                        bc->ptop /= scal->stress;
 	if(bc->pbot != -1.0)                        bc->pbot /= scal->stress;
     bc->Plume_Temperature = (bc->Plume_Temperature+scal->Tshift)/scal->temperature;							// to Kelvin & nondimensionalise
-    bc->bvel_potential_temperature = (bc->bvel_potential_temperature+scal->Tshift)/scal->temperature;							// to Kelvin & nondimensionalise
+    bc->bvel_potential_temperature = (bc->bvel_potential_temperature+scal->Tshift)/scal->temperature;		// to Kelvin & nondimensionalise
     bc->bvel_temperature_top       = (bc->bvel_temperature_top+scal->Tshift)/scal->temperature;
     bc->bvel_constant_temperature  = (bc->bvel_constant_temperature+scal->Tshift)/scal->temperature;
 
@@ -749,8 +821,11 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// WARNING! Synchronization is necessary if SPC constraints are active
 	// LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
-
 	ierr = BCApplyPres(bc); CHKERRQ(ierr);
+
+
+//	if(bc->Plume_Type == 2 || bc->bot_open) ierr = BCApply_Permeable_Pressure(bc); CHKERRQ(ierr);
+
 
 	//=============================
 	// VELOCITY (RESTRUCTURE THIS!)
@@ -775,7 +850,7 @@ PetscErrorCode BCApply(BCCtx *bc)
 	ierr = BCApplyCells(bc); CHKERRQ(ierr);
 
 	// plume like boundary condition
-	ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
+	if(bc->Plume_Type == 1) ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
 
 	// synchronize SPC constraints in the internal ghost points
 	// WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
@@ -954,7 +1029,9 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 	fs = bc->fs;
 
 	// get boundary temperatures
-	Tbot = bc->Tbot;
+	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);
+
+	//Tbot = bc->Tbot;
 	Ttop = bc->Ttop;
 
 	// initialize index bounds
@@ -986,7 +1063,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 				x       = COORD_CELL(i, sx, fs->dsx);
 				y       = COORD_CELL(j, sy, fs->dsy);
 
-				if(bc->Plume_Type==1)	// 2D plume
+				if(bc->Plume_Dimension==1)	// 2D plume
 				{	
 					PetscScalar xmin, xmax;
 					
@@ -996,7 +1073,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 					
 					if ( (x >= xmin) && (x <= xmax))
 					{
-						bcT[k-1][j][i]     = bc->Plume_Temperature;
+						bcT[k-1][j][i]     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
 					}
 					
 				}
@@ -1034,8 +1111,9 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscScalar z,   z_bot, z_top;
 	PetscScalar y,   y_frt, y_bck;
 	PetscInt    mnx, mny, mnz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open, bot_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1045,6 +1123,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	// set open boundary flag
 	top_open = bc->top_open;
+	bot_open = bc->bot_open;
 
 	// initialize index bounds
 	mnx = fs->dsx.tnods - 1;
@@ -1064,9 +1143,13 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	vby = (by - Ryy)*Eyy;   vey = (ey - Ryy)*Eyy;
 	vbz = (bz - Rzz)*Ezz;   vez = (ez - Rzz)*Ezz;
 
-	if(top_open)
+	if		(top_open)
 	{
 		vez = 0.0;
+	}
+	else if	(bot_open)
+	{
+		vbz = 0.0;
 	}
 
 	// access constraint vectors
@@ -1161,7 +1244,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 		if(j == mny-1 && Eyz != 0.0) { bcvz[k][j][i] = 0.0; }
 
 		// pure shear		
-		if(k == 0                && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; }
+		if((k == 0   && !bot_open && bcp[-1 ][j][i] == DBL_MAX)) { bcvz[k][j][i] = vbz; }//
 		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
 
 
@@ -1426,7 +1509,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	PetscInt    mnz, mnx, mny;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar ***bcvx,  ***bcvy, ***bcvz;
-	PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open;
+	PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open, bot_open;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1446,6 +1529,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 
 	// set open boundary flag
 	top_open = bc->top_open;
+	bot_open = bc->bot_open;
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
@@ -1555,16 +1639,16 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_NODE_RANGE(nz, sz, fs->dsz)
 
-	if(bc->face == 5)
+	if(bc->face == 5 )
 	{
 		START_STD_LOOP
 		{
 			vel = 0.0;
 
-			if(k == 0)                vel = velbot;
-			if(k == mnz && !top_open) vel = veltop;
+			if(k == 0   && !bot_open)  vel = velbot;
+			if(k == mnz && !top_open)  vel = veltop;
 	
-			if(k == 0)                { bcvz[k][j][i] = vel; }
+			if(k == 0   && !bot_open) { bcvz[k][j][i] = vel; }
 			if(k == mnz && !top_open) { bcvz[k][j][i] = vel; }
 			iter++;
 		}
@@ -1974,6 +2058,39 @@ PetscErrorCode BCGetBGStrainRates(
 
 	PetscFunctionReturn(0);
 }
+
+#undef __FUNCT__
+#define __FUNCT__ "BCGetTempBound"
+PetscErrorCode BCGetTempBound(
+		BCCtx       *bc,
+		PetscScalar *Tbot)
+{
+	// get current bottom temperature
+
+	PetscInt    jj;
+	PetscScalar time, Tbot_val;
+
+	// initialize
+	time  		= bc->ts->time;
+	Tbot_val  	= 0.0;
+
+	// 
+	if(bc->TbotNumPeriods)
+	{
+		for(jj = 0; jj < bc->TbotNumPeriods-1; jj++)
+		{
+			if(time < bc->TbotTimeDelims[jj]) break;
+		}
+
+		Tbot_val = bc->Tbot[jj];
+	}
+
+	// store result
+	*Tbot = Tbot_val;
+
+	PetscFunctionReturn(0);
+}
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCStretchGrid"
@@ -2021,11 +2138,15 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	FDSTAG     *fs;
 	PetscInt    i, j, k, M, N, mx, my, sx, sy,sz,ip;
 	PetscScalar z,x, y, cmax,cmin,z_plate;
-	PetscScalar Temp_age,k_thermal;
-
+	PetscScalar Temp_age,k_thermal,dT_adiabatic,Z_Top,Tbot;
+	PetscInt phase_inflow;
+	PetscScalar T_inflow;
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
+	
+	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
 
-	if( (bc->face) || bc->Plume_Inflow)
+	if( (bc->face) || bc->Plume_Inflow || bc->bot_open)
 	{
 		fs = bc->fs;
 		M  = fs->dsx.ncels;
@@ -2048,12 +2169,33 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 							||  (bc->face == 4 && j + sy == my))
 							&&  (z >= bc->bot && z <= bc->top) && (bc->bvel_temperature_inflow>0))
 		{
+
+			if(bc->jr->ctrl.Adiabatic_gr > 0.0)
+			{
+				if(bc->jr->surf->UseFreeSurf)
+				{
+					Z_Top = bc->jr->surf->InitLevel;
+				}
+				else
+				{
+					Z_Top = bc->fs->dsz.gcrdend;
+				}
+
+
+
+				dT_adiabatic= bc->jr->ctrl.Adiabatic_gr*PetscAbs(z-Z_Top);
+			}
+			else
+			{
+				dT_adiabatic = 0.0;
+			}
+
 			if(bc->bvel_temperature_inflow==2)
 			{
 				k_thermal= 1e-6/( (bc->scal->length_si)*(bc->scal->length_si)/(bc->scal->time_si));
 				z_plate = PetscAbs(z-bc->top);
 				Temp_age = (bc->bvel_potential_temperature-bc->bvel_temperature_top)*erf(z_plate/2.0/sqrt(k_thermal*bc->bvel_thermal_age)) + bc->bvel_temperature_top;
-				P->T = Temp_age;
+				P->T = Temp_age+dT_adiabatic;
 			}
 			else if(bc->bvel_temperature_inflow == 1)
 			{
@@ -2088,37 +2230,56 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 		}
 
-		if(bc->Plume_Inflow)
-		{	
+
 			// if we have have a inflow condition @ the lower boundary, we change the phase of the particles within the zone
-			if(k+sz == 0 || k+sz == 1)
+		if(k+sz == 0)
+		{
+			if (bc->Plume_Inflow == 1)
 			{
-				if(bc->Plume_Type==1)
+				/*
+				 * This routine handle the inflow and outflow. If the Plume boundary is "permeable" type, within the plume radius the phase that are
+				 * injected is the one prescribed for the plume. The particle injected has the same temperature of the TBot (i.e. according to a gaussian thermal
+				 * perturbation). Otherwise has the phase and temperature of the background mantle.
+				 */
+
+				phase_inflow = bc->phase_inflow_bot;
+
+				if(bc->Plume_Dimension==1)
 				{
+					T_inflow     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
+
+
 					cmin = bc->Plume_Center[0] - bc->Plume_Radius;
 					cmax = bc->Plume_Center[0] + bc->Plume_Radius;
-					
+
 					if(x>=cmin && x<=cmax)
 					{
-						P->phase = bc->Plume_Phase;
-						P->T     = bc->Plume_Temperature;
+						phase_inflow = bc->Plume_Phase;
 					}
-
 				}
 				else
 				{
-                    if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) + 
-                        PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
-                    {
-	                    P->phase = bc->Plume_Phase;
-						P->T     = bc->Plume_Temperature;
-                    }
+					T_inflow     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/(PetscPowScalar(bc->Plume_Radius,2.0)));
 
-
+					if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) +
+						PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
+					{
+						phase_inflow = bc->Plume_Phase;
+					}
 				}
-			}
 
+				P->phase  = phase_inflow;
+				P->T      = T_inflow;
+			//	PetscPrintf(PETSC_COMM_WORLD,"Plume Temperature P->T=%6f \n",P->T*bc->scal->temperature-bc->scal->Tshift);
+
+			}
+			else if(bc->bot_open)
+			{
+				P->phase = bc->phase_inflow_bot;
+				P->T     = Tbot;
+			}
 		}
+
 	}
 
 	PetscFunctionReturn(0);
@@ -2139,14 +2300,16 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	
 	if(!bc->Plume_Inflow) 	PetscFunctionReturn(0);
+
 
 	fs              =   bc->fs;
 
 	ierr 			= 	FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
 	
     V_in            = 	bc->Plume_Inflow_Velocity;                      // max. inflow velocity
-    if(bc->Plume_Type == 1){   // 2D
+    if(bc->Plume_Dimension == 1){   // 2D
         Area_Bottom 	=	(x_max-x_min);
         Area_Inflow 	= 	2.0*bc->Plume_Radius;		    // inflow length
         Area_Outflow 	=	Area_Bottom-Area_Inflow;	    // outflow length
@@ -2162,7 +2325,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
         //  Note that this results in a velocity discontinuity at the border
        
         // We assume Poiseuille flow between plates (2D) or in a pipe (3D):
-        if(bc->Plume_Type == 1)		{	V_avg = V_in*2.0/3.0;	}	// 2D
+        if(bc->Plume_Dimension == 1)		{	V_avg = V_in*2.0/3.0;	}	// 2D
         else						{	V_avg = V_in*1.0/2.0; 	}	// 3D	
 
         // outflow velocity is based on mass conservation (i.e.: Qin+Qout=0)
@@ -2172,7 +2335,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
     else{
         
         // Gaussian-like inflow perturbation
-        if(bc->Plume_Type == 1){   // 2D
+        if(bc->Plume_Dimension == 1){   // 2D
             PetscScalar a,b,c, xc;
             /*  Gaussian perturbation velocity - anything that creates a rigid plug is a problem
 
@@ -2249,7 +2412,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
         if ( bc->Plume_VelocityType==0 ){   
             // Poiseuille type inflow 
-            if(bc->Plume_Type == 1)   // 2D
+            if(bc->Plume_Dimension == 1)   // 2D
             {
                 R       =   PetscPowScalar((x-bc->Plume_Center[0]),2.0);
             }
@@ -2271,7 +2434,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
             xc              =   bc->Plume_Center[0];
 
             // gaussian type perturbation
-            if(bc->Plume_Type == 1){   // 2D
+            if(bc->Plume_Dimension == 1){   // 2D
                
              
                 // Gaussian velocity perturbation
@@ -2285,7 +2448,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
                 y   =   COORD_CELL(j, sy, fs->dsy);
 
                 // Gaussian velocity perturbation
-                vel = (V_in-V_out)*PetscExpScalar( - ( PetscPowScalar(x-xc,2.0 ) + PetscPowScalar(y-yc,2.0 ) )/radius2 ) + V_out;
+                vel = V_out+(V_in-V_out)*PetscExpScalar( - ( PetscPowScalar(x-xc,2.0 ) + PetscPowScalar(y-yc,2.0 ) )/radius2 );
 
             }
         }
@@ -2304,5 +2467,287 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
 	PetscFunctionReturn(0);
 }
+/*
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApply_Permeable_Pressure"
+PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
+{
+	// apply pressure constraints
+
+	FDSTAG      *fs;
+	SolVarBulk  *svBulk;
+	PetscScalar g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,p_bot,radius2, rhog,Tbot;
+	PetscInt    phase_mantle,phase_plume;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz,iter;
+	PetscScalar ***bcp,***lp;
+
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = bc->fs;
+
+	ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
+
+	if(bc->Plume_Type == 2)
+	{
+		phase_mantle = bc->Plume_Phase_Mantle;
+	}
+	else
+	{
+		phase_mantle = bc->phase_inflow_bot;
+	}
+	if(bc->Plume_Type==2)
+	{
+		phase_plume  = bc->Plume_Phase;
+
+		g     =  PetscAbsScalar(bc->jr->ctrl.grav[2]);
+		H     = bc->Plume_Depth;
+
+		// compute the average lithostatic pressure at the bototm
+	
+
+		if(bc->Plume_Pressure>0.0)
+		{
+			p = bc->Plume_Pressure;
+		}
+		else if (bc->Plume_Pressure <0.0)
+		{
+			ierr = GetAverageLithostatic(bc); CHKERRQ(ierr);
+			p = bc->jr->mean_p;
+		}
+	}
+	else
+	{
+		ierr = GetAverageLithostatic(bc); CHKERRQ(ierr);
+		p = bc->jr->mean_p;
+	}
+
+	// initialize index bounds
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
+
+
+	//-----------------------------------------------------
+	// P points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		iter = 0;
+		radius2 = PetscPowScalar(bc->Plume_Radius,2.0 );
+		START_STD_LOOP
+		{
+			dz      = SIZE_CELL(k,sz,fs->dsz);
+			x       = COORD_CELL(i, sx, fs->dsx);
+			y       = COORD_CELL(j, sy, fs->dsy);
+			p_bot   = 0.0;
+
+			if( k==0)
+			{
+				// compute the pressure at the bottom of the numerical box.
+				// Lithostatic pressure is stored in the central node, to obtain the pressure at the bottom a factor rho*g*dz/2 must be applied
+				svBulk = &bc->jr->svCell[iter++].svBulk;
+
+				if(bc->Plume_Pressure==0.0)
+				{
+					p_bot = lp[k][j][i] + (dz/2)*g*svBulk->rho;
+
+				}
+				else
+				{
+					p_bot = p + (dz/2)*g*svBulk->rho;
+				}
+				rho_mantle =  GetDensity(bc,phase_mantle,Tbot, p_bot);
+				// To compute the pressure outside the domain, a factor of dz/2*rho_ext*g must applied. It is assumed that the density is constant outside
+				// the domain and equal to the density of the bottom of the numerical box
+				rhog = (dz/2)*g*rho_mantle;
+				// If the plume pressure boundary condition is applied, it is necessary to compute the density of the plume outside the domain
+				if(bc->Plume_Type == 2)
+				{
+					rho_plume  =  GetDensity(bc,phase_plume,bc->Plume_Temperature, p_bot);
+					dP         =  (rho_mantle-rho_plume)*g*H;
+					if(bc->Plume_Dimension ==1)
+					{
+						xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
+						xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
+						if(x>=xmin && x<=xmax)rhog = (dz/2)*g*rho_plume;
+						// Gaussian perturbation of dP
+
+						bcp[k-1][j][i] = p_bot+rhog+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
+					}
+					else
+					{
+						if(PetscPowScalar((x - bc->Plume_Center[0]),2.0) + PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0))
+						{
+							rhog = (dz/2)*g*rho_plume+dP*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/radius2);
+						}
+						// Gaussian perturbation of dP
+						bcp[k-1][j][i] = p_bot+rhog;
+					}
+				}
+				else
+				{
+					bcp[k-1][j][i] = p_bot + rhog;
+
+				}
+			}
+		}
+		END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------------------------
+// Compute the average lithostatic pressure at the bottom of the numerical simulation
+#undef __FUNCT__
+#define __FUNCT__ "GetAverageLithostatic"
+PetscErrorCode GetAverageLithostatic(BCCtx *bc)
+{
+		Vec         send,recv;
+		JacRes      *jr;
+		FDSTAG      *fs;
+		Discret1D   *dsz;
+		PetscScalar ***lp, ***ibuff, *lbuff,*lbuff2 ,mean_p;
+		PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L;
+		PetscErrorCode ierr;
+		PetscFunctionBegin;
+
+
+
+		jr  = bc->jr;
+		fs  =  jr->fs;
+		dsz = &fs->dsz;
+		L   =  (PetscInt)dsz->rank;
+
+
+	    GET_CELL_RANGE(nx, sx, fs->dsx)
+	    GET_CELL_RANGE(ny, sy, fs->dsy)
+	    GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		// Create the vector to save the lithostatic pressure
+		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &send); CHKERRQ(ierr);
+
+		ierr = VecZeroEntries(send); CHKERRQ(ierr);
+
+		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &recv); CHKERRQ(ierr);
+
+		ierr = VecZeroEntries(recv); CHKERRQ(ierr);
+
+		// retrieve the lithostatic pressure at the bottom of the domain (i.e. the largest value of the array along z direction)
+
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
+
+		ierr = DMDAVecGetArray(jr->DA_CELL_2D, send, &ibuff); CHKERRQ(ierr);
+
+
+		ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+
+
+		START_STD_LOOP
+		{
+			if(ibuff[L][j][i]< lp[k][j][i])
+			{
+				ibuff[L][j][i]= lp[k][j][i];
+
+			}
+
+
+		}
+		END_STD_LOOP
+
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
+
+		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, send, &ibuff); CHKERRQ(ierr);
+
+
+		if(dsz->nproc != 1 )
+		{
+			ierr = VecGetArray(send, &lbuff); CHKERRQ(ierr);
+			ierr = VecGetArray(recv, &lbuff2); CHKERRQ(ierr);
+			ierr = MPI_Allreduce(lbuff, lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_MAX, dsz->comm); CHKERRQ(ierr);
+
+			ierr = VecRestoreArray(send, &lbuff); CHKERRQ(ierr);
+			ierr = VecRestoreArray(recv, &lbuff2); CHKERRQ(ierr);
+
+
+		}
+		else
+		{
+			ierr = VecCopy(send,recv);  CHKERRQ(ierr);
+		}
+
+		ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &send); CHKERRQ(ierr);
+
+		// Compute the average lithostatic pressure
+
+		ierr = VecSum(recv, &mean_p); CHKERRQ(ierr);
+
+
+
+		bc->jr->mean_p =mean_p/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels*fs->dsz.nproc);
+
+		ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &recv); CHKERRQ(ierr);
+
+		PetscFunctionReturn(0);
+
+
+
+}
+// Get the density of the material below the numerical mode
+//---------------------------------------------------------------------------------------------
+// Compute the average lithostatic pressure at the bottom of the numerical simulation
+PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p )
+{
+	Material_t *mat;
+	PData      *Pd;
+	PetscScalar cf_therm,cf_comp;
+	PetscScalar rho;
+	PetscErrorCode ierr;
+
+	mat = bc->dbm->phases;
+	rho = mat[Phase].rho;
+	Pd  = bc->jr->Pd;
+
+
+	cf_comp  = 1.0;
+	cf_therm = 1.0;
+
+	if(mat[Phase].beta)
+	{
+		// negative sign as compressive pressures (increasing depth) is negative in LaMEM
+		cf_comp = 1.0 + p*mat->beta;
+	}
+
+	if(mat[Phase].alpha)
+	{
+		cf_therm  = 1.0 - mat->alpha*(T - bc->jr->ctrl.TRef);
+	}
+
+	if(mat[Phase].pdAct == 1)
+	{
+		ierr = setDataPhaseDiagram(Pd, p, T, mat[Phase].pdn); CHKERRQ(ierr);
+
+		rho = Pd->rho;
+	}
+	else
+	{
+		rho = rho*cf_comp*cf_therm;
+	}
+
+
+
+	return rho;
+}
+*/
+
 
