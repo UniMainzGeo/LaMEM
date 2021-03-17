@@ -162,7 +162,8 @@ struct OutMask
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
-
+        PetscInt DikeRHS;        // dike right hand side (additional divergence)   // NEW FOR DIKE
+  
 	// phase aggregates
 	PetscInt num_agg;                                              // number of phase aggregates
 	char     agg_name     [_max_num_phase_agg_][_str_len_];        // names

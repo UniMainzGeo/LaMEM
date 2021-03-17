@@ -865,7 +865,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
 	Marker         *P;
 	PetscLogDouble  t;
-	PetscScalar     chLen, chTime;
+	PetscScalar     chLen, chTime, chVel; // chVel NEW FOR DIKE
 	char            TemperatureStructure[_str_len_];
 	PetscInt        jj, ngeom, imark, maxPhaseID;
 	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *ridge, *hex, *layer, *cylinder;
@@ -881,6 +881,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	maxPhaseID = actx->dbm->numPhases - 1;
 	chLen      = actx->jr->scal->length;
 	chTime     = actx->jr->scal->time;
+	chVel      = actx->jr->scal->velocity;
 
 	// clear storage
 	ierr = PetscMemzero(geom,  sizeof(GeomPrim) *(size_t)_max_geom_); CHKERRQ(ierr);
@@ -1093,10 +1094,16 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen);     CHKERRQ(ierr);
 	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen);     CHKERRQ(ierr);
 	    ierr = getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime);          CHKERRQ(ierr);
+            ierr = getScalarParam(fb, _OPTIONAL_, "v_ridge",        &ridge->v_ridge, 1, chVel); CHKERRQ(ierr);  // NEW FOR DIKE, THICKER LITHOSPHERE
+
+	    PetscPrintf(PETSC_COMM_WORLD, "ridge velocity: %f \n", ridge->v_ridge*actx->jr->scal->velocity);
+	    
 	    ridge->bot = ridge->bounds[4];
 	    ridge->top = ridge->bounds[5];
 
 	    ridge->v_spread=PetscAbs(actx->jr->bc->velin);
+
+	    PetscPrintf(PETSC_COMM_WORLD, "spread velocity: %f \n", ridge->v_spread*actx->jr->scal->velocity);
 	    
 	    // Temperature options (actually required to be setTemp==4)
 	    ierr = getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL );    CHKERRQ(ierr);
@@ -2063,7 +2070,7 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
         {
 
 	  // Half space cooling profile with age function, oblique possible
-	  PetscScalar x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack, T_top, T_bot, kappa, thermalAgeRidge, age0;
+	  PetscScalar x, y, z, z_top, v_spread, v_ridge, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack, T_top, T_bot, kappa, thermalAgeRidge, age0;
 
 	  y = P->X[1];
 	  x = P->X[0];
@@ -2077,25 +2084,41 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	  z          = PetscAbs(P->X[2]-z_top);
 	  kappa      = geom->kappa;
 	  v_spread   = geom->v_spread;
+	  v_ridge    = geom->v_ridge;
 	  age0       = geom->age0;
 
+	  
 	  if (x_ridgeLeft == x_ridgeRight){
 
-	    thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
-	    thermalAgeRidge = max(thermalAgeRidge,age0);
+	    if (v_ridge){                   // f v_ridge exists, use v_ridge not v_spread, NEW FOR DIKE, THICKER LITHOSPHERE
+	        PetscPrintf(PETSC_COMM_WORLD, "go for ridge velocity: %f \n", v_ridge);
+	      thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_ridge;
+	      thermalAgeRidge = max(thermalAgeRidge,age0);
+	    }
+	    else {
+	      PetscPrintf(PETSC_COMM_WORLD, "go for spread velocity: %f \n", v_spread);
+	      thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
+	      thermalAgeRidge = max(thermalAgeRidge,age0);
+	    }
 	  }
 	  
 	  else {   
 
-	    x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
+	   x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
 
-	    thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;	    
-	    thermalAgeRidge = max(thermalAgeRidge,age0);
+	    if (v_ridge){                  // f v_ridge exists, use v_ridge not v_spread, NEW FOR DIKE, THICKER LITHOSPHERE
+	      thermalAgeRidge = PetscAbs(x-x_oblique)/v_ridge;
+	      thermalAgeRidge = max(thermalAgeRidge,age0);
+	    }
+	    else {
+	      thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;	    
+	      thermalAgeRidge = max(thermalAgeRidge,age0);
+	    }
+	   }
+
+	   (*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
+
 	  }
-
-          (*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
-
-	}
 }
 
 //---------------------------------------------------------------------------

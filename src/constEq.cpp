@@ -64,7 +64,7 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 
 	PetscFunctionBegin;
 
-	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity, for dike phase
+	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity, NEW for dike phase
 	ctx->numPhases =  jr->dbm->numPhases; // number phases
 	ctx->phases    =  jr->dbm->phases;    // phase parameters
 	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
@@ -480,12 +480,12 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		eta   = tauII/(2.0*DII);
 
 
-PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside getPhaseVisc function, before all the additional plastic strains are removed \n");   // NEW FOR DIKE, TESTTING PURPOSE   
+//PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside getPhaseVisc function, before all the additional plastic strains are removed \n");// NEW FOR DIKE, TESTTING PURPOSE
 		
 		// compute plastic strain rate
 		DIIpl = getConsEqRes(eta, ctx);
 
-PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside getPhaseVisc function, after all the additional plastic strains are removed \n");   // NEW FOR DIKE, TESTTING PURPOSE
+//PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside getPhaseVisc function, after all the additional plastic strains are removed \n"); // NEW FOR DIKE, TESTTING PURPOSE
 		
 		// reset if plasticity is not active
 		if(DIIpl < 0.0)
@@ -578,7 +578,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
 
 
-PetscPrintf(PETSC_COMM_WORLD, " JUST to see whether inside getConsEqRes function \n");   // NEW FOR DIKE, TESTTING PURPOSE
+	//PetscPrintf(PETSC_COMM_WORLD, " JUST to see whether inside getConsEqRes function \n");   // NEW FOR DIKE, TESTTING PURPOSE
 	
 	// compute stress
 	tauII = 2.0*eta*ctx->DII;
@@ -597,7 +597,7 @@ PetscPrintf(PETSC_COMM_WORLD, " JUST to see whether inside getConsEqRes function
 
 	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike); // substract additionally //NEW FOR DIKE
 
-	PetscPrintf(PETSC_COMM_WORLD, " JUST to see whether inside getConsEqRes function, after DII res is computed \n");   // NEW FOR DIKE, TESTTING PURPOSE
+	//	PetscPrintf(PETSC_COMM_WORLD, " JUST to see whether inside getConsEqRes function, after DII res is computed \n");   // NEW FOR DIKE, TESTTING PURPOSE
 	
 	DIIres= ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
 	PetscPrintf(PETSC_COMM_WORLD, " DII incl DII dike  %f \n", DIIres);
@@ -677,16 +677,16 @@ PetscScalar getI2Gdt(
 PetscErrorCode volConstEq(ConstEqCtx *ctx)
 {
 	// evaluate volumetric constitutive equations in control volume
-	Controls    *ctrl;
-	Scaling     *scal;
+	Controls    *ctrl; 
+	//	Scaling     *scal; // NEW for dike, only for testing printing the dike rhs
 	PData       *Pd;
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
-	Ph_trans_t  *PhaseTrans;   // for dike
+	Ph_trans_t  *PhaseTrans;   // NEW for dike
 	PetscInt     i, numPhases;
 	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
-	PetscScalar  v_spread, M, left, right;  // for dike
-	BCCtx        *bc;
+	PetscScalar  v_spread, M, left, right; //, dikeRHS_test;  // NEW for dike
+	BCCtx        *bc;     // NEW for dike
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -704,7 +704,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	T         = ctx->T;
        	bc        = ctx->bc;          // for dike
 	PhaseTrans = ctx->PhaseTrans; // for dike
-	scal      = ctx->scal;        // for dike
+	//	scal      = ctx->scal;        // NEW for dike, only for testing printing the dike rhs
 	
 	p         = p+ctrl->pShift;
 
@@ -716,7 +716,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	svBulk->mf     = 0.0;
 	svBulk->rho_pf = 0.0;
 	svBulk->dikeRHS = 0.0;  // for dike
-
+	//	dikeRHS_test   =0.0;  // for testing dike rhs
 	
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -813,7 +813,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
 				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s 
-				//PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", mat->dikeRHS);
+				//					PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", mat->dikeRHS*scal->strain_rate);
 			    }
 			  /*  else
 
@@ -842,8 +842,9 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			// update density, thermal expansion & inverse bulk elastic parameter, and dikeRHS depending on the cell ratios
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
-		       	svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // new for dike
-			//PetscPrintf(PETSC_COMM_WORLD, "in volCell: svBulk dikeRHS %f \n", svBulk->dikeRHS);
+		       	svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // NEW for dike
+			//			dikeRHS_test += phRat[i]*mat->dikeRHS*scal->strain_rate;   // NEW for dike, only for testing printing the dike rhs
+			//						PetscPrintf(PETSC_COMM_WORLD, "in volCell: svBulk dikeRHS %e \n", dikeRHS_test);
 		}
 	}
 
