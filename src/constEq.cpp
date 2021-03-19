@@ -948,6 +948,11 @@ PetscErrorCode cellConstEq(
             gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + svBulk->dikeRHS;  // [1/s]
 	    //PetscPrintf(PETSC_COMM_WORLD, "in gres: gres dike %f \n", gres);
           }
+	else if(ctrl->actDike)
+          {
+             gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->dikeRHS;  // [1/s] ;
+          }
+	
 	else if(ctrl->actExp)
           {
             gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
