@@ -64,7 +64,7 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 
 	PetscFunctionBegin;
 
-	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity, NEW for dike phase
+	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity, NEW for dikephase
 	ctx->numPhases =  jr->dbm->numPhases; // number phases
 	ctx->phases    =  jr->dbm->phases;    // phase parameters
 	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
@@ -169,9 +169,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
 
 
-	//  PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside setupPhase function \n");   // NEW FOR DIKE, TESTTING PURPOSE   
-
-	
 	if(mat->pdAct == 1)
 	{
 		// compute melt fraction from phase diagram
@@ -199,9 +196,9 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctx->A_prl = 0.0; // Peierls constant
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
-	       ctx->dikeDxx = 0.0; // dike DII x, NEW FOR DIKE
-		ctx->dikeDyy = 0.0; // dike DII y, NEW FOR DIKE  
-		ctx->dikeDzz = 0.0; // dike DII z, NEW FOR DIKE  
+	ctx->dikeDxx = 0.0; // dike DII x, NEW FOR DIKE
+	ctx->dikeDyy = 0.0; // dike DII y, NEW FOR DIKE  
+	ctx->dikeDzz = 0.0; // dike DII z, NEW FOR DIKE  
 	
 	// MELT FRACTION
 	mfd = 1.0;
@@ -351,12 +348,13 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 			if(mat->Mf && mat->Mb){
 
 
-			  //	  PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside setupPhase function and dike function \n");   // NEW FOR DIKE, TESTTING PURPOSE
-			  
-	  ctx->dikeDxx = 2/3 * mat->dikeRHS;  // 2nd invariant strainrate component x
-	  ctx->dikeDyy = 1/3 * mat->dikeRHS;  // 2nd invariant strainrate component y
-	  ctx->dikeDzz = 1/3 * mat->dikeRHS;  // 2nd invariant strainrate component z
-	  } 
+	  ctx->dikeDxx = (2.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component x
+	  ctx->dikeDyy = (1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component y
+	  ctx->dikeDzz = (1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component z
+
+	  //      	  PetscPrintf(PETSC_COMM_WORLD, " dike Dxx, dike Dyy %f \n", ctx->dikeDxx, ctx->dikeDyy);   // NEW FOR DIKE, TESTTING PURPOSE
+	  
+       	} 
 
 	PetscFunctionReturn(0);
 }
@@ -406,10 +404,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 		PetscFunctionReturn(0);
 	}
 
-
-
-	//  PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside evConstEq function \n");   // NEW FOR DIKE, TESTTING PURPOSE   
-
 	
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -420,8 +414,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 			// setup phase parameters
 			ierr = setUpPhase(ctx, i); CHKERRQ(ierr);
 
-			//  PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside loop for getPhaseVisc, after setUpPhase \n");   // NEW FOR DIKE, TESTTING PURPOSE   
-			
 			// compute phase viscosities and strain rate partitioning
 			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
 
@@ -479,14 +471,9 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		tauII = taupl;
 		eta   = tauII/(2.0*DII);
 
-
-//PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside getPhaseVisc function, before all the additional plastic strains are removed \n");// NEW FOR DIKE, TESTTING PURPOSE
-		
 		// compute plastic strain rate
 		DIIpl = getConsEqRes(eta, ctx);
 
-//PetscPrintf(PETSC_COMM_WORLD, " JUST to see whehter inside getPhaseVisc function, after all the additional plastic strains are removed \n"); // NEW FOR DIKE, TESTTING PURPOSE
-		
 		// reset if plasticity is not active
 		if(DIIpl < 0.0)
 		{
@@ -578,8 +565,6 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
 
 
-	//PetscPrintf(PETSC_COMM_WORLD, " JUST to see whether inside getConsEqRes function \n");   // NEW FOR DIKE, TESTTING PURPOSE
-	
 	// compute stress
 	tauII = 2.0*eta*ctx->DII;
 
@@ -591,19 +576,22 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
 	DIIdike = ctx->dikeDxx*ctx->dikeDyy + ctx->dikeDyy*ctx->dikeDzz + ctx->dikeDzz*ctx->dikeDxx; // Strain due to Dike opening   //NEW FOR DIKE 
 
+	//	 PetscPrintf(PETSC_COMM_WORLD, " dikeDxx %f \n", ctx->dikeDxx);
+	//	PetscPrintf(PETSC_COMM_WORLD, " DIIdike %f \n", DIIdike);
+	
+	
 	// residual function (r)
 	// r < 0 if eta > solution (negative on overshoot)
 	// r > 0 if eta < solution (positive on undershoot)
 
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike); // substract additionally //NEW FOR DIKE
-
-	//	PetscPrintf(PETSC_COMM_WORLD, " JUST to see whether inside getConsEqRes function, after DII res is computed \n");   // NEW FOR DIKE, TESTTING PURPOSE
 	
-	DIIres= ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
-	PetscPrintf(PETSC_COMM_WORLD, " DII incl DII dike  %f \n", DIIres);
+	/* 	DIIres= ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
+	PetscPrintf(PETSC_COMM_WORLD, " DIIres incl DII dike removal %f \n", DIIres);
 
 	DIIres=  ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
-	PetscPrintf(PETSC_COMM_WORLD, " DII without DII dike %f \n", DIIres);
+	PetscPrintf(PETSC_COMM_WORLD, " DIIres without DII dike removal %f \n", DIIres);*/
+
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);  //  substract additionally //NEW FOR DIKE  
 	  
 }
 
