@@ -36,11 +36,11 @@ sys.path.append(os.path.join(os.environ['PWD'], 't21_Passive_Tracer'))
 sys.path.append(os.path.join(os.environ['PWD'], 't22_RidgeGeom'))
 sys.path.append(os.path.join(os.environ['PWD'], 't23_Permeable'))
 
-
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
     sys.path.append(os.path.join(os.environ['PWD'], 't3_SubductionMATLABinput'))
     sys.path.append(os.path.join(os.environ['PWD'], 't12_Temperature_diffusion'))
+    sys.path.append(os.path.join(os.environ['PWD'], 't24_Erosion_Sedimentation'))
 else:
     print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
 
@@ -69,6 +69,7 @@ import test_23_Permeable as Permeable
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1     as Sub1 # import test that requires MATLAB
   import test_12_TpD            as Diffusion
+  import test_24_Erosion_Sedimentation    as ES
 
 def makeLocalPathAbsolute(localRelPath) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
@@ -106,7 +107,8 @@ if os.environ.get('MATLAB') != None:
     registeredTests.append(Sub1.test_d());
     registeredTests.append( Diffusion.test_1D());
     registeredTests.append( Diffusion.test_halfspace());
-    
+    registeredTests.append(ES.test_a());
+    registeredTests.append(ES.test_b());
     
 
 # Run the tests:
