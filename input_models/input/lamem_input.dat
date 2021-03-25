@@ -118,18 +118,18 @@
 	surf_max_angle     = 45.0             # maximum angle with horizon (smoothed if larger)
 	surf_topo_file     = ./input/topo.dat # initial topography file (redundant)
     
-    erosion_model      = 2                # erosion model [0-none (default), 1-infinitely fast, 2-prescribed rate with given level]
-    er_num_phases      = 3                # number of erosion phases
-    er_time_delims     = 0.5   2.5        # erosion time delimiters (one less than number)
-    er_rates           = 0.2 0.1 0.2      # constant erosion rates in different time periods
-    er_levels          = 1   2   1        # levels above which we apply constant erosion rates in different time periods
+       erosion_model      = 2                # erosion model [0-none (default), 1-infinitely fast, 2-prescribed rate with given level]
+       er_num_phases      = 3                # number of erosion phases
+       er_time_delims     = 0.5   2.5        # erosion time delimiters (one less than number)
+       er_rates           = 0.2 0.1 0.2      # constant erosion rates in different time periods
+       er_levels          = 1   2   1        # levels above which we apply constant erosion rates in different time periods
     	
-    sediment_model     = 1                # sedimentation model [0-none (dafault), 1-prescribed rate with given level, 2-cont. margin]
-    sed_num_layers     = 3                # number of sediment layers
-    sed_time_delims    = 0.5   2.5        # sediment layers time delimiters (one less than number)
-    sed_rates          = 0.3 0.2 0.3      # sediment rates in different time periods
-    sed_levels         = -5  -2  -2       # levels below which we apply constant sediment rates in different time periods 
-    sed_phases         = 1   2   3        # sediment layers phase numbers in different time periods
+       sediment_model     = 1                # sedimentation model [0-none (dafault), 1-prescribed rate with given level, 2-cont. margin]
+       sed_num_layers     = 3                # number of sediment layers
+       sed_time_delims    = 0.5   2.5        # sediment layers time delimiters (one less than number)
+       sed_rates          = 0.3 0.2 0.3      # sediment rates in different time periods
+       sed_levels         = -5  -2  -2       # levels below which we apply constant sediment rates in different time periods 
+       sed_phases         = 1   2   3        # sediment layers phase numbers in different time periods
 
 	marginO            = 0.0 0.0          # lateral coordinates of continental margin - origin
 	marginE            = 10.0 10.0        # lateral coordinates of continental margin - 2nd point
