@@ -120,7 +120,7 @@
     
     erosion_model      = 2                # erosion model [0-none (default), 1-infinitely fast, 2-prescribed rate with given level]
     er_num_phases      = 3                # number of erosion phases
-    er_time_delims     = 0.5 2.5          # erosion time delimiters (one less than number)
+	er_time_delims     = 0.5 2.5          # erosion time delimiters (one less than number)
 	er_rates           = 0.2 0.1 0.2      # constant erosion rates in different time periods
 	er_levels          = 1   2   1        # levels above which we apply constant erosion rates in different time periods 
     
