@@ -349,8 +349,8 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 
 	  ctx->dikeDxx = (2.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component x
-	  ctx->dikeDyy = (1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component y
-	  ctx->dikeDzz = (1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component z
+	  ctx->dikeDyy = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component y
+	  ctx->dikeDzz = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component z
 
 	  //      	  PetscPrintf(PETSC_COMM_WORLD, " dike Dxx, dike Dyy %f \n", ctx->dikeDxx, ctx->dikeDyy);   // NEW FOR DIKE, TESTTING PURPOSE
 	  
@@ -574,10 +574,9 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	DIIdike = ctx->dikeDxx*ctx->dikeDyy + ctx->dikeDyy*ctx->dikeDzz + ctx->dikeDzz*ctx->dikeDxx; // Strain due to Dike opening   //NEW FOR DIKE 
-
-	//	 PetscPrintf(PETSC_COMM_WORLD, " dikeDxx %f \n", ctx->dikeDxx);
-	//	PetscPrintf(PETSC_COMM_WORLD, " DIIdike %f \n", DIIdike);
+	DIIdike = 0.5*(ctx->dikeDxx*ctx->dikeDxx+ctx->dikeDyy*ctx->dikeDyy+ctx->dikeDzz*ctx->dikeDzz); // NEW FOR DIKE VERSION  WHY sqrt??
+	
+			PetscPrintf(PETSC_COMM_WORLD, " DIIdike %f \n", DIIdike);
 	
 	
 	// residual function (r)
@@ -585,11 +584,11 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	// r > 0 if eta < solution (positive on undershoot)
 
 	
-	/* 	DIIres= ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
+	 	DIIres= ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
 	PetscPrintf(PETSC_COMM_WORLD, " DIIres incl DII dike removal %f \n", DIIres);
 
 	DIIres=  ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
-	PetscPrintf(PETSC_COMM_WORLD, " DIIres without DII dike removal %f \n", DIIres);*/
+	PetscPrintf(PETSC_COMM_WORLD, " DIIres without DII dike removal %f \n", DIIres);
 
 	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);  //  substract additionally //NEW FOR DIKE  
 	  
