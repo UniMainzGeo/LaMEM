@@ -80,7 +80,9 @@ struct FreeSurf
 	PetscScalar timeDelims[_max_sed_layers_-1];  // sediment layers time delimiters
 	PetscScalar timeDelimsEr[_max_er_phases_-1]; // sediment layers time delimiters
 	PetscScalar erRates[_max_er_phases_];        // erosion rates
+	PetscScalar erLevels[_max_er_phases_];       // erosion levels
 	PetscScalar sedRates[_max_sed_layers_  ];    // sedimentation rates
+	PetscScalar sedLevels[_max_sed_layers_];     // sedimentation levels
 	PetscScalar sedRates2nd[_max_sed_layers_  ]; // sedimentation rates
 	PetscInt    sedPhases[_max_sed_layers_  ];   // sediment layers phase numbers
 	PetscScalar marginO[2];                 // lateral coordinates of continental margin - origin
