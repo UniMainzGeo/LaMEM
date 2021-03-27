@@ -2091,12 +2091,12 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	  if (x_ridgeLeft == x_ridgeRight){
 
 	    if (v_ridge){                   // f v_ridge exists, use v_ridge not v_spread, NEW FOR DIKE, THICKER LITHOSPHERE
-	        PetscPrintf(PETSC_COMM_WORLD, "go for ridge velocity: %f \n", v_ridge);
+	      //	        PetscPrintf(PETSC_COMM_WORLD, "go for ridge velocity: %f \n", v_ridge);
 	      thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_ridge;
 	      thermalAgeRidge = max(thermalAgeRidge,age0);
 	    }
 	    else {
-	      PetscPrintf(PETSC_COMM_WORLD, "go for spread velocity: %f \n", v_spread);
+	      //	      PetscPrintf(PETSC_COMM_WORLD, "go for spread velocity: %f \n", v_spread);
 	      thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
 	      thermalAgeRidge = max(thermalAgeRidge,age0);
 	    }

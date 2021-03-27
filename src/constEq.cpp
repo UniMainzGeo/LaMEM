@@ -196,9 +196,9 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctx->A_prl = 0.0; // Peierls constant
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
-	ctx->dikeDxx = 0.0; // dike DII x, NEW FOR DIKE
-	ctx->dikeDyy = 0.0; // dike DII y, NEW FOR DIKE  
-	ctx->dikeDzz = 0.0; // dike DII z, NEW FOR DIKE  
+	/*	ctx->dikeDxx = 0.0; // deviatoric strain rate component due to added dike divergence x, NEW FOR DIKE
+	ctx->dikeDyy = 0.0; // as above for y, NEW FOR DIKE  
+	ctx->dikeDzz = 0.0; // as above for z, NEW FOR DIKE   */
 	
 	// MELT FRACTION
 	mfd = 1.0;
@@ -347,10 +347,9 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	// FOR STRAIN RATE REMOVAL DUE TO DIKE      //NEW FOR DIKE
 			if(mat->Mf && mat->Mb){
 
-
 	  ctx->dikeDxx = (2.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component x
 	  ctx->dikeDyy = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component y
-	  ctx->dikeDzz = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component z
+	  ctx->dikeDzz = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component z     // this is going to change
 
 	  //      	  PetscPrintf(PETSC_COMM_WORLD, " dike Dxx, dike Dyy %f \n", ctx->dikeDxx, ctx->dikeDyy);   // NEW FOR DIKE, TESTTING PURPOSE
 	  
@@ -429,7 +428,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 		ctx->DIIdis /= ctx->DII;
 		ctx->DIIprl /= ctx->DII;
 		ctx->DIIpl  /= ctx->DII;
-		//		ctx->DIIdike/= ctx->DII; // NOT NECESSARY BECASUE AFTER STRAIN REMOVAL
 	}
 
 	PetscFunctionReturn(0);
@@ -444,7 +442,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	Controls    *ctrl;
 	PetscInt    it, conv;
 	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
-	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat; // DIIdike;  // NEW FOR DIKE  PROBABLY NOT NECESSARY AND CAN BE REOMVED
+	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat, DIIdike;  // NEW FOR DIKE  PROBABLY NOT NECESSARY AND CAN BE REOMVED
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
 
 	
@@ -549,9 +547,9 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	ctx->DIIdis += phRat*DIIdis; // dislocation creep strain rate
 	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
 	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
-	// ctx->DIIdike += phRat*DIIdike; // strain rate due to dike // NOT NECESSARY BECASUE AFTER STRAIN REMOVAL
 	ctx->yield  += phRat*taupl;  // plastic yield stress
-
+	// add DIIdike here
+	
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -574,9 +572,9 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	DIIdike = 0.5*(ctx->dikeDxx*ctx->dikeDxx+ctx->dikeDyy*ctx->dikeDyy+ctx->dikeDzz*ctx->dikeDzz); // NEW FOR DIKE VERSION  WHY sqrt??
+	//	DIIdike = sqrt(0.5*(ctx->dikeDxx*ctx->dikeDxx+ctx->dikeDyy*ctx->dikeDyy+ctx->dikeDzz*ctx->dikeDzz)); // NEW FOR DIKE VERSION 
 	
-			PetscPrintf(PETSC_COMM_WORLD, " DIIdike %f \n", DIIdike);
+	//		PetscPrintf(PETSC_COMM_WORLD, " DIIdike %f \n", DIIdike);
 	
 	
 	// residual function (r)
@@ -584,13 +582,13 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	// r > 0 if eta < solution (positive on undershoot)
 
 	
-	 	DIIres= ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
+	/*	DIIres= ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
 	PetscPrintf(PETSC_COMM_WORLD, " DIIres incl DII dike removal %f \n", DIIres);
 
 	DIIres=  ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
-	PetscPrintf(PETSC_COMM_WORLD, " DIIres without DII dike removal %f \n", DIIres);
+	PetscPrintf(PETSC_COMM_WORLD, " DIIres without DII dike removal %f \n", DIIres);*/
 
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);  //  substract additionally //NEW FOR DIKE  
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl); // + DIIdike);  //  substract additionally //NEW FOR DIKE  
 	  
 }
 
@@ -665,14 +663,13 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 {
 	// evaluate volumetric constitutive equations in control volume
 	Controls    *ctrl; 
-	//	Scaling     *scal; // NEW for dike, only for testing printing the dike rhs
 	PData       *Pd;
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	Ph_trans_t  *PhaseTrans;   // NEW for dike
 	PetscInt     i, numPhases;
 	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
-	PetscScalar  v_spread, M, left, right; //, dikeRHS_test;  // NEW for dike
+	PetscScalar  v_spread, M, left, right; // NEW FOR DIKE
 	BCCtx        *bc;     // NEW for dike
 
 	PetscErrorCode ierr;
@@ -689,9 +686,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	dt        = ctx->dt;
 	p         = ctx->p;
 	T         = ctx->T;
-       	bc        = ctx->bc;          // for dike
-	PhaseTrans = ctx->PhaseTrans; // for dike
-	//	scal      = ctx->scal;        // NEW for dike, only for testing printing the dike rhs
+       	bc        = ctx->bc;          // NEW for dike
+	PhaseTrans = ctx->PhaseTrans; // NEW for dike
 	
 	p         = p+ctrl->pShift;
 
@@ -702,8 +698,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	Kavg           = 0.0;
 	svBulk->mf     = 0.0;
 	svBulk->rho_pf = 0.0;
-	svBulk->dikeRHS = 0.0;  // for dike
-	//	dikeRHS_test   =0.0;  // for testing dike rhs
+	svBulk->dikeRHS = 0.0;  // NEW for dike
+
 	
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -790,7 +786,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			}
 
 			// dike
-			if(mat->Mb && mat->Mf)
+			if(mat->Mb && mat->Mf)    // NEW for dike
 			{
 			  if(mat->Mb == mat->Mf)
 			    {
@@ -800,7 +796,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
 				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s 
-				//					PetscPrintf(PETSC_COMM_WORLD, "in volCell: dikeRHS %f \n", mat->dikeRHS*scal->strain_rate);
 			    }
 			  /*  else
 
@@ -830,8 +825,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
 		       	svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // NEW for dike
-			//			dikeRHS_test += phRat[i]*mat->dikeRHS*scal->strain_rate;   // NEW for dike, only for testing printing the dike rhs
-			//						PetscPrintf(PETSC_COMM_WORLD, "in volCell: svBulk dikeRHS %e \n", dikeRHS_test);
 		}
 	}
 
@@ -904,6 +897,13 @@ PetscErrorCode cellConstEq(
 	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
 	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
 
+	/*	if(ctrl->actDike){
+	// compute contribution of dike divergence to strain rate tensor
+	  dikeDxx = svCell->dxx - (2.0/3.0)*svBulk->dikeRHS;  //  
+	  dikeDyy = svCell->dyy + (1.0/3.0)*svBulk->dikeRHS;  //
+	  dikeDzz = svCell->dzz + (1.0/3.0)*svBulk->dikeRHS;  //         
+	  } */
+	  
 	// compute shear heating term contribution
 	svDev->Hr =
 		txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
@@ -926,16 +926,15 @@ PetscErrorCode cellConstEq(
 	svCell->DIIdis = ctx->DIIdis; // relative dislocation creep strain rate
 	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
-	//	svCell->DIIdike = ctx->DIIdike; // strain rate due to dike   // NEW FOR DIKE
+	//	svCell->DIIdike = ctx->DII-ctx->DIIdikeComp; // strain rate due to dike   // NEW FOR DIKE
 	
 	// compute volumetric residual
 
-	if(ctrl->actExp && ctrl->actDike)    // new option for dike
+	if(ctrl->actExp && ctrl->actDike)    // NEW option for dike
           {
             gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + svBulk->dikeRHS;  // [1/s]
-	    //PetscPrintf(PETSC_COMM_WORLD, "in gres: gres dike %f \n", gres);
           }
-	else if(ctrl->actDike)
+	else if(ctrl->actDike)    // NEW option for dike without thermal expansion
           {
              gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->dikeRHS;  // [1/s] ;
           }

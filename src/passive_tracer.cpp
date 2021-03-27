@@ -425,7 +425,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	Material_t      *mat;
 	PData           *Pd;
 	PetscInt        sx, sy, sz, nx, ny,nz,rank;
-	PetscInt        jj, I, J, K, II, JJ, KK, AirPhase, num_part,ID, n, ii, numActTracers ;
+	PetscInt        jj, I, J, K, II, JJ, KK, AirPhase, num_part,ID, n, ii, numActTracers ; 
 	PetscScalar     ex,bx,ey,by,ez,bz;
 	PetscScalar     *ncx, *ncy, *ncz;
 	PetscScalar     *ccx, *ccy, *ccz;
@@ -600,7 +600,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 				ierr = Check_advection_condition(actx, jj, ID,xp,yp,zp,Pr[jj],T[jj],mf_ptr[jj]); CHKERRQ(ierr);
 			}
 
-
 			// override temperature of air phase
 			if(AirPhase != -1 && phase[jj] == AirPhase) T[jj] = Ttop;
 
@@ -772,7 +771,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	FreeSurf        *surf;
 	Vec             vphase;
 	PetscInt        sx, sy, sz;
-	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid; // DikePhaseID;
+	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid; 
 	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *IX,bz,ez,by,ey,bx,ex,Xm[3];
 	PetscScalar *Xp, *Yp,*Zp,*phaseptr;
 	spair           d;
@@ -790,7 +789,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	fs        = actx->fs;
 	L         = fs->dsz.rank;
 	AirPhase  = surf->AirPhase;
-	//	DikePhaseID = surf->DikePhaseID;  // NEW for dike phase in the sticky air layer
 
 	// starting indices & number of cells
 	sx = fs->dsx.pstart;
@@ -831,8 +829,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 		zp = Zp[jj];;
 		// get consecutive index of the host cell
 
-
-
 		if(xp >= bx && xp<ex && yp >= by && yp< ey && zp >= bz && zp< ez)
 		{
 
@@ -847,7 +843,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
 
 			// check whether rock marker is above the free surface
-			//if(phaseptr[jj] !=DikePhaseID && phaseptr[jj] != AirPhase && zp > topo) 
       			if(phaseptr[jj] != AirPhase && zp > topo) 
 			{
 				// erosion (physical or numerical) -> rock turns into air
