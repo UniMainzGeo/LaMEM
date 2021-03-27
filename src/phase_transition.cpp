@@ -329,6 +329,7 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
 
 	}
+	
 	else{
 		  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType [none; constant; linear; halfspace]");
 	}
@@ -383,6 +384,76 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 		ph->T0_clapeyron[it]        =   (ph->T0_clapeyron[it]+scal->Tshift)/ (scal->temperature);   // [Celcius]
 	}
 	PetscFunctionReturn(0);
+
+}
+
+  ierr = getStringParam(fb, _REQUIRED_, "Parameter_transition",   Parameter, "none");  CHKERRQ(ierr);
+        if(!strcmp(Parameter, "T"))
+        {
+                ph->Parameter_transition = _T_;
+	}
+
+//------------------------------------------------------------------------------------------------------------//                                                                     
+#undef __FUNCT__
+#define __FUNCT__ "Check_AirPhaseRatio_Box_Transition()"
+PetscErrorCode  Check_AirPhaseRatio_Box_Transition(Material_t *mat, ConstEqCtx *ctx, SolVarCell *svCell) //those ones only if new box feature: Ph_trans_t *ph, DBMat *dbm, FB *fb
+{
+     /* Scaling      *scal;
+        char         Parameter[_str_len_];
+        PetscScalar  Box[6]; */
+        PetscInt     i;  //jj; ??
+	PetscScalar *phRat;
+//     	  FDSTAG      *fs;  // likely not needed
+        JacRes      *jr;
+
+        // access context                                                                                                                                                           
+	AirPhase  = jr->surf->AirPhase;
+//	numPhases = ctx->numPhases;   // likely not needed 
+	phRat     = ctx->phRat;
+//        fs        = jr->fs;         // likely not needed
+        ctrl      = ctx->ctrl;
+
+        PetscErrorCode ierr;
+        PetscFunctionBegin;
+
+	//        scal = dbm -> scal;
+
+	/* // get phase box bounds, only if a new feature box, not the best option because not really calle every time, just phase and temperature checked
+	   ierr = getScalarParam(fb, _REQUIRED_, "PT_Box_Bounds",           ph->bounds,             6, scal->length);                       CHKERRQ(ierr);
+
+	   ph->PhaseInside[0] = -1;        // default
+
+	   for (i=0; i<5; i++){ Box[i] = ph->bounds[i]*scal->length; }             // dimensional units
+
+	   PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Box \n", (LLD)(ph->ID));
+	   PetscPrintf(PETSC_COMM_WORLD,"   Box Bounds :  [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length); */
+
+	if(ctrl->actDike) {
+
+	  // loop on all cells: access air phase ratio ( FROM FreeSurfGetAirPhaseRatio() )
+
+	  START_STD_LOOP
+	    {
+	      // access phase ratio array                                                                                                                      
+	      phRat = jr->svCell[iter++].phRat;
+      
+	      if(phRat[AirPhase] > 0.5) { 
+		// turn dike off: 
+		mat->Mf = 0; 
+		mat->Mb = 0;
+
+	    /*	// get reference to material parameters table                                                                                                                
+                mat = &phases[Airphase];
+			
+		mat->rho = rho(phase air);   // NEED TO FIGURE OUT HOW TO DO THIS PROPERLY, IS IT NECESSARY? we see that creep viscosity and density are re-set to dike values, too
+		mat->T = T(phase air);
+		mat->eta = eta(phase air) ; */
+	      }
+
+	    }
+	  END_STD_LOOP
+
+	}
 
 }
 
@@ -605,6 +676,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	}
 	ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
 
+ //	ierr= Check_AirPhaseRatio_Box_Transition(ctx, svCell); CHKERRQ(ierr);    // NEW FOR DIKE, checking the airphase ratio,
+      	                                                                                       // done here because the markers are already interpolated to cell values
+
+	
     PrintDone(t);
 
 	PetscFunctionReturn(0);
