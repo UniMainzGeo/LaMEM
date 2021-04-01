@@ -90,6 +90,7 @@
 #include "constEq.h"
 #include "parsing.h"
 #include "objFunct.h"
+#include "surf.h"
 //-----------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhaseTr"
@@ -387,46 +388,35 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 }
 
-  ierr = getStringParam(fb, _REQUIRED_, "Parameter_transition",   Parameter, "none");  CHKERRQ(ierr);
+/*  ierr = getStringParam(fb, _REQUIRED_, "Parameter_transition",   Parameter, "none");  CHKERRQ(ierr);
         if(!strcmp(Parameter, "T"))
         {
                 ph->Parameter_transition = _T_;
-	}
+		}*/    // WAS THIS HERE OR DID I ACCIDENTALLY COPY THIS HERE?
 
 //------------------------------------------------------------------------------------------------------------//                                                                     
-#undef __FUNCT__
+/* #undef __FUNCT__
 #define __FUNCT__ "Check_AirPhaseRatio_Box_Transition()"
-PetscErrorCode  Check_AirPhaseRatio_Box_Transition(Material_t *mat, ConstEqCtx *ctx, SolVarCell *svCell) //those ones only if new box feature: Ph_trans_t *ph, DBMat *dbm, FB *fb
+PetscErrorCode Check_AirPhaseRatio_Box_Transition(Material_t *mat, Controls ctrl, SolVarCell *svCell) //those ones only if new box feature: Ph_trans_t *ph, DBMat *dbm, FB *fb
 {
-     /* Scaling      *scal;
-        char         Parameter[_str_len_];
-        PetscScalar  Box[6]; */
-        PetscInt     i;  //jj; ??
-	PetscScalar *phRat;
+        PetscInt     k, j, i, nx, ny, nz, sx, sy, sz, iter;
+        PetscInt     AirPhase;
+	PetscScalar  *phRat;
 //     	  FDSTAG      *fs;  // likely not needed
-        JacRes      *jr;
-
+        JacRes       *jr;
+	Controls     ctrl;   // how to declare
+	SolVarCell   *svCell;   // how to declare
+	
         // access context                                                                                                                                                           
 	AirPhase  = jr->surf->AirPhase;
-//	numPhases = ctx->numPhases;   // likely not needed 
 	phRat     = ctx->phRat;
-//        fs        = jr->fs;         // likely not needed
-        ctrl      = ctx->ctrl;
+//        ctrl      = ctx->ctrl;
 
-        PetscErrorCode ierr;
+	// initialize
+	AirPhase = 0;
+	iter      = 0;
+	
         PetscFunctionBegin;
-
-	//        scal = dbm -> scal;
-
-	/* // get phase box bounds, only if a new feature box, not the best option because not really calle every time, just phase and temperature checked
-	   ierr = getScalarParam(fb, _REQUIRED_, "PT_Box_Bounds",           ph->bounds,             6, scal->length);                       CHKERRQ(ierr);
-
-	   ph->PhaseInside[0] = -1;        // default
-
-	   for (i=0; i<5; i++){ Box[i] = ph->bounds[i]*scal->length; }             // dimensional units
-
-	   PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Box \n", (LLD)(ph->ID));
-	   PetscPrintf(PETSC_COMM_WORLD,"   Box Bounds :  [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length); */
 
 	if(ctrl->actDike) {
 
@@ -439,15 +429,13 @@ PetscErrorCode  Check_AirPhaseRatio_Box_Transition(Material_t *mat, ConstEqCtx *
       
 	      if(phRat[AirPhase] > 0.5) { 
 		// turn dike off: 
+
+		// get reference to material parameters table 
+		//mat = &phases[i];
+
 		mat->Mf = 0; 
 		mat->Mb = 0;
 
-	    /*	// get reference to material parameters table                                                                                                                
-                mat = &phases[Airphase];
-			
-		mat->rho = rho(phase air);   // NEED TO FIGURE OUT HOW TO DO THIS PROPERLY, IS IT NECESSARY? we see that creep viscosity and density are re-set to dike values, too
-		mat->T = T(phase air);
-		mat->eta = eta(phase air) ; */
 	      }
 
 	    }
@@ -455,7 +443,7 @@ PetscErrorCode  Check_AirPhaseRatio_Box_Transition(Material_t *mat, ConstEqCtx *
 
 	}
 
-}
+	} */
 
 // ---------------------------------------------------------------------------------------------------------- //
 #undef __FUNCT__
@@ -615,8 +603,9 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			
 			num_phas    =   PhaseTrans->number_phases;
 			if ( PhaseTrans->Type == _Box_ ){
-				below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
-				above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
+			  below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
+			  // phase inside check, if the phase doesn't belong there it returns n=below=-1 and goes to the next if condition loop
+			  above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);   // phase outside check
 			}
 			else {
 				below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas);
@@ -625,13 +614,13 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 			if  ( (below >= 0) || (above >= 0) )
 			{
-				PH2 = P->phase;
+				PH2 = P->phase;  
 				PH1 = P->phase;
                  // the current phase is indeed involved in a phase transition
 				if      (   below>=0    )
 				{
 					if ( PhaseTrans->Type == _Box_ ){
-						PH1 = PhaseTrans->PhaseInside[below];
+					  PH1 = PhaseTrans->PhaseInside[below];    // PH1 is always inside the box
 						PH2 = PhaseTrans->PhaseOutside[below];
 					}
 					else{
@@ -642,7 +631,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				else if (   above >=0   )
 				{
 					if ( PhaseTrans->Type == _Box_ ){
-						PH1 = PhaseTrans->PhaseInside[above];
+						PH1 = PhaseTrans->PhaseInside[above];    
 						PH2 = PhaseTrans->PhaseOutside[above];
 					}
 					else{
@@ -652,8 +641,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				}
 
 				ph = P->phase;
-				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T);
-
+				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, jr);
 
 				if ( (PhaseTrans->Type == _Box_) ){
 					if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;				// do not change the phase
@@ -676,9 +664,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	}
 	ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
 
- //	ierr= Check_AirPhaseRatio_Box_Transition(ctx, svCell); CHKERRQ(ierr);    // NEW FOR DIKE, checking the airphase ratio,
-      	                                                                                       // done here because the markers are already interpolated to cell values
-
 	
     PrintDone(t);
 
@@ -686,24 +671,35 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------------------
-PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out )
+PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, PetscInt PH2, Controls ctrl, Scaling *scal, SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
 {
-	PetscInt 	ph;
+
+        PetscInt    ph;
 	PetscScalar T;
+	//      JacRes *jr;	
+	//	ConstEqCtx  *ctx;
+	// access context   // NEW for the dike box option where air phase is not turned into dike phase
+	//	ctrl      = ctx->ctrl;  when to use "Controls *ctrl" and when "Controls ctrl" ??
+	// When to use ctrl->actDike and when ctrl.actDike?
 
 	ph = P->phase;
 	T  = P->T;
-	if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
+
+	if (PhaseTrans->Type==_Box_ && ctrl.actDike)
+	{
+	  Check_DikeBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);            // compute phase & T within Box of dike, ignore airphase particles        
+        }
+	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
 		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl, svCell);
 	}
 	else if(PhaseTrans->Type==_Clapeyron_)
 	{
-		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl);
+	  ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl);
 	}
-	else if(PhaseTrans->Type==_Box_)
+	else if(PhaseTrans->Type==_Box_)                                      
 	{
-		Check_Box_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T);		// compute phase & T within Box
+                Check_Box_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T);                // compute phase & T within Box
 	}
 	
 	*ph_out = ph;
@@ -784,7 +780,7 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 	T  = P->T;
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
 		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
-		 (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) 	){
+	     (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5])    ){  
 	  
 		// We are within the box
 		ph = PH1;
@@ -835,6 +831,73 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 
 	PetscFunctionReturn(0);
 }
+//------------------------------------------------------------------------------------------------------------//                                                          
+PetscInt Check_DikeBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
+{
+        PetscInt     ph, AirPhase;
+        PetscScalar  T;
+	//	JacRes      *jr;   // how to initialize jr ?
+
+	AirPhase=0.0;
+	//	 PetscPrintf(PETSC_COMM_WORLD, "initialized airphase: %g \n", AirPhase);
+	AirPhase  = jr->surf->AirPhase;
+	//	PetscPrintf(PETSC_COMM_WORLD, "pointed airphase: %g \n", AirPhase);
+        ph = P->phase;
+        T  = P->T;
+	
+        if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
+                 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
+             (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase    ){           // NEW condition: Dike is activated
+
+                // We are within the box
+	        ph = PH1;
+
+                // Set the temperature structure                                                                 
+                if(PhaseTrans->TempType == 0){
+                        // do nothing                                                                                                                                    
+                }
+                else if (PhaseTrans->TempType == 1){
+                        // constant T inside                                                                      
+                        T = PhaseTrans->cstTemp;
+                }
+                else if (PhaseTrans->TempType == 2){
+                        // linear temperature profile
+                        PetscScalar zTop, zBot, topTemp, botTemp, d;
+                        zTop    =       PhaseTrans->bounds[5];  // top    of domain                                                                                      
+                        zBot    =       PhaseTrans->bounds[4];  // bottom of domain                                                                                      
+                        topTemp =       PhaseTrans->topTemp;    // T @ top                                                                                               
+                        botTemp =       PhaseTrans->botTemp;    // T @ bottom                                                                                           
+
+                        d               =       (P->X[2]-zTop)/(zTop-zBot);             // normalized distance to top                                                    
+                        T               =       d*(topTemp-botTemp) + topTemp;  // temperature profile                                                                   
+                }
+		else if (PhaseTrans->TempType == 3){
+                        // halfspace cooling T inside                                                                                                                     
+                        PetscScalar zTop, topTemp, botTemp, T_age, d, kappa;
+                        zTop    =       PhaseTrans->bounds[5];  // top    of domain                                                                                      
+                        topTemp =       PhaseTrans->topTemp;    // T @ top
+			botTemp =       PhaseTrans->botTemp;    // T @ bottom                                                                                           
+                        T_age   =       PhaseTrans->thermalAge; // thermal age                                                        
+
+                        kappa   =       1e-6/( (scal->length_si)*(scal->length_si)/(scal->time_si));
+
+                        d               =       zTop - P->X[2];
+                        T               =       (botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
+                }
+        }
+        else{
+	  
+	  // Outside; keep T
+	  ph = PH2;
+	}
+
+	// return
+	*ph_out =       ph;
+	*T_out  =       T;
+
+	PetscFunctionReturn(0);
+}
+
 //------------------------------------------------------------------------------------------------------------//
 PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl)
 {
