@@ -1132,6 +1132,16 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		YY = dyy[k][j][i];
 		ZZ = dzz[k][j][i];
 
+
+		// should maybe compute dike contribution of strain rate here
+		// dikeDxx = (2.0/3.0) * mat->dikeRHS;
+		// dikeDyy = - (1.0/3.0) * mat->dikeRHS;    
+		// dikeDzz = - (1.0/3.0) * mat->dikeRHS;    
+		// XXnew = XX - dikeDxx;
+		// YYnew = YY - dikeDyy;
+		// ZZnew = ZZ - dikeDzz;
+
+		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];
 		XY2 = dxy[k][j+1][i];
@@ -1158,6 +1168,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		DII = sqrt(J2Inv);
 
+		// DikeDII = DII - sqrt(0.5*(XXnew^2 + YYnew^2 + ZZnew^2)) --> pass this to constEq.cpp getConsEqRes() to be exact, otherwise use the DikeDII as it is coded now
+		
 		//=======================
 		// CONSTITUTIVE EQUATIONS
 		//=======================

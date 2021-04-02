@@ -196,9 +196,9 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctx->A_prl = 0.0; // Peierls constant
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
-	/*	ctx->dikeDxx = 0.0; // deviatoric strain rate component due to added dike divergence x, NEW FOR DIKE
+       	ctx->dikeDxx = 0.0; // deviatoric strain rate component due to added dike divergence x, NEW FOR DIKE
 	ctx->dikeDyy = 0.0; // as above for y, NEW FOR DIKE  
-	ctx->dikeDzz = 0.0; // as above for z, NEW FOR DIKE   */
+	ctx->dikeDzz = 0.0; // as above for z, NEW FOR DIKE   
 	
 	// MELT FRACTION
 	mfd = 1.0;
@@ -345,13 +345,12 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
 
 	// FOR STRAIN RATE REMOVAL DUE TO DIKE      //NEW FOR DIKE
-			if(mat->Mf && mat->Mb){
-
+	if(mat->Mb && mat->Mf){
 	  ctx->dikeDxx = (2.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component x
 	  ctx->dikeDyy = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component y
-	  ctx->dikeDzz = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component z     // this is going to change
+	  ctx->dikeDzz = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component z // these could be in JacResGetEffStrainrate()
 
-	  //      	  PetscPrintf(PETSC_COMM_WORLD, " dike Dxx, dike Dyy %f \n", ctx->dikeDxx, ctx->dikeDyy);   // NEW FOR DIKE, TESTTING PURPOSE
+	  PetscPrintf(PETSC_COMM_WORLD, " dike Dxx %f \n", ctx->dikeDxx);   // NEW FOR DIKE, TESTTING PURPOSE
 	  
        	} 
 
@@ -388,7 +387,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	ctx->DIIprl = 0.0; // Peierls creep strain rate
 	ctx->DIIpl  = 0.0; // plastic strain rate
 	ctx->yield  = 0.0; // yield stress
-	ctx->DIIdike = 0.0; // strain rate due to dike //NEW FOR DIKE, MIGHT BE ABLE TO REMOVE FROM HERE
+	//	ctx->DIIdike = 0.0; // strain rate due to dike //NEW FOR DIKE, MIGHT BE ABLE TO REMOVE FROM HERE
 	
 	// zero out stabilization viscosity
 	svDev->eta_st = 0.0;
@@ -442,7 +441,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	Controls    *ctrl;
 	PetscInt    it, conv;
 	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
-	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat, DIIdike;  // NEW FOR DIKE  PROBABLY NOT NECESSARY AND CAN BE REOMVED
+	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat; //, DIIdike;  // NEW FOR DIKE  PROBABLY NOT NECESSARY AND CAN BE REOMVED
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
 
 	
@@ -548,7 +547,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
 	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
 	ctx->yield  += phRat*taupl;  // plastic yield stress
-	// add DIIdike here
+	// add DIIdike here ???? PROBABLY NOT NECESSARY
 	
 	PetscFunctionReturn(0);
 }
@@ -572,23 +571,21 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	//	DIIdike = sqrt(0.5*(ctx->dikeDxx*ctx->dikeDxx+ctx->dikeDyy*ctx->dikeDyy+ctx->dikeDzz*ctx->dikeDzz)); // NEW FOR DIKE VERSION 
+       	DIIdike = sqrt(0.5*(ctx->dikeDxx*ctx->dikeDxx+ctx->dikeDyy*ctx->dikeDyy+ctx->dikeDzz*ctx->dikeDzz)); // NEW FOR DIKE VERSION 
 	
-	//		PetscPrintf(PETSC_COMM_WORLD, " DIIdike %f \n", DIIdike);
-	
-	
+		
 	// residual function (r)
 	// r < 0 if eta > solution (negative on overshoot)
 	// r > 0 if eta < solution (positive on undershoot)
 
 	
-	/*	DIIres= ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
+       	DIIres = ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
 	PetscPrintf(PETSC_COMM_WORLD, " DIIres incl DII dike removal %f \n", DIIres);
 
-	DIIres=  ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
-	PetscPrintf(PETSC_COMM_WORLD, " DIIres without DII dike removal %f \n", DIIres);*/
+	DIIres = ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
+	PetscPrintf(PETSC_COMM_WORLD, " DIIres without DII dike removal %f \n", DIIres);
 
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl); // + DIIdike);  //  substract additionally //NEW FOR DIKE  
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);  //  substract additionally //NEW FOR DIKE  
 	  
 }
 
