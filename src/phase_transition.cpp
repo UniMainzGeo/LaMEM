@@ -673,11 +673,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 //----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, PetscInt PH2, Controls ctrl, Scaling *scal, SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
 {
-
         PetscInt    ph;
 	PetscScalar T;
-	//      JacRes *jr;	
-	//	ConstEqCtx  *ctx;
 	// access context   // NEW for the dike box option where air phase is not turned into dike phase
 	//	ctrl      = ctx->ctrl;  when to use "Controls *ctrl" and when "Controls ctrl" ??
 	// When to use ctrl->actDike and when ctrl.actDike?
@@ -836,7 +833,6 @@ PetscInt Check_DikeBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscIn
 {
         PetscInt     ph, AirPhase;
         PetscScalar  T;
-	//	JacRes      *jr;   // how to initialize jr ?
 
 	AirPhase=0.0;
 	//	 PetscPrintf(PETSC_COMM_WORLD, "initialized airphase: %g \n", AirPhase);
@@ -847,7 +843,7 @@ PetscInt Check_DikeBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscIn
 	
         if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
                  (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
-             (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase    ){           // NEW condition: Dike is activated
+             (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase    ){           // NEW condition: no airPhase particles are used
 
                 // We are within the box
 	        ph = PH1;
