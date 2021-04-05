@@ -127,7 +127,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	if(LoadPhaseDiagrams)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Phase Diagrams:  \n");
-		PetscPrintf(PETSC_COMM_WORLD,"   Diagrams employed for phases  : ");
+		PetscPrintf(PETSC_COMM_WORLD,"   Diagrams employed for phases  : \n ");
 		
 	}	
 
@@ -135,7 +135,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	{
 		if(actx->jr->dbm->phases[i].pdAct)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"%i, ", i);
+			PetscPrintf(PETSC_COMM_WORLD,"        %i:  ", i);
 
 			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
 		}
@@ -506,7 +506,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	BCCtx       *bc;
 	Marker      *P;
 	PetscInt     imark, nummark;
-	PetscScalar  dTdz, zbot, ztop, zp;
+	PetscScalar  dTdz, zbot, ztop, zp, Tbot;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -518,6 +518,9 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	// return if not set
 	if(!bc->initTemp) PetscFunctionReturn(0);
 
+	// get time-dependent Tbot
+	ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		
+	
 	// get grid coordinate bounds in z-direction
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
 
@@ -528,7 +531,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	}
 
 	// get temperature gradient in z-direction
-	dTdz = (bc->Ttop - bc->Tbot)/(ztop - zbot);
+	dTdz = (bc->Ttop - Tbot)/(ztop - zbot);
 
 	// set temperature based on temperature gradient
 	for(imark = 0; imark < nummark; imark++)
@@ -541,7 +544,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 
 		// set temperature
 		if(zp > ztop) P->T = bc->Ttop;
-		else          P->T = bc->Tbot + dTdz*(zp - zbot);
+		else          P->T = Tbot + dTdz*(zp - zbot);
 	}
 
 	PetscFunctionReturn(ierr);
@@ -1084,26 +1087,32 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	  {
-
+		PetscScalar v_spread, maxAge;  
 	    fb->ID  = jj;                                                               // allows command-line parsing
 	    GET_GEOM(ridge, geom, ngeom, _max_geom_);
 	    
-	    ridge->setTemp = 0;       //default is no
-	    ierr = getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID);    CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen);         CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen);     CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen);     CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime);          CHKERRQ(ierr);
-            ierr = getScalarParam(fb, _OPTIONAL_, "v_ridge",        &ridge->v_ridge, 1, chVel); CHKERRQ(ierr);  // NEW FOR DIKE, THICKER LITHOSPHERE
+	    ridge->setTemp 	= 0;       	//	default is no
+		v_spread   	   	= 0.0;
+		maxAge 			= 1e20;		// max. thermal age a plate can have 		
+	    ierr = getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID);    					CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen);         					CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen);     					CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen);     					CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime);          					CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _OPTIONAL_, "v_spread",       &v_spread,    1, actx->jr->scal->velocity);         CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _OPTIONAL_, "maxAge",       	&maxAge,      1, actx->jr->scal->time);      		CHKERRQ(ierr);
+            ierr = getScalarParam(fb, _OPTIONAL_, "v_ridge",        &ridge->v_ridge, 1, chVel); CHKERRQ(ierr);  // NEW FOR DIKE, THICKER LITHOSPHERE   
+		
+	    ridge->bot 		= ridge->bounds[4];
+	    ridge->top 		= ridge->bounds[5];
+	    ridge->maxAge 	= maxAge;
 
-	    PetscPrintf(PETSC_COMM_WORLD, "ridge velocity: %f \n", ridge->v_ridge*actx->jr->scal->velocity);
-	    
-	    ridge->bot = ridge->bounds[4];
-	    ridge->top = ridge->bounds[5];
-
-	    ridge->v_spread=PetscAbs(actx->jr->bc->velin);
-
-	    PetscPrintf(PETSC_COMM_WORLD, "spread velocity: %f \n", ridge->v_spread*actx->jr->scal->velocity);
+		if (v_spread>0){
+			ridge->v_spread=v_spread;		
+		}
+		else{
+	    	ridge->v_spread=PetscAbs(actx->jr->bc->velin);
+		}
 	    
 	    // Temperature options (actually required to be setTemp==4)
 	    ierr = getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL );    CHKERRQ(ierr);
@@ -1777,6 +1786,10 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	
 	n = pd->nT[i_pd]*pd->nP[i_pd]; // number of points
 
+	// Print info:
+	PetscPrintf(PETSC_COMM_WORLD," P range=[%1.1f-%1.1f] kbar, T range = [%1.1f-%1.1f] K \n", pd->minP[i_pd]*scal->stress_si/1e8, pd->maxP[i_pd]*scal->stress_si/1e8, pd->minT[i_pd]*scal->temperature, pd->maxT[i_pd]*scal->temperature);
+
+
 	/*
 	Check what data is available:
 	1 column = rho fluid [kg/m3]
@@ -1835,7 +1848,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	fclose(fp);
 
 	// Uncomment to debug values
-	// PetscPrintf(PETSC_COMM_WORLD,"RHO = %.20f ; scal = %lf\n 2 = %lf\n  3 = %lf\n 3m = %lf\n  4 = %.20f ; scal = %lf\n 5 = %lf\n 6 = %lf\n 6m = %lf\n n = %i ; scal = %lf\n",pd->rho_v[20000][0], scal.temperature,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd], scal.stress_si,pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],n, scal.density);
+	//PetscPrintf(PETSC_COMM_WORLD,"RHO = %.20f ; scal = %lf\n 2 = %lf\n  3 = %lf\n 3m = %lf\n  4 = %.20f ; scal = %lf\n 5 = %lf\n 6 = %lf\n 6m = %lf\n n = %i ; scal = %lf\n",pd->rho_v[2][0], scal.temperature,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd], scal.stress_si,pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],n);
 
 	PetscFunctionReturn(0);
 }
@@ -2066,27 +2079,29 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	}
 
 
-	else if (geom->setTemp==4)   // JS, oblique ridge temperature
+	else if (geom->setTemp==4)   // Oblique ridge temperature
         {
 
 	  // Half space cooling profile with age function, oblique possible
-	  PetscScalar x, y, z, z_top, v_spread, v_ridge, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack, T_top, T_bot, kappa, thermalAgeRidge, age0;
 
-	  y = P->X[1];
-	  x = P->X[0];
-	  y_ridgeFront = geom->ridgeseg_y[0];
-	  y_ridgeBack = geom->ridgeseg_y[1];
-	  x_ridgeRight = geom->ridgeseg_x[1];
-	  x_ridgeLeft = geom->ridgeseg_x[0];
-	  z_top      = geom->top;
-	  T_top      = geom->topTemp;
-	  T_bot      = geom->botTemp;
-	  z          = PetscAbs(P->X[2]-z_top);
-	  kappa      = geom->kappa;
-	  v_spread   = geom->v_spread;
-	  v_ridge    = geom->v_ridge;
-	  age0       = geom->age0;
+	  PetscScalar   x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack; 
+	  PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge, v_ridge;
 
+	  y             = P->X[1];
+	  x             = P->X[0];
+	  y_ridgeFront  = geom->ridgeseg_y[0];
+	  y_ridgeBack   = geom->ridgeseg_y[1];
+	  x_ridgeRight  = geom->ridgeseg_x[1];
+	  x_ridgeLeft   = geom->ridgeseg_x[0];
+	  z_top         = geom->top;
+	  T_top         = geom->topTemp;
+	  T_bot         = geom->botTemp;
+	  z             = PetscAbs(P->X[2]-z_top);
+	  kappa         = geom->kappa;
+	  v_spread      = geom->v_spread;
+	  age0          = geom->age0;
+	  maxAge        = geom->maxAge;  
+	  v_ridge       = geom->v_ridge;
 	  
 	  if (x_ridgeLeft == x_ridgeRight){
 
@@ -2116,8 +2131,8 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	    }
 	   }
 
+	  thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff  
 	   (*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
-
 	  }
 }
 

@@ -486,6 +486,9 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		// ... matrix-free finite-difference (MMFD)
 		ierr = MatMFFDSetFunction(nl->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes); CHKERRQ(ierr);
 		ierr = MatMFFDSetBase(nl->MFFD, x, jr->gres);                                                      CHKERRQ(ierr);
+		//ierr = MatMFFDSetType(nl->MFFD, MATMFFD_DS); 	  CHKERRQ(ierr);
+		ierr = MatMFFDSetType(nl->MFFD, MATMFFD_WP); 	  CHKERRQ(ierr);
+		
 		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyMFFD);                       CHKERRQ(ierr);
 		ierr = MatShellSetContext(nl->J, (void*)&nl->MFFD);                                                CHKERRQ(ierr);
 	}

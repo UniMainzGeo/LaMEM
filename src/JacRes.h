@@ -87,6 +87,7 @@ struct SolVarBulk
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
         PetscScalar  dikeRHS; // additional term on RHS in divergence equation
+	PetscScalar  Ha ;    // Adiabatic heating
 
 };
 
@@ -102,6 +103,7 @@ struct SolVarCell
 	PetscScalar  hxx, hyy, hzz; // history stress (elastic)
 	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
 	PetscScalar *phRat;         // phase ratios in the control volume
+	PetscInt     FreeSurf;      // indicates whether the control volume contains the internal free surface
 	PetscScalar  U[3];          // total displacement
 	PetscScalar  ATS;           // accumulated total strain
 	PetscScalar  eta_cr;        // creep viscosity
@@ -145,6 +147,7 @@ struct Controls
 {
 	PetscScalar grav[3];       // global gravity components
 	PetscScalar FSSA;          // free surface stabilization parameter [0 - 1]
+	PetscInt    FSSA_allVel;   // Use all velocity components for FSSA?
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
@@ -161,6 +164,7 @@ struct Controls
 	PetscInt    pLimPlast;      // limit pressure at first iteration for plasticity
 	PetscScalar pShift;         // shift the pressure by a constant value while evaluating plasticity & for output
 	PetscInt    pShiftAct;      // pressure shift activation flag (zero pressure in the top cell layer)
+	PetscInt    printNorms;		// priny norms of velocity/pressure/temperature?
 
 	PetscScalar eta_min;        // minimum viscosity
 	PetscScalar eta_max;        // maximum viscosity
@@ -184,6 +188,7 @@ struct Controls
 	PetscScalar lrtol;          // local rheology iterations relative tolerance
 	PetscInt    Phasetrans;     // Flag to activate phase transition routines
 	PetscInt    Passive_Tracer; // Flag to activate passive tracer routine
+	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
         PetscInt    actDike;         // Flag to activate dike, additional term on RHS of divergence   
 
@@ -251,6 +256,7 @@ struct JacRes
 	SolVarEdge  *svXZEdge; // XZ edges
 	SolVarEdge  *svYZEdge; // YZ edges
 	PetscScalar *svBuff;   // storage for phRat
+	PetscScalar  mean_p;  // average lithostatic pressure
 
 	// Phase diagram
 	PData       *Pd;

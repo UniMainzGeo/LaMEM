@@ -117,12 +117,20 @@
 	surf_air_phase     = 0                # phase ID of sticky air layer
 	surf_max_angle     = 45.0             # maximum angle with horizon (smoothed if larger)
 	surf_topo_file     = ./input/topo.dat # initial topography file (redundant)
-	erosion_model      = 1                # erosion model [0-none (default), 1-infinitely fast]
-	sediment_model     = 1                # sedimentation model [0-none (dafault), 1-prescribed rate, 2-cont. margin]
-	sed_num_layers     = 3                # number of sediment layers
-	sed_time_delims    = 0.5 2.5          # sediment layers time delimiters (one less than number)
-	sed_rates          = 1e-3 1e-2 2-3    # sedimentation rates
-	sed_phases         = 1 2 3            # sediment layers phase numbers
+    
+       erosion_model      = 2                # erosion model [0-none (default), 1-infinitely fast, 2-prescribed rate with given level]
+       er_num_phases      = 3                # number of erosion phases
+       er_time_delims     = 0.5   2.5        # erosion time delimiters (one less than number)
+       er_rates           = 0.2 0.1 0.2      # constant erosion rates in different time periods
+       er_levels          = 1   2   1        # levels above which we apply constant erosion rates in different time periods
+    	
+       sediment_model     = 1                # sedimentation model [0-none (dafault), 1-prescribed rate with given level, 2-cont. margin]
+       sed_num_layers     = 3                # number of sediment layers
+       sed_time_delims    = 0.5   2.5        # sediment layers time delimiters (one less than number)
+       sed_rates          = 0.3 0.2 0.3      # sediment rates in different time periods
+       sed_levels         = -5  -2  -2       # levels below which we apply constant sediment rates in different time periods 
+       sed_phases         = 1   2   3        # sediment layers phase numbers in different time periods
+
 	marginO            = 0.0 0.0          # lateral coordinates of continental margin - origin
 	marginE            = 10.0 10.0        # lateral coordinates of continental margin - 2nd point
 	hUp                = 1.5              # up dip thickness of sediment cover (onshore)
@@ -204,6 +212,11 @@
 
 	open_top_bound = 1
 
+# Permeable lower boundary flag    
+    open_bot_bound = 0
+	permeable_phase_inflow = 1 # Phase of the inflow material from the bottom (The temperature of the inflow phase it is the same of the bottom boundary)
+
+    
 # No-slip boundary flag mask (left right front back bottom top)
 
 	noslip = 0 0 1 1 0 0
@@ -220,10 +233,14 @@
 
 	fix_cell_file = ./bc/cdb 
 	
-# temperature on the top & bottom boundaries
+# temperature on the top & bottom boundaries [usually constant]
 
-	temp_top  = 0.0
-	temp_bot  = 1300.0;
+    temp_top                =   0.0
+    temp_bot                =   1300.0                              # if only one value is given, it is assumed to be constant with time
+
+    temp_bot_num_periods    =   2                                   # How many periods with different temp_bot do we have? 
+    temp_bot_time_delim     =   1.2                                 # At which time do we switch from one to the next period?
+
 
 # temperature initial guess flag
 # linear profile between temp_top and temp_bot
@@ -231,14 +248,18 @@
 
 # Optional plume inflow @ bottom boundary
     Plume_InflowBoundary    =   1           # have a plume-like inflow boundary @ bottom
-    Plume_Type              =   2nd         # 2D or 3D (circular)		
+    Plume_Type              =   Inflow_Type          # Inflow_type or Pressure_type (circular)	
+	                        =   Permeable_Type       # Combine the open bot boundary with the plume boundary condition (the option herein listed overwrite open_bot, so do not activate) 	
+	Plume_Dimension         =   2D          # 2D or 3D (circular)		
     Plume_Phase             =   4           # phase of plume
+    Plume_Depth             =   1885        # depth of provenience of the plume (i.e. how far from the bottom of the model the plume source is) 
+    Plume_Mantle_Phase      =   1           # Astenosphere phase (if the inflow occurs outside the plume radius)
     Plume_Temperature       =   1600        # temperature of inflow plume
-    Plume_Inflow_Velocity   =   15          # Inflow velocity	
-    Plume_VelocityType      =   Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
+    Plume_Inflow_Velocity   =   15          # Inflow velocity	(not required if Pressure_Type)
+    Plume_VelocityType      =   Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better (not required if Pressure_Type) 			
     Plume_Center            =   0 50        # [X,Y] of center  (2nd only in case of 3D plume)
     Plume_Radius            =   100         # Width/Radius of plume
-
+    Plume_Phase_Mantle      =   1			# Inflow phase. If the velocity happens to be positive in the domain, the inflow material has a constant phase and the temperature of the bottom 
 
 # Pressure on the top & bottom boundaries
 
@@ -249,7 +270,7 @@
 # linear profile between pres_top and pres_bot in the unconstrained cells
 
 	init_pres = 1
-	
+
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
@@ -389,17 +410,19 @@
 		thermalAge  = 70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
 	<BoxEnd>
 
-       <RidgeSegStart>
-                phase = 1
-		bounds      = 1.0 2.0 1.0 2.0 1.0 2.0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
-                ridgeseg_x  = 1.5 1.5                   # coordinate order: left, right [can be different for oblique ridge]
-                ridgeseg_y  = 1.0 2.0                   # coordinate order: front, back [needs to be the same as the front and back of bounds]
-                topTemp     = 0                         # required: temperature @ top [in Celcius in case of GEO units]
-                botTemp     = 1300                      # required: temperature @ bottom [in Celcius in case of GEO units]
-		Temperature = halfspace_age             # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
-                age0        = 0.001                     # minimum age of seafloor at ridge [in Myr in case of GEO units]
-		v_ridge	    = 0.5			# optional spreading velocity (cm/yr) to initiate the temperature structure independently from the actual spreading velocity
-	<RidgeSegEnd>
+    <RidgeSegStart>
+        phase       = 1
+        bounds      = 1.0 2.0 1.0 2.0 1.0 2.0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+        ridgeseg_x  = 1.5 1.5                   # coordinate order: left, right [can be different for oblique ridge]
+        ridgeseg_y  = 1.0 2.0                   # coordinate order: front, back [needs to be the same as the front and back of bounds]
+        topTemp     = 0                         # required: temperature @ top [in Celcius in case of GEO units]
+        botTemp     = 1300                      # required: temperature @ bottom [in Celcius in case of GEO units]
+        Temperature = halfspace_age             # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
+        age0        = 0.001                     # minimum age of seafloor at ridge [in Myr in case of GEO units]
+        maxAge      = 60                        # [optional] parameter that indicates the maximum thermal age of a plate 
+        v_spread    = 1                         # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above   
+        v_ridge     = 0.5                       # optional spreading velocity (cm/yr) to initiate the temperature structure independently from the actual spreading velocity
+<RidgeSegEnd>
 
 	<HexStart>
 		phase = 1
@@ -438,7 +461,7 @@
 	Passive_Tracer              = 1                               # Activate passive tracers?
 	PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
     PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
-    PassiveTracer_ActiveType    =  Melt_Fraction                  # Under which condition are they activated? []  
+    PassiveTracer_ActiveType    =  Always                  		  # Under which condition are they activated? []  
     PassiveTracer_ActiveValue   =  0.1                            # When this value is exceeded the tracers are being activated 
     
     # Passive Tracer activation type specification:
@@ -486,8 +509,14 @@
 	out_moment_res      = 1
 	out_cont_res        = 1
 	out_energ_res       = 1
+<<<<<<< HEAD
         out_dike_rhs        = 1
 	
+=======
+	out_melt_fraction 	= 1
+	out_fluid_density   = 1	
+
+>>>>>>> master
 # Phase aggregate output paramter
 # Phase ratios of listed phases are summed up and output as a scalar vector
 # Phase aggregate can consist of a single phase
@@ -524,8 +553,9 @@
     out_ptr_phase        = 1    # phase of the passive tracers
     out_ptr_Pressure     = 1    # interpolated pressure
     out_ptr_Temperature  = 1    # temperature
-    out_ptr_MeltFraction = 1    # melt fraction
+    out_ptr_MeltFraction = 1    # melt fraction computed using P-T of the marker 
     out_ptr_Active       = 1    # option that highlight the marker that are currently active
+    out_ptr_Grid_Mf      = 1    # option that allow to store the melt fraction seen within the cell 
 
 
 
@@ -548,13 +578,15 @@
 	<PhaseTransitionStart>
 		ID                      =   0         #     Phase_transition law ID
 		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
-		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain, MeltFraction] parameter that triggers the phase transition
+		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coord, X=x-coord, Y=y-coord, APS = accumulated plastic strain, MeltFraction, t = time] parameter that triggers the phase transition
 		ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z, APS]
         
         number_phases           =   1         #     The number of involved phases [default=1]
 		PhaseAbove              =   1         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
 		PhaseBelow              =   3         #       
         PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
+
+        ResetParam              =   APS       #     [APS] Parameter to reset on particles below PT or within box
 	<PhaseTransitionEnd>
 
 	<PhaseTransitionStart>
@@ -572,8 +604,8 @@
         Type                    =   Box                             # A box-like region
         PTBox_Bounds            =   200 400 -100 100 -1000 -500     # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   1
-        PhaseInside             =   7                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
-        PhaseOutside            =   3                               # Phase outside the box
+        PhaseInside             =   7                               # Phase within the box  [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   3                               # Phase outside the box [use -1 if you don't want to change the phase outside the box]
         PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
 
         PTBox_TempType          =   linear                          # Temperature condition witin the box [none, constant, linear, halfspace]
@@ -582,7 +614,12 @@
         
         PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
         PTBox_cstTemp          	=   1200                            # Temp within box [only for constant T]
+<<<<<<< HEAD
    <PhaseTransitionEnd>
+=======
+						
+	<PhaseTransitionEnd>
+>>>>>>> master
 
 
 # Define material properties for all phases (maximum 32)
@@ -641,8 +678,13 @@
 		A          = 1e-9   # radiogenic heat production
 		T          = 100.0  # optional temperature to set within the phase
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
+<<<<<<< HEAD
                 rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
 		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar)
+=======
+        rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
+		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar; usually ~30 for olivine)
+>>>>>>> master
 	<MaterialEnd>
 
 #===============================================================================

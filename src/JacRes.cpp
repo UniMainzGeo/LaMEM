@@ -81,15 +81,19 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;
 	ctrl->FSSA         =  1.0;
+	ctrl->FSSA_allVel  =  0;
 	ctrl->AdiabHeat    =  0.0;
 	ctrl->shearHeatEff =  1.0;
 	ctrl->biot         =  1.0;
-	ctrl->pShiftAct    =  1;
+	ctrl->pShiftAct    =  0;
 	ctrl->pLithoVisc   =  1;
 	ctrl->initGuess    =  1;
 	ctrl->mfmax        =  0.15;
 	ctrl->lmaxit       =  25;
 	ctrl->lrtol        =  1e-6;
+	ctrl->actTemp	   =  0;			// diffusion is not active by default (otherwise we have to define thermal properties in all cases)
+	ctrl->printNorms   =  0;			// print norms of velocity/pressure/temperature?
+	ctrl->Adiabatic_gr = 0.0;
 
 	if(scal->utype != _NONE_)
 	{
@@ -100,6 +104,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// read from options
 	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",          ctrl->grav,           3, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1.0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "FSSA_allVel",     &ctrl->FSSA_allVel,    1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0);            CHKERRQ(ierr);
@@ -112,9 +117,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_lith_pres",  &ctrl->initLithPres,   1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",      &ctrl->initGuess,      1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",    &ctrl->pLithoVisc,     1, 1);              CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",   &ctrl->pLithoPlast,    1, 1);      CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",     &ctrl->pLimPlast,      1, 1);      CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "p_shift",  		 &ctrl->pShift, 		1, 1.0);    CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",   &ctrl->pLithoPlast,    1, 1);      		CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",     &ctrl->pLimPlast,      1, 1);      		CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "p_shift",  		 &ctrl->pShift, 		1, 1.0);    		CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",         &ctrl->eta_min,        1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",         &ctrl->eta_max,        1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_ref",         &ctrl->eta_ref,        1, 1.0);            CHKERRQ(ierr);
@@ -129,11 +134,13 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,         1, 1);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfmax",           &ctrl->mfmax,          1, 1.0);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);       CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);        CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1);          CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Passive_Tracer",  &ctrl->Passive_Tracer, 1, 1);          CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);       	CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);        	CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1);          	CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "Passive_Tracer",  &ctrl->Passive_Tracer, 1, 1);          	CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms,     1, 1);          	CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,          1, 1.0);        	CHKERRQ(ierr);
+        ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr); 
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -290,6 +297,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->mfmax)          PetscPrintf(PETSC_COMM_WORLD, "   Max. melt fraction (viscosity, density) : %g    \n", ctrl->mfmax);
 	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %lld  \n", ctrl->lmaxit);
 	if(ctrl->lrtol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration tolerance            : %g    \n", ctrl->lrtol);
+	if(ctrl->Adiabatic_gr)   PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic gradient                      : %g    \n", ctrl->Adiabatic_gr);
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");
 
@@ -321,6 +329,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->gwLevel        /=  scal->length;
 	ctrl->steadyTempStep /=  scal->time;
     ctrl->pShift         /=  scal->stress;
+    ctrl->Adiabatic_gr   = (ctrl->Adiabatic_gr/scal->temperature)*scal->length;
 
 	// adjoint field based gradient output vector
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
@@ -1045,7 +1054,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
-	PetscInt    iter;
+	PetscInt    iter, fssa_allVel;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
@@ -1077,9 +1086,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz  = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	fssa   =  jr->ctrl.FSSA; // density gradient penalty parameter
-	grav   =  jr->ctrl.grav; // gravity acceleration
-	dt     =  jr->ts->dt;    // time step
+	fssa   			=  	jr->ctrl.FSSA; 			// Density gradient penalty parameter
+	fssa_allVel		=	jr->ctrl.FSSA_allVel; 	// Use all velocity components for FSSA or only Vz? 
+
+	grav   			=  	jr->ctrl.grav; // gravity acceleration
+	dt     			=  	jr->ts->dt;    // time step
 
 	// setup constitutive equation evaluation context parameters
 	ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
@@ -1221,9 +1232,17 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// momentum
-		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
-		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
-		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+		if (fssa_allVel){
+			fx[k][j][i] -= (sxx + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1] + vy[k][j][i+1] + vz[k][j][i+1])*tx)/fdx - gx/2.0;
+			fy[k][j][i] -= (syy + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vx[k][j+1][i] + vy[k][j+1][i] + vz[k][j+1][i])*ty)/fdy - gy/2.0;
+			fz[k][j][i] -= (szz + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vx[k+1][j][i] + vy[k+1][j][i] + vz[k+1][j][i])*tz)/fdz - gz/2.0;
+		}
+		else{
+			fx[k][j][i] -= (sxx + (vx[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1])*tx)/fdx - gx/2.0;
+			fy[k][j][i] -= (syy + (vy[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vy[k][j+1][i])*ty)/fdy - gy/2.0;
+			fz[k][j][i] -= (szz + (vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vz[k+1][j][i])*tz)/fdz - gz/2.0;
+		}
+
 
 		// pressure boundary constraints
 		if(i == 0   && bcp[k][j][i-1] != DBL_MAX) fx[k][j][i]   += -p[k][j][i-1]/bdx;
@@ -2242,7 +2261,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	// show assembled residual with boundary constraints
 	// WARNING! rewrite this function using coupled residual vector directly
 
-	PetscScalar dinf, d2, e2, fx, fy, fz, f2, div_tol;
+	PetscScalar dinf, d2, e2, fx, fy, fz, f2, div_tol, T2, vx2, vy2, vz2, p2;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2259,12 +2278,19 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	ierr = VecNorm(jr->gfy, NORM_2, &fy);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfz, NORM_2, &fz);   CHKERRQ(ierr);
 
+	ierr = VecNorm(jr->gvx, NORM_2, &vx2);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gvy, NORM_2, &vy2);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gvz, NORM_2, &vz2);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gp,  NORM_2, &p2);    CHKERRQ(ierr);		// pressure
+
 	f2 = sqrt(fx*fx + fy*fy + fz*fz);
 
 	if(jr->ctrl.actTemp)
 	{
 		ierr = JacResGetTempRes(jr,jr->ts->dt);         CHKERRQ(ierr);
 		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
+		ierr = VecNorm(jr->lT, NORM_2, &T2); CHKERRQ(ierr);
+		
 	}
 
 	// print
@@ -2275,10 +2301,25 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "   Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "      |mRes|_2  = %12.12e \n", f2);
 
+	if (jr->ctrl.printNorms)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Velocity: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "      |Vx|_2    = %12.12e \n", vx2);
+		PetscPrintf(PETSC_COMM_WORLD, "      |Vy|_2    = %12.12e \n", vy2);
+		PetscPrintf(PETSC_COMM_WORLD, "      |Vz|_2    = %12.12e \n", vz2);
+		PetscPrintf(PETSC_COMM_WORLD, "   Pressure: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "      |P|_2     = %12.12e \n", p2);
+	}
+
 	if(jr->ctrl.actTemp)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Energy: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "      |eRes|_2  = %12.12e \n", e2);
+		if (jr->ctrl.printNorms)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Temperature: \n" );
+			PetscPrintf(PETSC_COMM_WORLD, "      |T|_2     = %12.12e \n", T2);
+		}
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");

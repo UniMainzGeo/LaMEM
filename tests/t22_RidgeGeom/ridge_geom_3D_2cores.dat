@@ -151,15 +151,15 @@
 	<RidgeSegEnd>
 
 	<RidgeSegStart>
-                phase       = 1
-                bounds      = -50 50 0 25 -40 0  # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
-                ridgeseg_x  = -20 -20            # coordinate order: left, right [currently only working if left=right]
-                ridgeseg_y  = 0 25              # coordinate order: front, back
-                topTemp     = 0                  # temperature @ top [in Celcius in case of GEO units]
-                botTemp     = 1300               # temperature @ bottom [in Celcius in case of GEO units]
-                Temperature = halfspace_age      # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
+        phase       = 1
+        bounds      = -50 50 0 25 -40 0  # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+        ridgeseg_x  = -20 -20            # coordinate order: left, right [currently only working if left=right]
+        ridgeseg_y  = 0 25              # coordinate order: front, back
+        topTemp     = 0                  # temperature @ top [in Celcius in case of GEO units]
+        botTemp     = 1300               # temperature @ bottom [in Celcius in case of GEO units]
+        Temperature = halfspace_age      # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
 		age0  	    = 1	      	      	 # inital age of lithosphere at	ridge in Myr [required]
-        <RidgeSegEnd>
+    <RidgeSegEnd>
 
 
         # sticky air
