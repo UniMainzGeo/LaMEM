@@ -49,7 +49,7 @@
 #include "surf.h"
 #include "phase.h"
 #include "JacRes.h"
-#include "meltParam.h"
+#include "meltParamKatz.h"
 #include "tools.h"
 #include "phase_transition.h"
 #include "scaling.h"
@@ -350,7 +350,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	  ctx->dikeDyy = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component y
 	  ctx->dikeDzz = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component z // these could be in JacResGetEffStrainrate()
 
-	  PetscPrintf(PETSC_COMM_WORLD, " dike Dxx %f \n", ctx->dikeDxx);   // NEW FOR DIKE, TESTTING PURPOSE
+	  //	  PetscPrintf(PETSC_COMM_WORLD, " dike Dxx %f \n", ctx->dikeDxx);   // NEW FOR DIKE, TESTTING PURPOSE
 	  
        	} 
 
@@ -521,7 +521,12 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		conv = solveBisect(eta_mean, eta_min, ctrl->lrtol*DII, ctrl->lmaxit, eta, it, getConsEqRes, ctx);
 
 		// compute stress
-		tauII = 2.0*eta*DII;
+		tauII = 2.0*eta*DII; 
+
+		//              conv = solveBisect(eta_mean, eta_min, ctrl->lrtol*DII, ctrl->lmaxit, eta, it, getConsEqResDike, ctx);   check for different tauII
+		//		tauII_dike = 2.0*eta*DII_dike;
+		// PetscPrintf(PETSC_COMM_WORLD, " incl dike removal %f \n", tauII_dike); tau should be bigger without the dike
+
 	}
 
 	// update iteration statistics
@@ -556,15 +561,14 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 {
 	// compute residual of the nonlinear visco-elastic constitutive equation
 
-  PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl, DIIdike, DIIres;  // NEW FOR DIKE, DIIres just for testing and printing
+  PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl, DIIdike;
 
 	// access context
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
 
-
 	// compute stress
 	tauII = 2.0*eta*ctx->DII;
-
+	
 	// creep strain rates
 	DIIels = ctx->A_els*tauII;                  // elasticity
 	DIIdif = ctx->A_dif*tauII;                  // diffusion
@@ -579,12 +583,6 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	// r > 0 if eta < solution (positive on undershoot)
 
 	
-       	DIIres = ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);
-	PetscPrintf(PETSC_COMM_WORLD, " DIIres incl DII dike removal %f \n", DIIres);
-
-	DIIres = ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
-	PetscPrintf(PETSC_COMM_WORLD, " DIIres without DII dike removal %f \n", DIIres);
-
 	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);  //  substract additionally //NEW FOR DIKE  
 	  
 }
