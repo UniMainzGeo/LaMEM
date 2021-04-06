@@ -421,7 +421,6 @@
         age0        = 0.001                     # minimum age of seafloor at ridge [in Myr in case of GEO units]
         maxAge      = 60                        # [optional] parameter that indicates the maximum thermal age of a plate 
         v_spread    = 1                         # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above   
-        v_ridge     = 0.5                       # optional spreading velocity (cm/yr) to initiate the temperature structure independently from the actual spreading velocity
 <RidgeSegEnd>
 
 	<HexStart>
@@ -509,14 +508,10 @@
 	out_moment_res      = 1
 	out_cont_res        = 1
 	out_energ_res       = 1
-<<<<<<< HEAD
         out_dike_rhs        = 1
-	
-=======
-	out_melt_fraction 	= 1
+	out_melt_fraction   = 1
 	out_fluid_density   = 1	
 
->>>>>>> master
 # Phase aggregate output paramter
 # Phase ratios of listed phases are summed up and output as a scalar vector
 # Phase aggregate can consist of a single phase
