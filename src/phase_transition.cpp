@@ -693,7 +693,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 				ph 			= P->phase;
 				InsideAbove = 0;
-				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time);
+				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr);
 
 				if ( (PhaseTrans->Type == _Box_) ){
 					if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;				// do not change the phase
@@ -751,7 +751,6 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	//	ctrl      = ctx->ctrl;  when to use "Controls *ctrl" and when "Controls ctrl" ??
 	// When to use ctrl->actDike and when ctrl.actDike?
 
-<<<<<<< HEAD
 	ph = P->phase;
 	T  = P->T;
         InAbove =       0; 
@@ -785,7 +784,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
     Sets the values for a phase transition that occurs @ a constant value
 */
 PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, 
-						Controls *ctrl, SolVarCell *svCell, PetscInt *ph_out, PetscInt *InAbove, PetscScalar time) 
+						Controls ctrl, SolVarCell *svCell, PetscInt *ph_out, PetscInt *InAbove, PetscScalar time) 
 {
     
     PetscInt 	ph, InAb;
@@ -999,7 +998,7 @@ PetscInt Check_DikeBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscIn
 
 //------------------------------------------------------------------------------------------------------------//
 PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, 
-		Controls *ctrl, PetscInt *ph_out, PetscInt *InAbove)
+		Controls ctrl, PetscInt *ph_out, PetscInt *InAbove)
 {
 	PetscInt 		ph,ip,neq, InAb;
 	PetscScalar 	Pres[2], pShift;
