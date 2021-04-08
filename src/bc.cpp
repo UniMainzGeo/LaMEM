@@ -424,7 +424,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->pbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot,   scal->lbl_stress);
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop,   scal->lbl_temperature);
 	if(bc->pfluid   != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Fluid pressure in Stokes domain            : %g %s \n", bc->pfluid, scal->lbl_stress);
-	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of fluid sources                    : %lld \n",  (LLD)bc->nsource);
+	if(bc->nsource)          PetscPrintf(PETSC_COMM_WORLD, "   Number of fluid sources                    : %lld \n",  (LLD)bc->nsource);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
