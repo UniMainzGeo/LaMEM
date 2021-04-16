@@ -172,6 +172,9 @@
 // maximum number of control polygons
 #define _max_ctrl_poly_ 20
 
+// maximum number of gaussian perturbation
+#define _max_GP_ 3
+
 // cast macros
 #define LLD long long int
 

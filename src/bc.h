@@ -247,8 +247,8 @@ struct BCCtx
 	PetscInt 		Plume_VelocityType;			// type of inflow [Gaussian=0=default or Poiseuille=1]
 	PetscScalar     Plume_Pressure ;            // Plume Pressure at the bottom of the model (i.e. the bottom pressure boundary condition)
 	// open boundary flag
-	PetscInt     	top_open;
-	PetscInt 		bot_open;
+	PetscInt        top_open;
+	PetscInt        bot_open;
 	PetscInt        phase_inflow_bot;
 
 	// no-slip boundary condition mask
@@ -261,6 +261,18 @@ struct BCCtx
 	PetscInt       	fixCell;
 	unsigned char 	*fixCellFlag;
 
+
+	//========================
+	// Internal Winkler Boundary
+	//========================
+
+	PetscInt         Internal_Winkler;
+	PetscScalar      Winkler_Depth;
+	PetscInt         Winkler_Phase;
+	PetscInt         Winkler_Inflow_ph;
+	PetscInt         Winkler_Plume;
+	PetscInt         Winkler_Plume_ph;
+
 	//========================
 	// TEMPERATURE CONSTRAINTS
 	//========================
@@ -270,6 +282,18 @@ struct BCCtx
 	PetscInt     	TbotNumPeriods;
 	PetscScalar  	TbotTimeDelims [_max_periods_-1];
 	PetscScalar  	Tbot[_max_periods_  ];
+
+
+
+	// Gaussian Peturbation BC
+	PetscInt        Gaussian_Pet_num;
+	PetscInt        Gaussian_Dim;
+	PetscScalar     Gaussian_Pet_cen_x[_max_GP_],Gaussian_Pet_cen_y[_max_GP_],Gaussian_Pet_rad[_max_GP_];
+	PetscScalar     Gaussian_Pet_dT[_max_GP_];
+
+
+
+
 
 	PetscScalar  	Ttop;
 	PetscInt     	initTemp;

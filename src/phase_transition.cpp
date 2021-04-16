@@ -920,3 +920,101 @@ PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_p
 
 	return n;
 }
+
+PetscErrorCode InternalWinklerBC(AdvCtx *actx)
+{
+	// creates arrays to optimize marker-cell interaction
+	PetscFunctionBegin;
+
+    PetscErrorCode  ierr;
+    BCCtx           *bc;
+	Marker          *P;
+	JacRes          *jr;
+	PetscInt        i,jj, ph,nPtr, numPhTrn,below,above,num_phas;
+	PetscScalar     Tbot,x,y,z;
+    PetscLogDouble  t;
+
+
+
+    // Retrieve parameters
+	jr          =   actx->jr;
+	bc         =   jr->bc;
+
+	if (bc->Winkler_Depth == -1) 	PetscFunctionReturn(0);
+	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);
+
+	for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
+	{
+		// access marker
+		P   =   &actx->markers[i];
+		x   =   P->X[0];
+		y   =   P->X[1];
+		z   =   P->X[2];
+
+		if(z<bc->Winkler_Depth)
+		{
+			P->phase  = bc->Winkler_Phase;
+			P->T      = Tbot;
+			if(bc->Gaussian_Pet_num > -1 && k == 0)
+			{
+				if(bc->Gaussian_Dim == 1)
+				{
+					for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
+					{
+						P->T     =P->T + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) /(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0))) ;
+					}
+				}
+				else
+				{
+					for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
+					{
+						P->T     =P->T + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));;
+					}
+				}
+			}
+		}
+
+		if((z>=bc->Winkler_Depth) & (P->phase == bc->Winkler_Phase))
+		{
+			P->phase = bc->Winkler_Inflow_ph;
+
+
+
+
+			cmin = bc->Plume_Center[0] - bc->Plume_Radius;
+			cmax = bc->Plume_Center[0] + bc->Plume_Radius;
+
+							if(x>=cmin && x<=cmax)
+							{
+								phase_inflow = bc->Plume_Phase;
+							}
+						}
+						else
+						{
+							T_inflow     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/(PetscPowScalar(bc->Plume_Radius,2.0)));
+
+							if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) +
+								PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
+							{
+								phase_inflow = bc->Plume_Phase;
+							}
+						}
+
+
+
+
+		}
+
+
+
+
+
+	}
+	PetscFunctionReturn(0);
+
+}
+
+
+
+
+

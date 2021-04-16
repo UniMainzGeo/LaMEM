@@ -748,7 +748,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = ADVExchange(&lm->actx); CHKERRQ(ierr);
 
 		// Advect Passive tracers
-			ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
+		ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
 
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
@@ -843,6 +843,9 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 
 	PetscLogDouble t;
 
+	// lithostatic pressure initializtaion
+	ierr = JacResInitLithPres(&lm->jr, &lm->actx); CHKERRQ(ierr);
+
 	// initialize boundary constraint vectors
 	ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
@@ -854,9 +857,6 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 
 	// initialize pressure
 	ierr = JacResInitPres(&lm->jr); CHKERRQ(ierr);
-
-	// lithostatic pressure initializtaion
-	ierr = JacResInitLithPres(&lm->jr, &lm->actx); CHKERRQ(ierr);
 
 	// compute inverse elastic parameters (dependent on dt)
 	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
