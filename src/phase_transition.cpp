@@ -931,7 +931,7 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 	Marker          *P;
 	JacRes          *jr;
 	PetscInt        i,jj, ph,nPtr, numPhTrn,below,above,num_phas;
-	PetscScalar     Tbot,x,y,z;
+	PetscScalar     Tbot,x,y,z,cmin,cmax,circle;
     PetscLogDouble  t;
 
 
@@ -955,7 +955,12 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 		{
 			P->phase  = bc->Winkler_Phase;
 			P->T      = Tbot;
-			if(bc->Gaussian_Pet_num > -1 && k == 0)
+			P->APS    = 0.0;
+			P->U[0]   = 0.0;
+			P->U[1]   = 0.0;
+			P->U[2]   = 0.0;
+			P->ATS    = 0.0;
+			if(bc->Gaussian_Pet_num > -1 )
 			{
 				if(bc->Gaussian_Dim == 1)
 				{
@@ -979,37 +984,36 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 			P->phase = bc->Winkler_Inflow_ph;
 
 
+			if(bc->Gaussian_Dim==1)
+			{
 
+				for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
+				{
+					cmin = bc->Gaussian_Pet_cen_x[jj] - bc->Gaussian_Pet_rad[jj];
+					cmax = bc->Gaussian_Pet_cen_x[jj] + bc->Gaussian_Pet_rad[jj];
 
-			cmin = bc->Plume_Center[0] - bc->Plume_Radius;
-			cmax = bc->Plume_Center[0] + bc->Plume_Radius;
-
-							if(x>=cmin && x<=cmax)
-							{
-								phase_inflow = bc->Plume_Phase;
-							}
-						}
-						else
-						{
-							T_inflow     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/(PetscPowScalar(bc->Plume_Radius,2.0)));
-
-							if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) +
-								PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
-							{
-								phase_inflow = bc->Plume_Phase;
-							}
-						}
-
-
-
-
+					if(x>=cmin && x<=cmax)
+					{
+					P->phase = bc->Winkler_Plume_ph;
+					}
+				}
+			}
+			else
+			{
+				for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
+				{
+					circle =PetscPowScalar((x - bc->Gaussian_Pet_cen_x[jj]),2.0) + PetscPowScalar((y - bc->Gaussian_Pet_cen_y[jj]),2.0);
+					if(circle<=bc->Gaussian_Pet_rad[jj])
+					{
+						P->phase = bc->Winkler_Plume_ph;
+					}
+				}
+			}
 		}
-
-
-
-
-
 	}
+
+	ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 
 }
