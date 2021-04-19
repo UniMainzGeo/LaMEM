@@ -521,15 +521,15 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "Internal_Winkler", &bc->Internal_Winkler, 1, -1);  CHKERRQ(ierr);
 	if(bc->Internal_Winkler == 1)
 	{
-		ierr = getScalarParam(fb, _REQUIRED_, "Winkler_Depth",   &bc->Winkler_Depth,  1, 1.0); CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "Winkler_Inflow_ph",&bc->Winkler_Inflow_ph,  1,  1);  CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "Winkler_Phase",   &bc->Winkler_Phase,  1,  1);  CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "Winkler_Depth",   &bc->Winkler_Depth,  1, scal->length); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "Winkler_Inflow_ph",&bc->Winkler_Inflow_ph,  1,  mID);  CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "Winkler_Phase",   &bc->Winkler_Phase,  1,  mID);  CHKERRQ(ierr);
 		ierr = getIntParam   (fb, _OPTIONAL_, "Winkler_Plume",   &bc->Winkler_Plume,  1,  1);  CHKERRQ(ierr);
 		if(bc->Winkler_Plume)
 		{
-			ierr = getIntParam   (fb, _REQUIRED_, "Winkler_Plume_Phase",   &bc->Winkler_Plume,  1,  1);  CHKERRQ(ierr);
+			ierr = getIntParam   (fb, _REQUIRED_, "Winkler_Plume_Phase",   &bc->Winkler_Plume_ph,  1,  mID);  CHKERRQ(ierr);
 		}
-		if(bc->Winkler_Plume & bc->Gaussian_Pet_num==-1)
+		if((bc->Winkler_Plume) & (bc->Gaussian_Pet_num==-1))
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You need to prescribe at least one gaussian perturbation. The position and the radius of this perturbation, defines the inflow window of plume phase \n");
 		}

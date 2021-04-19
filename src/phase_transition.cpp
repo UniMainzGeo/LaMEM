@@ -920,7 +920,7 @@ PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_p
 
 	return n;
 }
-
+//------------------------------------------------------------------------------------------------------------------
 PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 {
 	// creates arrays to optimize marker-cell interaction
@@ -930,7 +930,7 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
     BCCtx           *bc;
 	Marker          *P;
 	JacRes          *jr;
-	PetscInt        i,jj, ph,nPtr, numPhTrn,below,above,num_phas;
+	PetscInt        i,jj;
 	PetscScalar     Tbot,x,y,z,cmin,cmax,circle;
     PetscLogDouble  t;
 
@@ -941,6 +941,9 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 	bc         =   jr->bc;
 
 	if (bc->Winkler_Depth == -1) 	PetscFunctionReturn(0);
+    PrintStart(&t, "Winkler Boundary condition...", NULL);
+
+
 	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);
 
 	for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
@@ -1013,6 +1016,7 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 	}
 
 	ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 

@@ -762,6 +762,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
 
+		// Apply internal Winkler boundary condition
+		ierr =  InternalWinklerBC(&lm->actx); CHKERRQ(ierr);
+
 		//==================
 		// Save data to disk
 		//==================
