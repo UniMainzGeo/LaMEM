@@ -287,8 +287,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	nu       =  0.0;
 	Vp       =  0.0;
 	Vs       =  0.0;
-    eta_st   =  0.0;
-    healTau = 1e30;   
+	eta_st   =  0.0;
+	healTau = 1e30;   
 	chSoftID = -1;
 	frSoftID = -1;
 	MSN      =  dbm->numSoft - 1;
