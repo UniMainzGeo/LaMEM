@@ -49,7 +49,7 @@
 #include "surf.h"
 #include "phase.h"
 #include "JacRes.h"
-#include "meltParam.h"
+#include "meltParamKatz.h"
 #include "tools.h"
 #include "phase_transition.h"
 #include "scaling.h"
