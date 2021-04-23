@@ -702,6 +702,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
+	Material_t  *mat;     // NEW FOR HEALING
 	Marker      *P;
 	Tensor2RN    R;
 	Tensor2RS    SR;
@@ -713,6 +714,8 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 
 	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, d, dt;
 
+	PetscInt     phase_ID;
+	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -823,7 +826,13 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		}
 		else if(icase == _APS_)
 		{
-			P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
+		  P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
+
+		  phase_ID=P->phase;
+		  mat = actx->dbm->phases + phase_ID;
+
+		  if(mat->healTau) P->APS /= (dt/mat->healTau+1);
+
 		}
 		else if(icase == _ATS_)
 		{
