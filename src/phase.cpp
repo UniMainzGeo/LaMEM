@@ -266,7 +266,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;
+	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st, healTau;   // NEW FOR HEALING
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
@@ -288,6 +288,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Vp       =  0.0;
 	Vs       =  0.0;
     eta_st   =  0.0;
+    healTau = 1e30;   // NEW FOR HEALING, default value so we don't need an if-loop, healTau is always set
 	chSoftID = -1;
 	frSoftID = -1;
 	MSN      =  dbm->numSoft - 1;

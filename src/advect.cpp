@@ -831,7 +831,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		  phase_ID=P->phase;
 		  mat = actx->dbm->phases + phase_ID;
 
-		  if(mat->healTau) P->APS /= (dt/mat->healTau+1);
+		  P->APS /= (dt/mat->healTau+1);
 
 		}
 		else if(icase == _ATS_)
