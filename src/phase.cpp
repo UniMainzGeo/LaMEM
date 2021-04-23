@@ -266,7 +266,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st, healTau;   // NEW FOR HEALING
+	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st, healTau;  
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
@@ -288,7 +288,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Vp       =  0.0;
 	Vs       =  0.0;
     eta_st   =  0.0;
-    healTau = 1e30;   // NEW FOR HEALING, default value so we don't need an if-loop, healTau is always set
+    healTau = 1e30;   
 	chSoftID = -1;
 	frSoftID = -1;
 	MSN      =  dbm->numSoft - 1;
@@ -441,7 +441,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,     1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID,  1, MSN); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID,  1, MSN); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "healTau",  &healTau, 1, 1.0); CHKERRQ(ierr); // NEW FOR HEALING
+	ierr = getScalarParam(fb, _OPTIONAL_, "healTau",  &healTau,   1, 1.0); CHKERRQ(ierr); 
 	//=================================================================================
 	// energy
 	//=================================================================================
@@ -688,7 +688,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->fr,     "fr",     "[deg]",  scal, title, &print_title);
 		MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
 		MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);
-		MatPrintScalParam(m->healTau,"healTau","[Myr]",  scal, title, &print_title);   // NEW FOR HEALING
+		MatPrintScalParam(m->healTau,"healTau","[Myr]",  scal, title, &print_title);  
 		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
 		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
 
@@ -739,7 +739,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// plasticity
 	m->ch     /= scal->stress_si;
 	m->fr     /= scal->angle;
-	m->healTau /= scal->time;            // NEW FOR HEALING
+	m->healTau /= scal->time;           
 
     m->eta_st /= scal->viscosity;
     

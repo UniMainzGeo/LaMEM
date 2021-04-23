@@ -702,7 +702,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
-	Material_t  *mat;     // NEW FOR HEALING
+	Material_t  *mat; 
 	Marker      *P;
 	Tensor2RN    R;
 	Tensor2RS    SR;
