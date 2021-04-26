@@ -233,6 +233,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _REQUIRED_, "APS1", &s->APS1, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Lm",   &s->Lm,   1, 1.0); CHKERRQ(ierr);
+	//	ierr = getScalarParam(fb, _OPTIONAL_, "healTau", &s->healTau,   1, 1.0); CHKERRQ(ierr);   // NEW FOR HEALING IN SOFTENING
 
 	if(!s->A || !s->APS1 || !s->APS2)
 	{
@@ -253,6 +254,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// SCALE
 
 	s->Lm /= scal->length;
+	//	s->healTau /= scal->time;   // NEW FOR HEALING IN SOFTENING [MYR]
 
 	PetscFunctionReturn(0);
 }

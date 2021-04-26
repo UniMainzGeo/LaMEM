@@ -580,6 +580,14 @@ PetscScalar applyStrainSoft(
 	A    = s->A;
 	Lm   = s->Lm;
 
+
+	// healing        // NEW FOR HEALING IN SOFTENING LAW
+	/*if(healTau)
+	{
+        APS /= (dt/s->healTau+1);
+	}*/
+
+	
 	// Fracture Energy Regularization
 	if(Lm)
 	{
