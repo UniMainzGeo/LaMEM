@@ -565,6 +565,7 @@
 		APS2 		= 1.0 	# end of softening APS
 		A    		= 0.7 	# reduction ratio
 		Lm   		= 0.2 	# material length scale (in selected units, e.g. km in geo)
+#		healTau		= 1e-3  # healing parameter [Myr]   // NEW FOR HEALING IN SOFTENING
 	<SofteningEnd>
 	
 # Define Phase Transition laws (maximum 10)
