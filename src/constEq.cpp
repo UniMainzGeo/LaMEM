@@ -567,7 +567,7 @@ PetscScalar applyStrainSoft(
 	// apply strain softening to a parameter (friction, cohesion)
 
         PetscScalar  k;  // dt
-	PetscScalar  A, APS1, APS2, Lm;  // healTau
+	PetscScalar  A, APS1, APS2, Lm; 
 	Soft_t      *s;
 
 	// check whether softening is defined
@@ -580,14 +580,6 @@ PetscScalar applyStrainSoft(
 	A    = s->A;
 	Lm   = s->Lm;
 
-
-	// healing        // NEW FOR HEALING IN SOFTENING LAW
-	/*if(healTau)
-	{
-        APS /= (dt/s->healTau+1);
-	}*/
-
-	
 	// Fracture Energy Regularization
 	if(Lm)
 	{
