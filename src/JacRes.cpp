@@ -1076,6 +1076,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	fs = jr->fs;
 	bc = jr->bc;
 
+	//mat = ctx->mat; // for accessing dike phase for DIIdike
+	
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
 	mcy = fs->dsy.tcels - 1;
@@ -1179,7 +1181,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		DII = sqrt(J2Inv);
 
-		// DikeDII = DII - sqrt(0.5*(XXnew^2 + YYnew^2 + ZZnew^2)) --> pass this to constEq.cpp getConsEqRes() to be exact, otherwise use the DikeDII as it is coded now
+		// ctx->DikeDII = DII - sqrt(0.5*(XXnew^2 + YYnew^2 + ZZnew^2))
+		// --> pass this to constEq.cpp getConsEqRes() to be exact, otherwise use the DikeDII as it is coded now
 		
 		//=======================
 		// CONSTITUTIVE EQUATIONS

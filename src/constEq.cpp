@@ -387,7 +387,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	ctx->DIIprl = 0.0; // Peierls creep strain rate
 	ctx->DIIpl  = 0.0; // plastic strain rate
 	ctx->yield  = 0.0; // yield stress
-	//	ctx->DIIdike = 0.0; // strain rate due to dike //NEW FOR DIKE, MIGHT BE ABLE TO REMOVE FROM HERE
 	
 	// zero out stabilization viscosity
 	svDev->eta_st = 0.0;
@@ -414,6 +413,9 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 
 			// compute phase viscosities and strain rate partitioning
 			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
+
+
+			// maybe here another function to remove the strain rate proprly
 
 			// update stabilization viscosity
 			svDev->eta_st += phRat[i]*phases->eta_st;
@@ -552,7 +554,6 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
 	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
 	ctx->yield  += phRat*taupl;  // plastic yield stress
-	// add DIIdike here ???? PROBABLY NOT NECESSARY
 	
 	PetscFunctionReturn(0);
 }
