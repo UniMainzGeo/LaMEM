@@ -565,7 +565,7 @@
 		APS2 		= 1.0 	# end of softening APS
 		A    		= 0.7 	# reduction ratio
 		Lm   		= 0.2 	# material length scale (in selected units, e.g. km in geo)
-#		healTau		= 1e-3  # healing parameter [Myr]   // NEW FOR HEALING IN SOFTENING
+		healTau		= 1e-3  # healing parameter [Myr]   // NEW FOR HEALING IN SOFTENING
 	<SofteningEnd>
 	
 # Define Phase Transition laws (maximum 10)
@@ -669,7 +669,6 @@
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
 	        rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
 		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar; usually ~30 for olivine)
-		healTau    = 1e-3   # optional value for healing, in Myr, if not specified set to 1e30 so that healing is basically 0
 	<MaterialEnd>
 
 #===============================================================================
