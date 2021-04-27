@@ -702,7 +702,8 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
-	Material_t  *mat; 
+	Material_t  *mat;
+	Soft_t      *soft;
 	Marker      *P;
 	Tensor2RN    R;
 	Tensor2RS    SR;
@@ -714,8 +715,8 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 
 	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, d, dt;
 
-	PetscInt     phase_ID;
-	
+       	PetscInt     chSoftID, phase_ID;
+	  
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -828,10 +829,18 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		{
 		  	P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
 
-		  	phase_ID=P->phase;
+	       		phase_ID = P->phase;
 			mat = actx->dbm->phases + phase_ID;
 
-			P->APS /= (dt/mat->healTau+1);
+			chSoftID = mat->chSoftID;
+			soft = actx->dbm->matSoft + chSoftID;
+
+			if(soft->healTau)
+			{
+                        P->APS /= (dt/soft->healTau + 1.0);
+
+			PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%d, healTau=%f, APS=%f  \n", 1, phase_ID, soft->healTau, P->APS);
+			}
 
 		}
 		else if(icase == _ATS_)
