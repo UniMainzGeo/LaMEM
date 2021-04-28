@@ -715,7 +715,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 
 	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, d, dt;
 
-       	PetscInt     chSoftID, phase_ID;
+       	PetscInt     healID, phase_ID;
 	  
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -832,14 +832,14 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	       		phase_ID = P->phase;
 			mat = actx->dbm->phases + phase_ID;
 
-			chSoftID = mat->chSoftID;
-			soft = actx->dbm->matSoft + chSoftID;
+			healID = mat->healID;
+			soft = actx->dbm->matSoft + healID;
 
 			if(soft->healTau)
 			{
                         P->APS /= (dt/soft->healTau + 1.0);
 
-			PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%d, healTau=%f, APS=%f  \n", 1, phase_ID, soft->healTau, P->APS);
+			PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%d, healID=%d, healTau=%f, APS=%f  \n", 1, phase_ID, healID, soft->healTau, P->APS);
 			}
 
 		}

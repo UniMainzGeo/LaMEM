@@ -196,6 +196,7 @@ public:
   //	PetscScalar  healTau;           // for healing [Myr], 1e30 if not defined 
 	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID;          // cohesion softening law ID (-1 if not defined)
+        PetscInt     healID;            // activate healing ID (-1 if not defined)   
 	// thermal parameters
 	PetscScalar  alpha;             // thermal expansivity                        [1/K]
 	PetscScalar  Cp;                // cpecific heat (capacity)                   [J/kg/K]

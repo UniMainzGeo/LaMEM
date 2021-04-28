@@ -229,16 +229,16 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	s->ID = ID;
 
 	// read and store softening law parameters
-	ierr = getScalarParam(fb, _OPTIONAL_, "A",    &s->A,    1, 1.0); CHKERRQ(ierr); // changed all those to optional, maybe better to define a new ID? like healID?
+	ierr = getScalarParam(fb, _OPTIONAL_, "A",    &s->A,    1, 1.0); CHKERRQ(ierr); // changed all those to optional
 	ierr = getScalarParam(fb, _OPTIONAL_, "APS1", &s->APS1, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Lm",   &s->Lm,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "healTau", &s->healTau,   1, 1.0); CHKERRQ(ierr);   // NEW FOR HEALING IN SOFTENING
 
 	
-        if(!s->healTau && (!s->A || !s->APS1 || !s->APS2) )
+        if(!s->healTau &&(!s->A || !s->APS1 || !s->APS2)) 
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law or set healTau at least %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %lld", (LLD)ID);
 	}
 
 	if (PrintOutput){
@@ -267,7 +267,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
-	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
+	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, healID, MSN, print_title;
 	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;  //healTau
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
@@ -294,6 +294,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//	healTau = 1e30;
 	chSoftID = -1;
 	frSoftID = -1;
+	healID   = -1;
 	MSN      =  dbm->numSoft - 1;
 
 	// phase ID
@@ -444,7 +445,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,     1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID,  1, MSN); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID,  1, MSN); CHKERRQ(ierr);
-	//	ierr = getScalarParam(fb, _OPTIONAL_, "healTau",  &healTau,   1, 1.0); CHKERRQ(ierr); 
+	ierr = getIntParam   (fb, _OPTIONAL_, "healID",   &healID,    1, MSN); CHKERRQ(ierr); 
 	//=================================================================================
 	// energy
 	//=================================================================================
@@ -497,8 +498,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 
 
-
-    m->eta_st   = eta_st;
+	m->eta_st   = eta_st;
     //    m->healTau = healTau;
    
 	// set softening law IDs
@@ -744,7 +744,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->fr     /= scal->angle;
 	//	m->healTau /= scal->time;           
 
-    m->eta_st /= scal->viscosity;
+	m->eta_st /= scal->viscosity;
     
 	// temperature
 	m->alpha  /= scal->expansivity;
