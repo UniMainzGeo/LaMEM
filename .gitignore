@@ -15,5 +15,5 @@
 *.out
 /Timestep_*
 *.mat
-*.dat
+*.png
 

@@ -70,7 +70,7 @@ def test_2D_Pres():
   def comparefunc(unittest):
 
     key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-7)
+    unittest.compareFloatingPoint(key,2e-7)
 
     key = re.escape("|Div|_2")
     unittest.compareFloatingPoint(key,1e-5)

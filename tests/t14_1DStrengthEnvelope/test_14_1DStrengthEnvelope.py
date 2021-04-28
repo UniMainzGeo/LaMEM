@@ -294,7 +294,7 @@ def makePlot(Runs):
 # first test runs visco-plastic setup with dt = 10 ka
 def test_a():
   ranks         = 1
-  launch        = ['rm -r Timestep*',
+  launch        = ['rm -r Timestep* 2>/dev/null',
                    'rm -rf ./t14_1DStrengthEnvelope/OutVP; mkdir ./t14_1DStrengthEnvelope/OutVP',
                    '../bin/opt/LaMEM -ParamFile ./t14_1DStrengthEnvelope/1D_VP.dat',
                    'mv Timestep* ./t14_1DStrengthEnvelope/OutVP/']

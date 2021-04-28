@@ -36,11 +36,11 @@ sys.path.append(os.path.join(os.environ['PWD'], 't21_Passive_Tracer'))
 sys.path.append(os.path.join(os.environ['PWD'], 't22_RidgeGeom'))
 sys.path.append(os.path.join(os.environ['PWD'], 't23_Permeable'))
 
-
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
     sys.path.append(os.path.join(os.environ['PWD'], 't3_SubductionMATLABinput'))
     sys.path.append(os.path.join(os.environ['PWD'], 't12_Temperature_diffusion'))
+    sys.path.append(os.path.join(os.environ['PWD'], 't24_Erosion_Sedimentation'))
 else:
     print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
 
@@ -69,6 +69,7 @@ import test_23_Permeable as Permeable
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1     as Sub1 # import test that requires MATLAB
   import test_12_TpD            as Diffusion
+  import test_24_Erosion_Sedimentation    as ES
 
 def makeLocalPathAbsolute(localRelPath) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
@@ -91,7 +92,7 @@ registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),
                       StrEnv.test_a(), StrEnv.test_b(), StrEnv.test_c(), StrEnv.test_d(),
-                      RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(), PT.test_c(), PT.test_d(),
+                      RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(), PT.test_c(), PT.test_d(), PT.test_e(),
                       InOut.test_2D(), InOut.test_3D(),InOut.test_2D_Pres(), InOut.test_3D_Pres(),SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), 
                       CI.test_a(), CI.test_b(),
                       FSSA.test_1(),PTracer.test_a(),PTracer.test_b(),
@@ -106,7 +107,8 @@ if os.environ.get('MATLAB') != None:
     registeredTests.append(Sub1.test_d());
     registeredTests.append( Diffusion.test_1D());
     registeredTests.append( Diffusion.test_halfspace());
-    
+    registeredTests.append(ES.test_a());
+    registeredTests.append(ES.test_b());
     
 
 # Run the tests:

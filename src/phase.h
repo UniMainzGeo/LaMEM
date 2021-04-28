@@ -108,7 +108,8 @@ enum Parameter
 	_X_,
 	_Y_,
 	_PlasticStrain_,
-	_MeltFraction_
+	_MeltFraction_,
+	_Time_
 };
 
 // Structure that contains infor for phase transitions
