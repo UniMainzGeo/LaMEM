@@ -1049,6 +1049,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// DII = (0.5*D_ij*D_ij)^0.5
 	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
 
+        Material_t *phases;
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
@@ -1063,6 +1064,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XY, XY1, XY2, XY3, XY4;
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
+	PetscScalar dikeDxx, dikeDyy, dikeDzz, XXwoDike, YYwoDike, ZZwoDike, DikeDII;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
@@ -1075,8 +1077,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// access context
 	fs = jr->fs;
 	bc = jr->bc;
-
-	//mat = ctx->mat; // for accessing dike phase for DIIdike
+	phases = jr->dbm->phases; // for accessing dike phase for DIIdike
 	
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -1146,14 +1147,16 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		ZZ = dzz[k][j][i];
 
 
-		// should maybe compute dike contribution of strain rate here
-		// dikeDxx = (2.0/3.0) * mat->dikeRHS;
-		// dikeDyy = - (1.0/3.0) * mat->dikeRHS;    
-		// dikeDzz = - (1.0/3.0) * mat->dikeRHS;    
-		// XXnew = XX - dikeDxx;
-		// YYnew = YY - dikeDyy;
-		// ZZnew = ZZ - dikeDzz;
-
+		if(phases->Mf && phases->Mb)
+		  {
+		// dike contribution of strain rate
+		dikeDxx = (2.0/3.0) * phases->dikeRHS;
+		dikeDyy = - (1.0/3.0) * phases->dikeRHS;    
+		dikeDzz = - (1.0/3.0) * phases->dikeRHS;    
+		XXwoDike = XX - dikeDxx;
+		YYwoDike = YY - dikeDyy;
+		ZZwoDike = ZZ - dikeDzz; 
+		  }
 		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];
@@ -1181,8 +1184,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		DII = sqrt(J2Inv);
 
-		// ctx->DikeDII = DII - sqrt(0.5*(XXnew^2 + YYnew^2 + ZZnew^2))
+		if(phases->Mf && phases->Mb)
+                  {
+		DikeDII = DII - sqrt(0.5*(XXwoDike*XXwoDike + YYwoDike*YYwoDike + ZZwoDike*ZZwoDike));
 		// --> pass this to constEq.cpp getConsEqRes() to be exact, otherwise use the DikeDII as it is coded now
+		  }
 		
 		//=======================
 		// CONSTITUTIVE EQUATIONS
