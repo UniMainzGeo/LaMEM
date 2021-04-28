@@ -830,16 +830,22 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		  	P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
 
 	       		phase_ID = P->phase;
+			PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%i  \n", phase_ID);
+			
 			mat = actx->dbm->phases + phase_ID;
 
 			healID = mat->healID;
+			PetscPrintf(PETSC_COMM_WORLD, " healID=%i  \n", healID);
+			
 			soft = actx->dbm->matSoft + healID;
 
 			if(soft->healTau)
 			{
+
+			  PetscPrintf(PETSC_COMM_WORLD, "healTau=%f  \n", soft->healTau);
                         P->APS /= (dt/soft->healTau + 1.0);
 
-			PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%d, healID=%d, healTau=%f, APS=%f  \n", 1, phase_ID, healID, soft->healTau, P->APS);
+			 PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%d, healID=%d, healTau=%f, APS=%f  \n", 1, phase_ID, healID, soft->healTau, P->APS);
 			}
 
 		}

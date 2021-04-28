@@ -246,6 +246,10 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
 		}
+		if(s->healTau)
+		{
+                        PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, healTau = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->healTau);
+                }
 		else
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
@@ -504,6 +508,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// set softening law IDs
 	m->chSoftID = chSoftID;
 	m->frSoftID = frSoftID;
+	m->healID   = healID;
 
 	// DIFFUSION
 
@@ -694,7 +699,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		//		MatPrintScalParam(m->healTau,"healTau","[Myr]",  scal, title, &print_title);  
 		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
 		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
-
+		if(healID != -1)   PetscPrintf(PETSC_COMM_WORLD, "healID = %lld ",   (LLD)healID);
+		
 		sprintf(title, "   (temp)   : "); print_title = 1;
 		MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
 		MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
@@ -1625,7 +1631,7 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	PetscPrintf(PETSC_COMM_WORLD,">>> dc Cr.:           Bdc   = %1.7e,  Edc   = %1.7e,    Rdc   = %1.7e,    mu  = %1.7e \n", MatProp->Bdc, MatProp->Edc, MatProp->Rdc, MatProp->mu);
     PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
     
-    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_st= %1.7e,    rp= %1.7e,    frSoftID = %i,                chSoftID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID);
+    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_st= %1.7e,    rp= %1.7e,    frSoftID = %i,  chSoftID = %i,   healID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
