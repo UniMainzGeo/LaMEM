@@ -175,7 +175,8 @@
 //maximum number of melt extraction parametrization
 #define _max_ME_par 4
 
-
+// maximum number of gaussian perturbation
+#define _max_GP_ 3
 
 // cast macros
 #define LLD long long int

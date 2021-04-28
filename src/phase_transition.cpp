@@ -920,3 +920,109 @@ PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_p
 
 	return n;
 }
+//------------------------------------------------------------------------------------------------------------------
+PetscErrorCode InternalWinklerBC(AdvCtx *actx)
+{
+	// creates arrays to optimize marker-cell interaction
+	PetscFunctionBegin;
+
+    PetscErrorCode  ierr;
+    BCCtx           *bc;
+	Marker          *P;
+	JacRes          *jr;
+	PetscInt        i,jj;
+	PetscScalar     Tbot,x,y,z,cmin,cmax,circle;
+    PetscLogDouble  t;
+
+
+
+    // Retrieve parameters
+	jr          =   actx->jr;
+	bc         =   jr->bc;
+
+	if (bc->Winkler_Depth == -1) 	PetscFunctionReturn(0);
+    PrintStart(&t, "Winkler Boundary condition...", NULL);
+
+
+	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);
+
+	for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
+	{
+		// access marker
+		P   =   &actx->markers[i];
+		x   =   P->X[0];
+		y   =   P->X[1];
+		z   =   P->X[2];
+
+		if(z<bc->Winkler_Depth)
+		{
+			P->phase  = bc->Winkler_Phase;
+			P->T      = Tbot;
+			P->APS    = 0.0;
+			P->U[0]   = 0.0;
+			P->U[1]   = 0.0;
+			P->U[2]   = 0.0;
+			P->ATS    = 0.0;
+			if(bc->Gaussian_Pet_num > -1 )
+			{
+				if(bc->Gaussian_Dim == 1)
+				{
+					for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
+					{
+						P->T     =P->T + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) /(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0))) ;
+					}
+				}
+				else
+				{
+					for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
+					{
+						P->T     =P->T + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));;
+					}
+				}
+			}
+		}
+
+		if((z>=bc->Winkler_Depth) & (P->phase == bc->Winkler_Phase))
+		{
+			P->phase = bc->Winkler_Inflow_ph;
+
+
+			if(bc->Gaussian_Dim==1)
+			{
+
+				for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
+				{
+					cmin = bc->Gaussian_Pet_cen_x[jj] - bc->Gaussian_Pet_rad[jj];
+					cmax = bc->Gaussian_Pet_cen_x[jj] + bc->Gaussian_Pet_rad[jj];
+
+					if(x>=cmin && x<=cmax)
+					{
+					P->phase = bc->Winkler_Plume_ph;
+					}
+				}
+			}
+			else
+			{
+				for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
+				{
+					circle =PetscPowScalar((x - bc->Gaussian_Pet_cen_x[jj]),2.0) + PetscPowScalar((y - bc->Gaussian_Pet_cen_y[jj]),2.0);
+					if(circle<=bc->Gaussian_Pet_rad[jj])
+					{
+						P->phase = bc->Winkler_Plume_ph;
+					}
+				}
+			}
+		}
+	}
+
+	ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
+	PrintDone(t);
+
+	PetscFunctionReturn(0);
+
+}
+
+
+
+
+

@@ -1073,8 +1073,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp,***rho_ext;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
+	PetscScalar penality;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1127,6 +1128,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcr_ext, &rho_ext);CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -1237,6 +1239,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 			fy[k][j][i] -= (syy + (vy[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vy[k][j+1][i])*ty)/fdy - gy/2.0;
 			fz[k][j][i] -= (szz + (vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vz[k+1][j][i])*tz)/fdz - gz/2.0;
 		}
+
 
 
 		// pressure boundary constraints
@@ -1599,6 +1602,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcr_ext, &rho_ext);    CHKERRQ(ierr);
+
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
