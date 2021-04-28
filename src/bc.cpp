@@ -577,6 +577,45 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	}
 	
+	if(bc->Internal_Winkler)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Internal Winkler Boundary Condition       @ \n");
+		PetscPrintf(PETSC_COMM_WORLD, "    Winkler Depth                                        : %g %s \n", bc->Winkler_Depth*bc->scal->length, scal->lbl_length);
+		PetscPrintf(PETSC_COMM_WORLD, "    Winkler Phase                                        : %g \n", bc->Winkler_Phase);
+		PetscPrintf(PETSC_COMM_WORLD, "    Winkler Plume, (coupling with gaussian perturbation) : %g \n", bc->Winkler_Inflow_ph);
+		if(bc->Winkler_Plume) PetscPrintf(PETSC_COMM_WORLD, "    Winkler Inflow Phase Plume                           : %g \n", bc->Winkler_Plume_ph);
+
+	}
+
+	if(	bc->Gaussian_Pet_num > 0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Gaussian Thermal Perturbation       @ \n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of Gaussian perturbation    : %g \n", bc->Gaussian_Pet_num );
+		if(bc->Gaussian_Dim == 1)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Linear Gaussian Perturbation  [2D]     @ \n");
+			for (jj=0; jj<bc->Gaussian_Pet_num; jj++){
+							PetscPrintf(PETSC_COMM_WORLD, "Perturbation : %d \n", jj);
+							PetscPrintf(PETSC_COMM_WORLD, "Radius    : %g  %s\n", bc->Gaussian_Pet_rad[jj],scal->lbl_length );
+							PetscPrintf(PETSC_COMM_WORLD, "dT        : %g %s\n", bc->Gaussian_Pet_dT[jj],scal->lbl_length );
+							PetscPrintf(PETSC_COMM_WORLD, "Center    : %g %s\n", bc->Gaussian_Pet_cen_x[jj],scal->lbl_length );
+					}
+
+
+		}
+		else
+		{
+
+			PetscPrintf(PETSC_COMM_WORLD, "    Gaussian Perturbation  [3D]     @ \n");
+			for (jj=0; jj<bc->Gaussian_Pet_num; jj++){
+							PetscPrintf(PETSC_COMM_WORLD, "Perturbation : %d \n", jj);
+							PetscPrintf(PETSC_COMM_WORLD, "Radius    : %g  %s\n", bc->Gaussian_Pet_rad[jj],scal->lbl_length );
+							PetscPrintf(PETSC_COMM_WORLD, "dT        : %g %s\n", bc->Gaussian_Pet_dT[jj],scal->lbl_length );
+							PetscPrintf(PETSC_COMM_WORLD, "Center    : %g, %g %s\n", bc->Gaussian_Pet_cen_x[jj],bc->Gaussian_Pet_cen_y[jj],scal->lbl_length );
+					}
+		}
+	}
+
     if(bc->Plume_Inflow == 1){
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding plume inflow bottom condition       @ \n");
 	if(bc->Plume_Type == 1){PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : Inflow \n");}
