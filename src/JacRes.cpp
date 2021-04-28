@@ -1049,7 +1049,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// DII = (0.5*D_ij*D_ij)^0.5
 	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
 
-        Material_t *phases;
+        Material_t *mat;
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
@@ -1150,9 +1150,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(phases->Mf && phases->Mb)
 		  {
 		// dike contribution of strain rate
-		dikeDxx = (2.0/3.0) * phases->dikeRHS;
-		dikeDyy = - (1.0/3.0) * phases->dikeRHS;    
-		dikeDzz = - (1.0/3.0) * phases->dikeRHS;    
+		dikeDxx = (2.0/3.0) * mat->dikeRHS;
+		dikeDyy = - (1.0/3.0) * mat->dikeRHS;    
+		dikeDzz = - (1.0/3.0) * mat->dikeRHS;    
 		XXwoDike = XX - dikeDxx;
 		YYwoDike = YY - dikeDyy;
 		ZZwoDike = ZZ - dikeDzz; 
