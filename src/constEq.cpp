@@ -196,10 +196,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctx->A_prl = 0.0; // Peierls constant
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
-       	ctx->dikeDxx = 0.0; // deviatoric strain rate component due to added dike divergence x, NEW FOR DIKE
-	ctx->dikeDyy = 0.0; // as above for y, NEW FOR DIKE  
-	ctx->dikeDzz = 0.0; // as above for z, NEW FOR DIKE   
-	
+       		
 	// MELT FRACTION
 	mfd = 1.0;
 	mfn = 1.0;
@@ -344,14 +341,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	// correct for ultimate yield stress (if defined)
 	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
 
-	// FOR STRAIN RATE REMOVAL DUE TO DIKE      //NEW FOR DIKE
-	if(mat->Mb && mat->Mf){
-	  ctx->dikeDxx = (2.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component x
-	  ctx->dikeDyy = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component y
-	  ctx->dikeDzz = -(1.0/3.0) * mat->dikeRHS;  // 2nd invariant strainrate component z // these could be in JacResGetEffStrainrate()
-
-	  //	  PetscPrintf(PETSC_COMM_WORLD, " dike Dxx %f \n", ctx->dikeDxx);   // NEW FOR DIKE, TESTTING PURPOSE
-	  
        	} 
 
 	PetscFunctionReturn(0);
@@ -443,7 +432,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	Controls    *ctrl;
 	PetscInt    it, conv;
 	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
-	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat; //, DIIdike;  // NEW FOR DIKE  PROBABLY NOT NECESSARY AND CAN BE REOMVED
+	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat; 
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
 
 	
@@ -562,7 +551,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 {
 	// compute residual of the nonlinear visco-elastic constitutive equation
 
-  PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl, DIIdike;
+  PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl; //, DIIdike;
 
 	// access context
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
@@ -576,7 +565,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-       	DIIdike = sqrt(0.5*(ctx->dikeDxx*ctx->dikeDxx+ctx->dikeDyy*ctx->dikeDyy+ctx->dikeDzz*ctx->dikeDzz)); // NEW FOR DIKE VERSION 
+	//       	DIIdike pass here from Jacres. and then subtract, but is it necessary in the first place?
 	
 		
 	// residual function (r)
@@ -584,7 +573,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	// r > 0 if eta < solution (positive on undershoot)
 
 	
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIdike);  //  substract additionally //NEW FOR DIKE  
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl) // + DIIdike);  //  substract additionally, see above //NEW FOR DIKE  
 	  
 }
 
@@ -897,13 +886,6 @@ PetscErrorCode cellConstEq(
 	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
 	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
 
-	/*	if(ctrl->actDike){
-	// compute contribution of dike divergence to strain rate tensor
-	  dikeDxx = svCell->dxx - (2.0/3.0)*svBulk->dikeRHS;  //  
-	  dikeDyy = svCell->dyy + (1.0/3.0)*svBulk->dikeRHS;  //
-	  dikeDzz = svCell->dzz + (1.0/3.0)*svBulk->dikeRHS;  //         
-	  } */
-	  
 	// compute shear heating term contribution
 	svDev->Hr =
 		txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
@@ -926,7 +908,6 @@ PetscErrorCode cellConstEq(
 	svCell->DIIdis = ctx->DIIdis; // relative dislocation creep strain rate
 	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
-	//	svCell->DIIdike = ctx->DII-ctx->DIIdikeComp; // strain rate due to dike   // NEW FOR DIKE
 	
 	// compute volumetric residual
 
