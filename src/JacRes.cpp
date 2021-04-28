@@ -1049,7 +1049,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// DII = (0.5*D_ij*D_ij)^0.5
 	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
 
-        Material_t *mat;     
+        Material_t *phases;     
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarBulk *svBulk;
@@ -1065,7 +1065,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XY, XY1, XY2, XY3, XY4;
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
-	PetscScalar dikeDxx, dikeDyy, dikeDzz, DikeDII;
+	PetscScalar dikeDxx, dikeDyy, dikeDzz; //, DikeDII;  this not necessary if not passed
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
@@ -1078,7 +1078,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// access context
 	fs = jr->fs;
 	bc = jr->bc;
-	mat = jr->dbm->mat; // for accessing dike phase for DIIdike
+	phases = jr->dbm->phases; // for accessing dike phase for DIIdike
 	
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -1137,7 +1137,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	{
 		// access solution variables
 		svCell = &jr->svCell[iter++];
-
+		svBulk = &svCell->svBulk;
+		
 		//=================
 		// SECOND INVARIANT
 		//=================
@@ -1148,7 +1149,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		ZZ = dzz[k][j][i];
 
 
-		if(mat->Mf && mat->Mb)
+		if(phases->Mf && phases->Mb)
 		  {
 		// dike contribution of strain rate
 		dikeDxx = (2.0/3.0) * svBulk->dikeRHS;
@@ -1185,7 +1186,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		DII = sqrt(J2Inv);
 
-		/*		if(mat->Mf && mat->Mb)
+		/*		if(phases->Mf && phases->Mb)
                   {
 		DikeDII = DII - sqrt(0.5*(XXwoDike*XXwoDike + YYwoDike*YYwoDike + ZZwoDike*ZZwoDike));
 		// --> pass this to constEq.cpp getConsEqRes() to be exact, NECESSARY? Or jus tokay because the rest is subtracted above??

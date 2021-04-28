@@ -340,8 +340,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 	// correct for ultimate yield stress (if defined)
 	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
-
-       	} 
+ 
 
 	PetscFunctionReturn(0);
 }
@@ -573,7 +572,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	// r > 0 if eta < solution (positive on undershoot)
 
 	
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl) // + DIIdike);  //  substract additionally, see above //NEW FOR DIKE  
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl); // + DIIdike);  //  substract additionally, see above //NEW FOR DIKE  
 	  
 }
 
