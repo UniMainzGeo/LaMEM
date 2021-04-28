@@ -1051,6 +1051,15 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 		}
 	}
 
+	if(actx->jr->bc->Internal_Winkler)
+	{
+		if(X[2]<=actx->jr->bc->Winkler_Depth)
+		{
+			Active[jj] = 0.0;
+		}
+
+	}
+
 	// overwrite the phase in case of delayed activation or if some condition are met
 
 	if(((actx->Ptr->Condition_pr ==_Pres_ptr_)||(actx->Ptr->Condition_pr ==_Temp_ptr_)||(actx->Ptr->Condition_pr ==_Time_ptr_)) && Active[jj] == 1.0)

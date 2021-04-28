@@ -1969,9 +1969,6 @@ PetscErrorCode Set_to_zero_Vector(JacRes *jr)
 	ierr = VecZeroEntries(jr->MEPar->dgmvvecmerge); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->MEPar->ldvecmerge); CHKERRQ(ierr);
 
-
-
-
 	PetscFunctionReturn(0);
 
 }

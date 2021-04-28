@@ -963,6 +963,8 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 			P->U[1]   = 0.0;
 			P->U[2]   = 0.0;
 			P->ATS    = 0.0;
+			P->MExt   = 0.0;
+			P->MTot   = 0.0;
 			if(bc->Gaussian_Pet_num > -1 )
 			{
 				if(bc->Gaussian_Dim == 1)
