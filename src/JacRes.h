@@ -313,6 +313,9 @@ PetscErrorCode JacResGetVorticity(JacRes *jr);
 // compute nonlinear residual vectors
 PetscErrorCode JacResGetResidual(JacRes *jr);
 
+// compute contribution of dikeRHS, is passed to JacResGetResidual
+PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS);
+
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 

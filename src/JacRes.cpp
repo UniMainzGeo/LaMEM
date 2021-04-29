@@ -1049,10 +1049,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// DII = (0.5*D_ij*D_ij)^0.5
 	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
 
-        Material_t *phases;     
+        Controls   *ctrl;
 	FDSTAG     *fs;
 	BCCtx      *bc;
-	SolVarBulk *svBulk;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
@@ -1065,7 +1064,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XY, XY1, XY2, XY3, XY4;
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
-	PetscScalar dikeDxx, dikeDyy, dikeDzz; //, DikeDII;  this not necessary if not passed
+	PetscScalar dikeDxx, dikeDyy, dikeDzz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
@@ -1078,8 +1077,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// access context
 	fs = jr->fs;
 	bc = jr->bc;
-	phases = jr->dbm->phases; // for accessing dike phase for DIIdike
-	
+	ctrl = jr->ctrl;
+
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
 	mcy = fs->dsy.tcels - 1;
@@ -1148,17 +1147,21 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		YY = dyy[k][j][i];
 		ZZ = dzz[k][j][i];
 
-
-		if(phases->Mf && phases->Mb)
-		  {
+		if (ctrl->actDike)
+		{
+		// function that computes dikeRHS and contribution depending on the phase ratio
+		  ierr =JacResGetDikeContr(&ctx, &dikeRHS);  CHKERRQ(ierr);
+		 
 		// dike contribution of strain rate
-		dikeDxx = (2.0/3.0) * svBulk->dikeRHS;
-		dikeDyy = - (1.0/3.0) * svBulk->dikeRHS;    
-		dikeDzz = - (1.0/3.0) * svBulk->dikeRHS;    
-		XX = XX - dikeDxx;
-		YY = YY - dikeDyy;
-		ZZ = ZZ - dikeDzz; 
-		  }
+		dikeDxx = (2.0/3.0) * dikeRHS;    // if dikeRHS is 0 nothing happens so no if-loop needed
+		dikeDyy = - (1.0/3.0) * dikeRHS;    
+		dikeDzz = - (1.0/3.0) * dikeRHS;    
+		
+		// subtract from original strain rate array
+		dxx -= dikeDxx;                               // if dikeRHS is 0 nothing happens so no if-loop needed    
+		dyy -= dikeDyy;
+		dzz -= dikeDzz;
+		}
 		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];
@@ -1626,6 +1629,82 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------                                                                                               
+#undef __FUNCT__
+#define __FUNCT__ "JacresGetDikeContr"
+PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
+{
+
+  Material_t  *mat, *phases;
+  SolVarBulk  *svBulk;
+  PetscScalar *phRat;
+  PetscInt     i, numPhases;
+
+  svBulk    = ctx->svBulk;
+  numPhases = ctx->numPhases;
+  phases    = ctx->phases;
+  phRat     = ctx->phRat;
+  bc         = ctx->bc;          // NEW for dike                                                                                                                       
+  PhaseTrans = ctx->PhaseTrans; // NEW for dike 
+
+	
+        for(i = 0; i < numPhases; i++)
+        {
+                // update present phases only                                                                                                                               
+                if(phRat[i])
+                {
+                        // get reference to material parameters table                                 
+                        mat = &phases[i];
+
+			if(mat->Mb == mat->Mf)
+                            {
+                              // constant M                                                             
+                                M = mat->Mf;
+                                v_spread = PetscAbs(bc->velin);
+                                left = PhaseTrans->bounds[0];
+                                right = PhaseTrans->bounds[1];
+                                mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s             
+                            }
+			 /* else
+			   {                               
+			  // Mb an Mf are different
+                          // FDSTAG *fs;                                                                     
+                          // access context                                           
+                          // fs = bc->fs;                                            
+                          // bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction          
+                          //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction                      
+                          if(front == back)                                                                                                 
+                          {
+			  // linear interpolation between different M values, Mf is M in front, Mb is M in back                            
+                          M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));                                                   
+                          dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km                          
+                          }                                                                                                 
+                          else                                                                        
+                          {
+			  // linear interpolation if the ridge/dike phase is oblique                
+                          y = COORD_CELL(j,sy,fs->dsy);                                                               
+                          M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));                                              
+                          dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km          
+                          } */
+
+			else(!mat->Mb || !mat->Mf)
+                        {
+			  // no dike is set (could be removed since already in if-loop,
+			  // however what about the gres function where dikeRHS is subtracted? maybe needs to stay for that
+			  mat->dikeRHS = 0.0;
+                        }
+
+                 dikeRHS += phRat[i]*mat->dikeRHS;   // NEW for dike  
+
+		 dikeRHS = svBulk->dikeRHS;      // store value for gres in volConstEq
+		}
+
+	}
+
+	PetscFunctionReturn(0);
+}
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopySol"
