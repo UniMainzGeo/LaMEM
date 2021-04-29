@@ -715,7 +715,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 
 	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, d, dt;
 
-       	PetscInt     healID, phase_ID;
+	PetscInt     healID, phase_ID;
 	  
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -827,27 +827,24 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		}
 		else if(icase == _APS_)
 		{
+			//Anton or Boris:  It might be good to throw an error if the user specified healID for a material but
+			//that softening law does not specify healTau.  How should this be done?
 		  	P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
-
-	       		phase_ID = P->phase;
-			PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%i  \n", phase_ID);
-			
+			phase_ID = P->phase;			
 			mat = actx->dbm->phases + phase_ID;
-
 			healID = mat->healID;
-			PetscPrintf(PETSC_COMM_WORLD, " healID=%i  \n", healID);
-			
-			soft = actx->dbm->matSoft + healID;
-
-			if(soft->healTau)
-			{
-
-			  PetscPrintf(PETSC_COMM_WORLD, "healTau=%f  \n", soft->healTau);
-                        P->APS /= (dt/soft->healTau + 1.0);
-
-			 PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%d, healID=%d, healTau=%f, APS=%f  \n", 1, phase_ID, healID, soft->healTau, P->APS);
+			if (healID != -1)
+			{		
+				soft = actx->dbm->matSoft + healID;
+				if(soft->healTau)
+				{
+                    P->APS /= (dt/soft->healTau + 1.0);
+                    //Jana, plz REMOVE THIS PRINT STATMENT WHEN READY
+					//PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%d, healID=%d, healTau=%f, APS=%f  \n", phase_ID, healID, soft->healTau, P->APS);
+				}
 			}
-
+			//if (yp<-1.9) PetscPrintf(PETSC_COMM_WORLD, ">>>x=%f, y=%f, phase_ID=%d, healID=%d, APS=%f  \n", xp, yp, phase_ID, healID, P->APS);
+			if (yp<-1.9) PetscPrintf(PETSC_COMM_WORLD, "%f %f %d %d %f  \n", xp, yp, phase_ID, healID, P->APS);
 		}
 		else if(icase == _ATS_)
 		{

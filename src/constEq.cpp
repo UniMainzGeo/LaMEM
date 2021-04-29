@@ -566,7 +566,7 @@ PetscScalar applyStrainSoft(
 {
 	// apply strain softening to a parameter (friction, cohesion)
 
-        PetscScalar  k;  // dt
+	PetscScalar  k;  // dt
 	PetscScalar  A, APS1, APS2, Lm; 
 	Soft_t      *s;
 
