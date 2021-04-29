@@ -565,7 +565,7 @@
 		APS2 		= 1.0 	# end of softening APS
 		A    		= 0.7 	# reduction ratio
 		Lm   		= 0.2 	# material length scale (in selected units, e.g. km in geo)
-		healTau		= 1e-3  # healing parameter [Myr]   // NEW FOR HEALING IN SOFTENING
+		healTau		= 1e-3  # healing parameter [Myr]  
 	<SofteningEnd>
 	
 # Define Phase Transition laws (maximum 10)
@@ -661,7 +661,7 @@
 		rp         = 0.7    # pore-pressure ratio
 		chSoftID   = 0      # friction softening law ID
 		frSoftID   = 0      # cohesion softening law ID
-		healID     = 0	    # healing ID
+		healID     = 0	    # healing ID, points to healTau in Softening
 		alpha      = 3e-5   # thermal expansivity
 		Cp         = 1.2e3  # specific heat (capacity)
 		k          = 2.5    # thermal conductivity
