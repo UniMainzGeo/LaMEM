@@ -843,8 +843,8 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 					//PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%d, healID=%d, healTau=%f, APS=%f  \n", phase_ID, healID, soft->healTau, P->APS);
 				}
 			}
-			//if (yp<-1.9) PetscPrintf(PETSC_COMM_WORLD, ">>>x=%f, y=%f, phase_ID=%d, healID=%d, APS=%f  \n", xp, yp, phase_ID, healID, P->APS);
-			if (yp<-1.9) PetscPrintf(PETSC_COMM_WORLD, "%f %f %d %d %f  \n", xp, yp, phase_ID, healID, P->APS);
+			if (zp>-0.05 && zp<0.05) PetscPrintf(PETSC_COMM_WORLD, ">>>x=%f, z=%f, phase_ID=%d, healID=%d, APS=%f  \n", xp, zp, phase_ID, healID, P->APS);
+			//if (zp<-0.05 && zp<0.05) PetscPrintf(PETSC_COMM_WORLD, "%f %f %d %d %f  \n", xp, zp, phase_ID, healID, P->APS);
 		}
 		else if(icase == _ATS_)
 		{
