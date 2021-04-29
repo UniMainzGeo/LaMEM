@@ -827,8 +827,6 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		}
 		else if(icase == _APS_)
 		{
-			//Anton or Boris:  It might be good to throw an error if the user specified healID for a material but
-			//that softening law does not specify healTau.  How should this be done?
 		  	P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
 			phase_ID = P->phase;			
 			mat = actx->dbm->phases + phase_ID;
@@ -838,13 +836,9 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 				soft = actx->dbm->matSoft + healID;
 				if(soft->healTau)
 				{
-                    P->APS /= (dt/soft->healTau + 1.0);
-                    //Jana, plz REMOVE THIS PRINT STATMENT WHEN READY
-					//PetscPrintf(PETSC_COMM_WORLD, " phase_ID=%d, healID=%d, healTau=%f, APS=%f  \n", phase_ID, healID, soft->healTau, P->APS);
+				  P->APS /= (dt/soft->healTau + 1.0);
 				}
 			}
-			if (zp>-0.05 && zp<0.05) PetscPrintf(PETSC_COMM_WORLD, ">>>x=%f, z=%f, phase_ID=%d, healID=%d, APS=%f  \n", xp, zp, phase_ID, healID, P->APS);
-			//if (zp<-0.05 && zp<0.05) PetscPrintf(PETSC_COMM_WORLD, "%f %f %d %d %f  \n", xp, zp, phase_ID, healID, P->APS);
 		}
 		else if(icase == _ATS_)
 		{
