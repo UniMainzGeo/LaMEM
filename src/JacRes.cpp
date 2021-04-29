@@ -1049,7 +1049,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// DII = (0.5*D_ij*D_ij)^0.5
 	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
 
-        Controls   *ctrl;
+  //        Controls   *ctrl;
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
@@ -1064,7 +1064,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XY, XY1, XY2, XY3, XY4;
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
-	PetscScalar dikeDxx, dikeDyy, dikeDzz;
+	PetscScalar dikeDxx, dikeDyy, dikeDzz, dikeRHS;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
@@ -1077,7 +1077,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// access context
 	fs = jr->fs;
 	bc = jr->bc;
-	ctrl = jr->ctrl;
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -1136,7 +1135,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	{
 		// access solution variables
 		svCell = &jr->svCell[iter++];
-		svBulk = &svCell->svBulk;
+		//		svBulk = &svCell->svBulk;
 		
 		//=================
 		// SECOND INVARIANT
@@ -1147,10 +1146,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		YY = dyy[k][j][i];
 		ZZ = dzz[k][j][i];
 
-		if (ctrl->actDike)
+		if (jr->ctrl.actDike)
 		{
+		  dikeRHS = 0.0;
 		// function that computes dikeRHS and contribution depending on the phase ratio
-		  ierr =JacResGetDikeContr(&ctx, &dikeRHS);  CHKERRQ(ierr);
+		  ierr =JacResGetDikeContr(&ctx, dikeRHS);  CHKERRQ(ierr);
 		 
 		// dike contribution of strain rate
 		dikeDxx = (2.0/3.0) * dikeRHS;    // if dikeRHS is 0 nothing happens so no if-loop needed
@@ -1158,9 +1158,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		dikeDzz = - (1.0/3.0) * dikeRHS;    
 		
 		// subtract from original strain rate array
-		dxx -= dikeDxx;                               // if dikeRHS is 0 nothing happens so no if-loop needed    
-		dyy -= dikeDyy;
-		dzz -= dikeDzz;
+		dxx[k][j][i] -= dikeDxx;                               // if dikeRHS is 0 nothing happens so no if-loop needed    
+		dyy[k][j][i] -= dikeDyy;
+		dzz[k][j][i] -= dikeDzz;
 		}
 		
 		// x-y plane, i-j indices
@@ -1189,12 +1189,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		DII = sqrt(J2Inv);
 
-		/*		if(phases->Mf && phases->Mb)
-                  {
-		DikeDII = DII - sqrt(0.5*(XXwoDike*XXwoDike + YYwoDike*YYwoDike + ZZwoDike*ZZwoDike));
-		// --> pass this to constEq.cpp getConsEqRes() to be exact, NECESSARY? Or jus tokay because the rest is subtracted above??
-		}  */
-		
 		//=======================
 		// CONSTITUTIVE EQUATIONS
 		//=======================
@@ -1631,9 +1625,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 }
 
 //---------------------------------------------------------------------------                                                                                               
-#undef __FUNCT__
+/* #undef __FUNCT__
 #define __FUNCT__ "JacresGetDikeContr"
-PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
+PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar dikeRHS)
 {
 
   Material_t  *mat, *phases;
@@ -1666,7 +1660,7 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
                                 right = PhaseTrans->bounds[1];
                                 mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s             
                             }
-			 /* else
+			  else
 			   {                               
 			  // Mb an Mf are different
                           // FDSTAG *fs;                                                                     
@@ -1686,7 +1680,7 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
                           y = COORD_CELL(j,sy,fs->dsy);                                                               
                           M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));                                              
                           dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km          
-                          } */
+                          } 
 
 			else(!mat->Mb || !mat->Mf)
                         {
@@ -1703,7 +1697,7 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
 	}
 
 	PetscFunctionReturn(0);
-}
+} */
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
