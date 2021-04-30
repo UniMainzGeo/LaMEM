@@ -182,50 +182,52 @@
 
 # Strain softening parameters
 
-  	 <SofteningStart>
-		ID   = 0
-		A    = 0.95 	# 0.87	# reduction ratio = 1-FinalParameter/InitialParameter
-		APS1 = 0.01      # 0.5    # make really small so weakenening makes it directly weak
-		APS2 = 0.1      # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
-	<SofteningEnd>
+         <SofteningStart>
+                ID   = 0
+                A    = 0.95      # reduction ratio = 1-FinalParameter/InitialParameter
+                APS1 = 0.01      # make really small so weakenening makes it directly weak
+                APS2 = 0.1       # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
+		healTau	= 1e-8
+        <SofteningEnd>
+
+         <SofteningStart>
+                ID   = 1
+                A    = 0.95      # reduction ratio = 1-FinalParameter/InitialParameter
+                APS1 = 0.01      # make really small so weakenening makes it directly weak
+                APS2 = 0.1       # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
+                healTau = 1.0
+        <SofteningEnd>
+
 
 # Material parameters
 
-        # Leftside
+        # Leftside          No Softening
         <MaterialStart>
-                ID              = 0       # phase id
-                rho             = 3300    # density
-                eta              =       1e24    # viscosity
-                G               =       5e10
-                chSoftID        =       0      # Cohesion softening ID
-                ch              =       30e6   # Cohesion
-#                fr              =        30     # initial friction angle
-                eta                     = 1e24    # viscosity
+                ID              = 0      # phase id
+                rho             = 3300   # density
+                eta             = 1e24   # viscosity
+                G               = 5e10
+                ch              = 30e6   # Cohesion
         <MaterialEnd>
 
-        # Middle
+        # Middle            Softening, healing1
         <MaterialStart>
-                ID                      =       1         # phase id
-                rho             = 3300    # density
-                eta              =       1e24   # viscosity
-                G               =       5e10
-                chSoftID        =       0      # Cohesion softening ID
-                ch              =       30e6   # Cohesion
-#                fr              =        30     # initial friction angle
-                healTau     =   1     #healing timescale in Myr
-                eta                     = 1e24    # viscosity
+                ID              = 1      # phase id
+                rho             = 3300   # density
+                eta             = 1e24   # viscosity
+                G               = 5e10
+                healID          = 0      # Cohesion softening ID
+                ch              = 30e6   # Cohesion
         <MaterialEnd>
 
-        # Right side
+        # Right side        Softening, Healing2
         <MaterialStart>
-                ID              =       2      # phase id
-                rho             =       3300   # density
-                eta              =       1e24    # viscosity
-                G               =       5e10
-                chSoftID        =       0      # Cohesion softening ID
-                ch              =       30e6   # Cohesion
-#                fr              =        30     # initial friction angle
-                healTau     =   1e-6     #healing timescale in Myr
+                ID              = 2      # phase id
+                rho             = 3300   # density
+                eta             = 1e24   # viscosity
+                G               = 5e10
+                ch              = 30e6    # Cohesion
+                healID          = 1       #healing ID
         <MaterialEnd>
 
 	
