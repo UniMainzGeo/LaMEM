@@ -202,7 +202,7 @@
                 A    = 0.95      # reduction ratio = 1-FinalParameter/InitialParameter
                 APS1 = 0.01      # make really small so weakenening makes it directly weak
                 APS2 = 0.1       # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
-                healTau = 1.0
+                healTau = 1e-3
         <SofteningEnd>
 
 
