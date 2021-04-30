@@ -28,8 +28,8 @@
 	dt_max    = 0.1     # maximum time step
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 5     # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 5       # save output every n steps
+	nstep_max = 50     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 10       # save output every n steps
 
 #===============================================================================
 # Grid & discretization parameters
@@ -122,7 +122,7 @@
 	# Left Side
 	<BoxStart>
 		phase  = 0
-		bounds = -12 -2 -2 2 -2 2  # (left, right, front, back, bottom, top)
+		bounds = -12 -6 -2 2 -2 2  # (left, right, front, back, bottom, top)
 		Temperature = constant
 		cstTemp = 600
 	<BoxEnd>
@@ -150,7 +150,7 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = test_healTau2D # output file name
+	out_file_name       = APS_Healing2cores # output file name
 	out_pvd             = 1       	# activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
@@ -182,53 +182,58 @@
 
 # Strain softening parameters
 
-         <SofteningStart>
-                ID   = 0
-                A    = 0.95      # reduction ratio = 1-FinalParameter/InitialParameter
-                APS1 = 0.01      # make really small so weakenening makes it directly weak
-                APS2 = 0.1       # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
-		healTau	= 1e-8
-        <SofteningEnd>
+	<SofteningStart>
+		ID   = 0
+		A    = 0.50     # reduction ratio = 1-FinalParameter/InitialParameter
+		APS1 = 0.001     # make really small so weakenening makes it directly weak
+		APS2 = 0.01      # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
+	<SofteningEnd>
 
-         <SofteningStart>
-                ID   = 1
-                A    = 0.95      # reduction ratio = 1-FinalParameter/InitialParameter
-                APS1 = 0.01      # make really small so weakenening makes it directly weak
-                APS2 = 0.1       # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
-                healTau = 1.0
-        <SofteningEnd>
+	<SofteningStart>
+		ID   = 1
+		healTau	= 1
+	<SofteningEnd>
+
+    <SofteningStart>
+		ID   = 2
+		healTau = 1e-6
+	<SofteningEnd>
 
 
 # Material parameters
 
-        # Leftside          No Softening
-        <MaterialStart>
-                ID              = 0      # phase id
-                rho             = 3300   # density
-                eta             = 1e24   # viscosity
-                G               = 5e10
-                ch              = 30e6   # Cohesion
-        <MaterialEnd>
+	# Leftside          Softening
+	<MaterialStart>
+		ID              = 0      # phase id
+ 		rho             = 3300   # density
+ 		eta             = 1e24   # viscosity
+		G               = 5e10
+		#chSoftID        = 0      # Cohesion softening ID
+		ch              = 30e6   # Cohesion
+		fr              = 30
+	<MaterialEnd>
 
-        # Middle            Softening, healing1
-        <MaterialStart>
-                ID              = 1      # phase id
-                rho             = 3300   # density
-                eta             = 1e24   # viscosity
-                G               = 5e10
-                healID          = 0      # Cohesion softening ID
-                ch              = 30e6   # Cohesion
-        <MaterialEnd>
+	# Middle            Softening, healing1
+	<MaterialStart>
+		ID              = 1      # phase id
+		rho             = 3300   # density
+		eta             = 1e24   # viscosity
+		G               = 5e10
+		healID          = 1      # Cohesion softening ID
+		ch              = 30e6   # Cohesion
+		fr              = 30
+	<MaterialEnd>
 
         # Right side        Softening, Healing2
-        <MaterialStart>
-                ID              = 2      # phase id
-                rho             = 3300   # density
-                eta             = 1e24   # viscosity
-                G               = 5e10
-                ch              = 30e6    # Cohesion
-                healID          = 1       #healing ID
-        <MaterialEnd>
+	<MaterialStart>
+		ID              = 2      # phase id
+		rho             = 3300   # density
+		eta             = 1e24   # viscosity
+		G               = 5e10
+		ch              = 30e6    # Cohesion
+		fr              = 30
+		healID          = 2       #healing ID
+	<MaterialEnd>
 
 	
 #===============================================================================
