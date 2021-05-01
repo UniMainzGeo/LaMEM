@@ -112,7 +112,7 @@ struct ConstEqCtx
 	PetscScalar  DIIdis; // dislocation creep strain rate
 	PetscScalar  DIIprl; // Peierls creep strain rate
 	PetscScalar  DIIpl;  // plastic strain rate
-        PetscScalar  DIIdike; // strain rate due to dike openening   NEW FOR DIKE
+  //        PetscScalar  DIIdike; // strain rate due to dike openening   NEW FOR DIKE
         PetscScalar  yield;  // yield stress
 };
 
@@ -198,6 +198,6 @@ PetscErrorCode setDataPhaseDiagram(
 		char         pdn[]);
 
 //---------------------------------------------------------------------------
-PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar dikeRHS);
+PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS);
 
 #endif

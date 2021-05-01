@@ -650,11 +650,11 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	PData       *Pd;
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
-	Ph_trans_t  *PhaseTrans;   // NEW for dike
+	//	Ph_trans_t  *PhaseTrans;   // NEW for dike
 	PetscInt     i, numPhases;
 	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
-	PetscScalar  v_spread, M, left, right; // NEW FOR DIKE
-	BCCtx        *bc;     // NEW for dike
+	//	PetscScalar  v_spread, M, left, right; // NEW FOR DIKE
+	//	BCCtx        *bc;     // NEW for dike
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -670,8 +670,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	dt        = ctx->dt;
 	p         = ctx->p;
 	T         = ctx->T;
-       	bc        = ctx->bc;          // NEW for dike
-	PhaseTrans = ctx->PhaseTrans; // NEW for dike
+	//       	bc        = ctx->bc;          // NEW for dike
+	//	PhaseTrans = ctx->PhaseTrans; // NEW for dike
 	
 	p         = p+ctrl->pShift;
 
@@ -682,7 +682,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	Kavg           = 0.0;
 	svBulk->mf     = 0.0;
 	svBulk->rho_pf = 0.0;
-	svBulk->dikeRHS = 0.0;  // NEW for dike
+	//	svBulk->dikeRHS = 0.0;  // NEW for dike
 
 	
 	// scan all phases
@@ -774,7 +774,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			}
 
 			// dike
-			if(mat->Mb && mat->Mf)    // NEW for dike
+			/*if(mat->Mb && mat->Mf)    // NEW for dike
 			{
 			  if(mat->Mb == mat->Mf)
 			    {
@@ -784,30 +784,12 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
 				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s 
-			    }
-			  /*  else
-
-			  //            FDSTAG *fs;           
-			  // access context        
-			  //      fs = bc->fs;           
-			  //bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction   
-			  //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction 		
-			  if(front == back)    
-			  // linear interpolation between different M values, Mf is M in front, Mb is M in back         
-			  M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));  
-			  dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km
-			  }            
-			  else
-			  {// linear interpolation if the ridge/dike phase is oblique                  
-			  y = COORD_CELL(j,sy,fs->dsy); 
-			  M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
-			  dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km 
-			  } */
+				}
 			}
 			else
 		        {
 			    mat->dikeRHS = 0.0;
-			}
+			    } */
 
 			// update density, thermal expansion & inverse bulk elastic parameter, and dikeRHS depending on the cell ratios
 			svBulk->rho   += phRat[i]*rho;
@@ -1172,25 +1154,25 @@ PetscErrorCode setDataPhaseDiagram(
 
 #undef __FUNCT__
 #define __FUNCT__ "JacresGetDikeContr"
-PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar dikeRHS)
+PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
 {
   
-  BCCtx        *bc;     // NEW for dike
+  BCCtx       *bc;    
   Material_t  *mat, *phases;
   SolVarBulk  *svBulk;
   PetscScalar *phRat;
-  Ph_trans_t  *PhaseTrans;   // NEW for dike 
+  Ph_trans_t  *PhaseTrans; 
   PetscInt     i, numPhases;
-  PetscScalar  v_spread, M, left, right; // NEW FOR DIKE 
+  PetscScalar  v_spread, M, left, right;
   
-  svBulk    = ctx->svBulk;
-  numPhases = ctx->numPhases;
-  phases    = ctx->phases;
-  phRat     = ctx->phRat;
-  bc         = ctx->bc;          // NEW for dike                                                                                             
-  PhaseTrans = ctx->PhaseTrans; // NEW for dike
+  svBulk     = ctx->svBulk;
+  numPhases  = ctx->numPhases;
+  phases     = ctx->phases;
+  phRat      = ctx->phRat;
+  bc         = ctx->bc;     
+  PhaseTrans = ctx->PhaseTrans; 
 
-for(i = 0; i < numPhases; i++)
+  for(i = 0; i < numPhases; i++)
         {
                 // update present phases only                                                        
                                                                                                                                                 
@@ -1230,21 +1212,25 @@ for(i = 0; i < numPhases; i++)
                           dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km                
                           } */
 
-			//			else(!mat->Mb || !mat->Mf)
-			//                        {
+  			  //			else(!mat->Mb || !mat->Mf)
+			  //                        {
                           // no dike is set (could be removed since already in if-loop,       
                           // however what about the gres function where dikeRHS is subtracted? maybe needs to stay for that
 			  //                          mat->dikeRHS = 0.0;
 			  //                        }
 
 			dikeRHS += phRat[i]*mat->dikeRHS;   // NEW for dike
-
-			dikeRHS = svBulk->dikeRHS;      // store value for gres in volConstEq
                 }
-
         }
 
-        PetscFunctionReturn(0);
+  dikeRHS = svBulk->dikeRHS;      // store value for gres in structure svBulk
+
+  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS: %f \n", dikeRHS);
+  
+ PetscPrintf(PETSC_COMM_WORLD, "sv->Bulk->dikeRHS: %f \n", svBulk->dikeRHS);
+ 
+  PetscFunctionReturn(0);
+
 }
 
 // ------------------------------------------------------------------------------------------------------------------------
