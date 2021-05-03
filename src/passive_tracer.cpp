@@ -696,6 +696,13 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 					Active[jj]=0.0;
 				}
 
+			if(actx->jr->bc->Internal_Winkler)
+			{
+				if(zp<=actx->jr->bc->Winkler_Depth)
+				{
+					Active[jj] = 0.0;
+				}
+			}
 
 
 			Xp[jj]=npx;
@@ -1051,14 +1058,8 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 		}
 	}
 
-	if(actx->jr->bc->Internal_Winkler)
-	{
-		if(zp<=actx->jr->bc->Winkler_Depth)
-		{
-			Active[jj] = 0.0;
-		}
 
-	}
+
 
 	// overwrite the phase in case of delayed activation or if some condition are met
 
