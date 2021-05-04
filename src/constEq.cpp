@@ -1242,7 +1242,7 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
     PetscPrintf(PETSC_COMM_WORLD, "dikeRHS: %f \n", dikeRHS);}  // this is the same value as dikeRHS after phase ratio
   
   //    svBulk->dikeRHS = dikeRHS;      //this gives segmentation fault
-  //  dikeRHS = svBulk->dikeRHS;        // this works, but assigns a different value to dikeRHS so that dikeRHS != svBulk->dikeRHS
+    dikeRHS = svBulk->dikeRHS;        // this works, but assigns a different value to dikeRHS so that dikeRHS != svBulk->dikeRHS, if not assigend also two different values, where does svBulk->dikeRHS come from? (tested in DII removal test5)
   
   if (svBulk->dikeRHS != 0.0){                  // prints it although not set??? tht doesn't make sense
      PetscPrintf(PETSC_COMM_WORLD, "svBulk->dikeRHS: %f \n", svBulk->dikeRHS);}
