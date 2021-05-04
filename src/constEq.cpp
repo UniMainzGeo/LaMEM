@@ -902,7 +902,8 @@ PetscErrorCode cellConstEq(
 
 	    if (svBulk->dikeRHS != 0.0){
 
-	      PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in cellconst: %f \n", svBulk-> dikeRHS);}
+	      PetscPrintf(PETSC_COMM_WORLD, "dvBulk->dikeRHS in cellconst: %f \n", svBulk->dikeRHS);}
+	      //PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in cellconst: %f \n", dikeRHS)  // doesn't work because dikeRHS not declared
 	    
              gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->dikeRHS;  // [1/s] ;
           }
@@ -1159,7 +1160,7 @@ PetscErrorCode setDataPhaseDiagram(
 //           FOR DIKE Right hand side
 
 #undef __FUNCT__
-#define __FUNCT__ "JacresGetDikeContr"
+#define __FUNCT__ "JacResGetDikeContr"
 PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
 {
   
@@ -1178,6 +1179,8 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
   bc         = ctx->bc;     
   PhaseTrans = ctx->PhaseTrans; 
 
+  //svBulk->dikeRHS = 0.0;  // gives segmentation fault
+  
   for(i = 0; i < numPhases; i++)
         {
                 // update present phases only                                                        
@@ -1226,19 +1229,23 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
 			  //                        }
 
 			dikeRHS += phRat[i]*mat->dikeRHS;   // NEW for dike
+
+			if (dikeRHS != 0.0){
+			  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS after phase ratio: %f \n", dikeRHS);
+			}
+ 
                 }
         }
 
   if (dikeRHS != 0.0){
 
-    PetscPrintf(PETSC_COMM_WORLD, "dikeRHS: %f \n", dikeRHS);}
+    PetscPrintf(PETSC_COMM_WORLD, "dikeRHS: %f \n", dikeRHS);}  // this is the same value as dikeRHS after phase ratio
   
-  dikeRHS = svBulk->dikeRHS;      // store value for gres in structure svBulk
-
-  //PetscPrintf(PETSC_COMM_WORLD, "dikeRHS: %f \n", dikeRHS);
-
-   if (dikeRHS != 0.0){
-     PetscPrintf(PETSC_COMM_WORLD, "sv->Bulk->dikeRHS: %f \n", svBulk->dikeRHS);}
+  //    svBulk->dikeRHS = dikeRHS;      //this gives segmentation fault
+  //  dikeRHS = svBulk->dikeRHS;        // this works, but assigns a different value to dikeRHS so that dikeRHS != svBulk->dikeRHS
+  
+  if (svBulk->dikeRHS != 0.0){                  // prints it although not set??? tht doesn't make sense
+     PetscPrintf(PETSC_COMM_WORLD, "svBulk->dikeRHS: %f \n", svBulk->dikeRHS);}
  
   PetscFunctionReturn(0);
 
