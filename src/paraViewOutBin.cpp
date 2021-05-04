@@ -562,7 +562,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3, NULL);
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL);
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1, NULL);
-     	if(omask->DikeRHS)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "dike_rhs",       scal->lbl_strain_rate,      &PVOutWriteDikeRHS,      1, NULL);//NEW FOR DIKE
+     	if(omask->DikeRHS)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "dike_rhs",       scal->lbl_unit,             &PVOutWriteDikeRHS,      1, NULL);//NEW FOR DIKE
 	// Write instead of Writ in cont_res?
 
 	// setup phase aggregate output vectors

@@ -1152,7 +1152,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// function that computes dikeRHS and contribution depending on the phase ratio
 		  ierr =JacResGetDikeContr(&ctx, dikeRHS);  CHKERRQ(ierr);
 
-		  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in JacRes: %f \n", dikeRHS);
+		  if (dikeRHS!=0.0){
+		    PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in JacRes, cell#: %f \n", dikeRHS, iter);}
 		  
 		// dike contribution of strain rate
 		dikeDxx = (2.0/3.0) * dikeRHS;    // if dikeRHS is 0 nothing happens so no if-loop needed

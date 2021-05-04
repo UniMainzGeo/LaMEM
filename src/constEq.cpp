@@ -889,6 +889,7 @@ PetscErrorCode cellConstEq(
 	svCell->DIIdis = ctx->DIIdis; // relative dislocation creep strain rate
 	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
+
 	
 	// compute volumetric residual
 
@@ -898,6 +899,11 @@ PetscErrorCode cellConstEq(
           }
 	else if(ctrl->actDike)    // NEW option for dike without thermal expansion
           {
+
+	    if (svBulk->dikeRHS != 0.0){
+
+	      PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in cellconst: %f \n", svBulk-> dikeRHS);}
+	    
              gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->dikeRHS;  // [1/s] ;
           }
 	
@@ -1223,11 +1229,16 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
                 }
         }
 
+  if (dikeRHS != 0.0){
+
+    PetscPrintf(PETSC_COMM_WORLD, "dikeRHS: %f \n", dikeRHS);}
+  
   dikeRHS = svBulk->dikeRHS;      // store value for gres in structure svBulk
 
-  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS: %f \n", dikeRHS);
-  
- PetscPrintf(PETSC_COMM_WORLD, "sv->Bulk->dikeRHS: %f \n", svBulk->dikeRHS);
+  //PetscPrintf(PETSC_COMM_WORLD, "dikeRHS: %f \n", dikeRHS);
+
+   if (dikeRHS != 0.0){
+     PetscPrintf(PETSC_COMM_WORLD, "sv->Bulk->dikeRHS: %f \n", svBulk->dikeRHS);}
  
   PetscFunctionReturn(0);
 
