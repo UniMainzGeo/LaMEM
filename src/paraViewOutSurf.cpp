@@ -239,22 +239,22 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 
 	if(pvsurf->Mext_ID0S)
 	{
-		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[0].Name ,scal->lbl_volume);
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[0].Name ,scal->lbl_length);
 	}
 
 	if(pvsurf->Mext_ID1S)
 	{
-		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[1].Name ,scal->lbl_volume);
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[1].Name ,scal->lbl_length);
 	}
 
 	if(pvsurf->Mext_ID2S)
 	{
-		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[2].Name ,scal->lbl_volume);
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[2].Name ,scal->lbl_length);
 	}
 
 	if(pvsurf->Mext_ID3S)
 	{
-		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[3].Name ,scal->lbl_volume);
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"SURF_%s %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvsurf->surf->jr->dbm->matMexT[3].Name ,scal->lbl_length);
 	}
 
 	if(pvsurf->Moho)
@@ -671,7 +671,7 @@ PetscErrorCode PVSurfWriteMD0S(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	Mext = pvsurf->surf->jr->MEPar;
 	fs   = pvsurf->surf->jr->fs;
-	cf   = pvsurf->surf->jr->scal->volume;
+	cf   = pvsurf->surf->jr->scal->length;
 
 	// retrieve average topography
 
@@ -721,7 +721,7 @@ PetscErrorCode PVSurfWriteMD1S(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	Mext = pvsurf->surf->jr->MEPar;
 	fs   = pvsurf->surf->jr->fs;
-	cf   = pvsurf->surf->jr->scal->volume;
+	cf   = pvsurf->surf->jr->scal->length;
 
 	// retrieve average topography
 
@@ -771,7 +771,7 @@ PetscErrorCode PVSurfWriteMD2S(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	Mext = pvsurf->surf->jr->MEPar;
 	fs   = pvsurf->surf->jr->fs;
-	cf   = pvsurf->surf->jr->scal->volume;
+	cf   = pvsurf->surf->jr->scal->length;
 
 	// retrieve average topography
 
@@ -820,7 +820,7 @@ PetscErrorCode PVSurfWriteMD3S(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	Mext = pvsurf->surf->jr->MEPar;
 	fs   = pvsurf->surf->jr->fs;
-	cf   = pvsurf->surf->jr->scal->volume;
+	cf   = pvsurf->surf->jr->scal->length;
 
 	// retrieve average topography
 

@@ -963,7 +963,7 @@ PetscErrorCode Moho_Tracking(JacRes *jr)
 			Moho_b[2] = Moho[L][J2][I1];
 			Moho_b[3] = Moho[L][J2][I2];
 
-			buf = (Moho_b[0] + Moho_b[1] + Moho_b[2] + Moho_b[3])/4;
+			buf = (Moho_b[0] + Moho_b[1] + Moho_b[2] + Moho_b[3])/4.0;
 
 			// store advected topography
 
@@ -1057,11 +1057,6 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
 	cnt=0;
 
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-
-
-
 
 	// scan all free surface local points
 	START_PLANE_LOOP
@@ -1081,19 +1076,19 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 		if(J1 == my) J1--;
 		if(J2 == -1) J2++;
 
-		Melt[0] = lmelt[L][J1][I1]; if(Melt[0] < 0.0) Melt[0] = 0.0;
-		Melt[1] = lmelt[L][J1][I2]; if(Melt[1] < 0.0) Melt[1] = 0.0;
-		Melt[2] = lmelt[L][J2][I1]; if(Melt[2] < 0.0) Melt[2] = 0.0;
-		Melt[3] = lmelt[L][J2][I2]; if(Melt[3] < 0.0) Melt[3] = 0.0;
+		Melt[0] = lmelt[L][J1][I1];
+		Melt[1] = lmelt[L][J1][I2];
+		Melt[2] = lmelt[L][J2][I1];
+		Melt[3] = lmelt[L][J2][I2];
 
-		Vol[0] = lmelt[L][J1][I1]*dx*dy; if(Vol[0] < 0.0) Melt[0] = 0.0;
-		Vol[1] = lmelt[L][J1][I2]*dx*dy; if(Vol[1] < 0.0) Melt[1] = 0.0;
-		Vol[2] = lmelt[L][J2][I1]*dx*dy; if(Vol[2] < 0.0) Melt[2] = 0.0;
-		Vol[3] = lmelt[L][J2][I2]*dx*dy; if(Vol[3] < 0.0) Melt[3] = 0.0;
+		Vol[0] = lmelt[L][J1][I1]*dx*dy;
+		Vol[1] = lmelt[L][J1][I2]*dx*dy;
+		Vol[2] = lmelt[L][J2][I1]*dx*dy;
+		Vol[3] = lmelt[L][J2][I2]*dx*dy;
 
 
-		Layer = (Melt[0] + Melt[1] + Melt[2] + Melt[3])/4;
-		Vol_t = (Vol[0] + Vol[1] + Vol[2] + Vol[3])/4;
+		Layer = (Melt[0] + Melt[1] + Melt[2] + Melt[3])/4.0;
+		Vol_t = (Vol[0] + Vol[1] + Vol[2] + Vol[3])/4.0;
 		// get topography
 		z = topo[L][j][i];
 		//PetscPrintf(PETSC_COMM_WORLD," Topo Z = %6f\n",z*jr->scal->length);
@@ -1112,7 +1107,7 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 			topo[L][j][i] = z;
 		}
 
-		Dm_save[L][j][i]+=Vol_t;
+		Dm_save[L][j][i] += Vol_t/(dx*dy);
 
 	}
 	END_PLANE_LOOP
@@ -1124,18 +1119,25 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 	if(ID_ME==0)
 	{
 		ierr = DMDAVecRestoreArray(surf->DA_SURF, Mext->MeltID0S, &Dm_save); CHKERRQ(ierr);
+
+
 	}
 	else if(ID_ME == 1)
 	{
 		ierr = DMDAVecRestoreArray(surf->DA_SURF, Mext->MeltID1S, &Dm_save); CHKERRQ(ierr);
+
+
 	}
 	else if(ID_ME==2)
 	{
 		ierr = DMDAVecRestoreArray(surf->DA_SURF, Mext->MeltID2S, &Dm_save); CHKERRQ(ierr);
+
+
 	}
 	else if(ID_ME==3)
 	{
 		ierr = DMDAVecRestoreArray(surf->DA_SURF, Mext->MeltID3S, &Dm_save); CHKERRQ(ierr);
+
 	}
 
 
