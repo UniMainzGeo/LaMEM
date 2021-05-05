@@ -1147,21 +1147,21 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		if (jr->ctrl.actDike)
 		{
-		  dikeRHS = 0.0;
-		// function that computes dikeRHS and contribution depending on the phase ratio
-		  ierr = JacResGetDikeContr(&ctx, dikeRHS);  CHKERRQ(ierr);
+			dikeRHS = 0.0;
+			// function that computes dikeRHS and contribution depending on the phase ratio
+			ierr = JacResGetDikeContr(&ctx, svCell->phRat, &svCell->svBulk, dikeRHS);  CHKERRQ(ierr);
 
-		  if (dikeRHS!=0.0){ PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in JacRes: %f \n", dikeRHS);}  // the same as in cosntEq.cpp, GOOD!
+			if (dikeRHS!=0.0){ PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in JacRes: %f \n", dikeRHS);}  // the same as in cosntEq.cpp, GOOD!
 		  
-		// dike contribution of strain rate
-		dikeDxx = (2.0/3.0) * dikeRHS;    // if dikeRHS is 0 nothing happens so no if-loop needed
-		dikeDyy = - (1.0/3.0) * dikeRHS;    
-		dikeDzz = - (1.0/3.0) * dikeRHS;    
+			// dike contribution of strain rate
+			dikeDxx = (2.0/3.0) * dikeRHS;    // if dikeRHS is 0 nothing happens so no if-loop needed
+			dikeDyy = - (1.0/3.0) * dikeRHS;    
+			dikeDzz = - (1.0/3.0) * dikeRHS;    
 		
-		// subtract from original strain rate array
-		dxx[k][j][i] -= dikeDxx;                               // if dikeRHS is 0 all dike strainrates are 0, too so dxx, dyy, dzz are not changed
-		dyy[k][j][i] -= dikeDyy;
-		dzz[k][j][i] -= dikeDzz;
+			// subtract from original strain rate array
+			dxx[k][j][i] -= dikeDxx;                               // if dikeRHS is 0 all dike strainrates are 0, too so dxx, dyy, dzz are not changed
+			dyy[k][j][i] -= dikeDyy;
+			dzz[k][j][i] -= dikeDzz;
 		}
 		
 		// x-y plane, i-j indices
@@ -1220,10 +1220,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// evaluate constitutive equations on the cell
 		ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, dikeRHS); CHKERRQ(ierr);  
-
-
-		if (dikeRHS != 0.0){ PetscPrintf(PETSC_COMM_WORLD, "gres in jacres: %f \n", gres);  // get printed, 
-		  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in jacres2: %f \n", dikeRHS);}   //gets printed, gres is passed
 		
 		// compute gravity terms
 		gx = rho*grav[0];
@@ -1270,10 +1266,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	}
 	END_STD_LOOP
-
-
-	  PetscPrintf(PETSC_COMM_WORLD, "TEST1: %f \n");  // works until here
-
 	  
 	//-------------------------------
 	// xy edge points
@@ -1362,15 +1354,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		dy = SIZE_NODE(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 		Le = sqrt(dx*dx + dy*dy + dz*dz);
-
-
-		//		PetscPrintf(PETSC_COMM_WORLD, "TEST2: %f \n");  // woks
 		
 		// setup control volume parameters
 		ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le); CHKERRQ(ierr);
-
-
-		//		PetscPrintf(PETSC_COMM_WORLD, "TEST3: %f \n");  // works
 		
 		// evaluate constitutive equations on the edge
 		ierr = edgeConstEq(&ctx, svEdge, XY, sxy); CHKERRQ(ierr);
@@ -1608,7 +1594,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	  PetscPrintf(PETSC_COMM_WORLD, "TEST4: %f \n"); // works
+	//PetscPrintf(PETSC_COMM_WORLD, "TEST4: %f \n"); // works
 	  
 	// restore vectors
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
@@ -1631,7 +1617,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
 
 
-	PetscPrintf(PETSC_COMM_WORLD, "TEST5: %f \n"); // works
+	//PetscPrintf(PETSC_COMM_WORLD, "TEST5: %f \n"); // works
 	
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)

@@ -198,6 +198,6 @@ PetscErrorCode setDataPhaseDiagram(
 		char         pdn[]);
 
 //---------------------------------------------------------------------------
-PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS);
+PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, SolVarBulk  *svBulk, PetscScalar &dikeRHS);
 
 #endif
