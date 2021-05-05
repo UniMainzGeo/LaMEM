@@ -112,7 +112,6 @@ struct ConstEqCtx
 	PetscScalar  DIIdis; // dislocation creep strain rate
 	PetscScalar  DIIprl; // Peierls creep strain rate
 	PetscScalar  DIIpl;  // plastic strain rate
-  //        PetscScalar  DIIdike; // strain rate due to dike openening   NEW FOR DIKE
         PetscScalar  yield;  // yield stress
 };
 
@@ -175,7 +174,8 @@ PetscErrorCode cellConstEq(
 		PetscScalar &syy,    // ...
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
-		PetscScalar &rho);   // effective density
+		PetscScalar &rho,   // effective density
+		PetscScalar dikeRHS);   // 
 
 // evaluate constitutive equations on the edge
 PetscErrorCode edgeConstEq(

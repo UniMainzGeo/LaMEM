@@ -336,7 +336,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->moment_res)     cnt++; // momentum residual
 	if(omask->cont_res)       cnt++; // continuity residual
 	if(omask->energ_res)      cnt++; // energy residual
-        if(omask->DikeRHS)        cnt++; // dike right hand side (added divergence)  //NEW FOR DIKE
+        if(omask->dikeRHS)        cnt++; // dike right hand side (added divergence)  //NEW FOR DIKE
 	
 	// phase aggregates
 	cnt += omask->num_agg;
@@ -405,7 +405,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
-        ierr = getIntParam   (fb, _OPTIONAL_, "out_dike_rhs",       &omask->DikeRHS,           1, 1); CHKERRQ(ierr);  // NEW FOR DIKE
+        ierr = getIntParam   (fb, _OPTIONAL_, "out_dike_rhs",       &omask->dikeRHS,           1, 1); CHKERRQ(ierr);  // NEW FOR DIKE
 	
 	// read phase aggregates
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseAggStart>", "<PhaseAggEnd>"); CHKERRQ(ierr);
@@ -474,7 +474,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->energ_res)      PetscPrintf(PETSC_COMM_WORLD, "   energy residual                         @ \n");
 	if(omask->melt_fraction)  PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction                           @ \n");
 	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
-        if(omask->DikeRHS)        PetscPrintf(PETSC_COMM_WORLD, "   Dike rhs (added divergence)             @ \n");   // NEW FOR DIKE
+        if(omask->dikeRHS)        PetscPrintf(PETSC_COMM_WORLD, "   Dike rhs (added divergence)             @ \n");   // NEW FOR DIKE
 	
 	for(i = 0; i < omask->num_agg; i++)
 	{
@@ -562,7 +562,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3, NULL);
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL);
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1, NULL);
-     	if(omask->DikeRHS)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "dike_rhs",       scal->lbl_strain_rate,      &PVOutWriteDikeRHS,      1, NULL);//NEW FOR DIKE
+     	if(omask->dikeRHS)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "dike_rhs",       scal->lbl_strain_rate,      &PVOutWriteDikeRHS,      1, NULL);//NEW FOR DIKE
 	// Write instead of Writ in cont_res?
 
 	// setup phase aggregate output vectors

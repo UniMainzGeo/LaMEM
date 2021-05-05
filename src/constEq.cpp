@@ -550,7 +550,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 {
 	// compute residual of the nonlinear visco-elastic constitutive equation
 
-  PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl; //, DIIdike;
+  PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl; 
 
 	// access context
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
@@ -564,7 +564,6 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	//       	DIIdike pass here from Jacres. and then subtract, but is it necessary in the first place?
 	
 		
 	// residual function (r)
@@ -572,7 +571,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	// r > 0 if eta < solution (positive on undershoot)
 
 	
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl); // + DIIdike);  //  substract additionally, see above //NEW FOR DIKE  
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
 	  
 }
 
@@ -650,11 +649,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	PData       *Pd;
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
-	//	Ph_trans_t  *PhaseTrans;   // NEW for dike
 	PetscInt     i, numPhases;
 	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
-	//	PetscScalar  v_spread, M, left, right; // NEW FOR DIKE
-	//	BCCtx        *bc;     // NEW for dike
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -670,9 +666,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	dt        = ctx->dt;
 	p         = ctx->p;
 	T         = ctx->T;
-	//       	bc        = ctx->bc;          // NEW for dike
-	//	PhaseTrans = ctx->PhaseTrans; // NEW for dike
-	
+
 	p         = p+ctrl->pShift;
 
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
@@ -682,8 +676,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	Kavg           = 0.0;
 	svBulk->mf     = 0.0;
 	svBulk->rho_pf = 0.0;
-	//	svBulk->dikeRHS = 0.0;  // NEW for dike
-
+	
 	
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -773,28 +766,9 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				rho = mat->rho*cf_comp*cf_therm;
 			}
 
-			// dike
-			/*if(mat->Mb && mat->Mf)    // NEW for dike
-			{
-			  if(mat->Mb == mat->Mf)
-			    {
-			      // constant M
-				M = mat->Mf;
-				v_spread = PetscAbs(bc->velin);
-				left = PhaseTrans->bounds[0];
-				right = PhaseTrans->bounds[1];
-				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s 
-				}
-			}
-			else
-		        {
-			    mat->dikeRHS = 0.0;
-			    } */
-
-			// update density, thermal expansion & inverse bulk elastic parameter, and dikeRHS depending on the cell ratios
+			// update density, thermal expansion & inverse bulk elastic parameter
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
-		       	svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // NEW for dike
 		}
 	}
 
@@ -816,7 +790,8 @@ PetscErrorCode cellConstEq(
 		PetscScalar &syy,    // ...
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
-		PetscScalar &rho)    // effective density
+		PetscScalar &rho,    // effective density
+	        PetscScalar dikeRHS) // dike RHS for gres, with & or not?, with & because the value is already assigned....?
 {
 	// evaluate constitutive equations on the cell
 
@@ -833,7 +808,7 @@ PetscErrorCode cellConstEq(
 	svDev  = ctx->svDev;
 	svBulk = ctx->svBulk;
 	ctrl   = ctx->ctrl;
-	
+
 	// evaluate deviatoric constitutive equation
 	ierr = devConstEq(ctx); CHKERRQ(ierr);
 
@@ -890,22 +865,22 @@ PetscErrorCode cellConstEq(
 	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
-	
-	// compute volumetric residual
 
 	if(ctrl->actExp && ctrl->actDike)    // NEW option for dike
           {
-            gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + svBulk->dikeRHS;  // [1/s]
+            gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;  // [1/s]
           }
 	else if(ctrl->actDike)    // NEW option for dike without thermal expansion
           {
-
-	    if (svBulk->dikeRHS != 0.0){
-
-	      PetscPrintf(PETSC_COMM_WORLD, "dvBulk->dikeRHS in cellconst: %f \n", svBulk->dikeRHS);}
-	      //PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in cellconst: %f \n", dikeRHS)  // doesn't work because dikeRHS not declared
+	    if(dikeRHS != 0.0){
+	    PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in cellconst1: %f \n", dikeRHS);
+	    PetscPrintf(PETSC_COMM_WORLD, "svBulk->dikeRHS in cellconst1: %f \n", svBulk->dikeRHS);
+	    PetscPrintf(PETSC_COMM_WORLD, "theta in cellconst1: %f \n", svBulk->theta);}
 	    
-             gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->dikeRHS;  // [1/s] ;
+             gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;  // [1/s] ;
+
+	     if(dikeRHS != 0.0){
+	       PetscPrintf(PETSC_COMM_WORLD, "gres in cellconst2: %f \n", gres);}
           }
 	
 	else if(ctrl->actExp)
@@ -1179,12 +1154,12 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
   bc         = ctx->bc;     
   PhaseTrans = ctx->PhaseTrans; 
 
-  //svBulk->dikeRHS = 0.0;  // gives segmentation fault
+  // initialize
+   svBulk->dikeRHS = 0.0;  
   
   for(i = 0; i < numPhases; i++)
         {
-                // update present phases only                                                        
-                                                                                                                                                
+                // update present phases only          
                 if(phRat[i])
                 {
                         // get reference to material parameters table                                                   
@@ -1219,35 +1194,24 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, PetscScalar &dikeRHS)
                           y = COORD_CELL(j,sy,fs->dsy);                                                          
                           M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));                                      
                           dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km                
-                          } */
+                          } */ 
 
-  			  //			else(!mat->Mb || !mat->Mf)
-			  //                        {
-                          // no dike is set (could be removed since already in if-loop,       
-                          // however what about the gres function where dikeRHS is subtracted? maybe needs to stay for that
-			  //                          mat->dikeRHS = 0.0;
-			  //                        }
+			  else
+			  {                                                                                                                                                                          mat->dikeRHS = 0.0;                                                        
+			  }
 
-			dikeRHS += phRat[i]*mat->dikeRHS;   // NEW for dike
-
-			if (dikeRHS != 0.0){
-			  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS after phase ratio: %f \n", dikeRHS);
-			}
- 
+		        svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // NEW for dike
+			
+			if(svBulk->dikeRHS != 0.0){PetscPrintf(PETSC_COMM_WORLD, "svBulk->dikeRHS after phase ratio: %f \n", svBulk->dikeRHS);}
+			
                 }
         }
 
-  if (dikeRHS != 0.0){
-
-    PetscPrintf(PETSC_COMM_WORLD, "dikeRHS: %f \n", dikeRHS);}  // this is the same value as dikeRHS after phase ratio
+  dikeRHS = svBulk->dikeRHS; // to pass the variable/value of the variable to JacResFormResidual(), WORkS!
   
-  //    svBulk->dikeRHS = dikeRHS;      //this gives segmentation fault
-    dikeRHS = svBulk->dikeRHS;        // this works, but assigns a different value to dikeRHS so that dikeRHS != svBulk->dikeRHS, if not assigend also two different values, where does svBulk->dikeRHS come from? (tested in DII removal test5)
+  if(dikeRHS != 0.0){PetscPrintf(PETSC_COMM_WORLD, "dikeRHS after assignment: %f \n", dikeRHS);}  // is the same as svBulk->dikeRHS, GOOD!
   
-  if (svBulk->dikeRHS != 0.0){                  // prints it although not set??? tht doesn't make sense
-     PetscPrintf(PETSC_COMM_WORLD, "svBulk->dikeRHS: %f \n", svBulk->dikeRHS);}
- 
-  PetscFunctionReturn(0);
+    PetscFunctionReturn(0);
 
 }
 
