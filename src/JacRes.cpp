@@ -1134,7 +1134,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	{
 		// access solution variables
 		svCell = &jr->svCell[iter++];
-
 		
 		//=================
 		// SECOND INVARIANT
@@ -1151,15 +1150,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 			// function that computes dikeRHS and contribution depending on the phase ratio
 			ierr = JacResGetDikeContr(&ctx, svCell->phRat, &svCell->svBulk, dikeRHS);  CHKERRQ(ierr);
 
-			if (dikeRHS!=0.0){ PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in JacRes: %f \n", dikeRHS);}  // the same as in cosntEq.cpp, GOOD!
-		  
 			// dike contribution of strain rate
-			dikeDxx = (2.0/3.0) * dikeRHS;    // if dikeRHS is 0 nothing happens so no if-loop needed
+			dikeDxx = (2.0/3.0) * dikeRHS;   
 			dikeDyy = - (1.0/3.0) * dikeRHS;    
 			dikeDzz = - (1.0/3.0) * dikeRHS;    
 		
 			// subtract from original strain rate array
-			dxx[k][j][i] -= dikeDxx;                               // if dikeRHS is 0 all dike strainrates are 0, too so dxx, dyy, dzz are not changed
+			dxx[k][j][i] -= dikeDxx;
 			dyy[k][j][i] -= dikeDyy;
 			dzz[k][j][i] -= dikeDzz;
 		}
@@ -1594,8 +1591,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	//PetscPrintf(PETSC_COMM_WORLD, "TEST4: %f \n"); // works
-	  
 	// restore vectors
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
@@ -1617,8 +1612,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
 
 
-	//PetscPrintf(PETSC_COMM_WORLD, "TEST5: %f \n"); // works
-	
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
 	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)

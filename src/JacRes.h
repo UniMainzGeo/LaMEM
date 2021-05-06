@@ -86,7 +86,7 @@ struct SolVarBulk
 	PetscScalar  rho_pf; // fluid density from phase diagram
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
-        PetscScalar  dikeRHS; // additional term on RHS in divergence equation
+        PetscScalar  dikeRHS; // additional term on RHS in divergence equation, can be removed if not plotted
 	PetscScalar  Ha ;    // Adiabatic heating
 
 };

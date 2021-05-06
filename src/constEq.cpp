@@ -791,7 +791,7 @@ PetscErrorCode cellConstEq(
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
 		PetscScalar &rho,    // effective density
-		PetscScalar dikeRHS) // dike RHS for gres, with & or not?, with & because the value is already assigned....?
+		PetscScalar dikeRHS) // dike RHS for gres, with & or not?
 {
 	// evaluate constitutive equations on the cell
 
@@ -872,17 +872,7 @@ PetscErrorCode cellConstEq(
           }
 	else if(ctrl->actDike)    // NEW option for dike without thermal expansion
           {
-	    	if(dikeRHS != 0.0)
-	    	{
-	    		PetscPrintf(PETSC_COMM_WORLD, "dikeRHS in cellconst1: %f \n", dikeRHS);
-	   			PetscPrintf(PETSC_COMM_WORLD, "svBulk->dikeRHS in cellconst1: %f \n", svBulk->dikeRHS);
-	    //PetscPrintf(PETSC_COMM_WORLD, "theta in cellconst1: %f \n", svBulk->theta);}
-	   		}
-	    
              gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;  // [1/s] ;
-
-	     if(dikeRHS != 0.0){
-	       PetscPrintf(PETSC_COMM_WORLD, "gres in cellconst2: %f \n", gres);}
           }
 	
 	else if(ctrl->actExp)
@@ -1134,32 +1124,29 @@ PetscErrorCode setDataPhaseDiagram(
 }
 
 //---------------------------------------------------------------------------
-//           FOR DIKE Right hand side
-
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetDikeContr"
-PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx, 
-			PetscScalar *phRat,  // phase ratios in the control volume
-			SolVarBulk  *svBulk, // volumetric variables
-			PetscScalar &dikeRHS)
-{
-  
+PetscErrorCode JacResGetDikeContr(ConstEqCtx  *ctx, 
+			          PetscScalar *phRat,          // phase ratios in the control volume
+			          SolVarBulk  *svBulk,         // volumetric variables
+			          PetscScalar &dikeRHS)
+{ 
 	BCCtx       *bc;    
 	Material_t  *mat, *phases;
 	Ph_trans_t  *PhaseTrans; 
 	PetscInt     i, numPhases;
 	PetscScalar  v_spread, M, left, right;
+
 	numPhases  = ctx->numPhases;
 	phases     = ctx->phases;
 	bc         = ctx->bc;     
 	PhaseTrans = ctx->PhaseTrans; 
-
+        // ctx->phRat  = phRat;  // phase ratios in the control volume      ? not necessary ?
+        // ctx->svBulk = svBulk; // volumetric variables 
+	
 	// initialize
 	svBulk->dikeRHS = 0.0;
-        	  //PetscPrintf(PETSC_COMM_WORLD, ">>>mat->Mb=%f \n",i,numPhases,mat->Mb);
-			  //PetscPrintf(PETSC_COMM_WORLD, ">>>phRat%f \n",phRat[i]);
-
-  
+          
 	for(i = 0; i < numPhases; i++)
 	{
         // update present phases only          
@@ -1176,7 +1163,7 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx,
 				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
 				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s
-			}
+	    }
 			/* else                                                                                                                                           
                            {                                                                                                                               
                           // Mb an Mf are different                                                                                                               
@@ -1199,20 +1186,17 @@ PetscErrorCode JacResGetDikeContr(ConstEqCtx *ctx,
                           dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km                
                           } */ 
 
-			  else
-			  {                                                                                                                                                                          mat->dikeRHS = 0.0;                                                        
-			  }
+	    else
+	      {
+		mat->dikeRHS = 0.0;                                                        
+	      }
 
-			svBulk->dikeRHS += phRat[i]*mat->dikeRHS;   // NEW for dike
-			
-			//if(svBulk->dikeRHS != 0.0){PetscPrintf(PETSC_COMM_WORLD, "svBulk->dikeRHS after phase ratio: %f \n", svBulk->dikeRHS);}
+	    svBulk->dikeRHS += phRat[i]*mat->dikeRHS; 
 			
         }
 	}
 
-	dikeRHS = svBulk->dikeRHS; // to pass the variable/value of the variable to JacResFormResidual(), WORkS!
-  
-  	//if(dikeRHS != 0.0){PetscPrintf(PETSC_COMM_WORLD, "dikeRHS after assignment: %f \n", dikeRHS);}  // is the same as svBulk->dikeRHS, GOOD!
+	dikeRHS = svBulk->dikeRHS;   
   
     PetscFunctionReturn(0);
 
