@@ -76,6 +76,7 @@ public:
 	PetscScalar APS2; // end of softening APS
 	PetscScalar A;    // reduction ratio
 	PetscScalar Lm;   // material length scale
+        PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
 
 };
 
@@ -192,8 +193,10 @@ public:
 	PetscScalar  ch;                // cohesion
 	PetscScalar  eta_st;            // stabilization viscosity
 	PetscScalar  rp;                // ratio of pore pressure to overburden stress
+  //	PetscScalar  healTau;           // for healing [Myr], 1e30 if not defined 
 	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID;          // cohesion softening law ID (-1 if not defined)
+        PetscInt     healID;            // healing ID (-1 if not defined)   
 	// thermal parameters
 	PetscScalar  alpha;             // thermal expansivity                        [1/K]
 	PetscScalar  Cp;                // cpecific heat (capacity)                   [J/kg/K]

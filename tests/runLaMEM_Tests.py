@@ -35,6 +35,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't20_FSSA'))
 sys.path.append(os.path.join(os.environ['PWD'], 't21_Passive_Tracer'))
 sys.path.append(os.path.join(os.environ['PWD'], 't22_RidgeGeom'))
 sys.path.append(os.path.join(os.environ['PWD'], 't23_Permeable'))
+sys.path.append(os.path.join(os.environ['PWD'], 't25_APS_Healing'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
@@ -65,6 +66,7 @@ import test_20_FSSA as FSSA
 import test_21_Passive_Tracer as PTracer
 import test_22_RidgeGeom as Ridge
 import test_23_Permeable as Permeable
+import test_25_APS_Healing as APShealing
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1     as Sub1 # import test that requires MATLAB
@@ -96,7 +98,7 @@ registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       InOut.test_2D(), InOut.test_3D(),InOut.test_2D_Pres(), InOut.test_3D_Pres(),SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), 
                       CI.test_a(), CI.test_b(),
                       FSSA.test_1(),PTracer.test_a(),PTracer.test_b(),
-                      Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique(),Permeable.test_a()];
+                      Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique(),Permeable.test_a(), APShealing.test_2D(), APShealing.test_2cores()];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)

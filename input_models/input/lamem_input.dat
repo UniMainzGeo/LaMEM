@@ -566,6 +566,7 @@
 		APS2 		= 1.0 	# end of softening APS
 		A    		= 0.7 	# reduction ratio
 		Lm   		= 0.2 	# material length scale (in selected units, e.g. km in geo)
+		healTau		= 1e-3  # healing parameter [Myr]  
 	<SofteningEnd>
 	
 # Define Phase Transition laws (maximum 10)
@@ -609,12 +610,7 @@
         
         PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
         PTBox_cstTemp          	=   1200                            # Temp within box [only for constant T]
-<<<<<<< HEAD
-   <PhaseTransitionEnd>
-=======
-						
-	<PhaseTransitionEnd>
->>>>>>> master
+<PhaseTransitionEnd>
 
 
 # Define material properties for all phases (maximum 32)
@@ -667,19 +663,15 @@
 		rp         = 0.7    # pore-pressure ratio
 		chSoftID   = 0      # friction softening law ID
 		frSoftID   = 0      # cohesion softening law ID
+		healID     = 0	    # healing ID, points to healTau in Softening
 		alpha      = 3e-5   # thermal expansivity
 		Cp         = 1.2e3  # specific heat (capacity)
 		k          = 2.5    # thermal conductivity
 		A          = 1e-9   # radiogenic heat production
 		T          = 100.0  # optional temperature to set within the phase
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
-<<<<<<< HEAD
                 rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
 		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar)
-=======
-        rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
-		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar; usually ~30 for olivine)
->>>>>>> master
 	<MaterialEnd>
 
 #===============================================================================
