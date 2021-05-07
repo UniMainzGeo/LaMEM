@@ -11,7 +11,7 @@
  **         55128 Mainz, Germany
  **
  **    project:    LaMEM
- **    filename:   meltParamKatz.h
+ **    filename:   meltParam.h
  **
  **    LaMEM is free software: you can redistribute it and/or modify
  **    it under the terms of the GNU General Public License as published
@@ -53,8 +53,8 @@
 // Available at http://www.ldeo.columbia.edu/~katz/meltParam/
 //---------------------------------------------------------------------------
 
-#ifndef __meltParamKatz_h__
-#define __meltParamKatz_h__
+#ifndef __meltParam_h__
+#define __meltParam_h__
 
 #define UNUSED    1e20
 #define MAXITS    60
