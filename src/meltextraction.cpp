@@ -469,7 +469,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 	Vec          global_volume ;
 	PetscScalar  bz, ez;
 	PetscScalar  IR, dx, dy, dz,Z,DZ;
-	PetscScalar  ***Thickness, D, D1, ***MohoG,***DMin,***DMax,vol;
+	PetscScalar  ***Thickness, D, D1, ***MohoG,***DMin,***DMax,vol,Vol_Cor;
 	PetscScalar  *vdgmvvec, *vdgmvvecmerge, ***vdgmvvecmerge2, ***vdgmvvec2, ***Mipbuff;
 
 	PetscErrorCode ierr;
@@ -482,6 +482,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 	L = (PetscInt)fs->dsz.rank; // rank of the processor
 	IR = M_Ex_t[ID_ME].IR; // Amount of intrusion that has to be injected within the crust
 	surf = jr->surf;
+	Vol_Cor = M_Ex_t[ID_ME].VolCor;
 
 
 	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
@@ -502,7 +503,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 
 	START_STD_LOOP
 	{
-		vdgmvvec2[L][j][i] += Mipbuff[k][j][i];
+		vdgmvvec2[L][j][i] += Vol_Cor*Mipbuff[k][j][i];
 	}
 	END_STD_LOOP
 
@@ -1816,7 +1817,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 						dM = Compute_dM(mfeff, M_Ex_t, jr->ts->dt);
 
 
-						Mipbuff[k][j][i] += -VolCor*phRat[iphase] * dM*dx*dy*dz;
+						Mipbuff[k][j][i] += -phRat[iphase] * dM*dx*dy*dz;
 
 					}
 					else
