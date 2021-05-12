@@ -101,7 +101,7 @@ PetscErrorCode DBMatReadMeltExtraction_Par(DBMat *dbm, FB *fb)
 	{
 		melt_par->Type = _Constant_mf_;
 	}
-	if(!strcmp(Type_,"_Constant_flux_"))
+	else if(!strcmp(Type_,"_Constant_flux_"))
 	{
 		melt_par->Type = _Constant_flux_;
 
