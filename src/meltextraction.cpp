@@ -92,7 +92,7 @@ PetscErrorCode DBMatReadMeltExtraction_Par(DBMat *dbm, FB *fb)
 	ierr = getStringParam(fb, _REQUIRED_, "Name", melt_par->Name,0);  CHKERRQ(ierr);
 	if (!melt_par->Name)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type (Constant) (Clapeyron) ", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the name of melt extraction law ", (LLD)ID);
 	}
 
 	ierr    =   getStringParam(fb, _REQUIRED_, "Type",Type_,NULL);  CHKERRQ(ierr);
@@ -104,6 +104,11 @@ PetscErrorCode DBMatReadMeltExtraction_Par(DBMat *dbm, FB *fb)
 	if(!strcmp(Type_,"_Constant_flux_"))
 	{
 		melt_par->Type = _Constant_flux_;
+
+	}
+	else
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct type of melt extraction ", (LLD)ID);
 
 	}
 
@@ -133,7 +138,7 @@ PetscErrorCode DBMatReadMeltExtraction_Par(DBMat *dbm, FB *fb)
 		ierr = getIntParam(fb, _OPTIONAL_, "mf_max_flux",&melt_par->mf_cap_flux, 1, 1); CHKERRQ(ierr);
 
 
-		melt_par->timescale = melt_par->timescale* scal->time;
+		melt_par->timescale = melt_par->timescale/ scal->time;
 
 	}
 
@@ -1680,25 +1685,30 @@ PetscScalar Compute_dM(PetscScalar mfeff, Melt_Ex_t *M_Ex_t, PetscScalar dt)
 //----------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Compute_dMex_Marker"
-PetscScalar Compute_dMex_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase )
+PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase, PetscScalar Pr, PetscScalar Tc )
 {
-	PetscInt      n,ipn,c=0,phase,*mark_id,id_m;
-	PetscScalar   Mext_b,Mext;
+	PetscInt         n,ipn,c=0,phase,*mark_id,id_m;
+	PetscScalar      mfeff_b,mfeff;
+	PData            *pd;
+
+	PetscErrorCode ierr;
 
 
-
+	pd  = actx->jr->Pd;
 	n = actx->markstart[ID+1] - actx->markstart[ID];
 	mark_id = actx->markind + actx->markstart[ID];
 
 
-	Mext = 0.0;
+	mfeff = 0.0;
 	for(ipn=0;ipn<n;ipn++)
 	{
 		id_m = mark_id[ipn];
 		phase = actx->markers[id_m].phase;
 		if(phase == iphase)
 		{
-			Mext += actx->markers[id_m].MExt;
+			ierr = setDataPhaseDiagram(pd, Pr, Tc, actx->dbm->phases[iphase].pdn); CHKERRQ(ierr);
+
+			mfeff += pd->mf-actx->markers[id_m].MExt;
 
 			c ++;
 		}
@@ -1706,13 +1716,13 @@ PetscScalar Compute_dMex_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase )
 
 	if(c>0)
 	{
-		Mext_b = Mext/c;
+		mfeff_b = mfeff/c;
 	}
 	else
 	{
-		Mext_b = 0.0;
+		mfeff_b = 0.0;
 	}
-	return Mext_b;
+	return mfeff_b;
 }
 //--------------------------------------------------------------
 #undef __FUNCT__
@@ -1725,7 +1735,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 	Melt_Extraction_t 	*Mext	;
 	Material_t     *phases;
 
-	PetscScalar    ***Mipbuff,VolCor;
+	PetscScalar    ***Mipbuff;
 	PetscInt       i, j, k, nx, ny, nz, sx, sy, sz, iter, iphase;
 	PetscInt       numPhases;
 	PetscScalar    *phRat;
@@ -1733,7 +1743,6 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 	PetscScalar    ***T,Tc;
 	PetscScalar    mfeff,dx,dy,dz,dM;
 	PetscInt       ID;
-	PetscScalar  dMext;
 
 
 	PetscErrorCode ierr;
@@ -1745,7 +1754,6 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 	pd  = jr->Pd;
 	phases =dbm->phases;
 	Mext   =  jr->MEPar;
-	VolCor = M_Ex_t->VolCor;
 
 	iter = 0;
 
@@ -1791,31 +1799,31 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 
 					dM  	= 0.0;
 					mfeff   = 0.0;
-					dMext   = 0.0;
 					// current pressure
 					if(phases[iphase].pdAct==1)
 					{
-
+						// check if exist a bit of melt within the cell
 						ierr = setDataPhaseDiagram(pd, pc, Tc, phases[iphase].pdn); CHKERRQ(ierr);
 
-						dMext=Compute_dMex_Marker(actx, ID,iphase);
+						if(pd->mf>0.0)
+						{
+							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
+							mfeff=Compute_mfeff_Marker(actx, ID,iphase,pc,Tc);
 
-						mfeff = pd->mf - dMext;
-
+						}
 
 						if(mfeff<0.0) mfeff=0.0;
 
 					}
 					else
 					{
-
+						// place holder for the
 					}
 
 					if(mfeff>M_Ex_t->Mtrs)
 					{
-
+						// compute the dM
 						dM = Compute_dM(mfeff, M_Ex_t, jr->ts->dt);
-
 
 						Mipbuff[k][j][i] += -phRat[iphase] * dM*dx*dy*dz;
 
