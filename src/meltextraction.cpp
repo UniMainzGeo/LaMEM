@@ -395,7 +395,6 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 		M_Ex_t = jr->dbm->matMexT+ID_ME;
 
 		IR = M_Ex_t->IR;
-		Vol_cor = M_Ex_t->VolCor;
 
 		ierr = Set_to_zero_Vector(jr); CHKERRQ(ierr);
 
@@ -403,7 +402,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 
 		ierr = MeltExtractionExchangeVolume(jr,ID_ME,update,actx);            CHKERRQ(ierr);
 
-		ierr = Update_Volumetric_source(jr,IR,Vol_cor);                                  CHKERRQ(ierr);
+		ierr = Update_Volumetric_source(jr,IR);                                  CHKERRQ(ierr);
 	}
 
 
@@ -426,7 +425,6 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 
 	PetscInt       update;
 	PetscInt       ID_ME;
-	PetscScalar    IR;
 
 	if((jr->ctrl.initGuess == 1) | (jr->ctrl.MeltExt == 0)) PetscFunctionReturn(0);
 
@@ -1107,7 +1105,7 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 		//PetscPrintf(PETSC_COMM_WORLD," Topo Z = %6f\n",z*jr->scal->length);
 
 		// uniformly advect
-		z += Ext_fraction*Layer;
+		z += M_Ex_t[ID_ME].VolCor*Ext_fraction*Layer;
 
 		// check if internal free surface goes outside the model domain
 		if(z > ztop) z = ztop;
@@ -1750,7 +1748,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 	PetscScalar    *phRat;
 	PetscScalar    ***p,pc;
 	PetscScalar    ***T,Tc;
-	PetscScalar    mfeff,dx,dy,dz,dM,mext;
+	PetscScalar    mfeff,dx,dy,dz,dM,mext,mfeff2,dm2;
 	PetscInt       ID;
 
 
@@ -1816,10 +1814,10 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 						if(pd->mf>0.0)
 						{
 							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
-							//mfeff=Compute_mfeff_Marker(actx, ID,iphase,pc,Tc);
+							mfeff2=Compute_mfeff_Marker(actx, ID,iphase,pc,Tc);
 							mfeff = pd->mf - mext;
 
-							PetscPrintf(PETSC_COMM_WORLD,"mfeff = %6f\n", mfeff);
+							PetscPrintf(PETSC_COMM_WORLD,"mfeff_diff = %6f\n", mfeff2-mfeff);
 
 
 						}
@@ -1836,7 +1834,9 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 					{
 						// compute the dM
 						dM = Compute_dM(mfeff, M_Ex_t, jr->ts->dt);
-						PetscPrintf(PETSC_COMM_WORLD,"dM = %6f\n", dM);
+						dm2 = Compute_dM(mfeff2, M_Ex_t, jr->ts->dt);
+
+						PetscPrintf(PETSC_COMM_WORLD,"dM = %6f, dm2 = %6f, diff = %6f\n",dM, dm2,dm2-dM);
 
 
 						Mipbuff[k][j][i] += -phRat[iphase] * dM*dx*dy*dz;
@@ -1890,7 +1890,7 @@ PetscErrorCode Set_to_zero_Volumetric_source(JacRes *jr)
 //------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Update_Volumetric_source"
-PetscErrorCode Update_Volumetric_source(JacRes *jr, PetscScalar IR, PetscScalar Vol_cor)
+PetscErrorCode Update_Volumetric_source(JacRes *jr, PetscScalar IR)
 {
 	SolVarBulk            *svBulk ;
 	SolVarCell            *svCell ;
@@ -1922,7 +1922,7 @@ PetscErrorCode Update_Volumetric_source(JacRes *jr, PetscScalar IR, PetscScalar 
 			volumetric_source = Mipbuff[k][j][i];
 			if(volumetric_source <0.0)
 			{
-			volumetric_source = Vol_cor*IR*volumetric_source;
+			volumetric_source = IR*volumetric_source;
 			}
 			svBulk->Vol_S += (1-(dx*dy*dz)/(dx*dy*dz+volumetric_source));
 

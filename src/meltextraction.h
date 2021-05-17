@@ -82,7 +82,7 @@ PetscScalar Compute_dM(PetscScalar mf, Melt_Ex_t *M_Ex_t, PetscScalar dt);
 PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase );
 PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscInt ID_ME,  Melt_Ex_t *M_Ex_t);
 PetscErrorCode Set_to_zero_Volumetric_source(JacRes *jr);
-PetscErrorCode Update_Volumetric_source(JacRes *jr,PetscScalar IR,PetscScalar Vol_cor);
+PetscErrorCode Update_Volumetric_source(JacRes *jr,PetscScalar IR);
 PetscErrorCode Save_Pressure_Temperature_Melt_Extracted(JacRes *jr,PetscInt ID_ME);
 PetscErrorCode Set_to_zero_Vector(JacRes *jr);
 
