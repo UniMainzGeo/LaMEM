@@ -371,6 +371,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 	Melt_Ex_t      *M_Ex_t	;
 	PetscInt       update;
 	PetscInt       ID_ME;
+	PetscScalar    IR,Vol_cor;
 
 
 	PetscErrorCode ierr;
@@ -393,13 +394,16 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 		// Access to the melt extraction context
 		M_Ex_t = jr->dbm->matMexT+ID_ME;
 
+		IR = M_Ex_t->IR;
+		Vol_cor = M_Ex_t->VolCor;
+
 		ierr = Set_to_zero_Vector(jr); CHKERRQ(ierr);
 
 		ierr = Compute_Comulative_Melt_Extracted(jr,actx, ID_ME,M_Ex_t); CHKERRQ(ierr);
 
 		ierr = MeltExtractionExchangeVolume(jr,ID_ME,update,actx);            CHKERRQ(ierr);
 
-		ierr = Update_Volumetric_source(jr);                                  CHKERRQ(ierr);
+		ierr = Update_Volumetric_source(jr,IR,Vol_cor);                                  CHKERRQ(ierr);
 	}
 
 
@@ -422,6 +426,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 
 	PetscInt       update;
 	PetscInt       ID_ME;
+	PetscScalar    IR;
 
 	if((jr->ctrl.initGuess == 1) | (jr->ctrl.MeltExt == 0)) PetscFunctionReturn(0);
 
@@ -437,6 +442,8 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 
 			// Access to the melt extraction context
 			M_Ex_t = jr->dbm->matMexT+ID_ME;
+
+
 
 			ierr = Set_to_zero_Vector(jr); CHKERRQ(ierr);
 
@@ -1708,7 +1715,7 @@ PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase, Petsc
 		phase = IP->phase;
 		if(phase == iphase)
 		{
-			ierr = setDataPhaseDiagram(pd, Pr, Tc, actx->dbm->phases[iphase].pdn); CHKERRQ(ierr);
+			ierr = setDataPhaseDiagram(pd, IP->p, IP->T, actx->dbm->phases[iphase].pdn); CHKERRQ(ierr);
 
 			mfeff += pd->mf-IP->MExt;
 
@@ -1883,13 +1890,13 @@ PetscErrorCode Set_to_zero_Volumetric_source(JacRes *jr)
 //------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Update_Volumetric_source"
-PetscErrorCode Update_Volumetric_source(JacRes *jr)
+PetscErrorCode Update_Volumetric_source(JacRes *jr, PetscScalar IR, PetscScalar Vol_cor)
 {
 	SolVarBulk            *svBulk ;
 	SolVarCell            *svCell ;
 	Melt_Extraction_t     *Mext;
 
-	PetscScalar         ***Mipbuff;
+	PetscScalar         ***Mipbuff,volumetric_source;
 	PetscScalar         dx,dy,dz;
 	PetscInt i,j,k,iter,nx,ny,nz,sx,sy,sz;
 	PetscErrorCode ierr;
@@ -1906,13 +1913,18 @@ PetscErrorCode Update_Volumetric_source(JacRes *jr)
 	GET_CELL_RANGE(nz, sz, jr->fs->dsz);
 
 	START_STD_LOOP{
+			volumetric_source = 0.0;
 			svCell = &jr->svCell[iter] ;// take the central node based properties
 			svBulk = &svCell->svBulk ;
 			dx = SIZE_CELL(i,sx,jr->fs->dsx);
 			dy = SIZE_CELL(j,sy,jr->fs->dsy);
 			dz = SIZE_CELL(k,sz,jr->fs->dsz);
-
-			svBulk->Vol_S += (1-(dx*dy*dz)/(dx*dy*dz+Mipbuff[k][j][i]));
+			volumetric_source = Mipbuff[k][j][i];
+			if(volumetric_source <0.0)
+			{
+			volumetric_source = Vol_cor*IR*volumetric_source;
+			}
+			svBulk->Vol_S += (1-(dx*dy*dz)/(dx*dy*dz+volumetric_source));
 
 
 			iter++;
