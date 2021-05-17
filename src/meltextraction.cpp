@@ -1814,10 +1814,10 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 						if(pd->mf>0.0)
 						{
 							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
-							mfeff2=Compute_mfeff_Marker(actx, ID,iphase,pc,Tc);
-							mfeff = pd->mf - mext;
+							mfeff=Compute_mfeff_Marker(actx, ID,iphase,pc,Tc);
+							//mfeff = pd->mf - mext;
 
-							PetscPrintf(PETSC_COMM_WORLD,"mfeff_diff = %6f\n", mfeff2-mfeff);
+							//PetscPrintf(PETSC_COMM_WORLD,"mfeff_diff = %6f\n", mfeff2-mfeff);
 
 
 						}
@@ -1834,9 +1834,9 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 					{
 						// compute the dM
 						dM = Compute_dM(mfeff, M_Ex_t, jr->ts->dt);
-						dm2 = Compute_dM(mfeff2, M_Ex_t, jr->ts->dt);
+						//dm2 = Compute_dM(mfeff2, M_Ex_t, jr->ts->dt);
 
-						PetscPrintf(PETSC_COMM_WORLD,"dM = %6f, dm2 = %6f, diff = %6f\n",dM, dm2,dm2-dM);
+						//PetscPrintf(PETSC_COMM_WORLD,"dM = %6f, dm2 = %6f, diff = %6f\n",dM, dm2,dm2-dM);
 
 
 						Mipbuff[k][j][i] += -phRat[iphase] * dM*dx*dy*dz;
