@@ -126,7 +126,7 @@ PetscErrorCode DBMatReadMeltExtraction_Par(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "VolCor",&melt_par->VolCor, 1, 1.0); CHKERRQ(ierr);
 	if(!melt_par->VolCor)
 	{
-		melt_par->VolCor = 0.85; // Alternatively one might a more sophisticated approach
+		melt_par->VolCor = 1.0; // Alternatively one might a more sophisticated approach
 	}
 
 
@@ -153,7 +153,7 @@ PetscErrorCode DBMatReadMeltExtraction_Par(DBMat *dbm, FB *fb)
 	if(melt_par->Type == _Constant_flux_)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"   timescale                                       :   %1.3f [%s]  \n", melt_par->timescale*scal->time,scal->lbl_time)    ;
-		PetscPrintf(PETSC_COMM_WORLD,"   volumetric_flux (Mleft/timescale)               :   %1.3f [1/%s]\n", melt_par->Mleft/(melt_par->timescale)*scal->time,scal->lbl_time) ;
+		PetscPrintf(PETSC_COMM_WORLD,"   volumetric_flux (Mleft/timescale)               :   %1.3f [1/yrs]\n", melt_par->Mleft/((melt_par->timescale)*scal->time*1e6)) ;
 	}
 	PetscPrintf(PETSC_COMM_WORLD,"   T Intrusion                                     :   %1.0f [%s]\n",   melt_par->TInt*scal->temperature - scal->Tshift, scal->lbl_temperature)                           ;
 	PetscPrintf(PETSC_COMM_WORLD,"   IR (proportion of intrusion)                    :   %1.3f [n.d.]\n", melt_par->IR)                           ;
@@ -371,7 +371,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 	Melt_Ex_t      *M_Ex_t	;
 	PetscInt       update;
 	PetscInt       ID_ME;
-	PetscScalar    IR,Vol_cor;
+	PetscScalar    IR;
 
 
 	PetscErrorCode ierr;
@@ -816,7 +816,7 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 
 			if(phases[P->phase].ID_MELTEXT==ID_ME)
 			{
-				ierr =  setDataPhaseDiagram(pd, p[sz+K][sy+J][sx+I], T[sz+K][sy+J][sx+I], jr->dbm->phases[P->phase].pdn); CHKERRQ(ierr);
+				ierr =  setDataPhaseDiagram(pd, P->p, P->T, jr->dbm->phases[P->phase].pdn); CHKERRQ(ierr);
 
 				mfeff = pd->mf - P->MExt;
 				dM = Compute_dM(mfeff, M_Ex_t, jr->ts->dt);
@@ -1087,10 +1087,10 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 		if(J1 == my) J1--;
 		if(J2 == -1) J2++;
 
-		Melt[0] = lmelt[L][J1][I1];
-		Melt[1] = lmelt[L][J1][I2];
-		Melt[2] = lmelt[L][J2][I1];
-		Melt[3] = lmelt[L][J2][I2];
+		Melt[0] = lmelt[L][J1][I1];if(Melt[0]<0.0) Melt[0]=0.0;
+		Melt[1] = lmelt[L][J1][I2];if(Melt[1]<0.0) Melt[1]=0.0;
+		Melt[2] = lmelt[L][J2][I1];if(Melt[2]<0.0) Melt[2]=0.0;
+		Melt[3] = lmelt[L][J2][I2];if(Melt[3]<0.0) Melt[3]=0.0;
 
 		Vol[0] = lmelt[L][J1][I1]*dx*dy;
 		Vol[1] = lmelt[L][J1][I2]*dx*dy;
@@ -1690,7 +1690,7 @@ PetscScalar Compute_dM(PetscScalar mfeff, Melt_Ex_t *M_Ex_t, PetscScalar dt)
 //----------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Compute_mfeff_Marker"
-PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase, PetscScalar Pr, PetscScalar Tc )
+PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase)
 {
 	PetscInt         n,ipn,c,phase,*mark_id,id_m;
 	PetscScalar      mfeff_b,mfeff;
@@ -1748,7 +1748,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 	PetscScalar    *phRat;
 	PetscScalar    ***p,pc;
 	PetscScalar    ***T,Tc;
-	PetscScalar    mfeff,dx,dy,dz,dM,mext,mfeff2,dm2;
+	PetscScalar    mfeff,dx,dy,dz,dM;
 	PetscInt       ID;
 
 
@@ -1782,7 +1782,6 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 		dz = SIZE_CELL(k,sz,fs->dsz);
 
 		phRat = actx->jr->svCell[iter].phRat; // take phase ratio on the central node
-		mext  = actx->jr->svCell[iter++].svBulk.mfext_cur;
 		GET_CELL_ID(ID, i-sx, j-sy, k-sz, fs->dsx.ncels, fs->dsy.ncels)
 
 
@@ -1814,7 +1813,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 						if(pd->mf>0.0)
 						{
 							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
-							mfeff=Compute_mfeff_Marker(actx, ID,iphase,pc,Tc);
+							mfeff=Compute_mfeff_Marker(actx, ID,iphase);
 							//mfeff = pd->mf - mext;
 
 							//PetscPrintf(PETSC_COMM_WORLD,"mfeff_diff = %6f\n", mfeff2-mfeff);
@@ -1920,10 +1919,10 @@ PetscErrorCode Update_Volumetric_source(JacRes *jr, PetscScalar IR)
 			dy = SIZE_CELL(j,sy,jr->fs->dsy);
 			dz = SIZE_CELL(k,sz,jr->fs->dsz);
 			volumetric_source = Mipbuff[k][j][i];
-			if(volumetric_source <0.0)
-			{
-			volumetric_source = IR*volumetric_source;
-			}
+			//if(volumetric_source <0.0)
+			//{
+			//volumetric_source = volumetric_source;
+			//}
 			svBulk->Vol_S += (1-(dx*dy*dz)/(dx*dy*dz+volumetric_source));
 
 
