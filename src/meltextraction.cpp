@@ -1690,7 +1690,7 @@ PetscScalar Compute_dM(PetscScalar mfeff, Melt_Ex_t *M_Ex_t, PetscScalar dt)
 //----------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Compute_mfeff_Marker"
-PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase)
+PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase,PetscScalar pc, PetscScalar Tc)
 {
 	PetscInt         n,ipn,c,phase,*mark_id,id_m;
 	PetscScalar      mfeff_b,mfeff;
@@ -1713,7 +1713,7 @@ PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase)
 		phase = IP->phase;
 		if(phase == iphase)
 		{
-			ierr = setDataPhaseDiagram(pd, IP->p, IP->T, actx->dbm->phases[iphase].pdn); CHKERRQ(ierr);
+			ierr = setDataPhaseDiagram(pd, pc, Tc, actx->dbm->phases[iphase].pdn); CHKERRQ(ierr);
 
 			mfeff += pd->mf-IP->MExt;
 
@@ -1813,11 +1813,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 						if(pd->mf>0.0)
 						{
 							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
-							mfeff=Compute_mfeff_Marker(actx, ID,iphase);
-							//mfeff = pd->mf - mext;
-
-							//PetscPrintf(PETSC_COMM_WORLD,"mfeff_diff = %6f\n", mfeff2-mfeff);
-
+							mfeff=Compute_mfeff_Marker(actx, ID,iphase, pc,Tc);
 
 						}
 
