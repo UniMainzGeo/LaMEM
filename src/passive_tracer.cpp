@@ -696,6 +696,13 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 					Active[jj]=0.0;
 				}
 
+			if(actx->jr->bc->Internal_Winkler)
+						{
+							if(zp<=actx->jr->bc->Winkler_Depth)
+							{
+								Active[jj] = 0.0;
+							}
+						}
 
 
 			Xp[jj]=npx;
