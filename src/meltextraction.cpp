@@ -811,8 +811,8 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 
 		DM = Dm_save[sz+K][sy+J][sx+I];
 
-		if(DM!=0.0)
-		{
+		//if(DM!=0.0)
+		//{
 
 			if(phases[P->phase].ID_MELTEXT==ID_ME)
 			{
@@ -834,7 +834,7 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 				}
 			}
 
-			}
+			//}
 	}
 
 
