@@ -814,7 +814,7 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 		//if(DM!=0.0)
 		//{
 
-			if(phases[P->phase].ID_MELTEXT==ID_ME)
+			if(phases[P->phase].ID_MELTEXT==ID_ME && P->phase != actx->surf->AirPhase )
 			{
 				ierr =  setDataPhaseDiagram(pd, P->p, P->T, jr->dbm->phases[P->phase].pdn); CHKERRQ(ierr);
 
@@ -1690,7 +1690,7 @@ PetscScalar Compute_dM(PetscScalar mfeff, Melt_Ex_t *M_Ex_t, PetscScalar dt)
 //----------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Compute_mfeff_Marker"
-PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase,PetscScalar pc, PetscScalar Tc)
+PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase)
 {
 	PetscInt         n,ipn,c,phase,*mark_id,id_m;
 	PetscScalar      mfeff_b,mfeff;
@@ -1713,7 +1713,7 @@ PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase,PetscS
 		phase = IP->phase;
 		if(phase == iphase)
 		{
-			ierr = setDataPhaseDiagram(pd, pc, Tc, actx->dbm->phases[iphase].pdn); CHKERRQ(ierr);
+			ierr = setDataPhaseDiagram(pd, IP->p, IP->T, actx->dbm->phases[iphase].pdn); CHKERRQ(ierr);
 
 			mfeff += pd->mf-IP->MExt;
 
@@ -1781,7 +1781,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 		dy = SIZE_CELL(j,sy,fs->dsy);
 		dz = SIZE_CELL(k,sz,fs->dsz);
 
-		phRat = actx->jr->svCell[iter].phRat; // take phase ratio on the central node
+		phRat = actx->jr->svCell[iter++].phRat; // take phase ratio on the central node
 		GET_CELL_ID(ID, i-sx, j-sy, k-sz, fs->dsx.ncels, fs->dsy.ncels)
 
 
@@ -1795,7 +1795,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 				if(phRat[iphase]>0.0)
 				{
 
-					if(phRat[iphase]>1.0) PetscPrintf(PETSC_COMM_SELF," phRat = %6f \n",phRat[iphase]);
+
 
 					pc = p[k][j][i];
 											// current temperature
@@ -1813,7 +1813,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 						if(pd->mf>0.0)
 						{
 							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
-							mfeff=Compute_mfeff_Marker(actx, ID,iphase, pc,Tc);
+							mfeff=Compute_mfeff_Marker(actx, ID,iphase);
 
 						}
 
