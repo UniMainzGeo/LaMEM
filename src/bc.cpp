@@ -507,7 +507,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->Gaussian_Pet_num != -1)
 	{
 		bc->Gaussian_Dim = 1;
-		ierr = getIntParam   (fb, _OPTIONAL_, "Gaussian_Dim", &bc->Gaussian_Dim, 1,1.0);  CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "Gaussian_Dim", &bc->Gaussian_Dim, 1,2);  CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "Gaussian_Pet_cen_x",  bc->Gaussian_Pet_cen_x, bc->Gaussian_Pet_num, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "Gaussian_Pet_rad",  bc->Gaussian_Pet_rad, bc->Gaussian_Pet_num, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "Gaussian_Pet_dT",   bc->Gaussian_Pet_dT,  bc->Gaussian_Pet_num, 1.0); CHKERRQ(ierr);
