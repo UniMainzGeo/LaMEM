@@ -259,6 +259,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// SCALE
 
 	s->Lm /= scal->length;
+	
 	if(s->healTau) 
 	{
 		s->healTau /= scal->time; 

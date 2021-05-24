@@ -193,7 +193,6 @@ public:
 	PetscScalar  ch;                // cohesion
 	PetscScalar  eta_st;            // stabilization viscosity
 	PetscScalar  rp;                // ratio of pore pressure to overburden stress
-  //	PetscScalar  healTau;           // for healing [Myr], 1e30 if not defined 
 	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID;          // cohesion softening law ID (-1 if not defined)
         PetscInt     healID;            // healing ID (-1 if not defined)   

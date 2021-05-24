@@ -787,7 +787,7 @@ PetscErrorCode cellConstEq(
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
 		PetscScalar &rho,    // effective density
-		PetscScalar dikeRHS) // dike RHS for gres
+		PetscScalar dikeRHS) // dike RHS for gres calculation
 {
 	// evaluate constitutive equations on the cell
 
@@ -1137,8 +1137,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
 	phases     = ctx->phases;
 	bc         = ctx->bc;     
 	PhaseTrans = ctx->PhaseTrans; 
-        // ctx->phRat  = phRat;  // phase ratios in the control volume      ? not necessary ?
-        // ctx->svBulk = svBulk; // volumetric variables 
 	
 	// initialize
 	svBulk->dikeRHS = 0.0;

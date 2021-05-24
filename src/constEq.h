@@ -60,7 +60,7 @@ struct JacRes;
 struct Ph_trans_t;
 struct DBMat;
 struct Scaling;
-struct BCCtx; // for dike
+struct BCCtx; 
 //---------------------------------------------------------------------------
 
 // constitutive equations evaluation context
