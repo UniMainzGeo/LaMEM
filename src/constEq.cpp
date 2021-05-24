@@ -64,7 +64,7 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 
 	PetscFunctionBegin;
 
-	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity, NEW for dikephase
+	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity
 	ctx->numPhases =  jr->dbm->numPhases; // number phases
 	ctx->phases    =  jr->dbm->phases;    // phase parameters
 	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
@@ -513,10 +513,6 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		// compute stress
 		tauII = 2.0*eta*DII; 
 
-		//              conv = solveBisect(eta_mean, eta_min, ctrl->lrtol*DII, ctrl->lmaxit, eta, it, getConsEqResDike, ctx);   check for different tauII
-		//		tauII_dike = 2.0*eta*DII_dike;
-		// PetscPrintf(PETSC_COMM_WORLD, " incl dike removal %f \n", tauII_dike); tau should be bigger without the dike
-
 	}
 
 	// update iteration statistics
@@ -791,7 +787,7 @@ PetscErrorCode cellConstEq(
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
 		PetscScalar &rho,    // effective density
-		PetscScalar dikeRHS) // dike RHS for gres, with & or not?
+		PetscScalar dikeRHS) // dike RHS for gres
 {
 	// evaluate constitutive equations on the cell
 
@@ -866,13 +862,13 @@ PetscErrorCode cellConstEq(
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
 
-	if(ctrl->actExp && ctrl->actDike)    // NEW option for dike
+	if(ctrl->actExp && ctrl->actDike) 
           {
-            gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;  // [1/s]
+            gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
           }
-	else if(ctrl->actDike)    // NEW option for dike without thermal expansion
+	else if(ctrl->actDike)   
           {
-             gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;  // [1/s] ;
+             gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS; 
           }
 	
 	else if(ctrl->actExp)
@@ -1125,8 +1121,8 @@ PetscErrorCode setDataPhaseDiagram(
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResGetDikeContr"
-PetscErrorCode JacResGetDikeContr(ConstEqCtx  *ctx, 
+#define __FUNCT__ "GetDikeContr"
+PetscErrorCode GetDikeContr(ConstEqCtx  *ctx, 
 			          PetscScalar *phRat,          // phase ratios in the control volume
 			          SolVarBulk  *svBulk,         // volumetric variables
 			          PetscScalar &dikeRHS)
