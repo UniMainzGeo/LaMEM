@@ -76,7 +76,7 @@ public:
 	PetscScalar APS2; // end of softening APS
 	PetscScalar A;    // reduction ratio
 	PetscScalar Lm;   // material length scale
-        PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
+	PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
 
 };
 
@@ -135,7 +135,7 @@ public:
 	PetscScalar     DensityAbove[_max_tr_];
 	PetscScalar     DensityBelow[_max_tr_];
 
-  PetscScalar     topTemp;
+	PetscScalar     topTemp;
     PetscScalar     botTemp;
     PetscScalar     cstTemp;
     PetscScalar     thermalAge;
@@ -195,18 +195,18 @@ public:
 	PetscScalar  rp;                // ratio of pore pressure to overburden stress
 	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID;          // cohesion softening law ID (-1 if not defined)
-        PetscInt     healID;            // healing ID (-1 if not defined)   
+	PetscInt     healID;            // healing ID (-1 if not defined)   
 	// thermal parameters
 	PetscScalar  alpha;             // thermal expansivity                        [1/K]
 	PetscScalar  Cp;                // cpecific heat (capacity)                   [J/kg/K]
 	PetscScalar  k;                 // thermal conductivity                       [W/m/k]
 	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
 	PetscScalar  T;                 // optional temperature to set within the phase
-        // dike parameters
-        PetscScalar  Mf;                // for dike phase only, amount of magma-accommodated extenison in front of box
-        PetscScalar  Mb;      	        // for dike phase only, amount of magma-accommodated extenison in back of box
-        PetscScalar  M;
-        PetscScalar  dikeRHS;
+	// dike parameters
+	PetscScalar  Mf;                // for dike phase only, amount of magma-accommodated extenison in front of box
+	PetscScalar  Mb;      	        // for dike phase only, amount of magma-accommodated extenison in back of box
+	PetscScalar  M;                 // for dike phase only, amount of magma-accommodated extenison in total 
+	PetscScalar  dikeRHS;           // for dike phase only, additional term for RHS due to added divergence in dike 
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number
@@ -261,7 +261,7 @@ struct DBMat
 	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
 	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties                 
-        PetscInt     numPhtr;                // number material softening laws
+	PetscInt     numPhtr;                // number material softening laws
 };
 
 // read material database

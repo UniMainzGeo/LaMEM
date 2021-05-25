@@ -86,7 +86,7 @@ struct SolVarBulk
 	PetscScalar  rho_pf; // fluid density from phase diagram
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
-        PetscScalar  dikeRHS; // additional term on RHS in divergence equation, can be removed if not plotted
+	PetscScalar  dikeRHS; // additional term on RHS in divergence equation, it can be removed from here if dikeRHS is not wished to be plotted
 	PetscScalar  Ha ;    // Adiabatic heating
 
 };
@@ -190,7 +190,7 @@ struct Controls
 	PetscInt    Passive_Tracer; // Flag to activate passive tracer routine
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
-        PetscInt    actDike;         // Flag to activate dike, additional term on RHS of divergence   
+	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence   
 
 };
 

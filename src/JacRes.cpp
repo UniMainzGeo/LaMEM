@@ -140,7 +140,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
     ierr = getIntParam   (fb, _OPTIONAL_, "Passive_Tracer",  &ctrl->Passive_Tracer, 1, 1);          	CHKERRQ(ierr);
     ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms,     1, 1);          	CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,          1, 1.0);        	CHKERRQ(ierr);
-        ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr); 
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr); 
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;

@@ -78,7 +78,7 @@ struct ConstEqCtx
 	PetscScalar  dt;        	// time step
 	PetscScalar  stats[3];  	// total number of [starts, successes, iterations]
 	PetscScalar  avg_topo;  	// average surface topography
-        BCCtx        *bc;               // boundary conditions, velin for dike
+	BCCtx        *bc;           // boundary conditions, necessary for velin for dike
   
 	// control volume parameters
 	PetscScalar *phRat;  // phase ratios in the control volume
@@ -101,9 +101,9 @@ struct ConstEqCtx
 	PetscScalar  A_prl;  // Peierls constant
 	PetscScalar  N_prl;  // Peierls exponent
 	PetscScalar  taupl;  // plastic yield stress
-        PetscScalar  dikeDxx;  // xx component of strain rate due to dike
-        PetscScalar  dikeDyy;  // yy component of strain rate due to dike
-        PetscScalar  dikeDzz;  // zz component of strain rate due to dike
+	PetscScalar  dikeDxx;  // xx component of strain rate due to dike
+	PetscScalar  dikeDyy;  // yy component of strain rate due to dike
+	PetscScalar  dikeDzz;  // zz component of strain rate due to dike
   
 	// control volume results
 	PetscScalar  eta;    // effective viscosity
@@ -175,7 +175,7 @@ PetscErrorCode cellConstEq(
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
 		PetscScalar &rho,   // effective density
-		PetscScalar dikeRHS);   // 
+		PetscScalar dikeRHS);   // additional term due to dike divergence when computing RHS
 
 // evaluate constitutive equations on the edge
 PetscErrorCode edgeConstEq(

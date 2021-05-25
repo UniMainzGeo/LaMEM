@@ -430,63 +430,6 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 }
 
-/*  ierr = getStringParam(fb, _REQUIRED_, "Parameter_transition",   Parameter, "none");  CHKERRQ(ierr);
-        if(!strcmp(Parameter, "T"))
-        {
-                ph->Parameter_transition = _T_;
-		}*/    // WAS THIS HERE OR DID I ACCIDENTALLY COPY THIS HERE?
-
-//------------------------------------------------------------------------------------------------------------//                                                                     
-/* #undef __FUNCT__
-#define __FUNCT__ "Check_AirPhaseRatio_Box_Transition()"
-PetscErrorCode Check_AirPhaseRatio_Box_Transition(Material_t *mat, Controls ctrl, SolVarCell *svCell) //those ones only if new box feature: Ph_trans_t *ph, DBMat *dbm, FB *fb
-{
-        PetscInt     k, j, i, nx, ny, nz, sx, sy, sz, iter;
-        PetscInt     AirPhase;
-	PetscScalar  *phRat;
-//     	  FDSTAG      *fs;  // likely not needed
-        JacRes       *jr;
-	Controls     ctrl;   // how to declare
-	SolVarCell   *svCell;   // how to declare
-	
-        // access context                                                                                                                                                           
-	AirPhase  = jr->surf->AirPhase;
-	phRat     = ctx->phRat;
-//        ctrl      = ctx->ctrl;
-
-	// initialize
-	AirPhase = 0;
-	iter      = 0;
-	
-        PetscFunctionBegin;
-
-	if(ctrl->actDike) {
-
-	  // loop on all cells: access air phase ratio ( FROM FreeSurfGetAirPhaseRatio() )
-
-	  START_STD_LOOP
-	    {
-	      // access phase ratio array                                                                                                                      
-	      phRat = jr->svCell[iter++].phRat;
-      
-	      if(phRat[AirPhase] > 0.5) { 
-		// turn dike off: 
-
-		// get reference to material parameters table 
-		//mat = &phases[i];
-
-		mat->Mf = 0; 
-		mat->Mb = 0;
-
-	      }
-
-	    }
-	  END_STD_LOOP
-
-	}
-
-	} */
-
 // ---------------------------------------------------------------------------------------------------------- //
 #undef __FUNCT__
 #define __FUNCT__ "Overwrite_Density"
@@ -747,17 +690,14 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	PetscInt 	ph, InAbove;
 
 	PetscScalar T;
-	// access context   // NEW for the dike box option where air phase is not turned into dike phase
-	//	ctrl      = ctx->ctrl;  when to use "Controls *ctrl" and when "Controls ctrl" ??
-	// When to use ctrl->actDike and when ctrl.actDike?
 
 	ph = P->phase;
 	T  = P->T;
-        InAbove =       0; 
+	InAbove =       0; 
 	
 	if (PhaseTrans->Type==_Box_ && ctrl.actDike)
 	{
-	  Check_DikeBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);            // compute phase & T within Box of dike, ignore airphase particles        
+	  Check_DikeBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box of dike, ignore airphase particles        
         }
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
@@ -933,60 +873,58 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 //------------------------------------------------------------------------------------------------------------//                                                          
 PetscInt Check_DikeBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
 {
-        PetscInt     ph, AirPhase;
-        PetscScalar  T;
+	PetscInt     ph, AirPhase;                
+	PetscScalar  T;
 
-	AirPhase=0.0;
-	//	 PetscPrintf(PETSC_COMM_WORLD, "initialized airphase: %g \n", AirPhase);
+	AirPhase = 0.0;
+
 	AirPhase  = jr->surf->AirPhase;
-	//	PetscPrintf(PETSC_COMM_WORLD, "pointed airphase: %g \n", AirPhase);
-        ph = P->phase;
-        T  = P->T;
+	ph = P->phase;
+	T  = P->T;
 	
-        if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
-                 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
-             (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase    ){           // NEW condition: no airPhase particles are used
+	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
+		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
+		 (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase  ){ 
 
-                // We are within the box
-	        ph = PH1;
+		// We are within the box
+		ph = PH1;
 
-                // Set the temperature structure                                                                 
-                if(PhaseTrans->TempType == 0){
-                        // do nothing                                                                                                                                    
-                }
-                else if (PhaseTrans->TempType == 1){
-                        // constant T inside                                                                      
-                        T = PhaseTrans->cstTemp;
-                }
-                else if (PhaseTrans->TempType == 2){
-                        // linear temperature profile
-                        PetscScalar zTop, zBot, topTemp, botTemp, d;
-                        zTop    =       PhaseTrans->bounds[5];  // top    of domain                                                                                      
-                        zBot    =       PhaseTrans->bounds[4];  // bottom of domain                                                                                      
-                        topTemp =       PhaseTrans->topTemp;    // T @ top                                                                                               
-                        botTemp =       PhaseTrans->botTemp;    // T @ bottom                                                                                           
-
-                        d               =       (P->X[2]-zTop)/(zTop-zBot);             // normalized distance to top                                                    
-                        T               =       d*(topTemp-botTemp) + topTemp;  // temperature profile                                                                   
-                }
-		else if (PhaseTrans->TempType == 3){
-                        // halfspace cooling T inside                                                                                                                     
-                        PetscScalar zTop, topTemp, botTemp, T_age, d, kappa;
-                        zTop    =       PhaseTrans->bounds[5];  // top    of domain                                                                                      
-                        topTemp =       PhaseTrans->topTemp;    // T @ top
+		// Set the temperature structure                                                                 
+		if      (PhaseTrans->TempType == 0){
+			// do nothing                                                                                                                                    
+		}
+		else if (PhaseTrans->TempType == 1){
+			// constant T inside                                                                      
+			T = PhaseTrans->cstTemp;
+		}
+		else if (PhaseTrans->TempType == 2){
+			// linear temperature profile
+			PetscScalar zTop, zBot, topTemp, botTemp, d;
+			zTop    =       PhaseTrans->bounds[5];  // top    of domain                                                                                      
+			zBot    =       PhaseTrans->bounds[4];  // bottom of domain                                                                                      
+			topTemp =       PhaseTrans->topTemp;    // T @ top                                                                                               
 			botTemp =       PhaseTrans->botTemp;    // T @ bottom                                                                                           
-                        T_age   =       PhaseTrans->thermalAge; // thermal age                                                        
 
-                        kappa   =       1e-6/( (scal->length_si)*(scal->length_si)/(scal->time_si));
+			d		=       (P->X[2]-zTop)/(zTop-zBot);             // normalized distance to top                                                    
+			T		=       d*(topTemp-botTemp) + topTemp;  // temperature profile                                                                   
+		}
+		else if (PhaseTrans->TempType == 3){
+			// halfspace cooling T inside                                                                                                                     
+			PetscScalar zTop, topTemp, botTemp, T_age, d, kappa;
+			zTop    =       PhaseTrans->bounds[5];  // top    of domain                                                                                      
+			topTemp =       PhaseTrans->topTemp;    // T @ top
+			botTemp =       PhaseTrans->botTemp;    // T @ bottom                                                                                           
+			T_age   =       PhaseTrans->thermalAge; // thermal age                                                        
 
-                        d               =       zTop - P->X[2];
-                        T               =       (botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
-                }
-        }
-        else{
-	  
-	  // Outside; keep T
-	  ph = PH2;
+			kappa   =       1e-6/( (scal->length_si)*(scal->length_si)/(scal->time_si));
+
+			d		=       zTop - P->X[2];
+			T		=       (botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
+		}
+	}
+	else{  
+		// Outside; keep T
+		ph = PH2;
 	}
 
 	// return
