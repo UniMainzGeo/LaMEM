@@ -814,7 +814,7 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 		//if(DM!=0.0)
 		//{
 
-			if(phases[P->phase].ID_MELTEXT==ID_ME && P->phase != actx->surf->AirPhase )
+			if(phases[P->phase].ID_MELTEXT==ID_ME && P->phase != actx->surf->AirPhase)
 			{
 				ierr =  setDataPhaseDiagram(pd, P->p, P->T, jr->dbm->phases[P->phase].pdn); CHKERRQ(ierr);
 

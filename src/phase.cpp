@@ -296,7 +296,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
-	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
+	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title,mexID;
 	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
@@ -322,6 +322,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
     eta_st   =  0.0;
 	chSoftID = -1;
 	frSoftID = -1;
+	mexID    = -1;
 	MSN      =  dbm->numSoft - 1;
 
 	// phase ID
@@ -484,7 +485,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// melt fraction viscosity parametrization
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "ID_Melt_Ex", &m->ID_MELTEXT, 1, -1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "ID_Melt_Ex", &mexID, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "PhNext", &m->PhNext, 1, _max_num_phases_); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "pMant", &m->pMant, 1, 1); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
@@ -532,6 +533,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// set softening law IDs
 	m->chSoftID = chSoftID;
 	m->frSoftID = frSoftID;
+
+	// melt extraction id
+	m->ID_MELTEXT = mexID;
 
 	// DIFFUSION
 
@@ -721,6 +725,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);
 		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
 		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
+		if(mexID    != -1) PetscPrintf(PETSC_COMM_WORLD, "mextID = %lld ",  (LLD)mexID);
+
 
 		sprintf(title, "   (temp)   : "); print_title = 1;
 		MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
