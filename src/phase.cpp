@@ -296,7 +296,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
-	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title,mexID;
+	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title,mexID, phnext;
 	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
@@ -324,6 +324,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	frSoftID = -1;
 	mexID    = -1;
 	MSN      =  dbm->numSoft - 1;
+	phnext   = -1;
 
 	// phase ID
 	ierr 	 = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
@@ -486,7 +487,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0);  CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "ID_Melt_Ex", &mexID, 1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "PhNext", &m->PhNext, 1, _max_num_phases_); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "PhNext", &phnext, 1, _max_num_phases_); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "pMant", &m->pMant, 1, 1); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
 
@@ -536,6 +537,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// melt extraction id
 	m->ID_MELTEXT = mexID;
+	m->PhNext   = phnext;
 
 	// DIFFUSION
 

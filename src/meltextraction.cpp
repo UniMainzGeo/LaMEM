@@ -713,7 +713,7 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 	Material_t *phases;
 	PetscScalar  ***Dm_save,***DMin,***DMax;
 	PetscInt nx, ny, sx, sy, sz;
-	PetscInt jj, ID, I, J, K, newphase,Ph_int;
+	PetscInt jj, ID, I, J, K, newphase,Ph_int,ph_id_me;
 	PetscInt L;
 	PetscScalar  DM,newME, T_Int;
 	PetscScalar  mfeff,dM, ***p,***T;
@@ -810,11 +810,12 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 		GET_CELL_IJK(ID, I, J, K, nx, ny)
 
 		DM = Dm_save[sz+K][sy+J][sx+I];
-
+		ph_id_me = phases[P->phase].ID_MELTEXT;
+		newphase = phases[P->phase].PhNext;
 		//if(DM!=0.0)
 		//{
 
-			if(phases[P->phase].ID_MELTEXT==ID_ME && P->phase != actx->surf->AirPhase)
+			if(ph_id_me==ID_ME  && P->phase != actx->surf->AirPhase)
 			{
 				ierr =  setDataPhaseDiagram(pd, P->p, P->T, jr->dbm->phases[P->phase].pdn); CHKERRQ(ierr);
 
@@ -828,7 +829,10 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 				{
 					newphase = jr->dbm->phases[P->phase].PhNext;
 					newME   = P->MExt -M_Ex_t->Mmax;
-					P->phase=newphase;
+					if (newphase>0)
+					{
+						P->phase=newphase;
+					}
 					P->MExt=newME;
 
 				}
