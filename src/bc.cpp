@@ -1162,7 +1162,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 				{
 					for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
 					{
-						bcT[k-1][j][i] = bcT[k-1][j][i] + Tbot + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));;
+						bcT[k-1][j][i] = bcT[k-1][j][i] +(bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));;
 					}
 				}
 			}
