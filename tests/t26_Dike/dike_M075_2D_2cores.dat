@@ -30,7 +30,7 @@
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 5       # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 10       # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1       # save output every n steps
 	nstep_rdb = 100     # save restart database every n steps
 
@@ -134,19 +134,21 @@
 		cstTemp = 1
 	<BoxEnd>
 	
-	
-	<RidgeSegStart>
-	    	phase = 1
-	    	bounds      = -30 30 -1 1 -20 0 # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
-    		ridgeseg_x  = 0.0 0.0           # coordinate order: left, right [can be different for oblique ridge]
-    		ridgeseg_y  = -1.0 1.0          # coordinate order: front, back [needs to be the same as the front and back of bounds]
-    		topTemp     = 1                # required: temperature @ top [in Celcius in case of GEO units]
-    		botTemp     = 1350             # required: temperature @ bottom [in Celcius in case of GEO units]
-    		Temperature = halfspace_age    # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
-    		age0        = 0.4             # minimum age of seafloor at ridge [in Myr in case of GEO units]
-#		maxAge      = 60               # [optional] parameter that indicates the maximum thermal age of a plate
-#		v_spread    = 1          # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above
-	<RidgeSegEnd>
+        # lith
+        <BoxStart>
+                phase  = 1
+                bounds = -30 30 -1 1 -10 0   # (left, right, front, back, bottom, top)
+                Temperature = constant
+                cstTemp = 500
+        <BoxEnd>
+
+        # asth
+        <BoxStart>
+                phase  = 2
+                bounds = -30 30 -1 1 -20 -10   # (left, right, front, back, bottom, top)
+                Temperature = constant
+                cstTemp = 1000
+        <BoxEnd>
 
 
 #===============================================================================
@@ -179,7 +181,7 @@
 
 # AVD phase viewer output options (requires activation)
 
-	out_avd     		= 1 # activate AVD phase output
+#	out_avd     		= 1 # activate AVD phase output
 	out_avd_pvd 		= 1 # activate writing .pvd file
 #	out_avd_ref 		= 3 # AVD grid refinement factor
 	
@@ -200,10 +202,10 @@
   <PhaseTransitionStart>
         ID                      =   0                               # Phase_transition law ID
         Type                    =   Box                             # A box-like region
-        PTBox_Bounds            =   -1.0 1.0 -1.0 1.0 -10.0 4.0      # box bound coordinates: [left, right, front, back, bottom, top]
-        number_phases           =   2
-        PhaseInside             =   2 2                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
-        PhaseOutside            =   1 0                             # Phase outside the box
+        PTBox_Bounds            =   -1.0 1.0 -1.0 1.0 -10.0 5.0      # box bound coordinates: [left, right, front, back, bottom, top]
+        number_phases           =   3
+        PhaseInside             =   3 3 3                              # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   1 0 2                            # Phase outside the box
         PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
         PTBox_TempType          =  none                          # Temperature condition witin the box [none, constant, linear, halfspace]
   <PhaseTransitionEnd>
@@ -237,10 +239,10 @@
 
     # Dike
     <MaterialStart>
-        ID              = 2      # phase id
+        ID              = 3      # phase id
         rho             = 3300   # density
         G               = 4e10
-	eta             = 1e22
+	eta             = 1e23
         alpha           = 3e-5  # thermal expansivity # Sam: 3.5e-5
 	Cp              = 1.2e3  # specific heat (capacity)
 	k               = 1.0    # thermal conductivity
@@ -252,11 +254,11 @@
      <MaterialEnd>
 
 
-	# Upper Lithosphere 1
+	# Lithosphere 1
 	<MaterialStart>
 		ID  		= 	1      # phase id
 		rho 		= 	3300   # density
-		eta		=       1e22
+		eta		=       1e23
      		alpha           =       3e-5   # thermal expansivity # Sam: 3.5e-5
 		Cp              =       1.2e3  # specific heat (capacity)
 		k               =       3.5  # thermal conductivity
@@ -266,6 +268,21 @@
 		fr  		=	30     # initial friction angle
 		healID          =       0
 	<MaterialEnd>
+
+      # Asth
+        <MaterialStart>
+                ID              =       2      # phase id
+                rho             =       3300   # density
+                eta             =       1e19
+                alpha           =       3e-5   # thermal expansivity # Sam: 3.5e-5
+                Cp              =       1.2e3  # specific heat (capacity)
+                k               =       3.5  # thermal conductivity
+                G               =       4e10
+#                chSoftID        =       0      # Cohesion softening ID
+#                ch              =       30e6   # Cohesion
+#                fr              =       30     # initial friction angle
+#                healID          =       0
+        <MaterialEnd>
 
 	
 #===============================================================================
