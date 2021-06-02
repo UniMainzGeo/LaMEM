@@ -963,7 +963,7 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 			P->U[1]   = 0.0;
 			P->U[2]   = 0.0;
 			P->ATS    = 0.0;
-			if(bc->Gaussian_Pet_num > -1 )
+			if(bc->Gaussian_Pet_num > 0 )
 			{
 				if(bc->Gaussian_Dim == 1)
 				{
@@ -976,7 +976,7 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 				{
 					for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
 					{
-						P->T     =P->T + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));;
+						P->T  = P->T + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));
 					}
 				}
 			}
