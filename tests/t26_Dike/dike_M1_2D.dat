@@ -30,7 +30,7 @@
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 5      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 5     # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 5       # save output every n steps
 #	nstep_rdb = 100     # save restart database every n steps
 
@@ -213,7 +213,7 @@
                 ID              = 2      # phase id
                 rho             = 3300   # density
                 G               = 4e10
-                eta             = 1e22   # viscosity, Sam: 2e11 ???
+                eta             = 1e20   # viscosity, Sam: 2e11 ???
                 alpha           = 3e-5   # thermal expansivity # Sam: 3.5e-5
                 Mf              = 1.0    # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box
                 Mb              = 1.0    # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box
@@ -224,7 +224,7 @@
 	<MaterialStart>
 		ID  		= 	1       # phase id
 		rho 		= 	3300    # density
-		eta 		= 	1e22    # viscosity
+		eta 		= 	1e24    # viscosity
                 alpha           = 	3e-5   # thermal expansivity # Sam: 3.5e-5
 		G   		= 	4e10
 	<MaterialEnd>
