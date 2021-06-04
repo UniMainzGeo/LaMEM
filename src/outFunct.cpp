@@ -946,27 +946,3 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-// NEW FOR DIKE TEST: WRITE DIKE RHS 
-
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteDikeRHS"
-PetscErrorCode PVOutWriteDikeRHS(OutVec* outvec)
-{
-        COPY_FUNCTION_HEADER
-
-        // macro to copy dike rhs to buffer                                                                                                                    
-
-        #define GET_DIKERHS buff[k][j][i] = jr->svCell[iter++].svBulk.dikeRHS;
-
-	  cf = scal->strain_rate; // scaling correct with strain rate?
-
-        INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIKERHS, 1, 0)
-
-        PetscFunctionReturn(0);
-
-        PetscFunctionReturn(0);
-	}   
-
-//--------------------------------------------------------------------------- 
-

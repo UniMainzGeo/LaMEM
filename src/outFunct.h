@@ -116,7 +116,6 @@ PetscErrorCode PVOutWriteRelDIIprl   (OutVec*);
 PetscErrorCode PVOutWriteMomentRes   (OutVec*);
 PetscErrorCode PVOutWriteContRes     (OutVec*);
 PetscErrorCode PVOutWritEnergRes     (OutVec*);
-PetscErrorCode PVOutWriteDikeRHS     (OutVec*);   // NEW FOR DIKE RHS OUTPUT
 // ... add more output functions here
 
 //---------------------------------------------------------------------------
