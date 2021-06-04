@@ -388,7 +388,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 
 		PetscFunctionReturn(0);
 	}
-
 	
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -401,9 +400,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 
 			// compute phase viscosities and strain rate partitioning
 			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
-
-
-			// maybe here another function to remove the strain rate proprly
 
 			// update stabilization viscosity
 			svDev->eta_st += phRat[i]*phases->eta_st;
@@ -431,9 +427,8 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	Controls    *ctrl;
 	PetscInt    it, conv;
 	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
-	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat; 
+	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
-
 	
 	PetscFunctionBegin;
 
@@ -497,7 +492,6 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		if(inv_eta_max > inv_eta_min) inv_eta_min = inv_eta_max;
 		if(inv_eta_dis > inv_eta_min) inv_eta_min = inv_eta_dis;
 		if(inv_eta_prl > inv_eta_min) inv_eta_min = inv_eta_prl;
-
 		eta_min = 1.0/inv_eta_min;
 
 		// get quasi-harmonic mean (lower bound)
@@ -511,8 +505,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		conv = solveBisect(eta_mean, eta_min, ctrl->lrtol*DII, ctrl->lmaxit, eta, it, getConsEqRes, ctx);
 
 		// compute stress
-		tauII = 2.0*eta*DII; 
-
+		tauII = 2.0*eta*DII;
 	}
 
 	// update iteration statistics
@@ -525,7 +518,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-       	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)                                       
+       	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)
 	
 	// compute creep viscosity
 	if(DIIvs) eta_cr = tauII/DIIvs/2.0;
@@ -546,7 +539,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 {
 	// compute residual of the nonlinear visco-elastic constitutive equation
 
-  PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl; 
+        PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl;
 
 	// access context
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
@@ -560,15 +553,12 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	
 		
 	// residual function (r)
 	// r < 0 if eta > solution (negative on overshoot)
 	// r > 0 if eta < solution (positive on undershoot)
-
 	
 	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
-	  
 }
 
 //---------------------------------------------------------------------------
@@ -671,8 +661,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	svBulk->IKdt   = 0.0;
 	Kavg           = 0.0;
 	svBulk->mf     = 0.0;
-	svBulk->rho_pf = 0.0;
-	
+	svBulk->rho_pf = 0.0;	
 	
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -776,7 +765,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 #undef __FUNCT__
 #define __FUNCT__ "cellConstEq"
 PetscErrorCode cellConstEq(
-		
+			   
 		ConstEqCtx  *ctx,    // evaluation context
 		SolVarCell  *svCell, // solution variables
 		PetscScalar  dxx,    // effective normal strain rate components
@@ -795,7 +784,6 @@ PetscErrorCode cellConstEq(
 	SolVarBulk  *svBulk;
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
-
 	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
