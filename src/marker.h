@@ -100,7 +100,7 @@ struct GeomPrim
 	PetscScalar rand_amplitude;
 	// ridge
     PetscScalar v_spread;
-    PetscScalar v_ridge;    // NEW FOR DIKE, THICKER LITHOSPHERE 
+   // PetscScalar v_ridge;    // NEW FOR DIKE, THICKER LITHOSPHERE 
     PetscScalar x_oblique;
     PetscScalar ridgeseg_x[2];
     PetscScalar ridgeseg_y[2];
@@ -112,7 +112,6 @@ struct GeomPrim
     PetscScalar age0;                   // thermal age @ ridge
     PetscScalar maxAge;                 // maximum thermal Age a plate can have [say 80 Myrs on Earth]
     // temperature
-
 	PetscInt    setTemp;
 	PetscScalar cstTemp;
 	PetscScalar topTemp, botTemp;

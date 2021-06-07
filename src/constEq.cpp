@@ -518,7 +518,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-       	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)
+	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)
 	
 	// compute creep viscosity
 	if(DIIvs) eta_cr = tauII/DIIvs/2.0;
@@ -539,7 +539,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 {
 	// compute residual of the nonlinear visco-elastic constitutive equation
 
-        PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl;
+	PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl;
 
 	// access context
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
@@ -560,7 +560,6 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	
 	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
 }
-
 //---------------------------------------------------------------------------
 PetscScalar applyStrainSoft(
 		Soft_t      *soft, // material softening laws
@@ -631,7 +630,7 @@ PetscScalar getI2Gdt(
 PetscErrorCode volConstEq(ConstEqCtx *ctx)
 {
 	// evaluate volumetric constitutive equations in control volume
-	Controls    *ctrl; 
+	Controls    *ctrl;
 	PData       *Pd;
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
@@ -661,8 +660,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	svBulk->IKdt   = 0.0;
 	Kavg           = 0.0;
 	svBulk->mf     = 0.0;
-	svBulk->rho_pf = 0.0;	
-	
+	svBulk->rho_pf = 0.0;
+		
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -764,8 +763,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "cellConstEq"
-PetscErrorCode cellConstEq(
-			   
+PetscErrorCode cellConstEq(			   
 		ConstEqCtx  *ctx,    // evaluation context
 		SolVarCell  *svCell, // solution variables
 		PetscScalar  dxx,    // effective normal strain rate components
@@ -1106,7 +1104,6 @@ PetscErrorCode setDataPhaseDiagram(
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GetDikeContr"

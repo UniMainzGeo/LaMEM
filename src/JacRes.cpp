@@ -1134,7 +1134,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	{
 		// access solution variables
 		svCell = &jr->svCell[iter++];
-		
+
 		//=================
 		// SECOND INVARIANT
 		//=================
@@ -1258,7 +1258,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	}
 	END_STD_LOOP
-	  
+
 	//-------------------------------
 	// xy edge points
 	//-------------------------------
@@ -1346,10 +1346,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		dy = SIZE_NODE(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 		Le = sqrt(dx*dx + dy*dy + dz*dz);
-		
+
 		// setup control volume parameters
 		ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le); CHKERRQ(ierr);
-		
+
 		// evaluate constitutive equations on the edge
 		ierr = edgeConstEq(&ctx, svEdge, XY, sxy); CHKERRQ(ierr);
 
@@ -1606,7 +1606,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
 
-
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
 	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
@@ -1617,7 +1616,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopySol"

@@ -109,7 +109,7 @@ struct ConstEqCtx
 	PetscScalar  DIIdis; // dislocation creep strain rate
 	PetscScalar  DIIprl; // Peierls creep strain rate
 	PetscScalar  DIIpl;  // plastic strain rate
-  PetscScalar  yield;  // yield stress
+	PetscScalar  yield;  // yield stress
 };
 
 //---------------------------------------------------------------------------

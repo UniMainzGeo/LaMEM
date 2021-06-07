@@ -868,7 +868,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
 	Marker         *P;
 	PetscLogDouble  t;
-	PetscScalar     chLen, chTime, chVel; // chVel NEW FOR DIKE
+	PetscScalar     chLen, chTime; 
 	char            TemperatureStructure[_str_len_];
 	PetscInt        jj, ngeom, imark, maxPhaseID;
 	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *ridge, *hex, *layer, *cylinder;
@@ -884,7 +884,6 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	maxPhaseID = actx->dbm->numPhases - 1;
 	chLen      = actx->jr->scal->length;
 	chTime     = actx->jr->scal->time;
-	chVel      = actx->jr->scal->velocity;
 
 	// clear storage
 	ierr = PetscMemzero(geom,  sizeof(GeomPrim) *(size_t)_max_geom_); CHKERRQ(ierr);
@@ -1101,7 +1100,6 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	    ierr = getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime);          					CHKERRQ(ierr);
 	    ierr = getScalarParam(fb, _OPTIONAL_, "v_spread",       &v_spread,    1, actx->jr->scal->velocity);         CHKERRQ(ierr);
 	    ierr = getScalarParam(fb, _OPTIONAL_, "maxAge",       	&maxAge,      1, actx->jr->scal->time);      		CHKERRQ(ierr);
-            ierr = getScalarParam(fb, _OPTIONAL_, "v_ridge",        &ridge->v_ridge, 1, chVel); CHKERRQ(ierr);  // NEW FOR DIKE, THICKER LITHOSPHERE   
 		
 	    ridge->bot 		= ridge->bounds[4];
 	    ridge->top 		= ridge->bounds[5];
@@ -2085,7 +2083,7 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	  // Half space cooling profile with age function, oblique possible
 
 	  PetscScalar   x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack; 
-	  PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge, v_ridge;
+	  PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge;
 
 	  y             = P->X[1];
 	  x             = P->X[0];
@@ -2101,34 +2099,19 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	  v_spread      = geom->v_spread;
 	  age0          = geom->age0;
 	  maxAge        = geom->maxAge;  
-	  v_ridge       = geom->v_ridge;
 	  
 	  if (x_ridgeLeft == x_ridgeRight){
 
-	    if (v_ridge){                   // f v_ridge exists, use v_ridge not v_spread, NEW FOR DIKE, THICKER LITHOSPHERE
-	      //	        PetscPrintf(PETSC_COMM_WORLD, "go for ridge velocity: %f \n", v_ridge);
-	      thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_ridge;
-	      thermalAgeRidge = max(thermalAgeRidge,age0);
-	    }
-	    else {
-	      //	      PetscPrintf(PETSC_COMM_WORLD, "go for spread velocity: %f \n", v_spread);
 	      thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
 	      thermalAgeRidge = max(thermalAgeRidge,age0);
-	    }
 	  }
 	  
 	  else {   
 
 	   x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
 
-	    if (v_ridge){                  // f v_ridge exists, use v_ridge not v_spread, NEW FOR DIKE, THICKER LITHOSPHERE
-	      thermalAgeRidge = PetscAbs(x-x_oblique)/v_ridge;
-	      thermalAgeRidge = max(thermalAgeRidge,age0);
-	    }
-	    else {
 	      thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;	    
 	      thermalAgeRidge = max(thermalAgeRidge,age0);
-	    }
 	   }
 
 	  thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff  

@@ -190,7 +190,6 @@ struct Controls
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence   
-
 };
 
 //---------------------------------------------------------------------------
