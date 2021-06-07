@@ -1148,7 +1148,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		{
 			dikeRHS = 0.0;
 			// function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-			ierr = GetDikeContr(&ctx, svCell->phRat, &svCell->svBulk, dikeRHS);  CHKERRQ(ierr);
+			ierr = GetDikeContr(&ctx, svCell->phRat, dikeRHS);  CHKERRQ(ierr);
 
 			// remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
 			dxx[k][j][i] -= (2.0/3.0) * dikeRHS;

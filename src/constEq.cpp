@@ -1112,7 +1112,6 @@ PetscErrorCode setDataPhaseDiagram(
 #define __FUNCT__ "GetDikeContr"
 PetscErrorCode GetDikeContr(ConstEqCtx  *ctx, 
 			          PetscScalar *phRat,          // phase ratios in the control volume
-			          SolVarBulk  *svBulk,         // volumetric variables
 			          PetscScalar &dikeRHS)
 { 
 	BCCtx       *bc;    
@@ -1126,9 +1125,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
 	bc         = ctx->bc;     
 	PhaseTrans = ctx->PhaseTrans; 
 	
-	// initialize
-	svBulk->dikeRHS = 0.0;
-          
 	for(i = 0; i < numPhases; i++)
 	{
         // update present phases only          
@@ -1173,13 +1169,11 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
 		mat->dikeRHS = 0.0;                                                        
 	      }
 
-	    svBulk->dikeRHS += phRat[i]*mat->dikeRHS; 
+	    dikeRHS += phRat[i]*mat->dikeRHS; 
 			
         }
 	}
 
-	dikeRHS = svBulk->dikeRHS;   
-  
     PetscFunctionReturn(0);
 
 }
