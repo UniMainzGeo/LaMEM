@@ -503,7 +503,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// Gaussian Perturbation & Winkler Boundary Condition
 	bc->Gaussian_Pet_num = -1;
-	ierr = getIntParam   (fb, _OPTIONAL_, "Gaussian_Pet_num", &bc->Gaussian_Pet_num, 1, -1);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "Gaussian_Pet_num", &bc->Gaussian_Pet_num, 1, 1.0);  CHKERRQ(ierr);
 	if(bc->Gaussian_Pet_num != -1)
 	{
 		bc->Gaussian_Dim = 1;
@@ -518,7 +518,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// Winkler Boundary Condition
 
 	bc->Internal_Winkler = -1;
-	ierr = getIntParam   (fb, _OPTIONAL_, "Internal_Winkler", &bc->Internal_Winkler, 1, -1);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "Internal_Winkler", &bc->Internal_Winkler, 1, 1.0);  CHKERRQ(ierr);
 	if(bc->Internal_Winkler == 1)
 	{
 		ierr = getScalarParam(fb, _REQUIRED_, "Winkler_Depth",   &bc->Winkler_Depth,  1, scal->length); CHKERRQ(ierr);
