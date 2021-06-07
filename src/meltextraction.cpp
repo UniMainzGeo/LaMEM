@@ -1740,6 +1740,7 @@ PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase)
 #define __FUNCT__ "Compute_Comulative_Melt_Extracted"
 PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscInt ID_ME,  Melt_Ex_t *M_Ex_t)
 {
+	SolVarBulk              *svBulk ;
 	FDSTAG         		*fs   	;
 	PData          		*pd    	;
 	DBMat        		*dbm	;
@@ -1784,7 +1785,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 		dx = SIZE_CELL(i,sx,fs->dsx);
 		dy = SIZE_CELL(j,sy,fs->dsy);
 		dz = SIZE_CELL(k,sz,fs->dsz);
-
+		svBulk = &actx->jr->svCell[iter].svBulk;
 		phRat = actx->jr->svCell[iter++].phRat; // take phase ratio on the central node
 		GET_CELL_ID(ID, i-sx, j-sy, k-sz, fs->dsx.ncels, fs->dsy.ncels)
 
@@ -1817,7 +1818,9 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 						if(pd->mf>0.0)
 						{
 							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
-							mfeff=Compute_mfeff_Marker(actx, ID,iphase);
+							//mfeff=Compute_mfeff_Marker(actx, ID,iphase);
+
+							mfeff = pd->mf - svBulk->mfext_cur;
 
 						}
 
