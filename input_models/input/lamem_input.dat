@@ -196,11 +196,11 @@
 	bvel_velin                =         1.0                          # inflow velocity
 	bvel_velout               =         0.0                          # outflow velocity (if not specified, computed from mass balance)
 	bvel_relax_d              =         100                          # distance over which velocity is reduced
-	bvel_velbot               =         0   	                 # bottom inflow velocity for use with bvel_face=CompensatingInflow
+	bvel_velbot               =         0   	                     # bottom inflow velocity for use with bvel_face=CompensatingInflow
 	bvel_veltop               =         0                            # top inflow velocity for use with bvel_face=CompensatingInflow
 	bvel_temperature_inflow   =        Fixed_thermal_age             # Thermal age of the plate is constant
-                                  =        Constant_T_inflow             # Temperature of the inflow material is constant everywhere
-	bvel_thermal_age          =        10        # In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
+                              =        Constant_T_inflow             # Temperature of the inflow material is constant everywhere
+	bvel_thermal_age          =        10                            # In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
 	bvel_temperature_mantle   =        1400                          # In dimensional unit. Temperature of the mantle
 	bvel_temperature_top      =        20                            # In dimensional unit. temperature of the top
 	bvel_temperature_constant =        100                           # Constant temperature inflow. 
@@ -421,7 +421,7 @@
         age0        = 0.001                     # minimum age of seafloor at ridge [in Myr in case of GEO units]
         maxAge      = 60                        # [optional] parameter that indicates the maximum thermal age of a plate 
         v_spread    = 1                         # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above   
-<RidgeSegEnd>
+	<RidgeSegEnd>
 
 	<HexStart>
 		phase = 1
@@ -486,8 +486,8 @@
 	out_visc_creep      = 1
 	out_velocity        = 1
 	out_pressure        = 1
-        out_tot_press       = 1  
-        out_eff_press       = 1
+	out_tot_press       = 1  
+	out_eff_press       = 1
 	out_over_press      = 1
 	out_litho_press     = 1
 	out_pore_press      = 1
@@ -508,7 +508,6 @@
 	out_moment_res      = 1
 	out_cont_res        = 1
 	out_energ_res       = 1
-        out_dike_rhs        = 1
 	out_melt_fraction   = 1
 	out_fluid_density   = 1	
 
@@ -670,7 +669,7 @@
 		A          = 1e-9   # radiogenic heat production
 		T          = 100.0  # optional temperature to set within the phase
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
-                rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
+		rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
 		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar)
 	<MaterialEnd>
 
