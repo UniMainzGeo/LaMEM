@@ -1819,7 +1819,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 						{
 							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
 							mext=Compute_mfeff_Marker(actx, ID,iphase);
-							PetscPrintf(PETSC_COMM_WORLD,"mext = %6f, mextBulk = %6f, diff = %6f\n",mext, svBulk->mfext_cur,svBulk->mfext_cur-mext)
+							PetscPrintf(PETSC_COMM_WORLD,"mext = %6f, mextBulk = %6f, diff = %6f\n",mext, svBulk->mfext_cur,svBulk->mfext_cur-mext);
 
 							mfeff = pd->mf - mext;
 
