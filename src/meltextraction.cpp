@@ -812,8 +812,8 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 		DM = Dm_save[sz+K][sy+J][sx+I];
 		ph_id_me = phases[P->phase].ID_MELTEXT;
 		newphase = phases[P->phase].PhNext;
-		//if(DM!=0.0)
-		//{
+		if(DM!=0.0)
+		{
 
 			if(ph_id_me==ID_ME  && P->phase != actx->surf->AirPhase)
 			{
@@ -837,8 +837,8 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 
 				}
 			}
+		}
 
-			//}
 	}
 
 
@@ -1697,7 +1697,7 @@ PetscScalar Compute_dM(PetscScalar mfeff, Melt_Ex_t *M_Ex_t, PetscScalar dt)
 PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase)
 {
 	PetscInt         n,ipn,c,phase,*mark_id,id_m;
-	PetscScalar      mfeff_b,mfeff;
+	PetscScalar      mfeff_b,mfeff, mfeff_temp;
 	PData            *pd;
 	Marker          *IP;
 
@@ -1717,10 +1717,14 @@ PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase)
 		phase = IP->phase;
 		if(phase == iphase)
 		{
-			//ierr = setDataPhaseDiagram(pd, IP->p, IP->T, actx->dbm->phases[iphase].pdn); CHKERRQ(ierr);
+			ierr = setDataPhaseDiagram(pd, IP->p, IP->T, actx->dbm->phases[iphase].pdn); CHKERRQ(ierr);
+			mfeff_temp = pd->mf - IP->MExt;
+			if(mfeff_temp <= 0.0)
+			{
+				mfeff_temp = 0.0;
+			}
 
-			mfeff += IP->MExt;
-
+			mfeff += mfeff_temp;
 			c ++;
 		}
 	}
@@ -1753,7 +1757,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 	PetscScalar    *phRat;
 	PetscScalar    ***p,pc;
 	PetscScalar    ***T,Tc;
-	PetscScalar    mfeff,dx,dy,dz,dM,mext;
+	PetscScalar    mfeff,dx,dy,dz,dM,mfeff_grid;
 	PetscInt       ID;
 
 
@@ -1808,7 +1812,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 
 
 					dM  	= 0.0;
-					mext   = 0.0;
+					mfeff   = 0.0;
 					// current pressure
 					if(phases[iphase].pdAct==1)
 					{
@@ -1817,11 +1821,10 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 
 						if(pd->mf>0.0)
 						{
+							mfeff_grid = pd->mf;
 							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
-							mext=Compute_mfeff_Marker(actx, ID,iphase);
-							PetscPrintf(PETSC_COMM_WORLD,"mext = %6f, mextBulk = %6f, diff = %6f\n",mext, svBulk->mfext_cur,svBulk->mfext_cur-mext);
-
-							mfeff = pd->mf - mext;
+							mfeff=Compute_mfeff_Marker(actx, ID,iphase);
+							PetscPrintf(PETSC_COMM_WORLD,"mext = %6f, mextBulk = %6f, diff = %6f\n",mfeff, mfeff_grid,mfeff-mfeff_grid);
 
 						}
 
