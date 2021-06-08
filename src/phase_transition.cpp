@@ -95,7 +95,6 @@
 #include "objFunct.h"
 #include "surf.h"
 #include "tssolve.h"
-
 //-----------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhaseTr"
@@ -372,7 +371,6 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
 
 	}
-	
 	else{
 		  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType [none; constant; linear; halfspace]");
 	}
@@ -598,8 +596,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			num_phas    =   PhaseTrans->number_phases;
 			if ( PhaseTrans->Type == _Box_ ){
 			  below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
-			  // phase inside check, if the phase doesn't belong there it returns n=below=-1 and goes to the next if condition loop
-			  above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);   // phase outside check
+			  above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
 			else {
 				below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas);
@@ -608,13 +605,13 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 			if  ( (below >= 0) || (above >= 0) )
 			{
-				PH2 = P->phase;  
+				PH2 = P->phase;
 				PH1 = P->phase;
                  // the current phase is indeed involved in a phase transition
 				if      (   below>=0    )
 				{
 					if ( PhaseTrans->Type == _Box_ ){
-					  PH1 = PhaseTrans->PhaseInside[below];    // PH1 is always inside the box
+						PH1 = PhaseTrans->PhaseInside[below];
 						PH2 = PhaseTrans->PhaseOutside[below];
 					}
 					else{
@@ -625,7 +622,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				else if (   above >=0   )
 				{
 					if ( PhaseTrans->Type == _Box_ ){
-						PH1 = PhaseTrans->PhaseInside[above];    
+						PH1 = PhaseTrans->PhaseInside[above];
 						PH2 = PhaseTrans->PhaseOutside[above];
 					}
 					else{
@@ -677,7 +674,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	}
 	ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
 
-	
     PrintDone(t);
 
 	PetscFunctionReturn(0);
@@ -685,15 +681,14 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 //----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, 
-		    SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr)
+					SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr)
 {
 	PetscInt 	ph, InAbove;
-
 	PetscScalar T;
 
 	ph = P->phase;
 	T  = P->T;
-	InAbove =       0; 
+	InAbove = 0;
 	
 	if (PhaseTrans->Type==_Box_ && ctrl.actDike)
 	{
@@ -707,7 +702,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	{
 		Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl, &ph, &InAbove);
 	}
-	else if(PhaseTrans->Type==_Box_)                                      
+	else if(PhaseTrans->Type==_Box_)
 	{
 		Check_Box_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, &InAbove);		// compute phase & T within Box
 	}

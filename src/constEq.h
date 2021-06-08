@@ -79,7 +79,7 @@ struct ConstEqCtx
 	PetscScalar  stats[3];  	// total number of [starts, successes, iterations]
 	PetscScalar  avg_topo;  	// average surface topography
 	BCCtx        *bc;           // boundary conditions, necessary for velin for dike
-  
+
 	// control volume parameters
 	PetscScalar *phRat;  // phase ratios in the control volume
 	SolVarDev   *svDev;  // deviatoric variables
@@ -101,7 +101,7 @@ struct ConstEqCtx
 	PetscScalar  A_prl;  // Peierls constant
 	PetscScalar  N_prl;  // Peierls exponent
 	PetscScalar  taupl;  // plastic yield stress
-  
+
 	// control volume results
 	PetscScalar  eta;    // effective viscosity
 	PetscScalar  eta_cr; // creep viscosity

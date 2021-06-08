@@ -831,7 +831,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	FreeSurf        *surf;
 	Vec             vphase;
 	PetscInt        sx, sy, sz;
-	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid; 
+	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
 	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *IX,bz,ez,by,ey,bx,ex,Xm[3];
 	PetscScalar *Xp, *Yp,*Zp,*phaseptr;
 	spair           d;
@@ -903,11 +903,10 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
 
 			// check whether rock marker is above the free surface
-      			if(phaseptr[jj] != AirPhase && zp > topo) 
+      			if(phaseptr[jj] != AirPhase && zp > topo)
 			{
 				// erosion (physical or numerical) -> rock turns into air
 				phaseptr[jj]= AirPhase;
-
 			}
 			
 			// check whether air marker is below the free surface

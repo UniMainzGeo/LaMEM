@@ -1,4 +1,4 @@
-/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~A~~~~~~~~~~~~~~~~~~~~~~~~~~
+/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
  **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
@@ -136,7 +136,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// read each individual phase
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-	  ierr = DBMatReadPhase(dbm, fb, PrintOutput); CHKERRQ(ierr); 
+		ierr = DBMatReadPhase(dbm, fb, PrintOutput); CHKERRQ(ierr);
 
 		fb->blockID++;
 
@@ -205,13 +205,13 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Scaling  *scal;
 	Soft_t   *s;
 	PetscInt  ID;
-	
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
 	scal = dbm->scal;
-		
+
 	// softening law ID
 	ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1); CHKERRQ(ierr);
 	fb->ID  = ID;
@@ -259,7 +259,6 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// SCALE
 
 	s->Lm /= scal->length;
-	
 	if(s->healTau) 
 	{
 		s->healTau /= scal->time; 
@@ -280,13 +279,13 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
-	
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
 	scal = dbm->scal;
-	 
+
 	// initialize additional parameters
 	eta      =  0.0;
 	eta0     =  0.0;
@@ -332,7 +331,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	{
 		strcpy(m->Name, Name);
 	}
-	
+
 	//============================================================
 	// density & phase diagram info
 	//============================================================
@@ -635,11 +634,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G must be specified for phase %lld", (LLD)ID);
 	}
 
-
 	// PRINT (optional)
 	if (PrintOutput){
-
-	  if (strlen(m->Name)>0){
+		if (strlen(m->Name)>0){
 			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld     --   %s ",(LLD)(m->ID), m->Name);
 		}
 		else
@@ -776,7 +773,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	PetscFunctionReturn(0);
 }
- 
 //---------------------------------------------------------------------------
 void MatPrintScalParam(
 		PetscScalar par,  const char key[],   const char label[],

@@ -2079,43 +2079,37 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 
 	else if (geom->setTemp==4)   // Oblique ridge temperature
         {
-
-	  // Half space cooling profile with age function, oblique possible
-
-	  PetscScalar   x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack; 
-	  PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge;
-
-	  y             = P->X[1];
-	  x             = P->X[0];
-	  y_ridgeFront  = geom->ridgeseg_y[0];
-	  y_ridgeBack   = geom->ridgeseg_y[1];
-	  x_ridgeRight  = geom->ridgeseg_x[1];
-	  x_ridgeLeft   = geom->ridgeseg_x[0];
-	  z_top         = geom->top;
-	  T_top         = geom->topTemp;
-	  T_bot         = geom->botTemp;
-	  z             = PetscAbs(P->X[2]-z_top);
-	  kappa         = geom->kappa;
-	  v_spread      = geom->v_spread;
-	  age0          = geom->age0;
-	  maxAge        = geom->maxAge;  
-	  
-	  if (x_ridgeLeft == x_ridgeRight){
-
-	      thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
-	      thermalAgeRidge = max(thermalAgeRidge,age0);
-	  }
-	  
-	  else {   
-
-	   x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
-
-	      thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;	    
-	      thermalAgeRidge = max(thermalAgeRidge,age0);
-	   }
-
-	  thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff  
-	   (*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
+			// Half space cooling profile with age function, oblique possible
+			PetscScalar   x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack; 
+			PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge;
+			
+			y             = P->X[1];
+			x             = P->X[0];
+			y_ridgeFront  = geom->ridgeseg_y[0];
+			y_ridgeBack   = geom->ridgeseg_y[1];
+			x_ridgeRight  = geom->ridgeseg_x[1];
+			x_ridgeLeft   = geom->ridgeseg_x[0];
+			z_top         = geom->top;
+			T_top         = geom->topTemp;
+			T_bot         = geom->botTemp;
+			z             = PetscAbs(P->X[2]-z_top);
+			kappa         = geom->kappa;
+			v_spread      = geom->v_spread;
+			age0          = geom->age0;
+			maxAge        = geom->maxAge;  
+			
+			if (x_ridgeLeft == x_ridgeRight){
+				thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
+				thermalAgeRidge = max(thermalAgeRidge,age0);
+				}
+			else {   
+				x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
+				thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;	    
+				thermalAgeRidge = max(thermalAgeRidge,age0);
+				}
+				
+			thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff  
+			(*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
 	  }
 }
 

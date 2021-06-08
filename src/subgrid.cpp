@@ -614,8 +614,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 			{
 				// sedimentation (numerical) -> air turns into closest (reference) rock
 				X = P->X;
-
-			    
+				
 				// get marker list in containing cell
 				nmark   = actx->markstart[ID+1] - actx->markstart[ID];
 				markind = actx->markind + actx->markstart[ID];

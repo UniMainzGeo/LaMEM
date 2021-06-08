@@ -168,7 +168,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
 
-
 	if(mat->pdAct == 1)
 	{
 		// compute melt fraction from phase diagram
@@ -196,7 +195,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctx->A_prl = 0.0; // Peierls constant
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
-       		
+
 	// MELT FRACTION
 	mfd = 1.0;
 	mfn = 1.0;
@@ -340,7 +339,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 	// correct for ultimate yield stress (if defined)
 	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
- 
 
 	PetscFunctionReturn(0);
 }
@@ -353,8 +351,8 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 
 	Controls    *ctrl;
 	PetscScalar *phRat;
-	SolVarDev   *svDev; 
-	Material_t  *phases;  
+	SolVarDev   *svDev;
+	Material_t  *phases;
 	PetscInt     i, numPhases;
 
 	PetscErrorCode ierr;
@@ -375,7 +373,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	ctx->DIIprl = 0.0; // Peierls creep strain rate
 	ctx->DIIpl  = 0.0; // plastic strain rate
 	ctx->yield  = 0.0; // yield stress
-	
+
 	// zero out stabilization viscosity
 	svDev->eta_st = 0.0;
 
@@ -388,7 +386,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 
 		PetscFunctionReturn(0);
 	}
-	
+
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -429,7 +427,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
 	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
-	
+
 	PetscFunctionBegin;
 
 	// access context
@@ -474,7 +472,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		inv_eta_max = 0.0;
 		inv_eta_dis = 0.0;
 		inv_eta_prl = 0.0;
-	
+
 		// elasticity
 		if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
 		// diffusion
@@ -485,7 +483,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(DII, 1.0 - 1.0/ctx->N_dis);
 		// Peierls
 		if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(DII, 1.0 - 1.0/ctx->N_prl);
-		
+
 		// get minimum viscosity (upper bound)
 		inv_eta_min                               = inv_eta_els;
 		if(inv_eta_dif > inv_eta_min) inv_eta_min = inv_eta_dif;
@@ -519,7 +517,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
 	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)
-	
+
 	// compute creep viscosity
 	if(DIIvs) eta_cr = tauII/DIIvs/2.0;
 
@@ -531,7 +529,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
 	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
 	ctx->yield  += phRat*taupl;  // plastic yield stress
-	
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -546,18 +544,18 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 
 	// compute stress
 	tauII = 2.0*eta*ctx->DII;
-	
+
 	// creep strain rates
 	DIIels = ctx->A_els*tauII;                  // elasticity
 	DIIdif = ctx->A_dif*tauII;                  // diffusion
 	DIImax = ctx->A_max*tauII;                  // upper bound
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-		
+
 	// residual function (r)
 	// r < 0 if eta > solution (negative on overshoot)
 	// r > 0 if eta < solution (positive on undershoot)
-	
+
 	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
 }
 //---------------------------------------------------------------------------
@@ -661,7 +659,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	Kavg           = 0.0;
 	svBulk->mf     = 0.0;
 	svBulk->rho_pf = 0.0;
-		
+
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -763,7 +761,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "cellConstEq"
-PetscErrorCode cellConstEq(			   
+PetscErrorCode cellConstEq(
 		ConstEqCtx  *ctx,    // evaluation context
 		SolVarCell  *svCell, // solution variables
 		PetscScalar  dxx,    // effective normal strain rate components
@@ -782,7 +780,7 @@ PetscErrorCode cellConstEq(
 	SolVarBulk  *svBulk;
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
-	
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -848,23 +846,18 @@ PetscErrorCode cellConstEq(
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
 
-	if(ctrl->actExp && ctrl->actDike) 
-          {
-            gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
-          }
-	else if(ctrl->actDike)   
-          {
-             gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS; 
-          }
-	
-	else if(ctrl->actExp)
-          {
-            gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
-	  }
-	 else
-	  {
-	     gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
-	  }
+	if(ctrl->actExp && ctrl->actDike){
+		gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
+		}
+	else if(ctrl->actDike){
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;
+		}
+	else if(ctrl->actExp){
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+		}
+	else{
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+		}
 
 	// store effective density
 	rho = svBulk->rho;
@@ -1137,7 +1130,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
                 v_spread = PetscAbs(bc->velin);
 				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
-				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // [1/s] in LaMEM:10^10s
+				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 	    }
 			/* else                                                                                                                                           
                            {                                                                                                                               
@@ -1174,5 +1167,4 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
     PetscFunctionReturn(0);
 
 }
-
 // ------------------------------------------------------------------------------------------------------------------------

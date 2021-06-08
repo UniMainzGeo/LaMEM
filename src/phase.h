@@ -134,7 +134,7 @@ public:
 	PetscScalar     dT_within;
 	PetscScalar     DensityAbove[_max_tr_];
 	PetscScalar     DensityBelow[_max_tr_];
-
+	
 	PetscScalar     topTemp;
     PetscScalar     botTemp;
     PetscScalar     cstTemp;
