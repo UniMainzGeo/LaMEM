@@ -137,13 +137,13 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	else if(!strcmp(Type_,"Box"))
 	{
 		ph->Type = _Box_;
-		ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);   		CHKERRQ(ierr);
+		ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);   	CHKERRQ(ierr);
 	}
 	else if(!strcmp(Type_,"NotInAirBox"))
-        {
-                ph->Type = _NotInAirBox_;
-                ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);              CHKERRQ(ierr);
-        }
+	{
+		ph->Type = _NotInAirBox_;
+		ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
+	}
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
 	if ( ph->Type == _Box_ ){
@@ -151,9 +151,9 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 	}
 	else if ( ph->Type == _NotInAirBox_ ){
-                ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,   ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
-                ierr = getIntParam(fb,      _OPTIONAL_, "PhaseInside",          ph->PhaseInside,        ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
-        }
+		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",		ph->PhaseOutside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseInside",		ph->PhaseInside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+	}
 	else{
 		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseAbove",       ph->PhaseAbove,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
@@ -195,19 +195,19 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	}
 	else if (ph->Type == _NotInAirBox_ ){
 
-                if (ph->number_phases>0){
-                        PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
-                        for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseOutside[i])); }
-                        PetscPrintf(PETSC_COMM_WORLD," \n");
+        if (ph->number_phases>0){
+        	PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
+        	for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseOutside[i])); }
+            PetscPrintf(PETSC_COMM_WORLD," \n");
 
-                        PetscPrintf(PETSC_COMM_WORLD,"     Phase Inside       :  ");
-                        for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseInside[i])); }
-                        PetscPrintf(PETSC_COMM_WORLD," \n");
-                        PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
-                }
-                else{
-                        PetscPrintf(PETSC_COMM_WORLD,"     No phase change    @   \n");
-                }
+            PetscPrintf(PETSC_COMM_WORLD,"     Phase Inside       :  ");
+            for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseInside[i])); }
+            PetscPrintf(PETSC_COMM_WORLD," \n");
+            PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
+            }
+        else{
+            PetscPrintf(PETSC_COMM_WORLD,"     No phase change    @   \n");
+            }
         }
 	else
 	{
@@ -620,12 +620,12 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			
 			num_phas    =   PhaseTrans->number_phases;
 			if ( PhaseTrans->Type == _Box_ ){
-			  below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
-			  above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
+			  	below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
+			  	above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
 			else if ( PhaseTrans->Type == _NotInAirBox_ ){
-                          below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
-                          above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
+				below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
+				above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
 			else {
 				below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas);
@@ -644,9 +644,9 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 						PH2 = PhaseTrans->PhaseOutside[below];
 					}
 					else if ( PhaseTrans->Type == _NotInAirBox_){
-                                                PH1 = PhaseTrans->PhaseInside[below];
-                                                PH2 = PhaseTrans->PhaseOutside[below];
-                                        }
+                        PH1 = PhaseTrans->PhaseInside[below];
+                    	PH2 = PhaseTrans->PhaseOutside[below];
+                    }
 					else{
 						PH1 = PhaseTrans->PhaseBelow[below];
 						PH2 = PhaseTrans->PhaseAbove[below];
@@ -658,9 +658,9 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 						PH1 = PhaseTrans->PhaseInside[above];
 						PH2 = PhaseTrans->PhaseOutside[above];
 					}
-				        else if ( PhaseTrans->Type == _NotInAirBox_){
-                                                PH1 = PhaseTrans->PhaseInside[above];
-                                                PH2 = PhaseTrans->PhaseOutside[above];
+					else if ( PhaseTrans->Type == _NotInAirBox_){
+						PH1 = PhaseTrans->PhaseInside[above];
+						PH2 = PhaseTrans->PhaseOutside[above];
                                         }
 					else{
 						PH1 = PhaseTrans->PhaseBelow[above];
@@ -677,8 +677,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				}
 
 				else if ( (PhaseTrans->Type == _NotInAirBox_ ) ){
-                                        if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;                                // do not change the phase                                   
-                                }
+					if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;				// do not change the phase                                   
+                }
 			
                 if (PhaseTrans->PhaseDirection==0){
                     P->phase    =   ph;
