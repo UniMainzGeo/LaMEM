@@ -183,7 +183,7 @@
 
   <PhaseTransitionStart>
         ID                      =   0                               # Phase_transition law ID
-        Type                    =   Box                             # A box-like region
+        Type                    =   Box                     # A box-like region
         PTBox_Bounds            =   -1 1  -1 1 -15 15      # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   1
         PhaseInside             =   1                              # Phase within the box [use -1 if you don't want to change the phase inside the box]

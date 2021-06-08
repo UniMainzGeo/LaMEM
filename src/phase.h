@@ -88,7 +88,8 @@ enum type
 {
 	_Constant_,
 	_Clapeyron_,
-	_Box_
+	_Box_,
+	_NotInAirBox_
 };
 
 enum Parameter

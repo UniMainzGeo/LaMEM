@@ -139,6 +139,11 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ph->Type = _Box_;
 		ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);   		CHKERRQ(ierr);
 	}
+	else if(!strcmp(Type_,"NotInAirBox"))
+        {
+                ph->Type = _NotInAirBox_;
+                ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);              CHKERRQ(ierr);
+        }
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
 	if ( ph->Type == _Box_ ){
@@ -598,6 +603,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			  below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
 			  above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
+			else if ( PhaseTrans->Type == _NotInAirBox_ ){
+                          below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
+                          above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
+			}
 			else {
 				below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas);
 				above       =   Check_Phase_above_below(PhaseTrans->PhaseAbove,   P, num_phas);
@@ -610,10 +619,14 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
                  // the current phase is indeed involved in a phase transition
 				if      (   below>=0    )
 				{
-					if ( PhaseTrans->Type == _Box_ ){
+					if ( PhaseTrans->Type == _Box_){
 						PH1 = PhaseTrans->PhaseInside[below];
 						PH2 = PhaseTrans->PhaseOutside[below];
 					}
+					else if ( PhaseTrans->Type == _NotInAirBox_){
+                                                PH1 = PhaseTrans->PhaseInside[below];
+                                                PH2 = PhaseTrans->PhaseOutside[below];
+                                        }
 					else{
 						PH1 = PhaseTrans->PhaseBelow[below];
 						PH2 = PhaseTrans->PhaseAbove[below];
@@ -621,10 +634,14 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				}
 				else if (   above >=0   )
 				{
-					if ( PhaseTrans->Type == _Box_ ){
+					if ( PhaseTrans->Type == _Box_){
 						PH1 = PhaseTrans->PhaseInside[above];
 						PH2 = PhaseTrans->PhaseOutside[above];
 					}
+				        else if ( PhaseTrans->Type == _NotInAirBox_){
+                                                PH1 = PhaseTrans->PhaseInside[above];
+                                                PH2 = PhaseTrans->PhaseOutside[above];
+                                        }
 					else{
 						PH1 = PhaseTrans->PhaseBelow[above];
 						PH2 = PhaseTrans->PhaseAbove[above];
@@ -635,9 +652,13 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				InsideAbove = 0;
 				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr);
 
-				if ( (PhaseTrans->Type == _Box_) ){
+				if ( (PhaseTrans->Type == _Box_ ) ){
 					if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;				// do not change the phase
 				}
+
+				if ( (PhaseTrans->Type == _NotInAirBox_ ) ){
+                                        if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;                                // do not change the phase                                   
+                                }
 			
                 if (PhaseTrans->PhaseDirection==0){
                     P->phase    =   ph;
@@ -690,9 +711,9 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	T  = P->T;
 	InAbove = 0;
 	
-	if (PhaseTrans->Type==_Box_ && ctrl.actDike)
+	if (PhaseTrans->Type==_NotInAirBox_ && ctrl.actDike )
 	{
-	  Check_DikeBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box of dike, ignore airphase particles        
+	  Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box but ignore airphase particles        
         }
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
@@ -866,7 +887,7 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 	PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------//                                                          
-PetscInt Check_DikeBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
+PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
 {
 	PetscInt     ph, AirPhase;                
 	PetscScalar  T;
