@@ -150,6 +150,10 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 	}
+	if ( ph->Type == _NotInAirBox_ ){
+                ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,   ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+                ierr = getIntParam(fb,      _OPTIONAL_, "PhaseInside",          ph->PhaseInside,        ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+        }
 	else{
 		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseAbove",       ph->PhaseAbove,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
@@ -603,7 +607,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			  below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
 			  above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
-			else if ( PhaseTrans->Type == _NotInAirBox_ ){
+			if ( PhaseTrans->Type == _NotInAirBox_ ){
                           below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
                           above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
