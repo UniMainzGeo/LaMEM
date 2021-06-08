@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Jun  7 2021 - Time: 16:29:03 	    
+     Compiled: Date: Jun  8 2021 - Time: 08:30:29 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -78,8 +78,8 @@ Phase Transition laws:
      Box Bounds         :   [-1.0; 1.0; -1.0; 1.0; -10.0; 5.0] [km] 
      Don't set phase    @   
      Don't set T inside @   
-     Phase Above        :   0  0  0  
-     Phase Below        :   0  0  0  
+     Phase Outside      :    1  0  2  
+     Phase Inside       :   3  3  3  
      Direction          :   BothWays 
 
    Adjusting density values due to phase transitions: 
@@ -145,7 +145,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.001477 sec)
+Reading geometric primitives ... done (0.00166297 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : dike_M075_2D_2cores 
@@ -190,7 +190,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.927203 (sec)
+SNES solution time      : 0.855984 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -201,14 +201,14 @@ Residual summary:
    Energy: 
       |eRes|_2  = 3.416451175719e-03 
 --------------------------------------------------------------------------
-Saving output ... done (0.0122271 sec)
+Saving output ... done (0.00787401 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.010572 sec)
+Phase_Transition ... done (0.00357294 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 2.346032804194e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -391,7 +391,7 @@ Phase_Transition ... done (0.010572 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 19
-SNES solution time      : 18.043 (sec)
+SNES solution time      : 18.2483 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -405,16 +405,16 @@ Residual summary:
 Actual time step : 0.00100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 10 markers in 2.7251e-03 s 
+Marker control [0]: (Corners ) injected 10 markers in 3.6790e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0268312 sec)
+Saving output ... done (0.037524 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00100000 [Myr] 
 Tentative time step : 0.00110000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00534797 sec)
+Phase_Transition ... done (0.00544596 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 5.940009554673e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -648,7 +648,7 @@ Phase_Transition ... done (0.00534797 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 27
-SNES solution time      : 23.1351 (sec)
+SNES solution time      : 21.9625 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -662,14 +662,14 @@ Residual summary:
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 14 markers in 3.3059e-03 s 
+Marker control [0]: (Corners ) injected 14 markers in 2.5990e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00210000 [Myr] 
 Tentative time step : 0.00121000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00609994 sec)
+Phase_Transition ... done (0.00363207 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.919610843595e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -1000,7 +1000,7 @@ Phase_Transition ... done (0.00609994 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 39
-SNES solution time      : 34.5825 (sec)
+SNES solution time      : 31.7537 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1014,14 +1014,14 @@ Residual summary:
 Actual time step : 0.00121 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 12 markers in 2.9218e-03 s 
+Marker control [0]: (Corners ) injected 12 markers in 2.8360e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00331000 [Myr] 
 Tentative time step : 0.00133100 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00369406 sec)
+Phase_Transition ... done (0.00395393 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.840732377159e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -1157,7 +1157,7 @@ Phase_Transition ... done (0.00369406 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 14
-SNES solution time      : 14.462 (sec)
+SNES solution time      : 12.5244 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1171,14 +1171,14 @@ Residual summary:
 Actual time step : 0.00133 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 11 markers in 3.4120e-03 s 
+Marker control [0]: (Corners ) injected 11 markers in 4.2980e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00464100 [Myr] 
 Tentative time step : 0.00146410 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00369811 sec)
+Phase_Transition ... done (0.004493 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.363278562913e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -1354,7 +1354,7 @@ Phase_Transition ... done (0.00369811 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 19
-SNES solution time      : 18.5097 (sec)
+SNES solution time      : 16.0968 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1368,11 +1368,11 @@ Residual summary:
 Actual time step : 0.00146 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 16 markers in 3.0179e-03 s 
+Marker control [0]: (Corners ) injected 16 markers in 3.0189e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00905514 sec)
+Saving output ... done (0.020973 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 110.153 (sec) 
+Total solution time : 101.932 (sec) 
 --------------------------------------------------------------------------
