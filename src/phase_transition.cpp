@@ -146,13 +146,9 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	}
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
-	if ( ph->Type == _Box_ ){
+	if ( ph->Type == _Box_ || ph->Type == _NotInAirBox_){
 		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
-	}
-	else if ( ph->Type == _NotInAirBox_ ){
-		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",		ph->PhaseOutside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
-		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseInside",		ph->PhaseInside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 	}
 	else{
 		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
@@ -177,7 +173,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type (Constant) (Clapeyron) ", (LLD)ID);
 	}
     
-	if (ph->Type == _Box_ ){
+	if (ph->Type == _Box_ || ph->Type == _NotInAirBox_){
 		
 		if (ph->number_phases>0){
 			PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
@@ -193,22 +189,6 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 			PetscPrintf(PETSC_COMM_WORLD,"     No phase change    @   \n");
 		}
 	}
-	else if (ph->Type == _NotInAirBox_ ){
-
-        if (ph->number_phases>0){
-        	PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
-        	for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseOutside[i])); }
-            PetscPrintf(PETSC_COMM_WORLD," \n");
-
-            PetscPrintf(PETSC_COMM_WORLD,"     Phase Inside       :  ");
-            for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseInside[i])); }
-            PetscPrintf(PETSC_COMM_WORLD," \n");
-            PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
-            }
-        else{
-            PetscPrintf(PETSC_COMM_WORLD,"     No phase change    @   \n");
-            }
-        }
 	else
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"     Phase Above        :  ");
@@ -619,13 +599,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			svCell = &jr->svCell[ID];
 			
 			num_phas    =   PhaseTrans->number_phases;
-			if ( PhaseTrans->Type == _Box_ ){
-			  	below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
-			  	above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
-			}
-			else if ( PhaseTrans->Type == _NotInAirBox_ ){
-				below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
-				above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
+
+			if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ){
+			  below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
+			  above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
 			else {
 				below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas);
@@ -639,14 +616,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
                  // the current phase is indeed involved in a phase transition
 				if      (   below>=0    )
 				{
-					if ( PhaseTrans->Type == _Box_){
+					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_){
 						PH1 = PhaseTrans->PhaseInside[below];
 						PH2 = PhaseTrans->PhaseOutside[below];
 					}
-					else if ( PhaseTrans->Type == _NotInAirBox_){
-                        PH1 = PhaseTrans->PhaseInside[below];
-                    	PH2 = PhaseTrans->PhaseOutside[below];
-                    }
 					else{
 						PH1 = PhaseTrans->PhaseBelow[below];
 						PH2 = PhaseTrans->PhaseAbove[below];
@@ -654,14 +627,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				}
 				else if (   above >=0   )
 				{
-					if ( PhaseTrans->Type == _Box_){
+					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_){
 						PH1 = PhaseTrans->PhaseInside[above];
 						PH2 = PhaseTrans->PhaseOutside[above];
 					}
-					else if ( PhaseTrans->Type == _NotInAirBox_){
-						PH1 = PhaseTrans->PhaseInside[above];
-						PH2 = PhaseTrans->PhaseOutside[above];
-                                        }
 					else{
 						PH1 = PhaseTrans->PhaseBelow[above];
 						PH2 = PhaseTrans->PhaseAbove[above];
@@ -672,14 +641,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				InsideAbove = 0;
 				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr);
 
-				if ( (PhaseTrans->Type == _Box_ ) ){
+				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) ){
 					if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;				// do not change the phase
 				}
 
-				else if ( (PhaseTrans->Type == _NotInAirBox_ ) ){
-					if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;				// do not change the phase                                   
-                }
-			
                 if (PhaseTrans->PhaseDirection==0){
                     P->phase    =   ph;
 				}
