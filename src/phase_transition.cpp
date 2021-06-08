@@ -150,7 +150,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 	}
-	if ( ph->Type == _NotInAirBox_ ){
+	else if ( ph->Type == _NotInAirBox_ ){
                 ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,   ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
                 ierr = getIntParam(fb,      _OPTIONAL_, "PhaseInside",          ph->PhaseInside,        ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
         }
@@ -193,6 +193,22 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 			PetscPrintf(PETSC_COMM_WORLD,"     No phase change    @   \n");
 		}
 	}
+	else if (ph->Type == _NotInAirBox_ ){
+
+                if (ph->number_phases>0){
+                        PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
+                        for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseOutside[i])); }
+                        PetscPrintf(PETSC_COMM_WORLD," \n");
+
+                        PetscPrintf(PETSC_COMM_WORLD,"     Phase Inside       :  ");
+                        for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseInside[i])); }
+                        PetscPrintf(PETSC_COMM_WORLD," \n");
+                        PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
+                }
+                else{
+                        PetscPrintf(PETSC_COMM_WORLD,"     No phase change    @   \n");
+                }
+        }
 	else
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"     Phase Above        :  ");
@@ -607,7 +623,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			  below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
 			  above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
-			if ( PhaseTrans->Type == _NotInAirBox_ ){
+			else if ( PhaseTrans->Type == _NotInAirBox_ ){
                           below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
                           above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
@@ -660,7 +676,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;				// do not change the phase
 				}
 
-				if ( (PhaseTrans->Type == _NotInAirBox_ ) ){
+				else if ( (PhaseTrans->Type == _NotInAirBox_ ) ){
                                         if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;                                // do not change the phase                                   
                                 }
 			
@@ -715,7 +731,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	T  = P->T;
 	InAbove = 0;
 	
-	if (PhaseTrans->Type==_NotInAirBox_ && ctrl.actDike )
+	if (PhaseTrans->Type==_NotInAirBox_ )
 	{
 	  Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box but ignore airphase particles        
         }
