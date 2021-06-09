@@ -85,6 +85,7 @@ PetscErrorCode Set_to_zero_Volumetric_source(JacRes *jr);
 PetscErrorCode Update_Volumetric_source(JacRes *jr,PetscScalar IR);
 PetscErrorCode Save_Pressure_Temperature_Melt_Extracted(JacRes *jr,PetscInt ID_ME);
 PetscErrorCode Set_to_zero_Vector(JacRes *jr);
+PetscErrorCode Compute_Residual_Melt_Ext(JacRes *jr);
 
 
 

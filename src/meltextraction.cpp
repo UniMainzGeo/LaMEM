@@ -396,14 +396,18 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 
 		IR = M_Ex_t->IR;
 
-		ierr = Set_to_zero_Vector(jr); CHKERRQ(ierr);
+		ierr = Set_to_zero_Vector(jr);                                       CHKERRQ(ierr);
 
-		ierr = Compute_Comulative_Melt_Extracted(jr,actx, ID_ME,M_Ex_t); CHKERRQ(ierr);
+		ierr = Compute_Comulative_Melt_Extracted(jr,actx, ID_ME,M_Ex_t);     CHKERRQ(ierr);
 
-		ierr = MeltExtractionExchangeVolume(jr,ID_ME,update,actx);            CHKERRQ(ierr);
+		ierr = MeltExtractionExchangeVolume(jr,ID_ME,update,actx);           CHKERRQ(ierr);
 
-		ierr = Update_Volumetric_source(jr,IR);                                  CHKERRQ(ierr);
+		ierr = Update_Volumetric_source(jr,IR);                              CHKERRQ(ierr);
+
+		ierr =  Compute_Residual_Melt_Ext(jr);                               CHKERRQ(ierr);
 	}
+
+	// Compute the residual of the volumetric source
 
 
 	PetscFunctionReturn(0);
@@ -513,7 +517,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt ID_ME,PetscInt 
 
 	START_STD_LOOP
 	{
-		vdgmvvec2[L][j][i] += Vol_Cor*Mipbuff[k][j][i];
+		vdgmvvec2[L][j][i] += Mipbuff[k][j][i];
 	}
 	END_STD_LOOP
 
@@ -1109,7 +1113,7 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt ID_ME, AdvCtx *actx)
 		//PetscPrintf(PETSC_COMM_WORLD," Topo Z = %6f\n",z*jr->scal->length);
 
 		// uniformly advect
-		z += M_Ex_t[ID_ME].VolCor*Ext_fraction*Layer;
+		z += Ext_fraction*Layer;
 
 		// check if internal free surface goes outside the model domain
 		if(z > ztop) z = ztop;
@@ -1744,7 +1748,6 @@ PetscScalar Compute_mfeff_Marker(AdvCtx *actx,PetscInt ID,PetscInt iphase)
 #define __FUNCT__ "Compute_Comulative_Melt_Extracted"
 PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscInt ID_ME,  Melt_Ex_t *M_Ex_t)
 {
-	SolVarBulk              *svBulk ;
 	FDSTAG         		*fs   	;
 	PData          		*pd    	;
 	DBMat        		*dbm	;
@@ -1789,7 +1792,6 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 		dx = SIZE_CELL(i,sx,fs->dsx);
 		dy = SIZE_CELL(j,sy,fs->dsy);
 		dz = SIZE_CELL(k,sz,fs->dsz);
-		svBulk = &actx->jr->svCell[iter].svBulk;
 		phRat = actx->jr->svCell[iter++].phRat; // take phase ratio on the central node
 		GET_CELL_ID(ID, i-sx, j-sy, k-sz, fs->dsx.ncels, fs->dsy.ncels)
 
@@ -1824,7 +1826,7 @@ PetscErrorCode Compute_Comulative_Melt_Extracted(JacRes *jr, AdvCtx *actx,PetscI
 							mfeff_grid = pd->mf;
 							// compute the effective melt fraction within the cell, by computing the average mfeff for the all the particles whose phase belongs to the melt extraction law
 							mfeff=Compute_mfeff_Marker(actx, ID,iphase);
-							PetscPrintf(PETSC_COMM_WORLD,"mext = %6f, mextBulk = %6f, diff = %6f\n",mfeff, mfeff_grid,mfeff-mfeff_grid);
+							//PetscPrintf(PETSC_COMM_WORLD,"mext = %6f, mextBulk = %6f, diff = %6f\n",mfeff, mfeff_grid,mfeff-mfeff_grid);
 
 						}
 
@@ -1926,10 +1928,6 @@ PetscErrorCode Update_Volumetric_source(JacRes *jr, PetscScalar IR)
 			dy = SIZE_CELL(j,sy,jr->fs->dsy);
 			dz = SIZE_CELL(k,sz,jr->fs->dsz);
 			volumetric_source = Mipbuff[k][j][i];
-			//if(volumetric_source <0.0)
-			//{
-			//volumetric_source = volumetric_source;
-			//}
 			svBulk->Vol_S += (1-(dx*dy*dz)/(dx*dy*dz+volumetric_source));
 
 
@@ -2008,7 +2006,115 @@ PetscErrorCode Set_to_zero_Vector(JacRes *jr)
 	PetscFunctionReturn(0);
 
 }
+#undef __FUNCT__
+#define __FUNCT__ "Compute_Residual_Melt_Ext"
+PetscErrorCode Compute_Residual_Melt_Ext(JacRes *jr)
+{
 
+	Melt_Extraction_t     *Mext;
+	PetscScalar           NlRes,NgRes,PlRes,PgRes,lRes,gRes ,***Mipbuff ;
+	PetscInt               i,j,k,sx,sy,sz,nx,ny,nz;
+
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	Mext = jr->MEPar;
+	// Here we compute the right-side term to plug in the residuum (JacRes). Mass_in is the initial mass, while dMass is representing the term that has to be
+	// add to svBulk->Mass. This allow us to avoid to dirty JacRes
+
+	gRes = 0.0;
+	lRes = 0.0;
+	NlRes = 0.0;
+	NgRes = 0.0;
+	PgRes = 0.0;
+	PlRes = 0.0;
+	GET_CELL_RANGE(nx, sx, jr->fs->dsx);
+	GET_CELL_RANGE(ny, sy, jr->fs->dsy);
+	GET_CELL_RANGE(nz, sz, jr->fs->dsz);
+
+
+	ierr = DMDAVecGetArray(jr->fs->DA_CEN, Mext->Miphase, &Mipbuff) ; CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		lRes += (Mipbuff[k][j][i]);
+	}
+	END_STD_LOOP
+
+		// restore access
+
+		// compute global sum
+		if(ISParallel(PETSC_COMM_WORLD))
+		{
+			ierr = MPI_Allreduce(&lRes, &gRes, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		}
+		else
+		{
+			gRes = lRes;
+		}
+
+	ierr = DMDAVecRestoreArray(jr->fs->DA_CEN, Mext->Miphase, &Mipbuff) ; CHKERRQ(ierr);
+
+
+
+	ierr = DMDAVecGetArray(jr->fs->DA_CEN, Mext->Miphase, &Mipbuff) ; CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		if(Mipbuff[k][j][i]>0.0) PlRes += (Mipbuff[k][j][i]);
+	}
+	END_STD_LOOP
+
+		// restore access
+
+		// compute global sum
+		if(ISParallel(PETSC_COMM_WORLD))
+		{
+			ierr = MPI_Allreduce(&PlRes, &PgRes, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		}
+		else
+		{
+			PgRes = PlRes;
+		}
+
+	ierr = DMDAVecRestoreArray(jr->fs->DA_CEN, Mext->Miphase, &Mipbuff) ; CHKERRQ(ierr);
+
+
+	ierr = DMDAVecGetArray(jr->fs->DA_CEN, Mext->Miphase, &Mipbuff) ; CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		if(Mipbuff[k][j][i]<0.0) NlRes += (Mipbuff[k][j][i]);
+	}
+	END_STD_LOOP
+
+		// restore access
+
+		// compute global sum
+		if(ISParallel(PETSC_COMM_WORLD))
+		{
+			ierr = MPI_Allreduce(&NlRes, &NgRes, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		}
+		else
+		{
+			NgRes = NlRes;
+		}
+
+	ierr = DMDAVecRestoreArray(jr->fs->DA_CEN, Mext->Miphase, &Mipbuff) ; CHKERRQ(ierr);
+
+
+	if(ISRankZero(PETSC_COMM_WORLD))
+		{
+
+		PetscPrintf(PETSC_COMM_WORLD,"\n Residual of volumetric melt fraction is %e, the total positive Volume is %e, the total negative volume is %e, their ratio is %e \n",gRes,PgRes,NgRes,gRes/(NgRes));
+
+
+		}
+
+	PetscFunctionReturn(0);
+
+}
 
 
 
