@@ -931,7 +931,7 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 	Marker          *P;
 	JacRes          *jr;
 	PetscInt        i,jj;
-	PetscScalar     Tbot,x,y,z,cmin,cmax,circle;
+	PetscScalar     Tbot,x,y,z,cmin,cmax,circle,gaussian_PET;
     PetscLogDouble  t;
 
 
@@ -940,7 +940,7 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 	jr          =   actx->jr;
 	bc         =   jr->bc;
 
-	if (bc->Winkler_Depth == -1) 	PetscFunctionReturn(0);
+	if (bc->Internal_Winkler == -1) 	PetscFunctionReturn(0);
     PrintStart(&t, "Winkler Boundary condition...", NULL);
 
 
@@ -971,14 +971,16 @@ PetscErrorCode InternalWinklerBC(AdvCtx *actx)
 				{
 					for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
 					{
-						P->T     =P->T + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) /(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0))) ;
+						gaussian_PET = (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) /(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0))) ;
+						P->T     = P->T + gaussian_PET;
 					}
 				}
 				else
 				{
 					for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
 					{
-						P->T     =P->T + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));;
+						gaussian_PET = (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));
+						P->T =P->T+  gaussian_PET;
 					}
 				}
 			}

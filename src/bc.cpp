@@ -503,11 +503,11 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// Gaussian Perturbation & Winkler Boundary Condition
 	bc->Gaussian_Pet_num = -1;
-	ierr = getIntParam   (fb, _OPTIONAL_, "Gaussian_Pet_num", &bc->Gaussian_Pet_num, 1, -1);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "Gaussian_Pet_num", &bc->Gaussian_Pet_num, 1, 1.0);  CHKERRQ(ierr);
 	if(bc->Gaussian_Pet_num != -1)
 	{
 		bc->Gaussian_Dim = 1;
-		ierr = getIntParam   (fb, _OPTIONAL_, "Gaussian_Dim", &bc->Gaussian_Dim, 1,1.0);  CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "Gaussian_Dim", &bc->Gaussian_Dim, 1,2);  CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "Gaussian_Pet_cen_x",  bc->Gaussian_Pet_cen_x, bc->Gaussian_Pet_num, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "Gaussian_Pet_rad",  bc->Gaussian_Pet_rad, bc->Gaussian_Pet_num, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "Gaussian_Pet_dT",   bc->Gaussian_Pet_dT,  bc->Gaussian_Pet_num, 1.0); CHKERRQ(ierr);
@@ -518,7 +518,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// Winkler Boundary Condition
 
 	bc->Internal_Winkler = -1;
-	ierr = getIntParam   (fb, _OPTIONAL_, "Internal_Winkler", &bc->Internal_Winkler, 1, -1);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "Internal_Winkler", &bc->Internal_Winkler, 1, 1.0);  CHKERRQ(ierr);
 	if(bc->Internal_Winkler == 1)
 	{
 		ierr = getScalarParam(fb, _REQUIRED_, "Winkler_Depth",   &bc->Winkler_Depth,  1, scal->length); CHKERRQ(ierr);
@@ -1162,7 +1162,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 				{
 					for(jj=0; jj<bc->Gaussian_Pet_num; jj++)
 					{
-						bcT[k-1][j][i] = bcT[k-1][j][i] + Tbot + (bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));;
+						bcT[k-1][j][i] = bcT[k-1][j][i] +(bc->Gaussian_Pet_dT[jj])*PetscExpScalar( - ( PetscPowScalar(x-bc->Gaussian_Pet_cen_x[jj],2.0 ) + PetscPowScalar(y-bc->Gaussian_Pet_cen_y[jj],2.0 ) )/(PetscPowScalar(bc->Gaussian_Pet_rad[jj],2.0)));;
 					}
 				}
 			}

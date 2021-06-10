@@ -649,7 +649,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 			if( Active[jj]==1.0)
 			{
-                numActTracers += 1; // keep track of the # of active tracers on this processor
+				numActTracers += 1; // keep track of the # of active tracers on this processor
 				npx = xp + vx*dt;
 				npy = yp + vy*dt;
 				npz = zp + vz*dt;
@@ -703,7 +703,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 					Active[jj] = 0.0;
 				}
 			}
-
 
 			Xp[jj]=npx;
 			Yp[jj]=npy;
