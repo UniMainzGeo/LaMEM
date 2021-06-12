@@ -65,8 +65,8 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-	ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL); CHKERRQ(ierr); \
-	buff[k][j][i] = kc;
+  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, &kfac1); CHKERRQ(ierr); \
+  buff[k][j][i] = kc;   // added two NULL because of the new variables that are passed
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
 #define GET_HRXZ buff[k][j][i] = jr->svXZEdge[iter++].svDev.Hr;
@@ -82,14 +82,15 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *phRat,
 		PetscScalar *k_,      // conductivity
 		PetscScalar *rho_Cp_, // volumetric heat capacity
-		PetscScalar *rho_A_)  // volumetric radiogenic heat
+		PetscScalar *rho_A_,  // volumetric radiogenic heat
+		PetscScalar *kfac1_)    // factor with which the conductivtiy is multiplied (material parameter)
 {
 	// compute effective energy parameters in the cell
 
 	PetscInt    i, numPhases, AirPhase;
     Material_t  *phases, *M;
 
-	PetscScalar cf, k, rho, rho_Cp, rho_A, density;
+    PetscScalar cf, k, rho, rho_Cp, rho_A, density, kfac1;
 
 	PetscFunctionBegin;
 
@@ -97,11 +98,13 @@ PetscErrorCode JacResGetTempParam(
 	k         = 0.0;
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
+	kfac1     = 0.0;
+	
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
 	density   = jr->scal->density;
 	AirPhase  = jr->surf->AirPhase;
-
+	
 	// average all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -118,12 +121,15 @@ PetscErrorCode JacResGetTempParam(
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
+                kfac1  +=   cf*M->kfac1;
+
 	}
 
 	// store
 	if(k_)      (*k_)      = k;
-    if(rho_Cp_) (*rho_Cp_) = rho_Cp;
+	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
 	if(rho_A_)  (*rho_A_)  = rho_A;
+	if(kfac1_)  (*kfac1_)  = kfac1;  // NEW  new value of kfac1 stored in previous value of kfac1_ as kfac1_ using the pointer *kfac1_
 
 	PetscFunctionReturn(0);
 }
@@ -417,6 +423,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	SolVarCell *svCell;
 	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
+	Controls   ctrl;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -425,7 +432,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha;
+	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, kfac1;   // NEW
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
 
@@ -439,6 +446,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	num   = bc->tNumSPC;
 	list  = bc->tSPCList;
 
+	// access controls
+	ctrl = jr->ctrl;
+	
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
 	my = fs->dsy.tcels - 1;
@@ -486,7 +496,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Pc  = P[k][j][i] ; // Current Pressure
 
 		// conductivity, heat capacity, radiogenic heat production
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A); CHKERRQ(ierr);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, &kfac1); CHKERRQ(ierr); // NEW
 
 		// shear heating term (effective)
 		Hr = svDev->Hr +
@@ -503,6 +513,13 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; if(Km1 < 0)  Km1++;
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
+		if (Tc <= ctrl.T_k1){kc = kc*kfac1;}   // temperature condition for conductivity
+				if (Tc <= ctrl.T_k1) {
+		PetscPrintf(PETSC_COMM_WORLD, " Tc %f \n", Tc);
+		               PetscPrintf(PETSC_COMM_WORLD, " kc original %f \n", kc/kfac1);
+		                PetscPrintf(PETSC_COMM_WORLD, " kfac1 %f \n", kfac1);		  
+	       		PetscPrintf(PETSC_COMM_WORLD, " kfac1*kc %f \n", kc);}
+		
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
 		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
@@ -588,15 +605,16 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
+	Controls   ctrl;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], kc, rho_Cp, invdt;
+	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, kfac1;  // NEW
 	MatStencil  row[1], col[7];
-	PetscScalar ***lk, ***bcT, ***buff;
+	PetscScalar ***lk, ***bcT, ***buff, ***lT;  // NEW  
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -607,6 +625,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	num  = bc->tNumSPC;
 	list = bc->tSPCList;
 
+	// access controls
+	ctrl = jr->ctrl;
+	
 	// compute inverse time step
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
@@ -624,7 +645,8 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT,  &bcT); CHKERRQ(ierr);
-
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr); // NEW
+	
 	//---------------
 	// central points
 	//---------------
@@ -636,8 +658,11 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		// access solution variables
 		svCell = &jr->svCell[iter++];
 
+		// access  // NEW
+		Tc  = lT[k][j][i]; // current temperature
+
 		// conductivity, heat capacity
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL); CHKERRQ(ierr);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, & kfac1); CHKERRQ(ierr);   // NEW
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }
@@ -647,6 +672,10 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcT[k-1][j][i] != DBL_MAX) cf[4] = -1.0; }
 		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcT[k+1][j][i] != DBL_MAX) cf[5] = -1.0; }
 
+		//		PetscPrintf(PETSC_COMM_WORLD, " kfac1  %f \n", kfac1);
+		
+		if (Tc <= ctrl.T_k1){kc = kc*kfac1;}   // temperature condition for conductivity  // NEW
+		
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
 		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
@@ -694,6 +723,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
 
 	// assemble temperature matrix
 	ierr = MatAIJAssemble(jr->Att, num, list, 1.0); CHKERRQ(ierr);
