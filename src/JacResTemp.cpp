@@ -65,8 +65,8 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, &kfac1); CHKERRQ(ierr); \
-  buff[k][j][i] = kc;   // added two NULL because of the new variables that are passed
+  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, &kfac1, &APS1); CHKERRQ(ierr); \
+  buff[k][j][i] = kc;   // added one NULL because of the new variables that are passed
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
 #define GET_HRXZ buff[k][j][i] = jr->svXZEdge[iter++].svDev.Hr;
@@ -83,14 +83,16 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *k_,      // conductivity
 		PetscScalar *rho_Cp_, // volumetric heat capacity
 		PetscScalar *rho_A_,  // volumetric radiogenic heat
-		PetscScalar *kfac1_)    // factor with which the conductivtiy is multiplied (material parameter)
+		PetscScalar *kfac1_,  // NEW  // factor with which the conductivtiy is multiplied (material parameter)
+		PetscScalar *APS1_)
 {
 	// compute effective energy parameters in the cell
 
 	PetscInt    i, numPhases, AirPhase;
     Material_t  *phases, *M;
-
-    PetscScalar cf, k, rho, rho_Cp, rho_A, density, kfac1;
+    Soft_t      *s;    // pointer to softening law ID
+    Soft_t      *matSoft, *soft; // material softening law parameters
+    PetscScalar cf, k, rho, rho_Cp, rho_A, density, kfac1, APS1;  // NEW new variables for T and aps-dependent conductivity
 
 	PetscFunctionBegin;
 
@@ -98,19 +100,27 @@ PetscErrorCode JacResGetTempParam(
 	k         = 0.0;
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
-	kfac1     = 0.0;
+	kfac1     = 0.0;   // NEW
+	APS1      = 0.0;   // NEW why do i need to initialize exactly those parameters? 
 	
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
 	density   = jr->scal->density;
 	AirPhase  = jr->surf->AirPhase;
-	
+	// access the pointers to softening law parameter and softening law IDS 
+        matSoft   = jr->dbm->matSoft;
+
 	// average all phases
 	for(i = 0; i < numPhases; i++)
 	{
 		M       = &phases[i];
 		cf      =  phRat[i];
 		rho     =  M->rho;
+
+		// accessing the softening ID of each phase and its associated APS1
+		//		chSoftID = M->chSoftID;  // softening ID of phase i  
+      	      	soft    = &matSoft[i];    
+		s       = soft;  // + chSoftID not necessary 		
 
 		// override air phase density
 		if(AirPhase != -1 && i == AirPhase)
@@ -121,7 +131,8 @@ PetscErrorCode JacResGetTempParam(
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
-                kfac1  +=   cf*M->kfac1;
+                kfac1  +=  cf*M->kfac1;   // NEW
+		APS1   +=  cf*s->APS1;   // NEW 
 
 	}
 
@@ -130,7 +141,8 @@ PetscErrorCode JacResGetTempParam(
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
 	if(rho_A_)  (*rho_A_)  = rho_A;
 	if(kfac1_)  (*kfac1_)  = kfac1;  // NEW  new value of kfac1 stored in previous value of kfac1_ as kfac1_ using the pointer *kfac1_
-
+        if(APS1_)   (*APS1_)   = APS1;  // NEW  APS1
+	
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -421,7 +433,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
-	SolVarDev  *svDev;
+       	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
 	Controls   ctrl;
 	PetscInt    iter, num, *list;
@@ -432,11 +444,10 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, kfac1;   // NEW
+	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, kfac1, APS, APS1;   // NEW
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
-
-
+	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -448,7 +459,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 
 	// access controls
 	ctrl = jr->ctrl;
-	
+
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
 	my = fs->dsy.tcels - 1;
@@ -489,14 +500,15 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		svCell = &jr->svCell[iter++];
 		svDev  = &svCell->svDev;
 		svBulk = &svCell->svBulk;
-
+		APS    = svDev->APS;
+		
 		// access
 		Tc  = lT[k][j][i]; // current temperature
 		Tn  = svBulk->Tn;  // temperature history
 		Pc  = P[k][j][i] ; // Current Pressure
-
+		
 		// conductivity, heat capacity, radiogenic heat production
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, &kfac1); CHKERRQ(ierr); // NEW
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, &kfac1, &APS1); CHKERRQ(ierr); // NEW
 
 		// shear heating term (effective)
 		Hr = svDev->Hr +
@@ -513,13 +525,21 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; if(Km1 < 0)  Km1++;
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
-		if (Tc <= ctrl.T_k1){kc = kc*kfac1;}   // temperature condition for conductivity
-				if (Tc <= ctrl.T_k1) {
+		if (ctrl.Tk_on && Tc <= ctrl.T_k1 && kfac1 > 0.0){kc = kc*kfac1;}   // temperature condition for conductivity
+		/*		if (Tc <= ctrl.T_k1) {
 		PetscPrintf(PETSC_COMM_WORLD, " Tc %f \n", Tc);
-		               PetscPrintf(PETSC_COMM_WORLD, " kc original %f \n", kc/kfac1);
-		                PetscPrintf(PETSC_COMM_WORLD, " kfac1 %f \n", kfac1);		  
-	       		PetscPrintf(PETSC_COMM_WORLD, " kfac1*kc %f \n", kc);}
-		
+		PetscPrintf(PETSC_COMM_WORLD, " kc original %f \n", kc/kfac1);
+		PetscPrintf(PETSC_COMM_WORLD, " kfac1 %f \n", kfac1);		  
+	       	PetscPrintf(PETSC_COMM_WORLD, " kfac1*kc %f \n", kc);} */
+
+		if (ctrl.APS_k && APS > APS1 && kfac1 > 0.0){kc = kc*kfac1;}  // APS condition for conductivity
+
+		/*	PetscPrintf(PETSC_COMM_WORLD, " APS  in func %f \n", APS);
+				  PetscPrintf(PETSC_COMM_WORLD, " APS1 in func %f \n", APS1);
+				  PetscPrintf(PETSC_COMM_WORLD, " kfac1 %f \n", kfac1);
+		PetscPrintf(PETSC_COMM_WORLD, " kc before %f \n", kc/kfac1);
+		PetscPrintf(PETSC_COMM_WORLD, " kc %f \n", kc);} */
+
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
 		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
@@ -605,14 +625,15 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
-	Controls   ctrl;
+	SolVarDev  *svDev;  // NEW
+	Controls   ctrl;    // NEW
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, kfac1;  // NEW
+	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, kfac1, APS, APS1;  // NEW
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff, ***lT;  // NEW  
 
@@ -626,8 +647,8 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	list = bc->tSPCList;
 
 	// access controls
-	ctrl = jr->ctrl;
-	
+	ctrl = jr->ctrl;  // NEW
+
 	// compute inverse time step
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
@@ -657,12 +678,14 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	{
 		// access solution variables
 		svCell = &jr->svCell[iter++];
-
+		svDev  = &svCell->svDev;
+		APS    = svDev->APS;
+		  
 		// access  // NEW
 		Tc  = lT[k][j][i]; // current temperature
-
+		
 		// conductivity, heat capacity
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, & kfac1); CHKERRQ(ierr);   // NEW
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, &kfac1, &APS1); CHKERRQ(ierr);   // NEW
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }
@@ -672,11 +695,11 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcT[k-1][j][i] != DBL_MAX) cf[4] = -1.0; }
 		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcT[k+1][j][i] != DBL_MAX) cf[5] = -1.0; }
 
-		//		PetscPrintf(PETSC_COMM_WORLD, " kfac1  %f \n", kfac1);
-		
-		if (Tc <= ctrl.T_k1){kc = kc*kfac1;}   // temperature condition for conductivity  // NEW
-		
-		// compute average conductivities
+		if (ctrl.Tk_on && Tc <= ctrl.T_k1){kc = kc*kfac1;}   // temperature condition for conductivity  // NEW
+
+		if (ctrl.APS_k && APS > APS1){kc = kc*kfac1;}  // NEW for APS-dependent conductivity
+
+ 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
 		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
 		bkz = (kc + lk[Km1][j][i])/2.0;      fkz = (kc + lk[Kp1][j][i])/2.0;

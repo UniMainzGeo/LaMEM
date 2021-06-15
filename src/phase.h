@@ -204,7 +204,6 @@ public:
 	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
 	PetscScalar  T;                 // optional temperature to set within the phase
   PetscScalar  kfac1;                 // optional multiplication factor that is used to compute the higher conductivtiy above the conductivity boundary temperature
-  //        PetscScalar  T_k1;                 // optional boundary-temperature between high and low conductivity
 	// dike parameters
 	PetscScalar  Mf;                // for dike phase only, amount of magma-accommodated extenison in front of box
 	PetscScalar  Mb;      	        // for dike phase only, amount of magma-accommodated extenison in back of box

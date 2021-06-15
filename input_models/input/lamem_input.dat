@@ -311,6 +311,8 @@
 	lrtol           = 1e-6           # local rheology iterations relative tolerance
 	act_dike        = 1              # dike activation flag (additonal term in divergence)
 	T_k1            = 600		 # default value for thermal conductivity boundary
+	Tk_on           = 1              # switch to use T-dependent conductivity, 0: not active
+	APS_k           = 1              # switch to use APS-dependent conductivity, 0: not active
 	
 # Groundwater level type specification:
 
@@ -687,7 +689,6 @@
 		k          = 2.5    # thermal conductivity
 		A          = 1e-9   # radiogenic heat production
 		T          = 100.0  # optional temperature to set within the phase
-#		T_k1       = 600    # below this temperature isotherm the conductivity is higher, needs also kfac1 as input
 		kfac1      = 5      # optional parameter which acts as a multiplication factor with the provided conductivity k above the provided temperature T_k1
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
 		rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here

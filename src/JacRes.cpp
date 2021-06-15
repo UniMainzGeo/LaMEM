@@ -139,10 +139,12 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);        	CHKERRQ(ierr);
     ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1);          	CHKERRQ(ierr);
     ierr = getIntParam   (fb, _OPTIONAL_, "Passive_Tracer",  &ctrl->Passive_Tracer, 1, 1);          	CHKERRQ(ierr);
-    ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms,     1, 1);          	CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms, 1, 1);          	CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,          1, 1.0);        	CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr);
-	ierr = getScalarParam   (fb, _OPTIONAL_, "T_k1",        &ctrl->T_k1,         1, 1.0);              CHKERRQ(ierr);
+	ierr = getScalarParam   (fb, _OPTIONAL_, "T_k1",         &ctrl->T_k1,            1, 1.0);            CHKERRQ(ierr);
+        ierr = getIntParam   (fb, _OPTIONAL_, "Tk_on",        &ctrl->Tk_on,           1, 1);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "APS_k",        &ctrl->APS_k,           1, 1);              CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -303,7 +305,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");
 	if(ctrl->T_k1)           PetscPrintf(PETSC_COMM_WORLD, "   conductivity boundary Temperature       : %g %s \n", ctrl->T_k1,      scal->lbl_temperature); // NEW
-
+	if(ctrl->APS_k)          PetscPrintf(PETSC_COMM_WORLD, "   Use APS-dependent conductivity          @ \n",       ctrl->APS_k); // NEW
+	
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
 	else if(ctrl->gwType == _GW_TOP_)   PetscPrintf(PETSC_COMM_WORLD, "top of the domain \n");
