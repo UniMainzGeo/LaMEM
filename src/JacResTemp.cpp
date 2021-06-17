@@ -131,8 +131,8 @@ PetscErrorCode JacResGetTempParam(
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
-                kfac1  +=  cf*M->kfac1;   // NEW
-		APS1   +=  cf*s->APS1;   // NEW 
+              	kfac1  +=  cf*M->kfac1;   // NEW
+		APS1   +=  cf*s->APS1;    // NEW 
 
 	}
 
@@ -141,7 +141,7 @@ PetscErrorCode JacResGetTempParam(
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
 	if(rho_A_)  (*rho_A_)  = rho_A;
 	if(kfac1_)  (*kfac1_)  = kfac1;  // NEW  new value of kfac1 stored in previous value of kfac1_ as kfac1_ using the pointer *kfac1_
-        if(APS1_)   (*APS1_)   = APS1;  // NEW  APS1
+        if(APS1_)   (*APS1_)   = APS1;   // NEW  APS1
 	
 	PetscFunctionReturn(0);
 }
@@ -444,7 +444,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, kfac1, APS, APS1;   // NEW
+	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, kfac1, APS, APS1, cond;   // NEW
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
 	
@@ -540,11 +540,19 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		PetscPrintf(PETSC_COMM_WORLD, " kc before %f \n", kc/kfac1);
 		PetscPrintf(PETSC_COMM_WORLD, " kc %f \n", kc);} */
 
+		// to output as a field (or below with the average??) 
+                cond = kc;
+                svBulk->cond = cond;
+		
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
 		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
 		bkz = (kc + lk[Km1][j][i])/2.0;      fkz = (kc + lk[Kp1][j][i])/2.0;
 
+		//		cond = (bkx+fkx)*0.5+(bky+fky)*0.5+(bkz+fkz)*0.5);  // average conductivity to get a field, no idea if that is correct 
+		//		cond = kc;
+		//              svBulk->cond = cond;
+		
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
 		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);

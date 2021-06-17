@@ -87,6 +87,7 @@ struct SolVarBulk
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
 	PetscScalar  Ha ;    // Adiabatic heating
+  PetscScalar  cond ;    // conductivity
 
 };
 

@@ -311,6 +311,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->litho_press)    cnt++; // lithostatic pressure
 	if(omask->pore_press)     cnt++; // pore pressure
 	if(omask->temperature)    cnt++; // temperature
+	if(omask->conductivity)    cnt++; // conductivity   // NEW
 	if(omask->dev_stress)     cnt++; // deviatoric stress tensor
 	if(omask->j2_dev_stress)  cnt++; // deviatoric stress second invariant
 	if(omask->strain_rate)    cnt++; // deviatoric strain rate tensor
@@ -381,6 +382,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_pore_press",     &omask->pore_press,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_press",      &omask->tot_pressure,      1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_temperature",    &omask->temperature,       1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_conductivity",   &omask->conductivity,      1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_dev_stress",     &omask->dev_stress,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_j2_dev_stress",  &omask->j2_dev_stress,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_strain_rate",    &omask->strain_rate,       1, 1); CHKERRQ(ierr);
@@ -452,6 +454,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->litho_press)    PetscPrintf(PETSC_COMM_WORLD, "   Lithostatic pressure                    @ \n");
 	if(omask->pore_press)     PetscPrintf(PETSC_COMM_WORLD, "   Pore pressure                           @ \n");
 	if(omask->temperature)    PetscPrintf(PETSC_COMM_WORLD, "   Temperature                             @ \n");
+	if(omask->conductivity)   PetscPrintf(PETSC_COMM_WORLD, "   Conductivity                            @ \n");
 	if(omask->dev_stress)     PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric stress tensor                @ \n");
 	if(omask->j2_dev_stress)  PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric stress second invariant      @ \n");
 	if(omask->strain_rate)    PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate tensor           @ \n");
@@ -535,6 +538,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->litho_press)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "litho_press",    scal->lbl_stress,           &PVOutWriteLithoPress,   1, NULL);
 	if(omask->pore_press)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "pore_press",     scal->lbl_stress,           &PVOutWritePorePress,    1, NULL);
 	if(omask->temperature)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1, NULL);
+        if(omask->conductivity)   OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "conductivity",   scal->lbl_conductivity,     &PVOutWriteConductivity, 1, NULL);
 	if(omask->dev_stress)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    9, NULL);
 	if(omask->strain_rate)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   9, NULL);
 	if(omask->j2_dev_stress)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "j2_dev_stress",  scal->lbl_stress,           &PVOutWriteJ2DevStress,  1, NULL);

@@ -443,6 +443,23 @@ PetscErrorCode PVOutWriteTemperature(OutVec* outvec)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteConductivity"    // NEW
+PetscErrorCode PVOutWriteConductivity(OutVec* outvec)
+{
+
+  COPY_FUNCTION_HEADER
+
+	// macros to copy conductivity to buffer  
+        #define GET_COND_CENTER buff[k][j][i] = jr->svCell[iter++].svBulk.cond;
+
+        cf = scal->conductivity;
+	
+        INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_COND_CENTER, 1, 0)
+
+        PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteDevStress"
 PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 {
