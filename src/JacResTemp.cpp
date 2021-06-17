@@ -634,6 +634,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	BCCtx      *bc;
 	SolVarCell *svCell;
 	SolVarDev  *svDev;  // NEW
+	SolVarBulk *svBulk; // NEW
 	Controls   ctrl;    // NEW
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
@@ -641,7 +642,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, kfac1, APS, APS1;  // NEW
+	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, kfac1, APS, APS1, cond;  // NEW
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff, ***lT;  // NEW  
 
@@ -687,7 +688,8 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		// access solution variables
 		svCell = &jr->svCell[iter++];
 		svDev  = &svCell->svDev;
-		APS    = svDev->APS;
+		svBulk = &svCell->svBulk; // NEW
+		APS    = svDev->APS;    //NEW
 		  
 		// access  // NEW
 		Tc  = lT[k][j][i]; // current temperature
@@ -707,6 +709,11 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 
 		if (ctrl.APS_k && APS > APS1){kc = kc*kfac1;}  // NEW for APS-dependent conductivity
 
+
+                // to output as a field (or below with the average??)        // NEW
+                cond = kc;   
+                svBulk->cond = cond;
+		
  		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
 		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
