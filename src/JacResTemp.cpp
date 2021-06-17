@@ -705,10 +705,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcT[k-1][j][i] != DBL_MAX) cf[4] = -1.0; }
 		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcT[k+1][j][i] != DBL_MAX) cf[5] = -1.0; }
 
-		if (ctrl.Tk_on && Tc <= ctrl.T_k1){kc = kc*kfac1;}   // temperature condition for conductivity  // NEW
+		if (ctrl.Tk_on && Tc <= ctrl.T_k1 && kfac1 > 0.0){kc = kc*kfac1;}   // temperature condition for conductivity  // NEW
 
-		if (ctrl.APS_k && APS > APS1){kc = kc*kfac1;}  // NEW for APS-dependent conductivity
-
+		if (ctrl.APS_k && APS > APS1 && kfac1 > 0.0){kc = kc*kfac1;}  // NEW for APS-dependent conductivity
 
                 // to output as a field (or below with the average??)        // NEW
                 cond = kc;   

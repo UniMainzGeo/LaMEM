@@ -94,7 +94,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->actTemp	   =  0;			// diffusion is not active by default (otherwise we have to define thermal properties in all cases)
 	ctrl->printNorms   =  0;			// print norms of velocity/pressure/temperature?
 	ctrl->Adiabatic_gr = 0.0;
-	ctrl->T_k1      =  0;   // NEW   temperature boundary for k is not activated by default. does it make sense to have 0 though? check again
+	//	ctrl->T_k1      =  0;   // NEW   temperature boundary for k is not activated by default. does it make sense to have 0 though? check again
 	
 	if(scal->utype != _NONE_)
 	{
