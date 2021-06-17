@@ -903,12 +903,12 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
 
 			// check whether rock marker is above the free surface
-      			if(phaseptr[jj] != AirPhase && zp > topo)
+            if(phaseptr[jj] != AirPhase && zp > topo)
 			{
 				// erosion (physical or numerical) -> rock turns into air
 				phaseptr[jj]= AirPhase;
 			}
-			
+
 			// check whether air marker is below the free surface
 			if(phaseptr[jj] == AirPhase && zp < topo)
 			{

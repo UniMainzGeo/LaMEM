@@ -601,8 +601,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			num_phas    =   PhaseTrans->number_phases;
 
 			if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ){
-			  below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
-			  above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
+                below       =   Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas);
+                above       =   Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas);
 			}
 			else {
 				below       =   Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas);
@@ -697,9 +697,9 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	InAbove = 0;
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
-	{
-	  Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box but ignore airphase particles        
-        }
+    {
+        Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box but ignore airphase particles
+    }
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
 		Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl, svCell, &ph, &InAbove, time);
@@ -816,9 +816,10 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 	T  = P->T;
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
 		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
-	     (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5])    ){  
-	  
-		// We are within the box
+	     (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5])  )
+    {
+
+        // We are within the box
 		ph 		= PH1;
 		InAb 	= 1;
 
@@ -885,9 +886,10 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
 	
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
 		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
-		 (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase  ){ 
-
-		// We are within the box
+		 (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase  )
+    {
+        
+        // We are within the box
 		ph = PH1;
 
 		// Set the temperature structure                                                                 

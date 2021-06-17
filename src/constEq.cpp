@@ -846,18 +846,22 @@ PetscErrorCode cellConstEq(
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
 
-	if(ctrl->actExp && ctrl->actDike){
-		gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
-		}
-	else if(ctrl->actDike){
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;
-		}
-	else if(ctrl->actExp){
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
-		}
-	else{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
-		}
+	if(ctrl->actExp && ctrl->actDike)
+    {
+        gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
+    }
+	else if(ctrl->actDike)
+    {
+        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;
+    }
+	else if(ctrl->actExp)
+    {
+        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+    }
+	else
+    {
+        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+    }
 
 	// store effective density
 	rho = svBulk->rho;
@@ -1131,40 +1135,44 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
 				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
 				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
-	    }
-			/* else                                                                                                                                           
-                           {                                                                                                                               
-                          // Mb an Mf are different                                                                                                               
-                          // FDSTAG *fs;                                                                                                                          
-                          // access context                                                                                                                
-                          // fs = bc->fs;                                                                                                                   
-                          // bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction         
-                          //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction            
-                          if(front == back)                        
-                          {                                               
-                          // linear interpolation between different M values, Mf is M in front, Mb is M in back    
-                          M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));                                                         
-                          dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km                   
-                          }                                                                                                           
-                          else                                                                                                            
-                          {                                                                                                          
-                          // linear interpolation if the ridge/dike phase is oblique                                          
-                          y = COORD_CELL(j,sy,fs->dsy);                                                          
-                          M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));                                      
-                          dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km                
-                          } */ 
-
-	    else
-	      {
-		mat->dikeRHS = 0.0;                                                        
-	      }
-
-	    dikeRHS += phRat[i]*mat->dikeRHS; 
-			
+                
+            }
+            /*else
+            {
+                // Mb an Mf are different
+                // FDSTAG *fs;
+                
+                // access context
+                // fs = bc->fs;
+                
+                // bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction
+                //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction
+                if(front == back)
+                {
+                    // linear interpolation between different M values, Mf is M in front, Mb is M in back
+                    M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+                    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km
+                    
+                }
+                else
+                {
+                    // linear interpolation if the ridge/dike phase is oblique
+                    y = COORD_CELL(j,sy,fs->dsy);
+                    M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+                    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km
+                }
+            }*/
+            else
+            {
+                mat->dikeRHS = 0.0;
+            }
+            
+            dikeRHS += phRat[i]*mat->dikeRHS;
+            
         }
 	}
-
+    
     PetscFunctionReturn(0);
-
+    
 }
 // ------------------------------------------------------------------------------------------------------------------------

@@ -76,7 +76,7 @@ public:
 	PetscScalar APS2; // end of softening APS
 	PetscScalar A;    // reduction ratio
 	PetscScalar Lm;   // material length scale
-	PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
+    PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
 
 };
 
@@ -135,8 +135,8 @@ public:
 	PetscScalar     dT_within;
 	PetscScalar     DensityAbove[_max_tr_];
 	PetscScalar     DensityBelow[_max_tr_];
-	
-	PetscScalar     topTemp;
+    
+    PetscScalar     topTemp;
     PetscScalar     botTemp;
     PetscScalar     cstTemp;
     PetscScalar     thermalAge;
@@ -213,7 +213,7 @@ public:
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number
 	PetscInt     pdAct;             // phase diagram activity flag
 	PetscScalar  mfc;               // melt fraction viscosity correction
-	PetscScalar  rho_melt;		// rho melt
+	PetscScalar  rho_melt;          // rho melt
 	PetscInt     Phase_Diagram_melt;// flag that allows only to consider the melt quantity from a phase diagram
 };
 
@@ -261,7 +261,7 @@ struct DBMat
 	Material_t   phases[_max_num_phases_]; // phase parameters
 	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
-	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties                 
+	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
 	PetscInt     numPhtr;                // number material softening laws
 };
 

@@ -1211,7 +1211,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		ierr = setUpCtrlVol(&ctx, svCell->phRat, &svCell->svDev, &svCell->svBulk, pc, pc_lith, pc_pore, Tc, DII, z, Le); CHKERRQ(ierr);
 
 		// evaluate constitutive equations on the cell
-		ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, dikeRHS); CHKERRQ(ierr);  
+		ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, dikeRHS); CHKERRQ(ierr);
 		
 		// compute gravity terms
 		gx = rho*grav[0];
