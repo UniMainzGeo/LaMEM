@@ -526,11 +526,12 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
 		if (ctrl.Tk_on && Tc <= ctrl.T_k1 && kfac1 > 0.0){kc = kc*kfac1;}   // temperature condition for conductivity
-		/*		if (Tc <= ctrl.T_k1) {
+				if (Tc <= ctrl.T_k1) {
+				  PetscPrintf(PETSC_COMM_WORLD, " T_k1 %f \n", ctrl.T_k1);
 		PetscPrintf(PETSC_COMM_WORLD, " Tc %f \n", Tc);
 		PetscPrintf(PETSC_COMM_WORLD, " kc original %f \n", kc/kfac1);
 		PetscPrintf(PETSC_COMM_WORLD, " kfac1 %f \n", kfac1);		  
-	       	PetscPrintf(PETSC_COMM_WORLD, " kfac1*kc %f \n", kc);} */
+	       	PetscPrintf(PETSC_COMM_WORLD, " kfac1*kc %f \n", kc);} 
 
 		if (ctrl.APS_k && APS > APS1 && kfac1 > 0.0){kc = kc*kfac1;}  // APS condition for conductivity
 
@@ -541,18 +542,14 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		PetscPrintf(PETSC_COMM_WORLD, " kc %f \n", kc);} */
 
 		// to output as a field (or below with the average??) 
-                cond = kc;
-                svBulk->cond = cond;
+		                cond = kc;
+		                svBulk->cond = cond;
 		
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
 		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
 		bkz = (kc + lk[Km1][j][i])/2.0;      fkz = (kc + lk[Kp1][j][i])/2.0;
 
-		//		cond = (bkx+fkx)*0.5+(bky+fky)*0.5+(bkz+fkz)*0.5);  // average conductivity to get a field, no idea if that is correct 
-		//		cond = kc;
-		//              svBulk->cond = cond;
-		
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
 		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);
@@ -710,8 +707,8 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		if (ctrl.APS_k && APS > APS1 && kfac1 > 0.0){kc = kc*kfac1;}  // NEW for APS-dependent conductivity
 
                 // to output as a field (or below with the average??)        // NEW
-                cond = kc;   
-                svBulk->cond = cond;
+		                cond = kc;   
+		                svBulk->cond = cond;
 		
  		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;

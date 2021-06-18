@@ -336,6 +336,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->steadyTempStep /=  scal->time;
     ctrl->pShift         /=  scal->stress;
     ctrl->Adiabatic_gr   = (ctrl->Adiabatic_gr/scal->temperature)*scal->length;
+    ctrl->T_k1            = (ctrl->T_k1 + scal->Tshift)/scal->temperature;
 
 	// adjoint field based gradient output vector
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
