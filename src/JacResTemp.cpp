@@ -128,7 +128,6 @@ PetscErrorCode JacResGetTempParam(
 		}
 
 		if(!M->kfac1){M->kfac1 = 1.0;}
-		if(!s->APS1){s->APS1 = 1.0;}
 		
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
