@@ -101,7 +101,7 @@ PetscErrorCode JacResGetTempParam(
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
 	kfac1     = 0.0;   // NEW
-	APS1      = 0.0;   // NEW why do i need to initialize exactly those parameters? 
+	APS1      = 0.0;   // NEW 
 	
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
@@ -118,16 +118,18 @@ PetscErrorCode JacResGetTempParam(
 		rho     =  M->rho;
 
 		// accessing the softening ID of each phase and its associated APS1
-		//		chSoftID = M->chSoftID;  // softening ID of phase i  
       	      	soft    = &matSoft[i];    
-		s       = soft;  // + chSoftID not necessary 		
-
+		s       = soft;
+		
 		// override air phase density
 		if(AirPhase != -1 && i == AirPhase)
 		{
 			rho = 1.0/density;
 		}
 
+		if(!M->kfac1){M->kfac1 = 1.0;}
+		if(!s->APS1){s->APS1 = 1.0;}
+		
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
@@ -525,15 +527,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; if(Km1 < 0)  Km1++;
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
-		if (ctrl.Tk_on && Tc <= ctrl.T_k1 && kfac1 > 0.0){kc = kc*kfac1;}   // temperature condition for conductivity
-				if (Tc <= ctrl.T_k1) {
-				  PetscPrintf(PETSC_COMM_WORLD, " T_k1 %f \n", ctrl.T_k1);
-		PetscPrintf(PETSC_COMM_WORLD, " Tc %f \n", Tc);
-		PetscPrintf(PETSC_COMM_WORLD, " kc original %f \n", kc/kfac1);
-		PetscPrintf(PETSC_COMM_WORLD, " kfac1 %f \n", kfac1);		  
-	       	PetscPrintf(PETSC_COMM_WORLD, " kfac1*kc %f \n", kc);} 
+		if (ctrl.Tk_on && Tc <= ctrl.T_k1){kc = kc*kfac1;}   // temperature condition for conductivity
 
-		if (ctrl.APS_k && APS > APS1 && kfac1 > 0.0){kc = kc*kfac1;}  // APS condition for conductivity
+		if (ctrl.APS_k && APS > APS1){kc = kc*kfac1;}  // APS condition for conductivity
 
 		/*	PetscPrintf(PETSC_COMM_WORLD, " APS  in func %f \n", APS);
 				  PetscPrintf(PETSC_COMM_WORLD, " APS1 in func %f \n", APS1);
@@ -541,7 +537,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		PetscPrintf(PETSC_COMM_WORLD, " kc before %f \n", kc/kfac1);
 		PetscPrintf(PETSC_COMM_WORLD, " kc %f \n", kc);} */
 
-		// to output as a field (or below with the average??) 
+		// to output as a field
 		                cond = kc;
 		                svBulk->cond = cond;
 		
