@@ -1119,18 +1119,26 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
 	bc         = ctx->bc;     
 	PhaseTrans = ctx->PhaseTrans; 
 	
-	for(i = 0; i < numPhases; i++)
-	{
+	//	for(i = 0; i < numPhases; i++)
+	//	{
+	  
+	  // retrieve the phase of dike j	  
+	  for(j = 0; j < numDike; j++)
+	    {
+	      i = dike.phase    // access the phase id of the dike
         // update present phases only          
-        if(phRat[i])
+	    if(phRat[i]   )  //>0
         {
             // get reference to material parameters table                                                   
-            mat = &phases[i];
+	 mat = &phases[i];  // remove this line
 
-            if(mat->Mb == mat->Mf)
+	    dike.Mb
+	    dike.Mf
+
+	 if(mat->Mb == mat->Mf     // needs to change to dike.Mb=dike.Mf)
             {
                 // constant M                                                     
-                M = mat->Mf;
+	      M = mat->Mf; // D = dike->Mf
                 v_spread = PetscAbs(bc->velin);
 				left = PhaseTrans->bounds[0];
 				right = PhaseTrans->bounds[1];
