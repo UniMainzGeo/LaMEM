@@ -468,14 +468,14 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//==================================================================================
 	// Dike 
 	//==================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "Mf",       &m->Mf,    1, 1.0);  CHKERRQ(ierr);  // amount of magma-accommodated extension in front for dike phase
-	ierr = getScalarParam(fb, _OPTIONAL_, "Mb",       &m->Mb,    1, 1.0);  CHKERRQ(ierr);  // amount of magma-accommodated extension in back for dike phase
+	//	ierr = getScalarParam(fb, _OPTIONAL_, "Mf",       &m->Mf,    1, 1.0);  CHKERRQ(ierr);  // amount of magma-accommodated extension in front for dike phase
+	//	ierr = getScalarParam(fb, _OPTIONAL_, "Mb",       &m->Mb,    1, 1.0);  CHKERRQ(ierr);  // amount of magma-accommodated extension in back for dike phase
 
 	// FOR DIKE PHASE
-	if((!m->Mf && m->Mb) || (m->Mf && !m->Mb))
+	/*	if((!m->Mf && m->Mb) || (m->Mf && !m->Mb))
     {
         SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Needs both Mb and Mf for dike", (LLD)ID);
-    }
+	}*/
 
 	// DEPTH-DEPENDENT
 

@@ -60,7 +60,9 @@ struct JacRes;
 struct Ph_trans_t;
 struct DBMat;
 struct Scaling;
-struct BCCtx; 
+struct BCCtx;
+struct Dike;
+struct DBPropDike;
 //---------------------------------------------------------------------------
 
 // constitutive equations evaluation context
@@ -72,6 +74,8 @@ struct ConstEqCtx
 	Soft_t      *soft;      	// material softening laws
 	Ph_trans_t  *PhaseTrans;    // Phase transition laws
 	DBMat       *dbm;
+  Dike       *dike;
+  DBPropDike *dbdike;
 	Controls    *ctrl;      	// parameters and controls
 	PData       *Pd;        	// phase diagram data
 	Scaling     *scal;      	// scaling
@@ -172,7 +176,7 @@ PetscErrorCode cellConstEq(
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
 		PetscScalar &rho,   // effective density
-		PetscScalar dikeRHS);   // additional term due to dike divergence when computing RHS
+		PetscScalar &dikeRHS);   // additional term due to dike divergence when computing RHS   // with & or not?
 
 // evaluate constitutive equations on the edge
 PetscErrorCode edgeConstEq(

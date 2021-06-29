@@ -55,6 +55,7 @@
 #include "scaling.h"
 #include "parsing.h"
 #include "bc.h"
+#include "dike.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "setUpConstEq"
@@ -772,7 +773,7 @@ PetscErrorCode cellConstEq(
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
 		PetscScalar &rho,    // effective density
-		PetscScalar dikeRHS) // dike RHS for gres calculation
+		PetscScalar &dikeRHS) // dike RHS for gres calculation   /// with & ???? it also works without, but seems inconsistent.....
 {
 	// evaluate constitutive equations on the cell
 
@@ -1109,42 +1110,35 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
 			          PetscScalar &dikeRHS)
 { 
 	BCCtx       *bc;    
-	Material_t  *mat, *phases;
+	Dike        *dike;
 	Ph_trans_t  *PhaseTrans; 
-	PetscInt     i, numPhases;
+	PetscInt     i, j, numDike;
 	PetscScalar  v_spread, M, left, right;
 
-	numPhases  = ctx->numPhases;
-	phases     = ctx->phases;
+	//	numPhases  = ctx->numPhases;
+	numDike    = ctx->dbdike->numDike;
+	dike       = ctx->dike;
 	bc         = ctx->bc;     
 	PhaseTrans = ctx->PhaseTrans; 
-	
-	//	for(i = 0; i < numPhases; i++)
-	//	{
-	  
-	  // retrieve the phase of dike j	  
+		  
+	  // loop through all dikes   
 	  for(j = 0; j < numDike; j++)
 	    {
-	      i = dike.phase    // access the phase id of the dike
-        // update present phases only          
-	    if(phRat[i]   )  //>0
-        {
-            // get reference to material parameters table                                                   
-	 mat = &phases[i];  // remove this line
+	      i = dike->Phase;    // access the phase ID of the dike parameters
 
-	    dike.Mb
-	    dike.Mf
+	     // check if the phase ratio of a dike phase is greater than 0 in the current cell 
+	    if(phRat[i]>0)
+	      {
 
-	 if(mat->Mb == mat->Mf     // needs to change to dike.Mb=dike.Mf)
-            {
-                // constant M                                                     
-	      M = mat->Mf; // D = dike->Mf
-                v_spread = PetscAbs(bc->velin);
-				left = PhaseTrans->bounds[0];
-				right = PhaseTrans->bounds[1];
-				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
-                
-            }
+	       if(dike->Mb == dike->Mf)
+		 {
+		  // constant M
+		  M = dike->Mf;
+		  v_spread = PetscAbs(bc->velin);
+		  left = PhaseTrans->bounds[0];
+		  right = PhaseTrans->bounds[1];
+		  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
+		 }
             /*else
             {
                 // Mb an Mf are different
@@ -1158,7 +1152,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
                 if(front == back)
                 {
                     // linear interpolation between different M values, Mf is M in front, Mb is M in back
-                    M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
+                    M = dike.Mf + (dike.Mb - dike.Mf) * (y/(PetscAbs(front+back)));
                     dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km
                     
                 }
@@ -1172,10 +1166,10 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
             }*/
             else
             {
-                mat->dikeRHS = 0.0;
+	      dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable 
             }
             
-            dikeRHS += phRat[i]*mat->dikeRHS;
+	       dikeRHS += phRat[i]*dike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
             
         }
 	}
