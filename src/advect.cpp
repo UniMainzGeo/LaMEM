@@ -60,6 +60,7 @@
 #include "tools.h"
 #include "phase_transition.h"
 #include "passive_tracer.h"
+#include "dike.h"
 /*
 #START_DOC#
 \lamemfunction{\verb- ADVCreate -}

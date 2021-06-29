@@ -51,7 +51,7 @@
 #include "tools.h"
 #include "Tensor.h"
 #include "parsing.h"
-
+#include "dike.h"
 //---------------------------------------------------------------------------
 #define gradComp(v, dx, bdx1, fdx1, bdx2, fdx2, dvdx, dvdx1, dvdx2, vc) \
 	dvdx  = ( v[9] - v[4])/dx; \

@@ -106,6 +106,7 @@ struct ModParam
 	PetscScalar     *val;                               // model value
 	PetscScalar      mfit, mfitCenter;                  // misfit value for current model parameters
     DBMat            dbm_modified;                      // holds the (modified) LaMEM material database
+  DBPropDike         dbdike_modified;                   // holds the modified LaMEM dike database
 	FB 				*fb;								// holds a copy of the filebuffer	
 	PetscScalar 	 ReferenceDensity;		  			// Reference density (perturbations are computed w.r.t. this value)
 	

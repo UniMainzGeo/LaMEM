@@ -1,42 +1,42 @@
-/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                                                                                         
- **                                                                    
- **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus 
- **    All rights reserved.     
- **                                                                                                                                                                     
- **    This software was developed at:                                                                                                                                  
- **                                                                                                                                                                     
- **         Institute of Geosciences                                                                                                                                    
- **         Johannes-Gutenberg University, Mainz                                                                                                                        
- **         Johann-Joachim-Becherweg 21                                                                                                                                 
- **         55128 Mainz, Germany                                                                                                                                        
- **                                                                                                                                                                     
+/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ **
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
  **    project:    LaMEM                                                                                                                                                
- **    filename:   dike_source.cpp
- **          
- **    LaMEM is free software: you can redistribute it and/or modify           
- **    it under the terms of the GNU General Public License as published             
+ **    filename:   dike.cpp
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
  **    by the Free Software Foundation, version 3 of the License.
- **                                                                                
- **    LaMEM is distributed in the hope that it will be useful,                                                                                                         
- **    but WITHOUT ANY WARRANTY; without even the implied warranty of                                                                                                   
- **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                                                                                                             
- **    See the GNU General Public License for more details.                                                                                                             
- **                                                                                                                                                                     
- **    You should have received a copy of the GNU General Public License                                                                                                
- **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.                                                                                                    
- **                                                                                                                                                                     
- **                                                                                                                                                                     
- **    Contact:                                                                                                                                                         
- **        Boris Kaus       [kaus@uni-mainz.de]                                                                                                                         
- **        Anton Popov      [popov@uni-mainz.de]                                                                                                                        
- **                                                                                                                                                                     
- **                                                                                                                                                                     
- **    This routine:                                                                                                                                                    
- **         Anton Popov      [popov@uni-mainz.de]                                                                                                                       
- **         Boris Kaus       [kaus@uni-mainz.de]                                                                                                                        
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    This routine:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
  **         Jana Schierjott
  **         Garrett Ito
- **                                                                                                                                                                     
+ **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 /*
 
@@ -50,16 +50,16 @@
 #include "LaMEM.h"
 #include "phase.h"
 #include "parsing.h"
-//#include "scaling.h"
+#include "scaling.h"
 #include "objFunct.h"
 #include "JacRes.h"
-//#include "phase_transition.h"
+#include "phase_transition.h"
 #include "dike.h"
-//#include "constEq.h"
+#include "constEq.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)   // NEED TO CHANGE DBMat to something else?
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)   
 {
 
         // read all dike parameter blocks from file

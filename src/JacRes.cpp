@@ -54,7 +54,7 @@
 #include "constEq.h"
 #include "tools.h"
 #include "advect.h"
-//#include "dike.h"
+#include "dike.h"
 //---------------------------------------------------------------------------
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {

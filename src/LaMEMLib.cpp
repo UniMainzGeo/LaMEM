@@ -72,7 +72,7 @@
 #include "LaMEMLib.h"
 #include "phase_transition.h"
 #include "passive_tracer.h"
-
+#include "dike.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibMain"
@@ -200,6 +200,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// create material database
 	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
+        // create dike database
+	ierr = DBDikeCreate(&lm->dbdike, fb, PETSC_TRUE);   CHKERRQ(ierr);  //NEW
+
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
 
@@ -279,6 +282,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	PetscLogDouble  t;
 	FB              *fb;
     DBMat           dbm_modified;
+    //        DBPropDike      dbdike_modified;
 	PetscInt        i;
     Scaling         scal;
 
@@ -358,6 +362,24 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 		//PrintMatProp(&lm->dbm.phases[i]);
 	}
 
+
+
+
+	//NEW, Necessary???
+	 // Store Dike DB in intermediate structure (for use with Adjoint)
+	//        ierr = DBDikeCreate(&dbdike_modified, fb, PETSC_TRUE);                                                      CHKERRQ(ierr);
+
+        // swap dike structure with the one from file (for adjoint)
+	/* for (i=0; i < lm->dbdike.numDike; i++)
+        {
+                swapDikeStruct(&lm->dbdike.matDike[i], &dbdike_modified.matDike[i]);
+                //PrintMatProp(&lm->dbm.phases[i]);
+		}*/
+
+
+
+
+	
 	// update time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 

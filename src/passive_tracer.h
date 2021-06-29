@@ -23,6 +23,7 @@
 #include "constEq.h"
 #include "parsing.h"
 #include "objFunct.h"
+#include "dike.h"
 //---------------------------------------------------------------------------
 
 struct FB;
@@ -30,6 +31,7 @@ struct FDSTAG;
 struct JacRes;
 struct FreeSurf;
 struct DBMat;
+struct DBPropDike;
 /*
  * The passive tracer are placed at the cell center. They are globally identified by the ID of the cell
  * The global ID number is given by the following formulation ID = i + Npx*(ip+j*nx+jp*ny)+Npx*Npy*npx*npy*(k+kp*nz)

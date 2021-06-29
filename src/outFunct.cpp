@@ -52,7 +52,7 @@
 #include "JacRes.h"
 #include "interpolate.h"
 #include "paraViewOutBin.h"
-
+#include "dike.h"
 //---------------------------------------------------------------------------
 // WARNING!
 //

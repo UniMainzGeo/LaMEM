@@ -66,6 +66,7 @@ struct LaMEMLib
 	Scaling  scal;   // scaling
 	TSSol    ts;     // time-stepping controls
 	DBMat    dbm;    // material database
+  DBPropDike dbdike;
 	FDSTAG   fs;     // staggered-grid layout
 	FreeSurf surf;   // free-surface grid
 	BCCtx    bc;     // boundary condition context
