@@ -1,4 +1,4 @@
-/*@ ~~~~~~AA~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
  **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
@@ -136,7 +136,11 @@ PetscErrorCode JacResGetTempParam(
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
               	kfac1  +=  cf*M->kfac1;   // NEW
-		APS1   +=  cf*s->APS1;    // NEW 
+		APS1   +=  cf*s->APS1;    // NEW
+
+		if (ctrl.Tk_on && Tc <= ctrl.T_k1) k = k*kfac1;   // temperature condition for conductivity
+
+		// if (ctrl.APS_k && APS > APS1){kc = kc*kfac1;}  // APS condition for conductivity (not working yet)
 
 
 
@@ -535,19 +539,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; if(Km1 < 0)  Km1++;
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
-		if (ctrl.Tk_on && Tc <= ctrl.T_k1){kc = kc*kfac1;}   // temperature condition for conductivity
-
-		if (ctrl.APS_k && APS > APS1){kc = kc*kfac1;}  // APS condition for conductivity
-
-		/*	PetscPrintf(PETSC_COMM_WORLD, " APS  in func %f \n", APS);
-				  PetscPrintf(PETSC_COMM_WORLD, " APS1 in func %f \n", APS1);
-				  PetscPrintf(PETSC_COMM_WORLD, " kfac1 %f \n", kfac1);
-		PetscPrintf(PETSC_COMM_WORLD, " kc before %f \n", kc/kfac1);
-		PetscPrintf(PETSC_COMM_WORLD, " kc %f \n", kc);} */
-
-		// to output as a field
-		                cond = kc;
-		                svBulk->cond = cond;
+		// to output as a paraview-field
+		cond = kc;
+		svBulk->cond = cond;
 		
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
@@ -678,7 +672,6 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT,  &bcT); CHKERRQ(ierr);
-	//	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr); // NEW
 	
 	//---------------
 	// central points
@@ -708,13 +701,10 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcT[k-1][j][i] != DBL_MAX) cf[4] = -1.0; }
 		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcT[k+1][j][i] != DBL_MAX) cf[5] = -1.0; }
 
-		if (ctrl.Tk_on && Tc <= ctrl.T_k1 && kfac1 > 0.0){kc = kc*kfac1;}   // temperature condition for conductivity  // NEW
-
-		if (ctrl.APS_k && APS > APS1 && kfac1 > 0.0){kc = kc*kfac1;}  // NEW for APS-dependent conductivity
 
                 // to output as a field (or below with the average??)        // NEW
-		                cond = kc;   
-		                svBulk->cond = cond;
+		cond = kc;
+		svBulk->cond = cond;
 		
  		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
