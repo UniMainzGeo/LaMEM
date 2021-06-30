@@ -692,6 +692,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
 
 
+ PetscPrintf(PETSC_COMM_WORLD, "============================== INITIAL GUESS OUTSIDE =============================\n");
+
+	
 	if (param)
 	{
 		ierr =  AdjointCreate(&aop, &lm->jr, (ModParam *)param);
@@ -868,20 +871,31 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	// initialize boundary constraint vectors
 	ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
+	PetscPrintf(PETSC_COMM_WORLD, " after bc solve \n");
+
 	// initialize temperature
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
+	PetscPrintf(PETSC_COMM_WORLD, " 2e \n");
+
 	// solve for steady-state temperature (if requested)
 	ierr = LaMEMLibDiffuseTemp(lm); CHKERRQ(ierr);
-
+PetscPrintf(PETSC_COMM_WORLD, " 3 \n");
+	
 	// initialize pressure
 	ierr = JacResInitPres(&lm->jr); CHKERRQ(ierr);
 
+PetscPrintf(PETSC_COMM_WORLD, " 4\n");
+	
 	// lithostatic pressure initializtaion
 	ierr = JacResInitLithPres(&lm->jr, &lm->actx); CHKERRQ(ierr);
 
+	PetscPrintf(PETSC_COMM_WORLD, " 5 \n");
+
 	// compute inverse elastic parameters (dependent on dt)
 	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, " 6 \n");
 
 	if(lm->jr.ctrl.initGuess)
 	{
@@ -891,10 +905,16 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
 
+		PetscPrintf(PETSC_COMM_WORLD, " after time \n");
+		
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, " after SNES solve \n");
 
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, " after SNES conv reson \n");
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
@@ -1038,3 +1058,4 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 
 //---------------------------------------------------------------------------
 
+B

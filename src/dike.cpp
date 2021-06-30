@@ -142,6 +142,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)
         if (PrintOutput)
 	  {
 	    PetscPrintf(PETSC_COMM_WORLD,"   Dike parameters ID[%lld] : Mf = %g, Mb = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb);
+	    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
         }
 
         PetscFunctionReturn(0);
