@@ -373,9 +373,8 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *phRat,
 	PetscScalar *k_,      // conductivity
 	PetscScalar *rho_Cp_, // volumetric heat capacity
-	PetscScalar *rho_A_, // volumetric radiogenic heat
-	PetscScalar *kfac1_, // factor for conductivity
-	PetscScalar  *APS1_); // APS1 value from softening law
+	PetscScalar *rho_A_,  // volumetric radiogenic heat
+	PetscScalar Tc);      // temperature of cell 
 
 // check whether thermal material parameters are properly defined
 PetscErrorCode JacResCheckTempParam(JacRes *jr);
