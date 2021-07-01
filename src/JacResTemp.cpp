@@ -140,31 +140,31 @@ PetscErrorCode JacResGetTempParam(
 			rho = 1.0/density;
 		}
 
-		if(!M->kfac1){M->kfac1 = 1.0;}
+		//		if(!M->kfac1){M->kfac1 = 1.0;}
 		
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
-	    	kfac1  +=  cf*M->kfac1;   // NEW
+		//	    	kfac1  +=  cf*M->kfac1;   // NEW
 		APS1   +=  cf*s->APS1;    // NEW
 
-		if (ctrl.Tk_on && Tc <= ctrl.T_k1) // switch to use temperature condition for the use of the Nusselt number
+		if (ctrl.Tk_on) // switch to use T-dep conductivity
 		  {
-		    //		    if(kfac1>=2.0){
-		    //PetscPrintf(PETSC_COMM_WORLD, " nusselt  %f \n", kfac1);}
-		    /*  if(!M->kfac1)
+		    if(!M->kfac1)
 		    {
 		      // set Nusselt number = 1 if not defined
 		      M->kfac1 = 1.0;
 		    }
-		  
-		  // compute phase-dependent bulk-Nusselt number of cell
-		  kfac1  +=  cf*M->kfac1; */
-
-		  // compute conductivity depending on that bulk-Nusselt number
-		  k = k*kfac1;
-		  //		  PetscPrintf(PETSC_COMM_WORLD, " cond  %f \n", k);
-
+		    // compute phase-dependent bulk-Nusselt number of cell
+		    kfac1  +=  cf*M->kfac1;
+		    // temperature cutoff
+		    if(Tc <= ctrl.T_k1)
+		      {
+			// compute conductivity depending on that bulk-Nusselt number
+			PetscPrintf(PETSC_COMM_WORLD, "conducttivity before %f \n", k);
+			k = k*kfac1;
+			PetscPrintf(PETSC_COMM_WORLD, "conducttivity after %f \n", k);
+		      }
 		  }
 
 		// if (ctrl.APS_k && APS > APS1){kc = kc*kfac1;}  // APS condition for conductivity (not working yet)		
@@ -559,7 +559,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
 		// to output as a paraview-field
-		cond = kc;
+		cond = (kc+lk[k][j][i])/2;
 		svBulk->cond = cond;
 		
 		// compute average conductivities
