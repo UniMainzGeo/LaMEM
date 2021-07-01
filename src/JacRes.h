@@ -192,9 +192,9 @@ struct Controls
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
 
-  PetscScalar T_k1;   // Temperature boundary for conductivity condition
-  PetscInt   Tk_on;   // activation flag for using temperature-dependent conductivity
-  PetscInt    APS_k;  // activation switch for APS-dependent conductivity
+  PetscScalar T_Nu;     // Temperature boundary for conductivity condition
+  PetscInt   useTk;     // activation flag for using temperature-dependent conductivity
+  PetscInt    useAPSk;  // activation switch for APS-dependent conductivity
 };
 
 //---------------------------------------------------------------------------
@@ -374,7 +374,7 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *k_,      // conductivity
 	PetscScalar *rho_Cp_, // volumetric heat capacity
 	PetscScalar *rho_A_,  // volumetric radiogenic heat
-	PetscScalar *kfac1_,    
+	PetscScalar *Nu_,    
 	PetscScalar Tc);      // temperature of cell 
 
 // check whether thermal material parameters are properly defined

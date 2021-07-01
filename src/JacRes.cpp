@@ -141,9 +141,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
     ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms, 1, 1);          	CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,          1, 1.0);        	CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr);
-	ierr = getScalarParam   (fb, _OPTIONAL_, "T_k1",         &ctrl->T_k1,            1, 1.0);            CHKERRQ(ierr);
-        ierr = getIntParam   (fb, _OPTIONAL_, "Tk_on",        &ctrl->Tk_on,           1, 1);              CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "APS_k",        &ctrl->APS_k,           1, 1);              CHKERRQ(ierr);
+	ierr = getScalarParam   (fb, _OPTIONAL_, "T_Nu",         &ctrl->T_Nu,            1, 1.0);            CHKERRQ(ierr);
+        ierr = getIntParam   (fb, _OPTIONAL_, "useTk",        &ctrl->useTk,           1, 1);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "useAPSk",        &ctrl->useAPSk,           1, 1);              CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -303,8 +303,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->Adiabatic_gr)   PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic gradient                      : %g    \n", ctrl->Adiabatic_gr);
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");
-	if(ctrl->T_k1)           PetscPrintf(PETSC_COMM_WORLD, "   conductivity boundary Temperature       : %g %s \n", ctrl->T_k1,      scal->lbl_temperature); // NEW
-	if(ctrl->APS_k)          PetscPrintf(PETSC_COMM_WORLD, "   Use APS-dependent conductivity          @ \n",       ctrl->APS_k); // NEW
+	if(ctrl->useTk)          PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature-dependent conductivity  @ \n",       ctrl->useTk); // NEW 
+	if(ctrl->T_Nu)           PetscPrintf(PETSC_COMM_WORLD, "   conductivity boundary Temperature       : %g %s \n", ctrl->T_Nu,      scal->lbl_temperature); // NEW
+	if(ctrl->useAPSk)        PetscPrintf(PETSC_COMM_WORLD, "   Use APS-dependent conductivity          @ \n",       ctrl->useAPSk); // NEW
 	
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
@@ -335,7 +336,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->steadyTempStep /=  scal->time;
     ctrl->pShift         /=  scal->stress;
     ctrl->Adiabatic_gr   = (ctrl->Adiabatic_gr/scal->temperature)*scal->length;
-    ctrl->T_k1            = (ctrl->T_k1 + scal->Tshift)/scal->temperature;
+    ctrl->T_Nu            = (ctrl->T_Nu + scal->Tshift)/scal->temperature;
 
 	// adjoint field based gradient output vector
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
