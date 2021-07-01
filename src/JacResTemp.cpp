@@ -65,7 +65,7 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i]); CHKERRQ(ierr); \
+  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, &kfac1, lT[k][j][i]); CHKERRQ(ierr); \
   buff[k][j][i] = kc;   // added one NULL because of the new variables that are passed
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
@@ -83,7 +83,7 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *k_,      // conductivity
 		PetscScalar *rho_Cp_, // volumetric heat capacity
 		PetscScalar *rho_A_,  // volumetric radiogenic heat
-		//	PetscScalar *kfac1_,  // NEW  // factor with which the conductivtiy is multiplied (material parameter)
+		PetscScalar *kfac1_,  // NEW  // factor with which the conductivtiy is multiplied (material parameter)
 		//		PetscScalar *APS1_,
 		PetscScalar Tc)
 {
@@ -157,13 +157,15 @@ PetscErrorCode JacResGetTempParam(
 		    }
 		    // compute phase-dependent bulk-Nusselt number of cell
 		    kfac1  +=  cf*M->kfac1;
+
 		    // temperature cutoff
 		    if(Tc <= ctrl.T_k1)
 		      {
 			// compute conductivity depending on that bulk-Nusselt number
-			PetscPrintf(PETSC_COMM_WORLD, "conducttivity before %f \n", k);
 			k = k*kfac1;
-			PetscPrintf(PETSC_COMM_WORLD, "conducttivity after %f \n", k);
+			PetscPrintf(PETSC_COMM_WORLD, "condu%f \n", k);
+			if(kfac1> 1.0)
+			  {PetscPrintf(PETSC_COMM_WORLD, "nusselt %f \n", kfac1);}
 		      }
 		  }
 
@@ -174,7 +176,7 @@ PetscErrorCode JacResGetTempParam(
 	if(k_)      (*k_)      = k;
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
 	if(rho_A_)  (*rho_A_)  = rho_A;
-	//	if(kfac1_)  (*kfac1_)  = kfac1;  // NEW  new value of kfac1 stored in previous value of kfac1_ as kfac1_ using the pointer *kfac1_
+	if(kfac1_)  (*kfac1_)  = kfac1;  // NEW  new value of kfac1 stored in previous value of kfac1_ as kfac1_ using the pointer *kfac1_, actually not necessary to pass
 	//        if(APS1_)   (*APS1_)   = APS1;   // NEW  APS1
 	
 	PetscFunctionReturn(0);
@@ -478,7 +480,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;   // NEW
+	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond, kfac1;   // NEW
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
 	
@@ -504,7 +506,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	else   invdt = 0.0;
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);   // NEW at this location
-	
+	PetscPrintf(PETSC_COMM_WORLD, "1 \n");
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, lT, GET_KC)
 	SCATTER_FIELD(fs->DA_XY,  jr->ldxy, lT, GET_HRXY)
 	SCATTER_FIELD(fs->DA_XZ,  jr->ldxz, lT, GET_HRXZ)
@@ -539,9 +541,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Tc  = lT[k][j][i]; // current temperature
 		Tn  = svBulk->Tn;  // temperature history
 		Pc  = P[k][j][i] ; // Current Pressure
-		
+
 		// conductivity, heat capacity, radiogenic heat production
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc); CHKERRQ(ierr); // NEW
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, &kfac1, Tc); CHKERRQ(ierr); // NEW
 
 		// shear heating term (effective)
 		Hr = svDev->Hr +
@@ -654,7 +656,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, cond;  // NEW
+	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, cond, kfac1;  // NEW
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff, ***lT;  // NEW  
 
@@ -703,7 +705,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		Tc  = lT[k][j][i]; // current temperature
 		
 		// conductivity, heat capacity
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc); CHKERRQ(ierr);   // NEW
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, &kfac1, Tc); CHKERRQ(ierr);   // NEW
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }
