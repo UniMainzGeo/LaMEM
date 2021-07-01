@@ -600,28 +600,20 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-PetscPrintf(PETSC_COMM_WORLD, " jr 1\n");
-	
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD, " jr 2 \n");
 	// get pressure shift to enforce zero pressure in top layer of cells if requested (for free slip setups)
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 
-PetscPrintf(PETSC_COMM_WORLD, " jr 3 \n");
-	
 	// compute lithostatic pressure
 	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
 
-PetscPrintf(PETSC_COMM_WORLD, " jr 4 \n");
-	
 	// compute pore pressure
 	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
-PetscPrintf(PETSC_COMM_WORLD, " jr 5\n");
+
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
-PetscPrintf(PETSC_COMM_WORLD, " jr 6\n");
 	
 	// compute residual
 	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
@@ -1157,12 +1149,12 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if (jr->ctrl.actDike)
 		{
 
-		  PetscPrintf(PETSC_COMM_WORLD, " jr  somet \n");
 			dikeRHS = 0.0;
+			                  PetscPrintf(PETSC_COMM_WORLD, " jr  some 2 \n");
 			// function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
 			ierr = GetDikeContr(&ctx, svCell->phRat, dikeRHS);  CHKERRQ(ierr);
 
-PetscPrintf(PETSC_COMM_WORLD, " jr some 2 \n");
+PetscPrintf(PETSC_COMM_WORLD, " jr some 3 \n");
 			
 			// remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
 			dxx[k][j][i] -= (2.0/3.0) * dikeRHS;

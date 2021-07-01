@@ -1057,5 +1057,3 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 //	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
 
 //---------------------------------------------------------------------------
-
-B

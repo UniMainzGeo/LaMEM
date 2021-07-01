@@ -50,6 +50,7 @@
 struct FB;
 struct JacRes;
 struct ModParam;
+struct ConstEqCtx;
 
 //---------------------------------------------------------------------------                                                                                                      
 //.......................   Dike Parameters  .......................                                                                                                      
@@ -57,15 +58,13 @@ struct ModParam;
 struct Dike
 {
 public:
-
-        PetscInt    ID;   // dike ID
-        PetscScalar Mf;   // amount of magma-accomodated extension in front of box 
-        PetscScalar Mb;   // amount of magma-accommodated extension in back of box
+  PetscInt    ID;   // dike ID
+  PetscScalar Mf;   // amount of magma-accomodated extension in front of box 
+  PetscScalar Mb;   // amount of magma-accommodated extension in back of box
   PetscInt Phase;         // associated material phase ID
 
-  //private:  
-
-    PetscScalar dikeRHS;
+  //private:
+  PetscScalar dikeRHS;
 };
 
 
@@ -80,6 +79,8 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput);
 
 // read-indike parameters
 PetscErrorCode DBReadDike(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput);
+
+PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
 
 //---------------------------------------------------------------------------
 #endif

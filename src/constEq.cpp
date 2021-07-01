@@ -1103,7 +1103,7 @@ PetscErrorCode setDataPhaseDiagram(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
+/*#undef __FUNCT__
 #define __FUNCT__ "GetDikeContr"
 PetscErrorCode GetDikeContr(ConstEqCtx  *ctx, 
 			          PetscScalar *phRat,          // phase ratios in the control volume
@@ -1139,7 +1139,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
 		  right = PhaseTrans->bounds[1];
 		  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
 		 }
-            /*else
+            else
             {
                 // Mb an Mf are different
                 // FDSTAG *fs;
@@ -1163,7 +1163,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
                     M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
                     dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km
                 }
-            }*/
+            }
             else
             {
 	      dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable 
@@ -1176,5 +1176,5 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
     
     PetscFunctionReturn(0);
     
-}
+} */
 // ------------------------------------------------------------------------------------------------------------------------
