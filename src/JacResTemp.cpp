@@ -163,9 +163,6 @@ PetscErrorCode JacResGetTempParam(
 		      {
 			// compute conductivity depending on that bulk-Nusselt number
 			k = k*Nu;
-			PetscPrintf(PETSC_COMM_WORLD, "condu %f \n", k);
-			if(Nu> 1.0)
-			  {PetscPrintf(PETSC_COMM_WORLD, "nusselt %f \n", Nu);}
 		      }
 		  }
 
@@ -506,7 +503,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	else   invdt = 0.0;
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);   // NEW at this location
-	PetscPrintf(PETSC_COMM_WORLD, "1 \n");
+
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, lT, GET_KC)
 	SCATTER_FIELD(fs->DA_XY,  jr->ldxy, lT, GET_HRXY)
 	SCATTER_FIELD(fs->DA_XZ,  jr->ldxz, lT, GET_HRXZ)
