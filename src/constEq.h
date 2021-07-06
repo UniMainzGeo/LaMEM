@@ -73,9 +73,10 @@ struct ConstEqCtx
 	Material_t  *phases;    	// phase parameters
 	Soft_t      *soft;      	// material softening laws
 	Ph_trans_t  *PhaseTrans;    // Phase transition laws
-	DBMat       *dbm;
-  Dike       *dike;
+  DBMat       *dbm;
   DBPropDike *dbdike;
+  Dike       *matDike;
+  PetscInt numDike;
 	Controls    *ctrl;      	// parameters and controls
 	PData       *Pd;        	// phase diagram data
 	Scaling     *scal;      	// scaling

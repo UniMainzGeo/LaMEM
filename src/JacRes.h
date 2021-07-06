@@ -205,9 +205,8 @@ struct JacRes
 	FDSTAG   *fs;    // staggered-grid layout
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
+  DBPropDike *dbdike; // dike database
 	DBMat    *dbm;   // material database
-  DBPropDike *dbdike; 
-
   
 	// parameters and controls
 	Controls ctrl;

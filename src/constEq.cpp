@@ -68,6 +68,8 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity
 	ctx->numPhases =  jr->dbm->numPhases; // number phases
 	ctx->phases    =  jr->dbm->phases;    // phase parameters
+	ctx->numDike   =  jr->dbdike->numDike;// number of dikes
+	ctx->matDike   =  jr->dbdike->matDike;// dike properties
 	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
 	ctx->ctrl      = &jr->ctrl;           // control parameters
 	ctx->Pd        =  jr-> Pd;            // phase diagram data

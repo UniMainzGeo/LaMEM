@@ -282,7 +282,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	PetscLogDouble  t;
 	FB              *fb;
     DBMat           dbm_modified;
-    //        DBPropDike      dbdike_modified;
 	PetscInt        i;
     Scaling         scal;
 
@@ -362,24 +361,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 		//PrintMatProp(&lm->dbm.phases[i]);
 	}
 
-
-
-
-	//NEW, Necessary???
-	 // Store Dike DB in intermediate structure (for use with Adjoint)
-	//        ierr = DBDikeCreate(&dbdike_modified, fb, PETSC_TRUE);                                                      CHKERRQ(ierr);
-
-        // swap dike structure with the one from file (for adjoint)
-	/* for (i=0; i < lm->dbdike.numDike; i++)
-        {
-                swapDikeStruct(&lm->dbdike.matDike[i], &dbdike_modified.matDike[i]);
-                //PrintMatProp(&lm->dbm.phases[i]);
-		}*/
-
-
-
-
-	
 	// update time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
@@ -534,7 +515,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	//                            |
 	//                          TSSol
 	//                            |
-	//                          DBMat
+	//                          DBMat/DBPropDike
 	//                            |
 	//                         FDSTAG
 	//                            |
@@ -577,6 +558,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->jr.surf     = &lm->surf;
 	lm->jr.bc       = &lm->bc;
 	lm->jr.dbm      = &lm->dbm;
+	lm->jr.dbdike      = &lm->dbdike;  // NEW for dike database
 	// AdvCtx
 	lm->actx.fs     = &lm->fs;
 	lm->actx.jr     = &lm->jr;
@@ -871,31 +853,20 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	// initialize boundary constraint vectors
 	ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD, " after bc solve \n");
-
 	// initialize temperature
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD, " 2e \n");
-
 	// solve for steady-state temperature (if requested)
 	ierr = LaMEMLibDiffuseTemp(lm); CHKERRQ(ierr);
-PetscPrintf(PETSC_COMM_WORLD, " 3 \n");
 	
 	// initialize pressure
 	ierr = JacResInitPres(&lm->jr); CHKERRQ(ierr);
 
-PetscPrintf(PETSC_COMM_WORLD, " 4\n");
-	
 	// lithostatic pressure initializtaion
 	ierr = JacResInitLithPres(&lm->jr, &lm->actx); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD, " 5 \n");
-
 	// compute inverse elastic parameters (dependent on dt)
 	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD, " 6 \n");
 
 	if(lm->jr.ctrl.initGuess)
 	{
@@ -905,16 +876,10 @@ PetscPrintf(PETSC_COMM_WORLD, " 4\n");
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
 
-		PetscPrintf(PETSC_COMM_WORLD, " after time \n");
-		
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
-
-		PetscPrintf(PETSC_COMM_WORLD, " after SNES solve \n");
 
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
-
-		PetscPrintf(PETSC_COMM_WORLD, " after SNES conv reson \n");
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
@@ -970,7 +935,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 
 		// project temperature from markers to grid
 		ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
-	
+
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 		

@@ -46,10 +46,9 @@
 #define __dike_h__
 //---------------------------------------------------------------------------   
 
-//struct Scaling;
-struct FB;
+struct FB; 
 struct JacRes;
-struct ModParam;
+//struct ModParam;  // necesary in case of adjoint
 struct ConstEqCtx;
 
 //---------------------------------------------------------------------------                                                                                                      
@@ -61,13 +60,13 @@ public:
   PetscInt    ID;   // dike ID
   PetscScalar Mf;   // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;   // amount of magma-accommodated extension in back of box
-  PetscInt Phase;         // associated material phase ID
+  PetscInt PhaseID;         // associated material phase ID
 
   //private:
   PetscScalar dikeRHS;
 };
 
-
+      
 struct DBPropDike
 {
   PetscInt numDike;                   // number of dikes

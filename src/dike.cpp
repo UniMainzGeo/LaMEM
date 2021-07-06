@@ -50,12 +50,13 @@
 #include "LaMEM.h"
 #include "phase.h"
 #include "parsing.h"
-#include "scaling.h"
-#include "objFunct.h"
+//#include "scaling.h"
+//#include "objFunct.h"  // necessary in case of adjoint
 #include "JacRes.h"
-#include "phase_transition.h"
+//#include "phase_transition.h"   // why not necessary but phase.h yes?, I am not using phases but phase transition boundaries
 #include "dike.h"
 #include "constEq.h"
+#include "bc.h"                 // why necessary and phase_transition.h not? both associated structures are in consteq
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
@@ -84,7 +85,14 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)
 		    PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
 		  }
                 // initialize ID for consistency checks                                                                                                                 
-                for(jj = 0; jj < _max_num_dike_; jj++) dbdike->matDike[jj].ID = -1;
+                for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1;
+
+
+		// error checking
+                if(fb->nblocks > _max_num_soft_)
+                {
+                        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_);
+                }
 
                 // store actual number of softening laws 
                 dbdike->numDike = fb->nblocks;
@@ -136,7 +144,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)
 	// read and store dike  parameters. 
         ierr = getScalarParam(fb, _REQUIRED_, "Mf", &dike->Mf,    1, 1.0); CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "Mb", &dike->Mb, 1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _REQUIRED_, "Phase", &dike->Phase, 1, 1); CHKERRQ(ierr);  
+	ierr = getIntParam(fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, 1); CHKERRQ(ierr);  
 
 	
         if (PrintOutput)
@@ -150,53 +158,40 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)
 //------------------------------------------------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GetDikeContr"
-PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
+PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
                                   PetscScalar *phRat,          // phase ratios in the control volume
                                   PetscScalar &dikeRHS)
 {
 
-  BCCtx       *bc;
-        Dike        *dike;
+        BCCtx       *bc;
+        Dike        *matDike;
         Ph_trans_t  *PhaseTrans;
         PetscInt     i, j, numDike;
         PetscScalar  v_spread, M, left, right;
 
-	
-	numDike    = ctx->dbdike->numDike;
+	numDike    = ctx->numDike;
+        matDike    = ctx->matDike;
 
-	PetscPrintf(PETSC_COMM_WORLD,"numdike \n");
-	
-        dike       = ctx->dike;
-
-	PetscPrintf(PETSC_COMM_WORLD,"begin \n");
         bc         = ctx->bc;
-	PetscPrintf(PETSC_COMM_WORLD,"begin \n");
         PhaseTrans = ctx->PhaseTrans;
 
-	PetscPrintf(PETSC_COMM_WORLD,"begin \n");
-
-	
           // loop through all dikes
           for(j = 0; j < numDike; j++)
             {
-	      PetscPrintf(PETSC_COMM_WORLD,"2a \n");
 	      // access the phase ID of the dike parameters
-              i = dike->Phase;
-	      PetscPrintf(PETSC_COMM_WORLD,"3a \n");
+              i = matDike->PhaseID;
+
              // check if the phase ratio of a dike phase is greater than 0 in the current cell
             if(phRat[i]>0)
               {
-		PetscPrintf(PETSC_COMM_WORLD,"4a \n");
-
-               if(dike->Mb == dike->Mf)
+               if(matDike->Mb == matDike->Mf)
                  {
-		   PetscPrintf(PETSC_COMM_WORLD,"5a \n");
                   // constant M
-                  M = dike->Mf;
+                  M = matDike->Mf;
                   v_spread = PetscAbs(bc->velin);
                   left = PhaseTrans->bounds[0];
                   right = PhaseTrans->bounds[1];
-                  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
+                  matDike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
                  }
 
 	  /*else                                                                                                                                                          
@@ -225,10 +220,10 @@ PetscErrorCode GetDikeContr(ConstEqCtx  *ctx,
             }*/
             else
             {
-              dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
+              matDike->dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
             }
 
-             dikeRHS += phRat[i]*dike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
+             dikeRHS += phRat[i]*matDike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
 
 	      }
         }

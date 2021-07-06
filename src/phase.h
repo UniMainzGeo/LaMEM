@@ -264,8 +264,6 @@ struct DBMat
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
 	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
 	PetscInt     numPhtr;                // number material softening laws
-  //  PetscInt numDike;           // number of dikes
-  //  Dike     matDike[_max_num_dike];   // dike properties
 };
 
 // read material database

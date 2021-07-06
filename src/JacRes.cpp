@@ -65,7 +65,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	BCCtx      *bc;
 	PetscScalar gx, gy, gz;
 	char        gwtype [_str_len_];
-	PetscInt    i, numPhases, temp_int;
+	PetscInt    i, numPhases, temp_int; // numDike
 	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
 
 	PetscErrorCode ierr;
@@ -77,7 +77,11 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	surf      =  jr->surf;
 	bc        =  jr->bc;
 	numPhases =  jr->dbm->numPhases;
+	//	numDike   =  jr->dbdike->numDike;
 
+
+	//	PetscPrintf(PETSC_COMM_WORLD, " numDike in jacrescreatedata %i \n", numDike);  // dowsn work, with numPhases it works
+	
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;
 	ctrl->FSSA         =  1.0;
@@ -614,11 +618,9 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
-	
+
 	// compute residual
 	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD, " jr  7\n");
 
 	// copy residuals to global vector
 	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
@@ -1074,7 +1076,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
+	
 	// access context
 	fs = jr->fs;
 	bc = jr->bc;
@@ -1150,12 +1152,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		{
 
 			dikeRHS = 0.0;
-			                  PetscPrintf(PETSC_COMM_WORLD, " jr  some 2 \n");
+
 			// function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
 			ierr = GetDikeContr(&ctx, svCell->phRat, dikeRHS);  CHKERRQ(ierr);
 
-PetscPrintf(PETSC_COMM_WORLD, " jr some 3 \n");
-			
 			// remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
 			dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
 			dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
