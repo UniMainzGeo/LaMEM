@@ -828,9 +828,9 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 				dM = Compute_dM(mfeff, M_Ex_t, jr->ts->dt);
 
 				P->MExt +=dM;
-				P->MTot +=dM;
 
-				if(P->MExt >= M_Ex_t->Mmax)
+
+				if(P->MExt >= M_Ex_t->Mmax & jr->dbm->phases[P->phase].ID_MELTEXT>-1)
 				{
 					newphase = jr->dbm->phases[P->phase].PhNext;
 					newME   = P->MExt -M_Ex_t->Mmax;
@@ -839,7 +839,12 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt ID_ME)
 						P->phase=newphase;
 					}
 					P->MExt=newME;
+					P->MTot+= newME;
 
+				}
+				else
+				{
+					P->MTot +=dM;
 				}
 			}
 		}
