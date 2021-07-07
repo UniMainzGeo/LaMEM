@@ -50,7 +50,6 @@ struct Scaling;
 struct FB;
 struct JacRes;
 struct ModParam;
-//struct Dike;
 
 //---------------------------------------------------------------------------
 //.....................   Rheology experiment type  .........................
@@ -204,11 +203,6 @@ public:
 	PetscScalar  k;                 // thermal conductivity                       [W/m/k]
 	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
 	PetscScalar  T;                 // optional temperature to set within the phase
-	// dike parameters
-  /*	PetscScalar  Mf;                // for dike phase only, amount of magma-accommodated extenison in front of box
-	PetscScalar  Mb;      	        // for dike phase only, amount of magma-accommodated extenison in back of box
-	PetscScalar  M;                 // for dike phase only, amount of magma-accommodated extenison in total 
-	PetscScalar  dikeRHS;           // for dike phase only, additional term for RHS due to added divergence in dike */
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number

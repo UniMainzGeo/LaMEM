@@ -50,6 +50,7 @@ struct FB;
 struct JacRes;
 //struct ModParam;  // necesary in case of adjoint
 struct ConstEqCtx;
+struct DBMat;
 
 //---------------------------------------------------------------------------                                                                                                      
 //.......................   Dike Parameters  .......................                                                                                                      
@@ -62,22 +63,22 @@ public:
   PetscScalar Mb;   // amount of magma-accommodated extension in back of box
   PetscInt PhaseID;         // associated material phase ID
 
-  //private:
   PetscScalar dikeRHS;
 };
 
       
 struct DBPropDike
 {
+  //  DBMat    *dbm;  
   PetscInt numDike;                   // number of dikes
   Dike     matDike[_max_num_dike_];   // dike properties per dike ID
 };
 
 // read dike properties
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // read-indike parameters
-PetscErrorCode DBReadDike(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
 

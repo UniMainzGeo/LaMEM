@@ -210,6 +210,14 @@
         PTBox_TempType          =  none                          # Temperature condition witin the box [none, constant, linear, halfspace]
   <PhaseTransitionEnd>
 
+  <DikeStart>
+	ID                      = 0
+	Mf                      = 0.75
+	Mb                      = 0.75
+	PhaseID                 = 3
+  <DikeEnd>
+
+
 # Strain softening parameters
 
   	 <SofteningStart>
@@ -248,8 +256,6 @@
 	k               = 1.0    # thermal conductivity
         ch              = 30e6
         fr  		= 30     # initial friction angle
-        Mf              = 0.75    # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box
-        Mb              = 0.75    # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box
 	healID          = 1
      <MaterialEnd>
 

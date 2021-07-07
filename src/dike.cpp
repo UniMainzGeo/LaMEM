@@ -60,7 +60,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)   
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput)   
 {
 
         // read all dike parameter blocks from file
@@ -89,7 +89,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)
 
 
 		// error checking
-                if(fb->nblocks > _max_num_soft_)
+                if(fb->nblocks > _max_num_dike_)
                 {
                         SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_);
                 }
@@ -103,7 +103,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)
                 // read each individual softening law                                                                                                                   
                 for(jj = 0; jj < fb->nblocks; jj++)
                 {
-                        ierr = DBReadDike(dbdike, fb, PrintOutput); CHKERRQ(ierr);
+		  ierr = DBReadDike(dbdike, dbm, fb, PrintOutput); CHKERRQ(ierr);
 
                         fb->blockID++;
                 }
@@ -116,12 +116,12 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBReadDike"
-PetscErrorCode DBReadDike(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)
+PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
-        // read softening law from file 
+        // read dike parameter from file 
         Dike     *dike;
         PetscInt  ID;
-
+	
         PetscErrorCode ierr;
         PetscFunctionBegin;
 
@@ -144,9 +144,8 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, FB *fb, PetscBool PrintOutput)
 	// read and store dike  parameters. 
         ierr = getScalarParam(fb, _REQUIRED_, "Mf", &dike->Mf,    1, 1.0); CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "Mb", &dike->Mb, 1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, 1); CHKERRQ(ierr);  
+	ierr = getIntParam(fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
 
-	
         if (PrintOutput)
 	  {
 	    PetscPrintf(PETSC_COMM_WORLD,"   Dike parameters ID[%lld] : Mf = %g, Mb = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb);
