@@ -15,7 +15,6 @@
 #include "surf.h"
 #include "subgrid.h"
 #include "tssolve.h"
-#include "dike.h"
 // allocate storage for the passive tracers
 // create initial distribution of markers (every processors knows everything)
 // Assign the initial phase, find the closest marker

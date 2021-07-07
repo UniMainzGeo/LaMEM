@@ -128,7 +128,6 @@
 #include "constEq.h"
 #include "parsing.h"
 #include "gravity.h"
-//#include "dike.h"
 #include <petscsys.h> 
 //-----------------------------------------------------------------------------
 // A bit stupid that this has to be twice declared, but the original function is only in AVD.cpp and not in a header file anymore ...

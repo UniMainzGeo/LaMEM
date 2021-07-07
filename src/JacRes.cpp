@@ -65,7 +65,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	BCCtx      *bc;
 	PetscScalar gx, gy, gz;
 	char        gwtype [_str_len_];
-	PetscInt    i, numPhases, temp_int; // numDike
+	PetscInt    i, numPhases, temp_int;
 	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
 
 	PetscErrorCode ierr;
@@ -77,10 +77,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	surf      =  jr->surf;
 	bc        =  jr->bc;
 	numPhases =  jr->dbm->numPhases;
-	//	numDike   =  jr->dbdike->numDike;
-
-
-	//	PetscPrintf(PETSC_COMM_WORLD, " numDike in jacrescreatedata %i \n", numDike);  // dowsn work, with numPhases it works
 	
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;

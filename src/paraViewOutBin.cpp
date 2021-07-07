@@ -52,7 +52,6 @@
 #include "phase.h"
 #include "outFunct.h"
 #include "tools.h"
-#include "dike.h"
 //---------------------------------------------------------------------------
 // * phase-ratio output
 // * integrate AVD phase viewer

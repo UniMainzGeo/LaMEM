@@ -94,7 +94,7 @@
 #include "objFunct.h"
 #include "surf.h"
 #include "tssolve.h"
-#include "dike.h"
+//#include "dike.h"
 //-----------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhaseTr"

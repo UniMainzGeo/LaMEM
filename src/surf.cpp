@@ -54,7 +54,6 @@
 #include "JacRes.h"
 #include "interpolate.h"
 #include "tools.h"
-#include "dike.h"
 //---------------------------------------------------------------------------
 // * stair-case type of free surface
 // ...

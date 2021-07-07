@@ -60,7 +60,6 @@
 #include "Tensor.h"
 #include "tools.h"
 #include "phase_transition.h"
-#include "dike.h"
 
 /*
 #START_DOC#
