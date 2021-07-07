@@ -73,10 +73,10 @@ struct ConstEqCtx
 	Material_t  *phases;    	// phase parameters
 	Soft_t      *soft;      	// material softening laws
 	Ph_trans_t  *PhaseTrans;    // Phase transition laws
-  DBMat       *dbm;
-  DBPropDike *dbdike;
-  Dike       *matDike;
-  PetscInt numDike;
+    DBMat       *dbm;
+    DBPropDike  *dbdike;
+    Dike        *matDike;       // material properties of dike
+    PetscInt    numDike;        // number of dikes
 	Controls    *ctrl;      	// parameters and controls
 	PData       *Pd;        	// phase diagram data
 	Scaling     *scal;      	// scaling
@@ -177,7 +177,7 @@ PetscErrorCode cellConstEq(
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
 		PetscScalar &rho,   // effective density
-		PetscScalar &dikeRHS);   // additional term due to dike divergence when computing RHS   // with & or not?
+		PetscScalar &dikeRHS);   // additional term due to dike divergence when computing RHS
 
 // evaluate constitutive equations on the edge
 PetscErrorCode edgeConstEq(
@@ -200,6 +200,4 @@ PetscErrorCode setDataPhaseDiagram(
 		char         pdn[]);
 
 //---------------------------------------------------------------------------
-//PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
-
 #endif

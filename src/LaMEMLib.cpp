@@ -45,6 +45,7 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "phase.h"
+#include "dike.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
@@ -72,7 +73,7 @@
 #include "LaMEMLib.h"
 #include "phase_transition.h"
 #include "passive_tracer.h"
-#include "dike.h"
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibMain"
@@ -200,8 +201,8 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// create material database
 	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
-        // create dike database
-	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, PETSC_TRUE);   CHKERRQ(ierr);  //NEW
+    // create dike database
+	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, PETSC_TRUE);   CHKERRQ(ierr);
 
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
@@ -558,7 +559,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->jr.surf     = &lm->surf;
 	lm->jr.bc       = &lm->bc;
 	lm->jr.dbm      = &lm->dbm;
-	lm->jr.dbdike      = &lm->dbdike;  // NEW for dike database
+	lm->jr.dbdike   = &lm->dbdike;
 	// AdvCtx
 	lm->actx.fs     = &lm->fs;
 	lm->actx.jr     = &lm->jr;
@@ -672,11 +673,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	//==============
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
+    
 
-
- PetscPrintf(PETSC_COMM_WORLD, "============================== INITIAL GUESS OUTSIDE =============================\n");
-
-	
 	if (param)
 	{
 		ierr =  AdjointCreate(&aop, &lm->jr, (ModParam *)param);
@@ -858,7 +856,7 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 
 	// solve for steady-state temperature (if requested)
 	ierr = LaMEMLibDiffuseTemp(lm); CHKERRQ(ierr);
-	
+
 	// initialize pressure
 	ierr = JacResInitPres(&lm->jr); CHKERRQ(ierr);
 

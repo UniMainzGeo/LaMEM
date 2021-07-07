@@ -171,17 +171,6 @@ PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B){
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*#undef __FUNCT__
-#define __FUNCT__ "swapDikeStruct"
-PetscErrorCode swapDikeStruct(struct Dike *A, struct Dike *B){
-    PetscFunctionBegin;
-        struct Dike temp = *A;
-    *A = *B;
-    *B = temp;
-
-        PetscFunctionReturn(0);
-	}*/
-//---------------------------------------------------------------------------
 void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_], PetscInt iP, 
 		char type_name[][_str_len_],
 		PetscInt 	*phsar,
@@ -232,7 +221,6 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	char            ExcludedPhaseName[_MAX_PAR_][_str_len_];
 	PetscInt 		ExcludedPhase[_MAX_PAR_], numExcludedPhases=0;
 	Material_t 		m;
-	//	Dike                    d;
 	
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"); CHKERRQ(ierr);
 
@@ -622,12 +610,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
 	}
-
-
- // Read Dike parameters from file   NECESSARY?
-	//	    ierr = FBFindBlocks(fb, _REQUIRED_, "<DikeStart>", "<DikeEnd>"); CHKERRQ(ierr);
-
-
 	
 	// PARAMETERS
 	
@@ -3677,10 +3659,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
 	IOparam->dbm_modified.scal    = &scal;
-	//	IOparam->dbdike_modified.scal = &scal;
-
-	
-
+    
     // Call material database with modified parameters
     ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); 	CHKERRQ(ierr);  
 
@@ -3689,14 +3668,6 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
         PetscPrintf(PETSC_COMM_WORLD,"| **** Created Modified material database **** \n");
     }
 
-
-    
-    // NEW, necessary??
-    // Call dike database with modified parameters
-    //    ierr = DBDikeCreate(&IOparam->dbdike_modified, fb, PETSC_FALSE);        CHKERRQ(ierr);
-
-
-    
     PetscFunctionReturn(0);
 }
 

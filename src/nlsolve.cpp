@@ -369,9 +369,6 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	nl = (NLSol*)ctx;
 	jr = nl->pc->pm->jr;
 
-	//	PetscPrintf(PETSC_COMM_WORLD,"numdike, numphase in formres %i, %i \n", jr->dbdike->numDike, jr->dbm->numPhases ) // doen't work
-
-	
 	ierr = JacResFormResidual(jr, x, f); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);

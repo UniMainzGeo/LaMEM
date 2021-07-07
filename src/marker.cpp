@@ -55,6 +55,11 @@
 #include "bc.h"
 #include "surf.h"
 #include "phase_transition.h"
+
+/*
+#START_DOC#
+#END_DOC#
+*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInit"

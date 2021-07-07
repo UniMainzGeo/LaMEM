@@ -61,11 +61,9 @@ struct FB;
 struct ConstEqCtx;
 struct SolVarCell;
 struct SolVarEdge;
-struct DBPropDike;
 
 #include "phase.h"
 #include "bc.h"
-#include "dike.h"
 
 // Some global maxes on parameter and index numbers
 #define _MAX_PAR_ 100
@@ -156,6 +154,5 @@ PetscErrorCode edgeConstEqFD(ConstEqCtx  *ctx,    SolVarEdge  *svEdge, PetscScal
 
 // Helper functions
 PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B);
-//PetscErrorCode swapDikeStruct(struct Dike *A, struct Dike *B);
 
 #endif

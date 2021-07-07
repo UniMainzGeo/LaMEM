@@ -51,6 +51,7 @@
 #include "bc.h"
 #include "matrix.h"
 #include "surf.h"
+
 //---------------------------------------------------------------------------
 
 #define SCATTER_FIELD(da, vec, FIELD) \

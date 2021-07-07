@@ -77,7 +77,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	surf      =  jr->surf;
 	bc        =  jr->bc;
 	numPhases =  jr->dbm->numPhases;
-	
+
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;
 	ctrl->FSSA         =  1.0;
@@ -1146,9 +1146,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		if (jr->ctrl.actDike)
 		{
-
 			dikeRHS = 0.0;
-
 			// function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
 			ierr = GetDikeContr(&ctx, svCell->phRat, dikeRHS);  CHKERRQ(ierr);
 
