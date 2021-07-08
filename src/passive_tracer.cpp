@@ -470,8 +470,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	Ttop     =  0.0;
 
 
-	
-
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
 	// access context
@@ -640,7 +638,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			{
 				ierr = Check_advection_condition(actx, jj, ID,xp,yp,zp,Pr[jj],T[jj],melt_grid[jj]); CHKERRQ(ierr);
 			}
-
 
 			// override temperature of air phase
 			if(AirPhase != -1 && phase[jj] == AirPhase) T[jj] = Ttop;
@@ -892,8 +889,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 		zp = Zp[jj];;
 		// get consecutive index of the host cell
 
-
-
 		if(xp >= bx && xp<ex && yp >= by && yp< ey && zp >= bz && zp< ez)
 		{
 
@@ -908,7 +903,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
 
 			// check whether rock marker is above the free surface
-			if(phaseptr[jj] != AirPhase && zp > topo)
+            if(phaseptr[jj] != AirPhase && zp > topo)
 			{
 				// erosion (physical or numerical) -> rock turns into air
 				phaseptr[jj]= AirPhase;

@@ -116,7 +116,6 @@ PetscErrorCode PVOutWriteRelDIIprl   (OutVec*);
 PetscErrorCode PVOutWriteMomentRes   (OutVec*);
 PetscErrorCode PVOutWriteContRes     (OutVec*);
 PetscErrorCode PVOutWritEnergRes     (OutVec*);
-
 // ... add more output functions here
 
 //---------------------------------------------------------------------------

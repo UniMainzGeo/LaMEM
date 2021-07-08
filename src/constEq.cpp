@@ -54,6 +54,8 @@
 #include "phase_transition.h"
 #include "scaling.h"
 #include "parsing.h"
+#include "bc.h"
+#include "dike.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "setUpConstEq"
@@ -63,8 +65,11 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 
 	PetscFunctionBegin;
 
+	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity
 	ctx->numPhases =  jr->dbm->numPhases; // number phases
 	ctx->phases    =  jr->dbm->phases;    // phase parameters
+	ctx->numDike   =  jr->dbdike->numDike;// number of dikes
+	ctx->matDike   =  jr->dbdike->matDike;// dike properties
 	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
 	ctx->ctrl      = &jr->ctrl;           // control parameters
 	ctx->Pd        =  jr-> Pd;            // phase diagram data
@@ -650,8 +655,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 
 	p         = p+ctrl->pShift;
 
-//
-
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
 	svBulk->rho    = 0.0;
 	svBulk->alpha  = 0.0;
@@ -771,7 +774,8 @@ PetscErrorCode cellConstEq(
 		PetscScalar &syy,    // ...
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
-		PetscScalar &rho)    // effective density
+		PetscScalar &rho,    // effective density
+		PetscScalar &dikeRHS) // dike RHS for gres calculation
 {
 	// evaluate constitutive equations on the cell
 
@@ -844,15 +848,23 @@ PetscErrorCode cellConstEq(
 	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
-	// compute volumetric residual
-	if(ctrl->actExp)
-	{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
-	}
+
+	if(ctrl->actExp && ctrl->actDike)
+    {
+        gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
+    }
+	else if(ctrl->actDike)
+    {
+        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;
+    }
+	else if(ctrl->actExp)
+    {
+        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+    }
 	else
-	{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
-	}
+    {
+        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+    }
 
 	// store effective density
 	rho = svBulk->rho;
@@ -1092,4 +1104,3 @@ PetscErrorCode setDataPhaseDiagram(
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------

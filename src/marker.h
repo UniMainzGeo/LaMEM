@@ -98,7 +98,6 @@ struct GeomPrim
 	PetscScalar amplitude;
 	PetscScalar wavelength;
 	PetscScalar rand_amplitude;
-    
 	// ridge
     PetscScalar v_spread;
     PetscScalar x_oblique;
@@ -111,7 +110,6 @@ struct GeomPrim
     PetscScalar thermalAgeRidge;
     PetscScalar age0;                   // thermal age @ ridge
     PetscScalar maxAge;                 // maximum thermal Age a plate can have [say 80 Myrs on Earth]
-    
     // temperature
 	PetscInt    setTemp;
 	PetscScalar cstTemp;

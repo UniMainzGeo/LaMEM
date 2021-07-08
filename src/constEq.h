@@ -60,6 +60,9 @@ struct JacRes;
 struct Ph_trans_t;
 struct DBMat;
 struct Scaling;
+struct BCCtx;
+struct Dike;
+struct DBPropDike;
 //---------------------------------------------------------------------------
 
 // constitutive equations evaluation context
@@ -70,13 +73,17 @@ struct ConstEqCtx
 	Material_t  *phases;    	// phase parameters
 	Soft_t      *soft;      	// material softening laws
 	Ph_trans_t  *PhaseTrans;    // Phase transition laws
-	DBMat       *dbm;
+    DBMat       *dbm;
+    DBPropDike  *dbdike;
+    Dike        *matDike;       // material properties of dike
+    PetscInt    numDike;        // number of dikes
 	Controls    *ctrl;      	// parameters and controls
 	PData       *Pd;        	// phase diagram data
 	Scaling     *scal;      	// scaling
 	PetscScalar  dt;        	// time step
 	PetscScalar  stats[3];  	// total number of [starts, successes, iterations]
 	PetscScalar  avg_topo;  	// average surface topography
+	BCCtx        *bc;           // boundary conditions, necessary for velin for dike
 
 	// control volume parameters
 	PetscScalar *phRat;  // phase ratios in the control volume
@@ -169,7 +176,8 @@ PetscErrorCode cellConstEq(
 		PetscScalar &syy,    // ...
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
-		PetscScalar &rho);   // effective density
+		PetscScalar &rho,   // effective density
+		PetscScalar &dikeRHS);   // additional term due to dike divergence when computing RHS
 
 // evaluate constitutive equations on the edge
 PetscErrorCode edgeConstEq(

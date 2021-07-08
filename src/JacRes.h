@@ -52,6 +52,7 @@ struct FDSTAG;
 struct FreeSurf;
 struct BCCtx;
 struct DBMat;
+struct DBPropDike;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
@@ -189,6 +190,7 @@ struct Controls
 	PetscInt    Passive_Tracer; // Flag to activate passive tracer routine
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
+	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence   
 };
 
 //---------------------------------------------------------------------------
@@ -203,6 +205,7 @@ struct JacRes
 	FDSTAG   *fs;    // staggered-grid layout
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
+    DBPropDike *dbdike; // dike database
 	DBMat    *dbm;   // material database
 
 	// parameters and controls

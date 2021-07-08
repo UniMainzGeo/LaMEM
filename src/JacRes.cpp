@@ -54,7 +54,7 @@
 #include "constEq.h"
 #include "tools.h"
 #include "advect.h"
-
+#include "dike.h"
 //---------------------------------------------------------------------------
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {
@@ -140,8 +140,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
     ierr = getIntParam   (fb, _OPTIONAL_, "Passive_Tracer",  &ctrl->Passive_Tracer, 1, 1);          	CHKERRQ(ierr);
     ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms,     1, 1);          	CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,          1, 1.0);        	CHKERRQ(ierr);
-
-
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr); 
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -1064,6 +1063,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XY, XY1, XY2, XY3, XY4;
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
+	PetscScalar dikeRHS;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
@@ -1072,7 +1072,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
+	
 	// access context
 	fs = jr->fs;
 	bc = jr->bc;
@@ -1144,6 +1144,18 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		YY = dyy[k][j][i];
 		ZZ = dzz[k][j][i];
 
+		if (jr->ctrl.actDike)
+		{
+			dikeRHS = 0.0;
+			// function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
+			ierr = GetDikeContr(&ctx, svCell->phRat, dikeRHS);  CHKERRQ(ierr);
+
+			// remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
+			dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
+			dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
+			dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
+		}
+		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];
 		XY2 = dxy[k][j+1][i];
@@ -1199,8 +1211,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		ierr = setUpCtrlVol(&ctx, svCell->phRat, &svCell->svDev, &svCell->svBulk, pc, pc_lith, pc_pore, Tc, DII, z, Le); CHKERRQ(ierr);
 
 		// evaluate constitutive equations on the cell
-		ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho); CHKERRQ(ierr);
-
+		ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, dikeRHS); CHKERRQ(ierr);
+		
 		// compute gravity terms
 		gx = rho*grav[0];
 		gy = rho*grav[1];

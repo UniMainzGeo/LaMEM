@@ -136,6 +136,9 @@
 // maximum number of phase transition law
 #define _max_num_tr_ 20
 
+// maximum number of phase-like dikes
+#define _max_num_dike_ 6
+
 // maximum number of equation parameter
 #define _max_num_eq_ 2
 

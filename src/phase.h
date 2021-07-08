@@ -76,7 +76,7 @@ public:
 	PetscScalar APS2; // end of softening APS
 	PetscScalar A;    // reduction ratio
 	PetscScalar Lm;   // material length scale
-        PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
+    PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
 
 };
 
@@ -88,7 +88,8 @@ enum type
 {
 	_Constant_,
 	_Clapeyron_,
-	_Box_
+	_Box_,
+	_NotInAirBox_
 };
 
 enum Parameter
@@ -134,7 +135,7 @@ public:
 	PetscScalar     dT_within;
 	PetscScalar     DensityAbove[_max_tr_];
 	PetscScalar     DensityBelow[_max_tr_];
-
+    
     PetscScalar     topTemp;
     PetscScalar     botTemp;
     PetscScalar     cstTemp;
@@ -193,10 +194,9 @@ public:
 	PetscScalar  ch;                // cohesion
 	PetscScalar  eta_st;            // stabilization viscosity
 	PetscScalar  rp;                // ratio of pore pressure to overburden stress
-  //	PetscScalar  healTau;           // for healing [Myr], 1e30 if not defined 
 	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID;          // cohesion softening law ID (-1 if not defined)
-        PetscInt     healID;            // healing ID (-1 if not defined)   
+	PetscInt     healID;            // healing ID (-1 if not defined)   
 	// thermal parameters
 	PetscScalar  alpha;             // thermal expansivity                        [1/K]
 	PetscScalar  Cp;                // cpecific heat (capacity)                   [J/kg/K]
@@ -208,7 +208,7 @@ public:
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number
 	PetscInt     pdAct;             // phase diagram activity flag
 	PetscScalar  mfc;               // melt fraction viscosity correction
-	PetscScalar  rho_melt;			// rho melt
+	PetscScalar  rho_melt;          // rho melt
 	PetscInt     Phase_Diagram_melt;// flag that allows only to consider the melt quantity from a phase diagram
 };
 
@@ -249,7 +249,6 @@ struct PData
 
 struct DBMat
 {
-
 	Scaling *scal;
 
 	// phase parameters
@@ -259,7 +258,6 @@ struct DBMat
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
 	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
 	PetscInt     numPhtr;                // number material softening laws
-
 };
 
 // read material database
