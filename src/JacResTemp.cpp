@@ -65,7 +65,7 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, &Nu, lT[k][j][i]); CHKERRQ(ierr); \
+  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i]); CHKERRQ(ierr); \
   buff[k][j][i] = kc;   // added one NULL because of the new variables that are passed
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
@@ -83,7 +83,7 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *k_,      // conductivity
 		PetscScalar *rho_Cp_, // volumetric heat capacity
 		PetscScalar *rho_A_,  // volumetric radiogenic heat
-		PetscScalar *Nu_,  // NEW  // factor with which the conductivtiy is multiplied (material parameter)
+		//	PetscScalar nu,  // NEW  // factor with which the conductivtiy is multiplied (material parameter)
 		//		PetscScalar *APS1_,
 		PetscScalar Tc)
 {
@@ -96,7 +96,7 @@ PetscErrorCode JacResGetTempParam(
     // SolVarCell  *svCell;
     // SolVarBulk  *svBulk;
     Controls    ctrl;
-    PetscScalar cf, k, rho, rho_Cp, rho_A, density, Nu, APS1;  // NEW new variables for T and aps-dependent conductivity
+    PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu, APS1;  // NEW new variables for T and aps-dependent conductivity
 
 	PetscFunctionBegin;
 
@@ -104,8 +104,8 @@ PetscErrorCode JacResGetTempParam(
 	k         = 0.0;
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
-	Nu     = 0.0;   // NEW
 	APS1      = 0.0;   // NEW 
+	nu        = 0.0;
 	
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
@@ -130,6 +130,12 @@ PetscErrorCode JacResGetTempParam(
 		cf      =  phRat[i];
 		rho     =  M->rho;
 
+		if(!M->nu)
+		  {
+                      // set Nusselt number = 1 if not defined
+                      M->nu = 1.0;
+                    }
+		
 		// accessing the softening ID of each phase and its associated APS1
       	      	soft    = &matSoft[i];    
 		s       = soft;
@@ -140,40 +146,40 @@ PetscErrorCode JacResGetTempParam(
 			rho = 1.0/density;
 		}
 
-		//		if(!M->Nu){M->Nu = 1.0;}
+		//		if(!M->nu){M->nu = 1.0;}
 		
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
-		//	    	Nu  +=  cf*M->Nu;   // NEW
+     	    	nu     +=  cf*M->nu;   // NEW
 		APS1   +=  cf*s->APS1;    // NEW
 
 		if (ctrl.useTk) // switch to use T-dep conductivity
 		  {
-		    if(!M->Nu)
+		    /*		    if(!M->nu)
 		    {
 		      // set Nusselt number = 1 if not defined
-		      M->Nu = 1.0;
-		    }
+		      M->nu = 1.0;
+		      } */
 		    // compute phase-dependent bulk-Nusselt number of cell
-		    Nu  +=  cf*M->Nu;
+		    //		    nu  +=  cf*M->nu;
 
 		    // temperature cutoff
 		    if(Tc <= ctrl.T_Nu)
 		      {
 			// compute conductivity depending on that bulk-Nusselt number
-			k = k*Nu;
+			k = k*nu;
 		      }
 		  }
 
-		// if (ctrl.useAPSk && APS > APS1){kc = kc*Nu;}  // APS condition for conductivity (not working yet)		
+		// if (ctrl.useAPSk && APS > APS1){kc = kc*nu;}  // APS condition for conductivity (not working yet)		
 	}
 
 	// store
 	if(k_)      (*k_)      = k;
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
 	if(rho_A_)  (*rho_A_)  = rho_A;
-	if(Nu_)  (*Nu_)  = Nu;  // NEW  new value of Nu stored in previous value of Nu_ as Nu_ using the pointer *Nu_, actually not necessary to pass
+	//	if(nu_)  (*nu_)  = nu;  // NEW  new value of Nu stored in previous value of Nu_ as Nu_ using the pointer *Nu_, actually not necessary to pass
 	//        if(APS1_)   (*APS1_)   = APS1;   // NEW  APS1
 	
 	PetscFunctionReturn(0);
@@ -477,7 +483,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond, Nu;   // NEW
+	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;   // NEW
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
 	
@@ -540,7 +546,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Pc  = P[k][j][i] ; // Current Pressure
 
 		// conductivity, heat capacity, radiogenic heat production
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, &Nu, Tc); CHKERRQ(ierr); // NEW
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc); CHKERRQ(ierr); // NEW
 
 		// shear heating term (effective)
 		Hr = svDev->Hr +
@@ -653,7 +659,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, cond, Nu;  // NEW
+	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, cond;  // NEW
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff, ***lT;  // NEW  
 
@@ -702,7 +708,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		Tc  = lT[k][j][i]; // current temperature
 		
 		// conductivity, heat capacity
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, &Nu, Tc); CHKERRQ(ierr);   // NEW
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc); CHKERRQ(ierr);   // NEW
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }

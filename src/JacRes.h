@@ -374,7 +374,7 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *k_,      // conductivity
 	PetscScalar *rho_Cp_, // volumetric heat capacity
 	PetscScalar *rho_A_,  // volumetric radiogenic heat
-	PetscScalar *Nu_,    
+	//	PetscScalar *Nu_,    
 	PetscScalar Tc);      // temperature of cell 
 
 // check whether thermal material parameters are properly defined

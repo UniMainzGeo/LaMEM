@@ -203,7 +203,7 @@ public:
 	PetscScalar  k;                 // thermal conductivity                       [W/m/k]
 	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
 	PetscScalar  T;                 // optional temperature to set within the phase
-  PetscScalar  Nu;                 // optional multiplication factor that is used to compute the higher conductivtiy below the conductivity boundary temperature
+  PetscScalar  nu;                 // optional multiplication factor that is used to compute the higher conductivtiy below the conductivity boundary temperature
 	// dike parameters
 	PetscScalar  Mf;                // for dike phase only, amount of magma-accommodated extenison in front of box
 	PetscScalar  Mb;      	        // for dike phase only, amount of magma-accommodated extenison in back of box
