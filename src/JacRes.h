@@ -88,7 +88,7 @@ struct SolVarBulk
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
 	PetscScalar  Ha ;    // Adiabatic heating
-  PetscScalar  cond ;    // conductivity
+    PetscScalar  cond ;  // conductivity
 
 };
 
@@ -193,9 +193,8 @@ struct Controls
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
 
-  PetscScalar T_Nu;     // Temperature boundary for conductivity condition
-  PetscInt   useTk;     // activation flag for using temperature-dependent conductivity
-  PetscInt    useAPSk;  // activation switch for APS-dependent conductivity
+    PetscScalar T_Nu;     // Temperature boundary for conductivity condition
+    PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
 };
 
 //---------------------------------------------------------------------------
@@ -375,8 +374,7 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *phRat,
 	PetscScalar *k_,      // conductivity
 	PetscScalar *rho_Cp_, // volumetric heat capacity
-	PetscScalar *rho_A_,  // volumetric radiogenic heat
-	//	PetscScalar *Nu_,    
+	PetscScalar *rho_A_,  // volumetric radiogenic heat   
 	PetscScalar Tc);      // temperature of cell 
 
 // check whether thermal material parameters are properly defined

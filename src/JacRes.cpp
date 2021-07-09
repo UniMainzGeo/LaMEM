@@ -141,9 +141,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
     ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms, 1, 1);          	CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,          1, 1.0);        	CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr);
-	ierr = getScalarParam   (fb, _OPTIONAL_, "T_Nu",         &ctrl->T_Nu,            1, 1.0);            CHKERRQ(ierr);
-        ierr = getIntParam   (fb, _OPTIONAL_, "useTk",        &ctrl->useTk,           1, 1);              CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "useAPSk",        &ctrl->useAPSk,           1, 1);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "T_Nu",            &ctrl->T_Nu,            1, 1.0);            CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1);              CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -303,10 +302,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->Adiabatic_gr)   PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic gradient                      : %g    \n", ctrl->Adiabatic_gr);
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");
-	if(ctrl->useTk)          PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature-dependent conductivity  @ \n",       ctrl->useTk); // NEW 
-	if(ctrl->T_Nu)           PetscPrintf(PETSC_COMM_WORLD, "   conductivity boundary Temperature       : %g %s \n", ctrl->T_Nu,      scal->lbl_temperature); // NEW
-	if(ctrl->useAPSk)        PetscPrintf(PETSC_COMM_WORLD, "   Use APS-dependent conductivity          @ \n",       ctrl->useAPSk); // NEW
-	
+	if(ctrl->useTk)          PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature-dependent conductivity  @ \n",       ctrl->useTk);
+	if(ctrl->T_Nu)           PetscPrintf(PETSC_COMM_WORLD, "   conductivity boundary Temperature       : %g %s \n", ctrl->T_Nu,      scal->lbl_temperature);	
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
 	else if(ctrl->gwType == _GW_TOP_)   PetscPrintf(PETSC_COMM_WORLD, "top of the domain \n");

@@ -312,7 +312,6 @@
 	act_dike        = 1              # dike activation flag (additonal term in divergence)
 	T_Nu            = 600		 # default value for thermal conductivity boundary
 	useTk           = 1              # switch to use T-dependent conductivity, 0: not active
-	useAPSk         = 1              # switch to use APS-dependent conductivity, 0: not active
 	
 # Groundwater level type specification:
 
@@ -512,7 +511,8 @@
 	out_cont_res        = 1
 	out_energ_res       = 1
 	out_melt_fraction   = 1
-	out_fluid_density   = 1	
+	out_fluid_density   = 1
+	out_conductivity    = 1
 
 # Phase aggregate output paramter
 # Phase ratios of listed phases are summed up and output as a scalar vector
@@ -703,7 +703,7 @@
 		k          = 2.5    # thermal conductivity
 		A          = 1e-9   # radiogenic heat production
 		T          = 100.0  # optional temperature to set within the phase
-		nu_k       = 5      # optional parameter which acts as a multiplication factor with the provided conductivity k below the provided temperature T_Nu
+		nu_k       = 5      # optional parameter, Nusselt number for use with conductivity
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
 		rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
 		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar)
