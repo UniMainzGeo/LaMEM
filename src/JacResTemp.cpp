@@ -83,20 +83,14 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *k_,      // conductivity
 		PetscScalar *rho_Cp_, // volumetric heat capacity
 		PetscScalar *rho_A_,  // volumetric radiogenic heat
-		//	PetscScalar nu,  // NEW  // factor with which the conductivtiy is multiplied (material parameter)
-		//		PetscScalar *APS1_,
 		PetscScalar Tc)
 {
 	// compute effective energy parameters in the cell
 
 	PetscInt    i, numPhases, AirPhase;
     Material_t  *phases, *M;
-    Soft_t      *s;    // pointer to softening law ID
-    Soft_t      *matSoft, *soft; // material softening law parameters
-    // SolVarCell  *svCell;
-    // SolVarBulk  *svBulk;
     Controls    ctrl;
-    PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu, APS1;  // NEW new variables for T and aps-dependent conductivity
+    PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k;  // NEW new variables for T and aps-dependent conductivity
 
 	PetscFunctionBegin;
 
@@ -104,25 +98,16 @@ PetscErrorCode JacResGetTempParam(
 	k         = 0.0;
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
-	APS1      = 0.0;   // NEW 
-	nu        = 0.0;
+	nu_k      = 0.0;
 	
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
 	density   = jr->scal->density;
 	AirPhase  = jr->surf->AirPhase;
 
-	// access the pointers to softening law parameter and softening law IDS 
-        matSoft   = jr->dbm->matSoft;
-	
 	// access the control which contains switch for T-dep/APS-dep conductivity
-	ctrl      = jr->ctrl;   // NEW
+	ctrl      = jr->ctrl;  
 
-	// access solution variables                                                                                                                             
-	/* svCell = &jr->svCell[iter++];  // how to ge APS here??, it's not always done per cell here...
-        svDev  = &svCell->svDev;
-        APS    = svDev->APS; */
-	
 	// average all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -130,57 +115,39 @@ PetscErrorCode JacResGetTempParam(
 		cf      =  phRat[i];
 		rho     =  M->rho;
 
-		if(!M->nu)
-		  {
-                      // set Nusselt number = 1 if not defined
-                      M->nu = 1.0;
-                    }
-		
-		// accessing the softening ID of each phase and its associated APS1
-      	      	soft    = &matSoft[i];    
-		s       = soft;
-		
 		// override air phase density
 		if(AirPhase != -1 && i == AirPhase)
 		{
 			rho = 1.0/density;
 		}
 
-		//		if(!M->nu){M->nu = 1.0;}
-		
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
-     	    	nu     +=  cf*M->nu;   // NEW
-		APS1   +=  cf*s->APS1;    // NEW
 
-		if (ctrl.useTk) // switch to use T-dep conductivity
+		// Temperature-dependent conductivity: phase-dependent nusselt number
+		if(ctrl.useTk)
 		  {
-		    /*		    if(!M->nu)
-		    {
-		      // set Nusselt number = 1 if not defined
-		      M->nu = 1.0;
-		      } */
-		    // compute phase-dependent bulk-Nusselt number of cell
-		    //		    nu  +=  cf*M->nu;
-
-		    // temperature cutoff
-		    if(Tc <= ctrl.T_Nu)
+		    if(! M->nu_k)
 		      {
-			// compute conductivity depending on that bulk-Nusselt number
-			k = k*nu;
+			// set Nusselt number = 1 if not defined 
+			M->nu_k = 1.0;
 		      }
+		    nu_k +=  cf*M->nu_k;
 		  }
-
-		// if (ctrl.useAPSk && APS > APS1){kc = kc*nu;}  // APS condition for conductivity (not working yet)		
+		
 	}
+
+	// switch and temperature condition to use T-dep conductivity
+	if (ctrl.useTk && Tc <= ctrl.T_Nu) 
+	  {
+	    k = k*nu_k;
+	  }
 
 	// store
 	if(k_)      (*k_)      = k;
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
 	if(rho_A_)  (*rho_A_)  = rho_A;
-	//	if(nu_)  (*nu_)  = nu;  // NEW  new value of Nu stored in previous value of Nu_ as Nu_ using the pointer *Nu_, actually not necessary to pass
-	//        if(APS1_)   (*APS1_)   = APS1;   // NEW  APS1
 	
 	PetscFunctionReturn(0);
 }
