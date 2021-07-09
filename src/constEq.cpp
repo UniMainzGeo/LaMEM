@@ -55,6 +55,7 @@
 #include "scaling.h"
 #include "parsing.h"
 #include "bc.h"
+#include "dike.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "setUpConstEq"
@@ -67,6 +68,8 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity
 	ctx->numPhases =  jr->dbm->numPhases; // number phases
 	ctx->phases    =  jr->dbm->phases;    // phase parameters
+	ctx->numDike   =  jr->dbdike->numDike;// number of dikes
+	ctx->matDike   =  jr->dbdike->matDike;// dike properties
 	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
 	ctx->ctrl      = &jr->ctrl;           // control parameters
 	ctx->Pd        =  jr-> Pd;            // phase diagram data
@@ -772,7 +775,7 @@ PetscErrorCode cellConstEq(
 		PetscScalar &szz,    // ...
 		PetscScalar &gres,   // volumetric residual
 		PetscScalar &rho,    // effective density
-		PetscScalar dikeRHS) // dike RHS for gres calculation
+		PetscScalar &dikeRHS) // dike RHS for gres calculation
 {
 	// evaluate constitutive equations on the cell
 
@@ -846,18 +849,22 @@ PetscErrorCode cellConstEq(
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
 
-	if(ctrl->actExp && ctrl->actDike){
-		gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
-		}
-	else if(ctrl->actDike){
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;
-		}
-	else if(ctrl->actExp){
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
-		}
-	else{
-		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
-		}
+	if(ctrl->actExp && ctrl->actDike)
+    {
+        gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
+    }
+	else if(ctrl->actDike)
+    {
+        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;
+    }
+	else if(ctrl->actExp)
+    {
+        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+    }
+	else
+    {
+        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+    }
 
 	// store effective density
 	rho = svBulk->rho;
@@ -1097,74 +1104,3 @@ PetscErrorCode setDataPhaseDiagram(
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GetDikeContr"
-PetscErrorCode GetDikeContr(ConstEqCtx  *ctx, 
-			          PetscScalar *phRat,          // phase ratios in the control volume
-			          PetscScalar &dikeRHS)
-{ 
-	BCCtx       *bc;    
-	Material_t  *mat, *phases;
-	Ph_trans_t  *PhaseTrans; 
-	PetscInt     i, numPhases;
-	PetscScalar  v_spread, M, left, right;
-
-	numPhases  = ctx->numPhases;
-	phases     = ctx->phases;
-	bc         = ctx->bc;     
-	PhaseTrans = ctx->PhaseTrans; 
-	
-	for(i = 0; i < numPhases; i++)
-	{
-        // update present phases only          
-        if(phRat[i])
-        {
-            // get reference to material parameters table                                                   
-            mat = &phases[i];
-
-            if(mat->Mb == mat->Mf)
-            {
-                // constant M                                                     
-                M = mat->Mf;
-                v_spread = PetscAbs(bc->velin);
-				left = PhaseTrans->bounds[0];
-				right = PhaseTrans->bounds[1];
-				mat->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
-	    }
-			/* else                                                                                                                                           
-                           {                                                                                                                               
-                          // Mb an Mf are different                                                                                                               
-                          // FDSTAG *fs;                                                                                                                          
-                          // access context                                                                                                                
-                          // fs = bc->fs;                                                                                                                   
-                          // bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction         
-                          //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction            
-                          if(front == back)                        
-                          {                                               
-                          // linear interpolation between different M values, Mf is M in front, Mb is M in back    
-                          M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));                                                         
-                          dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km                   
-                          }                                                                                                           
-                          else                                                                                                            
-                          {                                                                                                          
-                          // linear interpolation if the ridge/dike phase is oblique                                          
-                          y = COORD_CELL(j,sy,fs->dsy);                                                          
-                          M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));                                      
-                          dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km                
-                          } */ 
-
-	    else
-	      {
-		mat->dikeRHS = 0.0;                                                        
-	      }
-
-	    dikeRHS += phRat[i]*mat->dikeRHS; 
-			
-        }
-	}
-
-    PetscFunctionReturn(0);
-
-}
-// ------------------------------------------------------------------------------------------------------------------------

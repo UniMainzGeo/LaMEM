@@ -45,6 +45,7 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "phase.h"
+#include "dike.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
@@ -199,6 +200,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create material database
 	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
+
+    // create dike database
+	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, PETSC_TRUE);   CHKERRQ(ierr);
 
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
@@ -512,7 +516,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	//                            |
 	//                          TSSol
 	//                            |
-	//                          DBMat
+	//                          DBMat/DBPropDike
 	//                            |
 	//                         FDSTAG
 	//                            |
@@ -555,6 +559,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->jr.surf     = &lm->surf;
 	lm->jr.bc       = &lm->bc;
 	lm->jr.dbm      = &lm->dbm;
+	lm->jr.dbdike   = &lm->dbdike;
 	// AdvCtx
 	lm->actx.fs     = &lm->fs;
 	lm->actx.jr     = &lm->jr;
@@ -668,7 +673,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	//==============
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
-
+    
 
 	if (param)
 	{
@@ -928,7 +933,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 
 		// project temperature from markers to grid
 		ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
-	
+
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 		
@@ -1015,4 +1020,3 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 //	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
 
 //---------------------------------------------------------------------------
-

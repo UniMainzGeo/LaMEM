@@ -221,7 +221,6 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	char            ExcludedPhaseName[_MAX_PAR_][_str_len_];
 	PetscInt 		ExcludedPhase[_MAX_PAR_], numExcludedPhases=0;
 	Material_t 		m;
-
 	
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"); CHKERRQ(ierr);
 
@@ -611,7 +610,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
 	}
-
+	
 	// PARAMETERS
 	
 
@@ -3660,7 +3659,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
 	IOparam->dbm_modified.scal    = &scal;
-
+    
     // Call material database with modified parameters
     ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); 	CHKERRQ(ierr);  
 

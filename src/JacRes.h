@@ -52,6 +52,7 @@ struct FDSTAG;
 struct FreeSurf;
 struct BCCtx;
 struct DBMat;
+struct DBPropDike;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
@@ -209,6 +210,7 @@ struct JacRes
 	FDSTAG   *fs;    // staggered-grid layout
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
+    DBPropDike *dbdike; // dike database
 	DBMat    *dbm;   // material database
 
 	// parameters and controls

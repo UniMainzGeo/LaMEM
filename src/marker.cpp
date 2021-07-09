@@ -868,7 +868,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
 	Marker         *P;
 	PetscLogDouble  t;
-	PetscScalar     chLen, chTime; 
+	PetscScalar     chLen, chTime;
 	char            TemperatureStructure[_str_len_];
 	PetscInt        jj, ngeom, imark, maxPhaseID;
 	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *ridge, *hex, *layer, *cylinder;
@@ -1096,10 +1096,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	    ierr = getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID);    					CHKERRQ(ierr);
 	    ierr = getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen);         					CHKERRQ(ierr);
 	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen);     					CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen);     					CHKERRQ(ierr);
+        ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen);     					CHKERRQ(ierr);
 	    ierr = getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime);          					CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _OPTIONAL_, "v_spread",       &v_spread,    1, actx->jr->scal->velocity);         CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _OPTIONAL_, "maxAge",       	&maxAge,      1, actx->jr->scal->time);      		CHKERRQ(ierr);
+        ierr = getScalarParam(fb, _OPTIONAL_, "v_spread",       &v_spread,    1, actx->jr->scal->velocity);         CHKERRQ(ierr);
+        ierr = getScalarParam(fb, _OPTIONAL_, "maxAge",       	&maxAge,      1, actx->jr->scal->time);      		CHKERRQ(ierr);
 		
 	    ridge->bot 		= ridge->bounds[4];
 	    ridge->top 		= ridge->bounds[5];
@@ -2075,42 +2075,45 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 		kappa      = geom->kappa;
 		(*T)       = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAge)) + T_top;
 	}
-
-
 	else if (geom->setTemp==4)   // Oblique ridge temperature
+    {
+        // Half space cooling profile with age function, oblique possible
+        PetscScalar   x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack;
+        PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge;
+        
+        y             = P->X[1];
+        x             = P->X[0];
+        y_ridgeFront  = geom->ridgeseg_y[0];
+        y_ridgeBack   = geom->ridgeseg_y[1];
+        x_ridgeRight  = geom->ridgeseg_x[1];
+        x_ridgeLeft   = geom->ridgeseg_x[0];
+        z_top         = geom->top;
+        T_top         = geom->topTemp;
+        T_bot         = geom->botTemp;
+        z             = PetscAbs(P->X[2]-z_top);
+        kappa         = geom->kappa;
+        v_spread      = geom->v_spread;
+        age0          = geom->age0;
+        maxAge        = geom->maxAge;
+        
+        if (x_ridgeLeft == x_ridgeRight)
         {
-			// Half space cooling profile with age function, oblique possible
-			PetscScalar   x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack; 
-			PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge;
-			
-			y             = P->X[1];
-			x             = P->X[0];
-			y_ridgeFront  = geom->ridgeseg_y[0];
-			y_ridgeBack   = geom->ridgeseg_y[1];
-			x_ridgeRight  = geom->ridgeseg_x[1];
-			x_ridgeLeft   = geom->ridgeseg_x[0];
-			z_top         = geom->top;
-			T_top         = geom->topTemp;
-			T_bot         = geom->botTemp;
-			z             = PetscAbs(P->X[2]-z_top);
-			kappa         = geom->kappa;
-			v_spread      = geom->v_spread;
-			age0          = geom->age0;
-			maxAge        = geom->maxAge;  
-			
-			if (x_ridgeLeft == x_ridgeRight){
-				thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
-				thermalAgeRidge = max(thermalAgeRidge,age0);
-				}
-			else {   
-				x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
-				thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;	    
-				thermalAgeRidge = max(thermalAgeRidge,age0);
-				}
-				
-			thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff  
-			(*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
-	  }
+            thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
+            thermalAgeRidge = max(thermalAgeRidge,age0);
+            
+        }
+        else
+        {
+            x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
+            thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;
+            thermalAgeRidge = max(thermalAgeRidge,age0);
+        }
+        
+        thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff
+        (*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
+        
+    }
+    
 }
 
 //---------------------------------------------------------------------------

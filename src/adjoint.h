@@ -155,5 +155,4 @@ PetscErrorCode edgeConstEqFD(ConstEqCtx  *ctx,    SolVarEdge  *svEdge, PetscScal
 // Helper functions
 PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B);
 
-
 #endif

@@ -54,7 +54,7 @@
 #include "constEq.h"
 #include "tools.h"
 #include "advect.h"
-
+#include "dike.h"
 //---------------------------------------------------------------------------
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {
@@ -1079,7 +1079,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
+	
 	// access context
 	fs = jr->fs;
 	bc = jr->bc;
@@ -1218,7 +1218,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		ierr = setUpCtrlVol(&ctx, svCell->phRat, &svCell->svDev, &svCell->svBulk, pc, pc_lith, pc_pore, Tc, DII, z, Le); CHKERRQ(ierr);
 
 		// evaluate constitutive equations on the cell
-		ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, dikeRHS); CHKERRQ(ierr);  
+		ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, dikeRHS); CHKERRQ(ierr);
 		
 		// compute gravity terms
 		gx = rho*grav[0];
