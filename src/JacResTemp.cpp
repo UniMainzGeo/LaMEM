@@ -90,7 +90,7 @@ PetscErrorCode JacResGetTempParam(
 	PetscInt    i, numPhases, AirPhase;
     Material_t  *phases, *M;
     Controls    ctrl;
-    PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k;  // NEW new variables for T and aps-dependent conductivity
+    PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k; 
 
 	PetscFunctionBegin;
 
@@ -105,7 +105,7 @@ PetscErrorCode JacResGetTempParam(
 	density   = jr->scal->density;
 	AirPhase  = jr->surf->AirPhase;
 
-	// access the control which contains switch for T-dep/APS-dep conductivity
+	// access the control which contains switch for T-dep conductivity
 	ctrl      = jr->ctrl;  
 
 	// average all phases
