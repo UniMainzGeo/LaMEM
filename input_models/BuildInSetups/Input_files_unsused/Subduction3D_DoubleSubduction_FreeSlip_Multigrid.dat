@@ -1,0 +1,281 @@
+# This is a 3D double subduction setup with GEO units and a free slip upper boundary
+# The model is viscoplastic and the geometry is created with the build-in geometry tools
+# Multigrid solvers are being used, and it is best to run this in parallel	
+#
+# The target resolution is -nel_x 512 -nel_y 256 -nel_z 128 
+#  This is likely too much for a laptop, but a 64-128 core machine should do the job
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units            = geo		# geological units 
+	
+	unit_temperature = 1000
+	unit_length      = 1e3
+	unit_viscosity   = 1e20
+	unit_stress      = 1e9
+	
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 100   # simulation end time
+	dt        = 0.1   # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 100   # maximum time step
+	dt_out    = 0.5   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 200  # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 5     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 256
+	nel_y = 128
+	nel_z = 64
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = -3960 3960
+	coord_y =  0    2640
+	coord_z = -660  0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+# No-slip boundary flag mask (left right front back bottom top)
+
+	noslip = 0 0 0 0 1 0
+	
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -9.81  # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 0              # initial guess flag
+	eta_min        = 1e18           # viscosity upper bound
+	eta_ref        = 1e20			# reference viscosity for initial guess	
+	eta_max        = 1e23           # viscosity lower limit
+	
+	
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	multigrid 	# solver [direct or multigrid]
+	MGLevels 		=	3			# number of MG levels [default=3]
+	MGSweeps 		=	5			# number of MG smoothening steps per level [default=10]
+	MGSmoother 		=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
+	MGCoarseSolver 	=	mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
+	
+	
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	advect         = rk2               # advection scheme
+	interp         = stagp             # velocity interpolation scheme
+	stagp_a        = 0.7               # STAG_P velocity interpolation parameter
+	mark_ctrl      = basic             # marker control type
+	nmark_lim      = 16 100            # min/max number per cell
+	
+
+# Geometric primitives:
+	
+	#================================================
+	# First define the horizontal parts of the slab
+	# SLAB 1 -
+	# horizontal part of slab 1
+	<BoxStart>
+		phase  = 1
+		bounds = -3000 -1000 0 1000 -80 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# Crust in horizontal part of slab 1
+	<BoxStart>
+		phase  = 2
+		bounds = -3000 -1000 0 1000 -20 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# SLAB 2 -
+	# horizontal part of slab 2
+	<BoxStart>
+		phase  = 3
+		bounds = -1000  1000 0 1000 -80 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# Crust in horizontal part of slab 2
+	<BoxStart>
+		phase  = 4
+		bounds = -1000  1000 0 1000 -20 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# OVERRIDING PLATE EAST
+	# horizontal part of OP
+	<BoxStart>
+		phase  = 5
+		bounds =  1000  3000 0 1000 -80 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# OVERRIDING PLATE Back
+	# horizontal part of OP
+	<BoxStart>
+		phase  = 6
+		bounds = -3000  3000 1025 2640 -80 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+	
+	
+	#=============
+	# Next define the inclined parts of the slabs
+	# Inclined part of slab 1
+	<HexStart>
+		phase  = 1
+		coord = -1000 0 -80   -800 0 -230   -800 1000 -230  -1000 1000 -80  -1000 0 0   -800 0 -150   -800 1000 -150   -1000 1000 0
+	<HexEnd>
+	
+	# Inclined part of crust 1
+	<HexStart>
+		phase  = 2
+		coord = -1000 0 -20   -800 0 -170   -800 1000 -170  -1000 1000 -20  -1000 0 0   -800 0 -150   -800 1000 -150   -1000 1000 0
+	<HexEnd>
+	
+	# Inclined part of slab 2
+	<HexStart>
+		phase  = 3
+		coord =  1000 0 -80   1200 0 -230   1200 1000 -230   1000 1000 -80  1000 0 0   1200 0 -150   1200 1000 -150   1000 1000 0
+	<HexEnd>
+	
+	# Inclined part of crust 2
+	<HexStart>
+		phase  = 4
+		coord =  1000 0 -20   1200 0 -170   1200 1000 -170   1000 1000 -20  1000 0 0   1200 0 -150   1200 1000 -150   1000 1000 0
+	<HexEnd>
+	
+	# NOTE: we do noty include a 'stiff-core' in this setup, which could be useful to have
+	
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = DoubleSubduction_3D 	# output file name
+	out_pvd             = 1       				# activate writing .pvd file
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     		= 1 # activate AVD phase output
+	out_avd_pvd 		= 1 # activate writing .pvd file
+	out_avd_ref 		= 3 # AVD grid refinement factor
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+	out_eff_press       = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_yield           = 1
+	out_plast_strain    = 1
+	out_plast_dissip    = 1
+	out_tot_displ       = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of mantle
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 3300 # density
+		eta = 2.8e20 # viscosity
+	<MaterialEnd>
+
+	# Define properties of slab 1
+	<MaterialStart>
+		ID  = 1       # phase id
+		rho = 3385    # density
+		eta = 1.4e23  # viscosity
+	<MaterialEnd>
+
+	# Define properties weak crust 1
+	<MaterialStart>
+		ID  	=  2       # phase id
+		rho 	= 3385     # density
+		eta 	= 1.4e20   # viscosity
+	<MaterialEnd>
+	
+	# Define properties of slab 2
+	<MaterialStart>
+		ID  = 3       # phase id
+		rho = 3385    # density
+		eta = 1.4e23  # viscosity
+	<MaterialEnd>
+
+	# Define properties weak crust 2
+	<MaterialStart>
+		ID  	=  4       # phase id
+		rho 	= 3385     # density
+		eta 	= 1.4e20   # viscosity
+	<MaterialEnd>
+	
+	# Define properties of OP
+	<MaterialStart>
+		ID  = 5       # phase id
+		rho = 3385    # density
+		eta = 1.4e23  # viscosity
+	<MaterialEnd>
+	
+	# Define properties of OP in the back
+	<MaterialStart>
+		ID  = 6       # phase id
+		rho = 3385    # density
+		eta = 1.4e23  # viscosity
+	<MaterialEnd>
+	
+	
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_type ksponly			# switches off nonlinear iterations
+
+	-js_ksp_monitor # display how the inner iterations converge
+	
+	-js_ksp_rtol 1e-3
+	-js_ksp_atol 1e-4
+	
+<PetscOptionsEnd>
+
+#===============================================================================
