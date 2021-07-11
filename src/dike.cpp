@@ -50,13 +50,10 @@
 #include "LaMEM.h"
 #include "phase.h"
 #include "parsing.h"
-//#include "scaling.h"
-//#include "objFunct.h"  // necessary in case of adjoint
 #include "JacRes.h"
-//#include "phase_transition.h"   // why not necessary but phase.h yes?, I am not using phases but phase transition boundaries
 #include "dike.h"
 #include "constEq.h"
-#include "bc.h"                 // why necessary and phase_transition.h not? both associated structures are in consteq
+#include "bc.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
