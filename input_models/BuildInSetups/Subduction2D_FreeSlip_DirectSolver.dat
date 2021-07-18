@@ -1,0 +1,206 @@
+# This is a simple 2D subduction setup with GEO units and a free slip upper boundary
+# The model is viscoplastic and the geometry is created with the build-in geometry tools
+#
+# 
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units            = geo		# geological units 
+	
+	unit_temperature = 1000
+	unit_length      = 1e3
+	unit_viscosity   = 1e20
+	unit_stress      = 1e9
+	
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 100   # simulation end time
+	dt        = 0.1   # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 100   # maximum time step
+	dt_out    = 0.5   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 200  # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 5     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 256
+	nel_y = 2
+	nel_z = 64
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = -1500 1500
+	coord_y = -10   10
+	coord_z = -660  0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+# No-slip boundary flag mask (left right front back bottom top)
+
+	noslip = 0 0 0 0 1 0
+	
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -9.81  # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 1              # initial guess flag
+	eta_min        = 1e18           # viscosity upper bound
+	eta_ref 	   = 1e20			# reference viscosity for initial guess	
+	eta_max        = 1e23           # viscosity lower limit	
+	p_litho_visc    = 1              # use lithostatic pressure for creep laws
+	p_litho_plast   = 1              # use lithostatic pressure for plasticity
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e5
+
+		
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	advect         = rk2               # advection scheme
+	interp         = stagp             # velocity interpolation scheme
+	stagp_a        = 0.7               # STAG_P velocity interpolation parameter
+	mark_ctrl      = basic             # marker control type
+	nmark_lim      = 16 100            # min/max number per cell
+	
+
+# Geometric primitives:
+	
+	# horizontal part of slab
+	<BoxStart>
+		phase  = 1
+		bounds = 0 1200 -25 25 -80 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+	
+	# Inclined part of slab
+	<HexStart>
+		phase  = 1
+		coord = -250 -25 -230   0 -25 -80   0 25 -80   -250 25 -230  -250 -25 -150   0 -25 0   0 25 0   -250 25 -150
+	<HexEnd>
+	
+	# Crust in horizontal part of slab
+	<BoxStart>
+		phase  = 2
+		bounds = 0 1200 -25 25 -20 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+	
+	# Inclined part of crust
+	<HexStart>
+		phase  = 2
+		coord = -250 -25 -170   0 -25 -20   0 25 -20   -250 25 -170  -250 -25 -150   0 -25 0   0 25 0   -250 25 -150
+	<HexEnd>
+	
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = Subduction2D_direct # output file name
+	out_pvd             = 1       	# activate writing .pvd file
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     		= 1 # activate AVD phase output
+	out_avd_pvd 		= 1 # activate writing .pvd file
+	out_avd_ref 		= 3 # AVD grid refinement factor
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+	out_eff_press       = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_yield           = 1
+	out_plast_strain    = 1
+	out_plast_dissip    = 1
+	out_tot_displ       = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of mantle
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 3200 # density
+		eta = 1e21 # viscosity
+	<MaterialEnd>
+
+	# Define properties of slab
+	<MaterialStart>
+		ID  = 1       # phase id
+		rho = 3300    # density
+		eta = 1e23    # viscosity
+	<MaterialEnd>
+
+	# Define properties of plastic crust
+	<MaterialStart>
+		ID  	=  2       # phase id
+		rho 	=  3300    # density
+		eta 	=  1e23    # viscosity
+		
+		ch		=	5e6			# cohesion [MPa]
+		fr 		=	5			# friction angle	
+		
+		
+	<MaterialEnd>
+	
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_ksp_ew
+
+
+	-js_ksp_monitor # display how the inner iterations converge
+
+
+<PetscOptionsEnd>
+
+#===============================================================================

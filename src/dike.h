@@ -48,7 +48,6 @@
 
 struct FB; 
 struct JacRes;
-//struct ModParam;  // necesary in case of adjoint
 struct ConstEqCtx;
 struct DBMat;
 

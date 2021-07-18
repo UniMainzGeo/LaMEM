@@ -276,7 +276,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, healID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;
+	PetscScalar eta, eta0, e0, Kb, G, E, Vp, Vs, eta_st, nu;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
@@ -294,7 +294,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Kb    	 =  0.0;	// bulk modulus		
 	G        =  0.0;
 	E        =  0.0;
-	nu       =  0.0;
+        nu       =  0.0;
 	Vp       =  0.0;
 	Vs       =  0.0;
 	eta_st   =  0.0;
@@ -302,7 +302,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	frSoftID = -1;
 	healID   = -1;
 	MSN      =  dbm->numSoft - 1;
-
+	
 	// phase ID
 	ierr 	 = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
 	fb->ID	 = ID;
@@ -460,6 +460,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "k",        &m->k,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "nu_k",     &m->nu_k,  1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
 	// melt fraction viscosity parametrization
 	//=================================================================================
