@@ -294,7 +294,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Kb    	 =  0.0;	// bulk modulus		
 	G        =  0.0;
 	E        =  0.0;
-        nu       =  0.0;
+	nu       =  0.0;
 	Vp       =  0.0;
 	Vs       =  0.0;
 	eta_st   =  0.0;
@@ -461,6 +461,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "nu_k",     &m->nu_k,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "T_Nu",     &m->T_Nu,  1, 1.0); CHKERRQ(ierr);  //gito
 	//=================================================================================
 	// melt fraction viscosity parametrization
 	//=================================================================================
@@ -706,6 +707,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
 		MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
 		MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
+		MatPrintScalParam(m->nu_k,  "nu_k",  "[]",      scal, title, &print_title);
+		MatPrintScalParam(m->T_Nu,  "T_Nu",  "[C]",      scal, title, &print_title);
 		PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 	}
 
@@ -758,6 +761,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// phase-temperature
 	if(m->T) m->T = (m->T + scal->Tshift)/scal->temperature;
+	// temperature below which conductivity is multiplied by nu_k 
+	if(m->T_Nu) m->T_Nu = (m->T_Nu + scal->Tshift)/scal->temperature;
 
 	PetscFunctionReturn(0);
 }
@@ -1631,6 +1636,7 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
     
     PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_st= %1.7e,    rp= %1.7e,    frSoftID = %i,  chSoftID = %i,   healID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
+	PetscPrintf(PETSC_COMM_WORLD,"          			nu_k  = %1.7e,  T_Nu    = %1.7e   \n", MatProp->nu_k, MatProp->T_Nu);
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 

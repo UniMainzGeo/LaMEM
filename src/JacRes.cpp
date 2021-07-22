@@ -141,7 +141,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
     ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms, 1, 1);          	CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,          1, 1.0);        	CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T_Nu",            &ctrl->T_Nu,            1, 1.0);            CHKERRQ(ierr);
     ierr = getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1);              CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
@@ -303,7 +302,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");
 	if(ctrl->useTk)          PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature-dependent conductivity  @ \n",       ctrl->useTk);
-	if(ctrl->T_Nu)           PetscPrintf(PETSC_COMM_WORLD, "   conductivity boundary Temperature       : %g %s \n", ctrl->T_Nu,      scal->lbl_temperature);	
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
 	else if(ctrl->gwType == _GW_TOP_)   PetscPrintf(PETSC_COMM_WORLD, "top of the domain \n");
@@ -333,7 +331,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->steadyTempStep /=  scal->time;
     ctrl->pShift         /=  scal->stress;
     ctrl->Adiabatic_gr   = (ctrl->Adiabatic_gr/scal->temperature)*scal->length;
-    ctrl->T_Nu            = (ctrl->T_Nu + scal->Tshift)/scal->temperature;
 
 	// adjoint field based gradient output vector
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!

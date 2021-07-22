@@ -99,7 +99,6 @@
 	act_temp_diff   = 1              # temperature diffusion activation flag
 	lmaxit          = 8             # maximum number of local rheology iterations
 #       lrtol           = 1e-6           # local rheology iterations relative tolerance
-	T_Nu            = 600            # default value for thermal conductivity boundary
         useTk           = 1              # switch to use T-dependent conductivity
         useAPSk         = 0             # switch to use APS-dependent conductivtiy
 
@@ -222,6 +221,7 @@
 		G		= 4e10
                 Cp              = 1.0e3   # specific heat (capacity)  [J/kg/K]
                 k               = 10.0   # thermal conductivity   [W/m/K]
+#                T_Nu            = 600            # conductivity enhanced below this temperature 
 #                healID         = 1
 #		 chSoftID       = 2
 #		 ch             = 30e6
@@ -238,6 +238,7 @@
                  n              =       3.5
                 Cp              =       1.2e3  # specific heat (capacity)
                 k               =       3.5   # thermal conductivity
+		T_Nu            = 600            # conductivity enhanced below this temperature 
                 G               =       4e10
 #                chSoftID        =       0      # Cohesion softening ID
                 ch              =       30e6   # Cohesion
@@ -257,6 +258,7 @@
                 Cp              =       1.2e3  # specific heat (capacity)
                 k               =       3.5    # thermal conductivity
 		nu_k            =       4.0  
+		T_Nu            = 600            # conductivity enhanced below this temperature 
                 G               =       4e10
 #                chSoftID        =       0      # Cohesion softening ID
                 ch              =       30e6   # Cohesion
