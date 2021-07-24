@@ -61,7 +61,6 @@ public:
   PetscScalar Mf;   // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;   // amount of magma-accommodated extension in back of box
   PetscInt PhaseID;         // associated material phase ID
-
   PetscScalar dikeRHS;
 };
 
