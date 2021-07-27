@@ -87,10 +87,10 @@ PetscErrorCode JacResGetTempParam(
 {
 	// compute effective energy parameters in the cell
 
-		PetscInt    i, numPhases, AirPhase;
-    Material_t  *phases, *M;
-    Controls    ctrl;
-    PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
+	PetscInt    i, numPhases, AirPhase;
+	Material_t  *phases, *M;
+	Controls    ctrl;
+	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
 
 	PetscFunctionBegin;
 
