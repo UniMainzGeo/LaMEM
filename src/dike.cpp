@@ -144,12 +144,86 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 	ierr = getIntParam(fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
 
         if (PrintOutput)
-	  {
+	    {
 	    PetscPrintf(PETSC_COMM_WORLD,"   Dike parameters ID[%lld] : Mf = %g, Mb = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb);
 	    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
         }
 
         PetscFunctionReturn(0);
+}
+//------------------------------------------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DikeCond_and_Heatsource"
+PetscErrorCode DikeCond_and_Heatsource(JacRes *jr,
+                                Material_t, *phases,
+                                PetscScalar Tc,
+                                PetscScalar phRat,          // phase ratios in the control volume
+                                PetscScalar k,
+                                PetscScalar rho_A)
+{
+        BCCtx       *bc;
+        Dike        *matDike;
+        Ph_trans_t  *PhaseTrans;
+        Material_t  *M;
+        PetscInt     i, j, numDike;
+        PetscScalar  v_spread, left, right, kfac, tempdikeRHS;
+
+        numDike    = jr->dbdike->numDike;// number of dikes
+        matDike    = jr->dbdike->matDike;// dike properties
+
+        bc         =  jr->bc;
+        PhaseTrans =  jr->dbm->matPhtr;   // phase transition
+
+        kfac = 0.0;
+        dikeRHS = 0; 
+        // loop through all dikes
+
+        for(j = 0; j < numDike; j++)
+        {
+          // access the phase ID of the dike parameters
+            i = matDike->PhaseID;
+
+             // check if the phase ratio of a dike phase is greater than 0 in the current cell
+            if(phRat[i]>0)
+            {
+                if(matDike->Mb == matDike->Mf)
+                {
+                    // constant M
+                    v_spread = PetscAbs(bc->velin);
+                    left = PhaseTrans->bounds[0];
+                    right = PhaseTrans->bounds[1];
+                    tempdikeRHS = matDike->Mf * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
+                }
+
+            //code for along-axis variation in M goes here
+
+                else
+                {
+                    tempdike>dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
+                } 
+                // end if (matDike->Mb == matDike-Mf)
+
+                dikeRHS += phRat[i]*tempdikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
+
+                M = &phases[i];
+                kfac = 1.0*phRat[i];
+
+                //adjust k and heat source according to Behn & Ito [2005]
+
+                if (Tc < M->T_liq && Tc > M->T_sol)
+                {
+                    kfac  += phRat[i]* (1 + M->Latent_hx/( M->Cp*(M->T_liq-M->Tsol) ) )^(-1);
+                    rho_A += phRat[i]*M->rho*M->Cp*(M->T_liq-Tc)*dikeRHS;
+                }
+                else if (Tc <= M->T_sol)
+                {
+                    rho_A += phRat[i]*(M->rho*M->Cp)*((M->T_liq-Tc) + M->Latent_hx/M->Cp)*dikeRHS;
+                }
+                // end adjust k and heat source according to Behn & Ito [2005]
+            } //end check phaseRat>0
+        } //end for j=0 to numDike
+
+    PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
 #undef __FUNCT__
@@ -172,14 +246,14 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
         PhaseTrans = ctx->PhaseTrans;
 
           // loop through all dikes
-          for(j = 0; j < numDike; j++)
-            {
+        for(j = 0; j < numDike; j++)
+        {
 	      // access the phase ID of the dike parameters
-              i = matDike->PhaseID;
+            i = matDike->PhaseID;
 
              // check if the phase ratio of a dike phase is greater than 0 in the current cell
             if(phRat[i]>0)
-              {
+            {
                if(matDike->Mb == matDike->Mf)
                  {
                   // constant M
@@ -214,15 +288,14 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
                     dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km 
                 }
             }*/
-            else
-            {
-              matDike->dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
+                else
+                {
+                    matDike->dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
+                }
+
+                dikeRHS += phRat[i]*matDike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
+
             }
-
-             dikeRHS += phRat[i]*matDike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
-
-	      }
         }
     PetscFunctionReturn(0);
-
 }
