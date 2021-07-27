@@ -145,9 +145,9 @@ PetscErrorCode JacResGetTempParam(
 	  {
 	    k = k*nu_k;
 	  }
-	if (ctrl->actDike)
+	if (ctrl.actDike)
 		{
-		ierr = DikeCond_and_Heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
+		ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
 		}
 	// store
 	if(k_)      (*k_)      = k;

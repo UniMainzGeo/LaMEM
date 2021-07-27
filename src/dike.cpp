@@ -153,11 +153,11 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 }
 //------------------------------------------------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "DikeCond_and_Heatsource"
-PetscErrorCode DikeCond_and_Heatsource(JacRes *jr,
-                                Material_t, *phases,
+#define __FUNCT__ "Dike_k_heatsource"
+PetscErrorCode Dike_k_heatsource(JacRes *jr,
+                                Material_t *phases,
                                 PetscScalar Tc,
-                                PetscScalar phRat,          // phase ratios in the control volume
+                                PetscScalar *phRat,          // phase ratios in the control volume
                                 PetscScalar k,
                                 PetscScalar rho_A)
 {
@@ -166,7 +166,7 @@ PetscErrorCode DikeCond_and_Heatsource(JacRes *jr,
         Ph_trans_t  *PhaseTrans;
         Material_t  *M;
         PetscInt     i, j, numDike;
-        PetscScalar  v_spread, left, right, kfac, tempdikeRHS;
+        PetscScalar  v_spread, left, right, kfac, dikeRHS, tempdikeRHS;
 
         numDike    = jr->dbdike->numDike;// number of dikes
         matDike    = jr->dbdike->matDike;// dike properties
@@ -184,7 +184,7 @@ PetscErrorCode DikeCond_and_Heatsource(JacRes *jr,
             i = matDike->PhaseID;
 
              // check if the phase ratio of a dike phase is greater than 0 in the current cell
-            if(phRat[i]>0)
+            if(phRat[i] > 0)
             {
                 if(matDike->Mb == matDike->Mf)
                 {
@@ -199,30 +199,31 @@ PetscErrorCode DikeCond_and_Heatsource(JacRes *jr,
 
                 else
                 {
-                    tempdike>dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
+                    tempdikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
                 } 
                 // end if (matDike->Mb == matDike-Mf)
 
                 dikeRHS += phRat[i]*tempdikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
 
                 M = &phases[i];
-                kfac = 1.0*phRat[i];
 
                 //adjust k and heat source according to Behn & Ito [2005]
 
                 if (Tc < M->T_liq && Tc > M->T_sol)
                 {
-                    kfac  += phRat[i]* (1 + M->Latent_hx/( M->Cp*(M->T_liq-M->Tsol) ) )^(-1);
+                    kfac  += phRat[i]/(1 + M->Latent_hx/( M->Cp*(M->T_liq-M->T_sol) ) );
                     rho_A += phRat[i]*M->rho*M->Cp*(M->T_liq-Tc)*dikeRHS;
                 }
                 else if (Tc <= M->T_sol)
                 {
-                    rho_A += phRat[i]*(M->rho*M->Cp)*((M->T_liq-Tc) + M->Latent_hx/M->Cp)*dikeRHS;
+                    rho_A += phRat[i]*( M->rho*M->Cp)*((M->T_liq-Tc) + M->Latent_hx/M->Cp)*dikeRHS;
+                    kfac += phRat[i];
                 }
                 // end adjust k and heat source according to Behn & Ito [2005]
             } //end check phaseRat>0
         } //end for j=0 to numDike
 
+        k=kfac*k;  //kfac is weighted average multiplier 
     PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------

@@ -80,5 +80,12 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
 
+PetscErrorCode Dike_k_heatsource(JacRes *jr,
+                                Material_t *phases,
+                                PetscScalar Tc,
+                                PetscScalar *phRat,          // phase ratios in the control volume
+                                PetscScalar k,
+                                PetscScalar rho_A)
+
 //---------------------------------------------------------------------------
 #endif
