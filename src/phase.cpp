@@ -461,7 +461,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "nu_k",     &m->nu_k,  1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T_Nu",     &m->T_Nu,  1, 1.0); CHKERRQ(ierr);  //gito
+	ierr = getScalarParam(fb, _OPTIONAL_, "T_Nu",     &m->T_Nu,  1, 1.0); CHKERRQ(ierr);  
 	//=================================================================================
 	// melt fraction viscosity parametrization
 	//=================================================================================

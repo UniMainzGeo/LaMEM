@@ -165,7 +165,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
         PetscInt     i, j, numDike;
         PetscScalar  v_spread, M, left, right;
 
-	numDike    = ctx->numDike;
+        numDike    = ctx->numDike;
         matDike    = ctx->matDike;
 
         bc         = ctx->bc;
