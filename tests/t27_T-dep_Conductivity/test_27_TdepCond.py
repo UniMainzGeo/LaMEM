@@ -8,8 +8,8 @@ def test_2fields_dike():
   # Test dike feature using optimized LaMEM
     
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t27_T-dep_Conductivity/t27_conductivity.dat' # This must be a relative path with respect to runLaMEM_Tests.p
-  expected_file = 't27_T-dep_Conductivity/t27_conductivity.expected'
+  launch = '../bin/opt/LaMEM -ParamFile ./t27_T-dep_Conductivity/t27_TDep_NuK_Conductivity.dat' # This must be a relative path with respect to runLaMEM_Tests.p
+  expected_file = 't27_T-dep_Conductivity/t27_TDep_NuK_Conductivity.expected'
 
   def comparefunc(unittest):
 

@@ -88,9 +88,9 @@ PetscErrorCode JacResGetTempParam(
 	// compute effective energy parameters in the cell
 
 	PetscInt    i, numPhases, AirPhase;
-    Material_t  *phases, *M;
-    Controls    ctrl;
-    PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k; 
+	Material_t  *phases, *M;
+	Controls    ctrl;
+	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
 
 	PetscFunctionBegin;
 
@@ -99,6 +99,7 @@ PetscErrorCode JacResGetTempParam(
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
 	nu_k      = 0.0;
+	T_Nu			= 0.0;
 	
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
@@ -130,16 +131,17 @@ PetscErrorCode JacResGetTempParam(
 		  {
 		    if(! M->nu_k)
 		      {
-			// set Nusselt number = 1 if not defined 
-			M->nu_k = 1.0;
+						// set Nusselt number = 1 if not defined 
+						M->nu_k = 1.0;
 		      }
 		    nu_k +=  cf*M->nu_k;
+		    T_Nu +=  cf*M->T_Nu;
 		  }
 		
 	}
 
 	// switch and temperature condition to use T-dep conductivity
-	if (ctrl.useTk && Tc <= ctrl.T_Nu) 
+	if (ctrl.useTk && Tc <= T_Nu) 
 	  {
 	    k = k*nu_k;
 	  }

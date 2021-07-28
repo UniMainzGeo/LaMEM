@@ -193,7 +193,6 @@ struct Controls
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
 
-    PetscScalar T_Nu;     // Temperature boundary for conductivity condition
     PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
 };
 
