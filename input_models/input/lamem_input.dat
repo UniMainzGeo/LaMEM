@@ -310,7 +310,9 @@
 	lmaxit          = 25             # maximum number of local rheology iterations 
 	lrtol           = 1e-6           # local rheology iterations relative tolerance
 	act_dike        = 1              # dike activation flag (additonal term in divergence)
-
+	T_Nu            = 600		 # default value for thermal conductivity boundary
+	useTk           = 1              # switch to use T-dependent conductivity, 0: not active
+	
 # Groundwater level type specification:
 
 # gw_level_type = none  # don't compute pore pressure (default)
@@ -509,7 +511,8 @@
 	out_cont_res        = 1
 	out_energ_res       = 1
 	out_melt_fraction   = 1
-	out_fluid_density   = 1	
+	out_fluid_density   = 1
+	out_conductivity    = 1
 
 # Phase aggregate output paramter
 # Phase ratios of listed phases are summed up and output as a scalar vector
@@ -575,20 +578,18 @@
 		Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
 		Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coord, X=x-coord, Y=y-coord, APS = accumulated plastic strain, MeltFraction, t = time] parameter that triggers the phase transition
 		ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z, APS]
-        
-        number_phases           =   1         #     The number of involved phases [default=1]
+	        number_phases           =   1         #     The number of involved phases [default=1]
 		PhaseAbove              =   1         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
 		PhaseBelow              =   3         #       
         PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
-
         ResetParam              =   APS       #     [APS] Parameter to reset on particles below PT or within box
 	<PhaseTransitionEnd>
 
 	<PhaseTransitionStart>
-        ID                      =   1                           # Phase_transition law ID
+		ID                      =   1                           # Phase_transition law ID
 		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
 		Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
-        number_phases           =   3
+	        number_phases           =   3
 		PhaseAbove              =   4 5 7
 		PhaseBelow              =   1 2 3
 	<PhaseTransitionEnd>
@@ -702,6 +703,7 @@
 		k          = 2.5    # thermal conductivity
 		A          = 1e-9   # radiogenic heat production
 		T          = 100.0  # optional temperature to set within the phase
+		nu_k       = 5      # optional parameter, Nusselt number for use with conductivity
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
 		rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
 		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar)

@@ -94,7 +94,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->actTemp	   =  0;			// diffusion is not active by default (otherwise we have to define thermal properties in all cases)
 	ctrl->printNorms   =  0;			// print norms of velocity/pressure/temperature?
 	ctrl->Adiabatic_gr = 0.0;
-
+	
 	if(scal->utype != _NONE_)
 	{
 		ctrl->Rugc      = 8.3144621;
@@ -138,9 +138,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);        	CHKERRQ(ierr);
     ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1);          	CHKERRQ(ierr);
     ierr = getIntParam   (fb, _OPTIONAL_, "Passive_Tracer",  &ctrl->Passive_Tracer, 1, 1);          	CHKERRQ(ierr);
-    ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms,     1, 1);          	CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms, 1, 1);          	CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,          1, 1.0);        	CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr); 
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1);              CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -300,7 +301,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->Adiabatic_gr)   PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic gradient                      : %g    \n", ctrl->Adiabatic_gr);
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");
-
+	if(ctrl->useTk)          PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature-dependent conductivity  @ \n",       ctrl->useTk);
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
 	else if(ctrl->gwType == _GW_TOP_)   PetscPrintf(PETSC_COMM_WORLD, "top of the domain \n");

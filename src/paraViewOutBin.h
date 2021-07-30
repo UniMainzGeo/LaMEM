@@ -139,6 +139,7 @@ struct OutMask
 	PetscInt litho_press;    // lithostatic pressure
 	PetscInt pore_press;     // pore pressure
 	PetscInt temperature;    // temperature
+        PetscInt conductivity;   // conductivity
 	PetscInt dev_stress;     // deviatoric stress tensor
 	PetscInt j2_dev_stress;  // deviatoric stress second invariant
 	PetscInt strain_rate;    // deviatoric strain rate tensor

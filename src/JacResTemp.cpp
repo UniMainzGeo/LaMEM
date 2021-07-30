@@ -54,7 +54,7 @@
 
 //---------------------------------------------------------------------------
 
-#define SCATTER_FIELD(da, vec, FIELD) \
+#define SCATTER_FIELD(da, vec, lT, FIELD)				\
 	ierr = DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr); \
 	ierr = DMDAVecGetArray(da, vec, &buff); CHKERRQ(ierr); \
 	iter = 0; \
@@ -65,8 +65,8 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-	ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL); CHKERRQ(ierr); \
-	buff[k][j][i] = kc;
+  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i]); CHKERRQ(ierr); \
+  buff[k][j][i] = kc;   // added one NULL because of the new variables that are passed
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
 #define GET_HRXZ buff[k][j][i] = jr->svXZEdge[iter++].svDev.Hr;
@@ -82,14 +82,15 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *phRat,
 		PetscScalar *k_,      // conductivity
 		PetscScalar *rho_Cp_, // volumetric heat capacity
-		PetscScalar *rho_A_)  // volumetric radiogenic heat
+		PetscScalar *rho_A_,  // volumetric radiogenic heat
+		PetscScalar Tc)
 {
 	// compute effective energy parameters in the cell
 
 	PetscInt    i, numPhases, AirPhase;
-    Material_t  *phases, *M;
-
-	PetscScalar cf, k, rho, rho_Cp, rho_A, density;
+	Material_t  *phases, *M;
+	Controls    ctrl;
+	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
 
 	PetscFunctionBegin;
 
@@ -97,10 +98,16 @@ PetscErrorCode JacResGetTempParam(
 	k         = 0.0;
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
+	nu_k      = 0.0;
+	T_Nu			= 0.0;
+	
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
 	density   = jr->scal->density;
 	AirPhase  = jr->surf->AirPhase;
+
+	// access the control which contains switch for T-dep conductivity
+	ctrl      = jr->ctrl;  
 
 	// average all phases
 	for(i = 0; i < numPhases; i++)
@@ -118,13 +125,32 @@ PetscErrorCode JacResGetTempParam(
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
+
+		// Temperature-dependent conductivity: phase-dependent nusselt number
+		if(ctrl.useTk)
+		  {
+		    if(! M->nu_k)
+		      {
+						// set Nusselt number = 1 if not defined 
+						M->nu_k = 1.0;
+		      }
+		    nu_k +=  cf*M->nu_k;
+		    T_Nu +=  cf*M->T_Nu;
+		  }
+		
 	}
+
+	// switch and temperature condition to use T-dep conductivity
+	if (ctrl.useTk && Tc <= T_Nu) 
+	  {
+	    k = k*nu_k;
+	  }
 
 	// store
 	if(k_)      (*k_)      = k;
-    if(rho_Cp_) (*rho_Cp_) = rho_Cp;
+	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
 	if(rho_A_)  (*rho_A_)  = rho_A;
-
+	
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -415,8 +441,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
-	SolVarDev  *svDev;
+       	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
+	Controls   ctrl;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -425,11 +452,10 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha;
+	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;   // NEW
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
-
-
+	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -438,6 +464,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	bc    = jr->bc;
 	num   = bc->tNumSPC;
 	list  = bc->tSPCList;
+
+	// access controls
+	ctrl = jr->ctrl;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -448,14 +477,15 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
 
-	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KC)
-	SCATTER_FIELD(fs->DA_XY,  jr->ldxy, GET_HRXY)
-	SCATTER_FIELD(fs->DA_XZ,  jr->ldxz, GET_HRXZ)
-	SCATTER_FIELD(fs->DA_YZ,  jr->ldyz, GET_HRYZ)
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+
+	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, lT, GET_KC)
+	SCATTER_FIELD(fs->DA_XY,  jr->ldxy, lT, GET_HRXY)
+	SCATTER_FIELD(fs->DA_XZ,  jr->ldxz, lT, GET_HRXZ)
+	SCATTER_FIELD(fs->DA_YZ,  jr->ldyz, lT, GET_HRYZ)
 
 	// access work vectors
 	ierr = DMDAVecGetArray(jr->DA_T,   jr->ge,   &ge);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &hxy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &hxz); CHKERRQ(ierr);
@@ -464,7 +494,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy) ; CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz) ; CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &P );  CHKERRQ(ierr);
-
 
 
 	//---------------
@@ -479,14 +508,14 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		svCell = &jr->svCell[iter++];
 		svDev  = &svCell->svDev;
 		svBulk = &svCell->svBulk;
-
+		
 		// access
 		Tc  = lT[k][j][i]; // current temperature
 		Tn  = svBulk->Tn;  // temperature history
 		Pc  = P[k][j][i] ; // Current Pressure
 
 		// conductivity, heat capacity, radiogenic heat production
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A); CHKERRQ(ierr);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc); CHKERRQ(ierr);
 
 		// shear heating term (effective)
 		Hr = svDev->Hr +
@@ -503,6 +532,10 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; if(Km1 < 0)  Km1++;
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
+		// to output as a paraview-field
+		cond = kc;
+		svBulk->cond = cond;
+		
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
 		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
@@ -588,15 +621,16 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
+	SolVarBulk *svBulk; // NEW
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], kc, rho_Cp, invdt;
+	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, cond;
 	MatStencil  row[1], col[7];
-	PetscScalar ***lk, ***bcT, ***buff;
+	PetscScalar ***lk, ***bcT, ***buff, ***lT;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -616,7 +650,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	my = fs->dsy.tcels - 1;
 	mz = fs->dsz.tcels - 1;
 
-	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KC)
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+
+	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, lT, GET_KC)
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(jr->Att); CHKERRQ(ierr);
@@ -624,7 +660,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT,  &bcT); CHKERRQ(ierr);
-
+	
 	//---------------
 	// central points
 	//---------------
@@ -635,9 +671,13 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	{
 		// access solution variables
 		svCell = &jr->svCell[iter++];
-
+		svBulk = &svCell->svBulk;
+		  
+		// access
+		Tc  = lT[k][j][i]; // current temperature
+		
 		// conductivity, heat capacity
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL); CHKERRQ(ierr);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc); CHKERRQ(ierr);
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }
@@ -647,7 +687,11 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcT[k-1][j][i] != DBL_MAX) cf[4] = -1.0; }
 		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcT[k+1][j][i] != DBL_MAX) cf[5] = -1.0; }
 
-		// compute average conductivities
+        // to output as a paraview-field
+		cond = kc;
+		svBulk->cond = cond;
+		
+ 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
 		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
 		bkz = (kc + lk[Km1][j][i])/2.0;      fkz = (kc + lk[Kp1][j][i])/2.0;
@@ -694,6 +738,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
 
 	// assemble temperature matrix
 	ierr = MatAIJAssemble(jr->Att, num, list, 1.0); CHKERRQ(ierr);

@@ -1,0 +1,297 @@
+# This is an example of symmetric versus asymmetric rifting of a crustal setup
+# The model has a viscoelastoplastic rheology and the geometry is created with the build-in 
+# geometry objects. We use a multigrid solver
+#
+# With the parameters provided, you can go from a symmetric mode of rifting to an 
+# asymmetric one by decreasing the viscosity of the lower layer from 1e22 to 1e21
+#
+# This setup is inspired by Huismans et al. (2005), JGR Vol 110, B02406 even though they
+# employed a viscoplastic rheology, rather than a viscoelastoplastic rheology
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units            = geo		# geological units 
+	
+	unit_temperature = 1000
+	unit_length      = 1e3
+	unit_viscosity   = 1e19
+	unit_stress      = 1e8
+	
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 100     # simulation end time
+	dt        = 0.001   # initial time step
+	dt_min    = 1e-5    # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1   	# maximum time step
+	nstep_max = 200     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 5       # save output every n steps
+	nstep_rdb = 100     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+	nel_x = 256
+	nel_y = 2                       # number of elements in y-direction (multigrid requires at least 2)
+	nel_z = 128
+
+# Coordinates of all segments (including start and end points)
+	coord_x = -300  300             # x-coordinate  [left, right]
+	coord_y = -2.5  2.5
+	coord_z = -120  30
+
+#===============================================================================
+# Free surface 
+#===============================================================================
+	surf_use           = 1          # free surface activation flag
+	surf_corr_phase    = 1          # air phase ratio correction flag (due to surface position)
+	surf_level         = 0          # initial level
+	surf_air_phase     = 0          # phase ID of sticky air layer
+	
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+	exx_num_periods  = 1
+    exx_strain_rates = 1e-15        # Applied backgound strain rate (positive=extension)
+	open_top_bound 	 = 1            # Stress free boundary on top of the 'sticky-air'		
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+	gravity        = 0.0 0.0 -9.81  # gravity vector
+	init_guess     = 1              # initial guess flag
+	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
+	
+	eta_min        = 1e19           # viscosity upper bound
+	eta_max        = 1e24           # viscosity lower limit
+	eta_ref        = 1e22           # reference viscosity (initial guess)
+	min_cohes      = 1e6            # cohesion lower bound
+	min_fric       = 1.0            # friction angle lower bound
+	tau_ult        = 1e9            # ultimate yield stress [Pa]
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		    =	multigrid 	# solver [direct or multigrid]
+    #DirectSolver 		=	mumps		# mumps/superlu_dist/pastix/umfpack  (requires these external PETSc packages to be installed!)	
+	#DirectPenalty 		=	1e3			# penalty parameter [employed if we use a direct solver]
+	
+	MGLevels 			=	2			# number of MG levels [default=3]
+	MGCoarseSolver 		=   mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
+	
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+	msetup         = geom              # setup type (geom=internal geometry)
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	advect         = rk2               # advection scheme
+	interp         = minmod            # velocity interpolation scheme
+	mark_ctrl      = basic             # marker control type
+	
+
+# Geometric primitives:
+	
+	# sticky air
+	<LayerStart>
+		phase       = 0
+		top         = 30.0
+		bottom      = 0.0
+    	Temperature = constant 
+		cstTemp     = 0                 # T of layer     
+	<LayerEnd>
+
+    # full lithosphere (mainly to set the temperature structure)
+	<LayerStart>
+		phase       = 1
+		top         =  0
+		bottom      = -120.0
+    	Temperature = linear 
+        topTemp     = 0        
+		botTemp     = 1300      
+	<LayerEnd>
+
+	# Create layers in upper lithosphere (to better visualize localization)
+    <LayerStart>
+		phase       = 2
+		top         = -50
+		bottom      = -55
+    <LayerEnd>
+    <LayerStart>
+		phase       = 2
+		top         = -40
+		bottom      = -45
+    <LayerEnd>
+    <LayerStart>
+		phase       = 2
+		top         = -30
+		bottom      = -35
+    <LayerEnd>
+    <LayerStart>
+		phase       = 2
+		top         = -20
+		bottom      = -25
+    <LayerEnd>
+    <LayerStart>
+		phase       = 2
+		top         = -10
+		bottom      = -15
+    <LayerEnd>
+   <LayerStart>
+		phase       = 2
+		top         = -0
+		bottom      = -5
+    <LayerEnd>
+	
+	# Lower lithosphere
+	 <LayerStart>
+		phase       = 3
+		top         = -60
+		bottom      = -120
+    <LayerEnd>
+	
+	# Add Weak Seed
+	<BoxStart>
+		phase  = 3
+		bounds = -5 5 -25 25 -60 -55  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+	
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = Rifting2D # output file name
+	out_pvd             = 1       	# activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+	out_eff_press       = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_yield           = 1
+	out_plast_strain    = 1
+	out_plast_dissip    = 1
+	out_tot_displ       = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	
+# AVD phase viewer output options (requires activation)
+
+	out_avd     		= 1 # activate AVD phase output
+	out_avd_pvd 		= 1 # activate writing .pvd file
+	out_avd_ref 		= 3 # AVD grid refinement factor
+	
+# Free surface output options (can be activated only if surface tracking is enabled)
+
+	out_surf            = 1 # activate surface output
+	out_surf_pvd        = 1 # activate writing .pvd file
+	out_surf_velocity   = 1
+	out_surf_topography = 1
+	out_surf_amplitude  = 1
+
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+	# Strain softening parameters
+	<SofteningStart>
+		ID   = 0
+		A    = 0.87		# reduction ratio = 1-FinalParameter/InitialParameter
+		APS1 = 0.5
+		APS2 = 1.5
+      #  Lm   = 0.5 	# material length scale (in selected units, e.g. km in geo)
+	<SofteningEnd>
+	
+	# Sticky Air
+	<MaterialStart>
+		ID          =   0 	# phase id
+		rho         =   0 	# density
+		G           =   5e10
+		eta         =   1e18 	# viscosity
+	#	eta_st      =   1e21
+		
+		ch  =  20e6	  # Cohesion
+		fr  =  15	  # initial friction angle
+	<MaterialEnd>
+
+	# Upper Lithosphere 1
+	<MaterialStart>
+		ID  		= 	1       # phase id
+		rho 		= 	3300    # density
+		eta 		= 	1e24    # viscosity
+	        eta_st          =       1e20
+		G   		= 	5e10
+		ch  		=  	20e6	# Cohesion
+		fr  		=  	15	    # initial friction angle
+		frSoftID   	=  	0       # softening ID
+	<MaterialEnd>
+
+	# Upper Lithosphere 2
+	<MaterialStart>
+		ID  		= 	2       # phase id
+		rho 		= 	3300    # density
+		eta 		= 	1e24    # viscosity
+	        eta_st          =       1e20
+		G   		= 	5e10
+		ch  		=  	20e6	  # Cohesion
+		fr  		=  	15	  # initial friction angle
+		frSoftID   	=  	0     # softening ID
+	<MaterialEnd>
+	
+	# Lower Lithosphere
+	<MaterialStart>
+		ID  		= 	3       # phase id
+		rho 		= 	3300    # density
+		eta 		= 	1e21    # viscosity		1e22: symmetric, 1e21: asymmetric
+		G   		= 	5e10
+	        #eta_st         =       1e21
+	        ch  		=  	20e6    # Cohesion
+		fr  		=  	15	  # initial friction angle
+	<MaterialEnd>
+	
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_ksp_ew
+	-snes_ksp_ew_rtolmax 1e-4
+	-snes_rtol 5e-2					
+	-snes_atol 1e-4					# following Le Pourhiet et al. (EPSL, 2017)
+	-snes_max_it 200					
+	
+	-snes_PicardSwitchToNewton_rtol 1e-2   # relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
+	
+	-js_ksp_type fgmres
+	-js_ksp_monitor 				# display how the inner iterations converge
+	-js_ksp_max_it 20				# inner
+	-js_ksp_atol 1e-8
+	-js_ksp_rtol 1e-4
+
+	-snes_linesearch_type l2
+	#-snes_linesearch_monitor
+	-snes_linesearch_maxstep 10
+
+<PetscOptionsEnd>
+
+#===============================================================================

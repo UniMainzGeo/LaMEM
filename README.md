@@ -33,7 +33,7 @@ and were developed by:
 * Dave A. May     (ETH Zurich, Switzerland). 2009-2011
 
 Development work was supported by the European Research Council, 
-with ERC Starting Grant 258830, ERC Proof of Concept Grant 713397 and ERC Consolidator Grant 771143 awarded to Boris Kaus. 
+with ERC Starting Grant 258830, ERC Proof of Concept Grant 713397 and ERC Consolidator Grant 771143, as well as by BMBF projects SECURE and PERMEA awarded to Boris Kaus. 
 
 LaMEM is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published
