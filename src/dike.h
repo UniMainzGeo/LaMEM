@@ -47,7 +47,7 @@
 //---------------------------------------------------------------------------   
 
 struct FB; 
-struct JacRes;
+struct JacRes;   // necessary????? try to remove
 struct ConstEqCtx;
 struct DBMat;
 
@@ -57,11 +57,14 @@ struct DBMat;
 struct Dike
 {
 public:
-  PetscInt    ID;   // dike ID
-  PetscScalar Mf;   // amount of magma-accomodated extension in front of box 
-  PetscScalar Mb;   // amount of magma-accommodated extension in back of box
-  PetscInt PhaseID;         // associated material phase ID
-  PetscScalar dikeRHS;
+  PetscInt    ID;        // dike ID
+  PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
+  PetscScalar Mb;        // amount of magma-accommodated extension in back of box
+  PetscInt PhaseID;      // associated material phase ID
+  PetscScalar dikeRHS;   // output, added divergence to RHS of continuity equation, should it be private?
+  PetsScalar t0_dike;    // starting time for moving the dike
+  PetscScalar t1_dike;   // end time for moving the dike
+  PetsScalar v_dike;     // velocity with which the dike moves
 };
 
       
@@ -72,13 +75,17 @@ struct DBPropDike
   Dike     matDike[_max_num_dike_];   // dike properties per dike ID
 };
 
-// read dike properties
+// create the dike strutures for read-in 
 PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
-// read-indike parameters
+// read in dike parameters
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
+// compute the added RHS of the dike for the continuity equation
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
+
+// compute the new locations of the dikes in case they move with a specified velocity
+PetscErrorCode MovingDike(ConstEqCtx *ctx);
 
 //---------------------------------------------------------------------------
 #endif

@@ -54,6 +54,7 @@
 #include "dike.h"
 #include "constEq.h"
 #include "bc.h"
+#include "tssolve.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
@@ -239,6 +240,7 @@ PetscErrorCode MovingDike(ConstEqCtx *ctx)  // output need to be the new PhaseTr
 
   Dike        *matDike;
   Ph_trans_t  *PhaseTrans;
+  TSSol       *ts;
   PetscInt     i, numDike;
   PetscScalar  left, right, left_new, right_new;
 
@@ -251,8 +253,10 @@ PetscErrorCode MovingDike(ConstEqCtx *ctx)  // output need to be the new PhaseTr
   bc         = ctx->bc;
   PhaseTrans = ctx->PhaseTrans;
 
-  t_current  = ;
-  t_previous = ;
+  // use either dt ot dt_next, depending on which exists... more sense makes dt_next to me.
+  dt         = ts->dt;       // time step (but from last to current or from current to next? and which one do I need? the latter one I believe)
+  dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
+  t_current  = ts->time;     // current time stamp, computed at the end of last time step round
   
   // check if the current time step is equal to the starting time of when the dike is supposed to move 
   if(t0_dike >= t_current && t1_dike =< t_current)
@@ -269,8 +273,8 @@ PetscErrorCode MovingDike(ConstEqCtx *ctx)  // output need to be the new PhaseTr
 	      left = PhaseTrans->bounds[0];
 	      right = PhaseTrans->bounds[1];
 	      
-	      left_new = left   + v_dike * (t_current - t_previous);
-	      right_new = right + v_dike * (t_current - t_previous);
+	      left_new = left   + v_dike * (dt_next);  // dt or dt_next? Does dt_next already exist at the time this function is called?
+	      right_new = right + v_dike * (dt_next);  // dt or dt_next? Does dt_next already exist at the time this function is called?    
 
 	      PhaseTrans->bounds[0] = left_new;
 	      PhaseTrans->bounds[1]  = right_new;
