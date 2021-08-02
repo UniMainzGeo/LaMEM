@@ -47,9 +47,10 @@
 //---------------------------------------------------------------------------   
 
 struct FB; 
-struct JacRes;   // necessary????? try to remove
+//struct JacRes;   // necessary????? try to remove
 struct ConstEqCtx;
 struct DBMat;
+struct TSSol;
 
 //---------------------------------------------------------------------------                                                                                                      
 //.......................   Dike Parameters  .......................                                                                                                      
@@ -85,7 +86,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
 
 // compute the new locations of the dikes in case they move with a specified velocity
-PetscErrorCode MovingDike(ConstEqCtx *ctx);
+PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts);
 
 //---------------------------------------------------------------------------
 #endif

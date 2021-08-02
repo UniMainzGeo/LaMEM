@@ -235,12 +235,11 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 //------------------------------------------------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MovingDike"
-PetscErrorCode MovingDike(ConstEqCtx *ctx)  // output need to be the new PhaseTrans->bounds[0 and 1]   // need to get t_current and t_previous
+PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts)  // output need to be the new PhaseTrans->bounds[0 and 1]   // need to get t_current and t_previous
 {
 
   Dike        *matDike;
   Ph_trans_t  *PhaseTrans;
-  TSSol       *ts;
   PetscInt     i, numDike;
   PetscScalar  left, right, left_new, right_new;
   PetscScalar  t0_dike, t1_dike, v_dike;
