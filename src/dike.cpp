@@ -139,13 +139,17 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         dike->ID = ID;
 
 	// read and store dike  parameters. 
-        ierr = getScalarParam(fb, _REQUIRED_, "Mf", &dike->Mf,    1, 1.0); CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "Mb", &dike->Mb, 1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
-
+        ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
+        ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
+	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
+	ierr = getScalarParam(fb, _OPTIONAL_, "t0_dike", &dike->t0_dike, 1, 1.0);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "t1_dike", &dike->t1_dike, 1, 1.0);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "v_dike",  &dike->v_dike,  1, 1.0);              CHKERRQ(ierr);
+	
         if (PrintOutput)
 	  {
 	    PetscPrintf(PETSC_COMM_WORLD,"   Dike parameters ID[%lld] : Mf = %g, Mb = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb);
+	    PetscPrintf(PETSC_COMM_WORLD,"   Optional Dike parameters ID[%lld] : t0 = %g, t1 = %g, v = %g\n", (LLD)(dike->ID), dike->t0_dike, dike->t1_dike, dike->v_dike);
 	    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
         }
 
@@ -226,3 +230,58 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
     PetscFunctionReturn(0);
 
 }
+
+//------------------------------------------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MovingDike"
+PetscErrorCode MovingDike(ConstEqCtx *ctx)  // output need to be the new PhaseTrans->bounds[0 and 1]   // need to get t_current and t_previous
+{
+
+  Dike        *matDike;
+  Ph_trans_t  *PhaseTrans;
+  PetscInt     i, numDike;
+  PetscScalar  left, right, left_new, right_new;
+
+  numDike    = ctx->numDike;
+  matDike    = ctx->matDike;
+  t0_dike    = matDike->t0_dike;
+  t1_dike    = matDike->t1_dike;
+  v_dike     = matDike->v_dike;
+  
+  bc         = ctx->bc;
+  PhaseTrans = ctx->PhaseTrans;
+
+  t_current  = ;
+  t_previous = ;
+  
+  // check if the current time step is equal to the starting time of when the dike is supposed to move 
+  if(t0_dike >= t_current && t1_dike =< t_current)
+    {
+      
+      // as long as the end time for moving the time is smaller than the current time move the dike
+      //      while(t1_dike =< t_current)
+      //	{
+	  
+	  // loop through all dikes
+	  for(i = 0; i < numDike; i++)
+	    {
+	      
+	      left = PhaseTrans->bounds[0];
+	      right = PhaseTrans->bounds[1];
+	      
+	      left_new = left   + v_dike * (t_current - t_previous);
+	      right_new = right + v_dike * (t_current - t_previous);
+
+	      PhaseTrans->bounds[0] = left_new;
+	      PhaseTrans->bounds[1]  = right_new;
+	    }
+	  
+	  //	}
+      
+    }
+  
+  PetscFunctionReturn(0);
+}
+
+
+// --------------------------------------------------------------------------------------------------------------- 
