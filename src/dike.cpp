@@ -243,23 +243,24 @@ PetscErrorCode MovingDike(ConstEqCtx *ctx)  // output need to be the new PhaseTr
   TSSol       *ts;
   PetscInt     i, numDike;
   PetscScalar  left, right, left_new, right_new;
-
+  PetscScalar  t0_dike, t1_dike, v_dike;
+  PetscScalar  dt_next, t_current;  // dt
+  
   numDike    = ctx->numDike;
   matDike    = ctx->matDike;
   t0_dike    = matDike->t0_dike;
   t1_dike    = matDike->t1_dike;
   v_dike     = matDike->v_dike;
   
-  bc         = ctx->bc;
   PhaseTrans = ctx->PhaseTrans;
 
   // use either dt ot dt_next, depending on which exists... more sense makes dt_next to me.
-  dt         = ts->dt;       // time step (but from last to current or from current to next? and which one do I need? the latter one I believe)
+  //  dt         = ts->dt;       // time step (but from last to current or from current to next? and which one do I need? the latter one I believe)
   dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
   t_current  = ts->time;     // current time stamp, computed at the end of last time step round
   
   // check if the current time step is equal to the starting time of when the dike is supposed to move 
-  if(t0_dike >= t_current && t1_dike =< t_current)
+  if(t0_dike >= t_current && t1_dike <= t_current)
     {
       
       // as long as the end time for moving the time is smaller than the current time move the dike

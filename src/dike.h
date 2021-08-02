@@ -62,9 +62,9 @@ public:
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
   PetscInt PhaseID;      // associated material phase ID
   PetscScalar dikeRHS;   // output, added divergence to RHS of continuity equation, should it be private?
-  PetsScalar t0_dike;    // starting time for moving the dike
+  PetscScalar t0_dike;    // starting time for moving the dike
   PetscScalar t1_dike;   // end time for moving the dike
-  PetsScalar v_dike;     // velocity with which the dike moves
+  PetscScalar v_dike;     // velocity with which the dike moves
 };
 
       
