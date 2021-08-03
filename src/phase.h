@@ -238,6 +238,8 @@ public:
 	PetscInt     pMant     ;        // Mantle or crustal phase
 	PetscScalar  rho_melt;			// rho melt
 	PetscInt     Phase_Diagram_melt;// flag that allows only to consider the melt quantity from a phase diagram
+	// Viscous stiffening
+	PetscScalar   vs_stiff;         // It is a constant factor that is multiplied to the viscous rheology to simulate stiffening
 };
 
 //---------------------------------------------------------------------------

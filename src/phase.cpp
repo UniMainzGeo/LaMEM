@@ -491,6 +491,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getIntParam   (fb, _OPTIONAL_, "pMant", &m->pMant, 1, 1); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
 
+	//=====================================================================================
+	// Viscous multiplier
+	//=====================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "visc_stiff", &m->vs_stiff,1, 1.0);  CHKERRQ(ierr);
+
 	// DEPTH-DEPENDENT
 
 	// check depth-dependent density parameters

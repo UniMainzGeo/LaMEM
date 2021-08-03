@@ -149,7 +149,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	Melt_Ex_t   *Mexpar;
 	PData       *Pd;
 	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn,mfeff;
-	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total,dM;
+	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total,dM,vis_fact;
 	PetscInt     ID_ME;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -174,6 +174,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	mfeff  = 0.0;
 	dM = 0.0;
 	mf = 0.0;
+	vis_fact = mat->vs_stiff;
 
 	if(mat->pdAct == 1)
 	{
@@ -255,7 +256,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(mat->Bd)
 	{
 		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
-		ctx->A_dif = mat->Bd*exp(-Q)*mfd;
+		ctx->A_dif = vis_fact*mat->Bd*exp(-Q)*mfd;
 	}
 
 	// PS-CREEP
@@ -276,7 +277,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	{
 		Q          = (mat->En + p_visc*mat->Vn)/RT;
 		ctx->N_dis =  mat->n;
-		ctx->A_dis =  mat->Bn*exp(-Q)*mfn;
+		ctx->A_dis =  vis_fact*mat->Bn*exp(-Q)*mfn;
 	}
 
 	// DC-CREEP
