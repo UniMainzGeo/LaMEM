@@ -55,6 +55,7 @@
 #include "constEq.h"
 #include "bc.h"
 #include "tssolve.h"
+#include "scaling.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
@@ -119,10 +120,14 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         // read dike parameter from file 
         Dike     *dike;
         PetscInt  ID;
+	Scaling  *scal;
 	
         PetscErrorCode ierr;
         PetscFunctionBegin;
 
+	// access context
+	scal    =  dbdike->scal;
+	
         // Dike ID                                                                                                                                                         
         ierr    = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbdike->numDike-1); CHKERRQ(ierr);
         fb->ID  = ID;
@@ -143,9 +148,14 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
-	ierr = getScalarParam(fb, _OPTIONAL_, "t0_dike", &dike->t0_dike, 1, 1.0);              CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "t1_dike", &dike->t1_dike, 1, 1.0);              CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "v_dike",  &dike->v_dike,  1, 1.0);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "t0_dike", &dike->t0_dike, 1, 1.0);       CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "t1_dike", &dike->t1_dike, 1, 1.0);       CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "v_dike",  &dike->v_dike,  1, 1.0);   CHKERRQ(ierr);
+
+	// scale parameters (here or inside the function?
+       	dike->t0_dike /= scal->time;
+	dike->t1_dike /= scal->time;
+	dike->v_dike  /= scal->velocity; 
 	
         if (PrintOutput)
 	  {
@@ -235,7 +245,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 //------------------------------------------------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MovingDike"
-PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts, PetscScalar left_new, PetscScalar right_new)
+PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts, PetscScalar &left_new, PetscScalar &right_new)
 {
 
   Dike        *matDike;
@@ -253,18 +263,17 @@ PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts, PetscScalar left_new, Pets
   t1_dike    = matDike->t1_dike;
   v_dike     = matDike->v_dike;
 
-
   PetscPrintf(PETSC_COMM_WORLD," v_dike = g%\n", v_dike);
   PetscPrintf(PETSC_COMM_WORLD," t0_dike = g%\n", t0_dike);
   PetscPrintf(PETSC_COMM_WORLD," t1_dike = g%\n", t1_dike);
-  PetscPrintf(PETSC_COMM_WORLD," dt = g%\n", dt);
-  PetscPrintf(PETSC_COMM_WORLD," t_current = g%\n", t_current);
   
   PhaseTrans = ctx->PhaseTrans;
-
   dt         = ts->dt;       // time step (but from last to current or from current to next? and which one do I need? the latter one I believe)
   // dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
   t_current  = ts->time;     // current time stamp, computed at the end of last time step round
+
+    PetscPrintf(PETSC_COMM_WORLD," dt = g%\n", dt);
+  PetscPrintf(PETSC_COMM_WORLD," t_current = g%\n", t_current);
   
   // check if the current time step is equal to the starting time of when the dike is supposed to move 
   if(t0_dike >= t_current && t1_dike <= t_current)

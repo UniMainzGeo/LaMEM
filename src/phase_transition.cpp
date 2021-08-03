@@ -886,7 +886,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
 	AirPhase = 0.0;
 
 	ts = jr->ts;
-	ctx = jr->ctx; 
+	ctx = jr->ctx;   // added ctx to jr context
 	AirPhase  = jr->surf->AirPhase;
 	ph = P->phase;
 	T  = P->T;
