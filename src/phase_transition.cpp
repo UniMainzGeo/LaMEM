@@ -688,7 +688,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, 
 		    SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr)
 {
-	PetscInt 	ph, InAbove;
+	PetscInt    ph, InAbove;
 	PetscScalar T;
 
 	ph = P->phase;
@@ -874,8 +874,8 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 //------------------------------------------------------------------------------------------------------------//                                                          
 PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
 {
-  ConstEqCtx *ctx;
-  TSSol *ts;
+  DBPropDike  *dbdike;
+  TSSol  *ts;
   PetscInt     ph, AirPhase;                
 	PetscScalar  T;
 	PetscScalar  left_new, right_new;
@@ -886,17 +886,16 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
 	AirPhase = 0.0;
 
 	ts = jr->ts;
-	ctx = jr->ctx;   // added ctx to jr context
+        dbdike = jr->dbdike;
 	AirPhase  = jr->surf->AirPhase;
 	ph = P->phase;
 	T  = P->T;
 
-
 	// call here the new moving dike function for having the current new dike boundaries ready in case needed
 	left_new  = 0.0;
 	right_new = 0.0;
-	
-       	ierr = MovingDike(ctx, ts, left_new, right_new); CHKERRQ(ierr);
+
+       	ierr = MovingDike(dbdike, PhaseTrans, ts, left_new, right_new); CHKERRQ(ierr);
 
 	PhaseTrans->bounds[0] = left_new;
 	PhaseTrans->bounds[1] = right_new;

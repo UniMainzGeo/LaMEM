@@ -56,7 +56,7 @@ struct DBPropDike;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
-struct ConstEqCtx;
+//struct ConstEqCtx;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -211,7 +211,7 @@ struct JacRes
 	BCCtx    *bc;    // boundary condition context
   DBPropDike *dbdike; // dike database
 	DBMat    *dbm;   // material database
-  ConstEqCtx *ctx;
+  //  ConstEqCtx *ctx;
   
 	// parameters and controls
 	Controls ctrl;
