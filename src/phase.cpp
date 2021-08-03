@@ -697,6 +697,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->Bd, "Bd",  "[1/Pa/s]",  scal, title, &print_title);
 		MatPrintScalParam(m->Ed, "Ed",  "[J/mol]",   scal, title, &print_title);
 		MatPrintScalParam(m->Vd, "Vd",  "[m^3/mol]", scal, title, &print_title);
+		MatPrintScalParam(m->vs_stiff,     "visc_strenght",    "[n.d.]",scal, title, &print_title);
+
 
 		sprintf(title, "   (disl)   : "); print_title = 1;
 		MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal, title, &print_title);
@@ -705,6 +707,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->En, "En",   "[J/mol]",    scal, title, &print_title);
 		MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal, title, &print_title);
 		MatPrintScalParam(m->n,  "n",    "[ ]",        scal, title, &print_title);
+		MatPrintScalParam(m->vs_stiff,     "visc_strenght",    "[n.d.]",scal, title, &print_title);
+
 
 		sprintf(title, "   (peirl)  : "); print_title = 1;
 		MatPrintScalParam(m->Bp,    "Bp",    "[1/s]",     scal, title, &print_title);
@@ -724,6 +728,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->Bps,   "Bps",  "[K*m^3/Pa/s]", scal, title, &print_title);
 		MatPrintScalParam(m->Eps,   "Eps",  "[J/mol]",      scal, title, &print_title);
 		MatPrintScalParam(m->d,     "d",    "[m]",          scal, title, &print_title);
+
 
 		sprintf(title, "   (plast)  : "); print_title = 1;
 		MatPrintScalParam(m->ch,     "ch",     "[Pa]",   scal, title, &print_title);
