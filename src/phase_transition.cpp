@@ -94,6 +94,7 @@
 #include "objFunct.h"
 #include "surf.h"
 #include "tssolve.h"
+#include "dike.h"
 //-----------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhaseTr"
@@ -567,7 +568,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	SolVarCell  	*svCell;
 	Scaling      	*scal;
 
-
 		
     // Retrieve parameters
 	jr          =   actx->jr;
@@ -686,7 +686,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 //----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, 
-					SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr)
+		    SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr)
 {
 	PetscInt 	ph, InAbove;
 	PetscScalar T;
@@ -697,7 +697,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
     {
-        Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box but ignore airphase particles
+      Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box but ignore airphase particles
     }
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
@@ -874,14 +874,32 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 //------------------------------------------------------------------------------------------------------------//                                                          
 PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
 {
-	PetscInt     ph, AirPhase;                
+  ConstEqCtx *ctx;
+  TSSol *ts;
+  PetscInt     ph, AirPhase;                
 	PetscScalar  T;
-
+	PetscScalar  left_new, right_new;
+	  
+        PetscErrorCode ierr;
+        PetscFunctionBegin;
+	
 	AirPhase = 0.0;
 
+	ts = jr->ts;
+	ctx = jr->ctx; 
 	AirPhase  = jr->surf->AirPhase;
 	ph = P->phase;
 	T  = P->T;
+
+
+	// call here the new moving dike function for having the current new dike boundaries ready in case needed
+	left_new  = 0.0;
+	right_new = 0.0;
+	
+       	ierr = MovingDike(ctx, ts, left_new, right_new); CHKERRQ(ierr);
+
+	PhaseTrans->bounds[0] = left_new;
+	PhaseTrans->bounds[1] = right_new;
 	
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
 		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &

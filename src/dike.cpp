@@ -50,7 +50,7 @@
 #include "LaMEM.h"
 #include "phase.h"
 #include "parsing.h"
-#include "JacRes.h"
+//#include "JacRes.h"
 #include "dike.h"
 #include "constEq.h"
 #include "bc.h"
@@ -235,27 +235,35 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 //------------------------------------------------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MovingDike"
-PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts)  // output need to be the new PhaseTrans->bounds[0 and 1]   // need to get t_current and t_previous
+PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts, PetscScalar left_new, PetscScalar right_new)
 {
 
   Dike        *matDike;
   Ph_trans_t  *PhaseTrans;
   PetscInt     i, numDike;
-  PetscScalar  left, right, left_new, right_new;
+  PetscScalar  left, right; // left_new, right_new;
   PetscScalar  t0_dike, t1_dike, v_dike;
-  PetscScalar  dt_next, t_current;  // dt
+  PetscScalar  t_current, dt;  // dt is time step from last to current time I believe
+
+  PetscFunctionBegin;
   
   numDike    = ctx->numDike;
   matDike    = ctx->matDike;
   t0_dike    = matDike->t0_dike;
   t1_dike    = matDike->t1_dike;
   v_dike     = matDike->v_dike;
+
+
+  PetscPrintf(PETSC_COMM_WORLD," v_dike = g%\n", v_dike);
+  PetscPrintf(PETSC_COMM_WORLD," t0_dike = g%\n", t0_dike);
+  PetscPrintf(PETSC_COMM_WORLD," t1_dike = g%\n", t1_dike);
+  PetscPrintf(PETSC_COMM_WORLD," dt = g%\n", dt);
+  PetscPrintf(PETSC_COMM_WORLD," t_current = g%\n", t_current);
   
   PhaseTrans = ctx->PhaseTrans;
 
-  // use either dt ot dt_next, depending on which exists... more sense makes dt_next to me.
-  //  dt         = ts->dt;       // time step (but from last to current or from current to next? and which one do I need? the latter one I believe)
-  dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
+  dt         = ts->dt;       // time step (but from last to current or from current to next? and which one do I need? the latter one I believe)
+  // dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
   t_current  = ts->time;     // current time stamp, computed at the end of last time step round
   
   // check if the current time step is equal to the starting time of when the dike is supposed to move 
@@ -273,11 +281,11 @@ PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts)  // output need to be the 
 	      left = PhaseTrans->bounds[0];
 	      right = PhaseTrans->bounds[1];
 	      
-	      left_new = left   + v_dike * (dt_next);  // dt or dt_next? Does dt_next already exist at the time this function is called?
-	      right_new = right + v_dike * (dt_next);  // dt or dt_next? Does dt_next already exist at the time this function is called?    
+	      left_new = left   + v_dike * (dt);  // dt or dt_next? Does dt_next already exist at the time this function is called?
+	      right_new = right + v_dike * (dt);  // dt or dt_next? if called before phase transition I think dt is correct
 
-	      PhaseTrans->bounds[0] = left_new;
-	      PhaseTrans->bounds[1]  = right_new;
+	      //	      PhaseTrans->bounds[0] = left_new;   // not encessary to convert here, passed over to phase transition routine
+	      //	      PhaseTrans->bounds[1]  = right_new; // not necessary here, passed out to phase transition routine
 	    }
 	  
 	  //	}

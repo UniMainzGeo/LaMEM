@@ -86,7 +86,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
 
 // compute the new locations of the dikes in case they move with a specified velocity
-PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts);
+PetscErrorCode MovingDike(ConstEqCtx *ctx, TSSol *ts, PetscScalar left_new, PetscScalar right_new);
 
 //---------------------------------------------------------------------------
 #endif
