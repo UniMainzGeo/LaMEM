@@ -148,6 +148,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
+	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "t0_dike", &dike->t0_dike, 1, 1.0);       CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "t1_dike", &dike->t1_dike, 1, 1.0);       CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "v_dike",  &dike->v_dike,  1, 1.0);   CHKERRQ(ierr);
@@ -249,62 +250,44 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 #define __FUNCT__ "MovingDike"
 PetscErrorCode MovingDike(DBPropDike *dbdike,
 			  Ph_trans_t *PhaseTrans,
-			  TSSol *ts,
-			  PetscScalar &left_new,
-			  PetscScalar &right_new)
+			  TSSol *ts)
 {
 
-  PetscInt     i, numDike;
-  PetscScalar  left, right;
+  //  PetscInt     i, numDike;
   PetscScalar  t0_dike, t1_dike, v_dike;
   PetscScalar  t_current, dt;                 // dt is time step from last to current time I believe
 
-  Scaling *scal;  //only for testing
-  scal = ts->scal;  
+  Scaling *scal;  //only for testing here
+  scal = ts->scal;  // only for testing here
   
-  //  PetscFunctionBegin;
+  //  PetscFunctionBegin;  NECESSARY?
 
-    numDike    = dbdike->numDike;
-    t0_dike    = dbdike->matDike->t0_dike;
-    t1_dike    = dbdike->matDike->t1_dike;
-    v_dike     = dbdike->matDike->v_dike; // instead of ctx->matDike->v_dike
-
-    PetscPrintf(PETSC_COMM_WORLD," v_dike  = %g\n", v_dike*scal->velocity);
-    PetscPrintf(PETSC_COMM_WORLD," t0_dike = %g\n", t0_dike * scal->time);
-    PetscPrintf(PETSC_COMM_WORLD," t1_dike = %g\n", t1_dike * scal->time);
+  //  numDike    = dbdike->numDike;
+  t0_dike    = dbdike->matDike->t0_dike;
+  t1_dike    = dbdike->matDike->t1_dike;
+  v_dike     = dbdike->matDike->v_dike;
   
-  dt         = ts->dt;       // time step (but from last to current or from current to next? and which one do I need? the latter one I believe)
+  PetscPrintf(PETSC_COMM_WORLD," t1_dike = %g\n", t1_dike * scal->time);
+  
+  dt         = ts->dt;       // time step (but from last to current or from current to next? 
   // dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
   t_current  = ts->time;     // current time stamp, computed at the end of last time step round
-
-    PetscPrintf(PETSC_COMM_WORLD," dt = %g \n", dt*scal->time);
+  
+  PetscPrintf(PETSC_COMM_WORLD," dt = %g \n", dt*scal->time);
   PetscPrintf(PETSC_COMM_WORLD," t_current = %g \n", t_current*scal->time);
   
   // check if the current time step is equal to the starting time of when the dike is supposed to move 
   if(t0_dike >= t_current && t1_dike <= t_current)
     {
       
-      // as long as the end time for moving the time is smaller than the current time move the dike
-      //      while(t1_dike =< t_current)
-      //	{
+      // loop through all dikes --> it is checked inside the phase transition function whether we have a dike or not
+      //      for(i = 0; i < numDike; i++)
+      //{
 	  
-	  // loop through all dikes
-	  for(i = 0; i < numDike; i++)
-	    {
-	      
-	      left = PhaseTrans->bounds[0];
-	      right = PhaseTrans->bounds[1];
-	      
-	       PetscPrintf(PETSC_COMM_WORLD," left = %g \n", left);
-	       
-	      left_new = left   + v_dike * dt;  // dt or dt_next? Does dt_next already exist at the time this function is called?
-	      right_new = right + v_dike * dt;  // dt or dt_next? if called before phase transition I think dt is correct
-
-	      //	      PhaseTrans->bounds[0] = left_new;   // not encessary to convert here, passed over to phase transition routine
-	      //	      PhaseTrans->bounds[1]  = right_new; // not necessary here, passed out to phase transition routine
-	    }
+	  PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;  // dt or dt_next?
+	  PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;  // dt or dt_next? if called before phase transition I think dt is correct
 	  
-	  //	}
+	  //}
       
     }
   

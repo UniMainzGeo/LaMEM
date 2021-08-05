@@ -878,7 +878,6 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
   TSSol  *ts;
   PetscInt     ph, AirPhase;                
 	PetscScalar  T;
-	PetscScalar  left_new, right_new;
 	  
         PetscErrorCode ierr;
         PetscFunctionBegin;
@@ -891,14 +890,16 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
 	ph = P->phase;
 	T  = P->T;
 
-	// call here the new moving dike function for having the current new dike boundaries ready in case needed
-	left_new  = 0.0;
-	right_new = 0.0;
+	// call the moving dike function for having the current new dike boundaries ready, only if PhaseInside of PhaseTrans is equal to dikephase
+	if(PhaseTrans->ID == dbdike->matDike->PhaseTransID) // BUT HOW TO KNOW WHICH DIKE PHASEID? needs som loop or so earlier before this check-function is called?
+	  {
+	        // MAYBE CALL THIS FUNCTION EARLIER? WHERE THE BOUNDS ARE SET?
+	    ierr = MovingDike(dbdike, PhaseTrans, ts); CHKERRQ(ierr);
 
-       	ierr = MovingDike(dbdike, PhaseTrans, ts, left_new, right_new); CHKERRQ(ierr);
+	    PetscPrintf(PETSC_COMM_WORLD," left new %g \n", PhaseTrans->bounds[0]);
+	  }
 
-	PhaseTrans->bounds[0] = left_new;
-	PhaseTrans->bounds[1] = right_new;
+
 	
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
 		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
