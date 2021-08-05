@@ -267,14 +267,14 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
   t1_dike    = dbdike->matDike->t1_dike;
   v_dike     = dbdike->matDike->v_dike;
   
-  PetscPrintf(PETSC_COMM_WORLD," t1_dike = %g\n", t1_dike * scal->time);
+  //  PetscPrintf(PETSC_COMM_WORLD," t1_dike = %g\n", t1_dike * scal->time);
   
   dt         = ts->dt;       // time step (but from last to current or from current to next? 
   // dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
   t_current  = ts->time;     // current time stamp, computed at the end of last time step round
   
-  PetscPrintf(PETSC_COMM_WORLD," dt = %g \n", dt*scal->time);
-  PetscPrintf(PETSC_COMM_WORLD," t_current = %g \n", t_current*scal->time);
+  //  PetscPrintf(PETSC_COMM_WORLD," dt = %g \n", dt*scal->time);
+  //  PetscPrintf(PETSC_COMM_WORLD," t_current = %g \n", t_current*scal->time);
   
   // check if the current time step is equal to the starting time of when the dike is supposed to move 
   if(t0_dike >= t_current && t1_dike <= t_current)
@@ -283,11 +283,14 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
       // loop through all dikes --> it is checked inside the phase transition function whether we have a dike or not
       //      for(i = 0; i < numDike; i++)
       //{
-	  
-	  PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;  // dt or dt_next?
-	  PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;  // dt or dt_next? if called before phase transition I think dt is correct
-	  
-	  //}
+
+      PetscPrintf(PETSC_COMM_WORLD," left old = %g\n", PhaseTrans->bounds[0]);
+      
+      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;  // dt or dt_next?
+      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;  // dt or dt_next? if called before phase transition I think dt is correct
+      
+      PetscPrintf(PETSC_COMM_WORLD," left_new = %g\n", PhaseTrans->bounds[0]);
+      //}
       
     }
   

@@ -890,13 +890,16 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
 	ph = P->phase;
 	T  = P->T;
 
+	// would make more sense to first check the time and then the ID? but then I would need to change this function a lot inside instead of writing a separate function
 	// call the moving dike function for having the current new dike boundaries ready, only if PhaseInside of PhaseTrans is equal to dikephase
 	if(PhaseTrans->ID == dbdike->matDike->PhaseTransID) // BUT HOW TO KNOW WHICH DIKE PHASEID? needs som loop or so earlier before this check-function is called?
 	  {
+
+	    PetscPrintf(PETSC_COMM_WORLD," before entering routine \n");
 	        // MAYBE CALL THIS FUNCTION EARLIER? WHERE THE BOUNDS ARE SET?
 	    ierr = MovingDike(dbdike, PhaseTrans, ts); CHKERRQ(ierr);
 
-	    PetscPrintf(PETSC_COMM_WORLD," left new %g \n", PhaseTrans->bounds[0]);
+	    PetscPrintf(PETSC_COMM_WORLD," left new 2 %g\n", PhaseTrans->bounds[0]);
 	  }
 
 
