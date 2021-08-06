@@ -51,6 +51,7 @@
 #include "bc.h"
 #include "matrix.h"
 #include "surf.h"
+#include "dike.h"
 
 //---------------------------------------------------------------------------
 
@@ -91,7 +92,7 @@ PetscErrorCode JacResGetTempParam(
 	Material_t  *phases, *M;
 	Controls    ctrl;
 	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
-
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// initialize

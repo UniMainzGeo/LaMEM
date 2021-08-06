@@ -472,9 +472,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
 
 	// check energy parameters
-	if(m->Latent_hx && !m->T_liq ||!m->T_sol) 
-	||	 (m->T_liq && !m->Latent_hx ||!m->T_sol) 
-	||   (m->T_sol && !m->Latent_hx ||!m->T_liq) 
+	if((m->Latent_hx && (!m->T_liq || m->T_sol))
+	||	 (m->T_liq && (!m->Latent_hx || !m->T_sol)) 
+	||   (m->T_sol && (!m->Latent_hx ||!m->T_liq)))
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %lld (T_sol, T_liq, Latent_hx) \n", (LLD)ID);
 	}
@@ -773,7 +773,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->Cp     /= scal->cpecific_heat;
 	m->k      /= scal->conductivity;
 	m->A      /= scal->heat_production;
-	m->Latent_hx /= (scal->cpecific_heat*scale->temperature);
+	m->Latent_hx /= (scal->cpecific_heat*scal->temperature);
 
 	// phase-temperature
 	if(m->T) m->T = (m->T + scal->Tshift)/scal->temperature;

@@ -85,7 +85,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar Tc,
                                 PetscScalar *phRat,          // phase ratios in the control volume
                                 PetscScalar k,
-                                PetscScalar rho_A)
+                                PetscScalar rho_A);
 
 //---------------------------------------------------------------------------
 #endif
