@@ -781,6 +781,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	if(m->T_liq) m->T_liq = (m->T_liq + scal->Tshift)/scal->temperature;
 	if(m->T_sol) m->T_sol = (m->T_sol + scal->Tshift)/scal->temperature;
 
+    PetscPrintf(PETSC_COMM_WORLD," in Phase.cpp Tliq = %g, Tsol = %g Latent_hx = %g\n", m->T_liq, m->T_sol, m->Latent_hx);
 
 	PetscFunctionReturn(0);
 }

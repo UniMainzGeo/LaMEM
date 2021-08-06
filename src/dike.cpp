@@ -77,14 +77,12 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
         if(fb->nblocks)
         {
                 // print overview of dike blocks from file                                                                                                           
-                if (PrintOutput)
-		  {
-		    PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
-		  }
+            if (PrintOutput)
+            {
+		      PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
+            }
                 // initialize ID for consistency checks                                                                                                                 
-                for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1;
-
-
+            for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1;
 		// error checking
                 if(fb->nblocks > _max_num_dike_)
                 {
@@ -100,9 +98,8 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
                 // read each individual softening law                                                                                                                   
                 for(jj = 0; jj < fb->nblocks; jj++)
                 {
-		  ierr = DBReadDike(dbdike, dbm, fb, PrintOutput); CHKERRQ(ierr);
-
-                        fb->blockID++;
+                    ierr = DBReadDike(dbdike, dbm, fb, PrintOutput); CHKERRQ(ierr);
+                    fb->blockID++;
                 }
         }
 
@@ -162,14 +159,13 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar rho_A)
 {
         BCCtx       *bc;
-        Dike        *matDike;
+        Dike        *dike;
         Ph_trans_t  *PhaseTrans;
         Material_t  *M;
         PetscInt     i, j, numDike;
         PetscScalar  v_spread, left, right, kfac, dikeRHS, tempdikeRHS;
 
         numDike    = jr->dbdike->numDike;// number of dikes
-        matDike    = jr->dbdike->matDike;// dike properties
 
         bc         =  jr->bc;
         PhaseTrans =  jr->dbm->matPhtr;   // phase transition
@@ -180,19 +176,21 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 
         for(j = 0; j < numDike; j++)
         {
-          // access the phase ID of the dike parameters
-            i = matDike->PhaseID;
+            //access the material parameters of each dike block
+            dike=jr->dbdike->matDike+j;
+            // access the phase ID of the dike block
+            i = dike->PhaseID;
 
              // check if the phase ratio of a dike phase is greater than 0 in the current cell
             if(phRat[i] > 0)
             {
-                if(matDike->Mb == matDike->Mf)
+                if(dike->Mb == dike->Mf)
                 {
                     // constant M
                     v_spread = PetscAbs(bc->velin);
                     left = PhaseTrans->bounds[0];
                     right = PhaseTrans->bounds[1];
-                    tempdikeRHS = matDike->Mf * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
+                    tempdikeRHS = dike->Mf * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
                 }
 
             //code for along-axis variation in M goes here
@@ -201,13 +199,14 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 {
                     tempdikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
                 } 
-                // end if (matDike->Mb == matDike-Mf)
+                // end if (dike->Mb == dike-Mf)
 
                 dikeRHS += phRat[i]*tempdikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
 
                 M = &phases[i];
 
                 //adjust k and heat source according to Behn & Ito [2005]
+                PetscPrintf(PETSC_COMM_WORLD," Dike Tliq = %g, Tsol = %g Latent_hx=%g,  Tc=%g\n", M->T_liq, M->T_sol, M->Latent_hx, Tc);
 
                 if (Tc < M->T_liq && Tc > M->T_sol)
                 {
@@ -235,34 +234,35 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 {
 
         BCCtx       *bc;
-        Dike        *matDike;
+        Dike        *dike;
         Ph_trans_t  *PhaseTrans;
         PetscInt     i, j, numDike;
         PetscScalar  v_spread, M, left, right;
 
         numDike    = ctx->numDike;
-        matDike    = ctx->matDike;
-
         bc         = ctx->bc;
         PhaseTrans = ctx->PhaseTrans;
 
-          // loop through all dikes
+          // loop through all dike blocks
         for(j = 0; j < numDike; j++)
         {
-	      // access the phase ID of the dike parameters
-            i = matDike->PhaseID;
+            // access parameters of each dike block
+            dike=ctx->matDike+j;
+
+            // access the phase ID of the dike parameters of each dike
+            i = dike->PhaseID;  //correct phase ID
 
              // check if the phase ratio of a dike phase is greater than 0 in the current cell
             if(phRat[i]>0)
             {
-               if(matDike->Mb == matDike->Mf)
+               if(dike->Mb == dike->Mf)
                  {
                   // constant M
-                  M = matDike->Mf;
+                  M = dike->Mf;
                   v_spread = PetscAbs(bc->velin);
                   left = PhaseTrans->bounds[0];
                   right = PhaseTrans->bounds[1];
-                  matDike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
+                  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
                  }
 
 	  /*else                                                                                                                                                          
@@ -291,10 +291,10 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
             }*/
                 else
                 {
-                    matDike->dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
+                    dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
                 }
 
-                dikeRHS += phRat[i]*matDike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
+                dikeRHS += phRat[i]*dike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
 
             }
         }
