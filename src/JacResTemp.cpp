@@ -129,7 +129,7 @@ PetscErrorCode JacResGetTempParam(
 
 		// Temperature-dependent conductivity: phase-dependent nusselt number
 		if(ctrl.useTk)
-		  {
+		{
 		    if(! M->nu_k)
 		      {
 						// set Nusselt number = 1 if not defined 
@@ -137,19 +137,19 @@ PetscErrorCode JacResGetTempParam(
 		      }
 		    nu_k +=  cf*M->nu_k;
 		    T_Nu +=  cf*M->T_Nu;
-		  }
+		}
 		
 	}
 
 	// switch and temperature condition to use T-dep conductivity
 	if (ctrl.useTk && Tc <= T_Nu) 
-	  {
+	{
 	    k = k*nu_k;
-	  }
+	}
 	if (ctrl.actDike)
-		{
+	{
 		ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
-		}
+	}
 	// store
 	if(k_)      (*k_)      = k;
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;

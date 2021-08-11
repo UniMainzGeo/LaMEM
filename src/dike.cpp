@@ -206,7 +206,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 M = &phases[i];
 
                 //adjust k and heat source according to Behn & Ito [2005]
-                PetscPrintf(PETSC_COMM_WORLD," Dike Tliq = %g, Tsol = %g Latent_hx=%g,  Tc=%g\n", M->T_liq, M->T_sol, M->Latent_hx, Tc);
+                //PetscPrintf(PETSC_COMM_WORLD," Debugging: Dike Tliq = %g, Tsol = %g Latent_hx=%g,  Tc=%g\n", M->T_liq, M->T_sol, M->Latent_hx, Tc);
 
                 if (Tc < M->T_liq && Tc > M->T_sol)
                 {
