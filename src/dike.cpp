@@ -246,8 +246,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 	  
 	}
 
-      //      numDike++;
-      
     }
   
   
@@ -263,45 +261,62 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
 			  TSSol *ts)
 {
 
-  //  PetscInt     i, numDike;
+  Dike        *dike;
+  PetscInt     j, numDike;
   PetscScalar  t0_dike, t1_dike, v_dike;
   PetscScalar  t_current, dt;                 // dt is time step from last to current time I believe
 
   Scaling *scal;  //only for testing here
   scal = ts->scal;  // only for testing here
   
-  //  PetscFunctionBegin;  NECESSARY?
+ PetscFunctionBegin;//  NECESSARY? --> YES to call this function and pass variable
 
-  //  numDike    = dbdike->numDike;
-  t0_dike    = dbdike->matDike->t0_dike;
-  t1_dike    = dbdike->matDike->t1_dike;
-  v_dike     = dbdike->matDike->v_dike;
-  
-  //  PetscPrintf(PETSC_COMM_WORLD," t1_dike = %g\n", t1_dike * scal->time);
+  numDike    = dbdike->numDike;
+  //  t0_dike    = dbdike->matDike->t0_dike;
+  //  t1_dike    = dbdike->matDike->t1_dike;
+  //  v_dike     = dbdike->matDike->v_dike;
   
   dt         = ts->dt;       // time step (but from last to current or from current to next? 
   // dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
   t_current  = ts->time;     // current time stamp, computed at the end of last time step round
   
-  //  PetscPrintf(PETSC_COMM_WORLD," dt = %g \n", dt*scal->time);
-  //  PetscPrintf(PETSC_COMM_WORLD," t_current = %g \n", t_current*scal->time);
-  
-  // check if the current time step is equal to the starting time of when the dike is supposed to move 
-  if(t0_dike >= t_current && t1_dike <= t_current)
+  // loop through all dike blocks
+  for(j = 0; j < numDike; j++)
     {
       
-      // loop through all dikes --> it is checked inside the phase transition function whether we have a dike or not
-      //      for(i = 0; i < numDike; i++)
-      //{
+      // access the parameters of the dike depending on the dike block 
+      dike = dbdike->matDike+j;
+      
+      // access the starting and end times of certain dike block
+      t0_dike = dike->t0_dike;
+      t1_dike = dike->t1_dike;
+      v_dike  = dike->v_dike;
 
-      PetscPrintf(PETSC_COMM_WORLD," left old = %g\n", PhaseTrans->bounds[0]);
+      //      PetscPrintf(PETSC_COMM_WORLD,"t0_dike= %f \n", t0_dike*scal->time);
+      //      PetscPrintf(PETSC_COMM_WORLD,"t_current= %f \n", t_current*scal->time);
       
-      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;  // dt or dt_next?
-      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;  // dt or dt_next? if called before phase transition I think dt is correct
-      
-      PetscPrintf(PETSC_COMM_WORLD," left_new = %g\n", PhaseTrans->bounds[0]);
-      //}
-      
+      // check if the current time step is equal to the starting time of when the dike is supposed to move
+      if(t_current >= t0_dike && t_current <= t1_dike)
+	{
+	  //	  	  PetscPrintf(PETSC_COMM_WORLD,"dt = %g \n",dt*scal->time);
+	  //		   PetscPrintf(PETSC_COMM_WORLD,"dt unscaled = %g \n", dt);
+	  
+	  // condition for moving: phase transition ID needs to be the same as the Phase transitionID of the dike block
+	  if(PhaseTrans->ID == dike->PhaseTransID)    
+	    {
+
+	      //	       PetscPrintf(PETSC_COMM_WORLD,"dike vel= %g \n", dike->v_dike*scal->velocity);
+	      //                   PetscPrintf(PETSC_COMM_WORLD,"dike vel unscaled = %g \n", dike->v_dike);
+	      
+	      PetscPrintf(PETSC_COMM_WORLD," left old 2 = %g\n", PhaseTrans->bounds[0]);
+	      
+	      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;  // dt or dt_next?
+	      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;  // dt or dt_next? if called before phase transition I think dt is correct
+	      
+	      PetscPrintf(PETSC_COMM_WORLD," left_new = %g\n", PhaseTrans->bounds[0]);
+	      
+	    }
+	}
     }
   
   PetscFunctionReturn(0);

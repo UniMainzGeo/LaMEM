@@ -558,6 +558,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
     PetscErrorCode  ierr;
     DBMat           *dbm;
+    DBPropDike  *dbdike;
+    TSSol       *ts;
 	Ph_trans_t      *PhaseTrans;
 	Marker          *P;
 	JacRes          *jr;
@@ -573,9 +575,11 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	jr          =   actx->jr;
 	dbm         =   jr->dbm;
 	numPhTrn    =   dbm->numPhtr;
-	scal 		=	dbm->scal;
+	scal 	    =	dbm->scal;
 	time        =   jr->bc->ts->time;
-
+	ts          =   jr->ts;
+	dbdike      =   jr->dbdike;
+	
 	if (!numPhTrn) 	PetscFunctionReturn(0);		// only execute this function if we have phase transitions
 
     PrintStart(&t, "Phase_Transition", NULL);
@@ -585,7 +589,18 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	{
 		PhaseTrans = jr->dbm->matPhtr+nPtr;
-				
+
+
+
+		if ( PhaseTrans->Type == _NotInAirBox_ ){
+
+		  PetscPrintf(PETSC_COMM_WORLD," left_old = %g\n", PhaseTrans->bounds[0]);
+		  ierr = MovingDike(dbdike, PhaseTrans, ts); CHKERRQ(ierr);
+
+		  PetscPrintf(PETSC_COMM_WORLD," left_new2 = %g\n", PhaseTrans->bounds[0]);		  
+		  
+		}
+		
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
 		{
 			// access marker
@@ -874,39 +889,47 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 //------------------------------------------------------------------------------------------------------------//                                                          
 PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
 {
-  DBPropDike  *dbdike;
-  TSSol  *ts;
+  //  DBPropDike  *dbdike;
+  //    Dike        *dike;
+  //    PetscInt     i, j, numDike;
+  //  TSSol  *ts;
   PetscInt     ph, AirPhase;                
-	PetscScalar  T;
-	  
-        PetscErrorCode ierr;
-        PetscFunctionBegin;
-	
-	AirPhase = 0.0;
-
-	ts = jr->ts;
-        dbdike = jr->dbdike;
-	AirPhase  = jr->surf->AirPhase;
-	ph = P->phase;
-	T  = P->T;
+  PetscScalar  T;
+  
+  //  PetscErrorCode ierr;
+  PetscFunctionBegin;
+  
+  AirPhase = 0.0;
+  
+  //  ts = jr->ts;
+  //  dbdike = jr->dbdike;
+  AirPhase  = jr->surf->AirPhase;
+  ph = P->phase;
+  T  = P->T;
+  
+  
+// loop through all dike blocks                                                                                                                                              
+//  for(j = 0; j < numDike; j++)
+//    {
+      // access the parameters of the dike depending on the dike block
+	//      dike = ctx->matDike+j;
 
 	// would make more sense to first check the time and then the ID? but then I would need to change this function a lot inside instead of writing a separate function
 	// call the moving dike function for having the current new dike boundaries ready, only if PhaseInside of PhaseTrans is equal to dikephase
-	if(PhaseTrans->ID == dbdike->matDike->PhaseTransID) // BUT HOW TO KNOW WHICH DIKE PHASEID? needs som loop or so earlier before this check-function is called?
-	  {
+	//	if(PhaseTrans->ID == dike->PhaseTransID) // BUT HOW TO KNOW WHICH DIKE PHASEID? needs som loop or so earlier before this check-function is called?
+	//	  {
 
-	    PetscPrintf(PETSC_COMM_WORLD," before entering routine \n");
+	//	    PetscPrintf(PETSC_COMM_WORLD," before entering routine \n");
 	        // MAYBE CALL THIS FUNCTION EARLIER? WHERE THE BOUNDS ARE SET?
-	    ierr = MovingDike(dbdike, PhaseTrans, ts); CHKERRQ(ierr);
+  //  ierr = MovingDike(dbdike, PhaseTrans, ts); CHKERRQ(ierr);
 
-	    PetscPrintf(PETSC_COMM_WORLD," left new 2 %g\n", PhaseTrans->bounds[0]);
-	  }
-
-
+  //  PetscPrintf(PETSC_COMM_WORLD," left_new2 = %g\n", PhaseTrans->bounds[0]);
+	    	    PetscPrintf(PETSC_COMM_WORLD," left new 3 %g\n", PhaseTrans->bounds[0]);
+	    //	  }
 	
-	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
-		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
-		 (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase  )
+  if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
+       (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
+       (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase  )
     {
         
         // We are within the box
