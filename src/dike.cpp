@@ -266,14 +266,10 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
   PetscScalar  t0_dike, t1_dike, v_dike;
   PetscScalar  t_current, dt;
 
-  Scaling *scal;  //only for testing here
-  scal = ts->scal;  // only for testing here
-  
- PetscFunctionBegin;//  NECESSARY? --> YES to call this function and pass variable
+  PetscFunctionBegin;//  NECESSARY?
 
   numDike    = dbdike->numDike;
-  dt         = ts->dt;       // time step (but from last to current or from current to next? 
-  // dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
+  dt         = ts->dt;       // time step
   t_current  = ts->time;     // current time stamp, computed at the end of last time step round
   
   // loop through all dike blocks
@@ -295,8 +291,8 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
 	  // condition for moving: phase transition ID needs to be the same as the Phase transitionID of the dike block
 	  if(PhaseTrans->ID == dike->PhaseTransID)    
 	    {
-	      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;  // dt or dt_next?
-	      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;  // dt or dt_next?
+	      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;
+	      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;
 	    }
 	  
 	}
