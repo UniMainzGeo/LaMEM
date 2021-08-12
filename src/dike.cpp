@@ -149,7 +149,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
-	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
+	ierr = getIntParam(   fb, _OPTIONAL_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "t0_dike", &dike->t0_dike, 1, 1.0);       CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "t1_dike", &dike->t1_dike, 1, 1.0);       CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "v_dike",  &dike->v_dike,  1, 1.0);   CHKERRQ(ierr);
@@ -264,7 +264,7 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
   Dike        *dike;
   PetscInt     j, numDike;
   PetscScalar  t0_dike, t1_dike, v_dike;
-  PetscScalar  t_current, dt;                 // dt is time step from last to current time I believe
+  PetscScalar  t_current, dt;
 
   Scaling *scal;  //only for testing here
   scal = ts->scal;  // only for testing here
@@ -272,10 +272,6 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
  PetscFunctionBegin;//  NECESSARY? --> YES to call this function and pass variable
 
   numDike    = dbdike->numDike;
-  //  t0_dike    = dbdike->matDike->t0_dike;
-  //  t1_dike    = dbdike->matDike->t1_dike;
-  //  v_dike     = dbdike->matDike->v_dike;
-  
   dt         = ts->dt;       // time step (but from last to current or from current to next? 
   // dt_next    = ts->dt_next;  // tentative time step, should I rather use this one then?
   t_current  = ts->time;     // current time stamp, computed at the end of last time step round
@@ -292,31 +288,19 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
       t1_dike = dike->t1_dike;
       v_dike  = dike->v_dike;
 
-      //      PetscPrintf(PETSC_COMM_WORLD,"t0_dike= %f \n", t0_dike*scal->time);
-      //      PetscPrintf(PETSC_COMM_WORLD,"t_current= %f \n", t_current*scal->time);
-      
       // check if the current time step is equal to the starting time of when the dike is supposed to move
       if(t_current >= t0_dike && t_current <= t1_dike)
 	{
-	  //	  	  PetscPrintf(PETSC_COMM_WORLD,"dt = %g \n",dt*scal->time);
-	  //		   PetscPrintf(PETSC_COMM_WORLD,"dt unscaled = %g \n", dt);
-	  
+	      
 	  // condition for moving: phase transition ID needs to be the same as the Phase transitionID of the dike block
 	  if(PhaseTrans->ID == dike->PhaseTransID)    
 	    {
-
-	      //	       PetscPrintf(PETSC_COMM_WORLD,"dike vel= %g \n", dike->v_dike*scal->velocity);
-	      //                   PetscPrintf(PETSC_COMM_WORLD,"dike vel unscaled = %g \n", dike->v_dike);
-	      
-	      PetscPrintf(PETSC_COMM_WORLD," left old 2 = %g\n", PhaseTrans->bounds[0]);
-	      
 	      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;  // dt or dt_next?
-	      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;  // dt or dt_next? if called before phase transition I think dt is correct
-	      
-	      PetscPrintf(PETSC_COMM_WORLD," left_new = %g\n", PhaseTrans->bounds[0]);
-	      
+	      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;  // dt or dt_next?
 	    }
+	  
 	}
+      
     }
   
   PetscFunctionReturn(0);
