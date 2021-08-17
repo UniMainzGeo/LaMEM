@@ -159,7 +159,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar rho_A)
 {
         BCCtx       *bc;
-        Dike        *dike;
+        Dike        *dike;  //dike->dikeRHS
         Ph_trans_t  *PhaseTrans;
         Material_t  *M;
         PetscInt     i, j, numDike;
@@ -211,7 +211,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 if (Tc < M->T_liq && Tc > M->T_sol)
                 {
                     kfac  += phRat[i]/(1 + M->Latent_hx/( M->Cp*(M->T_liq-M->T_sol) ) );
-                    rho_A += phRat[i]*M->rho*M->Cp*(M->T_liq-Tc)*dikeRHS;
+                    rho_A += phRat[i]*M->rho*M->Cp*(M->T_liq-Tc)*dikeRHS;  // Cp different from the paper
                 }
                 else if (Tc <= M->T_sol)
                 {
