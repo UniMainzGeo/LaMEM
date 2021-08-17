@@ -132,8 +132,8 @@ PetscErrorCode JacResGetTempParam(
 		{
 		    if(! M->nu_k)
 		      {
-						// set Nusselt number = 1 if not defined 
-						M->nu_k = 1.0;
+			// set Nusselt number = 1 if not defined 
+			M->nu_k = 1.0;
 		      }
 		    nu_k +=  cf*M->nu_k;
 		    T_Nu +=  cf*M->T_Nu;
@@ -148,8 +148,9 @@ PetscErrorCode JacResGetTempParam(
 	}
 	if (ctrl.actDike)
 	{
-		ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
+	  ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
 	}
+	
 	// store
 	if(k_)      (*k_)      = k;
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;

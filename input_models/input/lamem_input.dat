@@ -699,7 +699,7 @@
 		frSoftID   = 0      # cohesion softening law ID
 		healID     = 0	    # healing ID, points to healTau in Softening
 		alpha      = 3e-5   # thermal expansivity
-		Cp         = 1.2e3  # specific heat (capacity)
+		Cp         = 1.2e3  # specific heat (capacity), J⋅K−1⋅kg−1
 		k          = 2.5    # thermal conductivity
 		A          = 1e-9   # radiogenic heat production
 		T          = 100.0  # optional temperature to set within the phase

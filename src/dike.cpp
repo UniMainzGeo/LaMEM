@@ -206,32 +206,31 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 // end if (dike->Mb == dike-Mf)
 
                 dikeRHS += phRat[i]*tempdikeRHS;
-		//		PetscPrintf(PETSC_COMM_WORLD," dikeRHS heat=%g\n", dikeRHS);
-
+	
                 M = &phases[i];
 
                 //adjust k and heat source according to Behn & Ito [2005]
                 //PetscPrintf(PETSC_COMM_WORLD," Debugging: Dike Tliq = %g, Tsol = %g Latent_hx=%g,  Tc=%g\n", M->T_liq, M->T_sol, M->Latent_hx, Tc);
 
                 if (Tc < M->T_liq && Tc > M->T_sol)
-                {
-                    kfac  += phRat[i]/(1 + M->Latent_hx/( M->Cp*(M->T_liq-M->T_sol) ) );
-                    rho_A += phRat[i]*M->rho*M->Cp*(M->T_liq-Tc)*dikeRHS;  // Cp different from the paper
-                }
-                else if (Tc <= M->T_sol)
-                {
-                    rho_A += phRat[i]*( M->rho*M->Cp)*((M->T_liq-Tc) + M->Latent_hx/M->Cp)*dikeRHS;
-                    kfac += phRat[i];
-                }
-                // end adjust k and heat source according to Behn & Ito [2005]
+		  {
+		    kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
+		    rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*dikeRHS;  // Cp not used in the paper,( M->rho*M->Cp) added to conserve units
+		  }
+		else if (Tc <= M->T_sol)
+		  {
+		    rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*dikeRHS;  // this term is here to conserve units: ( M->rho*M->Cp)
+		    kfac += phRat[i];
+		  }
+		// end adjust k and heat source according to Behn & Ito [2005]
 		
-            } //end check phaseRat>0
+	    } //end check phaseRat>0
 	    
         } //end for j=0 to numDike
-
+	
         k=kfac*k;  //kfac is weighted average multiplier
 	
-    PetscFunctionReturn(0);
+	PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
 #undef __FUNCT__
