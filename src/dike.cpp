@@ -226,7 +226,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 	    
         } //end for j=0 to numDike
 
-        k=kfac*k;  //doesn't this need to be inside the dike-loop?
+        k=kfac*k;  //doesn't this need to be inside the dike-loop? , smarter to pass kfac instead of k?
                	// kfac is weighted average multiplier, k is already phase-dependent, hence already weighted by phase ratio from inside JAcResGetTempParam
 
 	PetscFunctionReturn(0);
