@@ -464,7 +464,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "T_Nu",     &m->T_Nu,  1, 1.0); CHKERRQ(ierr);  
 	ierr = getScalarParam(fb, _OPTIONAL_, "Latent_hx", &m->Latent_hx,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T_liq",    &m->T_liq,  1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T_sol",     &m->T_sol,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "T_sol",    &m->T_sol,  1, 1.0); CHKERRQ(ierr);
 
 	//=================================================================================
 	// melt fraction viscosity parametrization
@@ -779,11 +779,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// phase-temperature
 	if(m->T) m->T = (m->T + scal->Tshift)/scal->temperature;
+	
 	// temperature below which conductivity is multiplied by nu_k 
 	if(m->T_liq) m->T_liq = (m->T_liq + scal->Tshift)/scal->temperature;
 	if(m->T_sol) m->T_sol = (m->T_sol + scal->Tshift)/scal->temperature;
-
-    //PetscPrintf(PETSC_COMM_WORLD,"debugging: in Phase.cpp B: Tliq = %g, Tsol = %g Latent_hx = %g\n", m->T_liq, m->T_sol, m->Latent_hx);
 
 	PetscFunctionReturn(0);
 }

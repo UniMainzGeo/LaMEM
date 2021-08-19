@@ -100,7 +100,7 @@ PetscErrorCode JacResGetTempParam(
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
 	nu_k      = 0.0;
-	T_Nu			= 0.0;
+	T_Nu	  = 0.0;
 	
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
@@ -149,8 +149,10 @@ PetscErrorCode JacResGetTempParam(
 	if (ctrl.actDike)
 	{
 	  ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
+	  PetscPrintf(PETSC_COMM_WORLD," temp1: rho_A = %g, k = %g\n", rho_A, k);  
 	}
-	
+
+	PetscPrintf(PETSC_COMM_WORLD," temp2: rho_A = %g, k = %g\n", rho_A, k);  
 	// store
 	if(k_)      (*k_)      = k;
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
@@ -457,7 +459,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;   // NEW
+	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
 	

@@ -153,10 +153,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 #define __FUNCT__ "Dike_k_heatsource"
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 Material_t *phases,
-                                PetscScalar Tc,
+                                PetscScalar &Tc,
                                 PetscScalar *phRat,          // phase ratios in the control volume
-                                PetscScalar k,
-                                PetscScalar rho_A)
+                                PetscScalar &k,
+                                PetscScalar &rho_A)
 {
         BCCtx       *bc;
         Dike        *dike;
@@ -216,6 +216,10 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 		  {
 		    kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
 		    rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*dikeRHS;  // Cp not used in the paper,( M->rho*M->Cp) added to conserve units
+
+
+		    PetscPrintf(PETSC_COMM_WORLD," inside dike: kfac = %g, rho_A = %g, Tc=%g \n", kfac, rho_A, Tc);
+		    
 		  }
 		else if (Tc <= M->T_sol)
 		  {
@@ -227,9 +231,12 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 	    } //end check phaseRat>0
 	    
         } //end for j=0 to numDike
+
+       	PetscPrintf(PETSC_COMM_WORLD," inside dike2: kfac = %g, rho_A = %g \n", kfac, rho_A);
 	
-        k=kfac*k;  //kfac is weighted average multiplier
-	
+        k=kfac*k;  //doesn't this need to be inside the dike-loop?
+               	// kfac is weighted average multiplier, k is already phase-dependent, hence already weighted by phase ratio from inside JAcResGetTempParam
+
 	PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
@@ -245,9 +252,12 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
         Ph_trans_t  *PhaseTrans;
         PetscInt     i, j, numDike;
         PetscScalar  v_spread, M, left, right, tempDikeRHS;
+	//	PetscInt     k, sx, dsx, sy, dsy;
+	//	PetscScalar  front, back;
 
         numDike    = ctx->numDike;
         bc         = ctx->bc;
+	//	fs         = bc->fs;
         PhaseTrans = ctx->PhaseTrans;
 
 	// loop through all dike blocks
@@ -256,8 +266,8 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
             // access parameters of each dike block
             dike=ctx->matDike+j;
 	    
-            // access the phase ID of the dike parameters of each dike
-            i = dike->PhaseID;  //correct phase ID
+            // access the correct phase ID of the dike parameters of each dike
+            i = dike->PhaseID;
 	    
 	    // check if the phase ratio of a dike phase is greater than 0 in the current cell
             if(phRat[i]>0)
@@ -265,35 +275,32 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		if(dike->Mb == dike->Mf)
 		  {
 		    // constant M
-                  M = dike->Mf;
-                  v_spread = PetscAbs(bc->velin);
-                  left = PhaseTrans->bounds[0];
-                  right = PhaseTrans->bounds[1];
-                  tempDikeRHS = M * 2 * v_spread / PetscAbs(left-right);
+		    M = dike->Mf;
+		    v_spread = PetscAbs(bc->velin);
+		    left = PhaseTrans->bounds[0];
+		    right = PhaseTrans->bounds[1];
+		    tempDikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 		  }
 		
-		/*else                                                                                                                                                          
+		/*else // Mb an Mf are different
 		  {
-		  // Mb an Mf are different
-		  // FDSTAG *fs;
 		  
-                // access context
-                // fs = bc->fs;
-		// bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction 
-                //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction       
-		
-                if(front == back)
-                {
-		// linear interpolation between different M values, Mf is M in front, Mb is M in back
-                    M = dike.Mf + (dike.Mb - dike.Mf) * (y/(PetscAbs(front+back))); 
-                    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km
-		    }
-		    else
+		  // access context
+		  y = COORD_CELL(k,sy,fs->dsy);
+		  
+		  front = PhaseTrans->bounds[2];
+		  back  = PhaseTrans->bounds[3];
+		  if(front == back)
+		  {
+		  // linear interpolation between different M values, Mf is in front, Mb is in back
+		  M = dike->Mf + (dike->Mb - dike->Mf) * (y/(PetscAbs(front+back))); 
+		  tempDikeRHS = M * 2 * v_spread / PetscAbs(left+right);
+		  }
+		  else
 		    {
-                    // linear interpolation if the ridge/dike phase is oblique
-                    y = COORD_CELL(j,sy,fs->dsy);
-                    M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
-                    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km 
+                    // linear interpolation if the dike phase is oblique
+                    M = dike->Mf + (dike->Mb - dike->Mf) * (y/(PetscAbs(front+back)));
+                    tempDikeRHS = M * 2 * v_spread / PetscAbs(left+right);
 		    }
 		    }*/
 		else
@@ -303,8 +310,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 	       
 		dikeRHS += phRat[i]*tempDikeRHS;
 
-		PetscPrintf(PETSC_COMM_WORLD," dikeRHS contr=%g\n", dikeRHS);
-		
 	      } // close phase ratio loop
 	    
 	  } // close dike block loop
