@@ -197,7 +197,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                     tempdikeRHS = dike->Mf * 2 * v_spread / PetscAbs(left-right);
                 }
 
-            //code for along-axis variation in M goes here
+            //code for along-axis variation in M goes here eventually
 
                 else
                 {
@@ -222,9 +222,9 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 		  }
 		// end adjust k and heat source according to Behn & Ito [2005]
 		
-	    } //end check phaseRat>0
+	    } // close check phaseRat>0 loop
 	    
-        } //end for j=0 to numDike
+        } // close dike block loop
 
         k=kfac*k;  //doesn't this need to be inside the dike-loop? , smarter to pass kfac instead of k?
                	// kfac is weighted average multiplier, k is already phase-dependent, hence already weighted by phase ratio from inside JAcResGetTempParam
