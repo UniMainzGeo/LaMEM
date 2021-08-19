@@ -210,16 +210,10 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 M = &phases[i];
 
                 //adjust k and heat source according to Behn & Ito [2005]
-                //PetscPrintf(PETSC_COMM_WORLD," Debugging: Dike Tliq = %g, Tsol = %g Latent_hx=%g,  Tc=%g\n", M->T_liq, M->T_sol, M->Latent_hx, Tc);
-
                 if (Tc < M->T_liq && Tc > M->T_sol)
 		  {
 		    kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
 		    rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*dikeRHS;  // Cp not used in the paper,( M->rho*M->Cp) added to conserve units
-
-
-		    PetscPrintf(PETSC_COMM_WORLD," inside dike: kfac = %g, rho_A = %g, Tc=%g \n", kfac, rho_A, Tc);
-		    
 		  }
 		else if (Tc <= M->T_sol)
 		  {
@@ -232,8 +226,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 	    
         } //end for j=0 to numDike
 
-       	PetscPrintf(PETSC_COMM_WORLD," inside dike2: kfac = %g, rho_A = %g \n", kfac, rho_A);
-	
         k=kfac*k;  //doesn't this need to be inside the dike-loop?
                	// kfac is weighted average multiplier, k is already phase-dependent, hence already weighted by phase ratio from inside JAcResGetTempParam
 
