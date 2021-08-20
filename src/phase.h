@@ -259,7 +259,7 @@ struct DBMat
 	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
 	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
-	PetscInt     numPhtr;                // number material softening laws
+	PetscInt     numPhtr;                // number phase transitions
 };
 
 // read material database
