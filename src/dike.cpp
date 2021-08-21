@@ -213,12 +213,17 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 if (Tc < M->T_liq && Tc > M->T_sol)
 		  {
 		    kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
-		    rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*dikeRHS;  // Cp not used in the paper,( M->rho*M->Cp) added to conserve units
+		    rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*dikeRHS;  // Cp*rho not used in the paper,( M->rho*M->Cp) added to conserve units
 		  }
 		else if (Tc <= M->T_sol)
 		  {
 		    rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*dikeRHS;  // this term is here to conserve units: ( M->rho*M->Cp)
 		    kfac += phRat[i];
+		  }
+		else
+		  {
+		    kfac +=phRat[i];
+		    rho_A = 0.0;
 		  }
 		// end adjust k and heat source according to Behn & Ito [2005]
 		
