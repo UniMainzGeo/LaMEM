@@ -94,6 +94,7 @@
 #include "objFunct.h"
 #include "surf.h"
 #include "tssolve.h"
+#include "dike.h"
 //-----------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhaseTr"
@@ -555,37 +556,46 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	// creates arrays to optimize marker-cell interaction
 	PetscFunctionBegin;
 
-    PetscErrorCode  ierr;
-    DBMat           *dbm;
+	PetscErrorCode  ierr;
+	DBMat           *dbm;
+	DBPropDike  *dbdike;
+	TSSol       *ts;
 	Ph_trans_t      *PhaseTrans;
 	Marker          *P;
 	JacRes          *jr;
 	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas;
 	PetscInt        PH1,PH2, ID, InsideAbove;
 	PetscScalar		T, time;
-    PetscLogDouble  t;
+	PetscLogDouble  t;
 	SolVarCell  	*svCell;
 	Scaling      	*scal;
-
 
 		
     // Retrieve parameters
 	jr          =   actx->jr;
 	dbm         =   jr->dbm;
 	numPhTrn    =   dbm->numPhtr;
-	scal 		=	dbm->scal;
+	scal 	    =	dbm->scal;
 	time        =   jr->bc->ts->time;
-
+	ts          =   jr->ts;
+	dbdike      =   jr->dbdike;
+	
 	if (!numPhTrn) 	PetscFunctionReturn(0);		// only execute this function if we have phase transitions
 
-    PrintStart(&t, "Phase_Transition", NULL);
-
+	PrintStart(&t, "Phase_Transition", NULL);
+	
 	// loop over all local particles 		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
 	nPtr        =   0;
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
-	{
-		PhaseTrans = jr->dbm->matPhtr+nPtr;
-				
+	  {
+	    PhaseTrans = jr->dbm->matPhtr+nPtr;
+	    
+	    // calling the moving dike function
+	    if ( PhaseTrans->Type == _NotInAirBox_ )
+	      {
+		ierr = MovingDike(dbdike, PhaseTrans, ts); CHKERRQ(ierr);
+	      }
+	    
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
 		{
 			// access marker
@@ -686,9 +696,9 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 //----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, 
-					SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr)
+		    SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr)
 {
-	PetscInt 	ph, InAbove;
+	PetscInt    ph, InAbove;
 	PetscScalar T;
 
 	ph = P->phase;
@@ -697,7 +707,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
     {
-        Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box but ignore airphase particles
+      Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box but ignore airphase particles
     }
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
@@ -874,18 +884,20 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 //------------------------------------------------------------------------------------------------------------//                                                          
 PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr)
 {
-	PetscInt     ph, AirPhase;                
-	PetscScalar  T;
 
-	AirPhase = 0.0;
-
-	AirPhase  = jr->surf->AirPhase;
-	ph = P->phase;
-	T  = P->T;
+  PetscInt     ph, AirPhase;                
+  PetscScalar  T;
+  
+  PetscFunctionBegin;
+  
+  AirPhase = 0.0;
+  AirPhase  = jr->surf->AirPhase;
+  ph = P->phase;
+  T  = P->T;
 	
-	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
-		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
-		 (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase  )
+  if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
+       (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
+       (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]) && ph != AirPhase  )
     {
         
         // We are within the box

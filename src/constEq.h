@@ -75,7 +75,7 @@ struct ConstEqCtx
 	Ph_trans_t  *PhaseTrans;    // Phase transition laws
     DBMat       *dbm;
     DBPropDike  *dbdike;
-    Dike        *matDike;       // material properties of dike
+    Dike        *matDike;       // material properties of dike
     PetscInt    numDike;        // number of dikes
 	Controls    *ctrl;      	// parameters and controls
 	PData       *Pd;        	// phase diagram data

@@ -56,6 +56,7 @@ struct DBPropDike;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
+//struct ConstEqCtx;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -210,9 +211,10 @@ struct JacRes
 	FDSTAG   *fs;    // staggered-grid layout
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
-    DBPropDike *dbdike; // dike database
+  DBPropDike *dbdike; // dike database
 	DBMat    *dbm;   // material database
-
+  //  ConstEqCtx *ctx;
+  
 	// parameters and controls
 	Controls ctrl;
 
