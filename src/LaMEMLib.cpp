@@ -691,7 +691,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 
 		// apply phase transitions on particles
-		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
+	  ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
 		
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
