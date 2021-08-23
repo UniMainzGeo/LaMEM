@@ -50,7 +50,7 @@
 #include "LaMEM.h"
 #include "phase.h"
 #include "parsing.h"
-//#include "JacRes.h"
+#include "JacRes.h"
 #include "dike.h"
 #include "constEq.h"
 #include "bc.h"

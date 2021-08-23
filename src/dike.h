@@ -47,7 +47,7 @@
 //---------------------------------------------------------------------------   
 
 struct FB; 
-//struct JacRes;   // necessary????? try to remove
+//struct JacRes;
 struct ConstEqCtx;
 struct DBMat;
 struct TSSol;
@@ -70,14 +70,12 @@ public:
   PetscScalar t1_dike;   // end time for moving the dike
   PetscScalar v_dike;    // velocity with which the dike move
 
-  PetscScalar dikeRHS;   // output, added divergence to RHS of continuity equation, should it be private? 
+  //  PetscScalar dikeRHS;   // output, added divergence to RHS of continuity equation, should it be private? 
 };
 
       
 struct DBPropDike
 {
-  //  Scaling *scal;
-  
   PetscInt numDike;                   // number of dikes
   Dike     matDike[_max_num_dike_];   // dike properties per dike ID
 };
