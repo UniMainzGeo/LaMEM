@@ -193,7 +193,9 @@ struct Controls
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
 
-    PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
+  PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
+
+  PetscInt  dikeHeat;   // activation flag for using Behn & Ito heat source in dike
 };
 
 //---------------------------------------------------------------------------

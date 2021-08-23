@@ -312,6 +312,7 @@
 	act_dike        = 1              # dike activation flag (additonal term in divergence)
 	T_Nu            = 600		 # default value for thermal conductivity boundary
 	useTk           = 1              # switch to use T-dependent conductivity, 0: not active
+	dikeHeat        = 1		 # switch to use Behn & Ito heat source in the dike
 	
 # Groundwater level type specification:
 

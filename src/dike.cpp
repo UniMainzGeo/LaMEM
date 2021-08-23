@@ -170,15 +170,15 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
         bc         =  jr->bc;
         PhaseTrans =  jr->dbm->matPhtr;   // phase transition
 
-        kfac = 0.0;
-        dikeRHS = 0; 
-
-	// alternatively: call GetDikeContr() here to not re-compute the dikeRHS
 	
         // loop through all dikes
         for(j = 0; j < numDike; j++)
         {
-            //access the material parameters of each dike block
+
+	  kfac = 0.0;
+	  dikeRHS = 0.0;
+	  
+	  //access the material parameters of each dike block
             dike=jr->dbdike->matDike+j;
 
             // access the phase ID of the dike block
@@ -197,7 +197,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                     tempdikeRHS = dike->Mf * 2 * v_spread / PetscAbs(left-right);
                 }
 
-            //code for along-axis variation in M goes here eventually
+		    //code for along-axis variation in M goes here eventually
 
                 else
                 {
@@ -217,23 +217,21 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 		  }
 		else if (Tc <= M->T_sol)
 		  {
+		    kfac  += phRat[i];
 		    rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*dikeRHS;  // this term is here to conserve units: ( M->rho*M->Cp)
-		    kfac += phRat[i];
 		  }
 		else
 		  {
-		    kfac +=phRat[i];
+		    kfac += phRat[i];
 		    rho_A = 0.0;
 		  }
 		// end adjust k and heat source according to Behn & Ito [2005]
 		
-	    } // close check phaseRat>0 loop
+		k=kfac*k;     // kfac is weighted average multiplier, k is already phase-dependent, already weighted by phase ratio
+	    }
 	    
-        } // close dike block loop
-
-        k=kfac*k;  //doesn't this need to be inside the dike-loop? , smarter to pass kfac instead of k?
-               	// kfac is weighted average multiplier, k is already phase-dependent, hence already weighted by phase ratio from inside JAcResGetTempParam
-
+        }
+	
 	PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
