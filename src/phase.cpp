@@ -779,6 +779,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// phase-temperature
 	if(m->T) m->T = (m->T + scal->Tshift)/scal->temperature;
+	if(m->T_Nu) m->T_Nu = (m->T_Nu + scal->Tshift)/scal->temperature;
 	
 	// temperature below which conductivity is multiplied by nu_k 
 	if(m->T_liq) m->T_liq = (m->T_liq + scal->Tshift)/scal->temperature;
