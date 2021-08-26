@@ -235,25 +235,30 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 if (Tc < M->T_liq && Tc > M->T_sol)
 		  {
 		    kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
-		    rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*dikeRHS;  // Cp*rho not used in the paper,( M->rho*M->Cp) added to conserve units
+		    rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper,( M->rho*M->Cp) added to conserve units
+		    PetscPrintf(PETSC_COMM_WORLD,"rhoA mid = %g \n", rho_A*jr->scal->density *jr->scal->heat_production);
+		    PetscPrintf(PETSC_COMM_WORLD,"rhoA mid2 = %g \n", (rho_A*jr->scal->density *jr->scal->cpecific_heat *jr->scal->temperature)-jr->scal->Tshift);
 		  }
 		else if (Tc <= M->T_sol)
 		  {
 		    kfac  += phRat[i];
-		    rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*dikeRHS;  // this term is here to conserve units: ( M->rho*M->Cp)
+		    rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*tempdikeRHS;  // this term is here to conserve units: ( M->rho*M->Cp)
+		    //		    PetscPrintf(PETSC_COMM_WORLD," rhoA <Ts = %g \n",rho_A );
 		  }
 		else
 		  {
 		    kfac += phRat[i];
 		    rho_A = 0.0;
+		    //		    PetscPrintf(PETSC_COMM_WORLD," rhoA > Tl = %g \n",rho_A);
 		  }
 		// end adjust k and heat source according to Behn & Ito [2005]
 		
 		k=kfac*k;     // kfac is weighted average multiplier, k is already phase-dependent, already weighted by phase ratio
-	    }
+	    }   // end phase ratio
 	    
-        }
-	
+        }   // end dike loop
+
+	//	PetscPrintf(PETSC_COMM_WORLD," rhoA in = %g \n",rho_A);
 	PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
