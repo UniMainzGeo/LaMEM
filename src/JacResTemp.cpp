@@ -128,8 +128,7 @@ PetscErrorCode JacResGetTempParam(
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;
 		rho_A  +=  cf*M->A*rho;
-		//		PetscPrintf(PETSC_COMM_WORLD," A = %g \n", M->A*jr->scal->heat_production*rho*jr->scal->density);
-		//		 PetscPrintf(PETSC_COMM_WORLD," rhoA = %g \n", rho_A*jr->scal->heat_production*jr->scal->density);
+
 		// Temperature-dependent conductivity: phase-dependent nusselt number
 		if(ctrl.useTk)
 		{
@@ -144,7 +143,6 @@ PetscErrorCode JacResGetTempParam(
 		
 	}
 
-
 	// switch and temperature condition to use T-dep conductivity
 	if (ctrl.useTk && Tc <= T_Nu) 
 	{
@@ -156,9 +154,6 @@ PetscErrorCode JacResGetTempParam(
 	  ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
 	}
 
-
-       	PetscPrintf(PETSC_COMM_WORLD," rhoA outside = %g \n",rho_A*jr->scal->heat_production*jr->scal->density);
-	
 	// store
 	if(k_)      (*k_)      = k;
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
