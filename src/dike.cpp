@@ -198,9 +198,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
         {
 
 	  kfac = 0.0;
-	  rho_A = 0.0;   // maybe not needed but just to make sure that there is no rhoA by accident already set
-	  
-	  PetscPrintf(PETSC_COMM_WORLD,"rhoA in dike loop  = %f \n", rho_A);
+	  rho_A = 0.0;
 	  
 	  //access the material parameters of each dike block
             dike=jr->dbdike->matDike+j;
@@ -249,9 +247,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 		  }
 		// end adjust k and heat source according to Behn & Ito [2005]
 
-		PetscPrintf(PETSC_COMM_WORLD,"rhoA at end dike loop  = %f \n", rho_A);
-		
-		k=kfac*k;     // kfac is weighted average multiplier, k is already phase-dependent, already weighted by phase ratio
+		k=kfac*k;
 
 	    }   // end phase ratio
 	    

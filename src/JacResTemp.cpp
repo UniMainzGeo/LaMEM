@@ -149,16 +149,11 @@ PetscErrorCode JacResGetTempParam(
 	    k = k*nu_k;
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"before call heatDike: rhoA = %f, Tc = %f \n", rho_A, Tc*jr->scal->temperature);
 	if (ctrl.actDike && ctrl.dikeHeat)
 	{
-	  PetscPrintf(PETSC_COMM_WORLD,"2Tc : Tc = %f \n", Tc*jr->scal->temperature);
 	  ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
-	  PetscPrintf(PETSC_COMM_WORLD,"right after call heatDike: rhoA = %f,  Tc = %f \n", rho_A, Tc*jr->scal->temperature);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"after call heatDike: rhoA = %f, Tc = %f \n", rho_A, Tc*jr->scal->temperature);
-	
 	// store
 	if(k_)      (*k_)      = k;
 	if(rho_Cp_) (*rho_Cp_) = rho_Cp;
@@ -527,13 +522,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Tn  = svBulk->Tn;  // temperature history
 		Pc  = P[k][j][i] ; // Current Pressure
 
-		PetscPrintf(PETSC_COMM_WORLD,"before call JAcRes: rhoA = %f, Tc = %f \n", rho_A, Tc*jr->scal->temperature);
-
 		// conductivity, heat capacity, radiogenic heat production
 		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc); CHKERRQ(ierr);
 
-		PetscPrintf(PETSC_COMM_WORLD,"after call JcRes: rhoA = %f, Tc = %f \n", rho_A, Tc*jr->scal->temperature);
-		
 		// shear heating term (effective)
 		Hr = svDev->Hr +
 		(hxy[k][j][i] + hxy[k][j+1][i] + hxy[k][j][i+1] + hxy[k][j+1][i+1] +
