@@ -198,6 +198,9 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
         {
 
 	  kfac = 0.0;
+	  rho_A = 0.0;   // maybe not needed but just to make sure that there is no rhoA by accident already set
+	  
+	  PetscPrintf(PETSC_COMM_WORLD,"rhoA in dike loop  = %f \n", rho_A);
 	  
 	  //access the material parameters of each dike block
             dike=jr->dbdike->matDike+j;
@@ -226,8 +229,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 } 
                 // end if (dike->Mb == dike-Mf)
 
-
-				PetscPrintf(PETSC_COMM_WORLD,"tempdike= %f \n", tempdikeRHS*jr->scal->velocity*jr->scal->length);
                 M = &phases[i];
 
                 //adjust k and heat source according to Behn & Ito [2005]
@@ -235,26 +236,23 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 		  {
 		    kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
 		    rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
-
-		    // Temperature (250) and tempdikeRHS (2) rho Cp (1000) correct,
-		    // when using dikeRHS by itself scaling necessary, when in rhoA no scaling otherwise it doesn't give predicted result
-
-      PetscPrintf(PETSC_COMM_WORLD,"rhoA mid = %f \n", rho_A*jr->scal->velocity*jr->scal->length*jr->scal->temperature*jr->scal->density*jr->scal->cpecific_heat);
 		  }
 		else if (Tc <= M->T_sol)
 		  {
 		    kfac  += phRat[i];
 		    rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*tempdikeRHS;
-      PetscPrintf(PETSC_COMM_WORLD," rhoA < Ts = %f \n",rho_A*jr->scal->velocity*jr->scal->length*jr->scal->temperature*jr->scal->density*jr->scal->cpecific_heat);
 		  }
-		else
+		else if (Tc >= M->T_liq)
 		  {
 		    kfac += phRat[i];
 		    rho_A = 0.0;
 		  }
 		// end adjust k and heat source according to Behn & Ito [2005]
+
+		PetscPrintf(PETSC_COMM_WORLD,"rhoA at end dike loop  = %f \n", rho_A);
 		
 		k=kfac*k;     // kfac is weighted average multiplier, k is already phase-dependent, already weighted by phase ratio
+
 	    }   // end phase ratio
 	    
         }   // end dike loop
