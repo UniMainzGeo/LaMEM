@@ -84,8 +84,7 @@ def test_M05_2D():
 
 def test_2cores_2dikes():
 
-# Test dike feature using optimized LaMEM                                                                                                                                   
-
+# Test dike feature using optimized LaMEM
   ranks = 2
   launch = '../bin/opt/LaMEM -ParamFile ./t26_Dike/move2Dikes.dat' # This must be a relative path with respect to runLaMEM_Tests.py 
   expected_file = 't26_Dike/move2Dikes.expected'
@@ -101,8 +100,59 @@ def test_2cores_2dikes():
     key = re.escape("|mRes|_2")
     unittest.compareFloatingPoint(key,1e-4)
 
-  # Create unit test object                                                                                                                                                    
+  # Create unit test object     
   ex1 = pth.pthUnitTest('t26_moveDike',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
+
+
+def heat_kfac():
+
+  ranks = 2
+  launch = '../bin/deb/LaMEM -ParamFile ./t26_Dike/dike_heating_kfac.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't26_Dike/dike_heating_kfacs.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+
+  # Create unit test object                                                                                                                                                
+  ex1 = pth.pthUnitTest('t26_dikeHeat_kfac',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
+
+
+def heat_rhoA():
+
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t26_Dike/dike_heating_rhoA.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't26_Dike/dike_heating_rhoA.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+
+  # Create unit test object
+    
+  ex1 = pth.pthUnitTest('t26_dikeHeat_rhoA',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
