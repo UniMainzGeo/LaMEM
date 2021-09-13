@@ -494,6 +494,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//=====================================================================================
 	// Viscous multiplier
 	//=====================================================================================
+	m->vs_stiff = 1.0; // Default value
 	ierr = getScalarParam(fb, _OPTIONAL_, "visc_stiff", &m->vs_stiff,1, 1.0);  CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
