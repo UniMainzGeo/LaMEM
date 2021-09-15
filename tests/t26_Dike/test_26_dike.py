@@ -111,7 +111,7 @@ def test_2cores_2dikes():
 def heat_kfac():
 
   ranks = 2
-  launch = '../bin/deb/LaMEM -ParamFile ./t26_Dike/dike_heating_kfac.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = '../bin/opt/LaMEM -ParamFile ./t26_Dike/dike_heating_kfac.dat' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't26_Dike/dike_heating_kfac.expected'
 
   def comparefunc(unittest):
