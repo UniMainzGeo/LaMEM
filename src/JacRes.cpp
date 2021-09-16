@@ -814,15 +814,15 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	{
 
 	// access the velocity gradient tensor
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &vx_x); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &vx_y); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &vx_z); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &vy_x); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &vy_y); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &vy_z); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &vz_x); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &vz_y); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &vz_z); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
 	}
 
 
@@ -1011,25 +1011,25 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	// access the velocity gradient tensor
 	if(jr->ctrl.Compute_velocity_gradient == 1)
 	{
-		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &vx_x); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &vx_y); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &vx_z); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &vy_x); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &vy_y); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &vy_z); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &vz_x); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &vz_y); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &vz_z); CHKERRQ(ierr);
+		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
 
-		LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
-		LOCAL_TO_LOCAL(fs->DA_XY,  jr->ldxy);
-		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->ldxz);
-		LOCAL_TO_LOCAL(fs->DA_XY,  jr->ldxy);
-		LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
-		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->ldyz);
-		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->ldxz);
-		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->ldyz);
-		LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvxdx);
+		LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvxdy);
+		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvxdz);
+		LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvydx);
+		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvydy);
+		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvydz);
+		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvzdx);
+		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvzdy);
+		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvzdz);
 	}
 
 	PetscFunctionReturn(0);
