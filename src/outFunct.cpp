@@ -963,3 +963,34 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "&PVOutWriteVelocityGr"
+PetscErrorCode PVOutWriteVelocityGr(OutVec* outvec)
+{
+	// NOTE! See warning about component ordering scheme above
+
+	//COPY_FUNCTION_HEADER
+	ACCESS_FUNCTION_HEADER
+//	// macro to copy deviatoric strain rate components to buffer
+//	#define GET_DXX buff[k][j][i] = jr->svCell[iter++].dxx;
+//	#define GET_DYY buff[k][j][i] = jr->svCell[iter++].dyy;
+//	#define GET_DZZ buff[k][j][i] = jr->svCell[iter++].dzz;
+//	#define GET_DXY buff[k][j][i] = jr->svXYEdge[iter++].d;
+//	#define GET_DYZ buff[k][j][i] = jr->svYZEdge[iter++].d;
+//	#define GET_DXZ buff[k][j][i] = jr->svXZEdge[iter++].d;
+
+	cf = scal->strain_rate;
+
+	INTERPOLATE_ACCESS(jr->dvxdx, InterpCenterCorner, 9, 0,0.0)
+	INTERPOLATE_ACCESS(jr->dvydy, InterpXYEdgeCorner, 9, 1,0.0)
+	INTERPOLATE_ACCESS(jr->dvzdz, InterpXZEdgeCorner, 9, 2,0.0)
+	INTERPOLATE_ACCESS(jr->dvxdy, InterpXYEdgeCorner, 9, 3,0.0)
+	INTERPOLATE_ACCESS(jr->dvydx, InterpCenterCorner, 9, 4,0.0)
+	INTERPOLATE_ACCESS(jr->dvxdz, InterpYZEdgeCorner, 9, 5,0.0)
+	INTERPOLATE_ACCESS(jr->dvzdx, InterpXZEdgeCorner, 9, 6,0.0)
+	INTERPOLATE_ACCESS(jr->dvydz, InterpYZEdgeCorner, 9, 7,0.0)
+	INTERPOLATE_ACCESS(jr->dvzdy, InterpCenterCorner, 9, 8,0.0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

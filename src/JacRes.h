@@ -195,6 +195,7 @@ struct Controls
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
 
     PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
+    PetscInt    Compute_velocity_gradient; // activaction flag for computing velocity gradient
 };
 
 //---------------------------------------------------------------------------
@@ -222,6 +223,7 @@ struct JacRes
 	// velocity	components
 	Vec gvx,  gvy, gvz;  // global
 	Vec lvx,  lvy, lvz;  // local (ghosted)
+	Vec dvxdx,dvxdy, dvxdz,dvydx,dvydy,dvydz,dvzdx,dvzdy,dvzdz;  // velocity tensor components
 
 	// momentum residual components
 	Vec gfx,  gfy, gfz;  // global
