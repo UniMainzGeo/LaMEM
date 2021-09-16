@@ -406,6 +406,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
+
 
 	// read phase aggregates
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseAggStart>", "<PhaseAggEnd>"); CHKERRQ(ierr);
@@ -413,6 +415,10 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(fb->nblocks > _max_num_phase_agg_)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase aggregates specified! Max allowed: %lld", (LLD)_max_num_phase_agg_);
+	}
+	if(pvout->jr->ctrl.Compute_velocity_gradient == 0 && omask->vel_gr_tensor == 1)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Compute_velocity_gradient is not activated");
 	}
 
 	omask->num_agg = fb->nblocks;
@@ -475,6 +481,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->energ_res)      PetscPrintf(PETSC_COMM_WORLD, "   energy residual                         @ \n");
 	if(omask->melt_fraction)  PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction                           @ \n");
 	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
+	if(omask->vel_gr_tensor)  PetscPrintf(PETSC_COMM_WORLD, "   Velocity Gradient Tensor                @ \n");
+
 
 	for(i = 0; i < omask->num_agg; i++)
 	{

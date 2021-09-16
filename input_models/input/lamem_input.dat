@@ -311,6 +311,7 @@
 	lrtol           = 1e-6           # local rheology iterations relative tolerance
 	act_dike        = 1              # dike activation flag (additonal term in divergence)
 	useTk           = 1              # switch to use T-dependent conductivity, 0: not active
+	Compute_velocity_gradient = 1    # compute the velocity gradient tensor 1: active, 0: not active
 	
 # Groundwater level type specification:
 
@@ -487,7 +488,7 @@
 	out_visc_creep      = 1
 	out_velocity        = 1
 	out_pressure        = 1
-	out_tot_press       = 1  
+	out_tot_press       = 1
 	out_eff_press       = 1
 	out_over_press      = 1
 	out_litho_press     = 1
@@ -512,6 +513,7 @@
 	out_melt_fraction   = 1
 	out_fluid_density   = 1
 	out_conductivity    = 1
+	out_vel_gr_tensor   = 1
 
 # Phase aggregate output paramter
 # Phase ratios of listed phases are summed up and output as a scalar vector

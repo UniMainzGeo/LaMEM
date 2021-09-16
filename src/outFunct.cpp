@@ -972,12 +972,6 @@ PetscErrorCode PVOutWriteVelocityGr(OutVec* outvec)
 	//COPY_FUNCTION_HEADER
 	ACCESS_FUNCTION_HEADER
 //	// macro to copy deviatoric strain rate components to buffer
-//	#define GET_DXX buff[k][j][i] = jr->svCell[iter++].dxx;
-//	#define GET_DYY buff[k][j][i] = jr->svCell[iter++].dyy;
-//	#define GET_DZZ buff[k][j][i] = jr->svCell[iter++].dzz;
-//	#define GET_DXY buff[k][j][i] = jr->svXYEdge[iter++].d;
-//	#define GET_DYZ buff[k][j][i] = jr->svYZEdge[iter++].d;
-//	#define GET_DXZ buff[k][j][i] = jr->svXZEdge[iter++].d;
 
 	cf = scal->strain_rate;
 
