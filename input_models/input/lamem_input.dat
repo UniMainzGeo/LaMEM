@@ -311,7 +311,7 @@
 	lrtol           = 1e-6           # local rheology iterations relative tolerance
 	act_dike        = 1              # dike activation flag (additonal term in divergence)
 	useTk           = 1              # switch to use T-dependent conductivity, 0: not active
-	Compute_velocity_gradient = 1    # compute the velocity gradient tensor 1: active, 0: not active
+	Compute_velocity_gradient = 1    # compute the velocity gradient tensor 1: active, 0: not active. If active, it automatically activates the output in the .pvd file
 	
 # Groundwater level type specification:
 
@@ -513,7 +513,6 @@
 	out_melt_fraction   = 1
 	out_fluid_density   = 1
 	out_conductivity    = 1
-	out_vel_gr_tensor   = 1
 
 # Phase aggregate output paramter
 # Phase ratios of listed phases are summed up and output as a scalar vector
