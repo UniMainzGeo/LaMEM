@@ -72,6 +72,7 @@
 	min_fric       = 5.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
 	init_lith_pres  = 1              # initial pressure with lithostatic pressure (stabilizes compressible setups in the first steps)
+	Compute_velocity_gradient = 1    # compute the velocity gradient tensor 1: active, 0: not active. If active, it automatically activates the output in the .pvd file
 
 #===============================================================================
 # Solver options
