@@ -385,7 +385,7 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
       
     }
   
-  PtegscFunctionReturn(0);
+  PetscFunctionReturn(0);
 
 }
 
