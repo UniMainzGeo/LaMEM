@@ -187,25 +187,30 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
         PetscInt     i, j, numDike;
         PetscScalar  v_spread, left, right, kfac, tempdikeRHS;
 
-        numDike    = jr->dbdike->numDike;// number of dikes
+        numDike    = jr->dbdike->numDike; // number of dikes
 
         bc         =  jr->bc;
         PhaseTrans =  jr->dbm->matPhtr;   // phase transition
 
+	j=0;
 	
         // loop through all dikes
         for(j = 0; j < numDike; j++)
         {
 
+	  PetscPrintf(PETSC_COMM_WORLD,"Dike: j = %i \n", j);
+	  
 	  kfac = 0.0;
 	  rho_A = 0.0;
 	  
 	  //access the material parameters of each dike block
             dike=jr->dbdike->matDike+j;
-
+	    
             // access the phase ID of the dike block
             i = dike->PhaseID;
-
+	    
+	    PetscPrintf(PETSC_COMM_WORLD,"Dike phase: i = %i \n", i);
+	    
              // check if the phase ratio of a dike phase is greater than 0 in the current cell
             if(phRat[i] > 0)
             {
@@ -380,7 +385,7 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
       
     }
   
-  PetscFunctionReturn(0);
+  PtegscFunctionReturn(0);
 
 }
 
