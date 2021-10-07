@@ -142,7 +142,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,          1, 1.0);        	CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);              CHKERRQ(ierr);
     ierr = getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1);              CHKERRQ(ierr);
-    ierr = getIntParam   (fb, _OPTIONAL_, "Compute_velocity_gradient", &ctrl->Compute_velocity_gradient,           1, 1);              CHKERRQ(ierr);
+
 //
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -419,18 +419,17 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = DMCreateGlobalVector(fs->DA_YZ,  &jr->gdyz); CHKERRQ(ierr);
 
 	// velocity gradient tensor components   // control structure to create and destroy them
-	if(jr->ctrl.Compute_velocity_gradient == 1)
-	{
-		ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvxdx); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvydy); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvzdz); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvxdy); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvydx); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvxdz); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvzdx); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvydz); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvzdy); CHKERRQ(ierr);
-	}
+
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvxdx); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvydy); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvzdz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvxdy); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvydx); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvxdz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvzdx); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvydz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvzdy); CHKERRQ(ierr);
+
 
 	// pressure
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gp);      CHKERRQ(ierr);
@@ -585,18 +584,16 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
 
 	// velocity gradient tensor components   // control structure to create and destroy them
-		if(jr->ctrl.Compute_velocity_gradient == 1)
-		{
-			ierr = VecDestroy(&jr->dvxdx); CHKERRQ(ierr);
-			ierr = VecDestroy(&jr->dvydy); CHKERRQ(ierr);
-			ierr = VecDestroy(&jr->dvzdz); CHKERRQ(ierr);
-			ierr = VecDestroy(&jr->dvxdy); CHKERRQ(ierr);
-			ierr = VecDestroy(&jr->dvydx); CHKERRQ(ierr);
-			ierr = VecDestroy(&jr->dvxdz); CHKERRQ(ierr);
-			ierr = VecDestroy(&jr->dvzdx); CHKERRQ(ierr);
-			ierr = VecDestroy(&jr->dvydz); CHKERRQ(ierr);
-			ierr = VecDestroy(&jr->dvzdy); CHKERRQ(ierr);
-		}
+
+	ierr = VecDestroy(&jr->dvxdx); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvydy); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvzdz); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvxdy); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvydx); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvxdz); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvzdx); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvydz); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvzdy); CHKERRQ(ierr);
 
 	// solution variables
 	ierr = PetscFree(jr->svCell);    CHKERRQ(ierr);
@@ -810,8 +807,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
 
-	if(jr->ctrl.Compute_velocity_gradient == 1)
-	{
 
 	// access the velocity gradient tensor
 		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
@@ -823,8 +818,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
 		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
 		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
-	}
-
 
 	//-------------------------------
 	// central points (dxx, dyy, dzz)
