@@ -198,8 +198,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
         for(j = 0; j < numDike; j++)
         {
 
-	  PetscPrintf(PETSC_COMM_WORLD,"Dike: j = %i \n", j);
-	  
 	  kfac = 0.0;
 	  rho_A = 0.0;
 	  
@@ -208,8 +206,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 	    
             // access the phase ID of the dike block
             i = dike->PhaseID;
-	    
-	    PetscPrintf(PETSC_COMM_WORLD,"Dike phase: i = %i \n", i);
 	    
              // check if the phase ratio of a dike phase is greater than 0 in the current cell
             if(phRat[i] > 0)
