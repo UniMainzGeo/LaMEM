@@ -513,7 +513,7 @@
 	out_melt_fraction   = 1
 	out_fluid_density   = 1
 	out_conductivity    = 1
-
+        out_vel_gr_tensor  = 1 
 # Phase aggregate output paramter
 # Phase ratios of listed phases are summed up and output as a scalar vector
 # Phase aggregate can consist of a single phase

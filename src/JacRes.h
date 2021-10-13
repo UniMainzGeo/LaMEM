@@ -195,7 +195,6 @@ struct Controls
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
 
     PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
-    PetscInt    Compute_velocity_gradient; // activaction flag for computing velocity gradient
 };
 
 //---------------------------------------------------------------------------

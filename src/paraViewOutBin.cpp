@@ -408,7 +408,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
-//	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
 
 
 	// read phase aggregates
@@ -418,10 +418,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase aggregates specified! Max allowed: %lld", (LLD)_max_num_phase_agg_);
 	}
-	if(pvout->jr->ctrl.Compute_velocity_gradient == 1 )
-	{
-		omask->vel_gr_tensor = 1;
-	}
+
+
 
 	omask->num_agg = fb->nblocks;
 
