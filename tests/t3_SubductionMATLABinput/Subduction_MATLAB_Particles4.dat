@@ -88,7 +88,8 @@
 	advect         = basic               # advection scheme
 	interp         = stag            # velocity interpolation scheme
 	mark_ctrl      = subgrid
-	mark_load_file = ./markers_p1/mdb  # marker input file (extension is .xxxxxxxx.dat)
+
+	mark_load_file = ./markers_p4/mdb  # marker input file (extension is .xxxxxxxx.dat)
 #===============================================================================
 # Output
 #===============================================================================
