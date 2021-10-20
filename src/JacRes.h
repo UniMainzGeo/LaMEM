@@ -222,6 +222,7 @@ struct JacRes
 	// velocity	components
 	Vec gvx,  gvy, gvz;  // global
 	Vec lvx,  lvy, lvz;  // local (ghosted)
+	Vec dvxdx,dvxdy, dvxdz,dvydx,dvydy,dvydz,dvzdx,dvzdy,dvzdz;  // velocity tensor components
 
 	// momentum residual components
 	Vec gfx,  gfy, gfz;  // global

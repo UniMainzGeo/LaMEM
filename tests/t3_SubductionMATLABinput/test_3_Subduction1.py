@@ -75,14 +75,14 @@ def test_b():
 def test_c():
 
   # 1) Create a partitioning file and do not show any output of this
-  os.system('mpiexec -n 4 ../bin/deb/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat -mode save_grid > /dev/null');
+  os.system('mpiexec -n 4 ../bin/deb/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles4.dat -mode save_grid > /dev/null');
 
   # 2) Run MATLAB to create the Particles input  (requires the environmental variable $MATLAB to be defined!)
   os.system('$MATLAB -nojvm -r "cd t3_SubductionMATLABinput; CreateMarkers_Subduction(4); exit" > /dev/null')
 
   # Run the input script wth matlab-generated particles
   ranks = 4
-  launch = '../bin/deb/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat -mark_load_file ./markers_p4/mdb -jp_pc_factor_mat_solver_package superlu_dist'
+  launch = '../bin/deb/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles4.dat -mark_load_file ./markers_p4/mdb -jp_pc_factor_mat_solver_package superlu_dist'
   expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_c_SUPERLUDIST_deb-p4.expected'
 
   def comparefunc(unittest):
@@ -106,14 +106,16 @@ def test_c():
 
 def test_d():
 
+  os.system('rm ../*.bin > /dev/null');
   # 1) Create a partitioning file and do not show any output of this
-  os.system('mpiexec -n 8 ../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_VEP.dat -mode save_grid > /dev/null');
+  os.system('mpiexec -np 8 ../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_VEP.dat -mode save_grid > /dev/null');
 
   # 2) Run MATLAB to create the Particles input  (requires the environmental variable $MATLAB to be defined!)
   os.system('$MATLAB -nojvm -r "cd t3_SubductionMATLABinput; CreateMarkers_SubductionVEP_parallel; exit" > /dev/null')
 
   # Run the input script wth matlab-generated particles
   ranks = 8
+  #os.system('mpiexec -n 8 ../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_VEP.dat >>t3_SubductionMATLABinput/Sub1_MATLAB_d_MUMPS_MG_VEP_opt-p8.expected  > /dev/null');
   launch = '../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_VEP.dat'
   expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_d_MUMPS_MG_VEP_opt-p8.expected'
 

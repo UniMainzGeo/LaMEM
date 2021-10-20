@@ -92,7 +92,7 @@ PetscErrorCode PVOutWriteOverPress   (OutVec*);
 PetscErrorCode PVOutWriteLithoPress  (OutVec*);
 PetscErrorCode PVOutWritePorePress   (OutVec*);
 PetscErrorCode PVOutWriteTemperature (OutVec*);
-PetscErrorCode PVOutWriteConductivity(OutVec*);   // NEW
+PetscErrorCode PVOutWriteConductivity(OutVec*);
 PetscErrorCode PVOutWriteDevStress   (OutVec*);
 PetscErrorCode PVOutWriteJ2DevStress (OutVec*);
 PetscErrorCode PVOutWriteStrainRate  (OutVec*);
@@ -117,6 +117,7 @@ PetscErrorCode PVOutWriteRelDIIprl   (OutVec*);
 PetscErrorCode PVOutWriteMomentRes   (OutVec*);
 PetscErrorCode PVOutWriteContRes     (OutVec*);
 PetscErrorCode PVOutWritEnergRes     (OutVec*);
+PetscErrorCode PVOutWriteVelocityGr  (OutVec*);
 // ... add more output functions here
 
 //---------------------------------------------------------------------------

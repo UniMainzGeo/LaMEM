@@ -337,6 +337,8 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->moment_res)     cnt++; // momentum residual
 	if(omask->cont_res)       cnt++; // continuity residual
 	if(omask->energ_res)      cnt++; // energy residual
+	if(omask->vel_gr_tensor)      cnt++; // energy residual
+
 
 	// phase aggregates
 	cnt += omask->num_agg;
@@ -406,6 +408,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
+
 
 	// read phase aggregates
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseAggStart>", "<PhaseAggEnd>"); CHKERRQ(ierr);
@@ -414,6 +418,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase aggregates specified! Max allowed: %lld", (LLD)_max_num_phase_agg_);
 	}
+
+
 
 	omask->num_agg = fb->nblocks;
 
@@ -475,6 +481,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->energ_res)      PetscPrintf(PETSC_COMM_WORLD, "   energy residual                         @ \n");
 	if(omask->melt_fraction)  PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction                           @ \n");
 	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
+	if(omask->vel_gr_tensor)  PetscPrintf(PETSC_COMM_WORLD, "   Velocity Gradient Tensor                @ \n");
+
 
 	for(i = 0; i < omask->num_agg; i++)
 	{
@@ -532,13 +540,13 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->velocity)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3, NULL);
 	if(omask->pressure)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1, NULL);
 	if(omask->tot_pressure)   OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "total_pressure", scal->lbl_stress,           &PVOutWriteTotalPress,   1, NULL);
-    if(omask->gradient)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "gradient",       scal->lbl_unit,             &PVOutWriteGradient,     1, NULL);
+	if(omask->gradient)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "gradient",       scal->lbl_unit,             &PVOutWriteGradient,     1, NULL);
 	if(omask->eff_press)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "eff_press",      scal->lbl_stress,           &PVOutWriteEffPress,     1, NULL);
 	if(omask->over_press)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "over_press",     scal->lbl_stress,           &PVOutWriteOverPress,    1, NULL);
 	if(omask->litho_press)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "litho_press",    scal->lbl_stress,           &PVOutWriteLithoPress,   1, NULL);
 	if(omask->pore_press)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "pore_press",     scal->lbl_stress,           &PVOutWritePorePress,    1, NULL);
 	if(omask->temperature)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1, NULL);
-        if(omask->conductivity)   OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "conductivity",   scal->lbl_conductivity,     &PVOutWriteConductivity, 1, NULL);
+	if(omask->conductivity)   OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "conductivity",   scal->lbl_conductivity,     &PVOutWriteConductivity, 1, NULL);
 	if(omask->dev_stress)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    9, NULL);
 	if(omask->strain_rate)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   9, NULL);
 	if(omask->j2_dev_stress)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "j2_dev_stress",  scal->lbl_stress,           &PVOutWriteJ2DevStress,  1, NULL);
@@ -563,6 +571,8 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3, NULL);
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL);
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1, NULL);
+	if(omask->vel_gr_tensor)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "vel_gr_tensor",  scal->lbl_strain_rate,      &PVOutWriteVelocityGr,   9, NULL);
+
 
 	// setup phase aggregate output vectors
 	for(i = 0; i < omask->num_agg; i++)
