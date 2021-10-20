@@ -39,7 +39,7 @@ Parallel_partition     = '../ProcessorPartitioning_8cpu_2.1.4.bin';
 %==========================================================================
 % Domain parameters
 W       =   2000; % x-dir
-L       =   1;    % y-dir
+L       =   60;    % y-dir
 H       =   680;  % z-dir
 
 % Number of markers in a grid cell
@@ -47,8 +47,8 @@ npart_x = 3;
 npart_y = 3;
 npart_z = 3;
 % Element resolution
-nel_x   =   256;
-nel_y   =   2;
+nel_x   =   64;
+nel_y   =   3;
 nel_z   =   128;
 % Number of markers
 nump_x  =   nel_x*npart_x;
@@ -249,8 +249,8 @@ if (LaMEM_Parallel_output == 1)
 
     FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition,logical(0));
 
-	!rm -rf ../markers_p8
-	!mv -f markers ../markers_p8
+	!rm -rf ../markers_p8_S
+	!mv -f markers ../markers_p8_S
 
 end
 

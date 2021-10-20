@@ -139,7 +139,7 @@ struct OutMask
 	PetscInt litho_press;    // lithostatic pressure
 	PetscInt pore_press;     // pore pressure
 	PetscInt temperature;    // temperature
-        PetscInt conductivity;   // conductivity
+	PetscInt conductivity;   // conductivity
 	PetscInt dev_stress;     // deviatoric stress tensor
 	PetscInt j2_dev_stress;  // deviatoric stress second invariant
 	PetscInt strain_rate;    // deviatoric strain rate tensor
@@ -163,6 +163,7 @@ struct OutMask
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
+	PetscInt vel_gr_tensor;  // velocity gradient tensor
 
 	// phase aggregates
 	PetscInt num_agg;                                              // number of phase aggregates
