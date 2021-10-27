@@ -98,12 +98,12 @@ registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),
                       StrEnv.test_a(), StrEnv.test_b(), StrEnv.test_c(), StrEnv.test_d(),
-                      RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(), PT.test_c(), PT.test_d(), PT.test_e(),
+                      RTI.RTI_isovisous_NoSlip(), PT.test_a(), PT.test_b(), PT.test_c(), PT.test_d(), PT.test_e(), PT.test_2phTr(),
                       InOut.test_2D(), InOut.test_3D(),InOut.test_2D_Pres(), InOut.test_3D_Pres(),SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), 
                       CI.test_a(), CI.test_b(),
                       FSSA.test_1(),PTracer.test_a(),PTracer.test_b(),
                       Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique(),Permeable.test_a(), APShealing.test_2D(), APShealing.test_2cores(),
-                      Dike.test_M1_2D(), Dike.test_M075_2D_2cores(), Dike.test_M05_2D(), Dike.test_2cores_2dikes(), TdepCond.test_2fields_dike()];
+                      Dike.test_M1_2D(), Dike.test_M075_2D_2cores(), Dike.test_M05_2D(), TdepCond.test_2fields_dike()];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)

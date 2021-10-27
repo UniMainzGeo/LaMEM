@@ -55,7 +55,7 @@
 #include "constEq.h"
 #include "bc.h"
 #include "tssolve.h"
-#include "scaling.h"
+//#include "scaling.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
@@ -121,14 +121,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         // read dike parameter from file 
         Dike     *dike;
         PetscInt  ID;
-	Scaling  *scal;
 	
         PetscErrorCode ierr;
         PetscFunctionBegin;
 
-	// access context
-	scal    =  dbm->scal;
-	
         // Dike ID                                                                                                                                                         
         ierr    = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbdike->numDike-1); CHKERRQ(ierr);
         fb->ID  = ID;
@@ -149,22 +145,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
-	ierr = getIntParam(   fb, _OPTIONAL_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "t0_dike", &dike->t0_dike, 1, 1.0);       CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "t1_dike", &dike->t1_dike, 1, 1.0);       CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "v_dike",  &dike->v_dike,  1, 1.0);   CHKERRQ(ierr);
-
-	// scale parameters
-      	dike->t0_dike /= scal->time;
-       	dike->t1_dike /= scal->time;
-	dike->v_dike  /= scal->velocity; 
 
         if (PrintOutput)
 	  {
 	    PetscPrintf(PETSC_COMM_WORLD,"   Dike parameters ID[%lld] : Mf = %g, Mb = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb);
-      	    PetscPrintf(PETSC_COMM_WORLD,"   Optional dike parameters: v_dike = %g \n", dike->v_dike, scal->lbl_velocity);
-	    PetscPrintf(PETSC_COMM_WORLD,"                             t0_dike = %g \n", dike->t0_dike, scal->lbl_time);
-	    PetscPrintf(PETSC_COMM_WORLD,"                             t1_dike = %g \n", dike->t1_dike, scal->lbl_time);
 	    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
         }
 
@@ -254,53 +238,3 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 }
 
 //------------------------------------------------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MovingDike"
-PetscErrorCode MovingDike(DBPropDike *dbdike,
-			  Ph_trans_t *PhaseTrans,
-			  TSSol *ts)
-{
-
-  Dike        *dike;
-  PetscInt     j, numDike;
-  PetscScalar  t0_dike, t1_dike, v_dike;
-  PetscScalar  t_current, dt;
-
-  PetscFunctionBegin;//  NECESSARY?
-
-  numDike    = dbdike->numDike;
-  dt         = ts->dt;       // time step
-  t_current  = ts->time;     // current time stamp, computed at the end of last time step round
-  
-  // loop through all dike blocks
-  for(j = 0; j < numDike; j++)
-    {
-      
-      // access the parameters of the dike depending on the dike block 
-      dike = dbdike->matDike+j;
-      
-      // access the starting and end times of certain dike block
-      t0_dike = dike->t0_dike;
-      t1_dike = dike->t1_dike;
-      v_dike  = dike->v_dike;
-
-      // check if the current time step is equal to the starting time of when the dike is supposed to move
-      if(t_current >= t0_dike && t_current <= t1_dike)
-	{
-	      
-	  // condition for moving: phase transition ID needs to be the same as the Phase transitionID of the dike block
-	  if(PhaseTrans->ID == dike->PhaseTransID)    
-	    {
-	      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;
-	      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;
-	    }
-	  
-	}
-      
-    }
-  
-  PetscFunctionReturn(0);
-}
-
-
-// --------------------------------------------------------------------------------------------------------------- 

@@ -1,0 +1,2891 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Oct 26 2021 - Time: 16:25:59 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./PhaseTransitionBox_move.dat 
+   Adding PETSc option: -snes_rtol 1e-3
+   Adding PETSc option: -snes_atol 1e-4
+   Adding PETSc option: -snes_max_it 50
+   Adding PETSc option: -snes_PicardSwitchToNewton_rtol 3e-3
+   Adding PETSc option: -snes_NewtonSwitchToPicard_it 20
+   Adding PETSc option: -js_ksp_type fgmres
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_max_it 20
+   Adding PETSc option: -js_ksp_atol 1e-8
+   Adding PETSc option: -js_ksp_rtol 1e-3
+   Adding PETSc option: -snes_linesearch_type l2
+   Adding PETSc option: -snes_linesearch_monitor
+   Adding PETSc option: -snes_linesearch_maxstep 10
+Finished parsing input file : ./PhaseTransitionBox_move.dat 
+--------------------------------------------------------------------------
+Scaling parameters:
+   Temperature : 1000. [C/K] 
+   Length      : 1000. [m] 
+   Viscosity   : 1e+19 [Pa*s] 
+   Stress      : 1e+09 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 0.5 [Myr] 
+   Maximum number of steps      : 6 
+   Time step                    : 0.001 [Myr] 
+   Minimum time step            : 1e-05 [Myr] 
+   Maximum time step            : 0.1 [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 1. 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Softening laws: 
+--------------------------------------------------------------------------
+   SoftLaw [0] : A = 0.95, APS1 = 0.01, APS2 = 0.15, healTau = 0.04
+   SoftLaw [1] : A = 0., APS1 = 0., APS2 = 0., healTau = 1e-24
+   SoftLaw [2] : A = 0., APS1 = 0., APS2 = 0., healTau = 0.04
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0   
+   (dens)   : rho = 100. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  healID = 2 
+   (temp)   : Cp = 1000. [J/kg/K]  k = 5000. [W/m/k]  
+
+   Phase ID : 2   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 4e+10 [Pa]  Vs = 3481.55 [m/s]  
+   (disl)   : Bn = 1.1e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 3e+07 [Pa]  fr = 30. [deg]  healID = 1 
+   (temp)   : Cp = 1200. [J/kg/K]  k = 80. [W/m/k]  
+
+   Phase ID : 1   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 4e+10 [Pa]  Vs = 3481.55 [m/s]  
+   (disl)   : Bn = 1.1e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 3e+07 [Pa]  fr = 30. [deg]  chSoftID = 0 healID = 0 
+   (temp)   : Cp = 1200. [J/kg/K]  k = 3.5 [W/m/k]  
+
+   Phase ID : 3   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 4e+10 [Pa]  Vs = 3481.55 [m/s]  
+   (disl)   : Bn = 1.1e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 3e+07 [Pa]  fr = 30. [deg]  chSoftID = 0 healID = 0 
+   (temp)   : Cp = 1200. [J/kg/K]  k = 10. [W/m/k]  
+
+--------------------------------------------------------------------------
+Phase Transition laws: 
+--------------------------------------------------------------------------
+   Phase Transition [0] :   Box 
+     Box Bounds         :   [-10.0; -8.0; -1.0; 1.0; -15.0; 4.0] [km] 
+     Don't set phase    @   
+     Don't set T inside @   
+     Phase Outside      :    1  0  
+     Phase Inside       :   2  2  
+     Direction          :   BothWays 
+   Phase Transition [1] :   Box 
+     Box Bounds         :   [5.0; 10.0; -1.0; 1.0; -15.0; 4.0] [km] 
+     Don't set phase    @   
+     Don't set T inside @   
+     Phase Outside      :    1  0  
+     Phase Inside       :   3  3  
+     Direction          :   BothWays 
+
+   Adjusting density values due to phase transitions: 
+--------------------------------------------------------------------------
+Dike blocks : 
+--------------------------------------------------------------------------
+   Dike parameters ID[0] : Mf = 1., Mb = 1.
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [40, 2, 20]
+   Number of cells                      :  1600
+   Number of faces                      :  5720
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [-20., -1., -15.]
+   Upper coordinate bounds [ex, ey, ez] : [20., 1., 5.]
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0. [km] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+   Maximum surface slope     : 25. [deg]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+   Open top boundary                          @ 
+   Top boundary temperature                   : 1. [C] 
+   Bottom boundary temperature                : 1350. [C] 
+   Adding inflow velocity at boundary         @ 
+      Inflow velocity boundary                : CompensatingInflow 
+      Inflow phase from next to boundary      @ 
+      Inflow window [bottom, top]             : [-15.00,5.00] [km] 
+      Inflow velocity                         : -2.00 [cm/yr] 
+      Outflow velocity                        : inf [cm/yr] 
+      Bottom flow velocity                    : 0.00 [cm/yr] 
+      Inflow temperature from closest marker  @ 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
+   Surface stabilization (FSSA)            :  1. 
+   Shear heating efficiency                :  1. 
+   Activate temperature diffusion          @ 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Use lithostatic pressure for plasticity @ 
+   Limit pressure at first iteration       @ 
+   Minimum viscosity                       : 1e+18 [Pa*s] 
+   Maximum viscosity                       : 1e+24 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+22 [Pa*s] 
+   Universal gas constant                  : 8.31446 [J/mol/K] 
+   Minimum cohesion                        : 1000. [Pa] 
+   Minimum friction                        : 1. [deg] 
+   Ultimate yield stress                   : 1e+09 [Pa] 
+   Max. melt fraction (viscosity, density) : 0.15    
+   Rheology iteration number               : 8  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : MINMOD (correction + MINMOD)
+   Marker control type           : AVD for cells + corner insertion
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+   Background phase ID           : 0 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.00169206 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : moveDikeM1movePhTr 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Temperature                             @ 
+   Conductivity                            @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate second invariant @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 2 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Penalty parameter (pgamma)    : 1.000000e+03
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : fgmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.605918788089e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.605918788089e+01 
+    1 KSP Residual norm 1.900649856981e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.90065e-05, 38.0296, 76.0592]
+      Line search terminated: lambda = 1., fnorms = 1.90065e-05
+  1 SNES Function norm 1.900649856982e-05 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.0622258 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 6.324475851763e-07 
+      |Div|_2   = 1.900649833652e-05 
+   Momentum: 
+      |mRes|_2  = 2.977935653436e-09 
+   Energy: 
+      |eRes|_2  = 3.115314872955e-04 
+--------------------------------------------------------------------------
+Saving output ... done (0.0538032 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.00100000 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... done (0.00379992 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.689484970509e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.689484970509e+00 
+    1 KSP Residual norm 6.370006210190e-02 
+    2 KSP Residual norm 3.920598845895e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.59944, 2.93269, 5.68948]
+      Line search terminated: lambda = 0.920429, fnorms = 1.51839
+  1 SNES Function norm 1.518393252457e+00 
+  1 PICARD ||F||/||F0||=2.668771e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.518393252457e+00 
+    1 KSP Residual norm 5.105131779387e-03 
+    2 KSP Residual norm 4.313466031742e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.161556, 0.766844, 1.51839]
+      Line search terminated: lambda = 0.993159, fnorms = 0.162752
+  2 SNES Function norm 1.627520004515e-01 
+  2 PICARD ||F||/||F0||=2.860575e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.627520004515e-01 
+    1 KSP Residual norm 3.540633578800e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0943388, 0.124974, 0.162752]
+      Line search terminated: lambda = 1.55934, fnorms = 0.0849411
+  3 SNES Function norm 8.494112464810e-02 
+  3 PICARD ||F||/||F0||=1.492949e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.494112464810e-02 
+    1 KSP Residual norm 1.988663433200e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0389669, 0.0611749, 0.0849411]
+      Line search terminated: lambda = 1.64051, fnorms = 0.0265848
+  4 SNES Function norm 2.658480181643e-02 
+  4 PICARD ||F||/||F0||=4.672620e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.658480181643e-02 
+    1 KSP Residual norm 1.257044890671e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0139103, 0.017597, 0.0265848]
+      Line search terminated: lambda = 0.956733, fnorms = 0.0139036
+  5 SNES Function norm 1.390362443808e-02 
+  5 MMFD   ||F||/||F0||=2.443740e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.390362443808e-02 
+    1 KSP Residual norm 1.371147875551e-02 
+    2 KSP Residual norm 6.759701690467e-03 
+    3 KSP Residual norm 2.198714294499e-03 
+    4 KSP Residual norm 3.816049991730e-04 
+    5 KSP Residual norm 1.013867434030e-04 
+    6 KSP Residual norm 3.322899469686e-05 
+    7 KSP Residual norm 9.861990024723e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0200253, 0.0129966, 0.0139036]
+      Line search terminated: lambda = 0.297563, fnorms = 0.0121717
+  6 SNES Function norm 1.217173573068e-02 
+  6 MMFD   ||F||/||F0||=2.139339e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.217173573068e-02 
+    1 KSP Residual norm 9.979064185857e-03 
+    2 KSP Residual norm 9.889454264180e-03 
+    3 KSP Residual norm 9.407018205327e-03 
+    4 KSP Residual norm 7.869824761198e-03 
+    5 KSP Residual norm 1.389426582290e-03 
+    6 KSP Residual norm 4.529214650689e-04 
+    7 KSP Residual norm 1.516261762999e-04 
+    8 KSP Residual norm 4.612664668192e-05 
+    9 KSP Residual norm 1.756570600016e-05 
+   10 KSP Residual norm 6.394130982604e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.467208, 0.224926, 0.0121717]
+      Line search terminated: lambda = 0.0348843, fnorms = 0.0239587
+  7 SNES Function norm 2.395865522778e-02 
+  7 MMFD   ||F||/||F0||=4.211041e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.395865522778e-02 
+    1 KSP Residual norm 9.412245763387e-03 
+    2 KSP Residual norm 6.566721878881e-03 
+    3 KSP Residual norm 2.820639051553e-03 
+    4 KSP Residual norm 6.385967537694e-04 
+    5 KSP Residual norm 1.096462903725e-04 
+    6 KSP Residual norm 3.320632762240e-05 
+    7 KSP Residual norm 1.086991316854e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0462361, 0.034459, 0.0239587]
+      Line search terminated: lambda = 0.5, fnorms = 0.034459
+  8 SNES Function norm 3.445896512804e-02 
+  8 MMFD   ||F||/||F0||=6.056605e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.445896512804e-02 
+    1 KSP Residual norm 6.200596909837e-03 
+    2 KSP Residual norm 3.306782160798e-03 
+    3 KSP Residual norm 1.448875359926e-03 
+    4 KSP Residual norm 5.959726817006e-04 
+    5 KSP Residual norm 1.431032900212e-04 
+    6 KSP Residual norm 4.028430102201e-05 
+    7 KSP Residual norm 8.194156345078e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0426544, 0.0383818, 0.034459]
+      Line search terminated: lambda = 0.5, fnorms = 0.0383818
+  9 SNES Function norm 3.838183101175e-02 
+  9 MMFD   ||F||/||F0||=6.746099e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.838183101175e-02 
+    1 KSP Residual norm 3.314404499020e-02 
+    2 KSP Residual norm 3.311717935258e-02 
+    3 KSP Residual norm 1.709654247783e-02 
+    4 KSP Residual norm 8.489295645641e-03 
+    5 KSP Residual norm 2.235704642851e-03 
+    6 KSP Residual norm 8.730232791866e-04 
+    7 KSP Residual norm 2.221940360107e-04 
+    8 KSP Residual norm 9.743929287010e-05 
+    9 KSP Residual norm 3.966843304074e-05 
+   10 KSP Residual norm 1.478415030062e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.241698, 0.124669, 0.0383818]
+      Line search terminated: lambda = 0.00579875, fnorms = 0.0388351
+ 10 SNES Function norm 3.883512559738e-02 
+ 10 MMFD   ||F||/||F0||=6.825772e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.883512559738e-02 
+    1 KSP Residual norm 3.794258663652e-02 
+    2 KSP Residual norm 3.022439821890e-02 
+    3 KSP Residual norm 2.766937150596e-02 
+    4 KSP Residual norm 1.150785025677e-02 
+    5 KSP Residual norm 3.827564849352e-03 
+    6 KSP Residual norm 1.243007155941e-03 
+    7 KSP Residual norm 3.387525169522e-04 
+    8 KSP Residual norm 1.436251804708e-04 
+    9 KSP Residual norm 6.303434472102e-05 
+   10 KSP Residual norm 2.303315040778e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.344454, 0.152104, 0.0388351]
+      Line search terminated: lambda = 0.103644, fnorms = 0.0402246
+ 11 SNES Function norm 4.022459340071e-02 
+ 11 MMFD   ||F||/||F0||=7.069989e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.022459340071e-02 
+    1 KSP Residual norm 3.508480639312e-02 
+    2 KSP Residual norm 3.064558836324e-02 
+    3 KSP Residual norm 3.053351668719e-02 
+    4 KSP Residual norm 1.478881397882e-02 
+    5 KSP Residual norm 5.623292870302e-03 
+    6 KSP Residual norm 1.727973079286e-03 
+    7 KSP Residual norm 4.438144388001e-04 
+    8 KSP Residual norm 1.925091787865e-04 
+    9 KSP Residual norm 8.133423461945e-05 
+   10 KSP Residual norm 2.936792497707e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.581878, 0.23533, 0.0402246]
+      Line search terminated: lambda = 0.13284, fnorms = 0.0520721
+ 12 SNES Function norm 5.207207838970e-02 
+ 12 MMFD   ||F||/||F0||=9.152336e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.207207838970e-02 
+    1 KSP Residual norm 3.738089694713e-02 
+    2 KSP Residual norm 3.737097652702e-02 
+    3 KSP Residual norm 2.337577684355e-02 
+    4 KSP Residual norm 1.367681273222e-02 
+    5 KSP Residual norm 3.298756467706e-03 
+    6 KSP Residual norm 1.042116845672e-03 
+    7 KSP Residual norm 2.773432294820e-04 
+    8 KSP Residual norm 1.089611151879e-04 
+    9 KSP Residual norm 4.741504935445e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.440561, 0.208801, 0.0520721]
+      Line search terminated: lambda = 0.0634911, fnorms = 0.0665721
+ 13 SNES Function norm 6.657209223377e-02 
+ 13 MMFD   ||F||/||F0||=1.170090e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.657209223377e-02 
+    1 KSP Residual norm 4.582339184891e-02 
+    2 KSP Residual norm 4.413287418798e-02 
+    3 KSP Residual norm 4.108992078367e-02 
+    4 KSP Residual norm 3.691638672604e-02 
+    5 KSP Residual norm 3.678337730135e-02 
+    6 KSP Residual norm 2.869472125334e-02 
+    7 KSP Residual norm 1.920257479412e-02 
+    8 KSP Residual norm 6.615257173382e-03 
+    9 KSP Residual norm 2.862342660220e-03 
+   10 KSP Residual norm 1.243873986319e-03 
+   11 KSP Residual norm 3.639171723786e-04 
+   12 KSP Residual norm 1.317046037636e-04 
+   13 KSP Residual norm 5.464435083853e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [23.3013, 11.5927, 0.0665721]
+      Line search terminated: lambda = 0.0049235, fnorms = 0.0884884
+ 14 SNES Function norm 8.848837800036e-02 
+ 14 MMFD   ||F||/||F0||=1.555297e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.848837800036e-02 
+    1 KSP Residual norm 5.645914338623e-02 
+    2 KSP Residual norm 5.645398916266e-02 
+    3 KSP Residual norm 3.606210863754e-02 
+    4 KSP Residual norm 2.335232434264e-02 
+    5 KSP Residual norm 4.472522706454e-03 
+    6 KSP Residual norm 1.461000059867e-03 
+    7 KSP Residual norm 4.593168552864e-04 
+    8 KSP Residual norm 1.662796242213e-04 
+    9 KSP Residual norm 5.661291999216e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.849147, 0.462922, 0.0884884]
+      Line search terminated: lambda = 0.5, fnorms = 0.462922
+ 15 SNES Function norm 4.629219117394e-01 
+ 15 MMFD   ||F||/||F0||=8.136447e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.629219117394e-01 
+    1 KSP Residual norm 3.190251116579e-01 
+    2 KSP Residual norm 1.429060062677e-01 
+    3 KSP Residual norm 3.786331939732e-02 
+    4 KSP Residual norm 1.256006020297e-02 
+    5 KSP Residual norm 6.104518174126e-03 
+    6 KSP Residual norm 1.419235617050e-03 
+    7 KSP Residual norm 4.261130284808e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.66235, 0.300826, 0.462922]
+      Line search terminated: lambda = 0.381141, fnorms = 0.271357
+ 16 SNES Function norm 2.713571544323e-01 
+ 16 MMFD   ||F||/||F0||=4.769450e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.713571544323e-01 
+    1 KSP Residual norm 2.704716969389e-01 
+    2 KSP Residual norm 7.404730165021e-02 
+    3 KSP Residual norm 1.600075770355e-02 
+    4 KSP Residual norm 4.139821858530e-03 
+    5 KSP Residual norm 1.409253221730e-03 
+    6 KSP Residual norm 6.216609187938e-04 
+    7 KSP Residual norm 1.910899622589e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.289288, 0.203822, 0.271357]
+      Line search terminated: lambda = 0.466145, fnorms = 0.203259
+ 17 SNES Function norm 2.032590324868e-01 
+ 17 MMFD   ||F||/||F0||=3.572538e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.032590324868e-01 
+    1 KSP Residual norm 1.888034958032e-01 
+    2 KSP Residual norm 8.493558078046e-02 
+    3 KSP Residual norm 3.270881423506e-02 
+    4 KSP Residual norm 1.278607500358e-02 
+    5 KSP Residual norm 3.708323993874e-03 
+    6 KSP Residual norm 1.259842122877e-03 
+    7 KSP Residual norm 3.904915740767e-04 
+    8 KSP Residual norm 1.236398663246e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.37356, 0.187567, 0.203259]
+      Line search terminated: lambda = 0.277751, fnorms = 0.152714
+ 18 SNES Function norm 1.527136608663e-01 
+ 18 MMFD   ||F||/||F0||=2.684139e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.527136608663e-01 
+    1 KSP Residual norm 1.473377930702e-01 
+    2 KSP Residual norm 2.571949704622e-02 
+    3 KSP Residual norm 6.953644841726e-03 
+    4 KSP Residual norm 2.356917742392e-03 
+    5 KSP Residual norm 6.264613890609e-04 
+    6 KSP Residual norm 2.277653278111e-04 
+    7 KSP Residual norm 7.639248265174e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.128333, 0.114163, 0.152714]
+      Line search terminated: lambda = 0.624818, fnorms = 0.11295
+ 19 SNES Function norm 1.129501046037e-01 
+ 19 MMFD   ||F||/||F0||=1.985243e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.129501046037e-01 
+    1 KSP Residual norm 9.984975358019e-02 
+    2 KSP Residual norm 4.773188353461e-02 
+    3 KSP Residual norm 2.310282839541e-02 
+    4 KSP Residual norm 6.932408867448e-03 
+    5 KSP Residual norm 1.792958582318e-03 
+    6 KSP Residual norm 6.686135451594e-04 
+    7 KSP Residual norm 2.308929561586e-04 
+    8 KSP Residual norm 8.221045082129e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.254057, 0.117253, 0.11295]
+      Line search terminated: lambda = 0.240055, fnorms = 0.0805235
+ 20 SNES Function norm 8.052353873365e-02 
+ 20 MMFD   ||F||/||F0||=1.415305e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.052353873365e-02 
+    1 KSP Residual norm 7.675293841972e-02 
+    2 KSP Residual norm 1.168017081234e-02 
+    3 KSP Residual norm 3.728835951601e-03 
+    4 KSP Residual norm 1.298467134376e-03 
+    5 KSP Residual norm 3.069760512621e-04 
+    6 KSP Residual norm 1.112337592487e-04 
+    7 KSP Residual norm 3.882143758996e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0631414, 0.0595154, 0.0805235]
+      Line search terminated: lambda = 0.684338, fnorms = 0.0576921
+ 21 SNES Function norm 5.769212434649e-02 
+ 21 MMFD   ||F||/||F0||=1.014013e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.769212434649e-02 
+    1 KSP Residual norm 4.987048036080e-02 
+    2 KSP Residual norm 2.443184472856e-02 
+    3 KSP Residual norm 1.378108226941e-02 
+    4 KSP Residual norm 3.488716133947e-03 
+    5 KSP Residual norm 8.897964083755e-04 
+    6 KSP Residual norm 2.993881380725e-04 
+    7 KSP Residual norm 1.157546899151e-04 
+    8 KSP Residual norm 4.099134218977e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.139655, 0.0639225, 0.0576921]
+      Line search terminated: lambda = 0.224157, fnorms = 0.041267
+ 22 SNES Function norm 4.126697229919e-02 
+ 22 MMFD   ||F||/||F0||=7.253200e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.126697229919e-02 
+    1 KSP Residual norm 3.871613818930e-02 
+    2 KSP Residual norm 5.906869758879e-03 
+    3 KSP Residual norm 2.008391028799e-03 
+    4 KSP Residual norm 6.227314916914e-04 
+    5 KSP Residual norm 1.475862716843e-04 
+    6 KSP Residual norm 5.165210929759e-05 
+    7 KSP Residual norm 1.840682003701e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0305908, 0.0295799, 0.041267]
+      Line search terminated: lambda = 0.715781, fnorms = 0.0280526
+ 23 SNES Function norm 2.805258931880e-02 
+ 23 MMFD   ||F||/||F0||=4.930603e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.805258931880e-02 
+    1 KSP Residual norm 2.199874277456e-02 
+    2 KSP Residual norm 1.385007846835e-02 
+    3 KSP Residual norm 1.006113829839e-02 
+    4 KSP Residual norm 2.090859022467e-03 
+    5 KSP Residual norm 6.200667587947e-04 
+    6 KSP Residual norm 2.043125218024e-04 
+    7 KSP Residual norm 5.683528054884e-05 
+    8 KSP Residual norm 2.436967267301e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0852376, 0.0368695, 0.0280526]
+      Line search terminated: lambda = 0.196339, fnorms = 0.0190536
+ 24 SNES Function norm 1.905363848656e-02 
+ 24 MMFD   ||F||/||F0||=3.348921e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.905363848656e-02 
+    1 KSP Residual norm 1.799824634312e-02 
+    2 KSP Residual norm 4.255573346289e-03 
+    3 KSP Residual norm 1.223381548913e-03 
+    4 KSP Residual norm 3.066034652782e-04 
+    5 KSP Residual norm 6.917339704069e-05 
+    6 KSP Residual norm 2.487686046577e-05 
+    7 KSP Residual norm 7.159607673428e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.01507, 0.0138612, 0.0190536]
+      Line search terminated: lambda = 0.665066, fnorms = 0.0133916
+ 25 SNES Function norm 1.339164279884e-02 
+ 25 PICARD ||F||/||F0||=2.353753e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.339164279884e-02 
+    1 KSP Residual norm 1.165033444609e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00584616, 0.00938356, 0.0133916]
+      Line search terminated: lambda = 1.47002, fnorms = 0.00415887
+ 26 SNES Function norm 4.158867406502e-03 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 26
+SNES solution time      : 2.33825 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 7.032299226186e-08 
+      |Div|_2   = 1.721538471211e-07 
+   Momentum: 
+      |mRes|_2  = 4.158867402939e-03 
+   Energy: 
+      |eRes|_2  = 1.456086673653e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00100 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 20 markers in 2.3019e-03 s 
+--------------------------------------------------------------------------
+Saving output ... done (0.0531759 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00100000 [Myr] 
+Tentative time step : 0.00110000 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... done (0.00368309 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.765496871558e-01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.765496871558e-01 
+    1 KSP Residual norm 4.090720330849e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.47977, 0.224341, 0.27655]
+      Line search terminated: lambda = 0.313472, fnorms = 0.221078
+  1 SNES Function norm 2.210781245930e-01 
+  1 PICARD ||F||/||F0||=7.994156e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.210781245930e-01 
+    1 KSP Residual norm 2.432407309676e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.480968, 0.26557, 0.221078]
+      Line search terminated: lambda = 0.172199, fnorms = 0.210136
+  2 SNES Function norm 2.101356323220e-01 
+  2 PICARD ||F||/||F0||=7.598477e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.101356323220e-01 
+    1 KSP Residual norm 1.779822257543e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.403485, 0.258837, 0.210136]
+      Line search terminated: lambda = 0.0934844, fnorms = 0.208231
+  3 SNES Function norm 2.082309386099e-01 
+  3 PICARD ||F||/||F0||=7.529603e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.082309386099e-01 
+    1 KSP Residual norm 1.522211879151e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.363891, 0.251227, 0.208231]
+      Line search terminated: lambda = 0.0506466, fnorms = 0.207667
+  4 SNES Function norm 2.076667069209e-01 
+  4 PICARD ||F||/||F0||=7.509201e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.076667069209e-01 
+    1 KSP Residual norm 1.404490730822e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.344362, 0.246635, 0.207667]
+      Line search terminated: lambda = 0.0289986, fnorms = 0.20744
+  5 SNES Function norm 2.074399453572e-01 
+  5 PICARD ||F||/||F0||=7.501001e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.074399453572e-01 
+    1 KSP Residual norm 1.343031439931e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.333689, 0.243375, 0.20744]
+      Line search terminated: lambda = 0.0244737, fnorms = 0.207301
+  6 SNES Function norm 2.073010125707e-01 
+  6 PICARD ||F||/||F0||=7.495977e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.073010125707e-01 
+    1 KSP Residual norm 1.293943424868e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.324961, 0.24097, 0.207301]
+      Line search terminated: lambda = 0.0173686, fnorms = 0.207216
+  7 SNES Function norm 2.072160018597e-01 
+  7 PICARD ||F||/||F0||=7.492903e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.072160018597e-01 
+    1 KSP Residual norm 1.260681099412e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.318934, 0.239249, 0.207216]
+      Line search terminated: lambda = 0.0130401, fnorms = 0.207155
+  8 SNES Function norm 2.071548322463e-01 
+  8 PICARD ||F||/||F0||=7.490691e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.071548322463e-01 
+    1 KSP Residual norm 1.236503974327e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.314497, 0.237954, 0.207155]
+      Line search terminated: lambda = 0.0101447, fnorms = 0.207105
+  9 SNES Function norm 2.071050371912e-01 
+  9 PICARD ||F||/||F0||=7.488891e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.071050371912e-01 
+    1 KSP Residual norm 1.218175639867e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.311093, 0.236944, 0.207105]
+      Line search terminated: lambda = 0.0080858, fnorms = 0.207065
+ 10 SNES Function norm 2.070654238148e-01 
+ 10 PICARD ||F||/||F0||=7.487458e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.070654238148e-01 
+    1 KSP Residual norm 1.203841551918e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.308415, 0.236138, 0.207065]
+      Line search terminated: lambda = 0.00663479, fnorms = 0.207037
+ 11 SNES Function norm 2.070374382058e-01 
+ 11 PICARD ||F||/||F0||=7.486446e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.070374382058e-01 
+    1 KSP Residual norm 1.192259767285e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.306235, 0.235426, 0.207037]
+      Line search terminated: lambda = 0.00651365, fnorms = 0.207008
+ 12 SNES Function norm 2.070082508557e-01 
+ 12 PICARD ||F||/||F0||=7.485391e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.070082508557e-01 
+    1 KSP Residual norm 1.181045172033e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.30424, 0.234741, 0.207008]
+      Line search terminated: lambda = 0.00700075, fnorms = 0.206983
+ 13 SNES Function norm 2.069826481968e-01 
+ 13 PICARD ||F||/||F0||=7.484465e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.069826481968e-01 
+    1 KSP Residual norm 1.169133247950e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.301978, 0.234004, 0.206983]
+      Line search terminated: lambda = 0.00698839, fnorms = 0.206955
+ 14 SNES Function norm 2.069551783141e-01 
+ 14 PICARD ||F||/||F0||=7.483472e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.069551783141e-01 
+    1 KSP Residual norm 1.157406613402e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.299739, 0.23327, 0.206955]
+      Line search terminated: lambda = 0.00708707, fnorms = 0.206936
+ 15 SNES Function norm 2.069356190244e-01 
+ 15 PICARD ||F||/||F0||=7.482765e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.069356190244e-01 
+    1 KSP Residual norm 1.145656301615e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.297499, 0.232523, 0.206936]
+      Line search terminated: lambda = 0.00759847, fnorms = 0.206909
+ 16 SNES Function norm 2.069088474902e-01 
+ 16 PICARD ||F||/||F0||=7.481796e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.069088474902e-01 
+    1 KSP Residual norm 1.133259500722e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.295093, 0.231722, 0.206909]
+      Line search terminated: lambda = 0.00815337, fnorms = 0.206883
+ 17 SNES Function norm 2.068829161208e-01 
+ 17 PICARD ||F||/||F0||=7.480859e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.068829161208e-01 
+    1 KSP Residual norm 1.120157515579e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.292523, 0.23086, 0.206883]
+      Line search terminated: lambda = 0.00902658, fnorms = 0.206853
+ 18 SNES Function norm 2.068532761559e-01 
+ 18 PICARD ||F||/||F0||=7.479787e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.068532761559e-01 
+    1 KSP Residual norm 1.105892994681e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.289707, 0.229908, 0.206853]
+      Line search terminated: lambda = 0.0102899, fnorms = 0.206821
+ 19 SNES Function norm 2.068207017657e-01 
+ 19 PICARD ||F||/||F0||=7.478609e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.068207017657e-01 
+    1 KSP Residual norm 1.089949992735e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.286532, 0.228823, 0.206821]
+      Line search terminated: lambda = 0.012224, fnorms = 0.206792
+ 20 SNES Function norm 2.067915749369e-01 
+ 20 PICARD ||F||/||F0||=7.477556e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.067915749369e-01 
+    1 KSP Residual norm 1.071356751709e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.282816, 0.227538, 0.206792]
+      Line search terminated: lambda = 0.015352, fnorms = 0.206757
+ 21 SNES Function norm 2.067569242207e-01 
+ 21 PICARD ||F||/||F0||=7.476303e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.067569242207e-01 
+    1 KSP Residual norm 1.048664641281e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.278202, 0.22599, 0.206757]
+      Line search terminated: lambda = 0.0188419, fnorms = 0.206703
+ 22 SNES Function norm 2.067025536056e-01 
+ 22 PICARD ||F||/||F0||=7.474337e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.067025536056e-01 
+    1 KSP Residual norm 1.021727783615e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.272776, 0.224017, 0.206703]
+      Line search terminated: lambda = 0.0275957, fnorms = 0.206623
+ 23 SNES Function norm 2.066229027670e-01 
+ 23 PICARD ||F||/||F0||=7.471457e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.066229027670e-01 
+    1 KSP Residual norm 9.839345121947e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.264854, 0.22115, 0.206623]
+      Line search terminated: lambda = 0.043225, fnorms = 0.206507
+ 24 SNES Function norm 2.065074946087e-01 
+ 24 PICARD ||F||/||F0||=7.467284e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.065074946087e-01 
+    1 KSP Residual norm 9.284377856721e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.252865, 0.216692, 0.206507]
+      Line search terminated: lambda = 0.0799767, fnorms = 0.206341
+ 25 SNES Function norm 2.063414360209e-01 
+ 25 PICARD ||F||/||F0||=7.461279e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.063414360209e-01 
+    1 KSP Residual norm 8.365548499414e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.231797, 0.208542, 0.206341]
+      Line search terminated: lambda = 0.201063, fnorms = 0.20537
+ 26 SNES Function norm 2.053698596502e-01 
+ 26 PICARD ||F||/||F0||=7.426147e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.053698596502e-01 
+    1 KSP Residual norm 6.571763582302e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.185008, 0.18886, 0.20537]
+      Line search terminated: lambda = 0.892073, fnorms = 0.184891
+ 27 SNES Function norm 1.848914060420e-01 
+ 27 PICARD ||F||/||F0||=6.685649e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.848914060420e-01 
+    1 KSP Residual norm 5.196995165445e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0429501, 0.111484, 0.184891]
+      Line search terminated: lambda = 1.22367, fnorms = 0.0319337
+ 28 SNES Function norm 3.193374047287e-02 
+ 28 PICARD ||F||/||F0||=1.154720e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.193374047287e-02 
+    1 KSP Residual norm 9.676973019388e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.013038, 0.0215745, 0.0319337]
+      Line search terminated: lambda = 1.32076, fnorms = 0.0108914
+ 29 SNES Function norm 1.089138488406e-02 
+ 29 PICARD ||F||/||F0||=3.938310e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.089138488406e-02 
+    1 KSP Residual norm 2.998194638515e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00577888, 0.00793567, 0.0108914]
+      Line search terminated: lambda = 1.31735, fnorms = 0.00535404
+ 30 SNES Function norm 5.354041217355e-03 
+ 30 PICARD ||F||/||F0||=1.936014e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.354041217355e-03 
+    1 KSP Residual norm 1.405042750600e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00274505, 0.00379623, 0.00535404]
+      Line search terminated: lambda = 1.21596, fnorms = 0.00255281
+ 31 SNES Function norm 2.552810669226e-03 
+ 31 PICARD ||F||/||F0||=9.230930e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.552810669226e-03 
+    1 KSP Residual norm 6.037025574540e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00143338, 0.00194592, 0.00255281]
+      Line search terminated: lambda = 1.61755, fnorms = 0.00122393
+ 32 SNES Function norm 1.223933710236e-03 
+ 32 PICARD ||F||/||F0||=4.425728e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.223933710236e-03 
+    1 KSP Residual norm 3.030307117692e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000514237, 0.000804328, 0.00122393]
+      Line search terminated: lambda = 1.15817, fnorms = 0.000494024
+ 33 SNES Function norm 4.940241115423e-04 
+ 33 MMFD   ||F||/||F0||=1.786385e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.940241115423e-04 
+    1 KSP Residual norm 4.776058712810e-04 
+    2 KSP Residual norm 1.766045130978e-04 
+    3 KSP Residual norm 7.391964801286e-05 
+    4 KSP Residual norm 2.124841461132e-05 
+    5 KSP Residual norm 7.946061522414e-06 
+    6 KSP Residual norm 2.895744150265e-06 
+    7 KSP Residual norm 9.664928699455e-07 
+    8 KSP Residual norm 2.581602386525e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000587568, 0.000389411, 0.000494024]
+      Line search terminated: lambda = 0.411563, fnorms = 0.000381164
+ 34 SNES Function norm 3.811644521993e-04 
+ 34 MMFD   ||F||/||F0||=1.378286e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.811644521993e-04 
+    1 KSP Residual norm 3.753392161361e-04 
+    2 KSP Residual norm 2.529975017809e-04 
+    3 KSP Residual norm 9.996709845669e-05 
+    4 KSP Residual norm 3.454431069087e-05 
+    5 KSP Residual norm 1.279649258577e-05 
+    6 KSP Residual norm 4.062415025943e-06 
+    7 KSP Residual norm 1.456098248593e-06 
+    8 KSP Residual norm 4.303777004316e-07 
+    9 KSP Residual norm 1.145812643514e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00146539, 0.000656288, 0.000381164]
+      Line search terminated: lambda = 0.150287, fnorms = 0.000316277
+ 35 SNES Function norm 3.162765997192e-04 
+ 35 MMFD   ||F||/||F0||=1.143652e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.162765997192e-04 
+    1 KSP Residual norm 3.161238050118e-04 
+    2 KSP Residual norm 1.283115915817e-04 
+    3 KSP Residual norm 5.906027216346e-05 
+    4 KSP Residual norm 1.848640851511e-05 
+    5 KSP Residual norm 5.966381336354e-06 
+    6 KSP Residual norm 2.353731965485e-06 
+    7 KSP Residual norm 5.822790451171e-07 
+    8 KSP Residual norm 1.828871228790e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000461383, 0.000268284, 0.000316277]
+      Line search terminated: lambda = 0.333025, fnorms = 0.000249565
+ 36 SNES Function norm 2.495654063503e-04 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 36
+SNES solution time      : 1.96617 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.545911033256e-08 
+      |Div|_2   = 8.838950431342e-08 
+   Momentum: 
+      |mRes|_2  = 2.495653906976e-04 
+   Energy: 
+      |eRes|_2  = 3.460518155443e-11 
+--------------------------------------------------------------------------
+Actual time step : 0.00110 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 11 markers in 2.1770e-03 s 
+--------------------------------------------------------------------------
+Saving output ... done (0.0526359 sec)
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00210000 [Myr] 
+Tentative time step : 0.00121000 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... done (0.00373602 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.700041468882e-01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.700041468882e-01 
+    1 KSP Residual norm 4.307516098808e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.604376, 0.289808, 0.370004]
+      Line search terminated: lambda = 0.329167, fnorms = 0.255671
+  1 SNES Function norm 2.556714242813e-01 
+  1 PICARD ||F||/||F0||=6.909961e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.556714242813e-01 
+    1 KSP Residual norm 2.020931245536e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.463129, 0.295399, 0.255671]
+      Line search terminated: lambda = 0.146081, fnorms = 0.246982
+  2 SNES Function norm 2.469815137352e-01 
+  2 PICARD ||F||/||F0||=6.675101e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.469815137352e-01 
+    1 KSP Residual norm 1.619760636288e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.433597, 0.299027, 0.246982]
+      Line search terminated: lambda = 0.0475138, fnorms = 0.246552
+  3 SNES Function norm 2.465517778238e-01 
+  3 PICARD ||F||/||F0||=6.663487e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517778238e-01 
+    1 KSP Residual norm 1.522414894282e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.423569, 0.298702, 0.246552]
+      Line search terminated: lambda = 0.0197678, fnorms = 0.246528
+  4 SNES Function norm 2.465280502848e-01 
+  4 PICARD ||F||/||F0||=6.662846e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465280502848e-01 
+    1 KSP Residual norm 1.485671853418e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.419591, 0.298516, 0.246528]
+      Line search terminated: lambda = 0.00826804, fnorms = 0.246538
+  5 SNES Function norm 2.465377945038e-01 
+  5 PICARD ||F||/||F0||=6.663109e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465377945038e-01 
+    1 KSP Residual norm 1.470896942930e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.41796, 0.298429, 0.246538]
+      Line search terminated: lambda = 0.00346166, fnorms = 0.246545
+  6 SNES Function norm 2.465452847178e-01 
+  6 PICARD ||F||/||F0||=6.663311e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465452847178e-01 
+    1 KSP Residual norm 1.464815282728e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.417281, 0.298391, 0.246545]
+      Line search terminated: lambda = 0.00144546, fnorms = 0.246549
+  7 SNES Function norm 2.465490149763e-01 
+  7 PICARD ||F||/||F0||=6.663412e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465490149763e-01 
+    1 KSP Residual norm 1.462292854701e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416999, 0.298375, 0.246549]
+      Line search terminated: lambda = 0.000604869, fnorms = 0.246551
+  8 SNES Function norm 2.465506791227e-01 
+  8 PICARD ||F||/||F0||=6.663457e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465506791227e-01 
+    1 KSP Residual norm 1.461240449361e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416881, 0.298371, 0.246551]
+      Line search terminated: lambda = 0.000221476, fnorms = 0.246551
+  9 SNES Function norm 2.465513085953e-01 
+  9 PICARD ||F||/||F0||=6.663474e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465513085953e-01 
+    1 KSP Residual norm 1.460855537735e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416837, 0.298369, 0.246551]
+      Line search terminated: lambda = 9.2727e-05, fnorms = 0.246552
+ 10 SNES Function norm 2.465515720854e-01 
+ 10 PICARD ||F||/||F0||=6.663481e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465515720854e-01 
+    1 KSP Residual norm 1.460694460877e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416819, 0.298368, 0.246552]
+      Line search terminated: lambda = 3.87998e-05, fnorms = 0.246552
+ 11 SNES Function norm 2.465516819871e-01 
+ 11 PICARD ||F||/||F0||=6.663484e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465516819871e-01 
+    1 KSP Residual norm 1.460627074039e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416812, 0.298367, 0.246552]
+      Line search terminated: lambda = 1.62298e-05, fnorms = 0.246552
+ 12 SNES Function norm 2.465517283588e-01 
+ 12 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517283588e-01 
+    1 KSP Residual norm 1.460598888323e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416809, 0.298367, 0.246552]
+      Line search terminated: lambda = 6.79121e-06, fnorms = 0.246552
+ 13 SNES Function norm 2.465517477750e-01 
+ 13 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517477750e-01 
+    1 KSP Residual norm 1.460587094655e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416807, 0.298367, 0.246552]
+      Line search terminated: lambda = 2.84173e-06, fnorms = 0.246552
+ 14 SNES Function norm 2.465517559019e-01 
+ 14 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517559019e-01 
+    1 KSP Residual norm 1.460582159899e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416807, 0.298367, 0.246552]
+      Line search terminated: lambda = 1.1891e-06, fnorms = 0.246552
+ 15 SNES Function norm 2.465517593029e-01 
+ 15 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517593029e-01 
+    1 KSP Residual norm 1.460580094847e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416807, 0.298367, 0.246552]
+      Line search terminated: lambda = 4.97568e-07, fnorms = 0.246552
+ 16 SNES Function norm 2.465517607261e-01 
+ 16 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517607261e-01 
+    1 KSP Residual norm 1.460579230751e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 2.08203e-07, fnorms = 0.246552
+ 17 SNES Function norm 2.465517613216e-01 
+ 17 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517613216e-01 
+    1 KSP Residual norm 1.460578869282e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 8.71211e-08, fnorms = 0.246552
+ 18 SNES Function norm 2.465517615708e-01 
+ 18 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517615708e-01 
+    1 KSP Residual norm 1.460578717914e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 3.64551e-08, fnorms = 0.246552
+ 19 SNES Function norm 2.465517616751e-01 
+ 19 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517616751e-01 
+    1 KSP Residual norm 1.460578654588e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 1.52543e-08, fnorms = 0.246552
+ 20 SNES Function norm 2.465517617187e-01 
+ 20 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617187e-01 
+    1 KSP Residual norm 1.460578628168e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 6.3832e-09, fnorms = 0.246552
+ 21 SNES Function norm 2.465517617370e-01 
+ 21 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617370e-01 
+    1 KSP Residual norm 1.460578617060e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 2.67099e-09, fnorms = 0.246552
+ 22 SNES Function norm 2.465517617446e-01 
+ 22 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617446e-01 
+    1 KSP Residual norm 1.460578612425e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 1.11754e-09, fnorms = 0.246552
+ 23 SNES Function norm 2.465517617478e-01 
+ 23 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617478e-01 
+    1 KSP Residual norm 1.460578610481e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 4.67682e-10, fnorms = 0.246552
+ 24 SNES Function norm 2.465517617491e-01 
+ 24 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617491e-01 
+    1 KSP Residual norm 1.460578609607e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 1.95631e-10, fnorms = 0.246552
+ 25 SNES Function norm 2.465517617497e-01 
+ 25 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617497e-01 
+    1 KSP Residual norm 1.460578609342e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 8.19618e-11, fnorms = 0.246552
+ 26 SNES Function norm 2.465517617499e-01 
+ 26 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617499e-01 
+    1 KSP Residual norm 1.460578609187e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 3.42675e-11, fnorms = 0.246552
+ 27 SNES Function norm 2.465517617500e-01 
+ 27 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617500e-01 
+    1 KSP Residual norm 1.460578609077e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 1.42489e-11, fnorms = 0.246552
+ 28 SNES Function norm 2.465517617501e-01 
+ 28 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617501e-01 
+    1 KSP Residual norm 1.460578609121e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 6.17462e-12, fnorms = 0.246552
+ 29 SNES Function norm 2.465517617501e-01 
+ 29 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617501e-01 
+    1 KSP Residual norm 1.460578609092e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 2.501e-12, fnorms = 0.246552
+ 30 SNES Function norm 2.465517617501e-01 
+ 30 PICARD ||F||/||F0||=6.663486e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.465517617501e-01 
+    1 KSP Residual norm 1.460578609040e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.416806, 0.298367, 0.246552]
+      Line search terminated: lambda = 0.5, fnorms = 0.298367
+ 31 SNES Function norm 2.983667620780e-01 
+ 31 PICARD ||F||/||F0||=8.063876e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.983667620780e-01 
+    1 KSP Residual norm 1.026964720842e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.30778, 0.295007, 0.298367]
+      Line search terminated: lambda = 0.352827, fnorms = 0.29404
+ 32 SNES Function norm 2.940396159203e-01 
+ 32 PICARD ||F||/||F0||=7.946928e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.940396159203e-01 
+    1 KSP Residual norm 8.395270805005e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.251622, 0.269407, 0.29404]
+      Line search terminated: lambda = 1.75434, fnorms = 0.1686
+ 33 SNES Function norm 1.686001804564e-01 
+ 33 PICARD ||F||/||F0||=4.556711e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.686001804564e-01 
+    1 KSP Residual norm 7.113144721699e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.12824, 0.117973, 0.1686]
+      Line search terminated: lambda = 0.675806, fnorms = 0.109886
+ 34 SNES Function norm 1.098855938246e-01 
+ 34 PICARD ||F||/||F0||=2.969848e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.098855938246e-01 
+    1 KSP Residual norm 2.480189721069e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0654733, 0.082849, 0.109886]
+      Line search terminated: lambda = 1.23928, fnorms = 0.0644728
+ 35 SNES Function norm 6.447277569837e-02 
+ 35 PICARD ||F||/||F0||=1.742488e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.447277569837e-02 
+    1 KSP Residual norm 1.601734079154e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0199458, 0.0346705, 0.0644728]
+      Line search terminated: lambda = 0.936983, fnorms = 0.0195629
+ 36 SNES Function norm 1.956290915620e-02 
+ 36 PICARD ||F||/||F0||=5.287213e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.956290915620e-02 
+    1 KSP Residual norm 5.433859216484e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0133306, 0.016272, 0.0195629]
+      Line search terminated: lambda = 2.16088, fnorms = 0.00946285
+ 37 SNES Function norm 9.462848209559e-03 
+ 37 PICARD ||F||/||F0||=2.557498e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 9.462848209559e-03 
+    1 KSP Residual norm 2.373458369683e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00499351, 0.00696178, 0.00946285]
+      Line search terminated: lambda = 1.42048, fnorms = 0.00433851
+ 38 SNES Function norm 4.338509610623e-03 
+ 38 PICARD ||F||/||F0||=1.172557e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.338509610623e-03 
+    1 KSP Residual norm 1.411087521691e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00286211, 0.00350917, 0.00433851]
+      Line search terminated: lambda = 1.61397, fnorms = 0.00267039
+ 39 SNES Function norm 2.670387408755e-03 
+ 39 PICARD ||F||/||F0||=7.217182e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.670387408755e-03 
+    1 KSP Residual norm 4.592774750133e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00165444, 0.00201509, 0.00267039]
+      Line search terminated: lambda = 1.12876, fnorms = 0.00161386
+ 40 SNES Function norm 1.613860854622e-03 
+ 40 PICARD ||F||/||F0||=4.361737e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.613860854622e-03 
+    1 KSP Residual norm 3.703698596192e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00108511, 0.00132927, 0.00161386]
+      Line search terminated: lambda = 1.93802, fnorms = 0.00109486
+ 41 SNES Function norm 1.094858982613e-03 
+ 41 MMFD   ||F||/||F0||=2.959045e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.094858982613e-03 
+    1 KSP Residual norm 1.069057241057e-03 
+    2 KSP Residual norm 4.536944164581e-04 
+    3 KSP Residual norm 1.478055635081e-04 
+    4 KSP Residual norm 3.400457864925e-05 
+    5 KSP Residual norm 1.186434714183e-05 
+    6 KSP Residual norm 3.084500751006e-06 
+    7 KSP Residual norm 7.855274837399e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00135564, 0.000775921, 0.00109486]
+      Line search terminated: lambda = 0.412811, fnorms = 0.00078141
+ 42 SNES Function norm 7.814103433411e-04 
+ 42 MMFD   ||F||/||F0||=2.111896e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.814103433411e-04 
+    1 KSP Residual norm 7.192060576277e-04 
+    2 KSP Residual norm 4.807706196648e-04 
+    3 KSP Residual norm 2.772446614363e-04 
+    4 KSP Residual norm 6.604590015819e-05 
+    5 KSP Residual norm 2.242026485910e-05 
+    6 KSP Residual norm 5.939289059074e-06 
+    7 KSP Residual norm 1.671677515968e-06 
+    8 KSP Residual norm 5.757735076286e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00393166, 0.00198622, 0.00078141]
+      Line search terminated: lambda = 0.0461423, fnorms = 0.000679242
+ 43 SNES Function norm 6.792424508739e-04 
+ 43 MMFD   ||F||/||F0||=1.835770e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.792424508739e-04 
+    1 KSP Residual norm 6.076822650508e-04 
+    2 KSP Residual norm 2.579088447836e-04 
+    3 KSP Residual norm 7.343433318243e-05 
+    4 KSP Residual norm 2.632097685552e-05 
+    5 KSP Residual norm 7.944321725309e-06 
+    6 KSP Residual norm 1.988271419686e-06 
+    7 KSP Residual norm 5.748095049396e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0006366, 0.000521313, 0.000679242]
+      Line search terminated: lambda = 0.543416, fnorms = 0.000520512
+ 44 SNES Function norm 5.205119035320e-04 
+ 44 MMFD   ||F||/||F0||=1.406773e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.205119035320e-04 
+    1 KSP Residual norm 4.348948185446e-04 
+    2 KSP Residual norm 4.334431366053e-04 
+    3 KSP Residual norm 2.324225378899e-04 
+    4 KSP Residual norm 1.377519099228e-04 
+    5 KSP Residual norm 5.520794079153e-05 
+    6 KSP Residual norm 1.551552600474e-05 
+    7 KSP Residual norm 4.913991493238e-06 
+    8 KSP Residual norm 1.526514863804e-06 
+    9 KSP Residual norm 6.140912659779e-07 
+   10 KSP Residual norm 1.358191680998e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00612849, 0.00333016, 0.000520512]
+      Line search terminated: lambda = 0.5, fnorms = 0.00333016
+ 45 SNES Function norm 3.330158162536e-03 
+ 45 MMFD   ||F||/||F0||=9.000327e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.330158162536e-03 
+    1 KSP Residual norm 1.339781905264e-03 
+    2 KSP Residual norm 4.155811084992e-04 
+    3 KSP Residual norm 9.586235859114e-05 
+    4 KSP Residual norm 2.380942889819e-05 
+    5 KSP Residual norm 9.235005082266e-06 
+    6 KSP Residual norm 3.005817119315e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00432539, 0.00374596, 0.00333016]
+      Line search terminated: lambda = 0.5, fnorms = 0.00374596
+ 46 SNES Function norm 3.745955517839e-03 
+ 46 MMFD   ||F||/||F0||=1.012409e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.745955517839e-03 
+    1 KSP Residual norm 9.750112607478e-04 
+    2 KSP Residual norm 3.501375620265e-04 
+    3 KSP Residual norm 1.080985315311e-04 
+    4 KSP Residual norm 2.344887170190e-05 
+    5 KSP Residual norm 7.883913989395e-06 
+    6 KSP Residual norm 2.804606930186e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00472555, 0.00419747, 0.00374596]
+      Line search terminated: lambda = 0.5, fnorms = 0.00419747
+ 47 SNES Function norm 4.197472781638e-03 
+ 47 MMFD   ||F||/||F0||=1.134439e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.197472781638e-03 
+    1 KSP Residual norm 1.804818398953e-03 
+    2 KSP Residual norm 1.011728751262e-03 
+    3 KSP Residual norm 2.745063449427e-04 
+    4 KSP Residual norm 6.513169748202e-05 
+    5 KSP Residual norm 2.214767554976e-05 
+    6 KSP Residual norm 9.366093283991e-06 
+    7 KSP Residual norm 2.759253867439e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00682233, 0.00537006, 0.00419747]
+      Line search terminated: lambda = 0.5, fnorms = 0.00537006
+ 48 SNES Function norm 5.370057161017e-03 
+ 48 MMFD   ||F||/||F0||=1.451351e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.370057161017e-03 
+    1 KSP Residual norm 2.728972792052e-03 
+    2 KSP Residual norm 1.692942664729e-03 
+    3 KSP Residual norm 4.166382672504e-04 
+    4 KSP Residual norm 1.080894346404e-04 
+    5 KSP Residual norm 3.712418812785e-05 
+    6 KSP Residual norm 1.405773573085e-05 
+    7 KSP Residual norm 4.099643413966e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00958066, 0.00724139, 0.00537006]
+      Line search terminated: lambda = 0.5, fnorms = 0.00724139
+ 49 SNES Function norm 7.241393210743e-03 
+ 49 MMFD   ||F||/||F0||=1.957111e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.241393210743e-03 
+    1 KSP Residual norm 4.164920511874e-03 
+    2 KSP Residual norm 3.049436414659e-03 
+    3 KSP Residual norm 7.195806421318e-04 
+    4 KSP Residual norm 2.077458161946e-04 
+    5 KSP Residual norm 7.408132103946e-05 
+    6 KSP Residual norm 2.581166699371e-05 
+    7 KSP Residual norm 8.520750643493e-06 
+    8 KSP Residual norm 4.119440746045e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0166465, 0.0114097, 0.00724139]
+      Line search terminated: lambda = 0.5, fnorms = 0.0114097
+ 50 SNES Function norm 1.140974976584e-02 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 50
+SNES solution time      : 2.96653 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.819360154007e-10 
+      |Div|_2   = 2.568133101327e-09 
+   Momentum: 
+      |mRes|_2  = 1.140974976584e-02 
+   Energy: 
+      |eRes|_2  = 1.205766278885e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00121 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 16 markers in 2.3680e-03 s 
+--------------------------------------------------------------------------
+Saving output ... done (0.056071 sec)
+--------------------------------------------------------------------------
+================================= STEP 4 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00331000 [Myr] 
+Tentative time step : 0.00133100 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... done (0.00581312 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.298932773781e-01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.298932773781e-01 
+    1 KSP Residual norm 5.022104300001e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.857997, 0.286711, 0.329893]
+      Line search terminated: lambda = 0.269561, fnorms = 0.239965
+  1 SNES Function norm 2.399647902473e-01 
+  1 PICARD ||F||/||F0||=7.274013e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.399647902473e-01 
+    1 KSP Residual norm 3.000902783257e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.767091, 0.360792, 0.239965]
+      Line search terminated: lambda = 0.155893, fnorms = 0.226104
+  2 SNES Function norm 2.261043979921e-01 
+  2 PICARD ||F||/||F0||=6.853865e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.261043979921e-01 
+    1 KSP Residual norm 2.059930477976e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.634986, 0.34841, 0.226104]
+      Line search terminated: lambda = 0.0839278, fnorms = 0.224644
+  3 SNES Function norm 2.246438617141e-01 
+  3 PICARD ||F||/||F0||=6.809592e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.246438617141e-01 
+    1 KSP Residual norm 1.713050012355e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.561581, 0.331793, 0.224644]
+      Line search terminated: lambda = 0.0453468, fnorms = 0.225164
+  4 SNES Function norm 2.251643086831e-01 
+  4 PICARD ||F||/||F0||=6.825368e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.251643086831e-01 
+    1 KSP Residual norm 1.564252816888e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.527976, 0.323454, 0.225164]
+      Line search terminated: lambda = 0.025719, fnorms = 0.225637
+  5 SNES Function norm 2.256368733108e-01 
+  5 PICARD ||F||/||F0||=6.839693e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.256368733108e-01 
+    1 KSP Residual norm 1.490080163964e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.510509, 0.318928, 0.225637]
+      Line search terminated: lambda = 0.015021, fnorms = 0.225968
+  6 SNES Function norm 2.259683235389e-01 
+  6 PICARD ||F||/||F0||=6.849740e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.259683235389e-01 
+    1 KSP Residual norm 1.449889064535e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.500745, 0.316309, 0.225968]
+      Line search terminated: lambda = 0.00915441, fnorms = 0.226193
+  7 SNES Function norm 2.261929872628e-01 
+  7 PICARD ||F||/||F0||=6.856550e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.261929872628e-01 
+    1 KSP Residual norm 1.426452953355e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.494932, 0.314426, 0.226193]
+      Line search terminated: lambda = 0.00760213, fnorms = 0.226382
+  8 SNES Function norm 2.263824657445e-01 
+  8 PICARD ||F||/||F0||=6.862294e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.263824657445e-01 
+    1 KSP Residual norm 1.407565513398e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.490213, 0.313124, 0.226382]
+      Line search terminated: lambda = 0.00489174, fnorms = 0.226507
+  9 SNES Function norm 2.265072402340e-01 
+  9 PICARD ||F||/||F0||=6.866076e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.265072402340e-01 
+    1 KSP Residual norm 1.395686460681e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.487221, 0.312292, 0.226507]
+      Line search terminated: lambda = 0.00319363, fnorms = 0.226589
+ 10 SNES Function norm 2.265890098870e-01 
+ 10 PICARD ||F||/||F0||=6.868555e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.265890098870e-01 
+    1 KSP Residual norm 1.388045199268e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.485272, 0.31175, 0.226589]
+      Line search terminated: lambda = 0.0020655, fnorms = 0.226641
+ 11 SNES Function norm 2.266413142654e-01 
+ 11 PICARD ||F||/||F0||=6.870140e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.266413142654e-01 
+    1 KSP Residual norm 1.383136746618e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.484017, 0.311401, 0.226641]
+      Line search terminated: lambda = 0.00133466, fnorms = 0.226676
+ 12 SNES Function norm 2.266764841011e-01 
+ 12 PICARD ||F||/||F0||=6.871207e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.266764841011e-01 
+    1 KSP Residual norm 1.379999468508e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48321, 0.311175, 0.226676]
+      Line search terminated: lambda = 0.00087264, fnorms = 0.226699
+ 13 SNES Function norm 2.266991464951e-01 
+ 13 PICARD ||F||/||F0||=6.871893e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.266991464951e-01 
+    1 KSP Residual norm 1.377953164192e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.482683, 0.311028, 0.226699]
+      Line search terminated: lambda = 0.000569576, fnorms = 0.226714
+ 14 SNES Function norm 2.267139541503e-01 
+ 14 PICARD ||F||/||F0||=6.872342e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267139541503e-01 
+    1 KSP Residual norm 1.376621095384e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48234, 0.310932, 0.226714]
+      Line search terminated: lambda = 0.000371417, fnorms = 0.226725
+ 15 SNES Function norm 2.267251720598e-01 
+ 15 PICARD ||F||/||F0||=6.872682e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267251720598e-01 
+    1 KSP Residual norm 1.375750516344e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48212, 0.310871, 0.226725]
+      Line search terminated: lambda = 0.000247341, fnorms = 0.226732
+ 16 SNES Function norm 2.267316113759e-01 
+ 16 PICARD ||F||/||F0||=6.872878e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267316113759e-01 
+    1 KSP Residual norm 1.375173685993e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481972, 0.310829, 0.226732]
+      Line search terminated: lambda = 0.000161938, fnorms = 0.226736
+ 17 SNES Function norm 2.267358280740e-01 
+ 17 PICARD ||F||/||F0||=6.873005e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267358280740e-01 
+    1 KSP Residual norm 1.374796314992e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481874, 0.310802, 0.226736]
+      Line search terminated: lambda = 0.000106057, fnorms = 0.226739
+ 18 SNES Function norm 2.267385902068e-01 
+ 18 PICARD ||F||/||F0||=6.873089e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267385902068e-01 
+    1 KSP Residual norm 1.374549287555e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481811, 0.310784, 0.226739]
+      Line search terminated: lambda = 6.94749e-05, fnorms = 0.22674
+ 19 SNES Function norm 2.267403998097e-01 
+ 19 PICARD ||F||/||F0||=6.873144e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267403998097e-01 
+    1 KSP Residual norm 1.374387520078e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481769, 0.310773, 0.22674]
+      Line search terminated: lambda = 4.55173e-05, fnorms = 0.226742
+ 20 SNES Function norm 2.267415854859e-01 
+ 20 PICARD ||F||/||F0||=6.873180e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267415854859e-01 
+    1 KSP Residual norm 1.374281558833e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481742, 0.310765, 0.226742]
+      Line search terminated: lambda = 2.9824e-05, fnorms = 0.226742
+ 21 SNES Function norm 2.267423624087e-01 
+ 21 PICARD ||F||/||F0||=6.873203e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267423624087e-01 
+    1 KSP Residual norm 1.374212139994e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481724, 0.31076, 0.226742]
+      Line search terminated: lambda = 1.95426e-05, fnorms = 0.226743
+ 22 SNES Function norm 2.267428715152e-01 
+ 22 PICARD ||F||/||F0||=6.873219e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267428715152e-01 
+    1 KSP Residual norm 1.374166656599e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481712, 0.310757, 0.226743]
+      Line search terminated: lambda = 1.28061e-05, fnorms = 0.226743
+ 23 SNES Function norm 2.267432051351e-01 
+ 23 PICARD ||F||/||F0||=6.873229e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267432051351e-01 
+    1 KSP Residual norm 1.374136853470e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481704, 0.310754, 0.226743]
+      Line search terminated: lambda = 8.39193e-06, fnorms = 0.226743
+ 24 SNES Function norm 2.267434237618e-01 
+ 24 PICARD ||F||/||F0||=6.873236e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267434237618e-01 
+    1 KSP Residual norm 1.374117324101e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481699, 0.310753, 0.226743]
+      Line search terminated: lambda = 5.49939e-06, fnorms = 0.226744
+ 25 SNES Function norm 2.267435670334e-01 
+ 25 PICARD ||F||/||F0||=6.873240e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267435670334e-01 
+    1 KSP Residual norm 1.374104526463e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481696, 0.310752, 0.226744]
+      Line search terminated: lambda = 3.6039e-06, fnorms = 0.226744
+ 26 SNES Function norm 2.267436609236e-01 
+ 26 PICARD ||F||/||F0||=6.873243e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267436609236e-01 
+    1 KSP Residual norm 1.374096139826e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481694, 0.310752, 0.226744]
+      Line search terminated: lambda = 2.36175e-06, fnorms = 0.226744
+ 27 SNES Function norm 2.267437224531e-01 
+ 27 PICARD ||F||/||F0||=6.873245e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267437224531e-01 
+    1 KSP Residual norm 1.374090644042e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481692, 0.310751, 0.226744]
+      Line search terminated: lambda = 1.54773e-06, fnorms = 0.226744
+ 28 SNES Function norm 2.267437627755e-01 
+ 28 PICARD ||F||/||F0||=6.873246e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267437627755e-01 
+    1 KSP Residual norm 1.374087042414e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481691, 0.310751, 0.226744]
+      Line search terminated: lambda = 1.01429e-06, fnorms = 0.226744
+ 29 SNES Function norm 2.267437892004e-01 
+ 29 PICARD ||F||/||F0||=6.873247e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267437892004e-01 
+    1 KSP Residual norm 1.374084682096e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.481691, 0.310751, 0.226744]
+      Line search terminated: lambda = 6.647e-07, fnorms = 0.226744
+ 30 SNES Function norm 2.267438065176e-01 
+ 30 PICARD ||F||/||F0||=6.873247e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438065176e-01 
+    1 KSP Residual norm 1.374083135391e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.310751, 0.226744]
+      Line search terminated: lambda = 4.35604e-07, fnorms = 0.226744
+ 31 SNES Function norm 2.267438178662e-01 
+ 31 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438178662e-01 
+    1 KSP Residual norm 1.374082121775e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.310751, 0.226744]
+      Line search terminated: lambda = 2.85468e-07, fnorms = 0.226744
+ 32 SNES Function norm 2.267438253034e-01 
+ 32 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438253034e-01 
+    1 KSP Residual norm 1.374081457482e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 1.87079e-07, fnorms = 0.226744
+ 33 SNES Function norm 2.267438301773e-01 
+ 33 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438301773e-01 
+    1 KSP Residual norm 1.374081022083e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 1.226e-07, fnorms = 0.226744
+ 34 SNES Function norm 2.267438333714e-01 
+ 34 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438333714e-01 
+    1 KSP Residual norm 1.374080736790e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 8.03447e-08, fnorms = 0.226744
+ 35 SNES Function norm 2.267438354646e-01 
+ 35 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438354646e-01 
+    1 KSP Residual norm 1.374080549874e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 5.26531e-08, fnorms = 0.226744
+ 36 SNES Function norm 2.267438368364e-01 
+ 36 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438368364e-01 
+    1 KSP Residual norm 1.374080427261e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 3.45057e-08, fnorms = 0.226744
+ 37 SNES Function norm 2.267438377353e-01 
+ 37 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438377353e-01 
+    1 KSP Residual norm 1.374080347050e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 2.2613e-08, fnorms = 0.226744
+ 38 SNES Function norm 2.267438383245e-01 
+ 38 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438383245e-01 
+    1 KSP Residual norm 1.374080294434e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 1.48192e-08, fnorms = 0.226744
+ 39 SNES Function norm 2.267438387105e-01 
+ 39 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438387105e-01 
+    1 KSP Residual norm 1.374080259969e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 9.71163e-09, fnorms = 0.226744
+ 40 SNES Function norm 2.267438389636e-01 
+ 40 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438389636e-01 
+    1 KSP Residual norm 1.374080237302e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 6.36441e-09, fnorms = 0.226744
+ 41 SNES Function norm 2.267438391294e-01 
+ 41 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438391294e-01 
+    1 KSP Residual norm 1.374080222576e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 4.17089e-09, fnorms = 0.226744
+ 42 SNES Function norm 2.267438392380e-01 
+ 42 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438392380e-01 
+    1 KSP Residual norm 1.374080212824e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 2.73334e-09, fnorms = 0.226744
+ 43 SNES Function norm 2.267438393092e-01 
+ 43 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438393092e-01 
+    1 KSP Residual norm 1.374080206486e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 1.79127e-09, fnorms = 0.226744
+ 44 SNES Function norm 2.267438393559e-01 
+ 44 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438393559e-01 
+    1 KSP Residual norm 1.374080202331e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 1.17391e-09, fnorms = 0.226744
+ 45 SNES Function norm 2.267438393865e-01 
+ 45 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438393865e-01 
+    1 KSP Residual norm 1.374080199437e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 7.69224e-10, fnorms = 0.226744
+ 46 SNES Function norm 2.267438394065e-01 
+ 46 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438394065e-01 
+    1 KSP Residual norm 1.374080197871e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 5.04223e-10, fnorms = 0.226744
+ 47 SNES Function norm 2.267438394197e-01 
+ 47 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438394197e-01 
+    1 KSP Residual norm 1.374080196600e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 3.3036e-10, fnorms = 0.226744
+ 48 SNES Function norm 2.267438394283e-01 
+ 48 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438394283e-01 
+    1 KSP Residual norm 1.374080195738e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 2.16465e-10, fnorms = 0.226744
+ 49 SNES Function norm 2.267438394339e-01 
+ 49 PICARD ||F||/||F0||=6.873248e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.267438394339e-01 
+    1 KSP Residual norm 1.374080195317e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.48169, 0.31075, 0.226744]
+      Line search terminated: lambda = 1.41921e-10, fnorms = 0.226744
+ 50 SNES Function norm 2.267438394376e-01 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 50
+SNES solution time      : 2.52508 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.944834389074e-03 
+      |Div|_2   = 1.097560296587e-02 
+   Momentum: 
+      |mRes|_2  = 2.264780449899e-01 
+   Energy: 
+      |eRes|_2  = 8.688058957255e-14 
+--------------------------------------------------------------------------
+Actual time step : 0.00133 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 23 markers in 2.3770e-03 s 
+--------------------------------------------------------------------------
+Saving output ... done (0.0542991 sec)
+--------------------------------------------------------------------------
+================================= STEP 5 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00464100 [Myr] 
+Tentative time step : 0.00146410 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... done (0.00384092 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.007398330675e-01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.007398330675e-01 
+    1 KSP Residual norm 5.684814476780e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.11429, 0.638491, 0.40074]
+      Line search terminated: lambda = 0.0395059, fnorms = 0.397092
+  1 SNES Function norm 3.970918736538e-01 
+  1 PICARD ||F||/||F0||=9.908969e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.970918736538e-01 
+    1 KSP Residual norm 5.191188352627e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.01775, 0.607459, 0.397092]
+      Line search terminated: lambda = 0.0180183, fnorms = 0.396063
+  2 SNES Function norm 3.960626283328e-01 
+  2 PICARD ||F||/||F0||=9.883286e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.960626283328e-01 
+    1 KSP Residual norm 5.000314771654e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.999784, 0.605223, 0.396063]
+      Line search terminated: lambda = 0.00293919, fnorms = 0.395975
+  3 SNES Function norm 3.959751205027e-01 
+  3 PICARD ||F||/||F0||=9.881102e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959751205027e-01 
+    1 KSP Residual norm 4.967316512399e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.993893, 0.603415, 0.395975]
+      Line search terminated: lambda = 0.00106561, fnorms = 0.395951
+  4 SNES Function norm 3.959509109506e-01 
+  4 PICARD ||F||/||F0||=9.880498e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959509109506e-01 
+    1 KSP Residual norm 4.955433159279e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.99179, 0.602769, 0.395951]
+      Line search terminated: lambda = 0.000396263, fnorms = 0.395942
+  5 SNES Function norm 3.959421813973e-01 
+  5 PICARD ||F||/||F0||=9.880280e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959421813973e-01 
+    1 KSP Residual norm 4.951025334594e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.991012, 0.60253, 0.395942]
+      Line search terminated: lambda = 0.000149306, fnorms = 0.395939
+  6 SNES Function norm 3.959389302964e-01 
+  6 PICARD ||F||/||F0||=9.880199e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959389302964e-01 
+    1 KSP Residual norm 4.949366091965e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990718, 0.60244, 0.395939]
+      Line search terminated: lambda = 5.56108e-05, fnorms = 0.395938
+  7 SNES Function norm 3.959377257877e-01 
+  7 PICARD ||F||/||F0||=9.880169e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959377257877e-01 
+    1 KSP Residual norm 4.948748306687e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990609, 0.602406, 0.395938]
+      Line search terminated: lambda = 2.07132e-05, fnorms = 0.395937
+  8 SNES Function norm 3.959372779198e-01 
+  8 PICARD ||F||/||F0||=9.880158e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959372779198e-01 
+    1 KSP Residual norm 4.948518231732e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990568, 0.602394, 0.395937]
+      Line search terminated: lambda = 7.71549e-06, fnorms = 0.395937
+  9 SNES Function norm 3.959371112001e-01 
+  9 PICARD ||F||/||F0||=9.880154e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959371112001e-01 
+    1 KSP Residual norm 4.948432535101e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990553, 0.602389, 0.395937]
+      Line search terminated: lambda = 2.87402e-06, fnorms = 0.395937
+ 10 SNES Function norm 3.959370491118e-01 
+ 10 PICARD ||F||/||F0||=9.880152e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370491118e-01 
+    1 KSP Residual norm 4.948400613495e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990547, 0.602387, 0.395937]
+      Line search terminated: lambda = 1.07058e-06, fnorms = 0.395937
+ 11 SNES Function norm 3.959370259858e-01 
+ 11 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370259858e-01 
+    1 KSP Residual norm 4.948388723124e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990545, 0.602386, 0.395937]
+      Line search terminated: lambda = 3.98797e-07, fnorms = 0.395937
+ 12 SNES Function norm 3.959370173715e-01 
+ 12 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370173715e-01 
+    1 KSP Residual norm 4.948384293437e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990545, 0.602386, 0.395937]
+      Line search terminated: lambda = 1.48554e-07, fnorms = 0.395937
+ 13 SNES Function norm 3.959370141627e-01 
+ 13 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370141627e-01 
+    1 KSP Residual norm 4.948382643412e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 5.53371e-08, fnorms = 0.395937
+ 14 SNES Function norm 3.959370129674e-01 
+ 14 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370129674e-01 
+    1 KSP Residual norm 4.948382028862e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 2.06133e-08, fnorms = 0.395937
+ 15 SNES Function norm 3.959370125222e-01 
+ 15 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370125222e-01 
+    1 KSP Residual norm 4.948381800044e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 7.67863e-09, fnorms = 0.395937
+ 16 SNES Function norm 3.959370123563e-01 
+ 16 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370123563e-01 
+    1 KSP Residual norm 4.948381714977e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 2.86038e-09, fnorms = 0.395937
+ 17 SNES Function norm 3.959370122945e-01 
+ 17 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370122945e-01 
+    1 KSP Residual norm 4.948381683461e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 1.0655e-09, fnorms = 0.395937
+ 18 SNES Function norm 3.959370122715e-01 
+ 18 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370122715e-01 
+    1 KSP Residual norm 4.948381671088e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 3.96854e-10, fnorms = 0.395937
+ 19 SNES Function norm 3.959370122629e-01 
+ 19 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370122629e-01 
+    1 KSP Residual norm 4.948381666575e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 1.47788e-10, fnorms = 0.395937
+ 20 SNES Function norm 3.959370122597e-01 
+ 20 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370122597e-01 
+    1 KSP Residual norm 4.948381664970e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 5.50897e-11, fnorms = 0.395937
+ 21 SNES Function norm 3.959370122586e-01 
+ 21 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370122586e-01 
+    1 KSP Residual norm 4.948381664261e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 2.04893e-11, fnorms = 0.395937
+ 22 SNES Function norm 3.959370122581e-01 
+ 22 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370122581e-01 
+    1 KSP Residual norm 4.948381664070e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 7.63967e-12, fnorms = 0.395937
+ 23 SNES Function norm 3.959370122579e-01 
+ 23 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370122579e-01 
+    1 KSP Residual norm 4.948381664216e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 2.87192e-12, fnorms = 0.395937
+ 24 SNES Function norm 3.959370122579e-01 
+ 24 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370122579e-01 
+    1 KSP Residual norm 4.948381664654e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 1.16485e-12, fnorms = 0.395937
+ 25 SNES Function norm 3.959370122579e-01 
+ 25 PICARD ||F||/||F0||=9.880151e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.959370122579e-01 
+    1 KSP Residual norm 4.948381664316e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.990544, 0.602386, 0.395937]
+      Line search terminated: lambda = 0.5, fnorms = 0.602386
+ 26 SNES Function norm 6.023860859738e-01 
+ 26 PICARD ||F||/||F0||=1.503185e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.023860859738e-01 
+    1 KSP Residual norm 3.017303268432e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.495866, 0.526613, 0.602386]
+      Line search terminated: lambda = 1.0405, fnorms = 0.488011
+ 27 SNES Function norm 4.880114371738e-01 
+ 27 PICARD ||F||/||F0||=1.217776e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.880114371738e-01 
+    1 KSP Residual norm 2.007128895085e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.230407, 0.333933, 0.488011]
+      Line search terminated: lambda = 1.1782, fnorms = 0.228784
+ 28 SNES Function norm 2.287837323747e-01 
+ 28 PICARD ||F||/||F0||=5.709034e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.287837323747e-01 
+    1 KSP Residual norm 5.260274245760e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.121833, 0.178044, 0.228784]
+      Line search terminated: lambda = 2.97607, fnorms = 0.431627
+ 29 SNES Function norm 4.316268554668e-01 
+ 29 PICARD ||F||/||F0||=1.077075e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.316268554668e-01 
+    1 KSP Residual norm 9.786309072479e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.073354, 0.229123, 0.431627]
+      Line search terminated: lambda = 1.02176, fnorms = 0.0757562
+ 30 SNES Function norm 7.575615486734e-02 
+ 30 PICARD ||F||/||F0||=1.890407e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.575615486734e-02 
+    1 KSP Residual norm 2.553121904699e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0234587, 0.0477323, 0.0757562]
+      Line search terminated: lambda = 1.2487, fnorms = 0.0175624
+ 31 SNES Function norm 1.756238062217e-02 
+ 31 PICARD ||F||/||F0||=4.382489e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.756238062217e-02 
+    1 KSP Residual norm 3.719221998233e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0056769, 0.0108822, 0.0175624]
+      Line search terminated: lambda = 1.16511, fnorms = 0.00514289
+ 32 SNES Function norm 5.142887011853e-03 
+ 32 PICARD ||F||/||F0||=1.283348e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.142887011853e-03 
+    1 KSP Residual norm 1.019644692032e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00223995, 0.00353517, 0.00514289]
+      Line search terminated: lambda = 1.32789, fnorms = 0.00189698
+ 33 SNES Function norm 1.896978538657e-03 
+ 33 PICARD ||F||/||F0||=4.733691e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.896978538657e-03 
+    1 KSP Residual norm 3.514608714990e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000939019, 0.00128835, 0.00189698]
+      Line search terminated: lambda = 1.08521, fnorms = 0.000906247
+ 34 SNES Function norm 9.062467067724e-04 
+ 34 MMFD   ||F||/||F0||=2.261434e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 9.062467067724e-04 
+    1 KSP Residual norm 8.289411132441e-04 
+    2 KSP Residual norm 3.281277878998e-04 
+    3 KSP Residual norm 2.077795341291e-04 
+    4 KSP Residual norm 1.444037170885e-04 
+    5 KSP Residual norm 1.061846204621e-04 
+    6 KSP Residual norm 4.970628660618e-05 
+    7 KSP Residual norm 1.325680349864e-05 
+    8 KSP Residual norm 4.175074455384e-06 
+    9 KSP Residual norm 1.462217452256e-06 
+   10 KSP Residual norm 7.014758891278e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00128405, 0.000631519, 0.000906247]
+      Line search terminated: lambda = 0.376302, fnorms = 0.000657429
+ 35 SNES Function norm 6.574285070357e-04 
+ 35 MMFD   ||F||/||F0||=1.640537e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.574285070357e-04 
+    1 KSP Residual norm 6.281163097188e-04 
+    2 KSP Residual norm 4.724084658435e-04 
+    3 KSP Residual norm 3.618519441114e-04 
+    4 KSP Residual norm 1.190225768177e-04 
+    5 KSP Residual norm 7.178396219653e-05 
+    6 KSP Residual norm 5.607386309832e-05 
+    7 KSP Residual norm 2.472240663552e-05 
+    8 KSP Residual norm 7.471900193219e-06 
+    9 KSP Residual norm 1.914763314757e-06 
+   10 KSP Residual norm 6.379582003825e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00323496, 0.00154024, 0.000657429]
+      Line search terminated: lambda = 0.0923313, fnorms = 0.000545307
+ 36 SNES Function norm 5.453067072126e-04 
+ 36 MMFD   ||F||/||F0||=1.360750e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.453067072126e-04 
+    1 KSP Residual norm 5.430764883381e-04 
+    2 KSP Residual norm 5.424127261089e-04 
+    3 KSP Residual norm 5.279964421854e-04 
+    4 KSP Residual norm 1.855636790259e-04 
+    5 KSP Residual norm 1.089822466338e-04 
+    6 KSP Residual norm 8.092817346911e-05 
+    7 KSP Residual norm 6.071928977932e-05 
+    8 KSP Residual norm 2.663701630106e-05 
+    9 KSP Residual norm 8.503034469659e-06 
+   10 KSP Residual norm 2.421016347551e-06 
+   11 KSP Residual norm 7.827064961462e-07 
+   12 KSP Residual norm 3.842196993582e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00408971, 0.00218212, 0.000545307]
+      Line search terminated: lambda = 0.5, fnorms = 0.00218212
+ 37 SNES Function norm 2.182121920998e-03 
+ 37 MMFD   ||F||/||F0||=5.445233e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.182121920998e-03 
+    1 KSP Residual norm 2.128169836014e-03 
+    2 KSP Residual norm 9.254967248254e-04 
+    3 KSP Residual norm 4.033952367503e-04 
+    4 KSP Residual norm 9.045021507133e-05 
+    5 KSP Residual norm 3.913384578173e-05 
+    6 KSP Residual norm 3.110113230135e-05 
+    7 KSP Residual norm 2.083585366279e-05 
+    8 KSP Residual norm 6.637295712787e-06 
+    9 KSP Residual norm 1.770223260611e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00257657, 0.00142406, 0.00218212]
+      Line search terminated: lambda = 0.436106, fnorms = 0.00139357
+ 38 SNES Function norm 1.393570298765e-03 
+ 38 MMFD   ||F||/||F0||=3.477494e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.393570298765e-03 
+    1 KSP Residual norm 1.283848233102e-03 
+    2 KSP Residual norm 7.655103121101e-04 
+    3 KSP Residual norm 5.002360084583e-04 
+    4 KSP Residual norm 9.816418934379e-05 
+    5 KSP Residual norm 3.314770488442e-05 
+    6 KSP Residual norm 2.223422967822e-05 
+    7 KSP Residual norm 1.711094000619e-05 
+    8 KSP Residual norm 8.424304418185e-06 
+    9 KSP Residual norm 2.500084270573e-06 
+   10 KSP Residual norm 6.351287691221e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00369213, 0.00148701, 0.00139357]
+      Line search terminated: lambda = 0.237932, fnorms = 0.00101523
+ 39 SNES Function norm 1.015231461714e-03 
+ 39 MMFD   ||F||/||F0||=2.533393e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.015231461714e-03 
+    1 KSP Residual norm 1.002916695834e-03 
+    2 KSP Residual norm 3.872408102939e-04 
+    3 KSP Residual norm 1.553573748316e-04 
+    4 KSP Residual norm 3.608238224671e-05 
+    5 KSP Residual norm 1.668416102798e-05 
+    6 KSP Residual norm 1.346896471274e-05 
+    7 KSP Residual norm 8.570004388958e-06 
+    8 KSP Residual norm 2.575485143674e-06 
+    9 KSP Residual norm 7.317124846856e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00130626, 0.000860847, 0.00101523]
+      Line search terminated: lambda = 0.365403, fnorms = 0.000763004
+ 40 SNES Function norm 7.630042195798e-04 
+ 40 MMFD   ||F||/||F0||=1.903989e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.630042195798e-04 
+    1 KSP Residual norm 7.624841008565e-04 
+    2 KSP Residual norm 2.880278536101e-04 
+    3 KSP Residual norm 1.253445381666e-04 
+    4 KSP Residual norm 2.828368468556e-05 
+    5 KSP Residual norm 1.364593816537e-05 
+    6 KSP Residual norm 1.032002490872e-05 
+    7 KSP Residual norm 7.052789570285e-06 
+    8 KSP Residual norm 3.095008674396e-06 
+    9 KSP Residual norm 8.329460769614e-07 
+   10 KSP Residual norm 2.128870184517e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000875998, 0.000540651, 0.000763004]
+      Line search terminated: lambda = 0.439473, fnorms = 0.000525056
+ 41 SNES Function norm 5.250563189979e-04 
+ 41 MMFD   ||F||/||F0||=1.310217e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.250563189979e-04 
+    1 KSP Residual norm 5.130363729936e-04 
+    2 KSP Residual norm 2.708120063065e-04 
+    3 KSP Residual norm 1.464122419060e-04 
+    4 KSP Residual norm 2.857432249376e-05 
+    5 KSP Residual norm 8.266087385172e-06 
+    6 KSP Residual norm 4.464025478556e-06 
+    7 KSP Residual norm 3.504951576392e-06 
+    8 KSP Residual norm 2.115893932694e-06 
+    9 KSP Residual norm 6.989608004867e-07 
+   10 KSP Residual norm 1.842911803279e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00122867, 0.00071347, 0.000525056]
+      Line search terminated: lambda = 0.0979263, fnorms = 0.000450418
+ 42 SNES Function norm 4.504183790245e-04 
+ 42 MMFD   ||F||/||F0||=1.123967e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.504183790245e-04 
+    1 KSP Residual norm 3.246615711882e-04 
+    2 KSP Residual norm 9.314360698270e-05 
+    3 KSP Residual norm 2.953686347917e-05 
+    4 KSP Residual norm 9.002615610915e-06 
+    5 KSP Residual norm 5.741860510772e-06 
+    6 KSP Residual norm 4.560400992625e-06 
+    7 KSP Residual norm 2.675852487157e-06 
+    8 KSP Residual norm 9.731622636667e-07 
+    9 KSP Residual norm 2.542747890371e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000619358, 0.000484728, 0.000450418]
+      Line search terminated: lambda = 0.112367, fnorms = 0.00040597
+ 43 SNES Function norm 4.059701804917e-04 
+ 43 MMFD   ||F||/||F0||=1.013052e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.059701804917e-04 
+    1 KSP Residual norm 1.252032442230e-04 
+    2 KSP Residual norm 4.314587328559e-05 
+    3 KSP Residual norm 1.219903036862e-05 
+    4 KSP Residual norm 5.544135766576e-06 
+    5 KSP Residual norm 4.219853064227e-06 
+    6 KSP Residual norm 2.837379077403e-06 
+    7 KSP Residual norm 1.119520423424e-06 
+    8 KSP Residual norm 3.121333092470e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000832779, 0.000471777, 0.00040597]
+      Line search terminated: lambda = 0.180101, fnorms = 0.000331842
+ 44 SNES Function norm 3.318419616348e-04 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 44
+SNES solution time      : 2.7878 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.413671325463e-10 
+      |Div|_2   = 1.342990241669e-09 
+   Momentum: 
+      |mRes|_2  = 3.318419616321e-04 
+   Energy: 
+      |eRes|_2  = 7.398820481042e-12 
+--------------------------------------------------------------------------
+Actual time step : 0.00146 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 19 markers in 2.3401e-03 s 
+--------------------------------------------------------------------------
+Saving output ... done (0.0531199 sec)
+--------------------------------------------------------------------------
+================================= STEP 6 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00610510 [Myr] 
+Tentative time step : 0.00161051 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... done (0.00421095 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.504980806330e-01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.504980806330e-01 
+    1 KSP Residual norm 8.539895739252e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.90151, 0.857188, 0.450498]
+      Line search terminated: lambda = 0.136805, fnorms = 0.392772
+  1 SNES Function norm 3.927720554599e-01 
+  1 PICARD ||F||/||F0||=8.718618e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.927720554599e-01 
+    1 KSP Residual norm 6.098795702536e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.31622, 0.692128, 0.392772]
+      Line search terminated: lambda = 0.0751349, fnorms = 0.390147
+  2 SNES Function norm 3.901470627690e-01 
+  2 PICARD ||F||/||F0||=8.660349e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.901470627690e-01 
+    1 KSP Residual norm 4.935071097533e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.116, 0.630528, 0.390147]
+      Line search terminated: lambda = 0.0464029, fnorms = 0.392272
+  3 SNES Function norm 3.922721870522e-01 
+  3 PICARD ||F||/||F0||=8.707522e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.922721870522e-01 
+    1 KSP Residual norm 4.328437506505e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.01336, 0.597098, 0.392272]
+      Line search terminated: lambda = 0.0333683, fnorms = 0.394057
+  4 SNES Function norm 3.940569781353e-01 
+  4 PICARD ||F||/||F0||=8.747140e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.940569781353e-01 
+    1 KSP Residual norm 3.946121658926e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.951881, 0.576835, 0.394057]
+      Line search terminated: lambda = 0.0258702, fnorms = 0.395664
+  5 SNES Function norm 3.956639555744e-01 
+  5 PICARD ||F||/||F0||=8.782811e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.956639555744e-01 
+    1 KSP Residual norm 3.676769176975e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.90951, 0.562665, 0.395664]
+      Line search terminated: lambda = 0.021745, fnorms = 0.397043
+  6 SNES Function norm 3.970434920845e-01 
+  6 PICARD ||F||/||F0||=8.813434e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.970434920845e-01 
+    1 KSP Residual norm 3.466905777492e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.877076, 0.551707, 0.397043]
+      Line search terminated: lambda = 0.0193854, fnorms = 0.398249
+  7 SNES Function norm 3.982493027396e-01 
+  7 PICARD ||F||/||F0||=8.840200e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.982493027396e-01 
+    1 KSP Residual norm 3.291383235945e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.850332, 0.542597, 0.398249]
+      Line search terminated: lambda = 0.0181201, fnorms = 0.399342
+  8 SNES Function norm 3.993420833956e-01 
+  8 PICARD ||F||/||F0||=8.864457e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.993420833956e-01 
+    1 KSP Residual norm 3.136431951717e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.826993, 0.534591, 0.399342]
+      Line search terminated: lambda = 0.0176511, fnorms = 0.400351
+  9 SNES Function norm 4.003514067743e-01 
+  9 PICARD ||F||/||F0||=8.886862e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.003514067743e-01 
+    1 KSP Residual norm 2.993605459293e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.805678, 0.527233, 0.400351]
+      Line search terminated: lambda = 0.0178149, fnorms = 0.401339
+ 10 SNES Function norm 4.013392401099e-01 
+ 10 PICARD ||F||/||F0||=8.908789e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.013392401099e-01 
+    1 KSP Residual norm 2.857067554994e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.78546, 0.520194, 0.401339]
+      Line search terminated: lambda = 0.0187473, fnorms = 0.402364
+ 11 SNES Function norm 4.023636395870e-01 
+ 11 PICARD ||F||/||F0||=8.931528e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.023636395870e-01 
+    1 KSP Residual norm 2.721045399321e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.765472, 0.513159, 0.402364]
+      Line search terminated: lambda = 0.0206916, fnorms = 0.403386
+ 12 SNES Function norm 4.033859378809e-01 
+ 12 PICARD ||F||/||F0||=8.954221e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.033859378809e-01 
+    1 KSP Residual norm 2.579653271297e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.744895, 0.505868, 0.403386]
+      Line search terminated: lambda = 0.0235901, fnorms = 0.40449
+ 13 SNES Function norm 4.044904226877e-01 
+ 13 PICARD ||F||/||F0||=8.978738e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.044904226877e-01 
+    1 KSP Residual norm 2.429189692628e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.722826, 0.497948, 0.40449]
+      Line search terminated: lambda = 0.0282698, fnorms = 0.405687
+ 14 SNES Function norm 4.056865247554e-01 
+ 14 PICARD ||F||/||F0||=9.005289e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.056865247554e-01 
+    1 KSP Residual norm 2.262794124713e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.698426, 0.489098, 0.405687]
+      Line search terminated: lambda = 0.035468, fnorms = 0.407076
+ 15 SNES Function norm 4.070761207162e-01 
+ 15 PICARD ||F||/||F0||=9.036134e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.070761207162e-01 
+    1 KSP Residual norm 2.074132612337e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.670236, 0.478693, 0.407076]
+      Line search terminated: lambda = 0.0475031, fnorms = 0.408667
+ 16 SNES Function norm 4.086673187931e-01 
+ 16 PICARD ||F||/||F0||=9.071455e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.086673187931e-01 
+    1 KSP Residual norm 1.854169474920e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.636425, 0.465989, 0.408667]
+      Line search terminated: lambda = 0.0680197, fnorms = 0.409997
+ 17 SNES Function norm 4.099970624030e-01 
+ 17 PICARD ||F||/||F0||=9.100972e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.099970624030e-01 
+    1 KSP Residual norm 1.599413364597e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.594315, 0.449755, 0.409997]
+      Line search terminated: lambda = 0.103608, fnorms = 0.41029
+ 18 SNES Function norm 4.102901982561e-01 
+ 18 PICARD ||F||/||F0||=9.107479e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.102901982561e-01 
+    1 KSP Residual norm 1.333105985705e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.540673, 0.428387, 0.41029]
+      Line search terminated: lambda = 0.168952, fnorms = 0.407181
+ 19 SNES Function norm 4.071812301503e-01 
+ 19 PICARD ||F||/||F0||=9.038468e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.071812301503e-01 
+    1 KSP Residual norm 1.149185404871e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.470624, 0.399531, 0.407181]
+      Line search terminated: lambda = 0.295358, fnorms = 0.394041
+ 20 SNES Function norm 3.940410961803e-01 
+ 20 PICARD ||F||/||F0||=8.746787e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.940410961803e-01 
+    1 KSP Residual norm 1.170385248936e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.373031, 0.357279, 0.394041]
+      Line search terminated: lambda = 0.602981, fnorms = 0.357
+ 21 SNES Function norm 3.569995363475e-01 
+ 21 PICARD ||F||/||F0||=7.924552e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.569995363475e-01 
+    1 KSP Residual norm 1.159145219388e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.214501, 0.277352, 0.357]
+      Line search terminated: lambda = 1.53813, fnorms = 0.175485
+ 22 SNES Function norm 1.754853444338e-01 
+ 22 PICARD ||F||/||F0||=3.895363e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.754853444338e-01 
+    1 KSP Residual norm 5.412958814285e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0845213, 0.103291, 0.175485]
+      Line search terminated: lambda = 0.856178, fnorms = 0.0788024
+ 23 SNES Function norm 7.880243401816e-02 
+ 23 PICARD ||F||/||F0||=1.749229e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.880243401816e-02 
+    1 KSP Residual norm 1.691418033483e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.036456, 0.0552866, 0.0788024]
+      Line search terminated: lambda = 1.35589, fnorms = 0.0295373
+ 24 SNES Function norm 2.953726134805e-02 
+ 24 PICARD ||F||/||F0||=6.556579e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.953726134805e-02 
+    1 KSP Residual norm 5.494972539667e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0160632, 0.021703, 0.0295373]
+      Line search terminated: lambda = 1.31516, fnorms = 0.0149379
+ 25 SNES Function norm 1.493793130714e-02 
+ 25 PICARD ||F||/||F0||=3.315870e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.493793130714e-02 
+    1 KSP Residual norm 2.601631333850e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00874829, 0.0113959, 0.0149379]
+      Line search terminated: lambda = 1.41767, fnorms = 0.00797346
+ 26 SNES Function norm 7.973456229664e-03 
+ 26 PICARD ||F||/||F0||=1.769920e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.973456229664e-03 
+    1 KSP Residual norm 1.552950180186e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00450211, 0.00595658, 0.00797346]
+      Line search terminated: lambda = 1.34037, fnorms = 0.00409143
+ 27 SNES Function norm 4.091433028277e-03 
+ 27 PICARD ||F||/||F0||=9.082021e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.091433028277e-03 
+    1 KSP Residual norm 7.315205272103e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00255339, 0.00314931, 0.00409143]
+      Line search terminated: lambda = 1.24635, fnorms = 0.00236514
+ 28 SNES Function norm 2.365141840373e-03 
+ 28 PICARD ||F||/||F0||=5.250060e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.365141840373e-03 
+    1 KSP Residual norm 3.282448077949e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00177605, 0.00201275, 0.00236514]
+      Line search terminated: lambda = 1.44416, fnorms = 0.00180576
+ 29 SNES Function norm 1.805759544629e-03 
+ 29 PICARD ||F||/||F0||=4.008362e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.805759544629e-03 
+    1 KSP Residual norm 1.843547885359e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00123164, 0.00120636, 0.00180576]
+      Line search terminated: lambda = 0.733498, fnorms = 0.0011613
+ 30 SNES Function norm 1.161301237708e-03 
+ 30 MMFD   ||F||/||F0||=2.577816e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.161301237708e-03 
+    1 KSP Residual norm 9.145829916277e-04 
+    2 KSP Residual norm 5.780194962833e-04 
+    3 KSP Residual norm 4.461856906180e-04 
+    4 KSP Residual norm 3.449321529805e-04 
+    5 KSP Residual norm 2.409362844179e-04 
+    6 KSP Residual norm 1.599964349283e-04 
+    7 KSP Residual norm 9.679644490221e-05 
+    8 KSP Residual norm 7.243263946511e-05 
+    9 KSP Residual norm 5.125032822127e-05 
+   10 KSP Residual norm 2.720257380023e-05 
+   11 KSP Residual norm 1.276098793813e-05 
+   12 KSP Residual norm 5.878002241790e-06 
+   13 KSP Residual norm 2.836476091056e-06 
+   14 KSP Residual norm 1.275073691591e-06 
+   15 KSP Residual norm 6.200851088291e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 15
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0020173, 0.00107021, 0.0011613]
+      Line search terminated: lambda = 0.282499, fnorms = 0.00100043
+ 31 SNES Function norm 1.000434148257e-03 
+ 31 MMFD   ||F||/||F0||=2.220729e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.000434148257e-03 
+    1 KSP Residual norm 9.669976278008e-04 
+    2 KSP Residual norm 6.702241230711e-04 
+    3 KSP Residual norm 5.805278775552e-04 
+    4 KSP Residual norm 3.263671155265e-04 
+    5 KSP Residual norm 2.407704938924e-04 
+    6 KSP Residual norm 1.493544455074e-04 
+    7 KSP Residual norm 8.892998497822e-05 
+    8 KSP Residual norm 5.826603736157e-05 
+    9 KSP Residual norm 4.624412214058e-05 
+   10 KSP Residual norm 2.864706550513e-05 
+   11 KSP Residual norm 1.763742082974e-05 
+   12 KSP Residual norm 7.302096564442e-06 
+   13 KSP Residual norm 3.768562984071e-06 
+   14 KSP Residual norm 1.997123506822e-06 
+   15 KSP Residual norm 7.714997165335e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 15
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00811906, 0.00421245, 0.00100043]
+      Line search terminated: lambda = 0.5, fnorms = 0.00421245
+ 32 SNES Function norm 4.212446285307e-03 
+ 32 MMFD   ||F||/||F0||=9.350642e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.212446285307e-03 
+    1 KSP Residual norm 1.909322879708e-03 
+    2 KSP Residual norm 1.206959101425e-03 
+    3 KSP Residual norm 3.832887104392e-04 
+    4 KSP Residual norm 1.998142667179e-04 
+    5 KSP Residual norm 1.525350611156e-04 
+    6 KSP Residual norm 1.213846388775e-04 
+    7 KSP Residual norm 7.092110977415e-05 
+    8 KSP Residual norm 4.178368093162e-05 
+    9 KSP Residual norm 3.100619249791e-05 
+   10 KSP Residual norm 2.357363563400e-05 
+   11 KSP Residual norm 1.204961354423e-05 
+   12 KSP Residual norm 7.122015380223e-06 
+   13 KSP Residual norm 3.873901080409e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00581753, 0.00486797, 0.00421245]
+      Line search terminated: lambda = 0.5, fnorms = 0.00486797
+ 33 SNES Function norm 4.867972401580e-03 
+ 33 MMFD   ||F||/||F0||=1.080576e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.867972401580e-03 
+    1 KSP Residual norm 2.026689333480e-03 
+    2 KSP Residual norm 1.577385823307e-03 
+    3 KSP Residual norm 4.948107173137e-04 
+    4 KSP Residual norm 1.889496951413e-04 
+    5 KSP Residual norm 9.045102015935e-05 
+    6 KSP Residual norm 6.982436524826e-05 
+    7 KSP Residual norm 5.605276521205e-05 
+    8 KSP Residual norm 3.587959475905e-05 
+    9 KSP Residual norm 2.141127459029e-05 
+   10 KSP Residual norm 1.428813469535e-05 
+   11 KSP Residual norm 1.079269782223e-05 
+   12 KSP Residual norm 7.399568310353e-06 
+   13 KSP Residual norm 3.875463098381e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00726307, 0.00592457, 0.00486797]
+      Line search terminated: lambda = 0.5, fnorms = 0.00592457
+ 34 SNES Function norm 5.924568443042e-03 
+ 34 MMFD   ||F||/||F0||=1.315115e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.924568443042e-03 
+    1 KSP Residual norm 3.821841177216e-03 
+    2 KSP Residual norm 3.758312236942e-03 
+    3 KSP Residual norm 1.523240046166e-03 
+    4 KSP Residual norm 6.343645729246e-04 
+    5 KSP Residual norm 1.899993102376e-04 
+    6 KSP Residual norm 7.995288927579e-05 
+    7 KSP Residual norm 4.386825551956e-05 
+    8 KSP Residual norm 2.969875091798e-05 
+    9 KSP Residual norm 2.444755767591e-05 
+   10 KSP Residual norm 1.758918151384e-05 
+   11 KSP Residual norm 9.353038557322e-06 
+   12 KSP Residual norm 5.576059465715e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.016699, 0.0107859, 0.00592457]
+      Line search terminated: lambda = 0.5, fnorms = 0.0107859
+ 35 SNES Function norm 1.078587930895e-02 
+ 35 MMFD   ||F||/||F0||=2.394212e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.078587930895e-02 
+    1 KSP Residual norm 4.525389587924e-03 
+    2 KSP Residual norm 3.646775352128e-03 
+    3 KSP Residual norm 1.093577686026e-03 
+    4 KSP Residual norm 3.754221392442e-04 
+    5 KSP Residual norm 1.259666399855e-04 
+    6 KSP Residual norm 4.794774323227e-05 
+    7 KSP Residual norm 2.417773404970e-05 
+    8 KSP Residual norm 1.633113329252e-05 
+    9 KSP Residual norm 1.330438427612e-05 
+   10 KSP Residual norm 1.014748005769e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0172627, 0.0138405, 0.0107859]
+      Line search terminated: lambda = 0.5, fnorms = 0.0138405
+ 36 SNES Function norm 1.384053558381e-02 
+ 36 MMFD   ||F||/||F0||=3.072274e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.384053558381e-02 
+    1 KSP Residual norm 7.555327668607e-03 
+    2 KSP Residual norm 6.924007327443e-03 
+    3 KSP Residual norm 2.545178564713e-03 
+    4 KSP Residual norm 8.864370292511e-04 
+    5 KSP Residual norm 3.161220415673e-04 
+    6 KSP Residual norm 1.094893269949e-04 
+    7 KSP Residual norm 4.338961024844e-05 
+    8 KSP Residual norm 2.201999056445e-05 
+    9 KSP Residual norm 1.509915600513e-05 
+   10 KSP Residual norm 1.201726020988e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0295789, 0.0208815, 0.0138405]
+      Line search terminated: lambda = 0.5, fnorms = 0.0208815
+ 37 SNES Function norm 2.088154520050e-02 
+ 37 MMFD   ||F||/||F0||=4.635213e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.088154520050e-02 
+    1 KSP Residual norm 8.809386309638e-03 
+    2 KSP Residual norm 7.076788906934e-03 
+    3 KSP Residual norm 2.551795010359e-03 
+    4 KSP Residual norm 8.988715136052e-04 
+    5 KSP Residual norm 3.386671703870e-04 
+    6 KSP Residual norm 1.131500303990e-04 
+    7 KSP Residual norm 3.903224349916e-05 
+    8 KSP Residual norm 1.991972002715e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0332105, 0.0264784, 0.0208815]
+      Line search terminated: lambda = 0.5, fnorms = 0.0264784
+ 38 SNES Function norm 2.647835994049e-02 
+ 38 MMFD   ||F||/||F0||=5.877574e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.647835994049e-02 
+    1 KSP Residual norm 1.744025134421e-02 
+    2 KSP Residual norm 1.721752478154e-02 
+    3 KSP Residual norm 8.512493854222e-03 
+    4 KSP Residual norm 3.602028279104e-03 
+    5 KSP Residual norm 1.342023803880e-03 
+    6 KSP Residual norm 4.471629238947e-04 
+    7 KSP Residual norm 1.520254895911e-04 
+    8 KSP Residual norm 6.728943229368e-05 
+    9 KSP Residual norm 4.276989436207e-05 
+   10 KSP Residual norm 3.211312895498e-05 
+   11 KSP Residual norm 2.175829656642e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0794171, 0.0499137, 0.0264784]
+      Line search terminated: lambda = 0.5, fnorms = 0.0499137
+ 39 SNES Function norm 4.991372871156e-02 
+ 39 MMFD   ||F||/||F0||=1.107968e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.991372871156e-02 
+    1 KSP Residual norm 2.914730514102e-02 
+    2 KSP Residual norm 2.762453536314e-02 
+    3 KSP Residual norm 1.187053445582e-02 
+    4 KSP Residual norm 3.884678866424e-03 
+    5 KSP Residual norm 1.620878823970e-03 
+    6 KSP Residual norm 4.966963729368e-04 
+    7 KSP Residual norm 1.955166591011e-04 
+    8 KSP Residual norm 7.420098572952e-05 
+    9 KSP Residual norm 4.073410792539e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.108159, 0.0747882, 0.0499137]
+      Line search terminated: lambda = 0.5, fnorms = 0.0747882
+ 40 SNES Function norm 7.478818075125e-02 
+ 40 MMFD   ||F||/||F0||=1.660122e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.478818075125e-02 
+    1 KSP Residual norm 5.489380382197e-02 
+    2 KSP Residual norm 5.448251865111e-02 
+    3 KSP Residual norm 3.177664113627e-02 
+    4 KSP Residual norm 1.404400955373e-02 
+    5 KSP Residual norm 5.184309015021e-03 
+    6 KSP Residual norm 1.583682645402e-03 
+    7 KSP Residual norm 6.861769319484e-04 
+    8 KSP Residual norm 2.428433655183e-04 
+    9 KSP Residual norm 1.063974032780e-04 
+   10 KSP Residual norm 5.981752045307e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.42476, 0.202794, 0.0747882]
+      Line search terminated: lambda = 0.0787815, fnorms = 0.0868731
+ 41 SNES Function norm 8.687311487142e-02 
+ 41 MMFD   ||F||/||F0||=1.928379e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.687311487142e-02 
+    1 KSP Residual norm 7.107899705762e-02 
+    2 KSP Residual norm 5.784911144458e-02 
+    3 KSP Residual norm 5.467157877104e-02 
+    4 KSP Residual norm 5.437579505110e-02 
+    5 KSP Residual norm 4.129058598728e-02 
+    6 KSP Residual norm 2.505118244439e-02 
+    7 KSP Residual norm 1.071359756360e-02 
+    8 KSP Residual norm 3.657984757467e-03 
+    9 KSP Residual norm 1.590182700311e-03 
+   10 KSP Residual norm 8.307337218372e-04 
+   11 KSP Residual norm 5.847339663475e-04 
+   12 KSP Residual norm 4.629937448696e-04 
+   13 KSP Residual norm 2.364299591136e-04 
+   14 KSP Residual norm 1.259559364373e-04 
+   15 KSP Residual norm 8.181458164479e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 15
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [5.76359, 2.97621, 0.0868731]
+      Line search terminated: lambda = 0.5, fnorms = 2.97621
+ 42 SNES Function norm 2.976205921961e+00 
+ 42 PICARD ||F||/||F0||=6.606479e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.976205921961e+00 
+    1 KSP Residual norm 1.301885761988e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.471782, 1.61505, 2.97621]
+      Line search terminated: lambda = 1.05875, fnorms = 0.539948
+ 43 SNES Function norm 5.399482361679e-01 
+ 43 PICARD ||F||/||F0||=1.198558e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.399482361679e-01 
+    1 KSP Residual norm 1.170726204700e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.236931, 0.37594, 0.539948]
+      Line search terminated: lambda = 1.40516, fnorms = 0.245492
+ 44 SNES Function norm 2.454916036834e-01 
+ 44 PICARD ||F||/||F0||=5.449337e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.454916036834e-01 
+    1 KSP Residual norm 5.146417149692e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0703429, 0.147372, 0.245492]
+      Line search terminated: lambda = 1.13504, fnorms = 0.0662408
+ 45 SNES Function norm 6.624081560141e-02 
+ 45 PICARD ||F||/||F0||=1.470391e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.624081560141e-02 
+    1 KSP Residual norm 1.089759357658e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.030082, 0.0461567, 0.0662408]
+      Line search terminated: lambda = 1.34381, fnorms = 0.0255898
+ 46 SNES Function norm 2.558984808334e-02 
+ 46 PICARD ||F||/||F0||=5.680346e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.558984808334e-02 
+    1 KSP Residual norm 3.704840442228e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0143546, 0.0192469, 0.0255898]
+      Line search terminated: lambda = 1.43493, fnorms = 0.0127967
+ 47 SNES Function norm 1.279667357699e-02 
+ 47 PICARD ||F||/||F0||=2.840561e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.279667357699e-02 
+    1 KSP Residual norm 1.709331834729e-07 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00750434, 0.00986442, 0.0127967]
+      Line search terminated: lambda = 1.55514, fnorms = 0.00668427
+ 48 SNES Function norm 6.684272403798e-03 
+ 48 PICARD ||F||/||F0||=1.483752e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.684272403798e-03 
+    1 KSP Residual norm 9.533180557795e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00373761, 0.00494953, 0.00668427]
+      Line search terminated: lambda = 1.2953, fnorms = 0.00358607
+ 49 SNES Function norm 3.586073616158e-03 
+ 49 PICARD ||F||/||F0||=7.960242e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.586073616158e-03 
+    1 KSP Residual norm 4.103224060685e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00237137, 0.00282167, 0.00358607]
+      Line search terminated: lambda = 1.20678, fnorms = 0.00225452
+ 50 SNES Function norm 2.254523038331e-03 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 50
+SNES solution time      : 3.39035 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.166795089962e-08 
+      |Div|_2   = 9.838946133132e-08 
+   Momentum: 
+      |mRes|_2  = 2.254523036184e-03 
+   Energy: 
+      |eRes|_2  = 3.015295333946e-10 
+--------------------------------------------------------------------------
+Actual time step : 0.00161 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 8 markers in 2.1760e-03 s 
+--------------------------------------------------------------------------
+Saving output ... done (0.0554719 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 16.6672 (sec) 
+--------------------------------------------------------------------------
