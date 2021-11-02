@@ -210,36 +210,40 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 	      v_spread = PetscAbs(bc->velin);
 	      left = PhaseTrans->bounds[0];
 	      right = PhaseTrans->bounds[1];
-	      dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);  // necessary to write dike->dikeRHS?
+	      dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 	    }
 	  
-	  /*else                                                                                                                                                          
+	  /*else   // Mf and Mb are different
             {
-	    // Mb an Mf are different
-	    // FDSTAG *fs;
+
+	    FDSTAG *fs;
 	    
 	    // access context
-	    // fs = bc->fs;
-	    // bdx = SIZE_NODE(i, sx, fs->dsx); // distance between two neighbouring cell centers in x-direction 
-	    //  cdx = SIZE_CELL(i, sx, fs->dsx); // distance between two neigbouring nodes in x-direction       
-            
-	    if(front == back)
+	    fs = bc->fs;
+	    y_c = COORD_CELL(j,sy,fs->dsy); 
+	    left = PhaseTrans->bounds[0];    // How do we know this is the correct phaseTrans box we are using for the boundaries? --> check if coded correctly
+	    right = PhaseTrans->bounds[1];
+            front = PhaseTrans->bounds[2];
+	    back = PhaseTrans->bounds[3];
+
+	    if(front == back) % ridge is straight
 	    {
 	    // linear interpolation between different M values, Mf is M in front, Mb is M in back
-	    M = dike.Mf + (dike.Mb - dike.Mf) * (y/(PetscAbs(front+back))); 
-	    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km
+	    y_distance = Petscabs(front - y_c);
+	    M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (PetscAbs(front)+PetscAbs(back)) );
+	    dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
 	    }
-	    else
+	    else   % ridge is oblique
 	    {
-	    // linear interpolation if the ridge/dike phase is oblique
-	    y = COORD_CELL(j,sy,fs->dsy);
-	    M = Mf + (Mb - Mf) * (y/(PetscAbs(front+back)));
-	    dikeRHS = M * 2 * v_spread / PetscAbs(left+right);  // [1/s] SCALE THIS TERM, now it is in km 
+	    // linear interpolation of Mf and Mb
+	    y_distance = PetscAbs(front - y_c);
+	    M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance/ (PetscAbs(front)+PetscAbs(back)) ); NEEDS CHANGE
+	    dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
 	    }
             }*/
 	  else
             {
-              dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ?? not really right? it is always passed as a variable
+              dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ??
             }
 	  
 	  dikeRHS += phRat[i]*dike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
