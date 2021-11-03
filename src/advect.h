@@ -69,6 +69,7 @@ struct Marker
 	PetscScalar T;     // temperature
 	PetscScalar APS;   // accumulated plastic strain
 	PetscScalar ATS;   // accumulated total strain
+	PetscScalar defW;  // accumulated deformational work
 	Tensor2RS   S;     // deviatoric stress
 	PetscScalar U[3];  // displacement
 

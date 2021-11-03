@@ -100,6 +100,7 @@ PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 	C.U[0]  = (A.U[0] + B.U[0])/2.0;
 	C.U[1]  = (A.U[1] + B.U[1])/2.0;
 	C.U[2]  = (A.U[2] + B.U[2])/2.0;
+	C.defW  = (A.defW + B.defW)/2.0;
 
 	PetscFunctionReturn(0);
 }
@@ -686,6 +687,8 @@ PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx)
 	ierr = ADVInterpFieldToMark(actx, _STRESS_);    CHKERRQ(ierr);
 
 	ierr = ADVInterpFieldToMark(actx, _VORTICITY_); CHKERRQ(ierr);
+
+	//ierr = ADVInterpFieldToMark(actx,_DefW_); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1723,6 +1726,7 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	// - APS          (centers and edges)
 	// - stress       (centers or edges)
 	// - displacement (centers)
+	// - defW         (???)
 
 	FDSTAG   *fs;
 	JacRes   *jr;

@@ -274,7 +274,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
-	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, healID, MSN, print_title;
+	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, healID, MSN, print_title,DiffWID,DislWID,PeirWID,MVN;
 	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, Kb, G, E, Vp, Vs, eta_st, nu;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
@@ -302,6 +302,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	frSoftID = -1;
 	healID   = -1;
 	MSN      =  dbm->numSoft - 1;
+	MVN      =  dbm->numViW  - 1;
+	DiffWID = -1;
+	DislWID = -1;
+	PeirWID = -1;
 	
 	// phase ID
 	ierr 	 = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
@@ -467,6 +471,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,   1, 1.0);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
+	//==================================================================================
+	// Viscous damage parametrization ID
+	//==================================================================================
+	ierr = getIntParam   (fb, _OPTIONAL_, "DiffWID",  &DiffWID,  1, MSN); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "DislWID",  &DislWID,  1, MSN); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "PeirlWID", &PeirWID,  1, MSN); CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
 
@@ -510,6 +520,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->chSoftID = chSoftID;
 	m->frSoftID = frSoftID;
 	m->healID   = healID;
+
+	// Set Viscous weakening law IDs
+	m->DiffWID  = DiffWID;
+	m->DislWID  = DislWID;
+	m->PeirWID  = PeirWID;
 
 	// DIFFUSION
 

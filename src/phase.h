@@ -62,6 +62,7 @@ enum ExpType
 	_None_
 };
 
+
 //---------------------------------------------------------------------------
 //.......................   Softening Law Parameters  .......................
 //---------------------------------------------------------------------------
@@ -78,6 +79,29 @@ public:
 	PetscScalar Lm;   // material length scale
     PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
 
+};
+
+// enum type for switching between simple linear, logistic or grain size type of weakening
+enum Weakening_Type
+{
+	_Linear_,     // Uni-axial experiment
+	_Logistic_,  // Simple shear experiment
+	_Grain_
+};
+
+
+struct Viscous_Damage
+{
+public:
+
+	PetscInt    ID;                // softening law ID
+	Weakening_Type Weakening_type; //type of weakening applied
+	// Linear weakening properties
+	PetscScalar ADW1;              // begin of softening APS
+	PetscScalar ADW2;              // end of softening APS
+	PetscScalar WD;                // reduction ratio
+	// Place Holder Hyperbolic// Logistic weakening function
+	// Place Holder Grain Size weakening
 };
 
 //---------------------------------------------------------------------------
@@ -196,7 +220,10 @@ public:
 	PetscScalar  rp;                // ratio of pore pressure to overburden stress
 	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID;          // cohesion softening law ID (-1 if not defined)
-	PetscInt     healID;            // healing ID (-1 if not defined)   
+	PetscInt     healID;            // healing ID (-1 if not defined)
+	PetscInt     DiffWID;           // ID softening law caused by deformational work Diff(-1 if not defined)
+	PetscInt     DislWID;           // ID softening law caused by deformational work Disl(-1 if not defined)
+	PetscInt     PeirWID;           // ID softening law caused by deformational work Peirl(-1 if not defined)
 	// thermal parameters
 	PetscScalar  alpha;             // thermal expansivity                        [1/K]
 	PetscScalar  Cp;                // cpecific heat (capacity)                   [J/kg/K]
@@ -257,6 +284,7 @@ struct DBMat
 	PetscInt     numPhases;                // number phases
 	Material_t   phases[_max_num_phases_]; // phase parameters
 	PetscInt     numSoft;                  // number material softening laws
+	PetscInt     numViW;                   // number material viscous softening law
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
 	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
 	PetscInt     numPhtr;                // number phase transitions
