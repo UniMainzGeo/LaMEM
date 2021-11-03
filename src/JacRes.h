@@ -70,6 +70,8 @@ struct SolVarDev
 	PetscScalar  Hr;     // shear heating term contribution
 	PetscScalar  APS;    // accumulated plastic strain
 	PetscScalar  PSR;    // plastic strain-rate contribution
+	PetscScalar  DW ;    // Deformational work stored in the material (j) during the current timestep
+	PetscScalar  DW_cum ;// Cumulative deformational work stored in the material during the whole simulation (j)
 
 };
 
@@ -209,7 +211,7 @@ struct JacRes
 	FDSTAG   *fs;    // staggered-grid layout
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
-  DBPropDike *dbdike; // dike database
+	DBPropDike *dbdike; // dike database
 	DBMat    *dbm;   // material database
   //  ConstEqCtx *ctx;
   

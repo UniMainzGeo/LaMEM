@@ -688,7 +688,7 @@ PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx)
 
 	ierr = ADVInterpFieldToMark(actx, _VORTICITY_); CHKERRQ(ierr);
 
-	//ierr = ADVInterpFieldToMark(actx,_DefW_); CHKERRQ(ierr);
+	ierr = ADVInterpFieldToMark(actx,_DW_); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -764,6 +764,12 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 			for(jj = 0; jj < fs->nXYEdg; jj++) { d = jr->svXYEdge[jj].d;  gxy[jj] = d*d; }
 			for(jj = 0; jj < fs->nXZEdg; jj++) { d = jr->svXZEdge[jj].d;  gxz[jj] = d*d; }
 			for(jj = 0; jj < fs->nYZEdg; jj++) { d = jr->svYZEdge[jj].d;  gyz[jj] = d*d; }
+		}
+		else if(icase ==_DW_)
+		{
+			for(jj = 0; jj < fs->nXYEdg; jj++) gxy[jj] = jr->svXYEdge[jj].svDev.DW;
+			for(jj = 0; jj < fs->nXZEdg; jj++) gxz[jj] = jr->svXZEdge[jj].svDev.DW;
+			for(jj = 0; jj < fs->nYZEdg; jj++) gyz[jj] = jr->svYZEdge[jj].svDev.DW;
 		}
 
 		// restore access
@@ -866,6 +872,10 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 
 			// store rotated stress on the marker
 			Tensor2RSCopy(&SR, &P->S);
+		}
+		else if(icase == _DW_)
+		{
+			P->defW +=dt*sqrt(svCell->svDev.DW + UPXY + UPXZ + UPYZ);
 		}
 	}
 
@@ -1778,6 +1788,10 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	// interpolate plastic strain to edges
 	ierr = ADVInterpMarkToEdge(actx, 0, _APS_); CHKERRQ(ierr);
 
+	// interpolate total deformational work to the edges
+	ierr = ADVInterpMarkToEdge(actx, 0, _DW_); CHKERRQ(ierr);
+
+
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(actx->surf); CHKERRQ(ierr);
 
@@ -1823,6 +1837,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->svBulk.pn  = 0.0;
 		svCell->svBulk.Tn  = 0.0;
 		svCell->svDev.APS  = 0.0;
+		svCell->svDev.DW_cum = 0.0;
 		svCell->ATS        = 0.0;
 		svCell->hxx        = 0.0;
 		svCell->hyy        = 0.0;
@@ -1864,16 +1879,17 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->phRat[P->phase] += w;
 
 		// update history variables
-		svCell->svBulk.pn += w*P->p;
-		svCell->svBulk.Tn += w*P->T;
-		svCell->svDev.APS += w*P->APS;
-		svCell->ATS       += w*P->ATS;
-		svCell->hxx       += w*P->S.xx;
-		svCell->hyy       += w*P->S.yy;
-		svCell->hzz       += w*P->S.zz;
-		svCell->U[0]      += w*P->U[0];
-		svCell->U[1]      += w*P->U[1];
-		svCell->U[2]      += w*P->U[2];
+		svCell->svBulk.pn    += w*P->p;
+		svCell->svBulk.Tn    += w*P->T;
+		svCell->svDev.APS    += w*P->APS;
+		svCell->svDev.DW_cum += w*P->defW;
+		svCell->ATS          += w*P->ATS;
+		svCell->hxx          += w*P->S.xx;
+		svCell->hyy          += w*P->S.yy;
+		svCell->hzz          += w*P->S.zz;
+		svCell->U[0]         += w*P->U[0];
+		svCell->U[1]         += w*P->U[1];
+		svCell->U[2]         += w*P->U[2];
 
 	}
 
@@ -1890,6 +1906,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->svBulk.pn /= w;		
 		svCell->svBulk.Tn /= w;
 		svCell->svDev.APS /= w;
+		svCell->svDev.DW_cum /= w;
 		svCell->ATS       /= w;
 		svCell->hxx       /= w;
 		svCell->hyy       /= w;
@@ -1983,6 +2000,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 
 		if      (icase == _STRESS_) { UPXY = P->S.xy; UPXZ = P->S.xz; UPYZ = P->S.yz; }
 		else if (icase == _APS_)    { UPXY = P->APS;  UPXZ = P->APS;  UPYZ = P->APS;  }
+		else if (icase == _DW_)     { UPXY = P->defW;  UPXZ = P->defW;  UPYZ = P->defW;  }
 
 		// update required fields from marker to edge nodes
 		lxy[sz+K ][sy+JJ][sx+II] += wxn*wyn*wzc*UPXY;

@@ -100,8 +100,8 @@ enum InterpCase
 	_APS_,       // accumulated plastic strain
 	_ATS_,       // accumulated total strain
 	_VORTICITY_, // vorticity pseudo-vector components
-	_DISP_       // displacement
-
+	_DISP_,      // displacement
+	_DW_         // deformational work (i.e. (1-X)*shear_heating)*dt)
 };
 
 //-----------------------------------------------------------------------------

@@ -830,6 +830,9 @@ PetscErrorCode cellConstEq(
 		txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
 		sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
 
+	// Compute deformational work during the time step
+	svDev->DW = (1-ctx->ctrl->shearHeatEff);
+
 	// compute total viscosity
 	svDev->eta = ctx->eta + eta_st;
 
