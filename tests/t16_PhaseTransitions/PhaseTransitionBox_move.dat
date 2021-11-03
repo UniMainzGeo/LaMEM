@@ -30,7 +30,7 @@
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 15       # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 20       # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 5       # save output every n steps
 #	nstep_rdb = 100     # save restart database every n steps
 
@@ -46,9 +46,9 @@
 
 # Coordinates of all segments (including start and end points)
 
-	coord_x = -20 20
+	coord_x = -10 10
 	coord_y = -1  1
-	coord_z = -15 5
+	coord_z = -8 2
 
 #===============================================================================
 # Free surface
@@ -57,7 +57,7 @@
 	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
 	surf_level         = 0                # initial level
 	surf_air_phase     = 0                # phase ID of sticky air layer
-	surf_max_angle     = 25.0             # maximum angle with horizon (smoothed if larger)
+	surf_max_angle     = 90.0             # maximum angle with horizon (smoothed if larger)
 	
 #===============================================================================
 # Boundary conditions
@@ -67,9 +67,9 @@
 
 # Velocity boundary condition
 	bvel_face    =  CompensatingInflow     # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
-	bvel_bot     =  -15   # bottom coordinate of inflow window
-	bvel_top     =  5    # top coordinate of inflow window
-	bvel_velin   =  -10.0  # 0utflow velocity (halfspreading velocity)
+	bvel_bot     =  -8   # bottom coordinate of inflow window
+	bvel_top     =  2    # top coordinate of inflow window
+	bvel_velin   =  -5.0  # 0utflow velocity (halfspreading velocity)
 #	bvel_velbot  =  -1.0  # top inflow velocity
 
 # temperature on the top & bottom boundaries
@@ -88,7 +88,7 @@
 	p_litho_plast  = 1              # use lithostatic pressure for plasticity
 	eta_min        = 1e18           # viscosity lower limit
 	eta_max        = 1e24           # viscosity upper limit
-	eta_ref        = 1e22           # reference viscosity (initial guess)
+	eta_ref        = 1e21           # reference viscosity (initial guess)
 	min_cohes      = 1e3            # cohesion lower bound
 	min_fric       = 1.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
@@ -127,7 +127,7 @@
 	# sticky air
 	<BoxStart>
 		phase  = 0
-		bounds = -20 20 -1 1 0 5   # (left, right, front, back, bottom, top)
+		bounds = -10 10 -1 1 0 2   # (left, right, front, back, bottom, top)
 		Temperature = constant
 		cstTemp = 1
 	<BoxEnd>
@@ -135,7 +135,7 @@
 	
 	<RidgeSegStart>
 	    	phase = 1
-	    	bounds      = -20 20 -1 1 -15 0 # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+	    	bounds      = -10 10 -1 1 -8 0 # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
     		ridgeseg_x  = 0.0 0.0           # coordinate order: left, right [can be different for oblique ridge]
     		ridgeseg_y  = -1.0 1.0          # coordinate order: front, back [needs to be the same as the front and back of bounds]
     		topTemp     = 1                # required: temperature @ top [in Celcius in case of GEO units]
@@ -197,7 +197,7 @@
   <PhaseTransitionStart>
         ID                      =   0                               # Phase_transition law ID
         Type                    =   NotInAirBox                             # A box-like region
-        PTBox_Bounds            =   -10.0 -8.0 -1.0 1.0 -15.0 4.0      # box bound coordinates: [left, right, front, back, bottom, top]
+        PTBox_Bounds            =   -4.0 -2.0 -1.0 1.0 -8.0 1.0      # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   2
         PhaseInside             =   2 2                                # Phase within the box [use -1 if you don't want to change the phase inside the box]
         PhaseOutside            =   1 0                            # Phase outside the box
@@ -205,14 +205,14 @@
         PTBox_TempType          =   none                          # Temperature condition witin the box [none, constant, linear, halfspace]
         t0_box 			= 0.001     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
         t1_box 			= 0.3      # optional, in Myr, end time
-        v_box  			= -3.0     # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
+        v_box  			= -2.0     # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
   <PhaseTransitionEnd>
 
 # boxes with higher conductivity
 <PhaseTransitionStart>
         ID                      =   1                               # Phase_transition law ID
         Type                    =   NotInAirBox                             # A box-like region
-        PTBox_Bounds 		=   5.0 10.0 -1.0 1.0 -15.0 4.0  # (left, right, front, back, bottom, top)
+        PTBox_Bounds 		=   2.0 6.0 -1.0 1.0 -8.0 1.0  # (left, right, front, back, bottom, top)
         number_phases           =   2
         PhaseInside             =   3 3                                # Phase within the box [use -1 if you don't want to change the phase inside the box]
         PhaseOutside            =   1 0                             # Phase outside the box
@@ -220,7 +220,7 @@
         PTBox_TempType          =   none                          # Temperature condition witin the box [none, constant, linear, halfspace]
 	t0_box 			= 0.002     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
         t1_box 			= 0.3      # optional, in Myr, end time
-        v_box  			= 5.0
+        v_box  			= 2.0
   <PhaseTransitionEnd>
 
 
