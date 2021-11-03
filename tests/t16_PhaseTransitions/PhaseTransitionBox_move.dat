@@ -31,7 +31,7 @@
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
 	nstep_max = 20       # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 5       # save output every n steps
+	nstep_out = 1       # save output every n steps
 #	nstep_rdb = 100     # save restart database every n steps
 
 
@@ -69,7 +69,7 @@
 	bvel_face    =  CompensatingInflow     # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
 	bvel_bot     =  -8   # bottom coordinate of inflow window
 	bvel_top     =  2    # top coordinate of inflow window
-	bvel_velin   =  -5.0  # 0utflow velocity (halfspreading velocity)
+	bvel_velin   =  -2.0  # 0utflow velocity (halfspreading velocity)
 #	bvel_velbot  =  -1.0  # top inflow velocity
 
 # temperature on the top & bottom boundaries
@@ -203,25 +203,25 @@
         PhaseOutside            =   1 0                            # Phase outside the box
         PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
         PTBox_TempType          =   none                          # Temperature condition witin the box [none, constant, linear, halfspace]
-        t0_box 			= 0.001     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
+        t0_box 			= 0.002     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
         t1_box 			= 0.3      # optional, in Myr, end time
-        v_box  			= -2.0     # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
+        v_box  			= -0.2     # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
   <PhaseTransitionEnd>
 
 # boxes with higher conductivity
-<PhaseTransitionStart>
-        ID                      =   1                               # Phase_transition law ID
-        Type                    =   NotInAirBox                             # A box-like region
-        PTBox_Bounds 		=   2.0 6.0 -1.0 1.0 -8.0 1.0  # (left, right, front, back, bottom, top)
-        number_phases           =   2
-        PhaseInside             =   3 3                                # Phase within the box [use -1 if you don't want to change the phase inside the box]
-        PhaseOutside            =   1 0                             # Phase outside the box
-        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
-        PTBox_TempType          =   none                          # Temperature condition witin the box [none, constant, linear, halfspace]
-	t0_box 			= 0.002     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
-        t1_box 			= 0.3      # optional, in Myr, end time
-        v_box  			= 2.0
-  <PhaseTransitionEnd>
+#<PhaseTransitionStart>
+#        ID                      =   1                               # Phase_transition law ID
+#        Type                    =   NotInAirBox                             # A box-like region
+#        PTBox_Bounds 		=   2.0 6.0 -1.0 1.0 -8.0 1.0  # (left, right, front, back, bottom, top)
+#        number_phases           =   2
+#        PhaseInside             =   3 3                                # Phase within the box [use -1 if you don't want to change the phase inside the box]
+#        PhaseOutside            =   1 0                             # Phase outside the box
+#        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
+#        PTBox_TempType          =   none                          # Temperature condition witin the box [none, constant, linear, halfspace]
+#	t0_box 			= 0.002     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
+#        t1_box 			= 0.3      # optional, in Myr, end time
+#        v_box  			= 1.0
+#  <PhaseTransitionEnd>
 
 
 # Strain softening parameters
