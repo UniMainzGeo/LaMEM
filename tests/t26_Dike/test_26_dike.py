@@ -116,13 +116,7 @@ def heat_kfac():
 
   def comparefunc(unittest):
 
-    key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-7)
-
-    key = re.escape("|Div|_2")
-    unittest.compareFloatingPoint(key,1e-5)
-
-    key = re.escape("|mRes|_2")
+    key = re.escape("|eRes|_2")
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object                                                                                                                                                
@@ -141,13 +135,7 @@ def heat_rhoA():
 
   def comparefunc(unittest):
 
-    key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-7)
-
-    key = re.escape("|Div|_2")
-    unittest.compareFloatingPoint(key,1e-5)
-
-    key = re.escape("|mRes|_2")
+    key = re.escape("|eRes|_2")
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
