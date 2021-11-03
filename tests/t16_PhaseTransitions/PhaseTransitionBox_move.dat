@@ -30,8 +30,8 @@
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 6       # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 1       # save output every n steps
+	nstep_max = 15       # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 5       # save output every n steps
 #	nstep_rdb = 100     # save restart database every n steps
 
 
@@ -69,7 +69,7 @@
 	bvel_face    =  CompensatingInflow     # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
 	bvel_bot     =  -15   # bottom coordinate of inflow window
 	bvel_top     =  5    # top coordinate of inflow window
-	bvel_velin   =  -2.0  # 0utflow velocity (halfspreading velocity)
+	bvel_velin   =  -10.0  # 0utflow velocity (halfspreading velocity)
 #	bvel_velbot  =  -1.0  # top inflow velocity
 
 # temperature on the top & bottom boundaries
@@ -205,7 +205,7 @@
         PTBox_TempType          =   none                          # Temperature condition witin the box [none, constant, linear, halfspace]
         t0_box 			= 0.001     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
         t1_box 			= 0.3      # optional, in Myr, end time
-        v_box  			= -40.0     # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
+        v_box  			= -3.0     # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
   <PhaseTransitionEnd>
 
 # boxes with higher conductivity
@@ -220,7 +220,7 @@
         PTBox_TempType          =   none                          # Temperature condition witin the box [none, constant, linear, halfspace]
 	t0_box 			= 0.002     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
         t1_box 			= 0.3      # optional, in Myr, end time
-        v_box  			= 50.0
+        v_box  			= 5.0
   <PhaseTransitionEnd>
 
 
