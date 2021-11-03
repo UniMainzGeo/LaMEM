@@ -571,6 +571,17 @@
 		healTau		= 1e-3  # healing parameter [Myr]  
 	<SofteningEnd>
 	
+	<ViscousDamageStart>
+		ID   		= 0   	# softening law ID
+		Weakening_Type = _Linear_ # _Logistic_Type_, (or Hyperbolic_Tangent_type_), _Grain_Size_
+		ADVW1           = 0.0
+		ADVW2           = 2000 #(Joule, need to discuss within which range we should do)
+		VDR            = 0.9  # Ratio at which the viscous properties is reduced
+		##########
+		#Place Holder Logistic/hyperbolic tangent grain size parameter 
+		##########
+	<ViscousDamageEnd>
+	
 # Define Phase Transition laws (maximum 10)
 	
 	<PhaseTransitionStart>

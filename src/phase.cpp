@@ -96,13 +96,52 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		// read each individual softening law
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
+			ierr = DBMatReadVisSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
 
 			fb->blockID++;
 		}
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	//====================
+	// VISCOUS DAMAGE LAW
+	//====================
+	// setup block access mode
+		ierr = FBFindBlocks(fb, _OPTIONAL_, "<ViscousDamageStart>", "<ViscousDamageEnd>"); CHKERRQ(ierr);
+
+		if(fb->nblocks)
+		{
+			// print overview of softening laws from file
+			if (PrintOutput){
+				PetscPrintf(PETSC_COMM_WORLD,"Viscous Damage laws: \n");
+			}
+			// initialize ID for consistency checks
+			for(jj = 0; jj < _max_vis_damage_; jj++) dbm->matVisD[jj].ID = -1;
+
+			// error checking
+			if(fb->nblocks > _max_vis_damage_)
+			{
+				SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)_max_vis_damage_);
+			}
+
+			// store actual number of softening laws
+			dbm->numViW = fb->nblocks;
+
+			if (PrintOutput){
+				PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+			}
+			// read each individual softening law
+			for(jj = 0; jj < fb->nblocks; jj++)
+			{
+				ierr = DBMatReadSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
+
+				fb->blockID++;
+			}
+		}
+
+		ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+
 
 
 
@@ -266,6 +305,85 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+// read Viscous softening law
+#undef __FUNCT__
+#define __FUNCT__ "DBMatReadVisSoft"
+PetscErrorCode DBMatReadVisSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
+{
+	// read softening law from file
+	Scaling          *scal ;
+	Viscous_Damage   *v_d  ;
+	PetscInt         ID    ;
+    char            Type_[_str_len_];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	scal = dbm->scal;
+
+		// softening law ID
+	ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numViW-1); CHKERRQ(ierr);
+	fb->ID  = ID;
+
+		// get pointer to specified softening law
+	v_d = dbm->matVisD + ID;
+
+	// check ID
+	if(v_d->ID != -1)
+	{
+		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Duplicate softening law!");
+	}
+
+	// set ID
+	v_d->ID = ID;
+	ierr    =   getStringParam(fb, _REQUIRED_, "Weakening_Type",Type_,NULL);  CHKERRQ(ierr);
+	if(!strcmp(Type_,"_Linear_"))
+	{
+		v_d->Weakening_type = _Linear_;
+	}
+	else if(!strcmp(Type_,"_Logistic_"))
+	{
+		// Place Holder
+	}
+	else if(!strcmp(Type_,"_Grain_Size_"))
+	{
+		// Place Holder
+	}
+	else
+	{
+		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Name of Weakening type is wrong, please check it!");
+	}
+
+	if(v_d->Weakening_type == _Linear_)
+	{
+		ierr = getScalarParam(fb, _REQUIRED_, "WDR",    &v_d->WDR,    1, 1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "ADVW1",  &v_d->ADVW1,  1, 1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "ADVW2",  &v_d->ADVW2,  1, 1.0); CHKERRQ(ierr);
+
+		//Scaling
+		v_d->ADVW1 /= scal->energy ;
+		v_d->ADVW2 /= scal->energy;
+	}
+	if(v_d->Weakening_type == _Logistic_)
+	{
+		// Place Holder
+	}
+	if(v_d->Weakening_type == _Grain_Size_)
+	{
+		// Place Holder
+	}
+
+	if (PrintOutput){
+			if(v_d->Weakening_type == _Linear_)
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : WDR = %g, ADVW1 = %g, ADVW2 = %g\n", (LLD)(v_d->ID), v_d->WDR, v_d->ADVW1, v_d->ADVW2);
+			}
+		}
+	PetscFunctionReturn(0);
+}
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhase"
@@ -474,9 +592,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//==================================================================================
 	// Viscous damage parametrization ID
 	//==================================================================================
-	ierr = getIntParam   (fb, _OPTIONAL_, "DiffWID",  &DiffWID,  1, MSN); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "DislWID",  &DislWID,  1, MSN); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "PeirlWID", &PeirWID,  1, MSN); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "DiffWID",  &DiffWID,  1, MVN); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "DislWID",  &DislWID,  1, MVN); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "PeirlWID", &PeirWID,  1, MVN); CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
 

@@ -175,6 +175,9 @@
 // maximum number of control polygons
 #define _max_ctrl_poly_ 20
 
+// maximum number of viscous damage law
+#define _max_vis_damage_ 5
+
 // cast macros
 #define LLD long long int
 
