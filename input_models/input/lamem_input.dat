@@ -708,10 +708,10 @@
 		k          = 2.5    # thermal conductivity
 		A          = 1e-9   # radiogenic heat production
 		T          = 100.0  # optional temperature to set within the phase
-		Latent_hx  =        # optional, used for dike heating, J/kg
-		T_liq      =        # optional, used for dike heating, liquidus temperature of material, celsius
-		T_sol      =        # optional, used for dike heating, solidus temperature of material, celsius  
-		T_Nu       = 600            # default value for thermal conductivity boundary
+		Latent_hx  = 5e5    # optional, used for dike heating, J/kg
+		T_liq      = 1300   # optional, used for dike heating, liquidus temperature of material, celsius
+		T_sol      = 1000   # optional, used for dike heating, solidus temperature of material, celsius  
+		T_Nu       = 600    # default value for thermal conductivity boundary
 		nu_k       = 5      # optional parameter, Nusselt number for use with conductivity
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
 		rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
