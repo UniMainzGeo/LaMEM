@@ -875,7 +875,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		}
 		else if(icase == _DW_)
 		{
-			P->defW +=dt*sqrt(svCell->svDev.DW + UPXY + UPXZ + UPYZ);
+			P->defW +=dt*(svCell->svDev.DW + UPXY + UPXZ + UPYZ);
 		}
 	}
 

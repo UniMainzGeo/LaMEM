@@ -875,7 +875,7 @@ PetscErrorCode cellConstEq(
 		sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
 
 	// Compute deformational work during the time step
-	svDev->DW = (1-ctx->ctrl->shearHeatEff);
+	svDev->DW = (1.0-ctx->ctrl->shearHeatEff)*svDev->Hr;
 
 	// compute total viscosity
 	svDev->eta = ctx->eta + eta_st;
@@ -962,7 +962,8 @@ PetscErrorCode edgeConstEq(
 
 	// compute shear heating term contribution
 	svDev->Hr = 2.0*t*svEdge->s + 2.0*svEdge->d*s;
-
+	// compute deformation work term contribution
+	svDev->DW = (1.0-ctx->ctrl->shearHeatEff)*svDev->Hr;
 	// compute total viscosity
 	svDev->eta = ctx->eta + eta_st;
 

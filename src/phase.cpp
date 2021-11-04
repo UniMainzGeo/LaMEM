@@ -93,10 +93,10 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		if (PrintOutput){
 			PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 		}
-		// read each individual softening law
+		// read each individual softening law DBMatReadSoft
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadVisSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
+			ierr = DBMatReadSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
 
 			fb->blockID++;
 		}
@@ -133,7 +133,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 			// read each individual softening law
 			for(jj = 0; jj < fb->nblocks; jj++)
 			{
-				ierr = DBMatReadSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
+				ierr = DBMatReadVisSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
 
 				fb->blockID++;
 			}

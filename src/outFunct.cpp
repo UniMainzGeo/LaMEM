@@ -992,35 +992,15 @@ PetscErrorCode PVOutWriteVelocityGr(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteDeformationW"
 PetscErrorCode PVOutWriteDeformationW(OutVec* outvec)
 {
-	SolVarCell *svCell;
-	SolVarEdge *svEdge;
-	PetscScalar DW_cum;
-
 	COPY_FUNCTION_HEADER
 
-	// macros to copy shear heating  to buffer
-	#define GET_DEF_WORK_CENTER \
-		svCell = &jr->svCell[iter++];  \
-		DW_cum = svCell->svDev.DW_cum; \
-		buff[k][j][i] = DW_cum;
+		// macro to copy accumulated plastic strain (APS) to buffer
+		#define GET_DW_cum buff[k][j][i] = jr->svCell[iter++].svDev.DW_cum;
 
-	#define GET_DEF_WORK_XY_EDGE svEdge = &jr->svXYEdge[iter++]; DW_cum = svEdge->svDev.DW_cum; buff[k][j][i] = DW_cum;
-	#define GET_DEF_WORK_YZ_EDGE svEdge = &jr->svYZEdge[iter++]; DW_cum = svEdge->svDev.DW_cum; buff[k][j][i] = DW_cum;
-	#define GET_DEF_WORK_XZ_EDGE svEdge = &jr->svXZEdge[iter++]; DW_cum = svEdge->svDev.DW_cum; buff[k][j][i] = DW_cum;
+		cf = scal->unit;
 
-	cf = scal->deformation_work;
+		INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_APS, 1, 0)
 
-	iflag.update = 1;
-
-	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
-
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DEF_WORK_CENTER,  1, 0)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DEF_WORK_XY_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DEF_WORK_YZ_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DEF_WORK_XZ_EDGE, 1, 0)
-
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
+		PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
