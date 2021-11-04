@@ -997,9 +997,9 @@ PetscErrorCode PVOutWriteDeformationW(OutVec* outvec)
 		// macro to copy accumulated plastic strain (APS) to buffer
 		#define GET_DW_cum buff[k][j][i] = jr->svCell[iter++].svDev.DW_cum;
 
-		cf = scal->unit;
+		cf = scal->deformation_work;
 
-		INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_APS, 1, 0)
+		INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DW_cum, 1, 0)
 
 		PetscFunctionReturn(0);
 }
