@@ -181,12 +181,17 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   BCCtx       *bc;
   Dike        *dike;
   Ph_trans_t  *PhaseTrans;
+  FDSTAG      *fs;
   PetscInt     i, j, numDike;
-  PetscScalar  v_spread, M, left, right;
+  PetscScalar  v_spread, M, left, right, front, back;
+  PetscInt     jy, sy, dsy;
+  PetscScalar  y_c, y_distance;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
   PhaseTrans = ctx->PhaseTrans;
+  fs         = bc->fs;
+  dsy        = fs->dsy
 
   j = 0;
   
@@ -213,37 +218,38 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 	      dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 	    }
 	  
-	  /*else   // Mf and Mb are different
+	  else if(dike->Mb != dike->Mf)   // Mf and Mb are different
             {
-
-	    FDSTAG *fs;
-	    
-	    // access context
-	    fs = bc->fs;
-	    y_c = COORD_CELL(j,sy,fs->dsy); 
-	    left = PhaseTrans->bounds[0];    // How do we know this is the correct phaseTrans box we are using for the boundaries? --> check if coded correctly
-	    right = PhaseTrans->bounds[1];
-            front = PhaseTrans->bounds[2];
-	    back = PhaseTrans->bounds[3];
-
-	    if(front == back) % ridge is straight
-	    {
-	    // linear interpolation between different M values, Mf is M in front, Mb is M in back
-	    y_distance = Petscabs(front - y_c);
-	    M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (PetscAbs(front)+PetscAbs(back)) );
-	    dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
-	    }
-	    else   % ridge is oblique
-	    {
-	    // linear interpolation of Mf and Mb
-	    y_distance = PetscAbs(front - y_c);
+	      
+	      // FDSTAG *fs;
+	      
+	      // access context
+	      //fs = bc->fs;
+	      //dsy = fs->dsy
+	      y_c = COORD_CELL(jy,sy,dsy); 
+	      left = PhaseTrans->bounds[0];    // How do we know this is the correct phaseTrans box we are using for the boundaries? --> check if coded correctly
+	      right = PhaseTrans->bounds[1];
+	      front = PhaseTrans->bounds[2];
+	      back = PhaseTrans->bounds[3];
+	      
+	      if(front == back) // ridge is straight
+		{
+		  // linear interpolation between different M values, Mf is M in front, Mb is M in back
+		  y_distance = PetscAbs(front - y_c);
+		  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (PetscAbs(front)+PetscAbs(back)) );
+		  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
+		}
+	      /*  else   % ridge is oblique
+		  {
+		  // linear interpolation of Mf and Mb
+		  y_distance = PetscAbs(front - y_c);
 	    M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance/ (PetscAbs(front)+PetscAbs(back)) ); NEEDS CHANGE
 	    dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
-	    }
-            }*/
+	    } */
+            }
 	  else
-            {
-              dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ??
+	    {
+	      dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ??
             }
 	  
 	  dikeRHS += phRat[i]*dike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
