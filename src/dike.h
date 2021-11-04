@@ -47,11 +47,9 @@
 //---------------------------------------------------------------------------   
 
 struct FB; 
-//struct JacRes;
 struct ConstEqCtx;
 struct DBMat;
 struct TSSol;
-//struct Scaling;
 
 //---------------------------------------------------------------------------       
 //.......................   Dike Parameters  .......................                                                                                                      
@@ -89,7 +87,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 // compute the added RHS of the dike for the continuity equation
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
 
-// compute dike heat after Behn & Ito
+// compute dike heat after Behn & Ito, 2008
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 Material_t *phases,
                                 PetscScalar &Tc,
