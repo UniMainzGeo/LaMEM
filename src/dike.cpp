@@ -173,88 +173,88 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 #undef __FUNCT__
 #define __FUNCT__ "Dike_k_heatsource"
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
-                                Material_t *phases,
-                                PetscScalar &Tc,
-                                PetscScalar *phRat,          // phase ratios in the control volume
-                                PetscScalar &k,
-                                PetscScalar &rho_A)
+				 Material_t *phases,
+				 PetscScalar &Tc,
+				 PetscScalar *phRat,          // phase ratios in the control volume
+				 PetscScalar &k,
+				 PetscScalar &rho_A)
 {
-
-        BCCtx       *bc;
-        Dike        *dike;
-        Ph_trans_t  *PhaseTrans;
-        Material_t  *M;
-        PetscInt     i, j, numDike;
-        PetscScalar  v_spread, left, right, kfac, tempdikeRHS;
-
-        numDike    = jr->dbdike->numDike; // number of dikes
-
-        bc         =  jr->bc;
-        PhaseTrans =  jr->dbm->matPhtr;   // phase transition
-
-	j=0;
-	
-        // loop through all dikes
-        for(j = 0; j < numDike; j++)
-        {
-
-	  kfac = 0.0;
-	  rho_A = 0.0;
+  
+  BCCtx       *bc;
+  Dike        *dike;
+  Ph_trans_t  *PhaseTrans;
+  Material_t  *M;
+  PetscInt     i, j, numDike;
+  PetscScalar  v_spread, left, right, kfac, tempdikeRHS;
+  
+  numDike    = jr->dbdike->numDike; // number of dikes
+  
+  bc         =  jr->bc;
+  PhaseTrans =  jr->dbm->matPhtr;   // phase transition
+  
+  j=0;
+  
+  // loop through all dikes
+  for(j = 0; j < numDike; j++)
+    {
+      
+      kfac = 0.0;
+      rho_A = 0.0;
+      
+      //access the material parameters of each dike block
+      dike=jr->dbdike->matDike+j;
+      
+      // access the phase ID of the dike block
+      i = dike->PhaseID;
+      
+      // check if the phase ratio of a dike phase is greater than 0 in the current cell
+      if(phRat[i] > 0)
+	{
 	  
-	  //access the material parameters of each dike block
-            dike=jr->dbdike->matDike+j;
-	    
-            // access the phase ID of the dike block
-            i = dike->PhaseID;
-	    
-             // check if the phase ratio of a dike phase is greater than 0 in the current cell
-            if(phRat[i] > 0)
-            {
-
-                if(dike->Mb == dike->Mf)
-                {
-                    // constant M
-                    v_spread = PetscAbs(bc->velin);
-                    left = PhaseTrans->bounds[0];
-                    right = PhaseTrans->bounds[1];
-                    tempdikeRHS = dike->Mf * 2 * v_spread / PetscAbs(left-right);
-                }
-
-		    //code for along-axis variation in M goes here eventually
-
-                else
-                {
-                    tempdikeRHS = 0.0;
-                } 
-                // end if (dike->Mb == dike-Mf)
-
-                M = &phases[i];
-
-                //adjust k and heat source according to Behn & Ito [2008]
-                if (Tc < M->T_liq && Tc > M->T_sol)
-		  {
-		    kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
-		    rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
-		  }
-		else if (Tc <= M->T_sol)
-		  {
-		    kfac  += phRat[i];
-		    rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*tempdikeRHS;
-		  }
+	  if(dike->Mb == dike->Mf)
+	    {
+	      // constant M
+	      v_spread = PetscAbs(bc->velin);
+	      left = PhaseTrans->bounds[0];
+	      right = PhaseTrans->bounds[1];
+	      tempdikeRHS = dike->Mf * 2 * v_spread / PetscAbs(left-right);
+	    }
+	  
+	  //code for along-axis variation in M goes here eventually
+	  
+	  else
+	    {
+	      tempdikeRHS = 0.0;
+	    } 
+	  // end if (dike->Mb == dike-Mf)
+	  
+	  M = &phases[i];
+	  
+	  //adjust k and heat source according to Behn & Ito [2008]
+	  if (Tc < M->T_liq && Tc > M->T_sol)
+	    {
+	      kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
+	      rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
+	    }
+	  else if (Tc <= M->T_sol)
+	    {
+	      kfac  += phRat[i];
+	      rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*tempdikeRHS;
+	    }
 		else if (Tc >= M->T_liq)
 		  {
 		    kfac += phRat[i];
 		    rho_A = 0.0;
 		  }
-		// end adjust k and heat source according to Behn & Ito [2008]
-
-		k=kfac*k;
-
-	    }   // end phase ratio
-	    
-        }   // end dike loop
-
-	PetscFunctionReturn(0);
+	  // end adjust k and heat source according to Behn & Ito [2008]
+	  
+	  k=kfac*k;
+	  
+	}   // end phase ratio
+      
+    }   // end dike loop
+  
+  PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
 #undef __FUNCT__
