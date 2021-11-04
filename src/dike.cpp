@@ -230,7 +230,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 
                 M = &phases[i];
 
-                //adjust k and heat source according to Behn & Ito [2005]
+                //adjust k and heat source according to Behn & Ito [2008]
                 if (Tc < M->T_liq && Tc > M->T_sol)
 		  {
 		    kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
@@ -246,7 +246,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 		    kfac += phRat[i];
 		    rho_A = 0.0;
 		  }
-		// end adjust k and heat source according to Behn & Ito [2005]
+		// end adjust k and heat source according to Behn & Ito [2008]
 
 		k=kfac*k;
 
