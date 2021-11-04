@@ -711,27 +711,27 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 #define __FUNCT__ "MovingBox"
 PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts)
 {
-
+  
   PetscScalar  t0_box, t1_box, v_box;
   PetscScalar  t_c, dt;
-
+  
   PetscFunctionBegin;
-
+  
   dt  = ts->dt;       // time step
   t_c = ts->time;     // current time stamp, computed at the end of last time step round
-
+  
   // access the starting and end times of certain phase transition and the velocity of the phase transition-box
   t0_box = PhaseTrans->t0_box;
   t1_box = PhaseTrans->t1_box;
   v_box  = PhaseTrans->v_box;
-
+  
   // check if the current time step is equal to the starting time of when the box is supposed to move
   if(t_c >= t0_box && t_c <= t1_box)
     {
       PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_box * dt;
       PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_box * dt;
     }
-
+  
   PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------
