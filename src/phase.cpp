@@ -363,8 +363,8 @@ PetscErrorCode DBMatReadVisSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		ierr = getScalarParam(fb, _REQUIRED_, "ADVW2",  &v_d->ADVW2,  1, 1.0); CHKERRQ(ierr);
 
 		//Scaling
-		v_d->ADVW1 /= scal->energy ;
-		v_d->ADVW2 /= scal->energy;
+		v_d->ADVW1 /= scal->deformation_work ;
+		v_d->ADVW2 /= scal->deformation_work ;
 	}
 	if(v_d->Weakening_type == _Logistic_)
 	{
@@ -378,7 +378,7 @@ PetscErrorCode DBMatReadVisSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	if (PrintOutput){
 			if(v_d->Weakening_type == _Linear_)
 			{
-				PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : WDR = %g, ADVW1 = %g, ADVW2 = %g\n", (LLD)(v_d->ID), v_d->WDR, v_d->ADVW1, v_d->ADVW2);
+				PetscPrintf(PETSC_COMM_WORLD,"   Viscous Weakening [%lld] : WDR = %g, ADVW1 = %g, ADVW2 = %g\n", (LLD)(v_d->ID), v_d->WDR, v_d->ADVW1, v_d->ADVW2);
 			}
 		}
 	PetscFunctionReturn(0);

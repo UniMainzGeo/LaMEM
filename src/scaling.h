@@ -119,6 +119,7 @@ struct Scaling
 	PetscScalar dissipation_rate;  // power / volume
 	PetscScalar angular_velocity;  // angle / time
 	PetscScalar volumetric_force;  // force / volume
+	PetscScalar deformation_work;  // (power/volume)'time
 
 	// material parameters
 	PetscScalar density;            // mass / volume
@@ -145,6 +146,8 @@ struct Scaling
 	char lbl_dissipation_rate [_lbl_sz_];
 	char lbl_angular_velocity [_lbl_sz_];
 	char lbl_volumetric_force [_lbl_sz_];
+	char lbl_deformation_work [_lbl_sz_];
+
 
 	// material parameters labels
 	char lbl_density          [_lbl_sz_];

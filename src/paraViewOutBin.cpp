@@ -332,6 +332,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->DIIdif)         cnt++; // diffusion creep relative strain rate
 	if(omask->DIIdis)         cnt++; // dislocation creep relative strain rate
 	if(omask->DIIprl)         cnt++; // Peierls creep relative strain rate
+	if(omask->Def_Work)       cnt++;// Cumulated Deformational work
 
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     cnt++; // momentum residual
@@ -409,6 +410,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Def_Work",       &omask->Def_Work,          1, 1); CHKERRQ(ierr);
 
 
 	// read phase aggregates
@@ -482,6 +484,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->melt_fraction)  PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction                           @ \n");
 	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
 	if(omask->vel_gr_tensor)  PetscPrintf(PETSC_COMM_WORLD, "   Velocity Gradient Tensor                @ \n");
+	if(omask->Def_Work)       PetscPrintf(PETSC_COMM_WORLD, "   Total deformational Work                @ \n");
 
 
 	for(i = 0; i < omask->num_agg; i++)
@@ -571,7 +574,8 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3, NULL);
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL);
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1, NULL);
-	if(omask->vel_gr_tensor)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "vel_gr_tensor",  scal->lbl_strain_rate,      &PVOutWriteVelocityGr,   9, NULL);
+	if(omask->vel_gr_tensor)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "vel_gr_tensor",    scal->lbl_strain_rate,      &PVOutWriteVelocityGr,   9, NULL);
+	if(omask->Def_Work)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Deformational_work",  scal->lbl_deformation_work,      &PVOutWriteDeformationW,   1, NULL);
 
 
 	// setup phase aggregate output vectors

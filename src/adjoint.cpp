@@ -4983,8 +4983,6 @@ PetscErrorCode edgeConstEqFD(
 	// compute shear heating term contribution
 	svDev->Hr = 2.0*t*svEdge->s + 2.0*svEdge->d*s;
 
-	// compute deformational work
-	svDev->DW = (1-ctx->ctrl->shearHeatEff)*svDev->Hr;
 
 	// compute total viscosity
 	svDev->eta = ctx->eta + eta_st;

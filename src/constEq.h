@@ -50,6 +50,7 @@
 
 struct Material_t;
 struct Soft_t;
+struct Viscous_Damage;
 struct Controls;
 struct SolVarDev;
 struct SolVarBulk;
@@ -69,14 +70,15 @@ struct DBPropDike;
 struct ConstEqCtx
 {
 	// database parameters
-	PetscInt     numPhases; 	// number phases
-	Material_t  *phases;    	// phase parameters
-	Soft_t      *soft;      	// material softening laws
+	PetscInt        numPhases; 	// number phases
+	Material_t      *phases;    	// phase parameters
+	Soft_t          *soft;      	// material softening laws
+	Viscous_Damage  *v_d;       // viscous damage laws
 	Ph_trans_t  *PhaseTrans;    // Phase transition laws
-    DBMat       *dbm;
-    DBPropDike  *dbdike;
-    Dike        *matDike;       // material properties of dike
-    PetscInt    numDike;        // number of dikes
+	DBMat       *dbm;
+	DBPropDike  *dbdike;
+	Dike        *matDike;       // material properties of dike
+	PetscInt    numDike;        // number of dikes
 	Controls    *ctrl;      	// parameters and controls
 	PData       *Pd;        	// phase diagram data
 	Scaling     *scal;      	// scaling
@@ -154,6 +156,12 @@ PetscScalar applyStrainSoft(
 		PetscScalar  APS,  // accumulated plastic strain
 		PetscScalar  Le,   // characteristic element size
 		PetscScalar  par); // softening parameter
+
+// compute the weakening factor for the diffusion/dislocation/peilrs creep
+PetscScalar ComputeViscousDamage(
+		Viscous_Damage *v_d, // material softening laws
+		PetscInt     ID,   // softening law ID
+		PetscScalar  DW_cum);
 
 // compute inverse elastic parameter in control volume
 PetscScalar getI2Gdt(
