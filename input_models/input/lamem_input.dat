@@ -629,6 +629,10 @@
 
         PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
         PTBox_cstTemp           =   1200                            # Temp within box [only for constant T]
+
+	v_box			=   0.2				    # [optional] only for NotInAirBox, velocity with which box moves in cm/yr  
+	t0_box			=   0.002			    # [optional] beginning time of movemen in Myr
+	t1_box			=   0.1				    # [optional] end time of movement in Myr
     <PhaseTransitionEnd>
 
 # Define properties for the dike (additional source term/RHS in the continuity equation):
