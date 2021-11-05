@@ -207,7 +207,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		scal->power               = power;
 		scal->heat_flux           = power/area;               sprintf(scal->lbl_heat_flux,        "[W/m^2]");
 		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
-		scal->deformation_work    = energy/volume;      sprintf(scal->lbl_deformation_work, "[J/m^3]");
+		scal->deformation_work    = energy/volume/1e3;      sprintf(scal->lbl_deformation_work, "[kJ/m^3]");
 		scal->angular_velocity    = angle/time;               sprintf(scal->lbl_angular_velocity, "[deg/s]"); // @
 		scal->volumetric_force    = force/volume;             sprintf(scal->lbl_volumetric_force, "[N/m^3]");
 
@@ -266,7 +266,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		scal->power               = power;
 		scal->heat_flux           = power/area/mW;            sprintf(scal->lbl_heat_flux,        "[mW/m^2]");  // @
 		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
-		scal->deformation_work    = energy/volume;            sprintf(scal->lbl_deformation_work, "[J/m^3]"); //();
+		scal->deformation_work    = energy/volume/1e3;            sprintf(scal->lbl_deformation_work, "[kJ/m^3]"); //();
 		scal->angular_velocity    = angle/(time/Myr);         sprintf(scal->lbl_angular_velocity, "[deg/Myr]"); // @
 		scal->volumetric_force    = force/volume;             sprintf(scal->lbl_volumetric_force, "[N/m^3]");
 

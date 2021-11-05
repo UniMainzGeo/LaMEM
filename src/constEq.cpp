@@ -71,8 +71,8 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 	ctx->numDike   =  jr->dbdike->numDike;// number of dikes
 	ctx->matDike   =  jr->dbdike->matDike;// dike properties
 	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
-	ctx->v_d       =  jr->dbm->matVisD;
 	ctx->ctrl      = &jr->ctrl;           // control parameters
+	ctx->v_d       =  jr->dbm->matVisD;
 	ctx->Pd        =  jr-> Pd;            // phase diagram data
 	ctx->dt        =  jr->ts->dt;         // time step
 	ctx->PhaseTrans = jr->dbm->matPhtr;   // phase transition
@@ -151,8 +151,9 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	Viscous_Damage *v_d;
 	Controls    *ctrl;
 	PData       *Pd;
-	PetscScalar  APS, DW_cum,Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn,dif_w,dis_w,per_w;
+	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
+	PetscScalar  dif_w, dis_w, per_w,DW_cum;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -164,7 +165,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctrl   = ctx->ctrl;
 	Pd     = ctx->Pd;
 	APS    = ctx->svDev->APS;
-	DW_cum = ctx->svDev->DW_cum;
 	Le     = ctx->Le;
 	dt     = ctx->dt;
 	p      = ctx->p;
@@ -172,14 +172,16 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	p_pore = ctx->p_pore;
 	T      = ctx->T;
 	mf     = 0.0;
-	dif_w=1.0;
-	dis_w=1.0;
-	per_w=1.0;
+	DW_cum = ctx->svDev->DW_cum;
+	dif_w = 1.0;
+	dis_w= 1.0;
+	per_w = 1.0;
 
 	dif_w = ComputeViscousDamage(v_d, mat->DiffWID, DW_cum);
 	dis_w = ComputeViscousDamage(v_d, mat->DislWID, DW_cum);
 	per_w = ComputeViscousDamage(v_d, mat->PeirWID, DW_cum);
 
+	if(dif_w != 1.0) 	PetscPrintf(PETSC_COMM_WORLD, "Weakening factor = %6f (sec) \n", dif_w);
 
 
 	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
@@ -208,6 +210,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctx->A_max = 0.0; // upper bound constant
 	ctx->A_dis = 0.0; // dislocation constant
 	ctx->N_dis = 1.0; // dislocation exponent
+	ctx->A_prl = 0.0; // Peierls constant
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
 
@@ -254,14 +257,14 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(mat->Bd)
 	{
 		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
-		ctx->A_dif = (1/dif_w)*mat->Bd*exp(-Q)*mfd;
+		ctx->A_dif = dif_w*mat->Bd*exp(-Q)*mfd;
 	}
 
 	// PS-CREEP
 	else if(mat->Bps && T)
 	{
 		Q          = mat->Eps/RT;
-		ctx->A_dif = (1/per_w)*mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
+		ctx->A_dif = mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
 	}
 
 	// UPPER BOUND CREEP
@@ -275,7 +278,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	{
 		Q          = (mat->En + p_visc*mat->Vn)/RT;
 		ctx->N_dis =  mat->n;
-		ctx->A_dis =  (1/dis_w)*mat->Bn*exp(-Q)*mfn;
+		ctx->A_dis =  mat->Bn*exp(-Q)*mfn;
 	}
 
 	// DC-CREEP
@@ -613,38 +616,6 @@ PetscScalar applyStrainSoft(
 	return par*k;
 }
 //---------------------------------------------------------------------------
-//ComputeViscousDamage
-PetscScalar ComputeViscousDamage(
-		Viscous_Damage *v_d, // material softening laws
-		PetscInt     ID,   // softening law ID
-		PetscScalar  DW_cum) // accumulated deformational work
-{
-		PetscScalar          k;  // dt
-		PetscScalar          WDR, ADVW1, ADVW2;
-		Viscous_Damage      *vd;
-
-		// check whether softening is defined
-		if(ID == -1) return 1.0;
-
-		// access parameters
-		vd    = v_d + ID;
-
-		ADVW1  = vd->ADVW1;
-		ADVW2  = vd->ADVW1;
-		WDR   = vd->WDR;
-
-
-
-		// compute scaling ratio
-		if(DW_cum <= ADVW1)               k = 1.0;
-		if(DW_cum >  ADVW1 && DW_cum < ADVW2) k = 1.0 - WDR*((DW_cum - ADVW1)/(ADVW1 - ADVW1));
-		if(DW_cum >= ADVW2)               k = 1.0 - WDR;
-
-		// apply strain softening
-		return k;
-
-}
-//---------------------------------------------------------------------------
 PetscScalar getI2Gdt(
 		PetscInt     numPhases, // number phases
 		Material_t  *phases,    // phase parameters
@@ -874,8 +845,8 @@ PetscErrorCode cellConstEq(
 		txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
 		sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
 
-	// Compute deformational work during the time step
 	svDev->DW = (1.0-ctx->ctrl->shearHeatEff)*svDev->Hr;
+
 
 	// compute total viscosity
 	svDev->eta = ctx->eta + eta_st;
@@ -962,8 +933,10 @@ PetscErrorCode edgeConstEq(
 
 	// compute shear heating term contribution
 	svDev->Hr = 2.0*t*svEdge->s + 2.0*svEdge->d*s;
-	// compute deformation work term contribution
+
 	svDev->DW = (1.0-ctx->ctrl->shearHeatEff)*svDev->Hr;
+
+
 	// compute total viscosity
 	svDev->eta = ctx->eta + eta_st;
 
@@ -1151,4 +1124,34 @@ PetscErrorCode setDataPhaseDiagram(
 	}
 
 	PetscFunctionReturn(0);
+}
+PetscScalar ComputeViscousDamage(
+		Viscous_Damage *v_d, // material softening laws
+		PetscInt     ID,   // softening law ID
+		PetscScalar  DW_cum) // accumulated deformational work
+{
+		PetscScalar          k;  // dt
+		PetscScalar          WDR, ADVW1, ADVW2;
+		Viscous_Damage      *vd;
+
+		// check whether softening is defined
+		if(ID == -1) return 1.0;
+
+		// access parameters
+		vd    = v_d + ID;
+
+		ADVW1  = vd->ADVW1;
+		ADVW2  = vd->ADVW2;
+		WDR   = vd->WDR;
+
+
+
+		// compute scaling ratio
+		if(DW_cum <= ADVW1)               k = 0.0;
+		if(DW_cum >  ADVW1 && DW_cum < ADVW2) k = 0.0 + WDR*((DW_cum - ADVW1)/(ADVW2 - ADVW1));
+		if(DW_cum >= ADVW2)               k = 0.0 + WDR;
+
+		// apply strain softening
+		return 1.0/pow(10.0,k);
+
 }
