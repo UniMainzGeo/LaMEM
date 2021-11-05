@@ -182,85 +182,98 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   Dike        *dike;
   Ph_trans_t  *PhaseTrans;
   FDSTAG      *fs;
-  PetscInt     i, j, numDike;
+  PetscInt     i, j, numDike, numPhTrn;
   PetscScalar  v_spread, M, left, right, front, back;
   PetscInt     jy, sy, dsy;
   PetscScalar  y_c, y_distance;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
-  PhaseTrans = ctx->PhaseTrans;
+  //  PhaseTrans = ctx->PhaseTrans;
+  //ctx->PhaseTrans = jr->dbm->matPhtr;
+  numPhTrn   = ctx->numPhtr;  // NEW ADD TO const.h
   fs         = bc->fs;
   dsy        = fs->dsy
-
+    
+  nPtr = 0;
   j = 0;
   
-  // loop through all dike blocks
-  for(j = 0; j < numDike; j++)
+  
+  for(nPtr=0; nPtr<numPhTrn; nPtr++)   // loop over all phase transitions
     {
-
-      // access the parameters of the dike depending on the dike block
-      dike = ctx->matDike+j;
-
-      // access the phase ID of the dike parameters of each dike
-      i = dike->PhaseID;   // correct phase ID
       
-      // check if the phase ratio of a dike phase is greater than 0 in the current cell
-      if(phRat[i]>0)
+      // access the parameters of the phasetranstion block, like the ID
+      PhaseTrans = ctx->matPhtr+nPtr;
+      
+      for(j = 0; j < numDike; j++) // loop through all dike blocks
 	{
-	  if(dike->Mb == dike->Mf)
+	  
+	  // access the parameters of the dike depending on the dike block
+	  dike = ctx->matDike+j;
+	  
+	  // access the phase ID of the dike parameters of each dike
+	  i = dike->PhaseID;   // correct phase ID            PhaseTrans=ctx->PhaseTrans+dike->PhaseTransID    ! add back in phaseTransID
+	  
+	  // check if the phase ratio of a dike phase is greater than 0 in the current cell
+	  if(phRat[i]>0)
 	    {
-	      // constant M
-	      M = dike->Mf;
-	      v_spread = PetscAbs(bc->velin);
-	      left = PhaseTrans->bounds[0];
-	      right = PhaseTrans->bounds[1];
-	      dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
+	      
+	      if(PhaseTrans->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
+		{
+		  
+		  if(dike->Mb == dike->Mf)
+		    {
+		      // constant M
+		      M = dike->Mf;
+		      v_spread = PetscAbs(bc->velin);
+		      left = PhaseTrans->bounds[0];         //something liske this left= PhaseTransID->PhaseTrans->bounds[0]
+		      right = PhaseTrans->bounds[1];
+		      dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
+		    }
+		  
+		  else if(dike->Mb != dike->Mf)   // Mf and Mb are different
+		    {
+		      
+		      // FDSTAG *fs;		      
+		      // access context
+		      //fs = bc->fs;
+		      //dsy = fs->dsy
+		      y_c = COORD_CELL(jy,sy,dsy); 
+		      left = PhaseTrans->bounds[0];    // How do we know this is the correct phaseTrans box we are using for the boundaries? --> check if coded correctly
+		      right = PhaseTrans->bounds[1];
+		      front = PhaseTrans->bounds[2];
+		      back = PhaseTrans->bounds[3];
+		      
+		      if(front == back) // ridge is straight
+			{
+			  // linear interpolation between different M values, Mf is M in front, Mb is M in back
+			  y_distance = PetscAbs(front - y_c);  // change to  y_c-front 
+			  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (PetscAbs(front)+PetscAbs(back)) );    // change to  back-front
+			  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
+			}
+		      /*  else   % ridge is oblique
+			  {
+			  // linear interpolation of Mf and Mb
+			  y_distance = PetscAbs(front - y_c);
+			  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance/ (PetscAbs(front)+PetscAbs(back)) ); NEEDS CHANGE
+			  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
+			  } */
+		    }
+		  else
+		    {
+		      dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ??
+		    }
+	      
+		  dikeRHS += phRat[i]*dike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
+		  
+		}
 	    }
 	  
-	  else if(dike->Mb != dike->Mf)   // Mf and Mb are different
-            {
-	      
-	      // FDSTAG *fs;
-	      
-	      // access context
-	      //fs = bc->fs;
-	      //dsy = fs->dsy
-	      y_c = COORD_CELL(jy,sy,dsy); 
-	      left = PhaseTrans->bounds[0];    // How do we know this is the correct phaseTrans box we are using for the boundaries? --> check if coded correctly
-	      right = PhaseTrans->bounds[1];
-	      front = PhaseTrans->bounds[2];
-	      back = PhaseTrans->bounds[3];
-	      
-	      if(front == back) // ridge is straight
-		{
-		  // linear interpolation between different M values, Mf is M in front, Mb is M in back
-		  y_distance = PetscAbs(front - y_c);
-		  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (PetscAbs(front)+PetscAbs(back)) );
-		  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
-		}
-	      /*  else   % ridge is oblique
-		  {
-		  // linear interpolation of Mf and Mb
-		  y_distance = PetscAbs(front - y_c);
-	    M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance/ (PetscAbs(front)+PetscAbs(back)) ); NEEDS CHANGE
-	    dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
-	    } */
-            }
-	  else
-	    {
-	      dike->dikeRHS = 0.0;   // necessary dike->dikeRHS ??
-            }
-	  
-	  dikeRHS += phRat[i]*dike->dikeRHS;   // is it correct to just use dikeRHS? still necessary to save as dike->dikeRHS before because used in cellconsteq?
-	  
 	}
-
+      
+      PetscFunctionReturn(0);
+      
     }
-  
-  
-  PetscFunctionReturn(0);
-  
 }
 
 //------------------------------------------------------------------------------------------------------------------
@@ -311,6 +324,5 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
   
   PetscFunctionReturn(0);
 }
-
 
 // --------------------------------------------------------------------------------------------------------------- 
