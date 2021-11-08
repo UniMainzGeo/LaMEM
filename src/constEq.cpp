@@ -181,7 +181,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	dis_w = ComputeViscousDamage(v_d, mat->DislWID, DW_cum);
 	per_w = ComputeViscousDamage(v_d, mat->PeirWID, DW_cum);
 
-	if(dif_w != 1.0) 	PetscPrintf(PETSC_COMM_WORLD, "Weakening factor = %6f (sec) \n", dif_w);
 
 
 	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
@@ -1152,6 +1151,6 @@ PetscScalar ComputeViscousDamage(
 		if(DW_cum >= ADVW2)               k = 0.0 + WDR;
 
 		// apply strain softening
-		return 1.0/pow(10.0,k);
+		return pow(10.0,k);
 
 }
