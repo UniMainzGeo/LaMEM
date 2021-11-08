@@ -199,7 +199,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions
     {
 
- PetscPrintf(PETSC_COMM_WORLD," # of transition = %d \n", nPtr);
+      // PetscPrintf(PETSC_COMM_WORLD," # of transition = %d \n", nPtr);
       
       // access the parameters of the phasetranstion block, like the ID
       CurrPhTr = ctx->PhaseTrans+nPtr;
@@ -214,20 +214,20 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 	  i = dike->PhaseID;   // correct phase ID                            PhaseTrans=ctx->PhaseTrans+dike->PhaseTransID 
 
 
-PetscPrintf(PETSC_COMM_WORLD," PhaseTransID = %d \n", CurrPhTr->ID);
- PetscPrintf(PETSC_COMM_WORLD," dikeID = %d \n", dike->PhaseTransID);
+	  //	  PetscPrintf(PETSC_COMM_WORLD," PhaseTransID = %d \n", CurrPhTr->ID);
+	  //	   PetscPrintf(PETSC_COMM_WORLD," dikeID = %d \n", dike->PhaseTransID);
 
 	  
 	  // check if the phase ratio of a dike phase is greater than 0 in the current cell
 	  if(phRat[i]>0)
 	    {
+PetscPrintf(PETSC_COMM_WORLD," PhaseTransID2 = %d \n", CurrPhTr->ID);
+                  PetscPrintf(PETSC_COMM_WORLD," dikeID2 = %d \n", dike->PhaseTransID);
 	      
 	      if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
 		{
 
-
-PetscPrintf(PETSC_COMM_WORLD," PhaseTransID2 = %d \n", CurrPhTr->ID);
- PetscPrintf(PETSC_COMM_WORLD," dikeID2 = %d \n", dike->PhaseTransID);
+		  PetscPrintf(PETSC_COMM_WORLD," inside \n");
 		  
 		  if(dike->Mb == dike->Mf)  // constant M
 		    {
@@ -240,26 +240,39 @@ PetscPrintf(PETSC_COMM_WORLD," PhaseTransID2 = %d \n", CurrPhTr->ID);
 		  
 		  else if(dike->Mb != dike->Mf)   // Mf and Mb are different
 		    {
-		      //		      GET_CELL_RANGE(ny, sy, fs->dsy);
+
 		      sy = 0;
 		      jy = 0;
 		      y_c = COORD_CELL(jy,sy,fs->dsy);
-		      
+
+ PetscPrintf(PETSC_COMM_WORLD," y_c = %g \n", y_c);
+ PetscPrintf(PETSC_COMM_WORLD," Mb = %g \n", dike->Mb);
+ PetscPrintf(PETSC_COMM_WORLD," Mf = %g \n", dike->Mf);
+ 
 		      left = CurrPhTr->bounds[0];
 		      right = CurrPhTr->bounds[1];
 		      front = CurrPhTr->bounds[2];
 		      back = CurrPhTr->bounds[3];
 
-		      M = dike->Mf;
-                      v_spread = PetscAbs(bc->velin);
+		      v_spread = PetscAbs(bc->velin);
 		      
-		      if(front == back) // ridge is straight
+		      if(PetscAbs(front) == PetscAbs(back)) // ridge is straight
 			{
 			  // linear interpolation between different M values, Mf is M in front, Mb is M in back
 			  y_distance = y_c - front;
+                          PetscPrintf(PETSC_COMM_WORLD," front = %g \n", front);
+			  PetscPrintf(PETSC_COMM_WORLD," back = %g \n", back);
+			  PetscPrintf(PETSC_COMM_WORLD," left = %g \n", left);
+			  PetscPrintf(PETSC_COMM_WORLD," right = %g \n", right);
+			  PetscPrintf(PETSC_COMM_WORLD," y_distance = %g \n", y_distance);
+			  PetscPrintf(PETSC_COMM_WORLD," v_spread = %g \n", v_spread);
+			  
 			  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
-			  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left + right);
-								  
+			  PetscPrintf(PETSC_COMM_WORLD," M = %g \n", M);
+
+			  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+			  PetscPrintf(PETSC_COMM_WORLD," dikeRHS = %g \n", dike->dikeRHS);
+
 			  /*if() // middle M are given
 			    {} */
 			}
@@ -268,7 +281,7 @@ PetscPrintf(PETSC_COMM_WORLD," PhaseTransID2 = %d \n", CurrPhTr->ID);
 			  // linear interpolation of Mf and Mb
 			  y_distance = PetscAbs(front - y_c);
 			  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance/ (PetscAbs(front)+PetscAbs(back)) ); NEEDS CHANGE
-			  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left+right);
+			  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 			  } */
 		    }
 		  else
