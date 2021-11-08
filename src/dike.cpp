@@ -175,18 +175,19 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 #undef __FUNCT__
 #define __FUNCT__ "GetDikeContr"
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
-                                  PetscScalar *phRat,          // phase ratios in the control volume
-                                  PetscScalar &dikeRHS)
+			    PetscScalar *phRat,          // phase ratios in the control volume
+			    PetscScalar &dikeRHS,
+			    PetscScalar &y_c)
 {
   
   BCCtx       *bc;
   Dike        *dike;
   Ph_trans_t  *CurrPhTr;
   FDSTAG      *fs;
-  PetscInt     i, j, nPtr, numDike, numPhtr;
+  PetscInt     i, nD, nPtr, numDike, numPhtr;
   PetscScalar  v_spread, M, left, right, front, back;
-  PetscInt     jy, sy; //, ny;
-  PetscScalar  y_c, y_distance;
+  PetscInt     j, sy, ny;
+  PetscScalar  y_distance;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
@@ -194,7 +195,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   fs         = bc->fs;
     
   nPtr = 0;
-  j = 0;
+  nD = 0;
   
   for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions
     {
@@ -204,11 +205,11 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
       // access the parameters of the phasetranstion block, like the ID
       CurrPhTr = ctx->PhaseTrans+nPtr;
       
-      for(j = 0; j < numDike; j++) // loop through all dike blocks
+      for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
 	{
 
 	  // access the parameters of the dike depending on the dike block
-	  dike = ctx->matDike+j;
+	  dike = ctx->matDike+nD;
 	  
 	  // access the phase ID of the dike parameters of each dike
 	  i = dike->PhaseID;   // correct phase ID                            PhaseTrans=ctx->PhaseTrans+dike->PhaseTransID 
@@ -240,10 +241,7 @@ PetscPrintf(PETSC_COMM_WORLD," PhaseTransID2 = %d \n", CurrPhTr->ID);
 		  
 		  else if(dike->Mb != dike->Mf)   // Mf and Mb are different
 		    {
-
-		      sy = 0;
-		      jy = 0;
-		      y_c = COORD_CELL(jy,sy,fs->dsy);
+		      //		      y_c = COORD_CELL(j,sy,fs->dsy);
 
  PetscPrintf(PETSC_COMM_WORLD," y_c = %g \n", y_c);
  PetscPrintf(PETSC_COMM_WORLD," Mb = %g \n", dike->Mb);

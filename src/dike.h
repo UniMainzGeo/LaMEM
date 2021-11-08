@@ -89,7 +89,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // compute the added RHS of the dike for the continuity equation
-PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
+PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS, PetscScalar &y_c);
 
 // compute the new locations of the dikes in case they move with a specified velocity
 PetscErrorCode MovingDike(DBPropDike *dbdike, Ph_trans_t *PhaseTrans, TSSol *ts);

@@ -1232,14 +1232,17 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		if (jr->ctrl.actDike)
 		{
-			dikeRHS = 0.0;
-			// function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-			ierr = GetDikeContr(&ctx, svCell->phRat, dikeRHS);  CHKERRQ(ierr);
-
-			// remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
-			dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
-			dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
-			dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
+		  PetscScalar y_c;
+		  y_c = COORD_CELL(j,sy,fs->dsy);
+		  
+		  dikeRHS = 0.0;
+		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
+		  ierr = GetDikeContr(&ctx, svCell->phRat, dikeRHS, y_c);  CHKERRQ(ierr);
+		  
+		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
+		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
+		  dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
+		  dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
 		}
 		
 		// x-y plane, i-j indices
