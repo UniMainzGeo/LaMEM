@@ -75,7 +75,8 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 	ctx->Pd        =  jr-> Pd;            // phase diagram data
 	ctx->dt        =  jr->ts->dt;         // time step
 	ctx->PhaseTrans = jr->dbm->matPhtr;   // phase transition
-	ctx->scal       = jr->scal;           // scaling
+	ctx->numPhtr   = jr->dbm->numPhtr;   // number of phase transition laws
+	ctx->scal      = jr->scal;           // scaling
 	ctx->stats[0]  =  0.0;                // total number of [starts, ...
 	ctx->stats[1]  =  0.0;                //  ... successes,
 	ctx->stats[2]  =  0.0;                // ... iterations]

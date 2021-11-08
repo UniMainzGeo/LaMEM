@@ -584,7 +584,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 	PrintStart(&t, "Phase_Transition", NULL);
 	
-	// loop over all local particles 		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
+	// loop over all phase transition laws		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
 	nPtr        =   0;
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	  {
