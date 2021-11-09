@@ -183,7 +183,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
     {
       
       kfac = 0.0;
-      rho_A = 0.0;
       
       //access the material parameters of each dike block
       dike=jr->dbdike->matDike+j;
@@ -228,7 +227,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 		else if (Tc >= M->T_liq)
 		  {
 		    kfac += phRat[i];
-		    rho_A = 0.0;
 		  }
 	  // end adjust k and heat source according to Behn & Ito [2008]
 	  
