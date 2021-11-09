@@ -205,6 +205,9 @@ public:
 	PetscScalar  T;                 // optional temperature to set within the phase
 	PetscScalar  nu_k;              // optional multiplication factor that is used to compute the higher conductivtiy below the conductivity boundary temperature
 	PetscScalar  T_Nu;              // optional definition of conductivity boundary temperature  gito
+	PetscScalar  T_liq;             // optional magma liquidus temperature for Behn & Ito [2005] dike heating model
+	PetscScalar  T_sol;             // optional magma solidus temperature for Behn & Ito [2005] dike heating model
+	PetscScalar  Latent_hx;          // optional magma latent heat of crystalization for Behn & Ito [2005] dike heating model
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number

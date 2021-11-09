@@ -51,6 +51,7 @@
 #include "bc.h"
 #include "matrix.h"
 #include "surf.h"
+#include "dike.h"
 
 //---------------------------------------------------------------------------
 
@@ -92,6 +93,8 @@ PetscErrorCode JacResGetTempParam(
 	Controls    ctrl;
 	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
 
+	PetscErrorCode ierr;
+
 	PetscFunctionBegin;
 
 	// initialize
@@ -99,7 +102,7 @@ PetscErrorCode JacResGetTempParam(
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
 	nu_k      = 0.0;
-	T_Nu			= 0.0;
+	T_Nu	  = 0.0;
 	
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
@@ -128,23 +131,28 @@ PetscErrorCode JacResGetTempParam(
 
 		// Temperature-dependent conductivity: phase-dependent nusselt number
 		if(ctrl.useTk)
-		  {
+		{
 		    if(! M->nu_k)
 		      {
-						// set Nusselt number = 1 if not defined 
-						M->nu_k = 1.0;
+			// set Nusselt number = 1 if not defined 
+			M->nu_k = 1.0;
 		      }
 		    nu_k +=  cf*M->nu_k;
 		    T_Nu +=  cf*M->T_Nu;
-		  }
+		}
 		
 	}
 
 	// switch and temperature condition to use T-dep conductivity
 	if (ctrl.useTk && Tc <= T_Nu) 
-	  {
+	{
 	    k = k*nu_k;
-	  }
+	}
+
+	if (ctrl.actDike && ctrl.dikeHeat)
+	{
+	  ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
+	}
 
 	// store
 	if(k_)      (*k_)      = k;
@@ -452,7 +460,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;   // NEW
+	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
 	
