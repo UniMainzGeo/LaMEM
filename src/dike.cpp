@@ -318,56 +318,5 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 	PetscFunctionReturn(0);
   
 }
-
-//------------------------------------------------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MovingDike"
-PetscErrorCode MovingDike(DBPropDike *dbdike,
-			  Ph_trans_t *PhaseTrans,
-			  TSSol *ts)
-{
-
-  Dike        *dike;
-  PetscInt     j, numDike;
-  PetscScalar  t0_dike, t1_dike, v_dike;
-  PetscScalar  t_current, dt;
-
-  PetscFunctionBegin;//  NECESSARY?
-
-  numDike    = dbdike->numDike;
-  dt         = ts->dt;       // time step
-  t_current  = ts->time;     // current time stamp, computed at the end of last time step round
-  
-  // loop through all dike blocks
-  for(j = 0; j < numDike; j++)
-    {
-      
-      // access the parameters of the dike depending on the dike block 
-      dike = dbdike->matDike+j;
-      
-      // access the starting and end times of certain dike block
-      t0_dike = dike->t0_dike;
-      t1_dike = dike->t1_dike;
-      v_dike  = dike->v_dike;
-
-      // check if the current time step is equal to the starting time of when the dike is supposed to move
-      if(t_current >= t0_dike && t_current <= t1_dike)
-	{
-	      
-	  // condition for moving: phase transition ID needs to be the same as the Phase transitionID of the dike block
-	  if(PhaseTrans->ID == dike->PhaseTransID)    
-	    {
-	      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_dike * dt;
-	      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_dike * dt;
-	    }
-	  
-	}
-      
-    }
-  
-  PetscFunctionReturn(0);
-
-}
-
 // --------------------------------------------------------------------------------------------------------------- 
 
