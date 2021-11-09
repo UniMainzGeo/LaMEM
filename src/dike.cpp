@@ -50,7 +50,7 @@
 #include "LaMEM.h"
 #include "phase.h"
 #include "parsing.h"
-//#include "JacRes.h"
+#include "JacRes.h"
 #include "dike.h"
 #include "constEq.h"
 #include "bc.h"
@@ -80,13 +80,13 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
         if(fb->nblocks)
         {
                 // print overview of dike blocks from file                                                                                                           
-                if (PrintOutput)
-		  {
-		    PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
-		  }
+            if (PrintOutput)
+            {
+		      PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
+            }
                 // initialize ID for consistency checks                                                                                                                 
-                for(jj = 0; jj < _max_num_dike_; jj++) dbdike->matDike[jj].ID = -1;
 
+            for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1;
 
 		// error checking
                 if(fb->nblocks > _max_num_dike_)
@@ -104,9 +104,8 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
                 // read each individual dike block                                                                                                                   
                 for(jj = 0; jj < fb->nblocks; jj++)
                 {
-		  ierr = DBReadDike(dbdike, dbm, fb, PrintOutput); CHKERRQ(ierr);
-
-                        fb->blockID++;
+                    ierr = DBReadDike(dbdike, dbm, fb, PrintOutput); CHKERRQ(ierr);
+                    fb->blockID++;
                 }
         }
 
@@ -161,7 +160,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 	dike->v_dike  /= scal->velocity; 
 
         if (PrintOutput)
-	  {
+	    {
 	    PetscPrintf(PETSC_COMM_WORLD,"   Dike parameters ID[%lld] : Mf = %g, Mb = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb);
       	    PetscPrintf(PETSC_COMM_WORLD,"   Optional dike parameters: v_dike = %g \n", dike->v_dike, scal->lbl_velocity);
 	    PetscPrintf(PETSC_COMM_WORLD,"                             t0_dike = %g \n", dike->t0_dike, scal->lbl_time);
@@ -172,14 +171,11 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GetDikeContr"
-PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
-			    PetscScalar *phRat,          // phase ratios in the control volume
-			    PetscScalar &dikeRHS,
-			    PetscScalar &y_c)
-{
-  
+#define __FUNCT__ "GetDikeContr"                                                                                                                                             
+PetscErrorCode GetDikeContr(ConstEqCtx *ctx,                                                                                                                                
+                            PetscScalar *phRat,          // phase ratios in the control volume                                                                              
+                           PetscScalar &dikeRHS,                                                                                                                                                        PetscScalar &y_c)     
+
   BCCtx       *bc;
   Dike        *dike;
   Ph_trans_t  *CurrPhTr;
@@ -187,7 +183,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   PetscInt     i, nD, nPtr, numDike, numPhtr;
   PetscScalar  v_spread, M, left, right, front, back;
   PetscInt     j, sy, ny;
-  PetscScalar  y_distance;
+PetscScalar  y_distance, tempdikeRHS;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
@@ -225,7 +221,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		      v_spread = PetscAbs(bc->velin);
 		      left = CurrPhTr->bounds[0];
 		      right = CurrPhTr->bounds[1];
-		      dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
+		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 		    }
 		  
 		  else if(dike->Mb != dike->Mf)   // Mf and Mb are different
@@ -254,8 +250,8 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 			  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
 			  PetscPrintf(PETSC_COMM_WORLD," M = %g \n", M);
 
-			  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-			  PetscPrintf(PETSC_COMM_WORLD," dikeRHS = %g \n", dike->dikeRHS);
+			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+			  PetscPrintf(PETSC_COMM_WORLD," dikeRHS = %g \n", tempdikeRHS);
 			}
 		      /*  else   % ridge is oblique
 			  {
@@ -263,16 +259,16 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 			  // linear interpolation of Mf and Mb
 			  y_distance = y_c - front;
 			  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance/(back - front)); NEEDS CHANGE
-			  dike->dikeRHS = M * 2 * v_spread / PetscAbs(left-right);
+			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 			  } */
 		    }  // close loop Mb!=Mf
 
 		  else  //  dike phase ratio phRat = 0.0
 		    {
-		      dike->dikeRHS = 0.0;
+		      tempdikeRHS = 0.0;
 		    }
 	      
-		  dikeRHS += phRat[i]*dike->dikeRHS;
+		  dikeRHS += phRat[i]*tempdikeRHS;
 		  
 		}
 	    }
@@ -280,9 +276,89 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 	}
 
     }
+
+
+//-----------------------------------------------------------------------------------------------------------------
+#define __FUNCT__ "Dike_k_heatsource"
+PetscErrorCode Dike_k_heatsource(JacRes *jr,
+                                 Material_t *phases,
+                                 PetscScalar &Tc,
+                                 PetscScalar *phRat,          // phase ratios in the control volume                                                                         
+                                 PetscScalar &k,
+                                 PetscScalar &rho_A)
+
+{
+  
+  Ph_trans_t  *PhaseTrans;
+  Material_t  *M;
+  PetscInt     i, j, numDike;
+  PetscScalar  v_spread, left, right, kfac, tempdikeRHS;
+  
+  numDike    = jr->dbdike->numDike; // number of dikes
+  bc         =  jr->bc;
+  PhaseTrans =  jr->dbm->matPhtr;   // phase transition
+  
+  j=0;
+  
+  // loop through all dikes
+  for(j = 0; j < numDike; j++)
+    {
+      
+      kfac = 0.0;
+      //      rho_A = 0.0;
+      
+      //access the material parameters of each dike block
+      dike=jr->dbdike->matDike+j;
+      
+      // access the phase ID of the dike block
+      i = dike->PhaseID;
+      
+      // check if the phase ratio of a dike phase is greater than 0 in the current cell
+      if(phRat[i] > 0)
+	{
+	  
+	  if(dike->Mb == dike->Mf)
+	    {
+	      // constant M
+	      v_spread = PetscAbs(bc->velin);
+	      left = PhaseTrans->bounds[0];
+	      right = PhaseTrans->bounds[1];
+	      tempdikeRHS = dike->Mf * 2 * v_spread / PetscAbs(left-right);
+	    }
+	  
+	  else
+	    {
+	      tempdikeRHS = 0.0;
+	    } 
+	  // end if (dike->Mb == dike-Mf)
+	  
+	  M = &phases[i];
+	  
+	  //adjust k and heat source according to Behn & Ito [2008]
+	  if (Tc < M->T_liq && Tc > M->T_sol)
+	    {
+	      kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
+	      rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
+	    }
+	  else if (Tc <= M->T_sol)
+	    {
+	      kfac  += phRat[i];
+	      rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*tempdikeRHS;
+	    }
+		else if (Tc >= M->T_liq)
+		  {
+		    kfac += phRat[i];
+		    //		    rho_A = 0.0;
+		  }
+	  // end adjust k and heat source according to Behn & Ito [2008]
+	  
+	  k=kfac*k;
+	  
+	}   // end phase ratio
+      
+    }   // end dike loop
   
   PetscFunctionReturn(0);
-  
 }
 
 //------------------------------------------------------------------------------------------------------------------
@@ -332,6 +408,6 @@ PetscErrorCode MovingDike(DBPropDike *dbdike,
     }
   
   PetscFunctionReturn(0);
-}
 
+}
 // --------------------------------------------------------------------------------------------------------------- 

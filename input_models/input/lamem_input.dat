@@ -311,6 +311,7 @@
 	lrtol           = 1e-6           # local rheology iterations relative tolerance
 	act_dike        = 1              # dike activation flag (additonal term in divergence)
 	useTk           = 1              # switch to use T-dependent conductivity, 0: not active
+	dikeHeat        = 1		 # switch to use Behn & Ito heat source in the dike
 	Compute_velocity_gradient = 1    # compute the velocity gradient tensor 1: active, 0: not active. If active, it automatically activates the output in the .pvd file
 	
 # Groundwater level type specification:
@@ -703,11 +704,14 @@
 		frSoftID   = 0      # cohesion softening law ID
 		healID     = 0	    # healing ID, points to healTau in Softening
 		alpha      = 3e-5   # thermal expansivity
-		Cp         = 1.2e3  # specific heat (capacity)
+		Cp         = 1.2e3  # specific heat (capacity), J⋅K−1⋅kg−1
 		k          = 2.5    # thermal conductivity
 		A          = 1e-9   # radiogenic heat production
 		T          = 100.0  # optional temperature to set within the phase
-		T_Nu       = 600            # default value for thermal conductivity boundary
+		Latent_hx  = 5e5    # optional, used for dike heating, J/kg
+		T_liq      = 1300   # optional, used for dike heating, liquidus temperature of material, celsius
+		T_sol      = 1000   # optional, used for dike heating, solidus temperature of material, celsius  
+		T_Nu       = 600    # default value for thermal conductivity boundary
 		nu_k       = 5      # optional parameter, Nusselt number for use with conductivity
 		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
 		rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
