@@ -171,25 +171,28 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
-#define __FUNCT__ "GetDikeContr"                                                                                                                                             
+#undef __FUNCT__
+#define __FUNCT__ "GetDikeContr"
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx,                                                                                                                                
                             PetscScalar *phRat,          // phase ratios in the control volume                                                                              
-                           PetscScalar &dikeRHS,                                                                                                                                                        PetscScalar &y_c)     
-
+			    PetscScalar &dikeRHS,
+                            PetscScalar &y_c)
+{
+  
   BCCtx       *bc;
   Dike        *dike;
   Ph_trans_t  *CurrPhTr;
-  FDSTAG      *fs;
+  // FDSTAG      *fs;
   PetscInt     i, nD, nPtr, numDike, numPhtr;
   PetscScalar  v_spread, M, left, right, front, back;
-  PetscInt     j, sy, ny;
-PetscScalar  y_distance, tempdikeRHS;
+  //  PetscInt     j, sy, ny;
+  PetscScalar  y_distance, tempdikeRHS;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
   numPhtr    = ctx->numPhtr;
-  fs         = bc->fs;
-    
+  //  fs         = bc->fs;
+  
   nPtr = 0;
   nD = 0;
   
@@ -205,15 +208,15 @@ PetscScalar  y_distance, tempdikeRHS;
 	  
 	  // access the phase ID of the dike parameters of each dike
 	  i = dike->PhaseID;
-
-	  // check if the phase ratio of a dike phase is greater than 0 in the current cell
-	  if(phRat[i]>0)
+	  
+	  if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell           
 	    {
-	      PetscPrintf(PETSC_COMM_WORLD," PhaseTransID2 = %d \n", CurrPhTr->ID);
-	      PetscPrintf(PETSC_COMM_WORLD," dikeID2 = %d \n", dike->PhaseTransID);
 	      
-	      if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
+	      // check if the phase ratio of a dike phase is greater than 0 in the current cell
+	      if(phRat[i]>0)
 		{
+		  PetscPrintf(PETSC_COMM_WORLD," PhaseTransID2 = %d \n", CurrPhTr->ID);
+		  PetscPrintf(PETSC_COMM_WORLD," dikeID2 = %d \n", dike->PhaseTransID);
 		  
 		  if(dike->Mb == dike->Mf)  // constant M
 		    {
@@ -226,59 +229,50 @@ PetscScalar  y_distance, tempdikeRHS;
 		  
 		  else if(dike->Mb != dike->Mf)   // Mf and Mb are different
 		    {
-
+		      
 		      PetscPrintf(PETSC_COMM_WORLD," y_c = %g \n", y_c);
- 
+		      
 		      left = CurrPhTr->bounds[0];
 		      right = CurrPhTr->bounds[1];
 		      front = CurrPhTr->bounds[2];
 		      back = CurrPhTr->bounds[3];
-
+		      
 		      v_spread = PetscAbs(bc->velin);
 		      
-		      if(PetscAbs(front) == PetscAbs(back)) // ridge is straight, THIS NEEDS TO BE CHANGED?! 
-			{
-			  // linear interpolation between different M values, Mf is M in front, Mb is M in back
-			  y_distance = y_c - front;
-                          PetscPrintf(PETSC_COMM_WORLD," front = %g \n", front);
-			  PetscPrintf(PETSC_COMM_WORLD," back = %g \n", back);
-			  PetscPrintf(PETSC_COMM_WORLD," left = %g \n", left);
-			  PetscPrintf(PETSC_COMM_WORLD," right = %g \n", right);
-			  PetscPrintf(PETSC_COMM_WORLD," y_distance = %g \n", y_distance);
-			  PetscPrintf(PETSC_COMM_WORLD," v_spread = %g \n", v_spread);
-			  
-			  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
-			  PetscPrintf(PETSC_COMM_WORLD," M = %g \n", M);
-
-			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-			  PetscPrintf(PETSC_COMM_WORLD," dikeRHS = %g \n", tempdikeRHS);
-			}
-		      /*  else   % ridge is oblique
-			  {
-			  // DO STHE NOT FIGURED OUT YET
-			  // linear interpolation of Mf and Mb
-			  y_distance = y_c - front;
-			  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance/(back - front)); NEEDS CHANGE
-			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
-			  } */
+		      // linear interpolation between different M values, Mf is M in front, Mb is M in back
+		      y_distance = y_c - front;
+		      PetscPrintf(PETSC_COMM_WORLD," front = %g \n", front);
+		      PetscPrintf(PETSC_COMM_WORLD," back = %g \n", back);
+		      PetscPrintf(PETSC_COMM_WORLD," left = %g \n", left);
+		      PetscPrintf(PETSC_COMM_WORLD," right = %g \n", right);
+		      PetscPrintf(PETSC_COMM_WORLD," y_distance = %g \n", y_distance);
+		      PetscPrintf(PETSC_COMM_WORLD," v_spread = %g \n", v_spread);
+		      
+		      M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
+		      PetscPrintf(PETSC_COMM_WORLD," M = %g \n", M);
+		      
+		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+		      PetscPrintf(PETSC_COMM_WORLD," dikeRHS = %g \n", tempdikeRHS);
+		      
 		    }  // close loop Mb!=Mf
-
-		  else  //  dike phase ratio phRat = 0.0
+		  
+		  else  // Mb and Mf don't exist (which should not occurr)
 		    {
 		      tempdikeRHS = 0.0;
 		    }
-	      
+		  
 		  dikeRHS += phRat[i]*tempdikeRHS;
 		  
-		}
-	    }
-	  
-	}
-
-    }
-
+		}  // close phase ratio loop
+	    }  // close phase transition and phase ID comparison 
+	}  // close dike block loop
+    }  // close phase transition block loop
+  
+  PetscFunctionReturn(0);
+}
 
 //-----------------------------------------------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "Dike_k_heatsource"
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                  Material_t *phases,
@@ -288,7 +282,8 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                  PetscScalar &rho_A)
 
 {
-  
+  BCCtx       *bc;
+  Dike        *dike;
   Ph_trans_t  *PhaseTrans;
   Material_t  *M;
   PetscInt     i, j, numDike;
@@ -305,7 +300,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
     {
       
       kfac = 0.0;
-      //      rho_A = 0.0;
       
       //access the material parameters of each dike block
       dike=jr->dbdike->matDike+j;
@@ -348,7 +342,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 		else if (Tc >= M->T_liq)
 		  {
 		    kfac += phRat[i];
-		    //		    rho_A = 0.0;
 		  }
 	  // end adjust k and heat source according to Behn & Ito [2008]
 	  
