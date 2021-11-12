@@ -630,6 +630,10 @@
 
         PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
         PTBox_cstTemp           =   1200                            # Temp within box [only for constant T]
+
+	v_box			=   0.2				    # [optional] only for NotInAirBox, velocity with which box moves in cm/yr  
+	t0_box			=   0.002			    # [optional] beginning time of movemen in Myr
+	t1_box			=   0.1				    # [optional] end time of movement in Myr
     <PhaseTransitionEnd>
 
 # Define properties for the dike (additional source term/RHS in the continuity equation):
@@ -640,10 +644,6 @@
 		Mf = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
 		Mb = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
 		PhaseID = 0
-		PhaseTransID = 0   # optional, for moving dike necessary, should be the same as the ID of the phase transition box used for the dike
-		t0_dike = 0.02     # optional, in Myr, start time for moving dike
-		t1_dike = 0.1      # optional, in Myr, end time
-		v_dike  = 20.0    # optional, in cm/yr, velocity with which dike moves, 10cm/yr = 100km/Myr
 	<DikeEnd>
 
 	<DikeStart>

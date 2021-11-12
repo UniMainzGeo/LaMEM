@@ -105,8 +105,9 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 
 	Ph_trans_t      *ph;
 	PetscInt        ID, i;
+	Scaling         *scal;   // for the moving box
 	PetscErrorCode  ierr;
-    char            str_direction[_str_len_], Type_[_str_len_], Parameter[_str_len_];
+	char            str_direction[_str_len_], Type_[_str_len_], Parameter[_str_len_];
 
 	// Phase transition law ID
 	ierr    =   getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
@@ -157,17 +158,27 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr = getScalarParam(fb,   _OPTIONAL_, "DensityAbove",     ph->DensityAbove,   ph->number_phases,  1.0);               CHKERRQ(ierr);
 	}
 	
-
-    ierr = getStringParam(fb, _OPTIONAL_, "PhaseDirection", 	str_direction, "BothWays"); 					            CHKERRQ(ierr);  
+	// for moving NotInAirBox: read-in box-velocity
+	if (ph->Type == _NotInAirBox_)
+	  {
+	    scal    =  dbm->scal;
+	    ierr = getScalarParam(fb, _OPTIONAL_, "v_box", &ph->v_box, 1,  1.0); CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _OPTIONAL_, "t0_box", &ph->t0_box, 1,  1.0); CHKERRQ(ierr);
+	    ierr = getScalarParam(fb, _OPTIONAL_, "t1_box", &ph->t1_box, 1,  1.0); CHKERRQ(ierr);
+	    ph->v_box  /= scal->velocity;
+	    ph->t0_box /= scal->time;
+	    ph->t1_box /= scal->time;
+	  }
+	
+	ierr = getStringParam(fb, _OPTIONAL_, "PhaseDirection",     str_direction, "BothWays");                                          CHKERRQ(ierr);
+	
 	if     	(!strcmp(str_direction, "BelowToAbove"))    ph->PhaseDirection  = 1;
 	else if (!strcmp(str_direction, "OutsideToInside")) ph->PhaseDirection  = 1;
-    else if (!strcmp(str_direction, "AboveToBelow"))    ph->PhaseDirection  = 2;
+	else if (!strcmp(str_direction, "AboveToBelow"))    ph->PhaseDirection  = 2;
 	else if (!strcmp(str_direction, "InsideToOutside")) ph->PhaseDirection  = 2;
 	else if (!strcmp(str_direction, "BothWays"    ))    ph->PhaseDirection  = 0;
-    else{      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Phase direction %s \n", str_direction);  }
+	else{      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Phase direction %s \n", str_direction);  }
 	
-	
-
 	if (!ph->PhaseAbove || !ph->PhaseBelow)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type (Constant) (Clapeyron) ", (LLD)ID);
@@ -558,14 +569,13 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 	PetscErrorCode  ierr;
 	DBMat           *dbm;
-	DBPropDike  *dbdike;
-	TSSol       *ts;
+	TSSol           *ts;
 	Ph_trans_t      *PhaseTrans;
 	Marker          *P;
 	JacRes          *jr;
 	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas;
 	PetscInt        PH1,PH2, ID, InsideAbove;
-	PetscScalar		T, time;
+	PetscScalar	T, time;
 	PetscLogDouble  t;
 	SolVarCell  	*svCell;
 	Scaling      	*scal;
@@ -574,11 +584,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
     // Retrieve parameters
 	jr          =   actx->jr;
 	dbm         =   jr->dbm;
+	ts          =   jr->ts;
 	numPhTrn    =   dbm->numPhtr;
 	scal 	    =	dbm->scal;
 	time        =   jr->bc->ts->time;
-	ts          =   jr->ts;
-	dbdike      =   jr->dbdike;
 	
 	if (!numPhTrn) 	PetscFunctionReturn(0);		// only execute this function if we have phase transitions
 
@@ -593,7 +602,10 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	    // calling the moving dike function
 	    if ( PhaseTrans->Type == _NotInAirBox_ )
 	      {
-		ierr = MovingDike(dbdike, PhaseTrans, ts); CHKERRQ(ierr);
+		if (PhaseTrans->v_box)
+		  {
+		    ierr = MovingBox(PhaseTrans, ts); CHKERRQ(ierr);
+		  }
 	      }
 	    
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
@@ -695,6 +707,34 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MovingBox"
+PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts)
+{
+  
+  PetscScalar  t0_box, t1_box, v_box;
+  PetscScalar  t_c, dt;
+  
+  PetscFunctionBegin;
+  
+  dt  = ts->dt;       // time step
+  t_c = ts->time;     // current time stamp, computed at the end of last time step round
+  
+  // access the starting and end times of certain phase transition and the velocity of the phase transition-box
+  t0_box = PhaseTrans->t0_box;
+  t1_box = PhaseTrans->t1_box;
+  v_box  = PhaseTrans->v_box;
+  
+  // check if the current time step is equal to the starting time of when the box is supposed to move
+  if(t_c >= t0_box && t_c <= t1_box)
+    {
+      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_box * dt;
+      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_box * dt;
+    }
+  
+  PetscFunctionReturn(0);
+}
+//----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, 
 		    SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr)
 {
@@ -707,7 +747,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
     {
-      Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // compute phase & T within Box but ignore airphase particles
+      Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // adjust phase according to T within Box but ignore airphase particles
     }
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
