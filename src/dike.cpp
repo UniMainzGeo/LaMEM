@@ -182,16 +182,13 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   BCCtx       *bc;
   Dike        *dike;
   Ph_trans_t  *CurrPhTr;
-  // FDSTAG      *fs;
   PetscInt     i, nD, nPtr, numDike, numPhtr;
   PetscScalar  v_spread, M, left, right, front, back;
-  //  PetscInt     j, sy, ny;
   PetscScalar  y_distance, tempdikeRHS;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
   numPhtr    = ctx->numPhtr;
-  //  fs         = bc->fs;
   
   nPtr = 0;
   nD = 0;

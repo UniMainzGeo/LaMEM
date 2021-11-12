@@ -67,8 +67,6 @@ public:
   PetscScalar t0_dike;   // starting time for moving the dike
   PetscScalar t1_dike;   // end time for moving the dike
   PetscScalar v_dike;    // velocity with which the dike move
-
-  //  PetscScalar dikeRHS;   // output, added divergence to RHS of continuity equation, should it be private? 
 };
 
       
