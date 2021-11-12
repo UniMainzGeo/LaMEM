@@ -139,3 +139,28 @@ def test_e():
   ex1.appendKeywords('@')
 
   return(ex1)
+
+def test_2phTr():
+
+# Test dike feature using optimized LaMEM
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t16_PhaseTransitions/PhaseTransitionBox_move.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't16_PhaseTransitions/PhaseTransitionBox_move.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t16_movePhTr',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
