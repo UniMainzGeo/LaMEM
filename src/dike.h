@@ -61,6 +61,7 @@ public:
   PetscInt    ID;        // dike ID
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
+  PetscScalar Mc;        // amount of magma-accommodated extension in center of box
   PetscInt PhaseID;      // associated material phase ID
   PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
 };
