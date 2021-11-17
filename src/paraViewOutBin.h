@@ -165,6 +165,10 @@ struct OutMask
 	PetscInt energ_res;      // energy residual
 	PetscInt vel_gr_tensor;  // velocity gradient tensor
 	PetscInt Def_Work     ;  // cumulative deformational work
+	PetscInt RW_Dif;
+	PetscInt RW_Dis;
+	PetscInt RW_Prl;
+	PetscInt RW_Pl;
 
 	// phase aggregates
 	PetscInt num_agg;                                              // number of phase aggregates

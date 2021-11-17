@@ -1004,3 +1004,147 @@ PetscErrorCode PVOutWriteDeformationW(OutVec* outvec)
 		PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteDif_Rate_W"
+PetscErrorCode PVOutWriteDif_Rate_W(OutVec* outvec)
+{
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	PetscScalar RW_M;
+
+	COPY_FUNCTION_HEADER
+
+	// macros to copy shear heating  to buffer
+	#define GET_RATE_WORKDIFF \
+		svCell = &jr->svCell[iter++];  \
+		RW_M = svCell->svDev.DW_dif; \
+		buff[k][j][i] = RW_M;
+
+	#define GET_RATE_WORK_XY_EDGEDIFF svEdge = &jr->svXYEdge[iter++]; RW_M = svEdge->svDev.DW_dif; buff[k][j][i] = RW_M;
+	#define GET_RATE_WORK_YZ_EDGEDIFF svEdge = &jr->svYZEdge[iter++]; RW_M = svEdge->svDev.DW_dif; buff[k][j][i] = RW_M;
+	#define GET_RATE_WORK_XZ_EDGEDIFF svEdge = &jr->svXZEdge[iter++]; RW_M = svEdge->svDev.DW_dif; buff[k][j][i] = RW_M;
+
+	cf = scal->dissipation_rate;
+
+	iflag.update = 1;
+
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_RATE_WORKDIFF,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_RATE_WORK_XY_EDGEDIFF, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_RATE_WORK_YZ_EDGEDIFF, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_RATE_WORK_XZ_EDGEDIFF, 1, 0)
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//------------------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteDis_Rate_W"
+PetscErrorCode PVOutWriteDis_Rate_W(OutVec* outvec)
+{
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	PetscScalar RW_M;
+
+	COPY_FUNCTION_HEADER
+
+	// macros to copy shear heating  to buffer
+	#define GET_RATE_WORKDISL \
+		svCell = &jr->svCell[iter++];  \
+		RW_M = svCell->svDev.DW_dis; \
+		buff[k][j][i] = RW_M;
+
+	#define GET_RATE_WORK_XY_EDGEDISL svEdge = &jr->svXYEdge[iter++]; RW_M = svEdge->svDev.DW_dis; buff[k][j][i] = RW_M;
+	#define GET_RATE_WORK_YZ_EDGEDISL svEdge = &jr->svYZEdge[iter++]; RW_M = svEdge->svDev.DW_dis; buff[k][j][i] = RW_M;
+	#define GET_RATE_WORK_XZ_EDGEDISL svEdge = &jr->svXZEdge[iter++]; RW_M = svEdge->svDev.DW_dis; buff[k][j][i] = RW_M;
+
+	cf = scal->dissipation_rate;
+
+	iflag.update = 1;
+
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_RATE_WORKDISL,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_RATE_WORK_XY_EDGEDISL, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_RATE_WORK_YZ_EDGEDISL, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_RATE_WORK_XZ_EDGEDISL, 1, 0)
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWritePrl_Rate_W"
+PetscErrorCode PVOutWritePrl_Rate_W(OutVec* outvec)
+{
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	PetscScalar RW_M;
+
+	COPY_FUNCTION_HEADER
+
+	// macros to copy shear heating  to buffer
+	#define GET_RATE_WORKPRL \
+		svCell = &jr->svCell[iter++];  \
+		RW_M = svCell->svDev.DW_perl; \
+		buff[k][j][i] = RW_M;
+
+	#define GET_RATE_WORK_XY_EDGEPRL svEdge = &jr->svXYEdge[iter++]; RW_M = svEdge->svDev.DW_perl; buff[k][j][i] = RW_M;
+	#define GET_RATE_WORK_YZ_EDGEPRL svEdge = &jr->svYZEdge[iter++]; RW_M = svEdge->svDev.DW_perl; buff[k][j][i] = RW_M;
+	#define GET_RATE_WORK_XZ_EDGEPRL svEdge = &jr->svXZEdge[iter++]; RW_M = svEdge->svDev.DW_perl; buff[k][j][i] = RW_M;
+
+	cf = scal->dissipation_rate;
+
+	iflag.update = 1;
+
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_RATE_WORKPRL,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_RATE_WORK_XY_EDGEPRL, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_RATE_WORK_YZ_EDGEPRL, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_RATE_WORK_XZ_EDGEPRL, 1, 0)
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//------------------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWritePl_Rate_W"
+PetscErrorCode PVOutWritePl_Rate_W(OutVec* outvec)
+{
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	PetscScalar RW_M;
+
+	COPY_FUNCTION_HEADER
+
+	// macros to copy shear heating  to buffer
+	#define GET_RATE_WORKPL \
+		svCell = &jr->svCell[iter++];  \
+		RW_M = svCell->svDev.DW_plas; \
+		buff[k][j][i] = RW_M;
+
+	#define GET_RATE_WORK_XY_EDGEPL svEdge = &jr->svXYEdge[iter++]; RW_M = svEdge->svDev.DW_plas; buff[k][j][i] = RW_M;
+	#define GET_RATE_WORK_YZ_EDGEPL svEdge = &jr->svYZEdge[iter++]; RW_M = svEdge->svDev.DW_plas; buff[k][j][i] = RW_M;
+	#define GET_RATE_WORK_XZ_EDGEPL svEdge = &jr->svXZEdge[iter++]; RW_M = svEdge->svDev.DW_plas; buff[k][j][i] = RW_M;
+
+	cf = scal->dissipation_rate;
+
+	iflag.update = 1;
+
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_RATE_WORKPL,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_RATE_WORK_XY_EDGEPL, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_RATE_WORK_YZ_EDGEPL, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_RATE_WORK_XZ_EDGEPL, 1, 0)
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}

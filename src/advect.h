@@ -76,6 +76,7 @@ struct Marker
 	// WARNING! after adding new field modify marker merge routine (below)
 };
 
+
 // merge two markers and average history and position C = (A + B)/2
 PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C);
 

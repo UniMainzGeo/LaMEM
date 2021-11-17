@@ -513,6 +513,7 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 		ierr = makeIntArray(&actx->markind, NULL, actx->markcap); CHKERRQ(ierr);
 
 		// reallocate memory for markers
+
 		ierr = PetscMalloc((size_t)actx->markcap*sizeof(Marker), &markers); CHKERRQ(ierr);
 		ierr = PetscMemzero(markers, (size_t)actx->markcap*sizeof(Marker)); CHKERRQ(ierr);
 

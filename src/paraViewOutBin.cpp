@@ -333,7 +333,10 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->DIIdis)         cnt++; // dislocation creep relative strain rate
 	if(omask->DIIprl)         cnt++; // Peierls creep relative strain rate
 	if(omask->Def_Work)       cnt++;// Cumulated Deformational work
-
+	if(omask->RW_Dif)         cnt++; // Rate of irreversible work due to Diffusion
+	if(omask->RW_Dis)         cnt++;// Rate of irreversible work due to Dislocation
+	if(omask->RW_Prl)         cnt++;// Rate of irreversible work due to Peirls creep
+	if(omask->RW_Pl )         cnt++;// Rate of irreversible work due to Plastic creep
 
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     cnt++; // momentum residual
@@ -413,6 +416,10 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_Def_Work",       &omask->Def_Work,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Def_ratDis_Work",&omask->RW_Dis,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Def_ratDif_Work",&omask->RW_Dif,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Def_ratPrl_Work",&omask->RW_Prl,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Def_ratPl_Work", &omask->RW_Pl,          1, 1); CHKERRQ(ierr);
 
 
 	// read phase aggregates
@@ -571,6 +578,11 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->DIIdis)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_dis_rate",   scal->lbl_unit,             &PVOutWriteRelDIIdis,    1, NULL);
 	if(omask->DIIprl)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_prl_rate",   scal->lbl_unit,             &PVOutWriteRelDIIprl,    1, NULL);
 	if(omask->Def_Work)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Deformational_work",  scal->lbl_deformation_work,      &PVOutWriteDeformationW,   1, NULL);
+
+	if(omask->RW_Dif)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Work_rate Dif",  scal->lbl_dissipation_rate,      &PVOutWriteDif_Rate_W,   1, NULL);
+	if(omask->RW_Dis)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Work_rate Dis",    scal->lbl_dissipation_rate,      &PVOutWriteDis_Rate_W,   1, NULL);
+	if(omask->RW_Prl)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Work_rate Prl",    scal->lbl_dissipation_rate,      &PVOutWritePrl_Rate_W,   1, NULL);
+	if(omask->RW_Pl )       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Work_rate Pl",     scal->lbl_dissipation_rate,      &PVOutWritePl_Rate_W,   1, NULL);
 
 	// === debugging vectors ===============================================
 	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1, NULL);

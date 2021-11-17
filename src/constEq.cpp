@@ -797,6 +797,7 @@ PetscErrorCode cellConstEq(
 	SolVarBulk  *svBulk;
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
+	PetscScalar  Dis_str;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -846,6 +847,15 @@ PetscErrorCode cellConstEq(
 
 	svDev->DW = (1.0-ctx->ctrl->shearHeatEff)*svDev->Hr;
 
+	Dis_str  = ctx->DIIdif+ctx->DIIdis+ctx->DIIprl+ctx->DIIpl; // ratio between the mechanism of generation of deformationa dissipative work
+
+	if(Dis_str >= 0.0)
+	{
+		svDev->DW_dif = svDev->DW*(ctx->DIIdif/Dis_str);
+		svDev->DW_dis = svDev->DW*(ctx->DIIdis/Dis_str);
+		svDev->DW_perl = svDev->DW*(ctx->DIIprl/Dis_str);
+		svDev->DW_plas = svDev->DW*(ctx->DIIpl/Dis_str);
+	}
 
 	// compute total viscosity
 	svDev->eta = ctx->eta + eta_st;
@@ -901,6 +911,7 @@ PetscErrorCode edgeConstEq(
 
 	SolVarDev   *svDev;
 	PetscScalar  t, eta_st;
+	PetscScalar Dis_str;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -934,6 +945,16 @@ PetscErrorCode edgeConstEq(
 	svDev->Hr = 2.0*t*svEdge->s + 2.0*svEdge->d*s;
 
 	svDev->DW = (1.0-ctx->ctrl->shearHeatEff)*svDev->Hr;
+
+	Dis_str  = ctx->DIIdif+ctx->DIIdis+ctx->DIIprl+ctx->DIIpl; // ratio between the mechanism of generation of deformationa dissipative work
+
+		if(Dis_str >= 0.0)
+		{
+			svDev->DW_dif = svDev->DW*(ctx->DIIdif/Dis_str);
+			svDev->DW_dis = svDev->DW*(ctx->DIIdis/Dis_str);
+			svDev->DW_perl = svDev->DW*(ctx->DIIprl/Dis_str);
+			svDev->DW_plas = svDev->DW*(ctx->DIIpl/Dis_str);
+		}
 
 
 	// compute total viscosity

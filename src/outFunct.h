@@ -119,6 +119,11 @@ PetscErrorCode PVOutWriteContRes     (OutVec*);
 PetscErrorCode PVOutWritEnergRes     (OutVec*);
 PetscErrorCode PVOutWriteVelocityGr  (OutVec*);
 PetscErrorCode PVOutWriteDeformationW (OutVec*);
+PetscErrorCode PVOutWriteDif_Rate_W(OutVec* outvec);
+PetscErrorCode PVOutWriteDis_Rate_W(OutVec* outvec);
+PetscErrorCode PVOutWritePrl_Rate_W(OutVec* outvec);
+PetscErrorCode PVOutWritePl_Rate_W(OutVec* outvec);
+
 // ... add more output functions here
 
 //---------------------------------------------------------------------------

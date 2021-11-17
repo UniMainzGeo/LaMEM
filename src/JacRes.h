@@ -70,7 +70,11 @@ struct SolVarDev
 	PetscScalar  Hr;     // shear heating term contribution
 	PetscScalar  APS;    // accumulated plastic strain
 	PetscScalar  PSR;    // plastic strain-rate contribution
-	PetscScalar  DW ;    // Deformational work stored in the material (j) during the current timestep
+	PetscScalar  DW ;    // Deformational work rate during the current timestep
+	PetscScalar  DW_dif; // Deformational work rate, due to diffusion deformation creep;
+	PetscScalar  DW_dis; // Deformational work rate, in the material due to the dislocation creep;
+	PetscScalar  DW_perl;// Deformational work rate, in the material due to the peirl creep
+	PetscScalar  DW_plas;// Deformational work rate in the material due to the plastic creep;
 	PetscScalar  DW_cum ;// Cumulative deformational work stored in the material during the whole simulation (j)
 
 };
