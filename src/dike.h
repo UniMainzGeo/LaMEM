@@ -62,6 +62,9 @@ public:
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
   PetscScalar Mc;        // amount of magma-accommodated extension in center of box
+  PetscScalar y_Mc;      // location in y direction of Mc, if in x-direction x_Mc needs to be given or in z-direction z_Mc
+  PetscScalar x_Mc;
+  PetscScalar z_Mc;
   PetscInt PhaseID;      // associated material phase ID
   PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
 };

@@ -145,8 +145,17 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mc",      &dike->Mc,      1, 1.0);              CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "x_Mc",    &dike->x_Mc,    1, 1.0);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "y_Mc",    &dike->y_Mc,    1, 1.0);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "z_Mc",    &dike->z_Mc,    1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
+
+	if(dike->Mc && (!dike->x_Mc && !dike->y_Mc && !dike->z_Mc))   // || or && ?
+        {
+                 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "the coordinate for Mc is missing, you need to provide either y_Mc, x_Mc or z_Mc");
+        }
+
 	
         if (PrintOutput)
 	    {
