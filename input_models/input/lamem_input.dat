@@ -641,16 +641,17 @@
 
 	<DikeStart>
 		ID = 0
-		Mf = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
-		Mb = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
+		Mf = 0.6           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
+		Mc = 0.7  	   # value for dike/magma- accommodated extension, between 0 and 1, in the center of the box, for phase dike
+		Mb = 0.8           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
 		PhaseID = 0
 		PhaseTransID = 0   # phase transition ID that is associated with this particular dike
 	<DikeEnd>
 
 	<DikeStart>
 		ID = 1
-                Mf = 0.7
-                Mb = 0.7
+                Mf = 0.5
+                Mb = 0.5
 		PhaseID = 3
 		PhaseTransID = 3   # phase transition ID that is associated with this particular dike
         <DikeEnd>
