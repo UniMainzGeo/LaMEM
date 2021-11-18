@@ -121,9 +121,13 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         // read dike parameter from file 
         Dike     *dike;
         PetscInt  ID;
+	Scaling  *scal;
 	
         PetscErrorCode ierr;
         PetscFunctionBegin;
+
+	// access context           
+        scal = dbm->scal;
 
         // Dike ID                                                                                                                                                         
         ierr    = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbdike->numDike-1); CHKERRQ(ierr);
@@ -145,11 +149,14 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mc",      &dike->Mc,      1, 1.0);              CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "x_Mc",    &dike->x_Mc,    1, 1.0);              CHKERRQ(ierr);
+	//	ierr = getScalarParam(fb, _OPTIONAL_, "x_Mc",    &dike->x_Mc,    1, 1.0);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "y_Mc",    &dike->y_Mc,    1, 1.0);              CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "z_Mc",    &dike->z_Mc,    1, 1.0);              CHKERRQ(ierr);
+	//	ierr = getScalarParam(fb, _OPTIONAL_, "z_Mc",    &dike->z_Mc,    1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
+
+	// scale the location of Mc y_Mc properly:
+	dike->y_Mc /= scal->length;
 
 	if(dike->Mc && (!dike->x_Mc && !dike->y_Mc && !dike->z_Mc))   // || or && ?
         {
