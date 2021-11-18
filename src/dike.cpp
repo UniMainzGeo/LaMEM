@@ -215,77 +215,51 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 	      // check if the phase ratio of a dike phase is greater than 0 in the current cell
 	      if(phRat[i]>0)
 		{
-		  PetscPrintf(PETSC_COMM_WORLD," PhaseTransID2 = %d \n", CurrPhTr->ID);
-		  PetscPrintf(PETSC_COMM_WORLD," dikeID2 = %d \n", dike->PhaseTransID);
-		  
-		  if(dike->Mb == dike->Mf && !dike->Mc)  // constant M
+		  if(dike->Mb == dike->Mf && !dike->Mc)       // constant M
 		    {
-		       PetscPrintf(PETSC_COMM_WORLD," WRONG LOOP\n");
 		      M = dike->Mf;
 		      v_spread = PetscAbs(bc->velin);
 		      left = CurrPhTr->bounds[0];
 		      right = CurrPhTr->bounds[1];
 		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 		    }
-		  
-		  else if(dike->Mc && dike->Mb && dike->Mf)
+		  else if(dike->Mc && dike->Mb && dike->Mf)   // Mf, Mc and Mb
                     {
-                      PetscPrintf(PETSC_COMM_WORLD," y_c = %g \n", y_c);
-
                       left = CurrPhTr->bounds[0];
                       right = CurrPhTr->bounds[1];
                       front = CurrPhTr->bounds[2];
                       back = CurrPhTr->bounds[3];
-
                       v_spread = PetscAbs(bc->velin);
 
 		      if(y_c >= dike->y_Mc)
 			{
-			   PetscPrintf(PETSC_COMM_WORLD,"larger than y_c, y_c = %g \n", y_c);
-                      // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
-                      y_distance = y_c - dike->y_Mc;
-                      PetscPrintf(PETSC_COMM_WORLD," y_distance = %g \n", y_distance);
-
-                      M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
-                      PetscPrintf(PETSC_COMM_WORLD," M = %g \n", M);
-
-                      tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-                      PetscPrintf(PETSC_COMM_WORLD," dikeRHS = %g \n", tempdikeRHS);
+			  // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
+			  y_distance = y_c - dike->y_Mc;
+			  M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
+			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
 			}
 		      else
 			{
-			  PetscPrintf(PETSC_COMM_WORLD,"smaller than y_c, y_c = %g, y_Mc = %g \n", y_c, dike->y_Mc);
 			  // linear interpolation between different M values, Mf is M in front, Mc acts as M in back  
 			  y_distance = y_c - front;
-			  PetscPrintf(PETSC_COMM_WORLD," y_distance = %g \n", y_distance);
-
 			  M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
-			  PetscPrintf(PETSC_COMM_WORLD," M = %g \n", M);
-
 			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-			  PetscPrintf(PETSC_COMM_WORLD," dikeRHS = %g \n", tempdikeRHS);
 			}
                     }
-		  
-		  else if(dike->Mb != dike->Mf && !dike->Mc)   // Mf and Mb are different
+		  else if(dike->Mb != dike->Mf && !dike->Mc)   // only Mf and Mb, they are different
 		    {
 		      left = CurrPhTr->bounds[0];
 		      right = CurrPhTr->bounds[1];
 		      front = CurrPhTr->bounds[2];
 		      back = CurrPhTr->bounds[3];
-		      
 		      v_spread = PetscAbs(bc->velin);
 		      
 		      // linear interpolation between different M values, Mf is M in front, Mb is M in back
 		      y_distance = y_c - front;
-
 		      M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
-		      PetscPrintf(PETSC_COMM_WORLD," M = %g \n", M);
-		      
 		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-		    }  // close loop Mb!=Mf
-
-		  else  // Mb and Mf don't exist (which should not occurr)
+		    }
+		  else                                         // Mb and Mf don't exist (which should not occurr)
 		    {
 		      tempdikeRHS = 0.0;
 		    }
