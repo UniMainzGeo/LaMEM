@@ -171,7 +171,8 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx,                                                                                                                                
                             PetscScalar *phRat,          // phase ratios in the control volume                                                                              
 			    PetscScalar &dikeRHS,
-                            PetscScalar &y_c)
+                            PetscScalar &y_c)            // also get x_c and z_c  to makeit versatile so that the dike cam be in any direction? 
+                                                         // or not necessary because it can only be in y-direction anyways from how it is coded at the moment
 {
   
   BCCtx       *bc;
@@ -210,7 +211,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		  PetscPrintf(PETSC_COMM_WORLD," PhaseTransID2 = %d \n", CurrPhTr->ID);
 		  PetscPrintf(PETSC_COMM_WORLD," dikeID2 = %d \n", dike->PhaseTransID);
 		  
-		  if(dike->Mb == dike->Mf)  // constant M
+		  if(dike->Mb == dike->Mf && !dike->Mc)  // constant M
 		    {
 		      M = dike->Mf;
 		      v_spread = PetscAbs(bc->velin);
@@ -219,7 +220,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 		    }
 		  
-		  else if(dike->Mc)
+		  else if(dike->Mc && dike->Mb && dike->Mf)
                     {
                       PetscPrintf(PETSC_COMM_WORLD," y_c = %g \n", y_c);
 
@@ -230,18 +231,33 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 
                       v_spread = PetscAbs(bc->velin);
 
-                      // linear interpolation between different M values, Mf is M in front, Mb is M in back 
-                      y_distance = y_c - front;
+		      if(dike->y_Mc >= y_c)
+			{
+                      // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
+                      y_distance = y_c - dike->y_Mc;
                       PetscPrintf(PETSC_COMM_WORLD," y_distance = %g \n", y_distance);
 
-                      M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
+                      M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
                       PetscPrintf(PETSC_COMM_WORLD," M = %g \n", M);
 
                       tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
                       PetscPrintf(PETSC_COMM_WORLD," dikeRHS = %g \n", tempdikeRHS);
+			}
+		      else
+			{
+			  // linear interpolation between different M values, Mf is M in front, Mc acts as M in back  
+			  y_distance = y_c - front;
+			  PetscPrintf(PETSC_COMM_WORLD," y_distance = %g \n", y_distance);
+
+			  M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
+			  PetscPrintf(PETSC_COMM_WORLD," M = %g \n", M);
+
+			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+			  PetscPrintf(PETSC_COMM_WORLD," dikeRHS = %g \n", tempdikeRHS);
+			}
                     }
 		  
-		  else if(dike->Mb != dike->Mf)   // Mf and Mb are different
+		  else if(dike->Mb != dike->Mf && !dike->Mc)   // Mf and Mb are different
 		    {
 		      left = CurrPhTr->bounds[0];
 		      right = CurrPhTr->bounds[1];
