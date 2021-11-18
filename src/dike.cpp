@@ -239,7 +239,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 
                       v_spread = PetscAbs(bc->velin);
 
-		      if(yc >= dike->y_Mc)
+		      if(y_c >= dike->y_Mc)
 			{
 			   PetscPrintf(PETSC_COMM_WORLD,"larger than y_c, y_c = %g \n", y_c);
                       // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
