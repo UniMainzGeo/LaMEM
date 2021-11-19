@@ -231,12 +231,18 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
                       back = CurrPhTr->bounds[3];
                       v_spread = PetscAbs(bc->velin);
 
+		      PetscPrintf(PETSC_COMM_WORLD,"y_c in DikeContr : %g \n", y_c);
+		      
 		      if(y_c >= dike->y_Mc)
 			{
 			  // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
 			  y_distance = y_c - dike->y_Mc;
+			  PetscPrintf(PETSC_COMM_WORLD,"y_Mc in dikecontr : %g\n", dike->y_Mc);
+                          PetscPrintf(PETSC_COMM_WORLD,"y_distance in dikecontr : %g\n", y_distance);
 			  M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
+			  PetscPrintf(PETSC_COMM_WORLD,"M in dike contr : %g\n", M);
 			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+			  PetscPrintf(PETSC_COMM_WORLD,"dikerhs in dike contr : %g\n", tempdikeRHS);
 			}
 		      else
 			{
@@ -286,20 +292,28 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 
 {
   BCCtx       *bc;
+  FDSTAG      *fs;
   Dike        *dike;
   Ph_trans_t  *CurrPhTr;
   Material_t  *mat;
   PetscInt     i, numDike, nD, nPtr, numPhtr;
+  PetscInt     j, sy;
   PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
-  PetscScalar  y_distance; 
+  PetscScalar  y_distance, y_c; 
   
   numDike    = jr->dbdike->numDike; // number of dikes
   numPhtr    = jr->dbm->numPhtr;
   bc         = jr->bc;
+  fs         = jr->fs;
   //PhaseTrans =  jr->dbm->matPhtr;   // phase transition
+
+  j   = 0;
+  sy  = 0;
+  y_c = COORD_CELL(j,sy,fs->dsy);
   
   nPtr = 0;
-  nD = 0;
+  nD   = 0;
+  kfac = 0;
   
   for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks                        
     {
@@ -309,7 +323,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
       for(nD = 0; nD < numDike; nD++) // loop through all dike blocks                                    
         {
           // access the parameters of the dike depending on the dike block                                                    
-          dike = jr->dbm->matDike+nD;
+          dike = jr->dbdike->matDike+nD;
 
           // access the phase ID of the dike parameters of each dike                                                       
           i = dike->PhaseID;
@@ -328,19 +342,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                       right = CurrPhTr->bounds[1];
                       tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 		    }
-		  else if(dike->Mb != dike->Mf && !dike->Mc)   // only Mf and Mb, they are different
-		    {
-		      left = CurrPhTr->bounds[0];
-		      right = CurrPhTr->bounds[1];
-		      front = CurrPhTr->bounds[2];
-		      back = CurrPhTr->bounds[3];
-		      v_spread = PetscAbs(bc->velin);
-		      
-		      // linear interpolation between different M values, Mf is M in front, Mb is M in back
-		      y_distance = y_c - front;
-		      M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
-		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-		    }
 		  else if(dike->Mc && dike->Mb && dike->Mf)   // Mf, Mc and Mb            
                     {
                       left = CurrPhTr->bounds[0];
@@ -349,12 +350,18 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                       back = CurrPhTr->bounds[3];
                       v_spread = PetscAbs(bc->velin);
 
+		      PetscPrintf(PETSC_COMM_WORLD,"y_c in Heating : %g\n", y_c);
+		      
                       if(y_c >= dike->y_Mc)
                         {
                           // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
                           y_distance = y_c - dike->y_Mc;
+			  PetscPrintf(PETSC_COMM_WORLD,"y_Mc in Heating: %g \n", dike->y_Mc);
+			  PetscPrintf(PETSC_COMM_WORLD,"y_distance in Heating: %g \n", y_distance);
                           M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
+			  PetscPrintf(PETSC_COMM_WORLD,"M in heating: %g\n", M);
                           tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+			  PetscPrintf(PETSC_COMM_WORLD,"dikerhs in heating: %g\n", tempdikeRHS);
                         }
                       else
                         {
