@@ -287,73 +287,128 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 {
   BCCtx       *bc;
   Dike        *dike;
-  Ph_trans_t  *PhaseTrans;
-  Material_t  *M;
-  PetscInt     i, j, numDike;
-  PetscScalar  v_spread, left, right, kfac, tempdikeRHS;
+  Ph_trans_t  *CurrPhTr;
+  Material_t  *mat;
+  PetscInt     i, numDike, nD, nPtr, numPhtr;
+  PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
+  PetscScalar  y_distance; 
   
   numDike    = jr->dbdike->numDike; // number of dikes
-  bc         =  jr->bc;
-  PhaseTrans =  jr->dbm->matPhtr;   // phase transition
+  numPhtr    = jr->dbm->numPhtr;
+  bc         = jr->bc;
+  //PhaseTrans =  jr->dbm->matPhtr;   // phase transition
   
-  j=0;
+  nPtr = 0;
+  nD = 0;
   
-  // loop through all dikes
-  for(j = 0; j < numDike; j++)
+  for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks                        
     {
-      
-      kfac = 0.0;
-      
-      //access the material parameters of each dike block
-      dike=jr->dbdike->matDike+j;
-      
-      // access the phase ID of the dike block
-      i = dike->PhaseID;
-      
-      // check if the phase ratio of a dike phase is greater than 0 in the current cell
-      if(phRat[i] > 0)
-	{
+      // access the parameters of the phasetranstion block                                             
+      CurrPhTr = jr->dbm->matPhtr+nPtr;
+
+      for(nD = 0; nD < numDike; nD++) // loop through all dike blocks                                    
+        {
+          // access the parameters of the dike depending on the dike block                                                    
+          dike = jr->dbm->matDike+nD;
+
+          // access the phase ID of the dike parameters of each dike                                                       
+          i = dike->PhaseID;
 	  
-	  if(dike->Mb == dike->Mf)
-	    {
-	      // constant M
-	      v_spread = PetscAbs(bc->velin);
-	      left = PhaseTrans->bounds[0];
-	      right = PhaseTrans->bounds[1];
-	      tempdikeRHS = dike->Mf * 2 * v_spread / PetscAbs(left-right);
-	    }
-	  
-	  else
-	    {
-	      tempdikeRHS = 0.0;
-	    } 
-	  // end if (dike->Mb == dike-Mf)
-	  
-	  M = &phases[i];
-	  
-	  //adjust k and heat source according to Behn & Ito [2008]
-	  if (Tc < M->T_liq && Tc > M->T_sol)
-	    {
-	      kfac  += phRat[i] / ( 1 + ( M->Latent_hx/ (M->Cp*(M->T_liq-M->T_sol))) );
-	      rho_A += phRat[i]*(M->rho*M->Cp)*(M->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
-	    }
-	  else if (Tc <= M->T_sol)
-	    {
-	      kfac  += phRat[i];
-	      rho_A += phRat[i]*( M->rho*M->Cp)*( (M->T_liq-Tc) + M->Latent_hx/M->Cp )*tempdikeRHS;
-	    }
-		else if (Tc >= M->T_liq)
-		  {
-		    kfac += phRat[i];
-		  }
-	  // end adjust k and heat source according to Behn & Ito [2008]
-	  
-	  k=kfac*k;
-	  
-	}   // end phase ratio
-      
-    }   // end dike loop
+          if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
+            {
+	      
+              // check if the phase ratio of a dike phase is greater than 0 in the current cell                   
+              if(phRat[i]>0)
+                {
+                  if(dike->Mb == dike->Mf && !dike->Mc)       // constant M                                  
+                    {
+                      M = dike->Mf;
+                      v_spread = PetscAbs(bc->velin);
+                      left = CurrPhTr->bounds[0];
+                      right = CurrPhTr->bounds[1];
+                      tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
+		    }
+		  else if(dike->Mb != dike->Mf && !dike->Mc)   // only Mf and Mb, they are different
+		    {
+		      left = CurrPhTr->bounds[0];
+		      right = CurrPhTr->bounds[1];
+		      front = CurrPhTr->bounds[2];
+		      back = CurrPhTr->bounds[3];
+		      v_spread = PetscAbs(bc->velin);
+		      
+		      // linear interpolation between different M values, Mf is M in front, Mb is M in back
+		      y_distance = y_c - front;
+		      M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
+		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+		    }
+		  else if(dike->Mc && dike->Mb && dike->Mf)   // Mf, Mc and Mb            
+                    {
+                      left = CurrPhTr->bounds[0];
+                      right = CurrPhTr->bounds[1];
+                      front = CurrPhTr->bounds[2];
+                      back = CurrPhTr->bounds[3];
+                      v_spread = PetscAbs(bc->velin);
+
+                      if(y_c >= dike->y_Mc)
+                        {
+                          // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
+                          y_distance = y_c - dike->y_Mc;
+                          M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
+                          tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+                        }
+                      else
+                        {
+                          // linear interpolation between different M values, Mf is M in front, Mc acts as M in back
+                          y_distance = y_c - front;
+                          M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
+                          tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+                        }
+                    }
+                  else if(dike->Mb != dike->Mf && !dike->Mc)   // only Mf and Mb, they are different     
+                    {
+                      left = CurrPhTr->bounds[0];
+                      right = CurrPhTr->bounds[1];
+                      front = CurrPhTr->bounds[2];
+                      back = CurrPhTr->bounds[3];
+                      v_spread = PetscAbs(bc->velin);
+
+                      // linear interpolation between different M values, Mf is M in front, Mb is M in back       
+                      y_distance = y_c - front;
+                      M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
+                      tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+                    }
+		  else
+		    {
+		      tempdikeRHS = 0.0;
+		    } 
+		  
+		  mat = &phases[i];
+		  
+		  //adjust k and heat source according to Behn & Ito [2008]
+		  if (Tc < mat->T_liq && Tc > mat->T_sol)
+		    {
+		      kfac  += phRat[i] / ( 1 + ( mat->Latent_hx/ (mat->Cp*(mat->T_liq-mat->T_sol))) );
+		      rho_A += phRat[i]*(mat->rho*mat->Cp)*(mat->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
+		    }
+		  else if (Tc <= mat->T_sol)
+		    {
+		      kfac  += phRat[i];
+		      rho_A += phRat[i]*( mat->rho*mat->Cp)*( (mat->T_liq-Tc) + mat->Latent_hx/mat->Cp )*tempdikeRHS;
+		    }
+		  else if (Tc >= mat->T_liq)
+		    {
+		      kfac += phRat[i];
+		    }
+		  // end adjust k and heat source according to Behn & Ito [2008]
+		  
+		  k=kfac*k;
+		  
+		}   // end phase ratio
+	    } // close phase transition and phase ID comparison	  
+	}   // end dike block loop      
+    }  // close phase transition block loop
   
   PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
+
