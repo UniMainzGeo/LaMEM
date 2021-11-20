@@ -211,9 +211,8 @@ struct JacRes
 	FDSTAG   *fs;    // staggered-grid layout
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
-  DBPropDike *dbdike; // dike database
+        DBPropDike *dbdike; // dike database
 	DBMat    *dbm;   // material database
-  //  ConstEqCtx *ctx;
   
 	// parameters and controls
 	Controls ctrl;
@@ -379,7 +378,8 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *k_,      // conductivity
 	PetscScalar *rho_Cp_, // volumetric heat capacity
 	PetscScalar *rho_A_,  // volumetric radiogenic heat   
-	PetscScalar Tc);      // temperature of cell 
+	PetscScalar Tc,       // temperature of cell
+        PetscScalar y_c);     // coordinate of cell
 
 // check whether thermal material parameters are properly defined
 PetscErrorCode JacResCheckTempParam(JacRes *jr);

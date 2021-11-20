@@ -288,28 +288,29 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                  PetscScalar &Tc,
                                  PetscScalar *phRat,          // phase ratios in the control volume                                                                         
                                  PetscScalar &k,
-                                 PetscScalar &rho_A)
+                                 PetscScalar &rho_A,
+				 PetscScalar &y_c)
 
 {
   BCCtx       *bc;
-  FDSTAG      *fs;
+  //  FDSTAG      *fs;
   Dike        *dike;
   Ph_trans_t  *CurrPhTr;
   Material_t  *mat;
   PetscInt     i, numDike, nD, nPtr, numPhtr;
-  PetscInt     j, sy;
+  //  PetscInt     j, sy;
   PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
-  PetscScalar  y_distance, y_c; 
+  PetscScalar  y_distance; //, y_c; 
   
   numDike    = jr->dbdike->numDike; // number of dikes
   numPhtr    = jr->dbm->numPhtr;
   bc         = jr->bc;
-  fs         = jr->fs;
+  //  fs         = jr->fs;
   //PhaseTrans =  jr->dbm->matPhtr;   // phase transition
 
   //  j   = 0;
   //  sy  = 0;
-  y_c = COORD_CELL(j,sy,fs->dsy);
+  //  y_c = COORD_CELL(j,sy,fs->dsy);
   
   nPtr = 0;
   nD   = 0;
