@@ -231,12 +231,11 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
                       back = CurrPhTr->bounds[3];
                       v_spread = PetscAbs(bc->velin);
 
-		      PetscPrintf(PETSC_COMM_WORLD,"y_c in DikeContr : %g \n", y_c);
-		      
 		      if(y_c >= dike->y_Mc)
 			{
 			  // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
 			  y_distance = y_c - dike->y_Mc;
+			  PetscPrintf(PETSC_COMM_WORLD,"y_c in DikeContr : %g \n", y_c);
 			  PetscPrintf(PETSC_COMM_WORLD,"y_Mc in dikecontr : %g\n", dike->y_Mc);
                           PetscPrintf(PETSC_COMM_WORLD,"y_distance in dikecontr : %g\n", y_distance);
 			  M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
@@ -247,6 +246,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		      else
 			{
 			  // linear interpolation between different M values, Mf is M in front, Mc acts as M in back  
+			  PetscPrintf(PETSC_COMM_WORLD,"y_c smaller than y_Mc : %g \n", y_c);
 			  y_distance = y_c - front;
 			  M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
 			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
@@ -307,8 +307,8 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
   fs         = jr->fs;
   //PhaseTrans =  jr->dbm->matPhtr;   // phase transition
 
-  j   = 0;
-  sy  = 0;
+  //  j   = 0;
+  //  sy  = 0;
   y_c = COORD_CELL(j,sy,fs->dsy);
   
   nPtr = 0;
@@ -350,12 +350,11 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                       back = CurrPhTr->bounds[3];
                       v_spread = PetscAbs(bc->velin);
 
-		      PetscPrintf(PETSC_COMM_WORLD,"y_c in Heating : %g\n", y_c);
-		      
                       if(y_c >= dike->y_Mc)
                         {
                           // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
                           y_distance = y_c - dike->y_Mc;
+			  PetscPrintf(PETSC_COMM_WORLD,"y_c in heating : %g \n", y_c);
 			  PetscPrintf(PETSC_COMM_WORLD,"y_Mc in Heating: %g \n", dike->y_Mc);
 			  PetscPrintf(PETSC_COMM_WORLD,"y_distance in Heating: %g \n", y_distance);
                           M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
@@ -365,6 +364,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                         }
                       else
                         {
+			  PetscPrintf(PETSC_COMM_WORLD," y_c smaller than y_Mc=1,y_c in heating : %g \n", y_c);
                           // linear interpolation between different M values, Mf is M in front, Mc acts as M in back
                           y_distance = y_c - front;
                           M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
