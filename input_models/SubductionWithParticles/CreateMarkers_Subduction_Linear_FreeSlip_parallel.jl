@@ -38,8 +38,10 @@ AddBox!(Phases,Temp,Grid,
         Origin=(Trench_x_location,0,0),
         phase=LithosphericPhases(Layers=[ThicknessCrust ThicknessML], Phases=[1 2 0]) );               
 
-# Save model 
+# Save julia setup 
 Model3D     =   CartData(Grid, (Phases=Phases,Temp=Temp))   # Create LaMEM model:
-Write_Paraview(Model3D,"LaMEM_ModelSetup")                      # Save model to paraview    
-Save_LaMEMMarkersParallel(Model3D)                              # Create LaMEM marker input on 1 core
+Write_Paraview(Model3D,"LaMEM_ModelSetup")                  # Save model to paraview   (load with opening LaMEM_ModelSetup.vts in paraview)  
+
+# Save LaMEM markers
+Save_LaMEMMarkersParallel(Model3D)                          # Create LaMEM marker input on 1 core
 
