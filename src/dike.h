@@ -47,11 +47,9 @@
 //---------------------------------------------------------------------------   
 
 struct FB; 
-//struct JacRes;   // necessary????? try to remove
 struct ConstEqCtx;
 struct DBMat;
 struct TSSol;
-//struct Scaling;
 
 //---------------------------------------------------------------------------       
 //.......................   Dike Parameters  .......................                                                                                                      
@@ -64,20 +62,10 @@ public:
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
   PetscInt PhaseID;      // associated material phase ID
-
-  PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
-  PetscScalar t0_dike;   // starting time for moving the dike
-  PetscScalar t1_dike;   // end time for moving the dike
-  PetscScalar v_dike;    // velocity with which the dike move
-
-  PetscScalar dikeRHS;   // output, added divergence to RHS of continuity equation, should it be private? 
 };
-
       
 struct DBPropDike
 {
-  //  Scaling *scal;
-  
   PetscInt numDike;                   // number of dikes
   Dike     matDike[_max_num_dike_];   // dike properties per dike ID
 };
@@ -91,8 +79,13 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 // compute the added RHS of the dike for the continuity equation
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
 
-// compute the new locations of the dikes in case they move with a specified velocity
-PetscErrorCode MovingDike(DBPropDike *dbdike, Ph_trans_t *PhaseTrans, TSSol *ts);
+// compute dike heat after Behn & Ito, 2008
+PetscErrorCode Dike_k_heatsource(JacRes *jr,
+                                Material_t *phases,
+                                PetscScalar &Tc,
+                                PetscScalar *phRat,          // phase ratios in the control volume
+                                PetscScalar &k,
+                                PetscScalar &rho_A);
 
 //---------------------------------------------------------------------------
 #endif

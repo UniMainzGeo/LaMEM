@@ -462,11 +462,23 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "nu_k",     &m->nu_k,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T_Nu",     &m->T_Nu,  1, 1.0); CHKERRQ(ierr);  
+	ierr = getScalarParam(fb, _OPTIONAL_, "Latent_hx", &m->Latent_hx,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "T_liq",    &m->T_liq,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "T_sol",    &m->T_sol,  1, 1.0); CHKERRQ(ierr);
+
 	//=================================================================================
 	// melt fraction viscosity parametrization
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,   1, 1.0);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
+
+	// check energy parameters
+	if((m->Latent_hx && (!m->T_liq || !m->T_sol))
+	||	 (m->T_liq && (!m->Latent_hx || !m->T_sol)) 
+	||   (m->T_sol && (!m->Latent_hx || !m->T_liq)))
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %lld (T_sol, T_liq, Latent_hx) \n", (LLD)ID);
+	}
 
 	// DEPTH-DEPENDENT
 
@@ -709,7 +721,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
 		MatPrintScalParam(m->nu_k,  "nu_k",  "[]",      scal, title, &print_title);
 		MatPrintScalParam(m->T_Nu,  "T_Nu",  "[C]",      scal, title, &print_title);
+		MatPrintScalParam(m->T_liq,  "T_liq",  "[C]",      scal, title, &print_title);
+		MatPrintScalParam(m->T_sol,  "T_sol",  "[C]",      scal, title, &print_title);
+		MatPrintScalParam(m->Latent_hx,  "Latent_hx",  "[J/kg]",      scal, title, &print_title);
+
 		PetscPrintf(PETSC_COMM_WORLD,"\n\n");
+
 	}
 
 	// SCALE
@@ -758,11 +775,15 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->Cp     /= scal->cpecific_heat;
 	m->k      /= scal->conductivity;
 	m->A      /= scal->heat_production;
+	m->Latent_hx /= (scal->cpecific_heat*scal->temperature);
 
 	// phase-temperature
 	if(m->T) m->T = (m->T + scal->Tshift)/scal->temperature;
-	// temperature below which conductivity is multiplied by nu_k 
 	if(m->T_Nu) m->T_Nu = (m->T_Nu + scal->Tshift)/scal->temperature;
+	
+	// temperature below which conductivity is multiplied by nu_k 
+	if(m->T_liq) m->T_liq = (m->T_liq + scal->Tshift)/scal->temperature;
+	if(m->T_sol) m->T_sol = (m->T_sol + scal->Tshift)/scal->temperature;
 
 	PetscFunctionReturn(0);
 }
@@ -1636,7 +1657,8 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
     
     PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_st= %1.7e,    rp= %1.7e,    frSoftID = %i,  chSoftID = %i,   healID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
-	PetscPrintf(PETSC_COMM_WORLD,"          			nu_k  = %1.7e,  T_Nu    = %1.7e   \n", MatProp->nu_k, MatProp->T_Nu);
+	PetscPrintf(PETSC_COMM_WORLD,"          			nu_k  = %1.7e,  T_Nu  = %1.7e,   \n", MatProp->nu_k, MatProp->T_Nu);
+	PetscPrintf(PETSC_COMM_WORLD,"          			T_sol = %1.7e, T_liq  = %1.7e,   Latent_hx= %1.7e,    \n", MatProp->T_sol, MatProp->T_liq, MatProp->Latent_hx);
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
