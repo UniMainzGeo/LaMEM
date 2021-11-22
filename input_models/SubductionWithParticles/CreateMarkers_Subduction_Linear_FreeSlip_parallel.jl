@@ -39,7 +39,7 @@ AddBox!(Phases,Temp,Grid,
         phase=LithosphericPhases(Layers=[ThicknessCrust ThicknessML], Phases=[1 2 0]) );               
 
 # Save model 
-Model3D     =   ParaviewData(Grid, (Phases=Phases,Temp=Temp))   # Create LaMEM model:
+Model3D     =   CartData(Grid, (Phases=Phases,Temp=Temp))   # Create LaMEM model:
 Write_Paraview(Model3D,"LaMEM_ModelSetup")                      # Save model to paraview    
 Save_LaMEMMarkersParallel(Model3D)                              # Create LaMEM marker input on 1 core
 
