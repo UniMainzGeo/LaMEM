@@ -158,10 +158,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 	// scale the location of Mc y_Mc properly:
 	dike->y_Mc /= scal->length;
 
-	if(dike->Mc && (!dike->x_Mc && !dike->y_Mc && !dike->z_Mc))   // || or && ?
+	/*	if(dike->Mc && (!dike->x_Mc && !dike->y_Mc && !dike->z_Mc))   // || or && ?
         {
                  SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "the coordinate for Mc is missing, you need to provide either y_Mc, x_Mc or z_Mc");
-        }
+		 }*/
 
 	
         if (PrintOutput)
@@ -337,6 +337,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 {
                   if(dike->Mb == dike->Mf && !dike->Mc)       // constant M                                  
                     {
+		       PetscPrintf(PETSC_COMM_WORLD,"Mf and Mb are the same, no Mc: %g \n", dike->Mf);
                       M = dike->Mf;
                       v_spread = PetscAbs(bc->velin);
                       left = CurrPhTr->bounds[0];
@@ -365,7 +366,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                         }
                       else
                         {
-			  PetscPrintf(PETSC_COMM_WORLD," y_c smaller than y_Mc=1,y_c in heating : %g \n", y_c);
+			  PetscPrintf(PETSC_COMM_WORLD," y_c smaller than y_Mc, y_c in heating : %g \n", y_c);
                           // linear interpolation between different M values, Mf is M in front, Mc acts as M in back
                           y_distance = y_c - front;
                           M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
@@ -374,6 +375,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                     }
                   else if(dike->Mb != dike->Mf && !dike->Mc)   // only Mf and Mb, they are different     
                     {
+		      PetscPrintf(PETSC_COMM_WORLD,"Mf and Mb are different, no Mc: %g, %g \n", dike->Mf, dike->Mb);
                       left = CurrPhTr->bounds[0];
                       right = CurrPhTr->bounds[1];
                       front = CurrPhTr->bounds[2];
