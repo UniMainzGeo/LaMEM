@@ -38,6 +38,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't23_Permeable'))
 sys.path.append(os.path.join(os.environ['PWD'], 't25_APS_Healing'))
 sys.path.append(os.path.join(os.environ['PWD'], 't26_Dike'))
 sys.path.append(os.path.join(os.environ['PWD'], 't27_T-dep_Conductivity'))
+sys.path.append(os.path.join(os.environ['PWD'], 't28_HeatRecharge'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
@@ -71,6 +72,7 @@ import test_23_Permeable as Permeable
 import test_25_APS_Healing as APShealing
 import test_26_dike as Dike
 import test_27_TdepCond as TdepCond
+import test_28_HeatRecharge as HR
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1     as Sub1 # import test that requires MATLAB
@@ -104,7 +106,8 @@ registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       FSSA.test_1(),PTracer.test_a(),PTracer.test_b(),
                       Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique(),Permeable.test_a(), APShealing.test_2D(), APShealing.test_2cores(),
                       Dike.test_M1_2D(), Dike.test_M075_2D_2cores(), Dike.test_M05_2D(), Dike.heat_kfac(), Dike.heat_rhoA(),
-                      TdepCond.test_2fields_dike()];
+                      TdepCond.test_2fields_dike(),
+                      HR.test_recharge1(), HR.test_recharge2()];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
