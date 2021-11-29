@@ -86,6 +86,7 @@ enum Weakening_Type
 {
 	_Linear_,     // Uni-axial experiment
 	_Logistic_,  // Simple shear experiment
+	_sLog_Linear_, // semi Log linear weakening function
 	_Grain_Size_
 };
 

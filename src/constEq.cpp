@@ -1160,18 +1160,36 @@ PetscScalar ComputeViscousDamage(
 		// access parameters
 		vd    = v_d + ID;
 
-		ADVW1  = vd->ADVW1;
-		ADVW2  = vd->ADVW2;
-		WDR   = vd->WDR;
+		if(vd->Weakening_type == _sLog_Linear_)
+		{
+			ADVW1  = vd->ADVW1;
+			ADVW2  = vd->ADVW2;
+			WDR   = vd->WDR;
 
 
 
 		// compute scaling ratio
-		if(DW_cum <= ADVW1)               k = 0.0;
-		if(DW_cum >  ADVW1 && DW_cum < ADVW2) k = 0.0 + WDR*((DW_cum - ADVW1)/(ADVW2 - ADVW1));
-		if(DW_cum >= ADVW2)               k = 0.0 + WDR;
+			if(DW_cum <= ADVW1)               k = 0.0;
+			if(DW_cum >  ADVW1 && DW_cum < ADVW2) k = 0.0 + WDR*((DW_cum - ADVW1)/(ADVW2 - ADVW1));
+			if(DW_cum >= ADVW2)               k = 0.0 + WDR;
 
 		// apply strain softening
-		return pow(10.0,k);
+			return pow(10.0,k);
+		}
 
+		if (vd->Weakening_type == _Linear_)
+		{
+
+			ADVW1  = vd->ADVW1;
+			ADVW2  = vd->ADVW2;
+			WDR   = vd->WDR;
+
+			if(DW_cum <= ADVW1)               k = 0.0;
+			if(DW_cum >  ADVW1 && DW_cum < ADVW2) k = 0.0 + WDR*((DW_cum - ADVW1)/(ADVW2 - ADVW1));
+			if(DW_cum >= ADVW2)               k = 0.0 + WDR;
+
+					// apply strain softening
+			return 1/(1-k);
+
+		}
 }

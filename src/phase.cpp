@@ -356,11 +356,16 @@ PetscErrorCode DBMatReadVisSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Name of Weakening type is wrong, please check it!");
 	}
 
-	if(v_d->Weakening_type == _Linear_)
+	if(v_d->Weakening_type == _Linear_ || v_d->Weakening_type == _sLog_Linear_)
 	{
 		ierr = getScalarParam(fb, _REQUIRED_, "WDR",    &v_d->WDR,    1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "ADVW1",  &v_d->ADVW1,  1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "ADVW2",  &v_d->ADVW2,  1, 1.0); CHKERRQ(ierr);
+
+		if(v_d->Weakening_type == _Linear_ && v_d->WDR >= 1.0)
+		{
+			 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " If a _Linear_ weakening is employed, the WDR must be less than 1.0");
+		}
 
 		//Scaling
 		v_d->ADVW1 /= scal->deformation_work ;
