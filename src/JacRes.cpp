@@ -1227,9 +1227,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//=================
 
 		// access strain rates
-		XX = dxx[k][j][i];
-		YY = dyy[k][j][i];
-		ZZ = dzz[k][j][i];
+		//		XX = dxx[k][j][i];
+		//		YY = dyy[k][j][i];
+		//		ZZ = dzz[k][j][i];
 
 		if (jr->ctrl.actDike)
 		{
@@ -1245,6 +1245,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		  dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
 		  dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
 		}
+
+		// access strain rates
+		XX = dxx[k][j][i];
+                YY = dyy[k][j][i];
+                ZZ = dzz[k][j][i];
 		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];
