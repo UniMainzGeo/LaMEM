@@ -107,8 +107,8 @@ struct DBox
 	PetscInt    num;                   // number of boxes
 	PetscInt 	advect_box;			   // advect box (=1) or not?
 	PetscScalar bounds[6*_max_boxes_]; // box bounds
-	PetscScalar zvel;                  // vertical velocity
-
+	PetscInt 	VelocityType;		   // 0-x, 1-y, 2-z
+	PetscScalar vel;                   // velocity value
 } ;
 
 //---------------------------------------------------------------------------
