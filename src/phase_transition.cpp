@@ -339,15 +339,25 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 
 	ierr = getScalarParam(fb, _REQUIRED_, "PTBox_Bounds",   	ph->bounds,  		6, scal->length);    			CHKERRQ(ierr);
 
-	ph->PhaseInside[0] = -1; 	// default
-
+	// ph->PhaseInside[0] = -1; 	// default
+	
 	for (i=0; i<6; i++){ Box[i] = ph->bounds[i]*scal->length; }		// dimensional units
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Box \n", (LLD)(ph->ID));
     PetscPrintf(PETSC_COMM_WORLD,"     Box Bounds         :   [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
 
+	
+	ierr = getIntParam(fb, _OPTIONAL_, "BoxVicinity",   &ph->BoxVicinity,  1, 1);
+
+	if (ph->BoxVicinity==1){
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside \n");	CHKERRQ(ierr);
+	} 
+	else {
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Box Vicinity       :   Use all particles to check inside/outside \n");	CHKERRQ(ierr);
+	}
+	
 	if (ph->PhaseInside[0] < 0) PetscPrintf(PETSC_COMM_WORLD,"     Don't set phase    @   \n");
 
-	ierr = getStringParam(fb, _OPTIONAL_, "PTBox_TempType",   Parameter,  "none");    			CHKERRQ(ierr);
+ 	ierr = getStringParam(fb, _OPTIONAL_, "PTBox_TempType",   Parameter,  "none");    			CHKERRQ(ierr);
 	if(!strcmp(Parameter, "none"))
 	{
 		ph->TempType = 0;
@@ -388,7 +398,7 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 
 	}
 	else{
-		  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType [none; constant; linear; halfspace]");
+		  SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType %s [none; constant; linear; halfspace]", Parameter);
 	}
 
 	PetscFunctionReturn(0);
@@ -575,7 +585,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	JacRes          *jr;
 	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas;
 	PetscInt        PH1,PH2, ID, InsideAbove;
-	PetscScalar	T, time;
+	PetscScalar		T, time, factor, dxBox, dyBox, dzBox;
 	PetscLogDouble  t;
 	SolVarCell  	*svCell;
 	Scaling      	*scal;
@@ -593,20 +603,21 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 	PrintStart(&t, "Phase_Transition", NULL);
 	
+
 	// loop over all local particles 		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
 	nPtr        =   0;
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	  {
 	    PhaseTrans = jr->dbm->matPhtr+nPtr;
-	    
+		
 	    // calling the moving dike function
 	    if ( PhaseTrans->Type == _NotInAirBox_ )
-	      {
-		if (PhaseTrans->v_box)
-		  {
-		    ierr = MovingBox(PhaseTrans, ts); CHKERRQ(ierr);
-		  }
-	      }
+	    {
+			if (PhaseTrans->v_box)
+			{
+				ierr = MovingBox(PhaseTrans, ts); CHKERRQ(ierr);
+			}
+	    }
 	    
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
 		{
@@ -663,7 +674,24 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr);
 
 				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) ){
-					if (PhaseTrans->PhaseInside[0]<0) ph = P->phase;				// do not change the phase
+					if (PhaseTrans->PhaseInside[0]<0){ 
+						ph = P->phase;				// do not change the phase
+					}
+
+				
+					if (PhaseTrans->BoxVicinity==1){
+						factor = 1.0;
+						dxBox  = (PhaseTrans->bounds[1]-PhaseTrans->bounds[0])*factor;
+						dyBox  = (PhaseTrans->bounds[3]-PhaseTrans->bounds[2])*factor;
+						dzBox  = (PhaseTrans->bounds[3]-PhaseTrans->bounds[2])*factor;
+						
+						if ( (P->X[0] < (PhaseTrans->bounds[0]-dxBox)) | (P->X[0] > (PhaseTrans->bounds[1]+dxBox)) |
+							 (P->X[1] < (PhaseTrans->bounds[2]-dyBox)) | (P->X[1] > (PhaseTrans->bounds[3]+dyBox)) |
+							 (P->X[2] < (PhaseTrans->bounds[4]-dzBox)) | (P->X[2] > (PhaseTrans->bounds[5]+dzBox))  )
+						{
+							ph = P->phase;				// do not change the phase
+						}
+					}
 				}
 
                 if (PhaseTrans->PhaseDirection==0){
@@ -747,7 +775,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
     {
-      Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // adjust phase according to T within Box but ignore airphase particles
+      	Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // adjust phase according to T within Box but ignore airphase particles
     }
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
@@ -909,6 +937,7 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 		
 	}
 	else{
+
 		// Outside; keep T
 		ph 		= PH2;
 		InAb 	= 0;

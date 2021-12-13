@@ -601,6 +601,8 @@
         ID                      =   2                               # Phase_transition law ID
         Type                    =   Box                             # A box-like region
         PTBox_Bounds            =   200 400 -100 100 -1000 -500     # box bound coordinates: [left, right, front, back, bottom, top]
+		BoxVicinity 			=	1								# 1: only check particles in the vicinity of the box boundaries (*2 in all directions)
+		
         number_phases           =   1
         PhaseInside             =   7                               # Phase within the box  [use -1 if you don't want to change the phase inside the box]
         PhaseOutside            =   3                               # Phase outside the box [use -1 if you don't want to change the phase outside the box]
