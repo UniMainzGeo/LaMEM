@@ -733,9 +733,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) ){
 					if (PhaseTrans->PhaseInside[0]<0){ 
 						ph 		= P->phase;				// do not change the phase
-						P->T 	= T;	// set T
 					}
-
+					P->T 	= T;	// set T
 				}
 			}
 		}
