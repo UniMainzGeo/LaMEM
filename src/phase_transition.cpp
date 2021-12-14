@@ -724,6 +724,20 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					}
 				}
 			}
+			else{
+				// allow cases in which we only reset T
+				ph 			= P->phase;
+				InsideAbove = 0;
+				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr);
+
+				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) ){
+					if (PhaseTrans->PhaseInside[0]<0){ 
+						ph 		= P->phase;				// do not change the phase
+						P->T 	= T;	// set T
+					}
+
+				}
+			}
 		}
 
 	}
