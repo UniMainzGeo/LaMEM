@@ -156,7 +156,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 			PetscPrintf(PETSC_COMM_WORLD,"Phase Transition laws: \n");
 
 			// initialize ID for consistency checks
-			for(jj = 0; jj < _max_num_soft_; jj++) dbm->matPhtr[jj].ID = -1;
+			for(jj = 0; jj < _max_num_tr_; jj++) dbm->matPhtr[jj].ID = -1;
 
 			// error checking
 			if(fb->nblocks > _max_num_tr_)
