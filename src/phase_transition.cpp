@@ -173,9 +173,9 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	ierr = getStringParam(fb, _OPTIONAL_, "PhaseDirection",     str_direction, "BothWays");                                          CHKERRQ(ierr);
 	
 	if     	(!strcmp(str_direction, "BelowToAbove"))    ph->PhaseDirection  = 1;
-	else if (!strcmp(str_direction, "OutsideToInside")) ph->PhaseDirection  = 1;
+	else if (!strcmp(str_direction, "InsideToOutside")) ph->PhaseDirection  = 1; 
 	else if (!strcmp(str_direction, "AboveToBelow"))    ph->PhaseDirection  = 2;
-	else if (!strcmp(str_direction, "InsideToOutside")) ph->PhaseDirection  = 2;
+	else if (!strcmp(str_direction, "OutsideToInside")) ph->PhaseDirection  = 2;
 	else if (!strcmp(str_direction, "BothWays"    ))    ph->PhaseDirection  = 0;
 	else{      SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Phase direction %s \n", str_direction);  }
 	
