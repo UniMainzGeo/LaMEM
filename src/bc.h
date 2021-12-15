@@ -99,10 +99,10 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
 
 //---------------------------------------------------------------------------
-// Dropping boxes (rectangular boxes moving with constant vertical velocity)
+// Dropping boxes (rectangular boxes moving with constant vertical velocity)     [OBSOLETE]
 //---------------------------------------------------------------------------
 
-struct DBox
+struct DBox 
 {
 	PetscInt    num;                   // number of boxes
 	PetscInt 	advect_box;			   // advect box (=1) or not?
@@ -111,9 +111,30 @@ struct DBox
 	PetscScalar vel;                   // velocity value
 } ;
 
+
+//---------------------------------------------------------------------------
+// Internal velocity boxes (rectangular boxes with constant prescribed velocity that are either fixed or move)
+//---------------------------------------------------------------------------
+struct VelBox
+{
+	PetscInt    num;        // number of boxes
+	PetscInt 	Advect[_max_boxes_];     // advect box (=1) or not?
+	PetscScalar cenX[_max_boxes_];       // x-coordinates of center
+	PetscScalar cenY[_max_boxes_];       // y-coordinates of center
+	PetscScalar cenZ[_max_boxes_];       // z-coordinates of center
+    PetscScalar widthX[_max_boxes_];     // Width in x
+	PetscScalar widthY[_max_boxes_];     // Width in y
+	PetscScalar widthZ[_max_boxes_];     // Width in z
+    
+	PetscScalar Vx[_max_boxes_];         // Vx-velocity within box
+	PetscScalar Vy[_max_boxes_];         // Vy-velocity within box
+	PetscScalar Vz[_max_boxes_];         // Vz-velocity within box
+} ;
+
 //---------------------------------------------------------------------------
 
-PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb);
+PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb);       // obsolete
+PetscErrorCode VelBoxReadCreate(VelBox *velbox, Scaling *scal, FB *fb);
 
 //---------------------------------------------------------------------------
 
@@ -220,8 +241,11 @@ struct BCCtx
 	PetscInt 	 nblocks;             // number of Bezier blocks
 	BCBlock      blocks[_max_boxes_]; // BC block
 
-	// dropping boxes
+	// dropping boxes  [OBSOLETE]
 	DBox         dbox;
+
+    // internal velocity boxes
+    VelBox      velbox;
 
 	// velocity inflow & outflow boundary condition
 	PetscInt     face,face_out,num_phase_bc,phase[5];   	// face (1-left 2-right 3-front 4-back) & phase identifiers
@@ -335,8 +359,8 @@ PetscErrorCode BCApplyBezier(BCCtx *bc);
 // apply inflow/outflow boundary velocities
 PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 
-// apply dropping boxes
-PetscErrorCode BCApplyDBox(BCCtx *bc);
+// apply internal velocity boxes
+PetscErrorCode BCApplyVelBox(BCCtx *bc);
 
 // constraint all cells containing phase
 PetscErrorCode BCApplyPhase(BCCtx *bc);

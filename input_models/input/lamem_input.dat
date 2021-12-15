@@ -102,10 +102,10 @@
 # segment 2: [0.7 0.8), 4 cells,  uniform spacing
 # segment 3: [0.8 1.0], 2 cells,  increasing spacing  (sz.end/ sz.beg = 3.0)
 
-#	nseg_x  = 3
-#	nel_x   = 10 4 2
-#	coord_x = 0.0 0.7 0.8 1.0
-#	bias_x  = 0.3 1.0 3.0
+#   nseg_x  = 3
+#   nel_x   = 10 4 2
+#   coord_x = 0.0 0.7 0.8 1.0
+#   bias_x  = 0.3 1.0 3.0
 
 #===============================================================================
 # Free surface
@@ -181,15 +181,22 @@
         top   =  0.1                               # Polygon top coordinate
     <BCBlockEnd>
 
-# Dropping box
+# Internal velocity box(es)
 
-    dbox_num            =   1                                       # number of boxes
-    dbox_bounds         =   0.0 1.0 0.0 1.0 0.0 1.0                 # box bounds (left, right, front, back, bottom, top)
-    dbox_VelocityType   =   Vx                                      # Vx, Vy, or Vz
-    dbox_vel            =   -1.0                                    # Value of velocity
-    dbox_advect         =   1                                       # advect the box or keep it fixed?
-
+    VelBox_num      =   2                       # The number of internal velocity boxes active
+    VelBox_cenX     =   1.0  2.0                # X-coordinate of center of box
+    VelBox_cenY     =   1.0  2.0                # Y-coordinate of center of box
+    VelBox_cenZ     =   1.0  2.0                # Z-coordinate of center of box
+    VelBox_widthX   =   1.0  1.0                # Width of box in x-direction
+    VelBox_widthY   =   2.0  2.0                # Width of box in y-direction
+    VelBox_widthZ   =   0.1  0.1                # Width of box in z-direction
+    VelBox_Vx       =   1.0 -2.0                # Vx velocity of box (employ NaN if you don't want to constrain it)
+    VelBox_Vy       =   NaN  NaN                # Vy velocity of box 
+    VelBox_Vz       =   NaN  NaN                # Vz velocity of box 
+    VelBox_Advect   =   0    0                  # Advect the box with the flow?     
+    
 # Inflow velocity boundary condition
+
     bvel_face                 =         Left                         # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
     bvel_face_out             =         1                            # do we have outflow @ opposite boundary?
     bvel_bot                  =        -20.0                         # bottom coordinate of inflow window
@@ -340,7 +347,6 @@
 #===============================================================================
 # Model setup & advection
 #===============================================================================
-
     msetup          = geom              # setup type
     nmark_x         = 2                 # markers per cell in x-direction
     nmark_y         = 2                 # ...                 y-direction
@@ -566,12 +572,12 @@
 # Define softening laws (maximum 10)
 
     <SofteningStart>
-        ID   		= 0   	# softening law ID
-        APS1 		= 0.1 	# begin of softening APS
-        APS2 		= 1.0 	# end of softening APS
-        A    		= 0.7 	# reduction ratio
-        Lm   		= 0.2 	# material length scale (in selected units, e.g. km in geo)
-        healTau		= 1e-3  # healing parameter [Myr]  
+        ID          =   0       # softening law ID
+        APS1        =   0.1     # begin of softening APS
+        APS2        =   1.0     # end of softening APS
+        A           =   0.7     # reduction ratio
+        Lm          =   0.2     # material length scale (in selected units, e.g. km in geo)
+        healTau     =   1e-3    # healing parameter [Myr]  
     <SofteningEnd>
     
 # Define Phase Transition laws (maximum 10)
@@ -635,9 +641,9 @@
         PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
         PTBox_cstTemp           =   1200                            # Temp within box [only for constant T]
 
-    v_box			=   0.2				    # [optional] only for NotInAirBox, velocity with which box moves in cm/yr  
-    t0_box			=   0.002			    # [optional] beginning time of movemen in Myr
-    t1_box			=   0.1				    # [optional] end time of movement in Myr
+        v_box                   =   0.2                             # [optional] only for NotInAirBox, velocity with which box moves in cm/yr  
+        t0_box                  =   0.002                           # [optional] beginning time of movemen in Myr
+        t1_box                  =   0.1                             # [optional] end time of movement in Myr
     <PhaseTransitionEnd>
 
 # Define properties for the dike (additional source term/RHS in the continuity equation):
@@ -652,21 +658,20 @@
 
     <DikeStart>
         ID = 1
-                Mf = 0.7
-                Mb = 0.7
+        Mf = 0.7
+        Mb = 0.7
         PhaseID = 3
-        <DikeEnd>
+    <DikeEnd>
 
 # Define material properties for all phases (maximum 32)
 # By default all rheological mechanisms are deactivated
 # List only active parameters in the material data block
 
-        <MaterialStart>
-                ID        = 0
-                rho       = 1e2
-                eta       = 1e18
-        <MaterialEnd>
-
+    <MaterialStart>
+        ID        = 0
+        rho       = 1e2
+        eta       = 1e18
+    <MaterialEnd>
 
     <MaterialStart>
         ID         = 1      # material phase ID
@@ -735,7 +740,7 @@
     Adjoint_FieldSensitivity            =   0                       # calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
     Adjoint_ScaleCostFunction           =   None                    # Scale cost function: [None=no; Mean=average values; Var=variance]
     Adjoint_PrintScalingLaws            =   1                       # Output scaling laws?
-    Adjoint_ScalingLawFilename          =   ScalingLaw_Test.dat		
+    Adjoint_ScalingLawFilename          =   ScalingLaw_Test.dat     
     Adjoint_ReferenceDensity            =   2800                    # Reference density 
     Adjoint_DII_ref                     =   1e-15                   # Reference strain rate (needed for sensitivity kernels & powerlaw viscosity)
     
@@ -799,33 +804,33 @@
 
 # Jacobian solver
 
-#	-js_ksp_type fgmres
-#	-js_ksp_max_it 1000
-#	-js_ksp_converged_reason
+#   -js_ksp_type fgmres
+#   -js_ksp_max_it 1000
+#   -js_ksp_converged_reason
      -js_ksp_monitor
     -js_ksp_rtol 1e-6
 
 # Preconditioner
 
-#	-pcmat_type block
-#	-pcmat_pgamma 1e3
-#	-jp_type bf
-#	-bf_vs_type user
-#	-vs_ksp_type preonly
-#	-vs_pc_type lu
-#	-vs_pc_factor_mat_solver_package mumps
+#   -pcmat_type block
+#   -pcmat_pgamma 1e3
+#   -jp_type bf
+#   -bf_vs_type user
+#   -vs_ksp_type preonly
+#   -vs_pc_type lu
+#   -vs_pc_factor_mat_solver_package mumps
 
-#	-pcmat_type block
-#	-pcmat_no_dev_proj
-#	-jp_type bf
-#	-bf_vs_type mg
-#	-vs_ksp_type preonly
+#   -pcmat_type block
+#   -pcmat_no_dev_proj
+#   -jp_type bf
+#   -bf_vs_type mg
+#   -vs_ksp_type preonly
 
     -pcmat_type mono
     -jp_type mg
 
-#	-gmg_pc_view
-#	-gmg_dump
+#   -gmg_pc_view
+#   -gmg_dump
     -gmg_pc_type mg
     -gmg_pc_mg_levels 4
     -gmg_pc_mg_galerkin
@@ -844,5 +849,4 @@
     -objects_dump
 
 <PetscOptionsEnd>
-
 #===============================================================================
