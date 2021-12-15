@@ -587,7 +587,7 @@
         Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
         Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coord, X=x-coord, Y=y-coord, APS = accumulated plastic strain, MeltFraction, t = time] parameter that triggers the phase transition
         ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z, APS]
-            number_phases           =   1         #     The number of involved phases [default=1]
+        number_phases           =   1         #     The number of involved phases [default=1]
         PhaseAbove              =   1         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
         PhaseBelow              =   3         #       
         PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
@@ -598,7 +598,7 @@
         ID                      =   1                           # Phase_transition law ID
         Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
         Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
-            number_phases           =   3
+        number_phases           =   3
         PhaseAbove              =   4 5 7
         PhaseBelow              =   1 2 3
     <PhaseTransitionEnd>
@@ -612,7 +612,7 @@
         
         number_phases           =   1
         PhaseInside             =   7                               # Phase within the box  [use -1 if you don't want to change the phase inside the box]
-        PhaseOutside            =   3                               # Phase outside the box [use -1 if you don't want to change the phase outside the box]
+        PhaseOutside            =   -1                              # Phase outside the box [use -1 if you don't want to change the phase outside the box. If combined with OutsideToInside, all phases that come in are set to PhaseInside]
         PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
 
         PTBox_TempType          =   linear                          # Temperature condition witin the box [none, constant, linear, halfspace]

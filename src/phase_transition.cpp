@@ -590,7 +590,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	SolVarCell  	*svCell;
 	Scaling      	*scal;
 
-		
     // Retrieve parameters
 	jr          =   actx->jr;
 	dbm         =   jr->dbm;
@@ -603,7 +602,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 	PrintStart(&t, "Phase_Transition", NULL);
 	
-
 	// loop over all local particles 		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
 	nPtr        =   0;
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
@@ -692,6 +690,14 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 							ph = P->phase;				// do not change the phase
 						}
 					}
+
+					if ((PhaseTrans->PhaseOutside[0]<0) & (PhaseTrans->PhaseDirection==2)){ 	
+						// PhaseOutside is set to -1 and OutsideToInside is selected, in which case we 
+						// set everything inside the box to a constant phase (specified in PhaseInside)
+						ph = PhaseTrans->PhaseInside[0];
+						P->phase = ph;
+					}
+					
 				}
 
                 if (PhaseTrans->PhaseDirection==0){
