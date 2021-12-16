@@ -148,8 +148,11 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
 	if ( ph->Type == _Box_ || ph->Type == _NotInAirBox_){
-		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+		
+		ph->PhaseOutside[0] = -1;	// default
+		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
+		
 	}
 	else{
 		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
@@ -187,10 +190,12 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	if (ph->Type == _Box_ || ph->Type == _NotInAirBox_){
 		
 		if (ph->number_phases>0){
-			PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
-			for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseOutside[i])); }
-			PetscPrintf(PETSC_COMM_WORLD," \n");
-
+			
+			if (ph->PhaseOutside[0]>=0){
+				PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
+				for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseOutside[i])); }
+				PetscPrintf(PETSC_COMM_WORLD," \n");
+			}
 			PetscPrintf(PETSC_COMM_WORLD,"     Phase Inside       :  ");
 			for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %d ", (LLD)(ph->PhaseInside[i])); }
 			PetscPrintf(PETSC_COMM_WORLD," \n");
@@ -691,13 +696,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 						}
 					}
 
-					if ((PhaseTrans->PhaseOutside[0]<0) & (PhaseTrans->PhaseDirection==2)){ 	
-						// PhaseOutside is set to -1 and OutsideToInside is selected, in which case we 
-						// set everything inside the box to a constant phase (specified in PhaseInside)
-						ph = PhaseTrans->PhaseInside[0];
-						P->phase = ph;
-					}
-					
+				
 				}
 
                 if (PhaseTrans->PhaseDirection==0){
@@ -728,6 +727,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 							P->APS = 0.0;
 						}
 					}
+
+
 				}
 			}
 			else{
@@ -740,9 +741,19 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					if (PhaseTrans->PhaseInside[0]<0){ 
 						ph 		= P->phase;				// do not change the phase
 					}
+					
+					if ((PhaseTrans->PhaseOutside[0]<0) & (PhaseTrans->PhaseDirection==2) & (InsideAbove==1)){ 	
+						// PhaseOutside is set to -1 and OutsideToInside is selected, in which case we 
+						// set everything inside the box to a constant phase (specified in PhaseInside)
+						ph = PhaseTrans->PhaseInside[0];
+						P->phase = ph;
+					}
+					
 					P->T 	= T;	// set T
 				}
 			}
+
+
 		}
 
 	}
