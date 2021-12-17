@@ -91,7 +91,7 @@ enum Weakening_Type
 };
 
 
-struct Viscous_Damage
+struct Viscous_Weak
 {
 public:
 
@@ -103,6 +103,19 @@ public:
 	PetscScalar WDR;                // reduction ratio
 	// Place Holder Hyperbolic// Logistic weakening function
 	// Place Holder Grain Size weakening
+};
+
+struct Damage_Work_CE
+{
+	public:
+	PetscInt ID;
+	PetscInt Healing;
+	PetscScalar D_ref;
+	PetscScalar DW_ref;
+	PetscScalar T_ref;
+	PetscScalar Q_H;
+	PetscScalar nH;
+	PetscScalar H_0;
 };
 
 //---------------------------------------------------------------------------
@@ -282,14 +295,15 @@ struct DBMat
 	Scaling *scal;
 
 	// phase parameters
-	PetscInt       numPhases;                // number phases
-	Material_t     phases[_max_num_phases_]; // phase parameters
-	PetscInt       numSoft;                  // number material softening laws
-	PetscInt       numViW;                   // number material viscous softening law
-	Soft_t         matSoft[_max_num_soft_];  // material softening law parameters
-	Viscous_Damage matVisD[_max_vis_damage_];  // material softening law parameters
-	Ph_trans_t     matPhtr[_max_num_tr_];   // phase transition properties
-	PetscInt       numPhtr;                // number phase transitions
+	PetscInt          numPhases;                // number phases
+	Material_t        phases[_max_num_phases_]; // phase parameters
+	PetscInt          numSoft;                  // number material softening laws
+	PetscInt          numViW;                   // number material viscous softening law
+	Soft_t            matSoft[_max_num_soft_];  // material softening law parameters
+	Viscous_Weak      matVisD[_max_vis_damage_];  // material softening law parameters
+	Ph_trans_t        matPhtr[_max_num_tr_];   // phase transition properties
+	PetscInt          numPhtr;                // number phase transitions
+	Damage_Work_CE    matDWE;                 // equations that relates the work rate to damage rate
 };
 
 // read material database
@@ -301,8 +315,11 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 // read single viscous softening law
 PetscErrorCode DBMatReadVisSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
+PetscErrorCode DBMreadDamage_Work_CE(DBMat *dbm, FB *fb, PetscBool PrintOutput);
+
 // read single material phase
 PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput);
+
 
 // print single material parameter
 void MatPrintScalParam(

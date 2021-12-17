@@ -76,6 +76,8 @@ struct SolVarDev
 	PetscScalar  DW_perl;// Deformational work rate, in the material due to the peirl creep
 	PetscScalar  DW_plas;// Deformational work rate in the material due to the plastic creep;
 	PetscScalar  DW_cum ;// Cumulative deformational work stored in the material during the whole simulation (j)
+	PetscScalar  D_pot; // Potential damage during the whole simulation
+	PetscScalar  D_eff; // Effective Damage
 
 };
 

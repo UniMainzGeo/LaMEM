@@ -148,7 +148,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 	Material_t  *mat;
 	Soft_t      *soft;
-	Viscous_Damage *v_d;
+	Viscous_Weak *v_d;
 	Controls    *ctrl;
 	PData       *Pd;
 	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
@@ -177,9 +177,9 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	dis_w= 1.0;
 	per_w = 1.0;
 
-	dif_w = ComputeViscousDamage(v_d, mat->DiffWID, DW_cum);
-	dis_w = ComputeViscousDamage(v_d, mat->DislWID, DW_cum);
-	per_w = ComputeViscousDamage(v_d, mat->PeirWID, DW_cum);
+	dif_w = ComputeViscousWeakening(v_d, mat->DiffWID, DW_cum);
+	dis_w = ComputeViscousWeakening(v_d, mat->DislWID, DW_cum);
+	per_w = ComputeViscousWeakening(v_d, mat->PeirWID, DW_cum);
 
 
 
@@ -1145,20 +1145,22 @@ PetscErrorCode setDataPhaseDiagram(
 
 	PetscFunctionReturn(0);
 }
-PetscScalar ComputeViscousDamage(
-		Viscous_Damage *v_d, // material softening laws
+//-------------------------------------------------------------------------------------------------------------------------//
+PetscScalar ComputeViscousWeakening(
+		Viscous_Weak *v_d, // material softening laws
 		PetscInt     ID,   // softening law ID
 		PetscScalar  DW_cum) // accumulated deformational work
 {
 		PetscScalar          k;  // dt
-		PetscScalar          WDR, ADVW1, ADVW2;
-		Viscous_Damage      *vd;
+		PetscScalar          WDR, ADVW1, ADVW2, W;
+		Viscous_Weak      *vd;
 
 		// check whether softening is defined
 		if(ID == -1) return 1.0;
 
 		// access parameters
 		vd    = v_d + ID;
+		W = 1;
 
 		if(vd->Weakening_type == _sLog_Linear_)
 		{
@@ -1174,7 +1176,7 @@ PetscScalar ComputeViscousDamage(
 			if(DW_cum >= ADVW2)               k = 0.0 + WDR;
 
 		// apply strain softening
-			return pow(10.0,k);
+			W = pow(10.0,k);
 		}
 
 		if (vd->Weakening_type == _Linear_)
@@ -1189,7 +1191,13 @@ PetscScalar ComputeViscousDamage(
 			if(DW_cum >= ADVW2)               k = 0.0 + WDR;
 
 					// apply strain softening
-			return 1/(1-k);
+			W = 1/(1-k);
 
 		}
+
+		return W;
+
+
 }
+//-----------------------Work-Damage--------------------------------------------------------------------------------//
+

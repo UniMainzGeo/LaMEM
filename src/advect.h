@@ -70,6 +70,8 @@ struct Marker
 	PetscScalar APS;   // accumulated plastic strain
 	PetscScalar ATS;   // accumulated total strain
 	PetscScalar defW;  // accumulated deformational work
+	PetscScalar D   ;  // effective damage;
+	PetscScalar D_pot; // potential damage;
 	Tensor2RS   S;     // deviatoric stress
 	PetscScalar U[3];  // displacement
 
@@ -320,5 +322,6 @@ PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart);
 // add adiabatic gradient to the current temperature distribution
 PetscErrorCode ADVMarkerAdiabatic(AdvCtx *actx);
 
+PetscErrorCode ADVUpdateDamage(AdvCtx *actx, Marker *P, PetscScalar dt, PetscScalar WR);
 //---------------------------------------------------------------------------
 #endif

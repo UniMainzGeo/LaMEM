@@ -50,7 +50,7 @@
 
 struct Material_t;
 struct Soft_t;
-struct Viscous_Damage;
+struct Viscous_Weak;
 struct Controls;
 struct SolVarDev;
 struct SolVarBulk;
@@ -73,7 +73,7 @@ struct ConstEqCtx
 	PetscInt        numPhases; 	// number phases
 	Material_t      *phases;    	// phase parameters
 	Soft_t          *soft;      	// material softening laws
-	Viscous_Damage  *v_d;       // viscous damage laws
+	Viscous_Weak  *v_d;       // viscous damage laws
 	Ph_trans_t  *PhaseTrans;    // Phase transition laws
 	DBMat       *dbm;
 	DBPropDike  *dbdike;
@@ -158,8 +158,8 @@ PetscScalar applyStrainSoft(
 		PetscScalar  par); // softening parameter
 
 // compute the weakening factor for the diffusion/dislocation/peilrs creep
-PetscScalar ComputeViscousDamage(
-		Viscous_Damage *v_d, // material softening laws
+PetscScalar ComputeViscousWeakening(
+		Viscous_Weak *v_d, // material softening laws
 		PetscInt     ID,   // softening law ID
 		PetscScalar  DW_cum);
 

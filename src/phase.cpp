@@ -104,10 +104,10 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 	//====================
-	// VISCOUS DAMAGE LAW
+	// VISCOUS WEAK LAW
 	//====================
 	// setup block access mode
-		ierr = FBFindBlocks(fb, _OPTIONAL_, "<ViscousDamageStart>", "<ViscousDamageEnd>"); CHKERRQ(ierr);
+		ierr = FBFindBlocks(fb, _OPTIONAL_, "<ViscousWeakStart>", "<ViscousWeakEnd>"); CHKERRQ(ierr);
 
 		if(fb->nblocks)
 		{
@@ -141,7 +141,34 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 		ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
+		//====================
+		// VISCOUS WEAK LAW
+		//====================
+		// setup block access mode
+			ierr = FBFindBlocks(fb, _OPTIONAL_, "<Work_Damage_CEStart>", "<Work_Damage_CEEnd>"); CHKERRQ(ierr);
 
+			if(fb->nblocks)
+			{
+					// print overview of softening laws from file
+					if (PrintOutput){
+						PetscPrintf(PETSC_COMM_WORLD,"Damage and work rate constitution equation \n");
+					}
+					// initialize ID for consistency checks
+
+
+					if (PrintOutput){
+						PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+					}
+					// read each individual softening law
+					for(jj = 0; jj < fb->nblocks; jj++)
+					{
+						ierr = DBMreadDamage_Work_CE(dbm, fb, PrintOutput); CHKERRQ(ierr);
+
+						fb->blockID++;
+					}
+				}
+
+				ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 
 
@@ -305,6 +332,58 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	PetscFunctionReturn(0);
 }
+//------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DBMreadDamage_Work_CE"
+PetscErrorCode DBMreadDamage_Work_CE(DBMat *dbm, FB *fb, PetscBool PrintOutput)
+{
+	// read softening law from file
+	Scaling          *scal ;
+	Damage_Work_CE    *DW_CE  ;
+	PetscInt         ID    ;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+/*
+ * ID = ID
+ * D_ref = D_ref
+ * DW_Ref = DW_ref
+ * Healing = Healing
+ * T_ref = T_ref
+ * Q     = Q_H
+ * n_He  = n_exp
+ * H0     = B
+ */
+	scal =  dbm->scal;
+	DW_CE = &dbm->matDWE;
+
+	ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, 0); CHKERRQ(ierr);
+
+
+	fb->ID  = ID;
+	DW_CE->ID = ID;
+	DW_CE-> Healing = 0;
+	// get pointer to specified softening law
+	ierr = getScalarParam(fb, _REQUIRED_, "D_Ref",     &DW_CE->D_ref,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "DW_Ref",    &DW_CE->DW_ref,       1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "Healing",      &DW_CE->Healing,      1, 1.0); CHKERRQ(ierr);
+
+	DW_CE->DW_ref/= scal->deformation_work;
+
+	if(DW_CE->Healing == 1)
+	{
+		ierr = getScalarParam(fb, _REQUIRED_, "Ref_Heal",     &DW_CE->H_0,        1, 1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "T_ref_Hel",    &DW_CE->T_ref,        1, 1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "Heal_exp",     &DW_CE->nH,        1, 1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb,_REQUIRED_, "E_heal",        &DW_CE->Q_H,        1,  1.0);CHKERRQ(ierr);
+
+		DW_CE->H_0 /=		scal->strain_rate;
+		DW_CE->T_ref = (DW_CE->T_ref+scal->Tshift)/scal->temperature;
+	}
+
+	PetscFunctionReturn(0);
+
+}
 //---------------------------------------------------------------------------
 // read Viscous softening law
 #undef __FUNCT__
@@ -313,8 +392,9 @@ PetscErrorCode DBMatReadVisSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read softening law from file
 	Scaling          *scal ;
-	Viscous_Damage   *v_d  ;
+	Viscous_Weak   *v_d  ;
 	PetscInt         ID    ;
+
     char            Type_[_str_len_];
 
 	PetscErrorCode ierr;
@@ -322,6 +402,7 @@ PetscErrorCode DBMatReadVisSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// access context
 	scal = dbm->scal;
+
 
 		// softening law ID
 	ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numViW-1); CHKERRQ(ierr);

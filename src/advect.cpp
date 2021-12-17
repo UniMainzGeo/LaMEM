@@ -101,6 +101,9 @@ PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 	C.U[1]  = (A.U[1] + B.U[1])/2.0;
 	C.U[2]  = (A.U[2] + B.U[2])/2.0;
 	C.defW  = (A.defW + B.defW)/2.0;
+	C.D     = (A.D+B.D)/2.0;
+	C.D_pot = (A.D_pot+B.D_pot)/2.0;
+
 
 	PetscFunctionReturn(0);
 }
@@ -716,9 +719,8 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	PetscInt     nx, ny, sx, sy, sz;
 	PetscInt     jj, ID, I, J, K, II, JJ, KK;
 	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
-
 	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, d, dt;
-
+	PetscScalar WR;
 	PetscInt     healID, phase_ID;
 	  
 	PetscErrorCode ierr;
@@ -876,7 +878,17 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		}
 		else if(icase == _DW_)
 		{
+
 			P->defW +=dt*(svCell->svDev.DW + UPXY + UPXZ + UPYZ);
+			// Update total potential damage and effective damage
+			// function
+			// return healing rate, and damage rate
+			// damage rate update the
+			WR = (svCell->svDev.DW + UPXY + UPXZ + UPYZ);
+			ierr = ADVUpdateDamage(actx, P, dt,WR); CHKERRQ(ierr);
+
+
+
 		}
 	}
 
@@ -2224,7 +2236,61 @@ PetscErrorCode ADVMarkerAdiabatic(AdvCtx *actx)
 		P->T+=dT;
 	}
 	PetscFunctionReturn(0);
-
-
-
 }
+//===========================Compute the damage and the healing term
+#undef __FUNCT__
+#define __FUNCT__ "ADVUpdateDamage"
+PetscErrorCode ADVUpdateDamage(AdvCtx *actx, Marker *P, PetscScalar dt, PetscScalar WR)
+{
+	Damage_Work_CE *dme;
+	PetscScalar dDdt_p;
+	PetscScalar W_crit,D_crit;
+	PetscScalar H0,Q,R,T0,T,dHdt,n,preH;
+
+	/*
+	 * Place holder:
+	 * structure of the function
+	 * send Marker
+	 * check the phase
+	 * extract the damage constitutive law (for now, only linear)
+	 * check which deformational work rate-damage law the user wants for this phase
+	 * compute dD/dt (potential damage rate)
+	 * compute dH/dt (healing rate)
+	 * Update:
+	 * a) P->D_pot +=(dD/dt)*dt
+	 * b) P->D_eff +=((dD/dt)-dH/dt)*dt
+	 */
+	//Compute potential damage work
+	dme = &actx->dbm->matDWE;
+	// PH if(dme->Type == _Linear_)
+	// do that and that
+	// so forth, for now, it is only linear
+	// Damage rate
+	//
+	//dD/dt = (Psi_rate/Psi_crit)*D_crit;
+	//
+	//H(T) = (D/D_crit)^n*exp(-Q/R(1/T-1/T0))
+	W_crit = dme ->DW_ref;
+	D_crit = dme ->D_ref;
+	T0     = dme->T_ref;
+	Q      = dme->Q_H;
+	H0     = dme->H_0;
+	n      = dme->nH;
+	T      = P->T;
+	R      = actx->jr->ctrl.Rugc;
+	preH = pow((P->D/D_crit),n);
+
+
+
+	dDdt_p = (WR/W_crit)*D_crit;
+	dHdt   = preH*H0*exp(-(Q/R)*(1/T-1/T0));
+
+
+
+	// Update Damage
+	P->D_pot += dDdt_p*dt;
+	P->D     += (dDdt_p-dHdt)*dt;
+
+	PetscFunctionReturn(0);
+}
+
