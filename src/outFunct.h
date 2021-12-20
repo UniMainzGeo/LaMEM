@@ -123,6 +123,8 @@ PetscErrorCode PVOutWriteDif_Rate_W(OutVec* outvec);
 PetscErrorCode PVOutWriteDis_Rate_W(OutVec* outvec);
 PetscErrorCode PVOutWritePrl_Rate_W(OutVec* outvec);
 PetscErrorCode PVOutWritePl_Rate_W(OutVec* outvec);
+PetscErrorCode PVOutWriteDam_pot(OutVec* outvec);
+PetscErrorCode PVOutWriteDam_eff(OutVec* outvec);
 
 // ... add more output functions here
 

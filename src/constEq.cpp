@@ -153,7 +153,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	PData       *Pd;
 	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
-	PetscScalar  dif_w, dis_w, per_w,DW_cum;
+	PetscScalar  dif_w, dis_w, per_w,DAM;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -172,14 +172,14 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	p_pore = ctx->p_pore;
 	T      = ctx->T;
 	mf     = 0.0;
-	DW_cum = ctx->svDev->DW_cum;
+	DAM = ctx->svDev->D_eff;
 	dif_w = 1.0;
 	dis_w= 1.0;
 	per_w = 1.0;
 
-	dif_w = ComputeViscousWeakening(v_d, mat->DiffWID, DW_cum);
-	dis_w = ComputeViscousWeakening(v_d, mat->DislWID, DW_cum);
-	per_w = ComputeViscousWeakening(v_d, mat->PeirWID, DW_cum);
+	dif_w = ComputeViscousWeakening(v_d, mat->DiffWID, DAM);
+	dis_w = ComputeViscousWeakening(v_d, mat->DislWID, DAM);
+	per_w = ComputeViscousWeakening(v_d, mat->PeirWID, DAM);
 
 
 
@@ -1149,7 +1149,7 @@ PetscErrorCode setDataPhaseDiagram(
 PetscScalar ComputeViscousWeakening(
 		Viscous_Weak *v_d, // material softening laws
 		PetscInt     ID,   // softening law ID
-		PetscScalar  DW_cum) // accumulated deformational work
+		PetscScalar  DAM) // accumulated deformational work
 {
 		PetscScalar          k;  // dt
 		PetscScalar          WDR, ADVW1, ADVW2, W;
@@ -1171,9 +1171,9 @@ PetscScalar ComputeViscousWeakening(
 
 
 		// compute scaling ratio
-			if(DW_cum <= ADVW1)               k = 0.0;
-			if(DW_cum >  ADVW1 && DW_cum < ADVW2) k = 0.0 + WDR*((DW_cum - ADVW1)/(ADVW2 - ADVW1));
-			if(DW_cum >= ADVW2)               k = 0.0 + WDR;
+			if(DAM <= ADVW1)               k = 0.0;
+			if(DAM >  ADVW1 && DAM < ADVW2) k = 0.0 + WDR*((DAM - ADVW1)/(ADVW2 - ADVW1));
+			if(DAM >= ADVW2)               k = 0.0 + WDR;
 
 		// apply strain softening
 			W = pow(10.0,k);
@@ -1186,9 +1186,9 @@ PetscScalar ComputeViscousWeakening(
 			ADVW2  = vd->ADVW2;
 			WDR   = vd->WDR;
 
-			if(DW_cum <= ADVW1)               k = 0.0;
-			if(DW_cum >  ADVW1 && DW_cum < ADVW2) k = 0.0 + WDR*((DW_cum - ADVW1)/(ADVW2 - ADVW1));
-			if(DW_cum >= ADVW2)               k = 0.0 + WDR;
+			if(DAM <= ADVW1)               k = 0.0;
+			if(DAM >  ADVW1 && DAM < ADVW2) k = 0.0 + WDR*((DAM - ADVW1)/(ADVW2 - ADVW1));
+			if(DAM >= ADVW2)               k = 0.0 + WDR;
 
 					// apply strain softening
 			W = 1/(1-k);

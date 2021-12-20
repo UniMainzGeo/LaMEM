@@ -577,9 +577,6 @@
 		ADVW1           = 0.0
 		ADVW2           = 2000 #(Joule, need to discuss within which range we should do)
 		VDR            = 0.9  # Ratio at which the viscous properties is reduced
-		##########
-		#Place Holder Logistic/hyperbolic tangent grain size parameter 
-		##########
 	<ViscousDamageEnd>
 	
 # Define Phase Transition laws (maximum 10)

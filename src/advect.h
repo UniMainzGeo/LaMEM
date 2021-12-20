@@ -104,7 +104,9 @@ enum InterpCase
 	_ATS_,       // accumulated total strain
 	_VORTICITY_, // vorticity pseudo-vector components
 	_DISP_,      // displacement
-	_DW_         // deformational work (i.e. (1-X)*shear_heating)*dt)
+	_DW_,         // deformational work (i.e. (1-X)*shear_heating)*dt)
+	_D_Eff_,         // Damage
+	_D_Pot_
 };
 
 //-----------------------------------------------------------------------------

@@ -1148,3 +1148,76 @@ PetscErrorCode PVOutWritePl_Rate_W(OutVec* outvec)
 
 	PetscFunctionReturn(0);
 }
+//--------------------------------------------------------------//
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteDam_eff"
+PetscErrorCode PVOutWriteDam_eff(OutVec* outvec)
+{
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	PetscScalar D;
+
+	COPY_FUNCTION_HEADER
+
+	// macros to copy shear heating  to buffer
+	#define GET_DAM_EFF \
+		svCell = &jr->svCell[iter++];  \
+		D = svCell->svDev.D_eff; \
+		buff[k][j][i] = D;
+
+	#define GET_DAM_EFF_XY_EDGE svEdge = &jr->svXYEdge[iter++]; D = svEdge->svDev.D_eff; buff[k][j][i] = D;
+	#define GET_DAM_EFF_YZ_EDGE svEdge = &jr->svYZEdge[iter++]; D = svEdge->svDev.D_eff; buff[k][j][i] = D;
+	#define GET_DAM_EFF_XZ_EDGE svEdge = &jr->svXZEdge[iter++]; D = svEdge->svDev.D_eff; buff[k][j][i] = D;
+
+	cf = 1.0;
+
+	iflag.update = 1;
+
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DAM_EFF,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DAM_EFF_XY_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DAM_EFF_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DAM_EFF_XZ_EDGE, 1, 0)
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+////------------------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteDam_pot"
+PetscErrorCode PVOutWriteDam_pot(OutVec* outvec)
+{
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	PetscScalar D;
+
+	COPY_FUNCTION_HEADER
+
+	// macros to copy shear heating  to buffer
+	#define GET_DAM_POT \
+		svCell = &jr->svCell[iter++];  \
+		D = svCell->svDev.D_pot; \
+		buff[k][j][i] = D;
+
+	#define GET_DAM_POT_XY_EDGE svEdge = &jr->svXYEdge[iter++]; D = svEdge->svDev.D_pot; buff[k][j][i] = D;
+	#define GET_DAM_POT_YZ_EDGE svEdge = &jr->svYZEdge[iter++]; D = svEdge->svDev.D_pot; buff[k][j][i] = D;
+	#define GET_DAM_POT_XZ_EDGE svEdge = &jr->svXZEdge[iter++]; D = svEdge->svDev.D_pot; buff[k][j][i] = D;
+
+	cf = 1.0;
+
+	iflag.update = 1;
+
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DAM_POT,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DAM_POT_XY_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DAM_POT_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DAM_POT_XZ_EDGE, 1, 0)
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}

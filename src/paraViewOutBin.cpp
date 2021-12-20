@@ -337,6 +337,8 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->RW_Dis)         cnt++;// Rate of irreversible work due to Dislocation
 	if(omask->RW_Prl)         cnt++;// Rate of irreversible work due to Peirls creep
 	if(omask->RW_Pl )         cnt++;// Rate of irreversible work due to Plastic creep
+	if(omask->Dam_eff)         cnt++;// Rate of irreversible work due to Peirls creep
+	if(omask->Dam_pot )         cnt++;// Rate of irreversible work due to Plastic creep
 
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     cnt++; // momentum residual
@@ -420,6 +422,9 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_Def_ratDif_Work",&omask->RW_Dif,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_Def_ratPrl_Work",&omask->RW_Prl,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_Def_ratPl_Work", &omask->RW_Pl,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Dam_pot",        &omask->Dam_pot,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Dam_eff",        &omask->Dam_eff,          1, 1); CHKERRQ(ierr);
+
 
 
 	// read phase aggregates
@@ -494,6 +499,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
 	if(omask->vel_gr_tensor)  PetscPrintf(PETSC_COMM_WORLD, "   Velocity Gradient Tensor                @ \n");
 	if(omask->Def_Work)       PetscPrintf(PETSC_COMM_WORLD, "   Total deformational Work                @ \n");
+	if(omask->Dam_pot)       PetscPrintf(PETSC_COMM_WORLD, "   Total potential Damage                @ \n");
+	if(omask->Dam_eff)       PetscPrintf(PETSC_COMM_WORLD, "   Total effective Damage                @ \n");
 
 
 	for(i = 0; i < omask->num_agg; i++)
@@ -583,6 +590,8 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->RW_Dis)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Work_rate Dis",    scal->lbl_dissipation_rate,      &PVOutWriteDis_Rate_W,   1, NULL);
 	if(omask->RW_Prl)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Work_rate Prl",    scal->lbl_dissipation_rate,      &PVOutWritePrl_Rate_W,   1, NULL);
 	if(omask->RW_Pl )       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Work_rate Pl",     scal->lbl_dissipation_rate,      &PVOutWritePl_Rate_W,   1, NULL);
+	if(omask->Dam_pot )       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Potential_Damage",     scal->lbl_unit,      &PVOutWriteDam_pot,   1, NULL);
+	if(omask->Dam_eff )       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Effective_Damage",     scal->lbl_unit,      &PVOutWriteDam_eff,   1, NULL);
 
 	// === debugging vectors ===============================================
 	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1, NULL);

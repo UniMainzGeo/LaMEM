@@ -1851,6 +1851,8 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->svBulk.Tn  = 0.0;
 		svCell->svDev.APS  = 0.0;
 		svCell->svDev.DW_cum = 0.0;
+		svCell->svDev.D_pot = 0.0;
+		svCell->svDev.D_eff = 0.0;
 		svCell->ATS        = 0.0;
 		svCell->hxx        = 0.0;
 		svCell->hyy        = 0.0;
@@ -1896,6 +1898,8 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->svBulk.Tn    += w*P->T;
 		svCell->svDev.APS    += w*P->APS;
 		svCell->svDev.DW_cum += w*P->defW;
+		svCell->svDev.D_eff  += w*P->D  ;
+		svCell->svDev.D_pot += w*P->D_pot;
 		svCell->ATS          += w*P->ATS;
 		svCell->hxx          += w*P->S.xx;
 		svCell->hyy          += w*P->S.yy;
@@ -1920,6 +1924,8 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->svBulk.Tn /= w;
 		svCell->svDev.APS /= w;
 		svCell->svDev.DW_cum /= w;
+		svCell->svDev.D_eff  /= w  ;
+		svCell->svDev.D_pot /= w;
 		svCell->ATS       /= w;
 		svCell->hxx       /= w;
 		svCell->hyy       /= w;
@@ -2014,6 +2020,9 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		if      (icase == _STRESS_) { UPXY = P->S.xy; UPXZ = P->S.xz; UPYZ = P->S.yz; }
 		else if (icase == _APS_)    { UPXY = P->APS;  UPXZ = P->APS;  UPYZ = P->APS;  }
 		else if (icase == _DW_)     { UPXY = P->defW;  UPXZ = P->defW;  UPYZ = P->defW;  }
+		else if (icase ==_D_Eff_)     { UPXY = P->D;  UPXZ = P->D;  UPYZ = P->D;  }
+		else if (icase == _D_Pot_)     { UPXY = P->D_pot;  UPXZ = P->D_pot;  UPYZ = P->D_pot;  }
+
 
 		// update required fields from marker to edge nodes
 		lxy[sz+K ][sy+JJ][sx+II] += wxn*wyn*wzc*UPXY;
@@ -2055,6 +2064,25 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.APS = gxz[jj]/jr->svXZEdge[jj].ws;
 		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.APS = gyz[jj]/jr->svYZEdge[jj].ws;
 	}
+	else if(icase == _DW_)
+		{
+			for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.DW_cum = gxy[jj]/jr->svXYEdge[jj].ws;
+			for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.DW_cum = gxz[jj]/jr->svXZEdge[jj].ws;
+			for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.DW_cum = gyz[jj]/jr->svYZEdge[jj].ws;
+		}
+	else if(icase == _D_Eff_)
+		{
+			for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.D_eff = gxy[jj]/jr->svXYEdge[jj].ws;
+			for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.D_eff = gxz[jj]/jr->svXZEdge[jj].ws;
+			for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.D_eff = gyz[jj]/jr->svYZEdge[jj].ws;
+		}
+
+	else if(icase == _D_Pot_)
+			{
+				for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.D_pot = gxy[jj]/jr->svXYEdge[jj].ws;
+				for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.D_pot = gxz[jj]/jr->svXZEdge[jj].ws;
+				for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.D_pot = gyz[jj]/jr->svYZEdge[jj].ws;
+			}
 
 	// restore access
 	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr);

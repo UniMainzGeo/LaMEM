@@ -169,6 +169,8 @@ struct OutMask
 	PetscInt RW_Dis;
 	PetscInt RW_Prl;
 	PetscInt RW_Pl;
+	PetscInt Dam_pot;
+	PetscInt Dam_eff;
 
 	// phase aggregates
 	PetscInt num_agg;                                              // number of phase aggregates
