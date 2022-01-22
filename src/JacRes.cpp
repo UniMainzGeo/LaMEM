@@ -113,6 +113,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "steady_temp_t",   &ctrl->steadyTempStep, 1, 1.0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_steady",    &ctrl->steadyNumStep,  1, 0);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_heat_rech",   &ctrl->actHeatRech,    1, 2.0);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",     &ctrl->pShiftAct,      1, 1);   			CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_lith_pres",  &ctrl->initLithPres,   1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",      &ctrl->initGuess,      1, 1);              CHKERRQ(ierr);

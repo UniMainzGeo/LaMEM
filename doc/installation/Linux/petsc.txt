@@ -14,8 +14,9 @@ Download paraview binaries instead (see etc.txt)
 You need to apt purge all MPI installations (if you have any)
 
 sudo apt update
-sudo apt install build-essential gfortran python-numpy
-sudo apt install bison flex cmake git valgrind
+sudo apt install build-essential gfortran python-is-python3 python-numpy
+sudo apt install bison flex cmake git-all valgrind
+sudo apt-get install libtool libtool-bin
 
 ------------------------------------------------------------------
 ENVIRONMENT (This step is necessary for system-wide setting)
@@ -52,7 +53,8 @@ FC=gfortran \
 --enable-cxx \
 --enable-g=none \
 --enable-fast=O2 \
---with-pm=hydra
+--with-pm=hydra \
+--with-device=ch3
 
 make
 
@@ -85,15 +87,22 @@ BLAS/LAPACK on AMD Ryzen
 Download single-threaded packages AMD BLIS and AMD libFLAME 
 (https://developer.amd.com/amd-cpu-libraries/blas-library/)
 
-Unpack and copy to e.g. /opt/amd/
+Unpack and copy the files libblis.a and libflame.a to /opt/amd/
+
+For 32-bit integer installation take the files from lib/lp64 directory
+For 64-bit integer installation take the files from lib/ilp64 directory
 
 Install optimized PETSc with these options:
 
---with-blas-lib=/opt/amd/amd-blis/lib/libblis.a \
---with-lapack-lib=/opt/amd/amd-libflame/lib/libflame.a \
+--with-blas-lib=/opt/amd/libblis.a \
+--with-lapack-lib=/opt/amd/libflame.a \
 --COPTFLAGS="-O3 -march=znver1" \
 --FOPTFLAGS="-O3 -march=znver1" \
 --CXXOPTFLAGS="-O3 -march=znver1" \
+
+Depending on gcc version and processor generation use different architecture options:
+
+znver3, znver2
 
 ------------------------------------------------------------------
 PETSC DEBUG (for development, debugging and valgind runs)

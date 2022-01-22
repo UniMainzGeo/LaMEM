@@ -112,6 +112,7 @@ struct SolVarCell
 	PetscScalar  DIIdif;        // relative diffusion creep strain rate
 	PetscScalar  DIIdis;        // relative dislocation creep strain rate
 	PetscScalar  DIIprl;        // relative Peierls creep strain rate
+	PetscScalar  DIIpl;         // relative plastic strain rate
 	PetscScalar  yield;         // average yield stress in control volume
 
 };
@@ -159,6 +160,7 @@ struct Controls
 	PetscInt    actSteadyTemp;  // steady-state temperature initial guess flag
 	PetscScalar steadyTempStep; // time for (quasi-)steady-state temperature initial guess
 	PetscInt    steadyNumStep;  // number of steps for (quasi-)steady-state temperature initial guess
+	PetscInt    actHeatRech;    // heat recharge setting
 	PetscInt    initLithPres;   // set initial pressure to lithostatic pressure
 	PetscInt    initGuess;      // initial guess activation flag
 	PetscInt    pLithoVisc;     // use lithostatic pressure for creep laws
