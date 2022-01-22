@@ -1,0 +1,447 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Dec 15 2021 - Time: 14:39:45 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t29_PermeableSides_VelBoxes/VelBoxes_Permeable_sides.dat 
+   Adding PETSc option: -snes_rtol 1e-4
+   Adding PETSc option: -snes_atol 1e-4
+   Adding PETSc option: -snes_max_it 30
+   Adding PETSc option: -snes_PicardSwitchToNewton_rtol 1e-4
+   Adding PETSc option: -snes_NewtonSwitchToPicard_it 5
+   Adding PETSc option: -js_ksp_type fgmres
+   Adding PETSc option: -js_ksp_max_it 20
+   Adding PETSc option: -js_ksp_atol 1e-8
+   Adding PETSc option: -js_ksp_rtol 1e-5
+   Adding PETSc option: -snes_linesearch_type l2
+   Adding PETSc option: -snes_linesearch_maxstep 10
+Finished parsing input file : ./t29_PermeableSides_VelBoxes/VelBoxes_Permeable_sides.dat 
+--------------------------------------------------------------------------
+Scaling parameters:
+   Temperature : 1000. [C/K] 
+   Length      : 100000. [m] 
+   Viscosity   : 1e+20 [Pa*s] 
+   Stress      : 1e+09 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1000. [Myr] 
+   Maximum number of steps      : 1 
+   Time step                    : 0.001 [Myr] 
+   Minimum time step            : 1e-09 [Myr] 
+   Maximum time step            : 1. [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.8 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+   Save restart every [n] steps : 200 
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   StickyAir 
+   (dens)   : rho = 10. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1e+06 [J/kg/K]  k = 100. [W/m/k]  
+
+   Phase ID : 1     --   OceanicCrust 
+   diffusion creep profile  : Wet_Plagioclase_RybackiDresen_2000
+   dislocation creep profile: Wet_Plagioclase_RybackiDresen_2000
+   (dens)   : rho = 3000. [kg/m^3]  
+   (diff)   : Bd = 4.74279e-11 [1/Pa/s]  Ed = 159000. [J/mol]  Vd = 3.8e-05 [m^3/mol]  
+   (disl)   : Bn = 1.13035e-15 [1/Pa^n/s]  En = 345000. [J/mol]  Vn = 3.8e-05 [m^3/mol]  n = 3. [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 2     --   OceanicMantleLithosphere 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 1e-05 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 3     --   UpperMantle 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 4     --   Plume 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 5     --   LowerMantle 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 6     --   ZirconsRichUpperMantle 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 7   
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 8     --   LowerPlume 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 9     --   ZirconsRich_Reidite 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 10     --   ZirconsRichPlume_Reidite 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 11     --   LowerMantle_Reidite 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3660. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 12   
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3660. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 13     --   UpperMantlePermeableSide 
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 14     --   LowerMantlePermeableSide 
+   (dens)   : rho = 3600. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 15     --   OceanicMantleLithospherePermeableSide 
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 16     --   OceanicCrustPermeableSide 
+   (dens)   : rho = 3000. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+--------------------------------------------------------------------------
+Phase Transition laws: 
+--------------------------------------------------------------------------
+   Phase Transition [0] :   Box 
+     Box Bounds         :   [2000.0; 2100.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    9  10  11  12  
+     Phase Inside       :   13  13  13  13  
+     Direction          :   OutsideToInside 
+   Phase Transition [1] :   Box 
+     Box Bounds         :   [2000.0; 2100.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    3  5  2  1  
+     Phase Inside       :   13  14  15  16  
+     Direction          :   BothWays 
+   Phase Transition [2] :   Box 
+     Box Bounds         :   [-2100.0; -2000.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    9  10  11  12  
+     Phase Inside       :   13  13  13  13  
+     Direction          :   OutsideToInside 
+   Phase Transition [3] :   Box 
+     Box Bounds         :   [-2100.0; -2000.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    3  5  2  1  
+     Phase Inside       :   13  14  15  16  
+     Direction          :   BothWays 
+   Phase Transition [4] :   Box 
+     Box Bounds         :   [-2100.0; -1850.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Use all particles to check inside/outside 
+     Halfspace; top T   :   0.0 [C] 
+     Halfspace; bot T   :   1350.0 [C] 
+     Halfspace; Age     :   30.0 [Myr] 
+     No phase change    @   
+   Phase Transition [5] :   Box 
+     Box Bounds         :   [1950.0; 2200.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Use all particles to check inside/outside 
+     Halfspace; top T   :   0.0 [C] 
+     Halfspace; bot T   :   1350.0 [C] 
+     Halfspace; Age     :   30.0 [Myr] 
+     No phase change    @   
+   Phase Transition [6] :   Constant 
+     Parameter          :   T 
+     Transition Value   :   1200.000 
+     Phase Above        :   3  13  
+     Phase Below        :   2  15  
+     Direction          :   BothWays 
+   Phase Transition [7] :   Constant 
+     Parameter          :   Depth 
+     Transition Value   :   -660.000 
+     Phase Above        :   3  4  9  10  13  
+     Phase Below        :   5  8  11  12  14  
+     Direction          :   BothWays 
+   Phase Transition [8] :   Constant 
+     Parameter          :   MeltFraction 
+     Transition Value   :   0.040 
+     Phase Above        :   6  7  
+     Phase Below        :   3  4  
+     Direction          :   BelowToAbove 
+   Phase Transition [9] :   Clapeyron 
+     Transition law     :   Zircon_Reidite
+       # Equations      :   1    [ P = P0 + gamma*(T-T0) ] 
+       eq[0]            :   gamma =  1.90e+00 [MPa/C], P0 = 8.00e+09 [Pa],  T0 = 25.0 [deg C] 
+     Phase Above        :   9  10  
+     Phase Below        :   6  7  
+     Direction          :   BelowToAbove 
+   Phase Transition [10] :   Constant 
+     Parameter          :   Depth 
+     Transition Value   :   -10.000 
+     Phase Above        :   16  
+     Phase Below        :   15  
+     Direction          :   BothWays 
+   Phase Transition [11] :   Constant 
+     Parameter          :   Depth 
+     Transition Value   :   -80.000 
+     Phase Above        :   15  
+     Phase Below        :   13  
+     Direction          :   BothWays 
+
+   Adjusting density values due to phase transitions: 
+     Phase              :    5, rho = 3600.0 [kg/m^3] 
+     Phase              :    3, rho = 3300.0 [kg/m^3] 
+     Phase              :    8, rho = 3600.0 [kg/m^3] 
+     Phase              :    4, rho = 3300.0 [kg/m^3] 
+     Phase              :   11, rho = 3600.0 [kg/m^3] 
+     Phase              :    9, rho = 3300.0 [kg/m^3] 
+     Phase              :   12, rho = 3600.0 [kg/m^3] 
+     Phase              :   10, rho = 3300.0 [kg/m^3] 
+     Phase              :   14, rho = 3600.0 [kg/m^3] 
+     Phase              :   13, rho = 3300.0 [kg/m^3] 
+     Phase              :    6, rho = 3300.0 [kg/m^3] 
+     Phase              :    9, rho = 3300.0 [kg/m^3] 
+     Phase              :    7, rho = 3300.0 [kg/m^3] 
+     Phase              :   10, rho = 3300.0 [kg/m^3] 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 2 
+   Processor grid  [nx, ny, nz]         : [2, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [128, 1, 32]
+   Number of cells                      :  4096
+   Number of faces                      :  16544
+   Maximum cell aspect ratio            :  1.28000
+   Lower coordinate bounds [bx, by, bz] : [-2100., -20., -1000.]
+   Upper coordinate bounds [ex, ey, ez] : [2100., 20., 0.]
+--------------------------------------------------------------------------
+Internal velocity conditions: 
+   Velocity box                         : 0 
+   Box center                           : [-1500.000000, 0.000000, -25.000000] [km] 
+   Box width                            : [200.000000, 200.000000, 50.000000] [km] 
+   Velocity                             : [1.000000, nan, nan] [cm/yr] 
+   
+   Velocity box                         : 1 
+   Box center                           : [1500.000000, 0.000000, -25.000000] [km] 
+   Box width                            : [200.000000, 200.000000, 50.000000] [km] 
+   Velocity                             : [-2.000000, nan, nan] [cm/yr] 
+   Advect velocity with flow            @   
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
+   Top boundary temperature                   : 0. [C] 
+   Bottom boundary temperature                : 1350. [C] 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
+   Activate temperature diffusion          @ 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Enforce zero average pressure on top    @ 
+   Minimum viscosity                       : 1e+18 [Pa*s] 
+   Maximum viscosity                       : 1e+24 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
+   Universal gas constant                  : 8.31446 [J/mol/K] 
+   Max. melt fraction (viscosity, density) : 0.08    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Passive Tracers are active              @ 
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : empirical STAGP (STAG + pressure points)
+   Marker control type           : subgrid 
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+   Background phase ID           : 0 
+   Interpolation constant        : 0.666667 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.0133388 sec)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Passive Tracers: 
+   Initial coordinate Box x = [Left,Right] : -1200.000000, 1200.000000 
+   Initial coordinate Box y = [Front,Back] : -1.000000, 1.000000 
+   Initial coordinate Box z = [Bot, Top]   : -200.000000, -100.000000 
+   # of tracers in [x,y,z] direction       : [300, 1, 300] 
+   Total # of tracers                      : 90000 
+   Tracer advection activation type        : Melt_Fraction > 0.08     
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : PlumeLithosphereInteraction 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Total Pressure                          @ 
+   Overpressure                            @ 
+   Lithostatic pressure                    @ 
+   Temperature                             @ 
+   Deviatoric stress tensor                @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate tensor           @ 
+   Deviatoric strain rate second invariant @ 
+   Yield stress                            @ 
+   Accumulated Plastic Strain (APS)        @ 
+   Plastic dissipation                     @ 
+   Total displacements                     @ 
+   Momentum residual                       @ 
+   Continuity residual                     @ 
+   Melt fraction                           @ 
+--------------------------------------------------------------------------
+Passive Tracers output parameters:
+   Write Passive tracers pvd file  
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Penalty parameter (pgamma)    : 1.000000e+04
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : fgmres 
+   Solver type                   : parallel direct/lu 
+   Solver package                : mumps 
+--------------------------------------------------------------------------
+Initializing pressure with lithostatic pressure ... done (0.00214982 sec)
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.015025707776e+02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 4.742423692033e-09 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 2.35239 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.762805583611e-10 
+      |Div|_2   = 4.742423644838e-09 
+   Momentum: 
+      |mRes|_2  = 6.690603713381e-13 
+   Energy: 
+      |eRes|_2  = 7.204699733820e-09 
+--------------------------------------------------------------------------
+Saving output ... done (0.368486 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.00100000 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... done (0.045423 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.186187046784e+03 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.880147874944e+01 
+  1 PICARD ||F||/||F0||=6.643259e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 2.536391027900e+01 
+  2 PICARD ||F||/||F0||=2.138272e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  3 SNES Function norm 6.489380027258e+00 
+  3 PICARD ||F||/||F0||=5.470790e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  4 SNES Function norm 5.693545505833e-01 
+  4 PICARD ||F||/||F0||=4.799872e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 5
+  5 SNES Function norm 1.839501703320e-01 
+  5 PICARD ||F||/||F0||=1.550769e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  6 SNES Function norm 3.608526971091e-02 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 6
+SNES solution time      : 10.5532 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.265158234291e-07 
+      |Div|_2   = 1.593369235702e-06 
+   Momentum: 
+      |mRes|_2  = 3.608526967573e-02 
+   Energy: 
+      |eRes|_2  = 2.758275711364e-14 
+--------------------------------------------------------------------------
+Actual time step : 0.00110 [Myr] 
+--------------------------------------------------------------------------
+Advection Passive tracers ... 
+ Currently active tracers    :  0 
+done (0.053623 sec)
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 7 markers and merged 0 markers in 9.2101e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.357113 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 14.1575 (sec) 
+--------------------------------------------------------------------------

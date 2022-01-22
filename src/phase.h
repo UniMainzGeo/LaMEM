@@ -125,7 +125,8 @@ public:
   
   // Box-like condition
   PetscScalar     bounds[6];                      //  left, right etc. of box
-  PetscInt        TempType;                       //  Temp condition [0=none, 1=constant; 2=linear; 3=halfspace]    
+  PetscInt        TempType;                       //  Temp condition [0=none, 1=constant; 2=linear; 3=halfspace]   
+  PetscInt 		  BoxVicinity;					  //  0-check all particles; 1-only apply PT to particles in the vicinity of the box (*2 of bounds) 
   
   PetscInt        number_phases;
   PetscInt        PhaseBelow[_max_tr_];

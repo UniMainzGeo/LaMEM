@@ -958,6 +958,32 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		{
 			// diffuse
 			ierr = LaMEMLibSolveTemp(lm, diff_step); CHKERRQ(ierr);
+
+			// reset temperature in anomalous phases every step
+			if (ctrl->actHeatRech > 1)
+			{
+				// overwrite markers where T(phase) is set
+				ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
+
+				// project temperature from markers to grid
+				ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+	
+				// initialize temperature
+				ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
+			}
+		}
+
+		// reset Temperature in anomalous phase
+		if (ctrl->actHeatRech)
+		{
+			// overwrite markers where T(phase) is set
+			ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
+
+			// project temperature from markers to grid
+			ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+	
+			// initialize temperature
+			ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 		}
 		
 		PrintDone(t);		
