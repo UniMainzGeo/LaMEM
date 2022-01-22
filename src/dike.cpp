@@ -149,21 +149,13 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
         ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mc",      &dike->Mc,      1, 1.0);              CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
-	//	ierr = getScalarParam(fb, _OPTIONAL_, "x_Mc",    &dike->x_Mc,    1, 1.0);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "y_Mc",    &dike->y_Mc,    1, 1.0);              CHKERRQ(ierr);
-	//	ierr = getScalarParam(fb, _OPTIONAL_, "z_Mc",    &dike->z_Mc,    1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
 
 	// scale the location of Mc y_Mc properly:
 	dike->y_Mc /= scal->length;
 
-	/*	if(dike->Mc && (!dike->x_Mc && !dike->y_Mc && !dike->z_Mc))   // || or && ?
-        {
-                 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "the coordinate for Mc is missing, you need to provide either y_Mc, x_Mc or z_Mc");
-		 }*/
-
-	
         if (PrintOutput)
 	    {
 	    PetscPrintf(PETSC_COMM_WORLD,"   Dike parameters ID[%lld] : Mf = %g, Mb = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb);
@@ -217,7 +209,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		{
 		  if(dike->Mb == dike->Mf && !dike->Mc)       // constant M
 		    {
-		      //		      PetscPrintf(PETSC_COMM_WORLD,"Mf=Mb in DikeContr : %g \n", dike->Mf);
 		      M = dike->Mf;
 		      v_spread = PetscAbs(bc->velin);
 		      left = CurrPhTr->bounds[0];
@@ -226,7 +217,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		    }
 		  else if(dike->Mc)   // Mf, Mc and Mb
                     {
-		      //		       PetscPrintf(PETSC_COMM_WORLD,"Mc in DikeContr : %g \n", dike->Mc);
                       left = CurrPhTr->bounds[0];
                       right = CurrPhTr->bounds[1];
                       front = CurrPhTr->bounds[2];
@@ -237,18 +227,12 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 			{
 			  // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
 			  y_distance = y_c - dike->y_Mc;
-			  /*			  PetscPrintf(PETSC_COMM_WORLD,"y_c in DikeContr : %g \n", y_c);
-			  PetscPrintf(PETSC_COMM_WORLD,"y_Mc in dikecontr : %g\n", dike->y_Mc);
-                          PetscPrintf(PETSC_COMM_WORLD,"y_distance in dikecontr : %g\n", y_distance); */
 			  M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
-			  //			  PetscPrintf(PETSC_COMM_WORLD,"M in dike contr : %g\n", M);
 			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-			  //			  PetscPrintf(PETSC_COMM_WORLD,"dikerhs in dike contr : %g\n", tempdikeRHS);
 			}
 		      else
 			{
 			  // linear interpolation between different M values, Mf is M in front, Mc acts as M in back  
-			  //			  PetscPrintf(PETSC_COMM_WORLD,"y_c smaller than y_Mc : %g \n", y_c);
 			  y_distance = y_c - front;
 			  M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
 			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
@@ -256,7 +240,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
                     }
 		  else if(dike->Mb != dike->Mf && !dike->Mc)   // only Mf and Mb, they are different
 		    {
-		      //		      PetscPrintf(PETSC_COMM_WORLD,"Mf different from Mb in DikeContr: %g, %g \n", dike->Mf, dike->Mb);
 		      left = CurrPhTr->bounds[0];
 		      right = CurrPhTr->bounds[1];
 		      front = CurrPhTr->bounds[2];
@@ -332,7 +315,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                 {
                   if(dike->Mb == dike->Mf && !dike->Mc)       // constant M                                  
                     {
-		      //		       PetscPrintf(PETSC_COMM_WORLD,"heating: Mf and Mb are the same, no Mc: %g \n", dike->Mf);
                       M = dike->Mf;
                       v_spread = PetscAbs(bc->velin);
                       left = CurrPhTr->bounds[0];
@@ -341,7 +323,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 		    }
 		  else if(dike->Mc)   // Mf, Mc and Mb            
                     {
-		      //		      PetscPrintf(PETSC_COMM_WORLD,"Mc in DikeHeating : %g \n", dike->Mc);
                       left = CurrPhTr->bounds[0];
                       right = CurrPhTr->bounds[1];
                       front = CurrPhTr->bounds[2];
@@ -352,17 +333,11 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                         {
                           // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
                           y_distance = y_c - dike->y_Mc;
-			  //			  PetscPrintf(PETSC_COMM_WORLD,"y_c in heating : %g \n", y_c);
-			  //			  PetscPrintf(PETSC_COMM_WORLD,"y_Mc in Heating: %g \n", dike->y_Mc);
-			  //			  PetscPrintf(PETSC_COMM_WORLD,"y_distance in Heating: %g \n", y_distance);
                           M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
-			  //			  PetscPrintf(PETSC_COMM_WORLD,"M in heating: %g\n", M);
                           tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-			  //			  PetscPrintf(PETSC_COMM_WORLD,"dikerhs in heating: %g\n", tempdikeRHS);
                         }
                       else
                         {
-			  //			  PetscPrintf(PETSC_COMM_WORLD," y_c smaller than y_Mc, y_c in heating : %g \n", y_c);
                           // linear interpolation between different M values, Mf is M in front, Mc acts as M in back
                           y_distance = y_c - front;
                           M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
@@ -371,7 +346,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                     }
                   else if(dike->Mb != dike->Mf && !dike->Mc)   // only Mf and Mb, they are different     
                     {
-		      //		      PetscPrintf(PETSC_COMM_WORLD,"heating: Mf and Mb are different, no Mc: %g, %g \n", dike->Mf, dike->Mb);
                       left = CurrPhTr->bounds[0];
                       right = CurrPhTr->bounds[1];
                       front = CurrPhTr->bounds[2];
