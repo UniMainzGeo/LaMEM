@@ -1227,11 +1227,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// SECOND INVARIANT
 		//=================
 
-		// access strain rates
-		//		XX = dxx[k][j][i];
-		//		YY = dyy[k][j][i];
-		//		ZZ = dzz[k][j][i];
-
 		if (jr->ctrl.actDike)
 		{
 		  PetscScalar y_c;
