@@ -30,12 +30,12 @@ def test_M1_2D():
   return(ex1)
 
 
-def test_M075_2D_2cores():
+def test_variableM():
 
-  # Test dike feature using optimized LaMEM with 2 cores
-  ranks = 2
-  launch = '../bin/opt/LaMEM -ParamFile ./t26_Dike/dike_M075_2D_2cores.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't26_Dike/dike_M075_2D_2cores.expected'
+  # Test dike feature using optimized LaMEM (one core)
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t26_Dike/dike_variableM.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't26_Dike/dike_variableM.expected'
 
   def comparefunc(unittest):
 
