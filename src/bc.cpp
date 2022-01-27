@@ -1780,13 +1780,16 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
         Vz  = velbox->Vz[iBox];
         if (velbox->Advect[iBox]==1){
             // Move center of box if requested	
-            if (!isnan(Vx)){
+	  if (!__builtin_isnan(Vx)){
+	      //            if (!isnan(Vx)){
                 velbox->cenX[iBox] += Vx*dt;
             }
-            if (!isnan(Vy)){
+	  if (!__builtin_isnan(Vy)){
+	    //            if (!isnan(Vy)){
                 velbox->cenY[iBox] += Vy*dt;
             }
-            if (!isnan(Vz)){
+	  if (!__builtin_isnan(Vz)){
+	    // if (!isnan(Vz)){
                 velbox->cenZ[iBox] += Vz*dt;
             }
 
@@ -1824,13 +1827,16 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
             && y >= yMin && y <= yMax
             && z >= zMin && z <= zMax)
             {
-                if (!isnan(Vx)){
-                     bcvx[k][j][i] = Vx;
+	      // if (!isnan(Vx)){
+	      if (!__builtin_isnan(Vx)){
+		  bcvx[k][j][i] = Vx;
                 }
-                if (!isnan(Vy)){
+	      if (!__builtin_isnan(Vy)){
+		    //                if (!isnan(Vy)){
                     bcvy[k][j][i]  = Vy;
                 }
-                if (!isnan(Vz)){
+	      if (!__builtin_isnan(Vz)){
+		   // if (!isnan(Vz)){
                     bcvz[k][j][i]  = Vz;
                 }
                     
