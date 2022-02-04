@@ -510,11 +510,12 @@
     out_shmax           = 1
     out_ehmax           = 1
     out_yield           = 1
-    out_rel_dif_rate    = 1
-    out_rel_dis_rate    = 1
-    out_rel_prl_rate    = 1
-    out_plast_strain    = 1
-    out_plast_dissip    = 1
+    out_rel_dif_rate    = 1     # relative proportion of diffusion creep strainrate
+    out_rel_dis_rate    = 1     # relative proportion of dislocation creep strainrate
+    out_rel_prl_rate    = 1     # relative proportion of peierls creep strainrate
+    out_rel_pl_rate     = 1     # relative proportion of plastic strainrate
+    out_plast_strain    = 1     # accumulated plastic strain
+    out_plast_dissip    = 1     # plastic dissipation
     out_tot_displ       = 1
     out_moment_res      = 1
     out_cont_res        = 1
