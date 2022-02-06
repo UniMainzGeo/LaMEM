@@ -95,6 +95,12 @@ PetscInt ISParallel(MPI_Comm comm);
 // get global rank of processor in DMDA
 PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p);
 
+// get global rank of processor in DMDA with periodic topology
+PetscMPIInt getGlobalRankPeriodic(
+		PetscInt i,  PetscInt j,  PetscInt k,
+		PetscInt m,  PetscInt n,  PetscInt p,
+		PetscInt pi, PetscInt pj, PetscInt pk);
+
 // get local ranks of processor in DMDA
 void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n);
 

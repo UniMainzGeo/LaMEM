@@ -276,7 +276,7 @@ PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscI
 {
 	// get global rank of processor in DMDA
 
-	if (i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
+	if(i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
 
 	return (PetscMPIInt)(i + j*m + k*m*n);
 }
@@ -287,8 +287,11 @@ PetscMPIInt getGlobalRankPeriodic(
 		PetscInt pi, PetscInt pj, PetscInt pk)
 {
 	// get global rank of processor in DMDA
+	if(pi) { if(i < 0) { i = m-1; } if(i >= m) {i = 0; } }
+	if(pj) { if(j < 0) { j = n-1; } if(j >= n) {j = 0; } }
+	if(pk) { if(k < 0) { k = p-1; } if(k >= p) {k = 0; } }
 
-	if (i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
+	if(i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
 
 	return (PetscMPIInt)(i + j*m + k*m*n);
 }

@@ -96,6 +96,14 @@
     bias_x = 1.0
     bias_y = 1.0
     bias_z = 1.0
+    
+# Periodic grid topology flags (currently only affects marker advection)
+# WARNING! only compatible wtih advect = basic
+
+	periodic_x = 1
+	periodic_y = 1
+	periodic_z = 1
+	
 
 # EXAMPLE:
 # segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)
