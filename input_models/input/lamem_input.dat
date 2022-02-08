@@ -1,4 +1,3 @@
-
 # PLEASE DON'T USE TABS ANYWERE EXCEPT THE FIRST CHARACTERS IN A ROW (LOOKS UGLY)
 
 #===============================================================================
@@ -96,6 +95,14 @@
     bias_x = 1.0
     bias_y = 1.0
     bias_z = 1.0
+    
+# Periodic grid topology flags (currently only affects marker advection)
+# WARNING! only compatible wtih advect = basic
+
+	periodic_x = 1
+	periodic_y = 1
+	periodic_z = 1
+	
 
 # EXAMPLE:
 # segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)
@@ -182,18 +189,18 @@
     <BCBlockEnd>
 
 # Internal velocity box(es)
-
-    VelBox_num      =   2                       # The number of internal velocity boxes active
-    VelBox_cenX     =   1.0  2.0                # X-coordinate of center of box
-    VelBox_cenY     =   1.0  2.0                # Y-coordinate of center of box
-    VelBox_cenZ     =   1.0  2.0                # Z-coordinate of center of box
-    VelBox_widthX   =   1.0  1.0                # Width of box in x-direction
-    VelBox_widthY   =   2.0  2.0                # Width of box in y-direction
-    VelBox_widthZ   =   0.1  0.1                # Width of box in z-direction
-    VelBox_Vx       =   1.0 -2.0                # Vx velocity of box (employ NaN if you don't want to constrain it)
-    VelBox_Vy       =   NaN  NaN                # Vy velocity of box 
-    VelBox_Vz       =   NaN  NaN                # Vz velocity of box 
-    VelBox_Advect   =   0    0                  # Advect the box with the flow?     
+    <VelBoxStart>
+    	cenX     =   1.0  # X-coordinate of center of box
+    	cenY     =   1.0  # Y-coordinate of center of box
+    	cenZ     =   1.0  # Z-coordinate of center of box
+   		widthX   =   1.0  # Width of box in x-direction
+    	widthY   =   2.0  # Width of box in y-direction
+    	widthZ   =   0.1  # Width of box in z-direction
+    	vx       =   1.0  # Vx velocity of box (default is unconstrained)
+    	vy       =   0.0  # Vy velocity of box (default is unconstrained)
+    	vz       =   0.0  # Vz velocity of box (default is unconstrained) 
+    	advect   =   0    # box advection flag
+    <VelBoxEnd> 
     
 # Inflow velocity boundary condition
 
@@ -510,11 +517,12 @@
     out_shmax           = 1
     out_ehmax           = 1
     out_yield           = 1
-    out_rel_dif_rate    = 1
-    out_rel_dis_rate    = 1
-    out_rel_prl_rate    = 1
-    out_plast_strain    = 1
-    out_plast_dissip    = 1
+    out_rel_dif_rate    = 1     # relative proportion of diffusion creep strainrate
+    out_rel_dis_rate    = 1     # relative proportion of dislocation creep strainrate
+    out_rel_prl_rate    = 1     # relative proportion of peierls creep strainrate
+    out_rel_pl_rate     = 1     # relative proportion of plastic strainrate
+    out_plast_strain    = 1     # accumulated plastic strain
+    out_plast_dissip    = 1     # plastic dissipation
     out_tot_displ       = 1
     out_moment_res      = 1
     out_cont_res        = 1
@@ -649,23 +657,19 @@
 # Define properties for the dike (additional source term/RHS in the continuity equation):
 # Define the associated phase, the amount of magma-accommodated extension on the front (Mf) and on the back (Mb) of the box and set its ID
 
-	<DikeStart>
-		ID = 0
-		Mf = 0.6           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
-		Mc = 0.7  	   # value for dike/magma- accommodated extension, between 0 and 1, in the center of the box, for phase dike
-		Mb = 0.8           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
-		y_Mc = 20 	   # coordinate for Mc, this is in y direction for ridges/ dikes that are along y (later extended to be possile in any direicteio by adding x_Mc and z_Mc)		
-		PhaseID = 0
-		PhaseTransID = 0   # phase transition ID that is associated with this particular dike
-	<DikeEnd>
+    <DikeStart>
+        ID = 0
+        Mf = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
+        Mb = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
+        PhaseID = 0
+    <DikeEnd>
 
-	<DikeStart>
-		ID = 1
-                Mf = 0.5
-                Mb = 0.5
-		PhaseID = 3
-		PhaseTransID = 3   # phase transition ID that is associated with this particular dike
-        <DikeEnd>
+    <DikeStart>
+        ID = 1
+        Mf = 0.7
+        Mb = 0.7
+        PhaseID = 3
+    <DikeEnd>
 
 # Define material properties for all phases (maximum 32)
 # By default all rheological mechanisms are deactivated
