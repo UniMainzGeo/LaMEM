@@ -60,19 +60,28 @@
 # No-slip boundary flag mask (left right front back bottom top)
 	noslip 					= 	0 0 0 0 1 0
 	
-# Internal velocity box
-    VelBox_num      =   2                       # The number of internal velocity boxes active
-    VelBox_cenX     =  -1500  1500            	# X-coordinate of center of box
-    VelBox_cenY     =   0.0   0.0             	# Y-coordinate of center of box
-    VelBox_cenZ     =   -25  -25             	# Z-coordinate of center of box
-    VelBox_widthX   =   200   200            	# Width of box in x-direction
-    VelBox_widthY   =   200   200            	# Width of box in y-direction
-    VelBox_widthZ   =   50    50                # Width of box in z-direction
-    VelBox_Vx       =   1.0  -2.0             	# Vx velocity of box (employ NaN if you don't want to constrain it)
-    VelBox_Vy       =   NaN   NaN             	# Vy velocity of box 
-    VelBox_Vz       =   NaN   NaN             	# Vz velocity of box 
-    VelBox_Advect   =   0     1               	# Advect the box with the flow? 
-
+# Internal velocity boxes
+ 	<VelBoxStart>
+    	cenX     =   -1500 # X-coordinate of center of box
+    	cenY     =    0.0  # Y-coordinate of center of box
+    	cenZ     =    -25  # Z-coordinate of center of box
+   		widthX   =    200  # Width of box in x-direction
+    	widthY   =    200  # Width of box in y-direction
+    	widthZ   =    50   # Width of box in z-direction
+    	vx       =    1.0  # Vx velocity of box (default is unconstrained)
+    	advect   =    0    # box advection flag
+    <VelBoxEnd> 
+ 
+ 	<VelBoxStart>
+    	cenX     =   1500 # X-coordinate of center of box
+    	cenY     =   0.0  # Y-coordinate of center of box
+    	cenZ     =  -25   # Z-coordinate of center of box
+   		widthX   =   200  # Width of box in x-direction
+    	widthY   =   200  # Width of box in y-direction
+    	widthZ   =   50   # Width of box in z-direction
+    	vx       =  -2.0  # Vx velocity of box (default is unconstrained)
+    	advect   =   1    # box advection flag
+    <VelBoxEnd>    
 
 #===============================================================================
 # Solution parameters & controls
