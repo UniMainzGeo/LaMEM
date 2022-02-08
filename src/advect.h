@@ -280,6 +280,9 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx);
 // create send and receive buffers for asynchronous MPI communication
 PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx);
 
+// apply periodic marker advection
+PetscErrorCode ADVApplyPeriodic(AdvCtx *actx);
+
 // communicate markers with neighbor processes
 PetscErrorCode ADVExchangeMark(AdvCtx *actx);
 

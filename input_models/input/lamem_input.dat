@@ -96,6 +96,14 @@
     bias_x = 1.0
     bias_y = 1.0
     bias_z = 1.0
+    
+# Periodic grid topology flags (currently only affects marker advection)
+# WARNING! only compatible wtih advect = basic
+
+	periodic_x = 1
+	periodic_y = 1
+	periodic_z = 1
+	
 
 # EXAMPLE:
 # segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)
@@ -182,18 +190,18 @@
     <BCBlockEnd>
 
 # Internal velocity box(es)
-
-    VelBox_num      =   2                       # The number of internal velocity boxes active
-    VelBox_cenX     =   1.0  2.0                # X-coordinate of center of box
-    VelBox_cenY     =   1.0  2.0                # Y-coordinate of center of box
-    VelBox_cenZ     =   1.0  2.0                # Z-coordinate of center of box
-    VelBox_widthX   =   1.0  1.0                # Width of box in x-direction
-    VelBox_widthY   =   2.0  2.0                # Width of box in y-direction
-    VelBox_widthZ   =   0.1  0.1                # Width of box in z-direction
-    VelBox_Vx       =   1.0 -2.0                # Vx velocity of box (employ NaN if you don't want to constrain it)
-    VelBox_Vy       =   NaN  NaN                # Vy velocity of box 
-    VelBox_Vz       =   NaN  NaN                # Vz velocity of box 
-    VelBox_Advect   =   0    0                  # Advect the box with the flow?     
+    <VelBoxStart>
+    	cenX     =   1.0  # X-coordinate of center of box
+    	cenY     =   1.0  # Y-coordinate of center of box
+    	cenZ     =   1.0  # Z-coordinate of center of box
+   		widthX   =   1.0  # Width of box in x-direction
+    	widthY   =   2.0  # Width of box in y-direction
+    	widthZ   =   0.1  # Width of box in z-direction
+    	vx       =   1.0  # Vx velocity of box (default is unconstrained)
+    	vy       =   0.0  # Vy velocity of box (default is unconstrained)
+    	vz       =   0.0  # Vz velocity of box (default is unconstrained) 
+    	advect   =   0    # box advection flag
+    <VelBoxEnd> 
     
 # Inflow velocity boundary condition
 

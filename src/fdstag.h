@@ -62,6 +62,7 @@ struct MeshSeg1D
 	PetscScalar biases[_max_num_segs_  ]; // biases for each segment
 	PetscInt    tcels;                    // total number of cells
 	PetscInt    uniform;                  // uniform grid flag
+	PetscInt    periodic;                 // periodic topology flag
 
 };
 
@@ -87,36 +88,37 @@ PetscErrorCode MeshSeg1DGenCoord(
 // finite difference discretization / domain decomposition data for single direction
 struct Discret1D
 {
-	PetscInt      nproc;   // number of processors
-	PetscMPIInt   rank;    // rank of current processor
+	PetscInt      nproc;    // number of processors
+	PetscMPIInt   rank;     // rank of current processor
 
-	PetscInt     *starts;  // index of first node (cell) on all processors + last index
-	PetscInt      pstart;  // index of first node (cell) on this processors
+	PetscInt     *starts;   // index of first node (cell) on all processors + last index
+	PetscInt      pstart;   // index of first node (cell) on this processors
 
-	PetscInt      tnods;   // total number of nodes
-	PetscInt      tcels;   // total number of cells (tnods-1)
+	PetscInt      tnods;    // total number of nodes
+	PetscInt      tcels;    // total number of cells (tnods-1)
 
-	PetscInt      nnods;   // number of local nodes
-	PetscInt      ncels;   // number of local cells
+	PetscInt      nnods;    // number of local nodes
+	PetscInt      ncels;    // number of local cells
 
-	PetscScalar  *ncoor;   // coordinates of local nodes (+ 1 layer of ghost points)
-	PetscScalar  *ccoor;   // coordinates of local cells (+ 1 layer of ghost points)
-	PetscScalar  *nbuff;   // memory buffer for node coordinates
-	PetscScalar  *cbuff;   // memory buffer for cells coordinates
-	PetscInt      bufsz;   // size of node buffer
+	PetscScalar  *ncoor;    // coordinates of local nodes (+ 1 layer of ghost points)
+	PetscScalar  *ccoor;    // coordinates of local cells (+ 1 layer of ghost points)
+	PetscScalar  *nbuff;    // memory buffer for node coordinates
+	PetscScalar  *cbuff;    // memory buffer for cells coordinates
+	PetscInt      bufsz;    // size of node buffer
 
-	PetscMPIInt   grprev;  // global rank of previous process (-1 for first processor)
-	PetscMPIInt   grnext;  // global rank of next process (-1 for last processor)
+	PetscMPIInt   grprev;   // global rank of previous process (-1 for first processor)
+	PetscMPIInt   grnext;   // global rank of next process (-1 for last processor)
 
-	PetscMPIInt   color;   // color of processor column in base direction
-	MPI_Comm      comm;    // column communicator
+	PetscMPIInt   color;    // color of processor column in base direction
+	MPI_Comm      comm;     // column communicator
 
-	PetscInt      uniform; // uniform grid flag
+	PetscInt      uniform;  // uniform grid flag
+	PetscInt      periodic; // periodic topology flag
 
-	PetscScalar   gcrdbeg; // global grid coordinate bound (begin)
-	PetscScalar   gcrdend; // global grid coordinate bound (end)
+	PetscScalar   gcrdbeg;  // global grid coordinate bound (begin)
+	PetscScalar   gcrdend;  // global grid coordinate bound (end)
 
-	PetscScalar   gtol;    // geometric tolerance
+	PetscScalar   gtol;     // geometric tolerance
 };
 
 //---------------------------------------------------------------------------

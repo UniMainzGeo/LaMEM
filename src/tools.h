@@ -93,19 +93,16 @@ PetscInt ISRankZero(MPI_Comm comm);
 PetscInt ISParallel(MPI_Comm comm);
 
 // get global rank of processor in DMDA
-static inline PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
-{
-	if (i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
-	return (PetscMPIInt)(i + j*m + k*m*n);
-}
+PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p);
+
+// get global rank of processor in DMDA with periodic topology
+PetscMPIInt getGlobalRankPeriodic(
+		PetscInt i,  PetscInt j,  PetscInt k,
+		PetscInt m,  PetscInt n,  PetscInt p,
+		PetscInt pi, PetscInt pj, PetscInt pk);
 
 // get local ranks of processor in DMDA
-static inline void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n)
-{
-	(*k) =  rank/(m*n);
-	(*j) = (rank - (*k)*m*n)/m;
-	(*i) =  rank - (*k)*m*n - (*j)*m;
-}
+void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n);
 
 //---------------------------------------------------------------------------
 // Directory management functions
