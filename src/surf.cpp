@@ -1393,12 +1393,12 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
 	// get input topography grid spacing
-	DX = spacing[0];
-	DY = spacing[1];
+	DX = spacing[0]/leng;
+	DY = spacing[1]/leng;
 
 	// get input topography south-west corner
-	X1 = start[0];
-	Y1 = start[1];
+	X1 = start[0]/leng;
+	Y1 = start[1]/leng;
 
 	// get mesh extents
 	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, 0, &ex, &ey, 0); CHKERRQ(ierr);
