@@ -480,7 +480,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, healID, MSN, print_title,DiffWID,DislWID,PeirWID,MVN;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, Kb, G, E, Vp, Vs, eta_st, nu;
+	PetscScalar eta, eta0, e0, Kb, G, E, Vp, Vs, eta_st, nu,tau0;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
@@ -493,6 +493,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// initialize additional parameters
 	eta      =  0.0;
 	eta0     =  0.0;
+	tau0     =  0.0;
 	e0       =  0.0;
 	//K        =  0.0;	// note: will be deprecated and renamed to Kb; we spit put an error message for now if we still find it in the input file
 	Kb    	 =  0.0;	// bulk modulus		
@@ -624,6 +625,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta0",     &eta0,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "e0",       &e0,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_,"tau0",      &tau0,      1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Bn",       &m->Bn,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "En",       &m->En,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Vn",       &m->Vn,    1, 1.0); CHKERRQ(ierr);
@@ -744,15 +746,18 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// DISLOCATION
 
-	if(!(( eta0 &&  e0 &&  m->n && !m->Bn)   // eta0, e0, n
-	||   (!eta0 && !e0 &&  m->n &&  m->Bn)   // Bn, n
-	||   (!eta0 && !e0 && !m->n && !m->Bn))) // nothing
+	if(!(( eta0 &&  e0 && !tau0 && m->n && !m->Bn)   // eta0, e0, n
+	||   (!eta0 && !e0 && !tau0 &&m->n &&  m->Bn)   // Bn, n
+	||   (!eta0 && !e0 && !tau0 &&!m->n && !m->Bn)
+	||   (eta0 && tau0 && !e0 && m->n && !m->Bn))) // nothing
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %lld (eta0 + e0 + n, Bn + n)\n", (LLD)ID);
 	}
 
 	// compute dislocation creep constant
-	if(eta0 && e0 && m->n) m->Bn = pow(2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+	if(eta0 && e0   && m->n) m->Bn = pow(2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+	if(eta0 && tau0 && m->n) m->Bn = (tau0*1e6)/(2*eta0*pow(tau0*1e6, 1-m->n));
+
 
 	// PEIERLS
 
@@ -887,6 +892,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		sprintf(title, "   (disl)   : "); print_title = 1;
 		MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal, title, &print_title);
 		MatPrintScalParam(e0,    "e0",   "[1/s]",      scal, title, &print_title);
+		MatPrintScalParam(tau0,  "tau0",   "[MPa]",      scal, title, &print_title);
 		MatPrintScalParam(m->Bn, "Bn",   "[1/Pa^n/s]", scal, title, &print_title);
 		MatPrintScalParam(m->En, "En",   "[J/mol]",    scal, title, &print_title);
 		MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal, title, &print_title);
