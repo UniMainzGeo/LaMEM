@@ -1,10 +1,10 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Nov 18 2020 - Time: 08:59:06 	    
+     Compiled: Date: Mar  3 2022 - Time: 16:55:02 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : ./t21_RidgeGeom/ridge_geom_oblique_2cores.dat 
+Parsing input file : ./t22_RidgeGeom/ridge_geom_oblique_2cores.dat 
    Adding PETSc option: -snes_rtol 1e-4
    Adding PETSc option: -snes_atol 1e-4
    Adding PETSc option: -snes_max_it 50
@@ -18,7 +18,7 @@ Parsing input file : ./t21_RidgeGeom/ridge_geom_oblique_2cores.dat
    Adding PETSc option: -snes_linesearch_type l2
    Adding PETSc option: -snes_linesearch_monitor
    Adding PETSc option: -snes_linesearch_maxstep 10
-Finished parsing input file : ./t21_RidgeGeom/ridge_geom_oblique_2cores.dat 
+Finished parsing input file : ./t22_RidgeGeom/ridge_geom_oblique_2cores.dat 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -42,17 +42,17 @@ Time stepping parameters:
 --------------------------------------------------------------------------
 Material parameters: 
 --------------------------------------------------------------------------
-   Phase ID : 0
+   Phase ID : 0   
    (dens)   : rho = 500. [kg/m^3]  
    (elast)  : G = 5e+10 [Pa]  Vs = 10000. [m/s]  
    (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
 
-   Phase ID : 2
+   Phase ID : 2   
    (dens)   : rho = 200. [kg/m^3]  
    (elast)  : G = 5e+10 [Pa]  Vs = 15811.4 [m/s]  
    (diff)   : eta = 1e+19 [Pa*s]  Bd = 5e-20 [1/Pa/s]  
 
-   Phase ID : 1
+   Phase ID : 1   
    (dens)   : rho = 3300. [kg/m^3]  
    (elast)  : G = 5e+10 [Pa]  Vs = 3892.49 [m/s]  
    (diff)   : eta = 1e+24 [Pa*s]  Bd = 5e-25 [1/Pa/s]  
@@ -60,8 +60,8 @@ Material parameters:
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Grid parameters:
-   Total number of cpu                  : 2 
-   Processor grid  [nx, ny, nz]         : [2, 1, 1]
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
    Fine grid cells [nx, ny, nz]         : [32, 16, 16]
    Number of cells                      :  8192
    Number of faces                      :  25856
@@ -72,7 +72,7 @@ Grid parameters:
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
    Adding inflow velocity at boundary         @ 
-      Inflow velocity boundary                : 1 [1-left; 2-right; 3-front; 4-back; 5-symmetric side flow with compensating top/bottom]
+      Inflow velocity boundary                : Left 
       Outflow at opposite boundary            @ 
       Inflow phase from next to boundary      @ 
       Inflow window [bottom, top]             : [-20.00,-10.00] [km] 
@@ -86,7 +86,6 @@ Solution parameters & controls:
    Compute initial guess                   @ 
    Use lithostatic pressure for creep      @ 
    Use lithostatic pressure for plasticity @ 
-   Enforce zero average pressure on top    @ 
    Limit pressure at first iteration       @ 
    Minimum viscosity                       : 1e+18 [Pa*s] 
    Maximum viscosity                       : 1e+25 [Pa*s] 
@@ -108,7 +107,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 2 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00645995 sec)
+Reading geometric primitives ... done (0.0137606 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : 3D_ridge 
@@ -129,7 +128,7 @@ Preconditioner parameters:
    Matrix type                   : monolithic
    Preconditioner type           : coupled Galerkin geometric multigrid
    Global coarse grid [nx,ny,nz] : [8, 4, 4]
-   Local coarse grid  [nx,ny,nz] : [4, 4, 4]
+   Local coarse grid  [nx,ny,nz] : [8, 4, 4]
    Number of multigrid levels    :  3
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -148,134 +147,133 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 4.332702945042e+01 
-    1 KSP Residual norm 2.886413814683e-01 
-    2 KSP Residual norm 1.462189880898e-02 
-    3 KSP Residual norm 6.444708691053e-03 
-    4 KSP Residual norm 3.941149404400e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000394115, 21.6635, 43.327]
-      Line search terminated: lambda = 1., fnorms = 0.000394115
-  1 SNES Function norm 3.941149404410e-04 
+    1 KSP Residual norm 1.317376726620e-01 
+    2 KSP Residual norm 8.858542736674e-03 
+    3 KSP Residual norm 2.873044390562e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 3
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000287304, 21.6635, 43.327]
+      Line search terminated: lambda = 1., fnorms = 0.000287304
+  1 SNES Function norm 2.873044390540e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.350061 (sec)
+SNES solution time      : 0.273958 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.399827670378e-06 
-      |Div|_2   = 7.299057829283e-05 
+      |Div|_inf = 1.615763928161e-07 
+      |Div|_2   = 5.529199118378e-06 
    Momentum: 
-      |mRes|_2  = 3.872969942555e-04 
+      |mRes|_2  = 2.872512291658e-04 
 --------------------------------------------------------------------------
-Saving output ... done (0.157533 sec)
+Saving output ... done (0.115749 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
-Current time        : 0.00000 [Myr] 
-Tentative time step : 0.01000 [Myr] 
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.01000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 6.504689567634e-01 
+  0 SNES Function norm 6.522819032263e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 6.504689567634e-01 
-    1 KSP Residual norm 9.446021128246e-04 
-    2 KSP Residual norm 6.339233545479e-04 
-    3 KSP Residual norm 1.577875264597e-05 
+    0 KSP Residual norm 6.522819032263e-01 
+    1 KSP Residual norm 9.233012789499e-04 
+    2 KSP Residual norm 3.579396341079e-04 
+    3 KSP Residual norm 1.737758967191e-06 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 3
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.57788e-05, 0.325234, 0.650469]
-      Line search terminated: lambda = 1., fnorms = 1.57788e-05
-  1 SNES Function norm 1.577875264575e-05 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.73776e-06, 0.326141, 0.652282]
+      Line search terminated: lambda = 1., fnorms = 1.73776e-06
+  1 SNES Function norm 1.737758967425e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.207636 (sec)
+SNES solution time      : 0.21441 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.146515796105e-07 
-      |Div|_2   = 2.999542136260e-06 
+      |Div|_inf = 3.034878835192e-09 
+      |Div|_2   = 4.502154348408e-08 
    Momentum: 
-      |mRes|_2  = 1.549102262695e-05 
+      |mRes|_2  = 1.737175664545e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.01000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 67 markers in 7.2069e-03 s 
+Marker control [0]: (Corners ) injected 118 markers in 1.2153e-02 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.148548 sec)
+Saving output ... done (0.112082 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
-Current time        : 0.01000 [Myr] 
-Tentative time step : 0.01100 [Myr] 
+Current time        : 0.01000000 [Myr] 
+Tentative time step : 0.01100000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.017394866189e+00 
+  0 SNES Function norm 2.019812131594e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.017394866189e+00 
-    1 KSP Residual norm 2.898902050873e-03 
-    2 KSP Residual norm 1.632480493094e-03 
-    3 KSP Residual norm 4.941052050756e-05 
+    0 KSP Residual norm 2.019812131594e+00 
+    1 KSP Residual norm 2.582809246210e-03 
+    2 KSP Residual norm 1.055764647282e-03 
+    3 KSP Residual norm 5.237125922001e-06 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 3
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [4.94105e-05, 1.0087, 2.01739]
-      Line search terminated: lambda = 1., fnorms = 4.94105e-05
-  1 SNES Function norm 4.941052050758e-05 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [5.23713e-06, 1.00991, 2.01981]
+      Line search terminated: lambda = 1., fnorms = 5.23713e-06
+  1 SNES Function norm 5.237125922091e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.2097 (sec)
+SNES solution time      : 0.217501 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.612011559307e-08 
-      |Div|_2   = 7.246499310175e-07 
+      |Div|_inf = 8.218661013060e-09 
+      |Div|_2   = 1.247315376411e-07 
    Momentum: 
-      |mRes|_2  = 4.940520639880e-05 
+      |mRes|_2  = 5.235640358863e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 248 markers in 8.8551e-03 s 
+Marker control [0]: (Corners ) injected 336 markers in 1.4526e-02 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.170028 sec)
+Saving output ... done (0.109878 sec)
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
-Current time        : 0.02100 [Myr] 
-Tentative time step : 0.01210 [Myr] 
+Current time        : 0.02100000 [Myr] 
+Tentative time step : 0.01210000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.263973289912e+00 
+  0 SNES Function norm 2.262800775274e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.263973289912e+00 
-    1 KSP Residual norm 2.950069390619e-03 
-    2 KSP Residual norm 1.653392496492e-03 
-    3 KSP Residual norm 5.226876480619e-05 
+    0 KSP Residual norm 2.262800775274e+00 
+    1 KSP Residual norm 2.583377183603e-03 
+    2 KSP Residual norm 1.107794500609e-03 
+    3 KSP Residual norm 5.575568044566e-06 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 3
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [5.22688e-05, 1.13199, 2.26397]
-      Line search terminated: lambda = 1., fnorms = 5.22688e-05
-  1 SNES Function norm 5.226876480635e-05 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [5.57557e-06, 1.1314, 2.2628]
+      Line search terminated: lambda = 1., fnorms = 5.57557e-06
+  1 SNES Function norm 5.575568044856e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.234986 (sec)
+SNES solution time      : 0.214444 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.521722178446e-08 
-      |Div|_2   = 7.810910063319e-07 
+      |Div|_inf = 7.571868700481e-09 
+      |Div|_2   = 1.224342839523e-07 
    Momentum: 
-      |mRes|_2  = 5.226292826872e-05 
+      |mRes|_2  = 5.574223611315e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.01210 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 698 markers in 1.2245e-02 s 
+Marker control [0]: (Corners ) injected 758 markers in 1.8337e-02 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.150839 sec)
+Saving output ... done (0.109498 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 1.92756 (sec) 
+Total solution time : 1.73603 (sec) 
 --------------------------------------------------------------------------
