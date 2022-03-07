@@ -66,7 +66,7 @@ LaMEM consists of the following directories:
 ### Main dependencies
 LaMEM crucially relies on:
 
-  * PETSc 3.9.4, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX
+  * PETSc 3.16.4, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX
 
 and to a minor extend on:
 
