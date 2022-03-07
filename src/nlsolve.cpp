@@ -567,10 +567,6 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 	{
 		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : maximum iterations reached\n"); CHKERRQ(ierr);
 	}
-	else if(reason == SNES_CONVERGED_TR_DELTA)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : SNES_CONVERGED_TR_DELTA\n"); CHKERRQ(ierr);
-	}
 	else if(reason == SNES_CONVERGED_ITERATING)
 	{
 		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : SNES_CONVERGED_ITERATING\n"); CHKERRQ(ierr);
