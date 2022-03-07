@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Dec 15 2021 - Time: 14:39:45 	    
+     Compiled: Date: Mar  7 2022 - Time: 14:35:02 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -270,18 +270,6 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [-2100., -20., -1000.]
    Upper coordinate bounds [ex, ey, ez] : [2100., 20., 0.]
 --------------------------------------------------------------------------
-Internal velocity conditions: 
-   Velocity box                         : 0 
-   Box center                           : [-1500.000000, 0.000000, -25.000000] [km] 
-   Box width                            : [200.000000, 200.000000, 50.000000] [km] 
-   Velocity                             : [1.000000, nan, nan] [cm/yr] 
-   
-   Velocity box                         : 1 
-   Box center                           : [1500.000000, 0.000000, -25.000000] [km] 
-   Box width                            : [200.000000, 200.000000, 50.000000] [km] 
-   Velocity                             : [-2.000000, nan, nan] [cm/yr] 
-   Advect velocity with flow            @   
---------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
    Top boundary temperature                   : 0. [C] 
@@ -305,6 +293,7 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Runge-Kutta 2-nd order
+   Periodic marker advection     : 0 0 0 
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : empirical STAGP (STAG + pressure points)
    Marker control type           : subgrid 
@@ -313,7 +302,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.666667 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0133388 sec)
+Reading geometric primitives ... done (0.004399 sec)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Passive Tracers: 
@@ -366,67 +355,67 @@ Solver parameters specified:
    Solver type                   : parallel direct/lu 
    Solver package                : mumps 
 --------------------------------------------------------------------------
-Initializing pressure with lithostatic pressure ... done (0.00214982 sec)
+Initializing pressure with lithostatic pressure ... done (0.000823 sec)
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
   0 SNES Function norm 2.015025707776e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 2
-  1 SNES Function norm 4.742423692033e-09 
+  1 SNES Function norm 4.742423917003e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 2.35239 (sec)
+SNES solution time      : 0.853184 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.762805583611e-10 
-      |Div|_2   = 4.742423644838e-09 
+      |Div|_inf = 3.762805613969e-10 
+      |Div|_2   = 4.742423649925e-09 
    Momentum: 
-      |mRes|_2  = 6.690603713381e-13 
+      |mRes|_2  = 1.591601563304e-12 
    Energy: 
       |eRes|_2  = 7.204699733820e-09 
 --------------------------------------------------------------------------
-Saving output ... done (0.368486 sec)
+Saving output ... done (0.13113 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.045423 sec)
+Phase_Transition ... done (0.015086 sec)
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.186187046784e+03 
+  0 SNES Function norm 1.183753339545e+03 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 7.880147874944e+01 
-  1 PICARD ||F||/||F0||=6.643259e-02 
+  1 SNES Function norm 7.916714715625e+01 
+  1 PICARD ||F||/||F0||=6.687808e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  2 SNES Function norm 2.536391027900e+01 
-  2 PICARD ||F||/||F0||=2.138272e-02 
+  2 SNES Function norm 2.556252258866e+01 
+  2 PICARD ||F||/||F0||=2.159447e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  3 SNES Function norm 6.489380027258e+00 
-  3 PICARD ||F||/||F0||=5.470790e-03 
+  3 SNES Function norm 6.646665843827e+00 
+  3 PICARD ||F||/||F0||=5.614908e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  4 SNES Function norm 5.693545505833e-01 
-  4 PICARD ||F||/||F0||=4.799872e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 5
-  5 SNES Function norm 1.839501703320e-01 
-  5 PICARD ||F||/||F0||=1.550769e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  6 SNES Function norm 3.608526971091e-02 
+  4 SNES Function norm 5.820506663003e-01 
+  4 PICARD ||F||/||F0||=4.916993e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  5 SNES Function norm 1.831257047730e-01 
+  5 PICARD ||F||/||F0||=1.546992e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 3
+  6 SNES Function norm 3.897516926260e-02 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 6
-SNES solution time      : 10.5532 (sec)
+SNES solution time      : 2.8323 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.265158234291e-07 
-      |Div|_2   = 1.593369235702e-06 
+      |Div|_inf = 4.350463648646e-07 
+      |Div|_2   = 1.490293644576e-06 
    Momentum: 
-      |mRes|_2  = 3.608526967573e-02 
+      |mRes|_2  = 3.897516923411e-02 
    Energy: 
       |eRes|_2  = 2.758275711364e-14 
 --------------------------------------------------------------------------
@@ -434,14 +423,14 @@ Actual time step : 0.00110 [Myr]
 --------------------------------------------------------------------------
 Advection Passive tracers ... 
  Currently active tracers    :  0 
-done (0.053623 sec)
+done (0.007963 sec)
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 7 markers and merged 0 markers in 9.2101e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 0 markers in 3.1060e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.357113 sec)
+Saving output ... done (0.132187 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 14.1575 (sec) 
+Total solution time : 4.11695 (sec) 
 --------------------------------------------------------------------------
