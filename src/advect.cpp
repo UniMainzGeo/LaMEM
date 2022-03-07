@@ -323,6 +323,10 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
  	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic_x,y,z)");
  	}
+	else{
+		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     : %lld %lld %lld \n",(LLD)fs->dsx.periodic,(LLD)fs->dsy.periodic,(LLD)fs->dsz.periodic);
+   		 
+	 }
 
  	// apply default setup in case advection is deactivated
  	if(actx->advect == ADV_NONE)

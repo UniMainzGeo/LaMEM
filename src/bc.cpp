@@ -218,115 +218,69 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 
     PetscFunctionReturn(0);
 }
-/*
+
 //---------------------------------------------------------------------------
-// Dropping boxes functions
+// Velocity box functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "DBoxReadCreate"
-PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb)
+#define __FUNCT__ "VelBoxCreate"
+PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 {
-    PetscErrorCode ierr;
-    PetscFunctionBegin;
-    char            Parameter[_str_len_]; 	
-    PetscScalar     Box[6];
-    PetscInt        i;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-    //========================
-    // Dropping box parameters
-    //========================
+	//========================
+	// velocity box parameters
+	//========================
 
-    ierr = getIntParam(fb, _OPTIONAL_, "dbox_num", &dbox->num, 1, _max_boxes_); CHKERRQ(ierr);
+	velbox->vx = DBL_MAX;
+	velbox->vy = DBL_MAX;
+	velbox->vz = DBL_MAX;
 
-    if(dbox->num)
-    {
-        ierr = getScalarParam(fb, _REQUIRED_, "dbox_bounds",  	    dbox->bounds, 6*dbox->num,  scal->length  ); 	CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "dbox_vel",    	    &dbox->vel,  1,     	scal->velocity); 	CHKERRQ(ierr);
-        ierr = getStringParam(fb, _OPTIONAL_, "dbox_VelocityType", Parameter,  "Vz"); 							CHKERRQ(ierr);
-        if 		(!strcmp(Parameter, "Vx"))
-        {
-            dbox->VelocityType = 0;
-        }
-        else if (!strcmp(Parameter, "Vy")){
-            dbox->VelocityType = 1;
-        }
-        else if (!strcmp(Parameter, "Vz")){
-            dbox->VelocityType = 2;
-        }
-        else {
-                SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown dbox_VelocityType. Should be [Vx,Vy,Vz] ");
-        }
-        dbox->advect_box=1;
-        ierr = getIntParam(fb, _OPTIONAL_, "dbox_advect",     &dbox->advect_box,   1,           1); 		CHKERRQ(ierr);	// advect box (=1) or not? Default is yes
+	ierr = getScalarParam(fb, _REQUIRED_, "cenX",   &velbox->cenX,   1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "cenY",   &velbox->cenY,   1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "cenZ",   &velbox->cenZ,   1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "widthX", &velbox->widthX, 1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "widthY", &velbox->widthY, 1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "widthZ", &velbox->widthZ, 1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "vx",     &velbox->vx,     1,  scal->velocity); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "vy",     &velbox->vy,     1,  scal->velocity); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "vz",     &velbox->vz,     1,  scal->velocity); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, "advect", &velbox->advect, 1,  1);              CHKERRQ(ierr);
 
-        for (i=0; i<6; i++){ Box[i] = dbox->bounds[i]*scal->length; }		// dimensional units    
-        PetscPrintf(PETSC_COMM_WORLD,"Internal velocity conditions: \n");
-        PetscPrintf(PETSC_COMM_WORLD,"   Velocity type                        : %s \n",Parameter);
-        PetscPrintf(PETSC_COMM_WORLD,"   Box Bounds                           : [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0], Box[1], Box[2], Box[3], Box[4], Box[5], scal->lbl_length);
-        PetscPrintf(PETSC_COMM_WORLD,"   Velocity value                       : %f %s\n",dbox->vel*scal->velocity, scal->lbl_velocity);
-        if (dbox->advect_box==1){
-            PetscPrintf(PETSC_COMM_WORLD,"   Advect velocity with flow            @   \n");
-        }
-
-        PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-        
-
-
-
-
-    }
+	if(velbox->vx == DBL_MAX && velbox->vy == DBL_MAX && velbox->vz == DBL_MAX)
+	{
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity box should specify at least one velocity component");
+	}
 
     PetscFunctionReturn(0);
 }
-*/
-//---------------------------------------------------------------------------
-// Internal velocity boxes functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "VelBoxReadCreate"
-PetscErrorCode VelBoxReadCreate(VelBox *velbox, Scaling *scal, FB *fb)
+#define __FUNCT__ "VelBoxPrint"
+PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
-    PetscErrorCode ierr;
-    PetscFunctionBegin;
-    PetscInt        i;
+	PetscFunctionBegin;
 
-    //========================
-    // Internal velocity box parameters
-    //========================
-    velbox->num = 0;
-    ierr = getIntParam(fb, _OPTIONAL_, "VelBox_num", &velbox->num, 1, _max_boxes_); CHKERRQ(ierr);
-    
-    if(velbox->num>0)
-    {
-        ierr = getScalarParam(fb, _REQUIRED_, "VelBox_cenX",  	    velbox->cenX,   velbox->num,  scal->length      ); 	CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "VelBox_cenY",  	    velbox->cenY,   velbox->num,  scal->length      ); 	CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "VelBox_cenZ",  	    velbox->cenZ,   velbox->num,  scal->length      ); 	CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "VelBox_widthX",  	velbox->widthX, velbox->num,  scal->length      ); 	CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "VelBox_widthY",  	velbox->widthY, velbox->num,  scal->length      ); 	CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "VelBox_widthZ",  	velbox->widthZ, velbox->num,  scal->length      ); 	CHKERRQ(ierr);
-        
-        ierr = getScalarParam(fb, _REQUIRED_, "VelBox_Vx",  	    velbox->Vx,     velbox->num,  scal->velocity    ); 	CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "VelBox_Vy",  	    velbox->Vy,     velbox->num,  scal->velocity    ); 	CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "VelBox_Vz",  	    velbox->Vz,     velbox->num,  scal->velocity    ); 	CHKERRQ(ierr);
-        
-        ierr = getIntParam(fb, _REQUIRED_,    "VelBox_Advect",  	velbox->Advect, velbox->num,  1  ); 	            CHKERRQ(ierr);
-        
-        PetscPrintf(PETSC_COMM_WORLD,"Internal velocity conditions: \n");
-        for (i=0; i<velbox->num; i++){ 
-            PetscPrintf(PETSC_COMM_WORLD,"   Velocity box                         : %i \n",i);
-            PetscPrintf(PETSC_COMM_WORLD,"   Box center                           : [%f, %f, %f] %s \n",velbox->cenX[i]*scal->length,velbox->cenY[i]*scal->length,velbox->cenZ[i]*scal->length, scal->lbl_length );
-            PetscPrintf(PETSC_COMM_WORLD,"   Box width                            : [%f, %f, %f] %s \n",velbox->widthX[i]*scal->length,velbox->widthY[i]*scal->length,velbox->widthZ[i]*scal->length, scal->lbl_length );
-            PetscPrintf(PETSC_COMM_WORLD,"   Velocity                             : [%f, %f, %f] %s \n", velbox->Vx[i]*scal->velocity,velbox->Vy[i]*scal->velocity,velbox->Vz[i]*scal->velocity, scal->lbl_velocity);
-            if (velbox->Advect[i]==1){
-                PetscPrintf(PETSC_COMM_WORLD,"   Advect velocity with flow            @   \n");
-            }
-            if (i<(velbox->num-1)){
-                PetscPrintf(PETSC_COMM_WORLD,"   \n");
-            }
-        }
-        PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-        
-    }
+	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %i \n", cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Box center                              : %g, %g, %g %s \n", velbox->cenX  *scal->length, velbox->cenY  *scal->length, velbox->cenZ  *scal->length, scal->lbl_length);
+	PetscPrintf(PETSC_COMM_WORLD, "      Box width                               : %g, %g, %g %s \n", velbox->widthX*scal->length, velbox->widthY*scal->length, velbox->widthZ*scal->length, scal->lbl_length);
+	if(velbox->vx != DBL_MAX)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      X-velocity                              : %g %s \n", velbox->vx*scal->velocity, scal->lbl_velocity);
+	}
+	if(velbox->vy != DBL_MAX)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      Y-velocity                              : %g %s \n", velbox->vy*scal->velocity, scal->lbl_velocity);
+	}
+	if(velbox->vz != DBL_MAX)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      Z-velocity                              : %g %s \n", velbox->vz*scal->velocity, scal->lbl_velocity);
+	}
+	if(velbox->advect)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      Advect velocity with flow               @  \n");
+	}
 
     PetscFunctionReturn(0);
 }
@@ -410,11 +364,30 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
     ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-    // dropping boxes
-    //ierr = DBoxReadCreate(&bc->dbox,        scal, fb); CHKERRQ(ierr);
+    // velocity boxes
+    ierr = FBFindBlocks(fb, _OPTIONAL_, "<VelBoxStart>", "<VelBoxEnd>"); CHKERRQ(ierr);
 
-    // Internal velocity boxes
-    ierr = VelBoxReadCreate(&bc->velbox,    scal, fb); CHKERRQ(ierr);
+    if(fb->nblocks)
+    {
+        // error checking
+        if(fb->nblocks > _max_boxes_)
+        {
+            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity boxes! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+        }
+
+        // store actual number of velocity blocks
+        bc->nboxes = fb->nblocks;
+
+        // read velocity boxes
+        for(jj = 0; jj < fb->nblocks; jj++)
+        {
+            ierr = VelBoxCreate(bc->vboxes + jj, scal, fb); CHKERRQ(ierr);
+
+            fb->blockID++;
+        }
+    }
+
+    ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
     
     // boundary inflow/outflow velocities
     ierr = getStringParam(fb, _OPTIONAL_, "bvel_face", str_inflow, NULL); CHKERRQ(ierr);  // must have component
@@ -586,9 +559,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
     }
 
-
-
     // print summary
+
     PetscPrintf(PETSC_COMM_WORLD, "Boundary condition parameters: \n");
 
     PetscPrintf(PETSC_COMM_WORLD, "   No-slip boundary mask [lt rt ft bk bm tp]  : ");
@@ -603,8 +575,15 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     if(bc->ExxNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %lld \n",  (LLD)bc->ExxNumPeriods);
     if(bc->EyyNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods);
     if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
+    if(bc->nboxes)           PetscPrintf(PETSC_COMM_WORLD, "   Number of velocity boxes                   : %lld \n",  (LLD)bc->nboxes);
+
+    for(jj = 0; jj < bc->nboxes; jj++)
+    {
+        ierr = VelBoxPrint(bc->vboxes + jj, scal, jj); CHKERRQ(ierr);
+    }
+
     if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
-    if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                          @ \n");
+    if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                       @ \n");
     if(bc->bot_open && bc->Plume_Type == 2)
     {
 
@@ -680,9 +659,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
      }
     }
 
-
     // TO BE ADDED: Information about inflow/outflow lateral velocities that are specified!
-
 
     if(bc->ptop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary pressure                      : %g %s \n", bc->ptop, scal->lbl_stress);
     if(bc->pbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot, scal->lbl_stress);
@@ -925,7 +902,7 @@ PetscErrorCode BCApply(BCCtx *bc)
     // apply prescribed boundary velocity
     ierr = BCApplyBoundVel(bc); CHKERRQ(ierr);
 
-    // apply dropping boxes
+    // apply velocity boxes
     ierr = BCApplyVelBox(bc); CHKERRQ(ierr);
 
     // fix all cells occupied by phase
@@ -1752,102 +1729,129 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 #define __FUNCT__ "BCApplyVelBox"
 PetscErrorCode BCApplyVelBox(BCCtx *bc)
 {
-    VelBox      *velbox;
     FDSTAG      *fs;
-    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, iBox;
+    VelBox      *velbox;
     PetscScalar ***bcvx, ***bcvy, ***bcvz;
-    PetscScalar x, y, z, dt, Vx, Vy, Vz;
-    PetscScalar xMin, xMax, yMin, yMax, zMin, zMax;
+    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, ib;
+    PetscScalar x, y, z, cx, cy, cz, dx, dy, dz, t, vx, vy, vz;
+    PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
 
     PetscErrorCode ierr;
     PetscFunctionBegin;
 
-    // access context
-    fs      = bc->fs;
-    velbox  = &bc->velbox;
+    // skip initial guess
     if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
 
     // check whether internal velocity box condition is activated
-    if(!velbox->num) PetscFunctionReturn(0);
+    if(!bc->nboxes) PetscFunctionReturn(0);
 
-    // Loop over all boxes
-    for(iBox = 0; iBox < velbox->num; iBox++){
+    // access context
+    fs    =  bc->fs;
+    t     =  bc->ts->time;
 
-        // integrate box positions (if requested)
-        dt   = bc->ts->dt;
-        Vx  = velbox->Vx[iBox];
-        Vy  = velbox->Vy[iBox];
-        Vz  = velbox->Vz[iBox];
-        if (velbox->Advect[iBox]==1){
-            // Move center of box if requested	
-            if (!isnan(Vx)){
-                velbox->cenX[iBox] += Vx*dt;
-            }
-            if (!isnan(Vy)){
-                velbox->cenY[iBox] += Vy*dt;
-            }
-            if (!isnan(Vz)){
-                velbox->cenZ[iBox] += Vz*dt;
-            }
+    // access velocity constraint vectors
+    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
+    // loop over all boxes
+    for(ib = 0; ib < bc->nboxes; ib++)
+    {
+    	// get current box
+    	velbox = bc->vboxes + ib;
+
+    	vx = velbox->vx; cx = velbox->cenX; dx = velbox->widthX;
+        vy = velbox->vy; cy = velbox->cenY; dy = velbox->widthY;
+        vz = velbox->vz; cz = velbox->cenZ; dz = velbox->widthZ;
+
+        // advect box (if requested)
+        if(velbox->advect)
+        {
+            if(vx != DBL_MAX) cx += vx*t;
+            if(vy != DBL_MAX) cy += vy*t;
+            if(vz != DBL_MAX) cz += vz*t;
         }
-        xMin = velbox->cenX[iBox] - velbox->widthX[iBox]/2.0;
-        xMax = velbox->cenX[iBox] + velbox->widthX[iBox]/2.0;
-        yMin = velbox->cenY[iBox] - velbox->widthY[iBox]/2.0;
-        yMax = velbox->cenY[iBox] + velbox->widthY[iBox]/2.0;
-        zMin = velbox->cenZ[iBox] - velbox->widthZ[iBox]/2.0;
-        zMax = velbox->cenZ[iBox] + velbox->widthZ[iBox]/2.0;
 
-        // access velocity constraint vectors
-        ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-        ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-        ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+        // get bounds
+        xmin = cx - dx/2.0; xmax = cx + dx/2.0;
+        ymin = cy - dy/2.0; ymax = cy + dy/2.0;
+        zmin = cz - dz/2.0; zmax = cz + dz/2.0;
+
+        //---------
+        // X points
+        //----------
+        if(vx != DBL_MAX)
+        {
+        	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+				// get coordinates
+				x = COORD_NODE(i, sx, fs->dsx);
+				y = COORD_CELL(j, sy, fs->dsy);
+				z = COORD_CELL(k, sz, fs->dsz);
+
+	            if(x >= xmin && x <= xmax
+	            && y >= ymin && y <= ymax
+	            && z >= zmin && z <= zmax)
+	            {
+	            	bcvx[k][j][i] = vx;
+	            }
+			}
+			END_STD_LOOP
+        }
+
+        //---------
+        // Y points
+        //----------
+        if(vy != DBL_MAX)
+        {
+        	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+				// get coordinates
+				x = COORD_CELL(i, sx, fs->dsx);
+				y = COORD_NODE(j, sy, fs->dsy);
+				z = COORD_CELL(k, sz, fs->dsz);
+	            if(x >= xmin && x <= xmax
+	            && y >= ymin && y <= ymax
+	            && z >= zmin && z <= zmax)
+	            {
+	            	bcvy[k][j][i] = vy;
+	            }
+			}
+			END_STD_LOOP
+        }
 
         //---------
         // Z points
-        //---------
-        GET_CELL_RANGE(nx, sx, fs->dsx)
-        GET_CELL_RANGE(ny, sy, fs->dsy)
-        GET_NODE_RANGE(nz, sz, fs->dsz)
-
-        iter = fs->nXFace + fs->nYFace;
-
-        START_STD_LOOP
+        //----------
+        if(vz != DBL_MAX)
         {
-            // get node coordinates
-            x = COORD_CELL(i, sx, fs->dsx);
-            y = COORD_CELL(j, sy, fs->dsy);
-            z = COORD_NODE(k, sz, fs->dsz);
+        	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-            // check whether node is inside any of boxes
-            if(x >= xMin && x <= xMax
-            && y >= yMin && y <= yMax
-            && z >= zMin && z <= zMax)
-            {
-                if (!isnan(Vx)){
-                     bcvx[k][j][i] = Vx;
-                }
-                if (!isnan(Vy)){
-                    bcvy[k][j][i]  = Vy;
-                }
-                if (!isnan(Vz)){
-                    bcvz[k][j][i]  = Vz;
-                }
-                    
-                break;
-            }
-            
-            iter++;
+			START_STD_LOOP
+			{
+				// get coordinates
+				x = COORD_CELL(i, sx, fs->dsx);
+				y = COORD_CELL(j, sy, fs->dsy);
+				z = COORD_NODE(k, sz, fs->dsz);
+	            if(x >= xmin && x <= xmax
+	            && y >= ymin && y <= ymax
+	            && z >= zmin && z <= zmax)
+	            {
+	            	bcvz[k][j][i] = vz;
+	            }
+			}
+			END_STD_LOOP
         }
-        END_STD_LOOP
-
-        // restore access
-        ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-        ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-        ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
-    
-
     }
+
+    // restore access
+    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
