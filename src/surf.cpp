@@ -1367,16 +1367,16 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
 
 	// read (and ignore) the silent undocumented file header
-	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &header, 1, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read grid dimensions
-	ierr = PetscBinaryRead(fd, &dim, 2,  PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &dim, 2,  NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read south-west corner coordinates
-	ierr = PetscBinaryRead(fd, &start, 2,  PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &start, 2,  NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read grid spacing
-	ierr = PetscBinaryRead(fd, &spacing, 2,  PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &spacing, 2,  NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// compute grid size
 	nxTopo = (PetscInt)dim[0];
@@ -1387,18 +1387,18 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	ierr = PetscMalloc((size_t)GridSize*sizeof(PetscScalar), &Z); CHKERRQ(ierr);
 	
 	// read entire file
-	ierr = PetscBinaryRead(fd, Z, GridSize, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, Z, GridSize, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// destroy file handle
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
 	// get input topography grid spacing
-	DX = spacing[0];
-	DY = spacing[1];
+	DX = spacing[0]/leng;
+	DY = spacing[1]/leng;
 
 	// get input topography south-west corner
-	X1 = start[0];
-	Y1 = start[1];
+	X1 = start[0]/leng;
+	Y1 = start[1]/leng;
 
 	// get mesh extents
 	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, 0, &ex, &ey, 0); CHKERRQ(ierr);

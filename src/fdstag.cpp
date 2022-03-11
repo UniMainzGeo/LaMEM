@@ -1480,19 +1480,19 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 
 		PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid);
 
-		PetscBinaryWrite(fid, &fs->dsx.nproc, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsy.nproc, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsz.nproc, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsx.tnods, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsy.tnods, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsz.tnods, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, fs->dsx.starts, fs->dsx.nproc+1, PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, fs->dsy.starts, fs->dsy.nproc+1, PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, fs->dsz.starts, fs->dsz.nproc+1, PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &chLen,         1,               PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, xc,             fs->dsx.tnods,   PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, yc,             fs->dsy.tnods,   PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, zc,             fs->dsz.tnods,   PETSC_SCALAR, PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsx.nproc, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsy.nproc, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsz.nproc, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsx.tnods, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsy.tnods, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsz.tnods, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, fs->dsx.starts, fs->dsx.nproc+1, PETSC_INT);
+		PetscBinaryWrite(fid, fs->dsy.starts, fs->dsy.nproc+1, PETSC_INT);
+		PetscBinaryWrite(fid, fs->dsz.starts, fs->dsz.nproc+1, PETSC_INT);
+		PetscBinaryWrite(fid, &chLen,         1,               PETSC_SCALAR);
+		PetscBinaryWrite(fid, xc,             fs->dsx.tnods,   PETSC_SCALAR);
+		PetscBinaryWrite(fid, yc,             fs->dsy.tnods,   PETSC_SCALAR);
+		PetscBinaryWrite(fid, zc,             fs->dsz.tnods,   PETSC_SCALAR);
 
 		PetscBinaryClose(fid);
 		free(fname);

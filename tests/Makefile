@@ -29,6 +29,8 @@ clean :
 	@rm -f *.xml
 	@rm -f *.output
 	@rm -f permea.darcy.dat
+	@rm -f ScalingLaw.dat
+	@rm -f ScalingLaw_Test.dat
 	@rm -rf ./Timestep*
 	@rm -rf ./Strainrate*
 	@rm -rf ./restart
