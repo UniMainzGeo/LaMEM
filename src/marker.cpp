@@ -364,9 +364,9 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 
 	// write binary output
 	s_nummark = (PetscScalar)actx->nummark;
-	ierr = PetscBinaryWrite(fd, &header,    1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, &s_nummark, 1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, markbuf,    5*actx->nummark, PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, &header,    1,               PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, &s_nummark, 1,               PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, markbuf,    5*actx->nummark, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// destroy file handle & file name
 	ierr = PetscViewerDestroy(&view_out); CHKERRQ(ierr);
@@ -628,10 +628,10 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
 
 	// read (and ignore) the silent undocumented file header
-	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &header, 1, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read grid dimensions
-	ierr = PetscBinaryRead(fd, &dim, 3,  PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &dim, 3, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// compute grid size
 	nx = (PetscInt)dim[0];
@@ -643,7 +643,7 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	ierr = PetscMalloc((size_t)GridSize*sizeof(PetscScalar), &Temp); CHKERRQ(ierr);
 
 	// read entire file
-	ierr = PetscBinaryRead(fd, Temp, GridSize, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, Temp, GridSize, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// get mesh extents
 	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
@@ -816,10 +816,10 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
 
 	// read (and ignore) the silent undocumented file header
-	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &header, 1, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read number of local of markers
-	ierr = PetscBinaryRead(fd, &s_nummark, 1, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &s_nummark, 1, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 	nummark = (PetscInt)s_nummark;
 
 	// allocate marker storage
@@ -832,7 +832,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
 
 	// read markers into buffer
-	ierr = PetscBinaryRead(fd, markbuf, 5*actx->nummark, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, markbuf, 5*actx->nummark, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// destroy file handle & file name
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
@@ -1382,7 +1382,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
 
 	// read (and ignore) the silent undocumented file header & size of file
-	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &header, 2, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 	Fsize = (PetscInt)(header[1]);
 
 	// allocate space for entire file & initialize counter
@@ -1390,7 +1390,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	Fcount = 0;
 
 	// read entire file 
-	ierr = PetscBinaryRead(fd, PolyFile, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, PolyFile, Fsize, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read number of volumes
 	VolN = (PetscInt)(PolyFile[Fcount]); Fcount++;

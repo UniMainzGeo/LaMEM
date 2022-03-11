@@ -148,6 +148,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
 	if ( ph->Type == _Box_ || ph->Type == _NotInAirBox_){
+		ph->PhaseInside[0] = -1;	// default
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		
 		ph->PhaseOutside[0] = -1;	// default
@@ -589,7 +590,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	Marker          *P;
 	JacRes          *jr;
 	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas;
-	PetscInt        PH1,PH2, ID, InsideAbove;
+	PetscInt        PH1,PH2, ID, InsideAbove,nphc; // nphc nophasechange condition
 	PetscScalar		T, time, factor, dxBox, dyBox, dzBox;
 	PetscLogDouble  t;
 	SolVarCell  	*svCell;
@@ -612,7 +613,16 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	  {
 	    PhaseTrans = jr->dbm->matPhtr+nPtr;
-		
+
+	    // Is the phase transition changing the phase, or other properites?
+		if((PhaseTrans->PhaseInside[0]>0 && PhaseTrans->PhaseOutside[0]>0) || (PhaseTrans->PhaseAbove[0]>0 && PhaseTrans->PhaseBelow[0]>0))
+		{
+			nphc = 1;
+		}
+		else
+		{
+			nphc = 0;
+		}
 	    // calling the moving dike function
 	    if ( PhaseTrans->Type == _NotInAirBox_ )
 	    {
@@ -649,7 +659,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				PH2 = P->phase;
 				PH1 = P->phase;
                  // the current phase is indeed involved in a phase transition
-				if      (   below>=0    )
+				if      (   (below>=0) && (nphc ==1))
 				{
 					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_){
 						PH1 = PhaseTrans->PhaseInside[below];
@@ -660,7 +670,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 						PH2 = PhaseTrans->PhaseAbove[below];
 					}
 				}
-				else if (   above >=0   )
+				else if (   (above >=0) && (nphc==1))
 				{
 					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_){
 						PH1 = PhaseTrans->PhaseInside[above];
@@ -670,6 +680,11 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 						PH1 = PhaseTrans->PhaseBelow[above];
 						PH2 = PhaseTrans->PhaseAbove[above];
 					}
+				}
+				else
+				{
+					PH1 = P->phase;
+					PH2 = PH1;
 				}
 
 				ph 			= P->phase;

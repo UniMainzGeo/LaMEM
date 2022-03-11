@@ -559,7 +559,7 @@ void in_polygon(
 			else
 			{
 				// non-vertical points
-				if(xp < MIN(ax, bx) || MAX(ax, bx) < xp) continue;
+				if(xp < PetscMin(ax, bx) || PetscMax(ax, bx) < xp) continue;
 
 				intersecty = ay + (xp - ax)/(bx - ax)*(by - ay);
 
@@ -584,7 +584,7 @@ void in_polygon(
 
 						xvind = vcoord[2*ind];
 
-						if(MIN(bx, xvind) < xp && xp < MAX(bx, xvind))
+						if(PetscMin(bx, xvind) < xp && xp < PetscMax(bx, xvind))
 						{
 							nIntersect += 1.0;
 						}
@@ -599,7 +599,7 @@ void in_polygon(
 
 		// check if the contour polygon is closed
 		point_in = (PetscInt)(nIntersect - 2.0*floor(nIntersect/2.0));
-		in[ip]   = MAX(point_on, point_in);
+		in[ip]   = PetscMax(point_on, point_in);
 	}
 }
 //---------------------------------------------------------------------------

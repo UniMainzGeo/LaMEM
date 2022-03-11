@@ -51,8 +51,8 @@ def test_b():
 
   # Run the input script wth matlab-generated particles
   ranks = 4
-  launch = '../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat -mark_load_file ./markers_p4/mdb -jp_pc_factor_mat_solver_package superlu_dist'
-  expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_b_SUPERLUDIST_opt-p4.expected'
+  launch = '../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat -mark_load_file ./markers_p4/mdb -jp_pc_factor_mat_solver_type mumps'
+  expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_b_MUMPS_opt-p4.expected'
 
   def comparefunc(unittest):
 
@@ -66,7 +66,7 @@ def test_b():
     unittest.compareFloatingPoint(key,2.5e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('t3_Sub1_MATLAB_b_SUPERLUDIST_opt',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t3_Sub1_MATLAB_b_MUMPS_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
@@ -82,8 +82,8 @@ def test_c():
 
   # Run the input script wth matlab-generated particles
   ranks = 4
-  launch = '../bin/deb/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles4.dat -mark_load_file ./markers_p4/mdb -jp_pc_factor_mat_solver_package superlu_dist'
-  expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_c_SUPERLUDIST_deb-p4.expected'
+  launch = '../bin/deb/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles4.dat -mark_load_file ./markers_p4/mdb -jp_pc_factor_mat_solver_type mumps'
+  expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_c_MUMPS_deb-p4.expected'
 
   def comparefunc(unittest):
 
@@ -97,7 +97,7 @@ def test_c():
     unittest.compareFloatingPoint(key,2.5e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('t3_Sub1_MATLAB_c_SUPERLUDIST_deb',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t3_Sub1_MATLAB_c_MUMPS_deb',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
