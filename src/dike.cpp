@@ -158,7 +158,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 
         if (PrintOutput)
 	    {
-	    PetscPrintf(PETSC_COMM_WORLD,"   Dike parameters ID[%lld] : Mf = %g, Mb = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb);
+	    PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld] : Mf = %g, Mb = %g, Mc = %g, y_Mc = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
 	    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
         }
 
@@ -215,7 +215,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		      right = CurrPhTr->bounds[1];
 		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 		    }
-		  else if(dike->Mc)   // Mf, Mc and Mb
+		  else if(dike->Mc >= 0.0)   // Mf, Mc and Mb
                     {
                       left = CurrPhTr->bounds[0];
                       right = CurrPhTr->bounds[1];
@@ -321,7 +321,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                       right = CurrPhTr->bounds[1];
                       tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 		    }
-		  else if(dike->Mc)   // Mf, Mc and Mb            
+		  else if(dike->Mc >= 0.0)   // Mf, Mc and Mb            
                     {
                       left = CurrPhTr->bounds[0];
                       right = CurrPhTr->bounds[1];
