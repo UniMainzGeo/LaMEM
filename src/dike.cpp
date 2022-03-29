@@ -259,7 +259,8 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		      tempdikeRHS = 0.0;
 		    }
 		  
-		  dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  //Give full divergence if cell is part dike part air before: dikeRHS += phRat[i]*tempdikeRHS; 
+		  dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  //Give full divergence if cell is part dike part air
+		  //before it was: dikeRHS += phRat[i]*tempdikeRHS; 
 		  
 		}  // close phase ratio loop
 	    }  // close phase transition and phase ID comparison 
