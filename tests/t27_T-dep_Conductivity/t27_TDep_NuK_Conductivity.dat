@@ -56,7 +56,7 @@
 	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
 	surf_level         = 0                # initial level
 	surf_air_phase     = 0                # phase ID of sticky air layer
-	surf_max_angle     = 90.0             # maximum angle with horizon (smoothed if larger)
+	surf_max_angle     = 0.0             # maximum angle with horizon (smoothed if larger)
 	
 #===============================================================================
 # Boundary conditions
@@ -237,6 +237,7 @@
 		Mf = 1.0
 		Mb = 1.0
 		PhaseID = 2
+		PhaseTransID = 0
 	<DikeEnd>
 
     # Dike
@@ -244,11 +245,6 @@
 		ID              = 2      # phase id
 		rho             = 3300   # density
 		G               = 4e10
-        			  # disl Rheology
-#      	 	n		= 3.5     # power law exponent
-#       	Bn  		= 1.1e-16 # DISLOCATION creep pre-exponential constant
-#       	En  		= 530e3   # activation energy
-#       	Vn  		= 15e-6   # activation volume
 # diff Rheology
 		Bd            =   3.33e-7
 		Ed            =   375e3
@@ -259,8 +255,8 @@
 		k               = 3.5   # thermal conductivity
 		nu_k		= 1.0
 		T_Nu            = 600.0    # Temp value for Nu enhancement to conductivity
-        		ch              = 30e6
-        fr  		= 30     # initial friction angle
+        	ch              = 30e6
+                fr  		= 30     # initial friction angle
      <MaterialEnd>
 
 
@@ -268,11 +264,6 @@
 	<MaterialStart>
 		ID  		= 	1      # phase id
 		rho 		= 	3300   # density
-# disl Rheology
-#		Bn  = 1.1e-16  # DISLOCATION creep pre-exponential constant
-#       	En  = 530e3    # activation energy
-#       	Vn  = 15e-6   # activation volume
-#     	      	n  = 3.5      
 # diff Rheology
         	Bd              =       3.33e-7
 		Ed              =       375e3
@@ -291,11 +282,6 @@
         <MaterialStart>
                 ID              =       3      # phase id
                 rho             =       3300   # density
-# disl Rheology
-#		Bn  = 1.1e-16  # DISLOCATION creep pre-exponential constant
-#       	En  = 530e3    # activation energy
-#       	Vn  = 15e-6   # activation volume
-#     	      	n  = 3.5      
 # diff Rheology
         	Bd              =       3.33e-7
 		Ed              =       375e3

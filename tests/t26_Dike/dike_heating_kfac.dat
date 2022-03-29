@@ -57,7 +57,7 @@
 	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
 	surf_level         = 0                # initial level
 	surf_air_phase     = 0                # phase ID of sticky air layer
-	surf_max_angle     = 25.0             # maximum angle with horizon (smoothed if larger)
+	surf_max_angle     = 0.0             # maximum angle with horizon (smoothed if larger)
 	
 #===============================================================================
 # Boundary conditions
@@ -90,7 +90,7 @@
 	p_litho_plast  = 1              # use lithostatic pressure for plasticity
 	eta_min        = 1e18           # viscosity lower limit
 	eta_max        = 1e24           # viscosity upper limit
-	eta_ref        = 1e22           # reference viscosity (initial guess)
+	eta_ref        = 1e20           # reference viscosity (initial guess)
 	min_cohes      = 1e3            # cohesion lower bound
 	min_fric       = 1.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
@@ -135,20 +135,6 @@
 		cstTemp = 1
 	<BoxEnd>
 	
-	
-#	<RidgeSegStart>
-#	    	phase = 1
-#	    	bounds      = -60 60 -1 1 -30 0 # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
-#   		ridgeseg_x  = 0.0 0.0           # coordinate order: left, right [can be different for oblique ridge]
-#    		ridgeseg_y  = -1.0 1.0          # coordinate order: front, back [needs to be the same as the front and back of bounds]
-#    		topTemp     = 1                # required: temperature @ top [in Celcius in case of GEO units]
-#    		botTemp     = 1350             # required: temperature @ bottom [in Celcius in case of GEO units]
-#    		Temperature = halfspace_age    # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
-#    		age0        = 0.8             # minimum age of seafloor at ridge [in Myr in case of GEO units]
-##		maxAge      = 60               # [optional] parameter that indicates the maximum thermal age of a plate
-##		v_spread    = 1          # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above
-#	<RidgeSegEnd>
-
         # lithosphere
         <BoxStart>
                 phase  = 1
@@ -284,11 +270,6 @@
 		healTau = 1e-24
 	<SofteningEnd>
 
-        <SofteningStart>
-                ID      = 2
-                healTau = 0.04
-        <SofteningEnd>
-
 # DIKES
 
         <DikeStart>
@@ -296,22 +277,8 @@
                 Mf = 0           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
                 Mb = 0           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
                 PhaseID = 2
-#		PhaseTransID = 0
-#                t0_dike = 0.11    # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step 
-#                t1_dike = 0.3     # optional, in Myr, end time
-#                v_dike  = 1.0     # optional, in cm/yr, velocity with which dike moves (as reference: 10cm/yr = 100km/Myr)
+		PhaseTransID = 0
         <DikeEnd>
-
-#	 <DikeStart>		
-#                ID = 1
-#                Mf = 0.4           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
-#                Mb = 0.4           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
-#                PhaseID = 3
-#               PhaseTransID = 0
-#                t0_dike = 0.11    # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
-#                t1_dike = 0.3     # optional, in Myr, end time
-#                v_dike  = 1.0     # optional, in cm/yr, velocity with which dike moves (as reference: 10cm/yr = 100km/Myr)
-#        <DikeEnd>
 
 # Material parameters
 
@@ -322,7 +289,11 @@
 		eta		= 1e18 	  # viscosity
 		 Cp             = 1.0e3   # specific heat (capacity)  [J/kg/K]
 		 k              = 1    # thermal conductivity   [W/m/K]
-		 healID         = 2
+                 G              = 4.0e10
+                 fr             = 30
+                 ch             = 30e6
+		 healID         = 1
+		 chSoftID	= 0
 	<MaterialEnd>
 
 
@@ -342,31 +313,10 @@
 	T_liq           = 1300    # celsius
 	T_sol           = 1000    # celsius
         ch              = 30e6
-        healID 	        = 1
+	chSoftID	= 0
+        healID 	        = 0
         fr  		= 30      # initial friction angle
      <MaterialEnd>
-
-# dike 2
-#    <MaterialStart>
-#        ID              = 3      # phase id
-#        rho             = 3300   # density
-#        G               = 4e10
-# disl Rheology
-#       n                = 3.5     # power law exponent
-#       Bn               = 1.1e-16 # DISLOCATION creep pre-exponential constant
-#       En               = 530e3   # activation energy
-#       Vn               = 15e-6   # activation volume
-#       alpha           = 3e-5    # thermal expansivity # Sam: 3.5e-5
-#        Cp              = 1.2e3   # specific heat (capacity)
-#        k               = 20.0    # thermal conductivity
-#        Latent_hx       = 5e5     # J/kg
-#        T_liq           = 1300    # celsius
-#        T_sol           = 1000    # celsius
-#        ch              = 30e6
-#        healID          = 1
-#        fr              = 30     # initial friction angle
-#     <MaterialEnd>
-
 
 	# Upper Lithosphere 1
 	<MaterialStart>
@@ -377,12 +327,7 @@
        	     	 En  = 530e3    # activation energy
        	      	 Vn  = 15e-6   # activation volume
       	      	 n  = 3.5      
-# diff Rheology
-#        	Bd              =       3.33e-7
-#		Ed              =       375e3
-#		Vd              =       10e-6
-#      		 alpha           =       3e-5  # thermal expansivity # Sam: 3.5e-5
-		Cp              =       1.2e3  # specific heat (capacity)
+ 		Cp              =       1.2e3  # specific heat (capacity)
 		k               =       2.0    # thermal conductivity
 		G   		= 	4e10
 		chSoftID	= 	0      # Cohesion softening ID
@@ -392,29 +337,7 @@
 #		frSoftID   	=  	0     # softening ID
 	<MaterialEnd>
 
-	
-	# Lithosphere with high conductivity
-#        <MaterialStart>
-#                ID              =       3      # phase id
-#                rho             =       3300   # density
-# disl Rheology
-#                 Bn  = 1.1e-16  # DISLOCATION creep pre-exponential constant
-#                 En  = 530e3    # activation energy
-#                 Vn  = 15e-6   # activation volume
-#                 n  = 3.5
-#                Cp              =       1.2e3  # specific heat (capacity)
-#                k               =       3.5    # thermal conductivity
-#		nu_k            =       4.0
-#		T_Nu            =       600
-#                G               =       4e10
-#                chSoftID        =       0      # Cohesion softening ID
-#                ch              =       30e6   # Cohesion
-#                fr              =       30     # initial friction angle
-#                healID          =       0      # healing timescale in Myr
-#               frSoftID        =       0     # softening ID
-#        <MaterialEnd>
-
-	
+		
 #===============================================================================
 # PETSc options
 #===============================================================================

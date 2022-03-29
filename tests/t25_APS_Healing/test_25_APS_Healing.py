@@ -30,9 +30,9 @@ def test_2D():
 
   return(ex1)
 
-def test_2cores():
+def test_2cores():    
 
-  # Test APS healing in 2D using optimized LaMEM                                                                                                                               
+  # Test APS healing in 2D using optimized LaMEM, fails with 2 cores, works with 1 core
   ranks = 2
   launch = '../bin/opt/LaMEM -ParamFile ./t25_APS_Healing/APS_Healing2cores.dat' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't25_APS_Healing/APS_Healing2cores.expected'

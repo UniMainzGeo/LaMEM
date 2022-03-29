@@ -108,14 +108,14 @@ registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       InOut.test_2D(), InOut.test_3D(),InOut.test_2D_Pres(), InOut.test_3D_Pres(),SS.test_xz(), SS.test_yz(), SS.test_xy(), SS.test_xz_yz(), 
                       CI.test_a(), CI.test_b(),
                       FSSA.test_1(),PTracer.test_a(),PTracer.test_b(),
-                      Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique(),Permeable.test_a(), APShealing.test_2D(), APShealing.test_2cores(),
-                      Dike.test_M1_2D(), Dike.test_M075_2D_2cores(),  Dike.heat_kfac(), Dike.heat_rhoA(),
+                      Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique(), Permeable.test_a(), APShealing.test_2D(), APShealing.test_2cores(),
+                      Dike.test_M1_2D(), Dike.test_M075_2D_2cores(), Dike.test_variableM(), Dike.test_M05_2D(), Dike.heat_kfac(), Dike.heat_rhoA(), 
                       TdepCond.test_2fields_dike(),
                       HR.test_recharge1(), HR.test_recharge2(),
                       PermSide.test_permeableSides_VelBoxes()];
 
                       #Dike.test_M05_2D()  tenmporarily removed 
- 
+                      # Dike.test_M075_2D_2cores() temporaily removed
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
 if os.environ.get('MATLAB') != None:
@@ -133,7 +133,6 @@ if os.environ.get('MATLAB') != None:
 h = pthharness.Harness(registeredTests)
 h.execute()
 h.verify()
-
 
 if __name__ == "__main__":
   run_tests()

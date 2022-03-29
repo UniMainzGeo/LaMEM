@@ -1,12 +1,4 @@
-# This is an example of symmetric versus asymmetric rifting of a crustal setup
-# The model has a viscoelastoplastic rheology and the geometry is created with the build-in 
-# geometry objects. We use a multigrid solver
-#
-# With the parameters provided, you can go from a symmetric mode of rifting to an 
-# asymmetric one by decreasing the viscosity of the lower layer from 1e22 to 1e21
-#
-# This setup is inspired by Huismans et al. (2005), JGR Vol 110, B02406 even though they
-# employed a viscoplastic rheology, rather than a viscoelastoplastic rheology
+# TESTING DIKE feature for a linearly varying M between a set value of M in-between the M in front and M in back
 
 #===============================================================================
 # Scaling
@@ -57,7 +49,7 @@
 	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
 	surf_level         = 0                # initial level
 	surf_air_phase     = 0                # phase ID of sticky air layer
-	surf_max_angle     = 90.0             # maximum angle with horizon (smoothed if larger)
+	surf_max_angle     = 0.0             # maximum angle with horizon (smoothed if larger)
 	
 #===============================================================================
 # Boundary conditions
@@ -90,7 +82,7 @@
 	p_litho_plast  = 1              # use lithostatic pressure for plasticity
 	eta_min        = 1e18           # viscosity lower limit
 	eta_max        = 5e22           # viscosity upper limit
-	eta_ref        = 5e19           # reference viscosity (initial guess)
+	eta_ref        = 1e19           # reference viscosity (initial guess)
 	min_cohes      = 1e3            # cohesion lower bound
 	min_fric       = 1.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
@@ -231,7 +223,7 @@
 		A    = 0.95 	# 0.87	# reduction ratio = 1-FinalParameter/InitialParameter
 		APS1 = 0.01      # 0.5    # make really small so weakenening makes it directly weak
 		APS2 = 0.15     # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
-                healTau = 0.03
+                healTau = 0.04
 	<SofteningEnd>
 
 	<SofteningStart>
@@ -243,9 +235,9 @@
         <DikeStart>
                 ID = 0
                 Mf = 1.0           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
-		Mc = 0.3
-                Mb = 0.6           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
-		y_Mc = -1.0
+		Mc = 0.0
+                Mb = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
+		y_Mc = 0.0
                 PhaseID = 2
 		PhaseTransID = 0
         <DikeEnd>
