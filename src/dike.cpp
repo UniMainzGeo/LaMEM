@@ -257,7 +257,8 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		    }
 		  
 		  dikeRHS += phRat[i]*tempdikeRHS;
-		  
+		  // dikeRHS +=(phRat[i]+phRat[AirPhase])*tempdikeRHS   --> get airphase
+		    
 		}  // close phase ratio loop
 	    }  // close phase transition and phase ID comparison 
 	}  // close dike block loop
