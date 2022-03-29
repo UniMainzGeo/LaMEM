@@ -168,8 +168,9 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 #undef __FUNCT__
 #define __FUNCT__ "GetDikeContr"
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx,                                                                                                                                
-                            PetscScalar *phRat,          // phase ratios in the control volume                                                                              
-			    PetscScalar &dikeRHS,
+                            PetscScalar *phRat,          // phase ratios in the control volume   
+                            PetscInt &AirPhase,                                                                           
+                            PetscScalar &dikeRHS,
                             PetscScalar &y_c)            // also get x_c and z_c  to makeit versatile so that the dike cam be in any direction? 
                                                          // or not necessary because it can only be in y-direction anyways from how it is coded at the moment
 {
@@ -194,74 +195,73 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
       CurrPhTr = ctx->PhaseTrans+nPtr;
       
       for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
-	{
-	  // access the parameters of the dike depending on the dike block
-	  dike = ctx->matDike+nD;
+        {
+	     // access the parameters of the dike depending on the dike block
+          dike = ctx->matDike+nD;
 	  
-	  // access the phase ID of the dike parameters of each dike
-	  i = dike->PhaseID;
+	     // access the phase ID of the dike parameters of each dike
+          i = dike->PhaseID;
 	  
-	  if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell           
-	    {
+          if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell           
+            {
 	      
-	      // check if the phase ratio of a dike phase is greater than 0 in the current cell
-	      if(phRat[i]>0)
-		{
-		  if(dike->Mb == dike->Mf && !dike->Mc)       // constant M
-		    {
-		      M = dike->Mf;
-		      v_spread = PetscAbs(bc->velin);
-		      left = CurrPhTr->bounds[0];
-		      right = CurrPhTr->bounds[1];
-		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
-		    }
-		  else if(dike->Mc >= 0.0)   // Mf, Mc and Mb
-                    {
-                      left = CurrPhTr->bounds[0];
-                      right = CurrPhTr->bounds[1];
-                      front = CurrPhTr->bounds[2];
-                      back = CurrPhTr->bounds[3];
-                      v_spread = PetscAbs(bc->velin);
+	           // check if the phase ratio of a dike phase is greater than 0 in the current cell
+            if(phRat[i]>0)
+              {
+              if(dike->Mb == dike->Mf && !dike->Mc)       // constant M
+                {
+                  M = dike->Mf;
+                  v_spread = PetscAbs(bc->velin);
+                  left = CurrPhTr->bounds[0];
+                  right = CurrPhTr->bounds[1];
+                  tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
+                }
+              else if(dike->Mc >= 0.0)   // Mf, Mc and Mb
+                {
+                  left = CurrPhTr->bounds[0];
+                  right = CurrPhTr->bounds[1];
+                  front = CurrPhTr->bounds[2];
+                  back = CurrPhTr->bounds[3];
+                  v_spread = PetscAbs(bc->velin);
 
-		      if(y_c >= dike->y_Mc)
-			{
-			  // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
-			  y_distance = y_c - dike->y_Mc;
-			  M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
-			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-			}
-		      else
-			{
-			  // linear interpolation between different M values, Mf is M in front, Mc acts as M in back  
-			  y_distance = y_c - front;
-			  M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
-			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-			}
+		              if(y_c >= dike->y_Mc)
+                    {
+                    // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
+                      y_distance = y_c - dike->y_Mc;
+                      M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
+                      tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
                     }
-		  else if(dike->Mb != dike->Mf && !dike->Mc)   // only Mf and Mb, they are different
-		    {
-		      left = CurrPhTr->bounds[0];
-		      right = CurrPhTr->bounds[1];
-		      front = CurrPhTr->bounds[2];
-		      back = CurrPhTr->bounds[3];
-		      v_spread = PetscAbs(bc->velin);
+                  else
+			             {
+			              // linear interpolation between different M values, Mf is M in front, Mc acts as M in back  
+			               y_distance = y_c - front;
+			               M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
+			               tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+			             }
+                }
+		          else if(dike->Mb != dike->Mf && !dike->Mc)   // only Mf and Mb, they are different
+		            {
+		              left = CurrPhTr->bounds[0];
+		              right = CurrPhTr->bounds[1];
+		              front = CurrPhTr->bounds[2];
+		              back = CurrPhTr->bounds[3];
+		              v_spread = PetscAbs(bc->velin);
 		      
-		      // linear interpolation between different M values, Mf is M in front, Mb is M in back
-		      y_distance = y_c - front;
-		      M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
-		      tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-		    }
-		  else                                         // Mb and Mf don't exist (which should not occurr)
-		    {
-		      tempdikeRHS = 0.0;
-		    }
+		              // linear interpolation between different M values, Mf is M in front, Mb is M in back
+		              y_distance = y_c - front;
+		              M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
+		              tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+		            }
+		          else                                         // Mb and Mf don't exist (which should not occurr)
+		            {
+		              tempdikeRHS = 0.0;
+		            }
 		  
-		  dikeRHS += phRat[i]*tempdikeRHS;
-		  // dikeRHS +=(phRat[i]+phRat[AirPhase])*tempdikeRHS   --> get airphase
-		    
-		}  // close phase ratio loop
-	    }  // close phase transition and phase ID comparison 
-	}  // close dike block loop
+		          dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  //Give full divergence if cell is part dike part air
+		  
+		          }  // close phase ratio loop
+	         }  // close phase transition and phase ID comparison 
+	     }  // close dike block loop
     }  // close phase transition block loop
   
   PetscFunctionReturn(0);
