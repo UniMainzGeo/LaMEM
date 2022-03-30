@@ -174,8 +174,8 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
                             PetscScalar *phRat,          // phase ratios in the control volume   
                             PetscInt &AirPhase,                                                                           
                             PetscScalar &dikeRHS,
-                            PetscScalar &y_c)            // also get x_c and z_c  to makeit versatile so that the dike cam be in any direction? 
-                                                         // or not necessary because it can only be in y-direction anyways from how it is coded at the moment
+                            PetscScalar &y_c) 
+                                              
 {
   
   BCCtx       *bc;
@@ -183,7 +183,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   Ph_trans_t  *CurrPhTr;
   PetscInt     i, nD, nPtr, numDike, numPhtr;
   PetscScalar  v_spread, M, left, right, front, back;
-  PetscScalar  y_distance, tempdikeRHS;
+  PetscScalar  y_distance, tempdikeRHS, dikeRHS_before;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
@@ -260,7 +260,12 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		    }
 		  
 		  dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  //Give full divergence if cell is part dike part air
-		  //before it was: dikeRHS += phRat[i]*tempdikeRHS; 
+
+		  /*		  PetscPrintf(PETSC_COMM_WORLD, "airphase %g, rockphase %g \n", phRat[AirPhase], phRat[i]);
+				  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS %g \n", dikeRHS);
+				  PetscPrintf(PETSC_COMM_WORLD, "tempdikeRHS %g \n", tempdikeRHS);
+				  dikeRHS_before += phRat[i]*tempdikeRHS; 
+				  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS_before %g \n", dikeRHS_before); */
 		  
 		}  // close phase ratio loop
 	    }  // close phase transition and phase ID comparison 
