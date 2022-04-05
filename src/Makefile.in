@@ -87,7 +87,7 @@ ifeq ($(PLATFORM), x86_64)
 endif
 
 # These are for BinaryBuilder compilations
-ifeq (,$(findstring $PLATFORM, aarch64 armv6l armv7l i686 powerpc64le))
+ifeq (,$(findstring $PLATFORM, aarch64 armv6l armv7l i686 powerpc64le amd64))
    ifneq ($(shell mpicc -v 2>&1 | grep -c gcc), 0)
       # GNU
       DEPEN_FLAGS = -MM
