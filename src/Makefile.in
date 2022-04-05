@@ -105,6 +105,25 @@ ifeq ($(PLATFORM), aarch64)
    endif   
 endif
 
+ifeq ($(PLATFORM), armv7l)
+   ifneq ($(shell mpicc -v 2>&1 | grep -c gcc), 0)
+      # GNU
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS += -std=c++11 -Wall -W \
+      -Wconversion -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
+      -Wno-unused-result -Wno-inline
+   endif
+   ifneq ($(shell mpicc -v 2>&1 | grep -c apple), 0)
+      # GNU
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS += -std=c++11  -pedantic -Wall -W -Wmissing-prototypes \
+      -Wconversion -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
+      -Wno-unused-result -Wno-inline
+   endif   
+endif
+
 
 #====================================================
 
