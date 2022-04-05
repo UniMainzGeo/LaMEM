@@ -58,7 +58,7 @@ ifeq ($(PLATFORM), ppc64)
 endif
 
 # Intel or AMD machine
-ifeq ($(PLATFORM), x86_64)
+ifeq ($(PLATFORM), x86_64))
    # Detect compilers
    ifneq ($(shell mpicc -v 2>&1 | grep -c pgcc), 0)
       # PORTLAND GROUP
@@ -95,6 +95,14 @@ ifeq ($(PLATFORM), aarch64)
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
    endif
+   ifneq ($(shell mpicc -v 2>&1 | grep -c Apple), 0)
+      # GNU
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS += -std=c++11  -pedantic -Wall -W -Wmissing-prototypes \
+      -Wconversion -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
+      -Wno-unused-result -Wno-inline
+   endif   
 endif
 
 
