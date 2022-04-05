@@ -58,7 +58,7 @@ ifeq ($(PLATFORM), ppc64)
 endif
 
 # Intel or AMD machine
-ifeq ($(PLATFORM), x86_64))
+ifeq ($(PLATFORM), x86_64)
    # Detect compilers
    ifneq ($(shell mpicc -v 2>&1 | grep -c pgcc), 0)
       # PORTLAND GROUP
@@ -86,7 +86,7 @@ ifeq ($(PLATFORM), x86_64))
    endif   
 endif
 
-ifneq ,($(findstring $(PLATFORM), aarch64 armv7l i686))
+ifeq ($(findstring $(PLATFORM), aarch64 armv7l i686))
    ifneq ($(shell mpicc -v 2>&1 | grep -c gcc), 0)
       # GNU
       DEPEN_FLAGS = -MM
