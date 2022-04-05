@@ -95,7 +95,7 @@ ifeq ($(PLATFORM), aarch64)
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
    endif
-end
+endif
 
 
 #====================================================
