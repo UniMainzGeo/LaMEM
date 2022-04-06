@@ -947,6 +947,7 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 
 		// Set the temperature structure
 		if 		(PhaseTrans->TempType == 0){
+		  //PetscPrintf(PETSC_COMM_WORLD,"inside box in loop in none temp \n");  // PRINT BOX TEST
 			// do nothing
 		}
 		else if	(PhaseTrans->TempType == 1){
@@ -979,7 +980,7 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 			d 		=	zTop - P->X[2];
 			T 		= 	(botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
-		
+
 	}
 	else{
 
@@ -1003,7 +1004,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
   PetscScalar  T;
   
   PetscFunctionBegin;
-  
+
   AirPhase = 0.0;
   AirPhase  = jr->surf->AirPhase;
   ph = P->phase;
@@ -1019,6 +1020,9 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
 
 		// Set the temperature structure                                                                 
 		if      (PhaseTrans->TempType == 0){
+
+		  //PetscPrintf(PETSC_COMM_WORLD,"inside NIAB in loop in none-temp \n");  // PRINT FOR NOTINAIRBOX TEST 
+
 			// do nothing                                                                                                                                    
 		}
 		else if (PhaseTrans->TempType == 1){

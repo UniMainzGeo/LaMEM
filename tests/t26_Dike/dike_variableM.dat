@@ -22,7 +22,7 @@
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 8    # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 4    # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 2       # save output every n steps
 #	nstep_rdb = 100     # save restart database every n steps
 
@@ -33,13 +33,13 @@
 
 # Number of cells for all segments
 	nel_x = 40
-	nel_y = 4
+	nel_y = 8
 	nel_z = 24
 
 # Coordinates of all segments (including start and end points)
 
 	coord_x = -20 20
-	coord_y = -2  2
+	coord_y = -4  4
 	coord_z = -20 4
 
 #===============================================================================
@@ -63,7 +63,7 @@
 	bvel_bot     =  -20   # bottom coordinate of inflow window
 	bvel_top     =  4    # top coordinate of inflow window
 	bvel_velin   =  -2.0  # 0utflow velocity (halfspreading velocity)
-	bvel_velbot  =  1.5   # bottom inflow velocity
+	bvel_velbot  =  1.16   # bottom inflow velocity, matlab velocity calculation: 1.1562
 #	bvel_veltop  =  -1.0  # top inflow velocity
 
 # temperature on the top & bottom boundaries
@@ -122,7 +122,7 @@
 	# sticky air
 	<BoxStart>
 		phase  = 0
-		bounds = -20 20 -2 2 0 4   # (left, right, front, back, bottom, top)
+		bounds = -20 20 -4 4 0 4   # (left, right, front, back, bottom, top)
 		Temperature = constant
 		cstTemp = 1
 	<BoxEnd>	
@@ -130,7 +130,7 @@
         # lith
         <BoxStart>
                 phase  = 1
-                bounds = -20 20 -2 2 -10 0   # (left, right, front, back, bottom, top)
+                bounds = -20 20 -4 4 -10 0   # (left, right, front, back, bottom, top)
                 Temperature = constant
                 cstTemp = 500
         <BoxEnd>
@@ -138,7 +138,7 @@
         # asth
         <BoxStart>
                 phase  = 2
-                bounds = -20 20 -2 2 -20 -10   # (left, right, front, back, bottom, top)
+                bounds = -20 20 -4 4 -20 -10   # (left, right, front, back, bottom, top)
                 Temperature = constant
                 cstTemp = 1000
         <BoxEnd>
@@ -208,7 +208,7 @@
   <PhaseTransitionStart>
         ID                      =   0                               # Phase_transition law ID
         Type                    =   NotInAirBox                             # A box-like region
-        PTBox_Bounds            =   -1.0 1.0  -3.0 3.0 -10.0 2.0      # box bound coordinates: [left, right, front, back, bottom, top]
+        PTBox_Bounds            =   -1.0 1.0 -4.0 4.0 -10.0 2.0      # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   2
         PhaseInside             =   2 2                                # Phase within the box [use -1 if you don't want to change the phase inside the box]
         PhaseOutside            =   1 0                            # Phase outside the box
@@ -234,10 +234,10 @@
 # DIKES
         <DikeStart>
                 ID = 0
-                Mf = 1.0           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
-		Mc = 0.0
-                Mb = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
-		y_Mc = 0.0
+                Mf = 1.0           # value for dike/magma- accommodated extension, between 0 and 1, in the front the box, for phase dike
+		Mc = 1.0	   # value for dike/magma- accommodated extension, between 0 and 1, in the middle between Mf and Mb, OPTIONAL
+                Mb = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
+		y_Mc = -1.0 	   # location where Mc is set, between the front and the back of the dike, OPTIONAL
                 PhaseID = 2
 		PhaseTransID = 0
         <DikeEnd>
