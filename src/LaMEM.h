@@ -195,6 +195,9 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#ifdef _WIN32
+#include "asprintf.h"       // required for some windows compilers
+#endif 
 
 using namespace std;
 
