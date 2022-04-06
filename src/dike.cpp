@@ -147,7 +147,9 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 
 	// set default value for Mc in case no Mc is provided
 	dike->Mc = -1.0;
-	
+	// set default value for y_Mc in case it is not used (it does not matter since it is not accessed and checked for anywhere  but might be better than not setting it)
+	dike->y_Mc = 0.0;
+
 	// read and store dike  parameters. 
         ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mc",      &dike->Mc,      1, 1.0);              CHKERRQ(ierr);
@@ -183,7 +185,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   Ph_trans_t  *CurrPhTr;
   PetscInt     i, nD, nPtr, numDike, numPhtr;
   PetscScalar  v_spread, M, left, right, front, back;
-  PetscScalar  y_distance, tempdikeRHS, dikeRHS_before;
+  PetscScalar  y_distance, tempdikeRHS;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
@@ -225,7 +227,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		      front = CurrPhTr->bounds[2];
 		      back = CurrPhTr->bounds[3];
 		      v_spread = PetscAbs(bc->velin);
-		      
+
 		      if(y_c >= dike->y_Mc)
 			{
 			  // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
@@ -233,7 +235,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 			  M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
 			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
 			}
-		      else
+		      else //if(y_c < dike->y_Mc)
 			{
 			  // linear interpolation between different M values, Mf is M in front, Mc acts as M in back  
 			  y_distance = y_c - front;
@@ -261,11 +263,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		  
 		  dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  //Give full divergence if cell is part dike part air
 
-		  /*		  PetscPrintf(PETSC_COMM_WORLD, "airphase %g, rockphase %g \n", phRat[AirPhase], phRat[i]);
-				  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS %g \n", dikeRHS);
-				  PetscPrintf(PETSC_COMM_WORLD, "tempdikeRHS %g \n", tempdikeRHS);
-				  dikeRHS_before += phRat[i]*tempdikeRHS; 
-				  PetscPrintf(PETSC_COMM_WORLD, "dikeRHS_before %g \n", dikeRHS_before); */
+		  // before:  dikeRHS_before += phRat[i]*tempdikeRHS; 
 		  
 		}  // close phase ratio loop
 	    }  // close phase transition and phase ID comparison 
@@ -345,7 +343,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                           M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
                           tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
                         }
-                      else
+                      else //if(y_c < dike->y_Mc)
                         {
                           // linear interpolation between different M values, Mf is M in front, Mc acts as M in back
                           y_distance = y_c - front;
