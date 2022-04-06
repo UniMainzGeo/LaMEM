@@ -127,7 +127,6 @@ ifeq (,$(findstring $PLATFORM, aarch64 armv6l armv7l i686 powerpc64le amd64))
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
-      CLIB_FLAGS = -lssp
    endif   
 endif
 
