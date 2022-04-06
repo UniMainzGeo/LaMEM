@@ -161,6 +161,10 @@ ${LaMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 	ar cr $@ ${COBJ}
 	ranlib $@
 
+# Create a dynamic library
+dylib: ${COBJ}
+	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
+
 #====================================================
 
 # Link LaMEM executable
@@ -173,7 +177,7 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 	@echo "............................................."
 	@echo "......... Linking LaMEM Executable .........."
 	@echo "............................................."
-	${CLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o $@
+	${CXXLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o $@
 
 #====================================================
 

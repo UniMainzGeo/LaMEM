@@ -120,6 +120,15 @@ ifeq (,$(findstring $PLATFORM, aarch64 armv6l armv7l i686 powerpc64le amd64))
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
    endif
+   ifneq ($(shell mpicc -v 2>&1 | grep -c musl), 0)
+      # GNU
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS = -std=c++11  -pedantic -W  \
+      -Wconversion -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
+      -Wno-unused-result -Wno-inline
+      CLIB_FLAGS = -lssp
+   endif   
 endif
 
 # Windows requires this linker flag
