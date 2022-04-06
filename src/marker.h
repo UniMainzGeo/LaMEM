@@ -83,11 +83,11 @@ struct GeomPrim
 	PetscInt    phase;
 	// sphere & cylinder & ellipsoid
 	PetscScalar center[3];
-	// sphere & cylinder
-	PetscScalar radius;
+	// sphere & cylinder & cone
+	PetscScalar radius, radius_base;
 	// ellipsoid
 	PetscScalar axes[3];
-	// cylinder
+	// cylinder & cone
 	PetscScalar base[3], cap[3];
 	// box & hex
 	PetscScalar bounds[6], coord[24];
@@ -119,6 +119,8 @@ void setPhaseLayer(GeomPrim *layer, Marker *P);
 void setPhaseHex(GeomPrim *hex, Marker *P);
 
 void setPhaseCylinder(GeomPrim *cylinder, Marker *P);
+
+void setPhaseCone(GeomPrim *cone, Marker *P);
 
 void HexGetBoundingBox(
 		PetscScalar *coord,   // hex coordinates

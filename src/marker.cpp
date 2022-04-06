@@ -864,7 +864,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	PetscScalar     chLen, chTime, chTemp;
 	char            TemperatureStructure[_str_len_];
 	PetscInt        jj, ngeom, imark, maxPhaseID;
-	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *hex, *layer, *cylinder;
+	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *ellipsoid, *box, *hex, *layer, *cylinder, *cone;
 
 	// map container to sort primitives in the order of appearance
 	map<PetscInt, GeomPrim*> cgeom;
@@ -1118,6 +1118,43 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		cylinder->setPhase = setPhaseCylinder;
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], cylinder));
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	//==========
+	// CONES
+	//==========
+
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<ConeStart>", "<ConeEnd>"); CHKERRQ(ierr);
+
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		fb->ID  = jj;								// allows command-line parsing
+		GET_GEOM(cone, geom, ngeom, _max_geom_);
+
+		ierr = getIntParam   (fb, _REQUIRED_, "phase",       &cone->phase,  1, maxPhaseID); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "radius",      &cone->radius, 1, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "radius_base", &cone->radius_base, 1, chLen); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "base",         cone->base,   3, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "cap",          cone->cap,    3, chLen);      CHKERRQ(ierr);
+
+		// Optional temperature options:
+		cone->setTemp = 0;
+		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		if 		(!strcmp(TemperatureStructure, "constant"))	    {cone->setTemp=1;}
+		
+		// Depending on temperature options, get required input parameters
+		if (cone->setTemp==1){
+			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&cone->cstTemp, 1, 1);     CHKERRQ(ierr); 
+		
+			// take potential shift C->K into account	
+			cone->cstTemp = (cone->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		}
+
+		cone->setPhase = setPhaseCone;
+
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], cone));
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -1934,6 +1971,49 @@ void setPhaseCylinder(GeomPrim *cylinder, Marker *P)
 		{	
 			PetscScalar T=0;
 			computeTemperature(cylinder, P, &T);
+
+			P->T = T; 			// set Temperature
+		}
+	}
+}
+//---------------------------------------------------------------------------
+void setPhaseCone(GeomPrim *cone, Marker *P)
+{
+	PetscScalar px, py, pz, ax, ay, az, dx, dy, dz, t, r,rb,rc;
+
+	// get vector between a test point and cone base
+	px = P->X[0] - cone->base[0];
+	py = P->X[1] - cone->base[1];
+	pz = P->X[2] - cone->base[2];
+
+	// get cone axis vector
+	ax = cone->cap[0] - cone->base[0];
+	ay = cone->cap[1] - cone->base[1];
+	az = cone->cap[2] - cone->base[2];
+
+	// radii
+	r  = cone->radius;
+	rb = cone->radius_base;
+
+	// find normalized parametric coordinate of a point-axis projection
+	t = (ax*px + ay*py + az*pz)/(ax*ax + ay*ay + az*az);
+	// ... parametric radius at t
+	rc  = (r-rb) * t + rb;
+
+	// find distance vector between point and axis
+	dx = px - t*ax;
+	dy = py - t*ay;
+	dz = pz - t*az;
+
+	// check cone
+	if(t >= 0.0 && t <= 1.0 && sqrt(dx*dx + dy*dy + dz*dz) <= rc)
+	{
+		P->phase = cone->phase;
+
+		if (cone->setTemp>0)
+		{	
+			PetscScalar T=0;
+			computeTemperature(cone, P, &T);
 
 			P->T = T; 			// set Temperature
 		}
