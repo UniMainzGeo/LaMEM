@@ -973,7 +973,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	ierr = JacResUpdateTemp(jr); CHKERRQ(ierr);
 
 	// copy temperature to markers
-	ierr = ADVMarkSetTempVector(actx); CHKERRQ(ierr);
+	ierr = ADVMarkSetTempVector(actx,dt); CHKERRQ(ierr);
 
 	// project temperature from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);

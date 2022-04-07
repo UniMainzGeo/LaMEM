@@ -161,7 +161,7 @@ PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx);
 PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb);
 
 // initialize temperature on markers from vector
-PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx);
+PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx, PetscScalar dt);
 
 // Load and set data from phase diagram
 PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i);

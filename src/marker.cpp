@@ -700,7 +700,7 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkSetTempVector"
-PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
+PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx,PetscScalar dt)
 {
 	FDSTAG         *fs;
 	JacRes         *jr;
@@ -767,7 +767,19 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 		if(zp > zc) { KK = K; } else { KK = K-1; }
 
 		// interpolate temperature on the marker
-		P->T = InterpLin3D(lT, II, JJ, KK,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
+		if (dt == 0.0) // steady state case only
+		{
+			// only set if not initialized with 0.0
+			if (P->T == 0.0)
+			{
+				P->T = InterpLin3D(lT, II, JJ, KK,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
+			}
+		}
+		else
+		{
+			P->T = InterpLin3D(lT, II, JJ, KK,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
+		}
+		
 
 		// override temperature of air phase
 		if(AirPhase != -1 && P->phase == AirPhase) P->T = Ttop;
