@@ -97,6 +97,11 @@ LaMEM_OBJ = ../lib/${mode}/LaMEM.o
 LaMEM_DEP = ../dep/${mode}/LaMEM.d
 LaMEM_LIB = ../lib/${mode}/liblamem.a
 
+# If we build LaMEM for BinaryBuilder we link to a PETSc build that has a different name
+ifeq ($(LAMEM_BINARYBUILDER), true)
+	PETSC_LIB := $(filter-out -lpetsc, $(PETSC_LIB))
+	PETSC_LIB += -lpetsc_double_real_Int32
+endif
 #====================================================
 
 # Target list
