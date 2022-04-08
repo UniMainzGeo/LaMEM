@@ -235,7 +235,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 			  M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
 			  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
 			}
-		      else //if(y_c < dike->y_Mc)
+		      else
 			{
 			  // linear interpolation between different M values, Mf is M in front, Mc acts as M in back  
 			  y_distance = y_c - front;
@@ -263,8 +263,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		  
 		  dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  //Give full divergence if cell is part dike part air
 
-		  // before:  dikeRHS_before += phRat[i]*tempdikeRHS; 
-		  
 		}  // close phase ratio loop
 	    }  // close phase transition and phase ID comparison 
 	}  // close dike block loop
@@ -343,7 +341,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                           M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
                           tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
                         }
-                      else //if(y_c < dike->y_Mc)
+                      else
                         {
                           // linear interpolation between different M values, Mf is M in front, Mc acts as M in back
                           y_distance = y_c - front;
