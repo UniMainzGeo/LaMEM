@@ -147,7 +147,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 
 	// set default value for Mc in case no Mc is provided
 	dike->Mc = -1.0;
-	// set default value for y_Mc in case it is not used (it does not matter since it is not accessed and checked for anywhere  but might be better than not setting it)
+	// set default value for y_Mc in case it is not used (it does not matter since it is not accessed and checked for anywhere but might be better than not setting it)
 	dike->y_Mc = 0.0;
 
 	// read and store dike  parameters. 
@@ -261,7 +261,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		      tempdikeRHS = 0.0;
 		    }
 		  
-		  dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  //Give full divergence if cell is part dike part air
+		  dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  // Give full divergence if cell is part dike part air
 
 		}  // close phase ratio loop
 	    }  // close phase transition and phase ID comparison 
@@ -277,7 +277,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                  Material_t *phases,
                                  PetscScalar &Tc,
-                                 PetscScalar *phRat,          // phase ratios in the control volume                                                                         
+                                 PetscScalar *phRat,          // phase ratios in the control volume 
                                  PetscScalar &k,
                                  PetscScalar &rho_A,
 				 PetscScalar &y_c)
