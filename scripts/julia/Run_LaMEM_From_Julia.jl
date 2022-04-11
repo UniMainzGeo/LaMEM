@@ -1,17 +1,24 @@
 # This contains routines to run LaMEM from julia.
-# Note that this downloads the BinaryBuilder version of LaMEM, which is not necessarylu 
+#
+# Note: This downloads the BinaryBuilder version of LaMEM, which is not necessarily the latest version of LaMEM 
+#       (or the same as the current repository), since we have to manually update the builds.
+
+
+
 
 using LaMEM_jll
 
 # load the correct mpi
-const mpiexec = if LaMEM_jll.MPICH_jll.is_available()
+const mpiexec = if isdefined(LaMEM_jll,:MPICH_jll)
     LaMEM_jll.MPICH_jll.mpiexec()
-elseif MAGEMin_jll.MicrosoftMPI_jll.is_available()
+elseif isdefined(LaMEM_jll,:MicrosoftMPI_jll) 
     LaMEM_jll.MicrosoftMPI_jll.mpiexec()
 else
     nothing
 end
 
+mpirun = addenv(mpiexec, LaMEM_jll.JLLWrappers.JLLWrappers.LIBPATH_env=>LaMEM_jll.LIBPATH[]);
+    
 """ 
     run_lamem(ParamFile::String, cores::Int64=1, args:String="")
 
@@ -40,11 +47,13 @@ julia> run_lamem(ParamFile, 2)
 """
 function run_lamem(ParamFile::String, cores::Int64=1, args::String="")
 
-    
-    mpirun = addenv(mpiexec, LaMEM_jll.JLLWrappers.JLLWrappers.LIBPATH_env=>LaMEM_jll.LIBPATH[]);
-    
-    # Run LaMEM in parallel
-    run(`$(mpirun) -n $cores $(LaMEM_jll.LaMEM_path) -ParamFile $(ParamFile) $(args)`);
+    if cores==1
+        # Run LaMEM on a single core, which does not require a working MPI
+        run(`$(LaMEM_jll.LaMEM()) -ParamFile $(ParamFile) $(args)`);
+    else
+        # Run LaMEM in parallel
+        run(`$(mpirun) -n $cores $(LaMEM_jll.LaMEM_path) -ParamFile $(ParamFile) $(args)`);
+    end
 
     return nothing
 end
