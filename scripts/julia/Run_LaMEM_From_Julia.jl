@@ -2,10 +2,6 @@
 #
 # Note: This downloads the BinaryBuilder version of LaMEM, which is not necessarily the latest version of LaMEM 
 #       (or the same as the current repository), since we have to manually update the builds.
-
-
-
-
 using LaMEM_jll
 
 # load the correct mpi
@@ -16,9 +12,7 @@ elseif isdefined(LaMEM_jll,:MicrosoftMPI_jll)
 else
     nothing
 end
-
-mpirun = addenv(mpiexec, LaMEM_jll.JLLWrappers.JLLWrappers.LIBPATH_env=>LaMEM_jll.LIBPATH[]);
-    
+   
 """ 
     run_lamem(ParamFile::String, cores::Int64=1, args:String="")
 
@@ -51,6 +45,9 @@ function run_lamem(ParamFile::String, cores::Int64=1, args::String="")
         # Run LaMEM on a single core, which does not require a working MPI
         run(`$(LaMEM_jll.LaMEM()) -ParamFile $(ParamFile) $(args)`);
     else
+        # set correct environment
+        mpirun = setenv(mpiexec, LaMEM_jll.JLLWrappers.JLLWrappers.LIBPATH_env=>LaMEM_jll.LIBPATH[]);
+
         # Run LaMEM in parallel
         run(`$(mpirun) -n $cores $(LaMEM_jll.LaMEM_path) -ParamFile $(ParamFile) $(args)`);
     end
