@@ -1679,7 +1679,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 
 
                 if(j == 0 )   { bcvy[k][j][i] = vel; }
-                if(j == mnx)  { bcvy[k][j][i] = vel; }
+                if(j == mny)  { bcvy[k][j][i] = vel; }
             }
             else
             {
