@@ -38,19 +38,22 @@
 # Time stepping parameters
 #===============================================================================
 
-    time_end  = 1.0   # simulation end time
-    dt        = 0.05  # time step
-    dt_min    = 0.01  # minimum time step (declare divergence if lower value is attempted)
-    dt_max    = 0.2   # maximum time step
-    dt_out    = 0.2   # output step (output at least at fixed time intervals)
-    inc_dt    = 0.1   # time step increment per time step (fraction of unit)
-    CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
-    CFLMAX    = 0.8   # CFL criterion for elasticity
-    nstep_max = 50    # maximum allowed number of steps (lower bound: time_end/dt_max)
-    nstep_out = 1     # save output every n steps
-    nstep_ini = 5     # save output for n initial steps
-    nstep_rdb = 5     # save restart database every n steps
-    time_tol  = 1e-8  # relative tolerance for time comparisons
+    time_end        = 1.0            # simulation end time
+    dt              = 0.05           # time step
+    dt_min          = 0.01           # minimum time step (declare divergence if lower value is attempted)
+    dt_max          = 0.2            # maximum time step
+    dt_out          = 0.2            # output step (output at least at fixed time intervals)
+    inc_dt          = 0.1            # time step increment per time step (fraction of unit)
+    num_dt_periods  = 4              # number of time stepping periods
+    time_dt_periods = 0 20 50 60 100 # timestamps where timestep should be fixed (first entry has to 0)
+    step_dt_periods = 1 5 5 2 3      # target timesteps ar timestamps above 
+    CFL             = 0.5            # CFL (Courant-Friedrichs-Lewy) criterion
+    CFLMAX          = 0.8            # CFL criterion for elasticity
+    nstep_max       = 50             # maximum allowed number of steps (lower bound: time_end/dt_max)
+    nstep_out       = 1              # save output every n steps
+    nstep_ini       = 5              # save output for n initial steps
+    nstep_rdb       = 5              # save restart database every n steps
+    time_tol        = 1e-8           # relative tolerance for time comparisons
 
 #===============================================================================
 # Grid & discretization parameters

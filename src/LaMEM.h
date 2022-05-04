@@ -88,6 +88,9 @@
 // maximum number of strain rate application periods
 #define _max_periods_ 20
 
+// maximum number of time steps
+#define _max_num_steps_ 2000
+
 // maximum number of Bezier blocks
 #define _max_boxes_ 5
 
