@@ -41,6 +41,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't27_T-dep_Conductivity'))
 sys.path.append(os.path.join(os.environ['PWD'], 't28_HeatRecharge'))
 sys.path.append(os.path.join(os.environ['PWD'], 't29_PermeableSides_VelBoxes'))
 sys.path.append(os.path.join(os.environ['PWD'], 't30_Timestep_Schedule'))
+sys.path.append(os.path.join(os.environ['PWD'], 't31_geomIO'))
 
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
@@ -78,6 +79,7 @@ import test_27_TdepCond as TdepCond
 import test_28_HeatRecharge as HR
 import test_29_VelBox_Permeable as PermSide
 import test_30_TimestepSchedule as TS
+import test_31_geomIO as geomIO
 
 
 if os.environ.get('MATLAB') != None:
@@ -115,7 +117,8 @@ registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       TdepCond.test_2fields_dike(),
                       HR.test_recharge1(), HR.test_recharge2(),
                       PermSide.test_permeableSides_VelBoxes(),
-                      TS.test_TS_Schedule()];
+                      TS.test_TS_Schedule(),
+                      geomIO.test_geomIO_1(), geomIO.test_geomIO_2()];
 
                       #Dike.test_M05_2D()  tenmporarily removed 
  
