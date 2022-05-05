@@ -54,7 +54,7 @@ struct Material_t;
 
 //---------------------------------------------------------------------------
 
-// input polygon data
+// input volume data
 typedef struct
 {
 	PetscInt     dir; // normal vector of polygon plane
@@ -62,14 +62,16 @@ typedef struct
 	PetscInt   phase; // phase that the polygon defines
 	PetscInt    type; // type can be of additive or assigning nature
 	PetscInt     num; // number of polygon slices defining the volume
+} Volume3D;
+
+// input polygon data
+typedef struct
+{
 	PetscInt     len; // number of nodes of polygon
 	PetscInt    idxs; // index of first polygon slice
 	PetscInt    gidx; // global plane index (consistent with planes of markers)
 	PetscInt    lidx; // local plane index (consistent with planes of markers)
 	PetscInt       n; // number of polygon nodes
-	PetscInt   nmark; // number of markers in current volume
-	PetscScalar   *X; // coordinates of the polygon x1,y1,x2,y2,...xn,yn
-
 } Polygon2D;
 
 //---------------------------------------------------------------------------

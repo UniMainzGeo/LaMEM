@@ -115,6 +115,9 @@
 // maximum number of geometry primitives
 #define _max_geom_ 100
 
+// maximum number of polygons on the same level
+#define _max_polygons_ 10
+
 // maximum number of observation types
 #define _max_num_obs_ 7
 
