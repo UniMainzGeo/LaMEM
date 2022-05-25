@@ -49,6 +49,7 @@
 struct FB; 
 struct ConstEqCtx;
 struct DBMat;
+struct FDSTAG;
 struct TSSol;
 
 //---------------------------------------------------------------------------       
@@ -65,6 +66,8 @@ public:
   PetscScalar y_Mc;      // location in y direction of Mc, if in x-direction x_Mc needs to be given or in z-direction z_Mc
   PetscScalar x_Mc;
   PetscScalar z_Mc;
+  PetscScalar *celly_xboundL; //left boundary of dike evaluated at ycoord of cell
+  PetscScalar *celly_xboundR; //right boundary of dike evaluated at ycoord of cell
   PetscInt PhaseID;      // associated material phase ID
   PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
 };
@@ -76,10 +79,10 @@ struct DBPropDike
 };
 
 // create the dike strutures for read-in 
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, PetscBool PrintOutput);
 
 // read in dike parameters
-PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, PetscBool PrintOutput);
 
 // compute the added RHS of the dike for the continuity equation
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscInt &Airphase, PetscScalar &dikeRHS, PetscScalar &y_c);

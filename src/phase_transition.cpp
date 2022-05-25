@@ -143,7 +143,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	else if(!strcmp(Type_,"NotInAirBox"))
 	{
 		ph->Type = _NotInAirBox_;
-		ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
+		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
 	}
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
@@ -285,8 +285,8 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Constant \n", (LLD)(ph->ID));
-    PetscPrintf(PETSC_COMM_WORLD,"     Parameter          :   %s \n",    Parameter);
-    PetscPrintf(PETSC_COMM_WORLD,"     Transition Value   :   %1.3f \n", ph->ConstantValue);
+	PetscPrintf(PETSC_COMM_WORLD,"     Parameter          :   %s \n",    Parameter);
+	PetscPrintf(PETSC_COMM_WORLD,"     Transition Value   :   %1.3f \n", ph->ConstantValue);
 
 	if(ph->Parameter_transition==_T_)                   //  Temperature [Celcius]
 	{
@@ -346,11 +346,98 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _REQUIRED_, "PTBox_Bounds",   	ph->bounds,  		6, scal->length);    			CHKERRQ(ierr);
 
 	// ph->PhaseInside[0] = -1; 	// default
-	
+
 	for (i=0; i<6; i++){ Box[i] = ph->bounds[i]*scal->length; }		// dimensional units
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Box \n", (LLD)(ph->ID));
-    PetscPrintf(PETSC_COMM_WORLD,"     Box Bounds         :   [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
+	PetscPrintf(PETSC_COMM_WORLD,"     Box Bounds         :   [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
 
+	
+	ierr = getIntParam(fb, _OPTIONAL_, "BoxVicinity",   &ph->BoxVicinity,  1, 1);
+
+	if (ph->BoxVicinity==1){
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside \n");	CHKERRQ(ierr);
+	} 
+	else {
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Box Vicinity       :   Use all particles to check inside/outside \n");	CHKERRQ(ierr);
+	}
+	
+	if (ph->PhaseInside[0] < 0) PetscPrintf(PETSC_COMM_WORLD,"     Don't set phase    @   \n");
+
+ 	ierr = getStringParam(fb, _OPTIONAL_, "PTBox_TempType",   Parameter,  "none");    			CHKERRQ(ierr);
+	if(!strcmp(Parameter, "none"))
+	{
+		ph->TempType = 0;
+	    ierr = PetscPrintf(PETSC_COMM_WORLD,"     Don't set T inside @   \n");		CHKERRQ(ierr);
+	}
+	else if(!strcmp(Parameter, "constant"))
+	{
+		ph->TempType = 1;
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_cstTemp",   	&ph->cstTemp,  1, 1);    									CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Constant T inside  :   %1.1f %s \n", ph->cstTemp, scal->lbl_temperature);		CHKERRQ(ierr);
+	 	ph->cstTemp = (ph->cstTemp + scal->Tshift)/scal->temperature;
+	}
+	else if(!strcmp(Parameter, "linear"))
+	{
+		ph->TempType = 2;
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",   	&ph->topTemp,  1, 1);    									CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",   	&ph->botTemp,  1, 1);    									CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Linear Temp; bot T :   %1.1f %s \n", ph->botTemp, scal->lbl_temperature);		CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Linear Temp; top T :   %1.1f %s \n", ph->topTemp, scal->lbl_temperature);		CHKERRQ(ierr);
+		
+		ph->topTemp = (ph->topTemp + scal->Tshift)/scal->temperature;
+		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
+
+	}
+	else if(!strcmp(Parameter, "halfspace"))
+	{
+		ph->TempType = 3;
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",   	&ph->topTemp,  		1, 1);    									CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",   	&ph->botTemp,  		1, 1);    									CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_thermalAge", 	&ph->thermalAge,  	1, scal->time);    							CHKERRQ(ierr);
+		
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; top T   :   %1.1f %s \n", ph->topTemp, 				scal->lbl_temperature);		CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; bot T   :   %1.1f %s \n", ph->botTemp, 				scal->lbl_temperature);		CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; Age     :   %1.1f %s \n", ph->thermalAge*scal->time, 	scal->lbl_time);			CHKERRQ(ierr);
+		
+		ph->topTemp = (ph->topTemp + scal->Tshift)/scal->temperature;
+		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
+
+	}
+	else{
+		  SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType %s [none; constant; linear; halfspace]", Parameter);
+	}
+
+	PetscFunctionReturn(0);
+
+}
+//------------------------------------------------------------------------------------------------------------//
+#undef __FUNCT__
+#define __FUNCT__ "Set_NotInAirBox_Phase_Transition"
+PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB *fb)
+{
+	Scaling      *scal;
+	char         Parameter[_str_len_];
+	PetscInt 	 i;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal = dbm -> scal;
+
+
+	ierr = getIntParam   (fb, _OPTIONAL_, "nsegs",  &ph->nsegs,  1,           _max_NotInAir_segs_);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "xbounds", ph->xbounds, 2*ph->nsegs, scal->length);        CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "ybounds", ph->ybounds, 2*ph->nsegs, scal->length);        CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "zbounds", ph->zbounds, 2*ph->nsegs, scal->length);        CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   NotInAirBox \n", (LLD)(ph->ID));
+	for (i = 0; i < ph->nsegs; i++)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"     seg = %i, xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", ph->nsegs, \
+			ph->xbounds[2*i]* scal->length, ph->xbounds[2*i+1]*scal->length,\
+			ph->ybounds[2*i]* scal->length, ph->ybounds[2*i+1]*scal->length,\
+			ph->zbounds[2*i]* scal->length, ph->zbounds[2*i+1]*scal->length);
+	}
 	
 	ierr = getIntParam(fb, _OPTIONAL_, "BoxVicinity",   &ph->BoxVicinity,  1, 1);
 
@@ -819,9 +906,9 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	InAbove = 0;
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
-    {
-      	Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // adjust phase according to T within Box but ignore airphase particles
-    }
+	{
+		Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr);    // adjust phase according to T within Box but ignore airphase particles
+	}
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
 		Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2, ctrl, svCell, &ph, &InAbove, time);

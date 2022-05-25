@@ -57,14 +57,15 @@
 #include "tssolve.h"
 #include "scaling.h"
 #include "fdstag.h"
+#include "tools.h"
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput)   
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, PetscBool PrintOutput)   
 {
 
         // read all dike parameter blocks from file
-  
         PetscInt jj;
 
         PetscErrorCode ierr;
@@ -89,9 +90,9 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
             for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1;
 
 		// error checking
-                if(fb->nblocks > _max_num_dike_)
+                if(fb->nblocks >_max_num_dike_)
                 {
-                        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_);
+                        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
                 }
 
                 // store actual number of dike blocks 
@@ -104,7 +105,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
                 // read each individual dike block                                                                                                                   
                 for(jj = 0; jj < fb->nblocks; jj++)
                 {
-                    ierr = DBReadDike(dbdike, dbm, fb, PrintOutput); CHKERRQ(ierr);
+                    ierr = DBReadDike(dbdike, dbm, fs, fb, PrintOutput); CHKERRQ(ierr);
                     fb->blockID++;
                 }
         }
@@ -116,12 +117,13 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBReadDike"
-PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput)
+PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, PetscBool PrintOutput)
 {
         // read dike parameter from file 
         Dike     *dike;
         PetscInt  ID;
-	Scaling  *scal;
+        Scaling  *scal;
+        Discret1D   *dsy;  
 	
         PetscErrorCode ierr;
         PetscFunctionBegin;
@@ -151,9 +153,9 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 	dike->y_Mc = 0.0;
 
 	// read and store dike  parameters. 
-        ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
+  ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Mc",      &dike->Mc,      1, 1.0);              CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
+  ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "y_Mc",    &dike->y_Mc,    1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
@@ -161,13 +163,19 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 	// scale the location of Mc y_Mc properly:
 	dike->y_Mc /= scal->length;
 
-        if (PrintOutput)
-	    {
-	    PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld] : Mf = %g, Mb = %g, Mc = %g, y_Mc = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
-	    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-        }
+  dsy = &fs->dsy;
+  //create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
+  ierr = makeScalArray(&dsy->cbuff, 0, dsy->ncels+2); CHKERRQ(ierr);
+  dike->celly_xboundL = dsy->cbuff + 1;
+  dike->celly_xboundR = dsy->cbuff + 1;
 
-        PetscFunctionReturn(0);
+  if (PrintOutput)
+  {
+    PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld] : Mf = %g, Mb = %g, Mc = %g, y_Mc = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
+    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+  }
+
+  PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
 #undef __FUNCT__

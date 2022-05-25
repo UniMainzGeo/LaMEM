@@ -141,6 +141,12 @@ public:
   PetscScalar     botTemp;
   PetscScalar     cstTemp;
   PetscScalar     thermalAge;
+
+  //Segmented NotInAirBox
+	PetscInt    nsegs;                    // number of segments
+	PetscScalar   xbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in x
+	PetscScalar		ybounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in y
+	PetscScalar		zbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in z
   
   // for moving NotInAirBox
   PetscScalar     t0_box;
