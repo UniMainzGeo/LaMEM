@@ -40,6 +40,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't26_Dike'))
 sys.path.append(os.path.join(os.environ['PWD'], 't27_T-dep_Conductivity'))
 sys.path.append(os.path.join(os.environ['PWD'], 't28_HeatRecharge'))
 sys.path.append(os.path.join(os.environ['PWD'], 't29_PermeableSides_VelBoxes'))
+sys.path.append(os.path.join(os.environ['PWD'], 't30_Timestep_Schedule'))
 
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
@@ -76,6 +77,7 @@ import test_26_dike as Dike
 import test_27_TdepCond as TdepCond
 import test_28_HeatRecharge as HR
 import test_29_VelBox_Permeable as PermSide
+import test_30_TimestepSchedule as TS
 
 
 if os.environ.get('MATLAB') != None:
@@ -112,7 +114,8 @@ registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       Dike.test_M1_2D(), Dike.test_M075_2D_2cores(), Dike.test_variableM(), Dike.heat_kfac(), Dike.heat_rhoA(), 
                       TdepCond.test_2fields_dike(),
                       HR.test_recharge1(), HR.test_recharge2(),
-                      PermSide.test_permeableSides_VelBoxes()];
+                      PermSide.test_permeableSides_VelBoxes(),
+                      TS.test_TS_Schedule()];
 
                       #APShealing.test_2cores()  removed
                       #Dike.test_M05_2D()  temporarily removed 

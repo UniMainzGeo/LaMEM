@@ -1,4 +1,4 @@
-	#==============================================================================
+#==============================================================================
 #
 #     Copyright (c) 2011-2018, JGU Mainz, Anton Popov, Boris Kaus
 #     All rights reserved.
@@ -97,6 +97,11 @@ LaMEM_OBJ = ../lib/${mode}/LaMEM.o
 LaMEM_DEP = ../dep/${mode}/LaMEM.d
 LaMEM_LIB = ../lib/${mode}/liblamem.a
 
+# If we build LaMEM for BinaryBuilder we link to a PETSc build that has a different name
+ifeq ($(LAMEM_BINARYBUILDER), true)
+	PETSC_LIB := $(filter-out -lpetsc, $(PETSC_LIB))
+	PETSC_LIB += -lpetsc_double_real_Int32
+endif
 #====================================================
 
 # Target list
@@ -161,6 +166,10 @@ ${LaMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 	ar cr $@ ${COBJ}
 	ranlib $@
 
+# Create a dynamic library
+dylib: ${COBJ}
+	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
+
 #====================================================
 
 # Link LaMEM executable
@@ -173,7 +182,7 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 	@echo "............................................."
 	@echo "......... Linking LaMEM Executable .........."
 	@echo "............................................."
-	${CLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} -o $@
+	${CXXLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o $@
 
 #====================================================
 
@@ -225,11 +234,15 @@ endif
 	@echo "............................................."
 	@echo "LAMEM_FLAGS : " ${LAMEM_FLAGS}
 	@echo "............................................."
+	@echo "LAMEM_LIB   : " ${LAMEM_LIB}
+	@echo "............................................."
 	@echo "CCOMPILER   : " ${CCOMPILER}
 	@echo "............................................."
 	@echo "CLINKER     : " ${CLINKER}
 	@echo "............................................."
 	@echo "PETSC_LIB   : " ${PETSC_LIB}
+	@echo "............................................."
+	@echo "CLIB_FLAGS  : " ${CLIB_FLAGS}
 	@echo "............................................."
 
 #====================================================
@@ -250,4 +263,3 @@ doc:
 	PDFLATEX=$(PDFLATEX) BIBTEX=$(BIBTEX) ../doc/Manual/./CreateDevelDoc.sh
 
 #====================================================
-
