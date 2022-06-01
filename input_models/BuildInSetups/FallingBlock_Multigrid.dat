@@ -166,6 +166,9 @@
 	-snes_type ksponly # no nonlinear solver
 	-js_ksp_monitor # display how the inner iterations converge
 
+	# Use an iterative coarse grid solver (doesn't need any external parallel solvers)
+	-crs_pc_type bjacobi
+	
 <PetscOptionsEnd>
 
 #===============================================================================

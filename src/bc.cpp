@@ -1678,8 +1678,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
                 if(z <= bot && z>= bot-relax_dist) vel = velin+(velin/(relax_dist))*(z-bot);
 
 
-                if(i == 0 )   { bcvy[k][j][i] = vel; }
-                if(i == mnx)  { bcvy[k][j][i] = vel; }
+                if(j == 0 )   { bcvy[k][j][i] = vel; }
+                if(j == mny)  { bcvy[k][j][i] = vel; }
             }
             else
             {
