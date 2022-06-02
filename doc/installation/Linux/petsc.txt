@@ -135,6 +135,7 @@ Download PETSC (http://www.mcs.anl.gov/petsc/download/)
 --download-superlu_dist=1 \
 --download-pastix=1 \
 --download-hwloc \
+--download-cmake \
 --with-clean
 
 ------------------------------------------------------------------
@@ -162,6 +163,7 @@ PETSC OPTIMIZED (for production runs)
 --download-superlu_dist=1 \
 --download-pastix=1 \
 --download-hwloc \
+--download-cmake \
 --with-clean
 
 ------------------------------------------------------------------
