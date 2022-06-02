@@ -56,7 +56,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatCreate"
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput)
 {
 	// read all material phases and softening laws from file
 
@@ -172,7 +172,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 			// read each individual softening law
 			for(jj = 0; jj < fb->nblocks; jj++)
 			{
-				ierr = DBMatReadPhaseTr(dbm, fb); CHKERRQ(ierr);
+				ierr = DBMatReadPhaseTr(dbm, fs, fb); CHKERRQ(ierr);
 
 				fb->blockID++;
 			}

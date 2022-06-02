@@ -66,8 +66,6 @@ public:
   PetscScalar y_Mc;      // location in y direction of Mc, if in x-direction x_Mc needs to be given or in z-direction z_Mc
   PetscScalar x_Mc;
   PetscScalar z_Mc;
-  PetscScalar *celly_xboundL; //left boundary of dike evaluated at ycoord of cell
-  PetscScalar *celly_xboundR; //right boundary of dike evaluated at ycoord of cell
   PetscInt PhaseID;      // associated material phase ID
   PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
 };

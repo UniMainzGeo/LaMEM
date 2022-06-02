@@ -198,11 +198,11 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// create time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
-	// create material database
-	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
-
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
+
+	// create material database
+	ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
 
     // create dike database
 	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, &lm->fs, fb, PETSC_TRUE);   CHKERRQ(ierr);
@@ -353,7 +353,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	}
 
     // Store Material DB in intermediate structure (for use with Adjoint)
-	ierr = DBMatCreate(&dbm_modified, fb, PETSC_TRUE); 							CHKERRQ(ierr);
+	ierr = DBMatCreate(&dbm_modified, fb, &lm->fs, PETSC_TRUE); 							CHKERRQ(ierr);
 
 	// swap material structure with the one from file (for adjoint)
 	for (i=0; i < lm->dbm.numPhases; i++)
@@ -691,7 +691,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 
 		// apply phase transitions on particles
-	  ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
+		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
 		
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);

@@ -3652,6 +3652,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 	PetscBool       PrintOutput=PETSC_FALSE;
     Scaling         scal;
     FB             *fb;
+    FDSTAG			*fs;
     PetscFunctionBegin;
 
     fb          = IOparam->fb;
@@ -3661,7 +3662,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 	IOparam->dbm_modified.scal    = &scal;
     
     // Call material database with modified parameters
-    ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); 	CHKERRQ(ierr);  
+    ierr = DBMatCreate(&IOparam->dbm_modified, fb, fs, PETSC_FALSE); 	CHKERRQ(ierr);  
 
     //PrintOutput = PETSC_TRUE;
     if (PrintOutput){

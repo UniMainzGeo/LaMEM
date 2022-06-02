@@ -48,6 +48,7 @@
 
 struct Scaling;
 struct FB;
+struct FDSTAG;
 struct JacRes;
 struct ModParam;
 
@@ -143,10 +144,12 @@ public:
   PetscScalar     thermalAge;
 
   //Segmented NotInAirBox
-	PetscInt    nsegs;                    // number of segments
-	PetscScalar   xbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in x
+	PetscInt			nsegs;                    // number of segments
+	PetscScalar		xbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in x
 	PetscScalar		ybounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in y
 	PetscScalar		zbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in z
+	PetscScalar  	*celly_xboundL;  //left boundary of segment evaluated at ycoord of cell
+	PetscScalar  	*celly_xboundR;  //right boundary of segment evaluated at ycoord of cell
   
   // for moving NotInAirBox
   PetscScalar     t0_box;
@@ -278,7 +281,7 @@ struct DBMat
 };
 
 // read material database
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput);
 
 // read single softening law
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);

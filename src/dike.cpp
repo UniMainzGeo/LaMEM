@@ -163,12 +163,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, Pe
 	// scale the location of Mc y_Mc properly:
 	dike->y_Mc /= scal->length;
 
-  dsy = &fs->dsy;
-  //create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
-  ierr = makeScalArray(&dsy->cbuff, 0, dsy->ncels+2); CHKERRQ(ierr);
-  dike->celly_xboundL = dsy->cbuff + 1;
-  dike->celly_xboundR = dsy->cbuff + 1;
-
+  
   if (PrintOutput)
   {
     PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld] : Mf = %g, Mb = %g, Mc = %g, y_Mc = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);

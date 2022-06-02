@@ -98,7 +98,7 @@
 //-----------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhaseTr"
-PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
+PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FDSTAG *fs, FB *fb)
 {
 	// read phase transitions from file
 	PetscFunctionBegin;
@@ -143,7 +143,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	else if(!strcmp(Type_,"NotInAirBox"))
 	{
 		ph->Type = _NotInAirBox_;
-		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
+		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fs, fb);		CHKERRQ(ierr);
 	}
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
@@ -413,12 +413,13 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 //------------------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Set_NotInAirBox_Phase_Transition"
-PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB *fb)
+PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDSTAG *fs, FB *fb)
 {
 	Scaling      *scal;
+	Discret1D	*dsy;
 	char         Parameter[_str_len_];
-	PetscInt 	 i;
-
+	PetscInt 	 i, j, found;
+	PetscMPIInt     rank;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -433,11 +434,55 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   NotInAirBox \n", (LLD)(ph->ID));
 	for (i = 0; i < ph->nsegs; i++)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"     seg = %i, xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", ph->nsegs, \
+		PetscPrintf(PETSC_COMM_WORLD,"     seg = %i, xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", i, \
 			ph->xbounds[2*i]* scal->length, ph->xbounds[2*i+1]*scal->length,\
 			ph->ybounds[2*i]* scal->length, ph->ybounds[2*i+1]*scal->length,\
 			ph->zbounds[2*i]* scal->length, ph->zbounds[2*i+1]*scal->length);
 	}
+
+	dsy = &fs->dsy;
+  //create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
+  	ierr = makeScalArray(&dsy->cbuff, 0, dsy->ncels+2); CHKERRQ(ierr);
+  	ph->celly_xboundL = dsy->cbuff + 1;
+  	ierr = makeScalArray(&dsy->cbuff, 0, dsy->ncels+2); CHKERRQ(ierr);
+  	ph->celly_xboundR = dsy->cbuff + 1;
+
+  	// get MPI processor rank
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+  	for(i = -1; i < dsy->ncels+1; i++)
+  	{
+  	   found=0;
+	   for (j = 0; j < ph->nsegs; j++)
+	   {
+  		if (dsy->ccoor[i] < ph->ybounds[0])
+  		{
+  			ph->celly_xboundL[i] = ph->xbounds[0];
+			ph->celly_xboundR[i] = ph->xbounds[1];
+			found=1;
+			break;
+		}
+  		else if(dsy->ccoor[i] >= ph->ybounds[2*j] && dsy->ccoor[i] < ph->ybounds[2*j+1])
+  		{
+			ph->celly_xboundL[i] = ph->xbounds[2*j];
+			ph->celly_xboundR[i] = ph->xbounds[2*j+1];
+			found=1;
+			break;
+		}
+		else if (dsy->ccoor[i]>ph->ybounds[(ph->nsegs-1)*2+1])
+		{
+			ph->celly_xboundL[i] = ph->xbounds[(ph->nsegs-1)*2];
+			ph->celly_xboundR[i] = ph->xbounds[(ph->nsegs-1)*2+1];
+			found=1;
+			break;
+		}
+	   }
+	   if (found==0) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, " Cannot find NotInAirBox seg i=%i, dsy->ccoor=%g\n", \
+	   		i, dsy->ccoor[i]*scal->length);
+	   //debugging 
+	   printf(" rank=%i, i = %i, ycoor= %g, xbounds=[%g, %g] \n", rank, i, \
+			dsy->ccoor[i]*scal->length, ph->celly_xboundL[i]*scal->length, ph->celly_xboundR[i]*scal->length);
+	}
+
 	
 	ierr = getIntParam(fb, _OPTIONAL_, "BoxVicinity",   &ph->BoxVicinity,  1, 1);
 
@@ -778,7 +823,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				InsideAbove = 0;
 				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr);
 
-				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) ){
+				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) )
+				{
 					if (PhaseTrans->PhaseInside[0]<0){ 
 						ph = P->phase;				// do not change the phase
 					}
