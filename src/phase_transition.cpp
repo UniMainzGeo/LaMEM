@@ -146,7 +146,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
 	}
 	
-	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
+	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_tr_);      CHKERRQ(ierr);
 	if ( ph->Type == _Box_ || ph->Type == _NotInAirBox_){
 		ph->PhaseInside[0] = -1;	// default
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
