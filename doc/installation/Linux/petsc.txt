@@ -4,6 +4,14 @@ NOTE
 
 Replace X.Y.Z with the actual PETSC version number you want to install
 
+PETSc has changed policy on prefix installs (using root access is not recommended)
+Install petsc to:
+[1] local destinations e.g. /home/username/petsc
+[2] global destinations e.g. /opt/petsc (change directory ownership to a normal user)
+    sudo mkdir /opt/petsc
+    sudo chown user:group /opt/petsc
+The configure scripts below refer to the option [2]
+
 ------------------------------------------------------------------
 PREREQUISITES (on non-Ubuntu/Debian systems update accordingly)
 ------------------------------------------------------------------
@@ -14,8 +22,9 @@ Download paraview binaries instead (see etc.txt)
 You need to apt purge all MPI installations (if you have any)
 
 sudo apt update
-sudo apt install build-essential gfortran python-numpy
-sudo apt install bison flex cmake git valgrind
+sudo apt install build-essential gfortran python-is-python3 python-numpy
+sudo apt install bison flex cmake git-all valgrind
+sudo apt-get install libtool libtool-bin
 
 ------------------------------------------------------------------
 ENVIRONMENT (This step is necessary for system-wide setting)
@@ -52,9 +61,10 @@ FC=gfortran \
 --enable-cxx \
 --enable-g=none \
 --enable-fast=O2 \
---with-pm=hydra
-
-make
+--with-pm=hydra \
+--with-device=ch3
+ 
+make all
 
 sudo make install
 
@@ -68,32 +78,35 @@ which mpicxx
 
 they all should point to /opt/mpich3/bin
 
-------------------------------------------------------------------
-OpenBLAS
-------------------------------------------------------------------
-
-Download OpenBLAS (http://www.openblas.net/)
-
-make BINARY=64 USE_THREAD=0 CC=gcc FC=gfortran
-
-sudo make PREFIX=/opt/openblas install
-
-------------------------------------------------------------------
-BLAS/LAPACK on AMD Ryzen 
+-----------------------------------------------------------------
+BLAS/LAPACK on AMD machines
 ------------------------------------------------------------------
 
-Download single-threaded packages AMD BLIS and AMD libFLAME 
-(https://developer.amd.com/amd-cpu-libraries/blas-library/)
+The configure scripts refer to Intel machines on which OpenBLAS works fine
+On AMD machines you can override it with platform-specific BLAS library
 
-Unpack and copy to e.g. /opt/amd/
+On AMD Ryzen platform install BLIS library with these options:
+--download-f2cblaslapack \
+--download-blis \
 
-Install optimized PETSc with these options:
+On AMD Bulldozer platform use ACML library if available:
+--with-blas-lapack-lib=/path-to-acml-library/gfortran64_fma4/lib/libacml.a \
 
---with-blas-lib=/opt/amd/amd-blis/lib/libblis.a \
---with-lapack-lib=/opt/amd/amd-libflame/lib/libflame.a \
---COPTFLAGS="-O3 -march=znver1" \
---FOPTFLAGS="-O3 -march=znver1" \
---CXXOPTFLAGS="-O3 -march=znver1" \
+Install optimized PETSc version with these options:
+
+AMD Ryzen:
+--COPTFLAGS="-O2 -march=znver1" \
+--FOPTFLAGS="-O2 -march=znver1" \
+--CXXOPTFLAGS="-O2 -march=znver1" \
+
+Depending on gcc version and processor generation use different architecture options:
+-march=znver2
+-march=znver3
+
+AMD Bulldozer:
+--COPTFLAGS="-mavx -mfma4 -O2" \
+--FOPTFLAGS="-mavx -mfma4 -O2" \
+--CXXOPTFLAGS="-mavx -mfma4 -O2" \
 
 ------------------------------------------------------------------
 PETSC DEBUG (for development, debugging and valgind runs)
@@ -103,11 +116,11 @@ Download PETSC (http://www.mcs.anl.gov/petsc/download/)
 
 ./configure \
 --prefix=/opt/petsc/petsc-X.Y.Z-deb \
---with-blas-lapack-lib=/opt/openblas/lib/libopenblas.a \
---with-debugging=1 \
+--download-openblas \
 --COPTFLAGS="-g -O0" \
 --FOPTFLAGS="-g -O0" \
 --CXXOPTFLAGS="-g -O0" \
+--with-debugging=1 \
 --with-large-file-io=1 \
 --with-shared-libraries=0 \
 --with-c++-support=1 \
@@ -121,13 +134,9 @@ Download PETSC (http://www.mcs.anl.gov/petsc/download/)
 --download-mumps=1 \
 --download-superlu_dist=1 \
 --download-pastix=1 \
+--download-hwloc \
+--download-cmake \
 --with-clean
-
-make all
-
-make test
-
-sudo make install
 
 ------------------------------------------------------------------
 PETSC OPTIMIZED (for production runs)
@@ -135,11 +144,11 @@ PETSC OPTIMIZED (for production runs)
 
 ./configure \
 --prefix=/opt/petsc/petsc-X.Y.Z-opt \
---with-blas-lapack-lib=/opt/openblas/lib/libopenblas.a \
---with-debugging=0 \
+--download-openblas \
 --COPTFLAGS="-O2" \
 --FOPTFLAGS="-O2" \
 --CXXOPTFLAGS="-O2" \
+--with-debugging=0 \
 --with-large-file-io=1 \
 --with-shared-libraries=0 \
 --with-c++-support=1 \
@@ -153,13 +162,9 @@ PETSC OPTIMIZED (for production runs)
 --download-mumps=1 \
 --download-superlu_dist=1 \
 --download-pastix=1 \
+--download-hwloc \
+--download-cmake \
 --with-clean
-
-make all
-
-make test
-
-sudo make install
 
 ------------------------------------------------------------------
 

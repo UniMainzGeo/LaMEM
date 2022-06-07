@@ -74,7 +74,7 @@ PetscErrorCode MatAIJCreate(
 	ierr = MatCreate(PETSC_COMM_WORLD, P); CHKERRQ(ierr);
 	ierr = MatSetType((*P), MATAIJ); CHKERRQ(ierr);
 	ierr = MatSetSizes((*P), m, n, PETSC_DETERMINE, PETSC_DETERMINE); CHKERRQ(ierr);
-
+	
 	// preallocate matrix
 	ierr = MatSeqAIJSetPreallocation((*P), d_nz, d_nnz); CHKERRQ(ierr);
 	ierr = MatMPIAIJSetPreallocation((*P), d_nz, d_nnz, o_nz, o_nnz); CHKERRQ(ierr);
@@ -109,6 +109,8 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 
 		ierr = MatSetValue((*P), ii, ii, 0.0, INSERT_VALUES); CHKERRQ(ierr);
 	}
+	
+	ierr = MatSetFromOptions((*P)); CHKERRQ(ierr);
 
 	// assemble
 	ierr = MatAIJAssemble((*P), 0, NULL, 0.0); CHKERRQ(ierr);
@@ -173,6 +175,9 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	{
 		// create
 		ierr = VecCreateMPI(PETSC_COMM_WORLD, ln, PETSC_DETERMINE, &nullsp_vecs[i]); CHKERRQ(ierr);
+		ierr = VecSetFromOptions(nullsp_vecs[i]); 	CHKERRQ(ierr);
+
+		ierr = VecZeroEntries (nullsp_vecs[i]);     CHKERRQ(ierr);
 
 		// initialize
 		ierr = VecZeroEntries (nullsp_vecs[i]);     CHKERRQ(ierr);
@@ -1231,7 +1236,9 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
+	ierr = VecSetFromOptions(P->xv); 									 CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);
+	ierr = VecSetFromOptions(P->xp); 									 CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->rv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->rp);                                  CHKERRQ(ierr);

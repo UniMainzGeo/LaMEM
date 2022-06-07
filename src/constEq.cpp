@@ -873,6 +873,7 @@ PetscErrorCode cellConstEq(
 	svCell->DIIdif = ctx->DIIdif; // relative diffusion creep strain rate
 	svCell->DIIdis = ctx->DIIdis; // relative dislocation creep strain rate
 	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
+	svCell->DIIpl  = ctx->DIIpl;  // relative plastic strain rate
 	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
 

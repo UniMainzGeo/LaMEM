@@ -691,7 +691,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 
 		// apply phase transitions on particles
-	  ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
+		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
 		
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
@@ -739,7 +739,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
 
-
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
 
@@ -753,7 +752,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = ADVExchange(&lm->actx); CHKERRQ(ierr);
 
 		// Advect Passive tracers
-			ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
+		ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
 
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
@@ -958,6 +957,32 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		{
 			// diffuse
 			ierr = LaMEMLibSolveTemp(lm, diff_step); CHKERRQ(ierr);
+
+			// reset temperature in anomalous phases every step
+			if (ctrl->actHeatRech > 1)
+			{
+				// overwrite markers where T(phase) is set
+				ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
+
+				// project temperature from markers to grid
+				ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+	
+				// initialize temperature
+				ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
+			}
+		}
+
+		// reset Temperature in anomalous phase
+		if (ctrl->actHeatRech)
+		{
+			// overwrite markers where T(phase) is set
+			ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
+
+			// project temperature from markers to grid
+			ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+	
+			// initialize temperature
+			ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 		}
 		
 		PrintDone(t);		

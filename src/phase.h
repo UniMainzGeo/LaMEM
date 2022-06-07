@@ -147,38 +147,44 @@ struct Ph_trans_t
 {
 public:
 
-	PetscInt    ID ;				                // Phase Transition ID
-	type        Type ; 					            // Type Constant or Clapeyron
-	Parameter   Parameter_transition; 	            // Parameter in Constant
-	char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
-	PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
-    PetscScalar ConstantValue ;                     // Value (if Constant) 
-	PetscInt    Reset;								// Rset parameters 
-	
-	// Clapeyron slope
-	PetscInt    neq ;                               // number of equation
-	PetscScalar P0_clapeyron[_max_num_eq_] ;        // for clapeyron
-	PetscScalar T0_clapeyron[_max_num_eq_] ;
-	PetscScalar clapeyron_slope[_max_num_eq_] ;
-	
-	// Box-like condition
-	PetscScalar     bounds[6];                      //  left, right etc. of box
-    PetscInt        TempType;                       //  Temp condition [0=none, 1=constant; 2=linear; 3=halfspace]    
-
-	PetscInt        number_phases;
-	PetscInt        PhaseBelow[_max_tr_];
-	PetscInt        PhaseAbove[_max_tr_];
-	PetscInt        PhaseInside[_max_tr_];
-	PetscInt        PhaseOutside[_max_tr_];
-	PetscScalar     dT_within;
-	PetscScalar     DensityAbove[_max_tr_];
-	PetscScalar     DensityBelow[_max_tr_];
-    
-    PetscScalar     topTemp;
-    PetscScalar     botTemp;
-    PetscScalar     cstTemp;
-    PetscScalar     thermalAge;
-
+  PetscInt    ID ;				                // Phase Transition ID
+  type        Type ; 					            // Type Constant or Clapeyron
+  Parameter   Parameter_transition; 	            // Parameter in Constant
+  char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
+  PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
+  PetscScalar ConstantValue ;                     // Value (if Constant) 
+  PetscInt    Reset;								// Rset parameters 
+  
+  // Clapeyron slope
+  PetscInt    neq ;                               // number of equation
+  PetscScalar P0_clapeyron[_max_num_eq_] ;        // for clapeyron
+  PetscScalar T0_clapeyron[_max_num_eq_] ;
+  PetscScalar clapeyron_slope[_max_num_eq_] ;
+  
+  // Box-like condition
+  PetscScalar     bounds[6];                      //  left, right etc. of box
+  PetscInt        TempType;                       //  Temp condition [0=none, 1=constant; 2=linear; 3=halfspace]   
+  PetscInt 		  BoxVicinity;					  //  0-check all particles; 1-only apply PT to particles in the vicinity of the box (*2 of bounds) 
+  
+  PetscInt        number_phases;
+  PetscInt        PhaseBelow[_max_tr_];
+  PetscInt        PhaseAbove[_max_tr_];
+  PetscInt        PhaseInside[_max_tr_];
+  PetscInt        PhaseOutside[_max_tr_];
+  PetscScalar     dT_within;
+  PetscScalar     DensityAbove[_max_tr_];
+  PetscScalar     DensityBelow[_max_tr_];
+  
+  PetscScalar     topTemp;
+  PetscScalar     botTemp;
+  PetscScalar     cstTemp;
+  PetscScalar     thermalAge;
+  
+  // for moving NotInAirBox
+  PetscScalar     t0_box;
+  PetscScalar     t1_box;
+  PetscScalar     v_box;
+  
 };
 
 //---------------------------------------------------------------------------
@@ -246,6 +252,9 @@ public:
 	PetscScalar  T;                 // optional temperature to set within the phase
 	PetscScalar  nu_k;              // optional multiplication factor that is used to compute the higher conductivtiy below the conductivity boundary temperature
 	PetscScalar  T_Nu;              // optional definition of conductivity boundary temperature  gito
+	PetscScalar  T_liq;             // optional magma liquidus temperature for Behn & Ito [2005] dike heating model
+	PetscScalar  T_sol;             // optional magma solidus temperature for Behn & Ito [2005] dike heating model
+	PetscScalar  Latent_hx;          // optional magma latent heat of crystalization for Behn & Ito [2005] dike heating model
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number

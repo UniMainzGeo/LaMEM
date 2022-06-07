@@ -272,6 +272,40 @@ PetscInt ISParallel(MPI_Comm comm)
 	return (size > 1);
 }
 //---------------------------------------------------------------------------
+PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
+{
+	// get global rank of processor in DMDA
+
+	if(i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
+
+	return (PetscMPIInt)(i + j*m + k*m*n);
+}
+//---------------------------------------------------------------------------
+PetscMPIInt getGlobalRankPeriodic(
+		PetscInt i,  PetscInt j,  PetscInt k,
+		PetscInt m,  PetscInt n,  PetscInt p,
+		PetscInt pi, PetscInt pj, PetscInt pk)
+{
+	// get global rank of processor in DMDA
+	if(pi) { if(i < 0) { i = m-1; } if(i >= m) {i = 0; } }
+	if(pj) { if(j < 0) { j = n-1; } if(j >= n) {j = 0; } }
+	if(pk) { if(k < 0) { k = p-1; } if(k >= p) {k = 0; } }
+
+	if(i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
+
+	return (PetscMPIInt)(i + j*m + k*m*n);
+}
+//---------------------------------------------------------------------------
+void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n)
+{
+	// get local ranks of processor in DMDA
+
+	(*k) =  rank/(m*n);
+	(*j) = (rank - (*k)*m*n)/m;
+	(*i) =  rank - (*k)*m*n - (*j)*m;
+
+}
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DirMake"
 PetscErrorCode DirMake(const char *name)
@@ -284,8 +318,14 @@ PetscErrorCode DirMake(const char *name)
 	// create a new directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
+
+#ifdef _WIN32
+		// call this on windows machines
+		status = mkdir(name);
+#else
 		// standard access pattern drwxr-xr-x
 		status = mkdir(name, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+#endif 
 
 		if(status && errno != EEXIST)
 		{
@@ -525,7 +565,7 @@ void in_polygon(
 			else
 			{
 				// non-vertical points
-				if(xp < MIN(ax, bx) || MAX(ax, bx) < xp) continue;
+				if(xp < PetscMin(ax, bx) || PetscMax(ax, bx) < xp) continue;
 
 				intersecty = ay + (xp - ax)/(bx - ax)*(by - ay);
 
@@ -550,7 +590,7 @@ void in_polygon(
 
 						xvind = vcoord[2*ind];
 
-						if(MIN(bx, xvind) < xp && xp < MAX(bx, xvind))
+						if(PetscMin(bx, xvind) < xp && xp < PetscMax(bx, xvind))
 						{
 							nIntersect += 1.0;
 						}
@@ -565,7 +605,7 @@ void in_polygon(
 
 		// check if the contour polygon is closed
 		point_in = (PetscInt)(nIntersect - 2.0*floor(nIntersect/2.0));
-		in[ip]   = MAX(point_on, point_in);
+		in[ip]   = PetscMax(point_on, point_in);
 	}
 }
 //---------------------------------------------------------------------------

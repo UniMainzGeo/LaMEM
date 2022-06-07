@@ -838,7 +838,6 @@ PetscErrorCode PVOutWriteYield(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteRelDIIdif"
 PetscErrorCode PVOutWriteRelDIIdif(OutVec* outvec)
 {
-
 	COPY_FUNCTION_HEADER
 
 	// macro to copy diffusion creep relative strain rate to buffer
@@ -856,7 +855,6 @@ PetscErrorCode PVOutWriteRelDIIdif(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteRelDIIdis"
 PetscErrorCode PVOutWriteRelDIIdis(OutVec* outvec)
 {
-
 	COPY_FUNCTION_HEADER
 
 	// macro to copy diffusion creep relative strain rate to buffer
@@ -874,7 +872,6 @@ PetscErrorCode PVOutWriteRelDIIdis(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteRelDIIprl"
 PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
 {
-
 	COPY_FUNCTION_HEADER
 
 	// macro to copy diffusion creep relative strain rate to buffer
@@ -884,6 +881,23 @@ PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
 	cf = scal->unit;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIprl, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteRelDIIpl"
+PetscErrorCode PVOutWriteRelDIIpl(OutVec* outvec)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy plastic relative strain rate to buffer
+
+	#define GET_DIIpl buff[k][j][i] = jr->svCell[iter++].DIIpl;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIpl, 1, 0)
 
 	PetscFunctionReturn(0);
 }

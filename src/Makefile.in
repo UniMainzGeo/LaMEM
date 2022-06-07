@@ -52,6 +52,7 @@ mode = opt
 
 PLATFORM = $(shell uname -m)
 
+
 # IBM machine (XLC compiler assumed)
 ifeq ($(PLATFORM), ppc64)
 	LAMEM_FLAGS += -qmakedep=gcc -qinfo=nouse
@@ -76,7 +77,7 @@ ifeq ($(PLATFORM), x86_64)
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
    endif
-   ifneq ($(shell mpicc -v 2>&1 | grep -c Apple), 0)
+   ifneq ($(shell mpicc -v 2>&1 | grep -c apple), 0)
       # GNU
       DEPEN_FLAGS = -MM
       LAMEM_FLAGS += -std=c++11  -pedantic -Wall -W -Wmissing-prototypes \
@@ -84,6 +85,55 @@ ifeq ($(PLATFORM), x86_64)
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
    endif   
+endif
+
+# These are for BinaryBuilder compilations
+ifeq (,$(findstring $PLATFORM, aarch64 armv6l armv7l i686 powerpc64le amd64))
+   ifneq ($(shell mpicc -v 2>&1 | grep -c gcc), 0)
+      # GNU
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS += -std=c++11 -Wall -W \
+      -Wconversion -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
+      -Wno-unused-result -Wno-inline
+   endif
+   ifneq ($(shell mpicc -v 2>&1 | grep -c clang), 0)
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS = -std=c++11  -pedantic -Wall -W -Wmissing-prototypes \
+      -Wconversion -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
+      -Wno-unused-result -Wno-inline
+   endif   
+   ifneq ($(shell mpicc -v 2>&1 | grep -c apple), 0)
+      # GNU
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS = -std=c++11  -pedantic -W  \
+      -Wconversion -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
+      -Wno-unused-result -Wno-inline
+   endif   
+   ifneq ($(shell mpicc -v 2>&1 | grep -c freebsd), 0)
+      # GNU
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS = -std=c++11 -Wall -W \
+      -Wconversion -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
+      -Wno-unused-result -Wno-inline
+   endif
+   ifneq ($(shell mpicc -v 2>&1 | grep -c musl), 0)
+      # GNU
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS = -std=c++11  -pedantic -W  \
+      -Wconversion -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
+      -Wno-unused-result -Wno-inline
+   endif   
+endif
+
+# Windows requires this linker flag
+UNAME := $(shell uname)
+ifneq ($(filter MSYS%,$(UNAME)),)
+CLIB_FLAGS = -lssp
 endif
 
 #====================================================

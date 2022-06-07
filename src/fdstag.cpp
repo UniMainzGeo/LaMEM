@@ -63,7 +63,7 @@ PetscErrorCode MeshSeg1DReadParam(
 	PetscInt    i, tcels, uniform;
 	PetscInt    ncells[_max_num_segs_];
 	PetscScalar avgsz, sz;
-	char        *nseg, *nel, *coord, *bias;
+	char        *nseg, *nel, *coord, *bias, *periodic;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -80,16 +80,18 @@ PetscErrorCode MeshSeg1DReadParam(
 	}
 
 	// compose option keys
-	asprintf(&nseg,  "nseg_%s",  dir);
-	asprintf(&nel,   "nel_%s",   dir);
-	asprintf(&coord, "coord_%s", dir);
-	asprintf(&bias,  "bias_%s",  dir);
+	asprintf(&nseg,     "nseg_%s",     dir);
+	asprintf(&nel,      "nel_%s",      dir);
+	asprintf(&coord,    "coord_%s",    dir);
+	asprintf(&bias,     "bias_%s",     dir);
+	asprintf(&periodic, "periodic_%s", dir);
 
 	// read parameters
-	ierr = getIntParam   (fb, _OPTIONAL_, nseg,  &ms->nsegs,  1,           _max_num_segs_);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, nel,    ncells,     ms->nsegs,   _max_num_cells_); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, coord,  ms->xstart, ms->nsegs+1, leng);        CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, bias,   ms->biases, ms->nsegs,   1.0 );        CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, nseg,     &ms->nsegs,    1,           _max_num_segs_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, nel,       ncells,       ms->nsegs,   _max_num_cells_); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, periodic, &ms->periodic, 1,           1);               CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, coord,     ms->xstart,   ms->nsegs+1, leng);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, bias,      ms->biases,   ms->nsegs,   1.0 );            CHKERRQ(ierr);
 
 	// compute starting node indices
 	for(i = 0, tcels = 0; i < ms->nsegs; i++)
@@ -131,6 +133,7 @@ PetscErrorCode MeshSeg1DReadParam(
 	free(nel);
 	free(coord);
 	free(bias);
+	free(periodic);
 
 	PetscFunctionReturn(0);
 }
@@ -426,6 +429,9 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 
 	// set uniform grid flag
 	ds->uniform = ms->uniform;
+
+	// set periodic periodic topology flag
+	ds->periodic = ms->periodic;
 
 	// set global grid coordinate bounds
 	ds->gcrdbeg = ms->xstart[0];
@@ -1232,7 +1238,7 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 {
 	// return an array with the global ranks of adjacent processes (including itself)
 
-	PetscInt i, j, k, rx, ry, rz, Px, Py, Pz, cnt;
+	PetscInt i, j, k, rx, ry, rz, Px, Py, Pz, ptx, pty, ptz, cnt;
 	PetscFunctionBegin;
 
 	// get ranks
@@ -1245,6 +1251,11 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 	Py = fs->dsy.nproc;
 	Pz = fs->dsz.nproc;
 
+	// get periodic topology flags
+	ptx = fs->dsx.periodic;
+	pty = fs->dsy.periodic;
+	ptz = fs->dsz.periodic;
+
 	// clear counter
 	cnt = 0;
 
@@ -1252,7 +1263,7 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 	{	for(j = -1; j < 2; j++)
 		{	for(i = -1; i < 2; i++)
 			{
-				fs->neighb[cnt++] = getGlobalRank(rx+i, ry+j, rz+k, Px, Py, Pz);
+				fs->neighb[cnt++] = getGlobalRankPeriodic(rx+i, ry+j, rz+k, Px, Py, Pz, ptx, pty, ptz);
 			}
 		}
 	}
@@ -1469,19 +1480,19 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 
 		PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid);
 
-		PetscBinaryWrite(fid, &fs->dsx.nproc, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsy.nproc, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsz.nproc, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsx.tnods, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsy.tnods, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsz.tnods, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, fs->dsx.starts, fs->dsx.nproc+1, PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, fs->dsy.starts, fs->dsy.nproc+1, PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, fs->dsz.starts, fs->dsz.nproc+1, PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &chLen,         1,               PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, xc,             fs->dsx.tnods,   PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, yc,             fs->dsy.tnods,   PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, zc,             fs->dsz.tnods,   PETSC_SCALAR, PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsx.nproc, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsy.nproc, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsz.nproc, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsx.tnods, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsy.tnods, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, &fs->dsz.tnods, 1,               PETSC_INT);
+		PetscBinaryWrite(fid, fs->dsx.starts, fs->dsx.nproc+1, PETSC_INT);
+		PetscBinaryWrite(fid, fs->dsy.starts, fs->dsy.nproc+1, PETSC_INT);
+		PetscBinaryWrite(fid, fs->dsz.starts, fs->dsz.nproc+1, PETSC_INT);
+		PetscBinaryWrite(fid, &chLen,         1,               PETSC_SCALAR);
+		PetscBinaryWrite(fid, xc,             fs->dsx.tnods,   PETSC_SCALAR);
+		PetscBinaryWrite(fid, yc,             fs->dsy.tnods,   PETSC_SCALAR);
+		PetscBinaryWrite(fid, zc,             fs->dsz.tnods,   PETSC_SCALAR);
 
 		PetscBinaryClose(fid);
 		free(fname);

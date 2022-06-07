@@ -343,7 +343,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	FDSTAG      *fs;
 	Discret1D   *dsz;
 	MPI_Request srequest, rrequest;
-	PetscScalar ***lp, ***ibuff, *lbuff, dz, dp, g, rho,mean_p;
+	PetscScalar ***lp, ***ibuff, *lbuff, dz, dp, g, rho;
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, iter, L;
 
 	PetscErrorCode ierr;

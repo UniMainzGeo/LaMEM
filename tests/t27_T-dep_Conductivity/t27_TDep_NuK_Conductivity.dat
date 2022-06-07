@@ -23,16 +23,16 @@
 # Time stepping parameters
 #===============================================================================
 
-	time_end  = 8     # simulation end time
+	time_end  = 1     # simulation end time
 	dt        = 0.001   # initial time step
 	dt_min    = 1e-5    # minimum time step (declare divergence if lower value is attempted)
 	dt_max    = 0.1     # maximum time step
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 10      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 50      # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 10      # save output every n steps
-	nstep_rdb = 500     # save restart database every n steps
+#	nstep_rdb = 500     # save restart database every n steps
 
 
 #===============================================================================

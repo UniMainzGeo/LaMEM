@@ -141,7 +141,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 			ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
 
 			// read (and ignore) the silent undocumented file header & size of file
-			ierr = PetscBinaryRead(fd, &header, 2+_max_num_obs_, PETSC_SCALAR); CHKERRQ(ierr);
+			ierr = PetscBinaryRead(fd, &header, 2+_max_num_obs_, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 			Fsize = (PetscInt)(header[1]);
 
 			for (k = 0; k <_max_num_obs_; k++)
@@ -204,7 +204,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 		if(ISRankZero(PETSC_COMM_WORLD))
 		{
 			// read observations into the buffer
-			ierr = PetscBinaryRead(fd, readbuff, buffsize, PETSC_SCALAR); CHKERRQ(ierr);
+			ierr = PetscBinaryRead(fd, readbuff, buffsize, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 			// destroy
 			ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);

@@ -99,21 +99,27 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
 
 //---------------------------------------------------------------------------
-// Dropping boxes (rectangular boxes moving with constant vertical velocity)
+// Internal velocity boxes (rectangular boxes with constant prescribed velocity that are either fixed or move)
 //---------------------------------------------------------------------------
 
-struct DBox
+struct VelBox
 {
-	PetscInt    num;                   // number of boxes
-	PetscInt 	advect_box;			   // advect box (=1) or not?
-	PetscScalar bounds[6*_max_boxes_]; // box bounds
-	PetscScalar zvel;                  // vertical velocity
-
-} ;
+	PetscInt 	advect;  // box advection flag
+	PetscScalar cenX;    // x-coordinates of center
+	PetscScalar cenY;    // y-coordinates of center
+	PetscScalar cenZ;    // z-coordinates of center
+	PetscScalar widthX;  // Width in x
+	PetscScalar widthY;  // Width in y
+	PetscScalar widthZ;  // Width in z
+	PetscScalar vx;      // Vx-velocity within box
+	PetscScalar vy;      // Vy-velocity within box
+	PetscScalar vz;      // Vz-velocity within box
+};
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb);
+PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb);
+PetscErrorCode VelBoxPrint (VelBox *velbox, Scaling *scal, PetscInt cnt);
 
 //---------------------------------------------------------------------------
 
@@ -156,7 +162,7 @@ struct BCCtx
 	DBMat    *dbm;  // material database
 	JacRes   *jr;   // Jacobian-residual context (CROSS-REFERENCE!)
 
-	// boundary conditions vectors (velocity, pressure, temperature)
+
 	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
 
 	// single-point constraints
@@ -220,13 +226,14 @@ struct BCCtx
 	PetscInt 	 nblocks;             // number of Bezier blocks
 	BCBlock      blocks[_max_boxes_]; // BC block
 
-	// dropping boxes
-	DBox         dbox;
+    // internal velocity boxes
+	PetscInt 	 nboxes;              // number of velocity boxes
+    VelBox       vboxes[_max_boxes_]; // velocity boxes
 
 	// velocity inflow & outflow boundary condition
-	PetscInt     face,face_out,num_phase_bc,phase[5];   	// face (1-left 2-right 3-front 4-back) & phase identifiers
-	PetscScalar  bot, top,relax_dist,phase_interval[6];     	// bottom & top coordinates of the plate
-	PetscScalar  velin, velout; 			// inflow & outflow velocities
+	PetscInt     face,face_out,num_phase_bc,phase[5];   // face (1-left 2-right 3-front 4-back) & phase identifiers
+	PetscScalar  bot, top,relax_dist,phase_interval[6]; // bottom & top coordinates of the plate
+	PetscScalar  velin, velout; 			            // inflow & outflow velocities
 	PetscScalar  velbot, veltop; 		// bottom/top inflow velocities
 	PetscInt     bvel_temperature_inflow;
 	PetscScalar  bvel_thermal_age,bvel_potential_temperature, bvel_temperature_top;
@@ -335,8 +342,8 @@ PetscErrorCode BCApplyBezier(BCCtx *bc);
 // apply inflow/outflow boundary velocities
 PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 
-// apply dropping boxes
-PetscErrorCode BCApplyDBox(BCCtx *bc);
+// apply internal velocity boxes
+PetscErrorCode BCApplyVelBox(BCCtx *bc);
 
 // constraint all cells containing phase
 PetscErrorCode BCApplyPhase(BCCtx *bc);
