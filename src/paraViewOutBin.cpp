@@ -587,7 +587,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->DIIdif)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_dif_rate",   scal->lbl_unit,             &PVOutWriteRelDIIdif,    1, NULL);
 	if(omask->DIIdis)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_dis_rate",   scal->lbl_unit,             &PVOutWriteRelDIIdis,    1, NULL);
 	if(omask->DIIprl)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_prl_rate",   scal->lbl_unit,             &PVOutWriteRelDIIprl,    1, NULL);
-	if(omask->DIIpl)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_pl_rate",    scal->lbl_unit,             &PVOutWriteRelDIIpl,     1, NU
+	if(omask->DIIpl)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_pl_rate",    scal->lbl_unit,             &PVOutWriteRelDIIpl,     1, NULL);
 	if(omask->Def_Work)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Deformational_work",  scal->lbl_deformation_work,      &PVOutWriteDeformationW,   1, NULL);
 	if(omask->RW_Dif)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Work_rate Dif",  scal->lbl_dissipation_rate,      &PVOutWriteDif_Rate_W,   1, NULL);
 	if(omask->RW_Dis)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "Work_rate Dis",    scal->lbl_dissipation_rate,      &PVOutWriteDis_Rate_W,   1, NULL);
