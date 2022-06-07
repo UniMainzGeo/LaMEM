@@ -756,7 +756,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// compute dislocation creep constant
 	if(eta0 && e0   && m->n) m->Bn = pow(2.0*eta0, -m->n)*pow(e0, 1 - m->n);
-	if(eta0 && tau0 && m->n) m->Bn = (tau0*1e6)/(2*eta0*pow(tau0*1e6, 1-m->n));
+	if(eta0 && tau0 && m->n) m->Bn = pow(tau0,1-m->n)/(2*eta0);
 
 
 	// PEIERLS
