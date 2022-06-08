@@ -29,9 +29,9 @@
 	dt_max    = 0.1     # maximum time step
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 5    # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 5       # save output every n steps
-	nstep_rdb = 100     # save restart database every n steps
+	nstep_max = 6    # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 2       # save output every n steps
+#	nstep_rdb = 100     # save restart database every n steps
 
 
 #===============================================================================
@@ -52,17 +52,17 @@
 #===============================================================================
 # Free surface
 #===============================================================================
-	surf_use           = 0                # free surface activation flag
-#	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
-#	surf_level         = 0                # initial level
-#	surf_air_phase     = 0                # phase ID of sticky air layer
-#	surf_max_angle     = 25.0             # maximum angle with horizon (smoothed if larger)
+	surf_use           = 1                # free surface activation flag
+	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+	surf_level         = 0                # initial level
+	surf_air_phase     = 0                # phase ID of sticky air layer
+	surf_max_angle     = 0             # maximum angle with horizon (smoothed if larger)
 	
 #===============================================================================
 # Boundary conditions
 #===============================================================================
 	
-#	open_top_bound = 1
+	open_top_bound = 1
 
 # Velocity boundary condition
 	bvel_face    =  CompensatingInflow     # # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
@@ -70,12 +70,12 @@
 	bvel_bot     =  -15   # bottom coordinate of inflow window
 	bvel_top     =  15   # top coordinate of inflow window
 	bvel_velin   =  -1.0    # 0utflow velocity (halfspreading velocity)
-	bvel_velbot  =  0.25   # bottom inflow velocity
-	bvel_veltop  =  -0.25  # top inflow velocity
+	bvel_velbot  =  0.5   # bottom inflow velocity
+#	bvel_veltop  =  -0.5  # top inflow velocity
 
 # temperature on the top & bottom boundaries
-#	temp_top  = 1.0
-#	temp_bot  = 1350.0
+	temp_top  = 0.0
+	temp_bot  = 1000.0
 
 #===============================================================================
 # Solution parameters & controls
@@ -88,8 +88,8 @@
 	p_litho_visc   = 1              # use lithostatic pressure for creep laws
 	p_litho_plast  = 1              # use lithostatic pressure for plasticity
 	eta_min        = 1e18           # viscosity lower limit
-	eta_max        = 1e24           # viscosity upper limit
-	eta_ref        = 1e22           # reference viscosity (initial guess)
+	eta_max        = 1e23           # viscosity upper limit
+	eta_ref        = 1e20           # reference viscosity (initial guess)
 	min_cohes      = 1e3            # cohesion lower bound
 	min_fric       = 1.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
@@ -125,14 +125,23 @@
 
 # Geometric primitives:
 	
-	# rock
+	# air
 	<BoxStart>
 		phase  = 0
-		bounds = -30 30 -1 1 -15 15 # (left, right, front, back, bottom, top)
+		bounds = -30 30 -1 1 0 15 # (left, right, front, back, bottom, top)
 		Temperature = constant
-		cstTemp = 1000
+		cstTemp = 1
 	<BoxEnd>
 	
+ # rock
+        <BoxStart>
+                phase  = 2
+                bounds = -30 30 -1 1 -15 0 # (left, right, front, back, bottom, top)
+                Temperature = constant
+                cstTemp = 1000
+        <BoxEnd>
+
+
 #===============================================================================
 # Output
 #===============================================================================
@@ -146,17 +155,17 @@
 	out_visc_total      = 1
 	out_visc_creep      = 1
 	out_velocity        = 1
-	out_pressure        = 1
-	out_eff_press       = 1
+	out_pressure        = 0
+	out_eff_press       = 0
 	out_temperature     = 1
-	out_dev_stress      = 1
+	out_dev_stress      = 0
 	out_j2_dev_stress   = 1
-	out_strain_rate     = 1
+	out_strain_rate     = 0
 	out_j2_strain_rate  = 1
-	out_yield           = 1
+	out_yield           = 0
 	out_plast_strain    = 1
-	out_plast_dissip    = 1
-	out_tot_displ       = 1
+	out_plast_dissip    = 0
+	out_tot_displ       = 0
 
 # AVD phase viewer output options (requires activation)
 
@@ -181,38 +190,48 @@
   <PhaseTransitionStart>
         ID                      =   0                               # Phase_transition law ID
         Type                    =   Box                     # A box-like region
-        PTBox_Bounds            =   -1 1  -1 1 -15 15      # box bound coordinates: [left, right, front, back, bottom, top]
-        number_phases           =   1
-        PhaseInside             =   1                              # Phase within the box [use -1 if you don't want to change the phase inside the box]
-        PhaseOutside            =   0                              # Phase outside the box
+        PTBox_Bounds            =   -2 2  -1 1 -10 10      # box bound coordinates: [left, right, front, back, bottom, top]
+        number_phases           =   2
+        PhaseInside             =   1 1                             # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   0 2                             # Phase outside the box
         PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
-        PTBox_TempType          =  none                             # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_TempType          =  none                             # Temperature condition witin the box [none, constant, linear, halfspace
   <PhaseTransitionEnd>
 
   <DikeStart>
 	ID              = 0
-        Mf              = 0.50    # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box
-        Mb              = 0.50    # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box
+        Mf              = 0.5    # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box
+        Mb              = 0.5    # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box
 	PhaseID         = 1
+	PhaseTransID	= 0
   <DikeEnd>
 
 # Material parameters
 
-  	# Rock
+  	# air
 	<MaterialStart>
 		ID		= 0	  # phase id
-		rho   		= 3300 	  # density
-		eta		= 1e22 	  # viscosity
+		rho   		= 1000 	  # density
+		eta		= 1e18 	  # viscosity
 		Cp             = 1.2e3   # specific heat (capacity)  [J/kg/K]
 		k              = 3.5   # thermal conductivity   [W/m/K]
 	<MaterialEnd>
+
+      # Rock 2
+        <MaterialStart>
+                ID              = 2       # phase id
+                rho             = 3200    # density
+                eta             = 1e21    # viscosity
+                Cp             = 1.2e3   # specific heat (capacity)  [J/kg/K]
+                k              = 3.5   # thermal conductivity   [W/m/K]
+        <MaterialEnd>
 
 
     # Dike
     <MaterialStart>
         ID              = 1      # phase id
-        rho             = 3300   # density
-	eta          	= 1e22
+        rho             = 3000   # density
+	eta          	= 1e20
 	Cp              = 1.2e3  # specific heat (capacity)
 	k               = 3.5    # thermal conductivity
      <MaterialEnd>

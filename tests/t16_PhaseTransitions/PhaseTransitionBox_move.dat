@@ -208,22 +208,6 @@
         v_box  			= -0.2     # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
   <PhaseTransitionEnd>
 
-# boxes with higher conductivity
-#<PhaseTransitionStart>
-#        ID                      =   1                               # Phase_transition law ID
-#        Type                    =   NotInAirBox                             # A box-like region
-#        PTBox_Bounds 		=   2.0 6.0 -1.0 1.0 -8.0 1.0  # (left, right, front, back, bottom, top)
-#        number_phases           =   2
-#        PhaseInside             =   3 3                                # Phase within the box [use -1 if you don't want to change the phase inside the box]
-#        PhaseOutside            =   1 0                             # Phase outside the box
-#        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
-#        PTBox_TempType          =   none                          # Temperature condition witin the box [none, constant, linear, halfspace]
-#	t0_box 			= 0.002     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
-#        t1_box 			= 0.3      # optional, in Myr, end time
-#        v_box  			= 1.0
-#  <PhaseTransitionEnd>
-
-
 # Strain softening parameters
 
   	 <SofteningStart>
@@ -239,18 +223,13 @@
 		healTau = 1e-24
 	<SofteningEnd>
 
-        <SofteningStart>
-                ID      = 2
-                healTau = 0.04
-        <SofteningEnd>
-
 # DIKES
-
         <DikeStart>
                 ID = 0
                 Mf = 1.0           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
                 Mb = 1.0           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
                 PhaseID = 2
+		PhaseTransID = 0
         <DikeEnd>
 
 # Material parameters
@@ -260,9 +239,13 @@
 		ID		= 0	  # phase id
 		rho   		= 100 	  # density
 		eta		= 1e18 	  # viscosity
-		 Cp             = 1.0e3   # specific heat (capacity)  [J/kg/K]
-		 k              = 5000   # thermal conductivity   [W/m/K]
-		 healID         = 2
+		Cp             = 1.0e3   # specific heat (capacity)  [J/kg/K]
+	  	k              = 5000   # thermal conductivity   [W/m/K]
+                G               = 4.0e10
+                fr              = 30
+                ch              = 30e6
+                chSoftID        = 0
+                healID          = 1
 	<MaterialEnd>
 
     # Dike
@@ -279,7 +262,7 @@
 	Cp              = 1.2e3  # specific heat (capacity)
 	k               = 80.0    # thermal conductivity
         ch              = 30e6
-        healID 	        = 1
+        healID 	        = 0
         fr  		= 30     # initial friction angle
      <MaterialEnd>
 
@@ -322,8 +305,6 @@
                 healID          =       0      # healing timescale in Myr
 #               frSoftID        =       0     # softening ID
         <MaterialEnd>
-	
-
 	
 #===============================================================================
 # PETSc options

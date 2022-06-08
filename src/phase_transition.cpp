@@ -146,7 +146,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr    =   Set_Box_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
 	}
 	
-	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_num_tr_);      CHKERRQ(ierr);
+	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_tr_);      CHKERRQ(ierr);
 	if ( ph->Type == _Box_ || ph->Type == _NotInAirBox_){
 		ph->PhaseInside[0] = -1;	// default
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
@@ -608,7 +608,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 	PrintStart(&t, "Phase_Transition", NULL);
 	
-	// loop over all local particles 		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
+	// loop over all phase transition laws		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
 	nPtr        =   0;
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	  {
@@ -947,6 +947,7 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 
 		// Set the temperature structure
 		if 		(PhaseTrans->TempType == 0){
+		  //PetscPrintf(PETSC_COMM_WORLD,"inside box in loop in none temp \n");  // PRINT BOX TEST
 			// do nothing
 		}
 		else if	(PhaseTrans->TempType == 1){
@@ -979,7 +980,7 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 			d 		=	zTop - P->X[2];
 			T 		= 	(botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
-		
+
 	}
 	else{
 
@@ -1003,7 +1004,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
   PetscScalar  T;
   
   PetscFunctionBegin;
-  
+
   AirPhase = 0.0;
   AirPhase  = jr->surf->AirPhase;
   ph = P->phase;
@@ -1019,6 +1020,9 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
 
 		// Set the temperature structure                                                                 
 		if      (PhaseTrans->TempType == 0){
+
+		  //PetscPrintf(PETSC_COMM_WORLD,"inside NIAB in loop in none-temp \n");  // PRINT FOR NOTINAIRBOX TEST 
+
 			// do nothing                                                                                                                                    
 		}
 		else if (PhaseTrans->TempType == 1){

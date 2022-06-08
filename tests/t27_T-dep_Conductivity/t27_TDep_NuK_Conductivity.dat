@@ -30,7 +30,7 @@
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 50      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 40      # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 10      # save output every n steps
 #	nstep_rdb = 500     # save restart database every n steps
 
@@ -56,7 +56,7 @@
 	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
 	surf_level         = 0                # initial level
 	surf_air_phase     = 0                # phase ID of sticky air layer
-	surf_max_angle     = 90.0             # maximum angle with horizon (smoothed if larger)
+	surf_max_angle     = 0.0             # maximum angle with horizon (smoothed if larger)
 	
 #===============================================================================
 # Boundary conditions
@@ -156,7 +156,7 @@
 	out_file_name       = testdiffConductivity # output file name
 	out_pvd             = 1       	# activate writing .pvd file
 	out_phase           = 1
-	out_density         = 0
+	out_density         = 1
 	out_visc_total      = 1
 	out_visc_creep      = 1
 	out_velocity        = 1
@@ -168,7 +168,7 @@
 	out_strain_rate     = 0
 	out_j2_strain_rate  = 1
 #	out_yield           = 0
-	out_plast_strain    = 1
+	out_plast_strain    = 0
 #	out_plast_dissip    = 1
 #	out_tot_displ       = 1
 #	out_moment_res      = 1
@@ -206,16 +206,15 @@
         PTBox_TempType          =  none          # Temperature condition witin the box [none, constant, linear, halfspace]
   <PhaseTransitionEnd>
 
-# boxes with higher conductivity
-<PhaseTransitionStart>
-        ID                      =   1                   # Phase_transition law ID
-        Type                    =   NotInAirBox                 # A box-like region
-        PTBox_Bounds 		=  1.0 30 -1.0 1.0 -10 4.0 	# (left, right, front, back, bottom, top)
+  <PhaseTransitionStart>
+        ID                      =   1                               # Phase_transition law ID
+        Type                    =   NotInAirBox                     # A box-like region
+        PTBox_Bounds            =   -30.0 -1.0  -1.0 1.0 -10.0 4.0    # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   3
-        PhaseInside             =   3 3 3             # Phase within the box [use -1 if you don't want to change the phase inside the box]
-        PhaseOutside            =   0 1 2             # Phase outside the box
-        PhaseDirection          =   BothWays            # [BothWays=default; OutsideToInside; InsideToOutside]
-        PTBox_TempType          =  none                 # Temperature condition witin the box [none, constant, linear, halfspace]
+        PhaseInside             =   3 3 3                         # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   1 0 2                         # Phase outside the box
+        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
+        PTBox_TempType          =  none          # Temperature condition witin the box [none, constant, linear, halfspace]
   <PhaseTransitionEnd>
 
 # Material parameters
@@ -237,6 +236,7 @@
 		Mf = 1.0
 		Mb = 1.0
 		PhaseID = 2
+		PhaseTransID = 0
 	<DikeEnd>
 
     # Dike
@@ -244,11 +244,6 @@
 		ID              = 2      # phase id
 		rho             = 3300   # density
 		G               = 4e10
-        			  # disl Rheology
-#      	 	n		= 3.5     # power law exponent
-#       	Bn  		= 1.1e-16 # DISLOCATION creep pre-exponential constant
-#       	En  		= 530e3   # activation energy
-#       	Vn  		= 15e-6   # activation volume
 # diff Rheology
 		Bd            =   3.33e-7
 		Ed            =   375e3
@@ -256,11 +251,11 @@
 #       	alpha           = 3e-5  # thermal expansivity # Sam: 3.5e-5
 		A		= 1.0e-6 #radiogenic heat production
 		Cp              = 1.2e3  # specific heat (capacity)
-		k               = 3.5   # thermal conductivity
+		k               = 2.0   # thermal conductivity
 		nu_k		= 1.0
 		T_Nu            = 600.0    # Temp value for Nu enhancement to conductivity
-        		ch              = 30e6
-        fr  		= 30     # initial friction angle
+        	ch              = 30e6
+                fr  		= 30     # initial friction angle
      <MaterialEnd>
 
 
@@ -268,11 +263,6 @@
 	<MaterialStart>
 		ID  		= 	1      # phase id
 		rho 		= 	3300   # density
-# disl Rheology
-#		Bn  = 1.1e-16  # DISLOCATION creep pre-exponential constant
-#       	En  = 530e3    # activation energy
-#       	Vn  = 15e-6   # activation volume
-#     	      	n  = 3.5      
 # diff Rheology
         	Bd              =       3.33e-7
 		Ed              =       375e3
@@ -291,11 +281,6 @@
         <MaterialStart>
                 ID              =       3      # phase id
                 rho             =       3300   # density
-# disl Rheology
-#		Bn  = 1.1e-16  # DISLOCATION creep pre-exponential constant
-#       	En  = 530e3    # activation energy
-#       	Vn  = 15e-6   # activation volume
-#     	      	n  = 3.5      
 # diff Rheology
         	Bd              =       3.33e-7
 		Ed              =       375e3
