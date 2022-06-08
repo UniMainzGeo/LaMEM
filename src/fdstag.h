@@ -303,6 +303,9 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 // get coordinate of i-th CELL (center)
 #define COORD_CELL(i, s, ds) (ds.ccoor[(i-s)])
 
+// get coordinate of i-th CELL ghost nodes 
+#define COORD_CELL_GHOST(i, ds) (ds.ccoor[(i-ds.pstart)])
+
 // get coordinate of i-th NODE
 #define COORD_NODE(i, s, ds) (ds.ncoor[(i-s)])
 

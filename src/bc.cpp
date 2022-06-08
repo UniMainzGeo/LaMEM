@@ -1081,7 +1081,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
     FDSTAG      *fs;
     PetscScalar Tbot, Ttop;
     PetscInt    mcz;
-    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz,I,J;
     PetscScalar ***bcT;
 
     PetscErrorCode ierr;
@@ -1121,9 +1121,9 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
             if(bc->Plume_Inflow == 1 && k==0)
             {
                 PetscScalar x,y;
-
-                x       = COORD_CELL(i, sx, fs->dsx);
-                y       = COORD_CELL(j, sy, fs->dsy);
+               
+                x       =COORD_CELL_GHOST(i,  fs->dsx);// COORD_CELL(I, sx, fs->dsx);
+                y       =COORD_CELL_GHOST(j,  fs->dsy);// COORD_CELL(J, sy, fs->dsy);
 
                 if(bc->Plume_Dimension==1)	// 2D plume
                 {	
@@ -1135,16 +1135,20 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
                     
                     if ( (x >= xmin) && (x <= xmax))
                     {
-                        bcT[k-1][j][i]     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
+                        bcT[k-1][j][i]     =bc->Plume_Temperature; //Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
+                        //bcT[k-1][j][i] = bc->Plume_Temperature;
                     }
+                    
                     
                 }
                 else	// 3D plume
                 {
-                    if ( ( PetscPowScalar( (x - bc->Plume_Center[0]), 2.0)  + PetscPowScalar( (y - bc->Plume_Center[1]),2.0) ) <= PetscPowScalar(bc->Plume_Radius,2.0))
-                    {
-                        bcT[k-1][j][i]     = bc->Plume_Temperature;
-                    }
+                    //if ( ( PetscPowScalar( (x - bc->Plume_Center[0]), 2.0)  + PetscPowScalar( (y - bc->Plume_Center[1]),2.0) ) <= PetscPowScalar(bc->Plume_Radius,2.0))
+                    //{                    T_inflow     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/(PetscPowScalar(bc->Plume_Radius,2.0)));
+
+                       // bcT[k-1][j][i]     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/(PetscPowScalar(bc->Plume_Radius,2.0)));
+
+                    //}
                 }
             }
         }
@@ -2360,8 +2364,8 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
                 if(bc->Plume_Dimension==1)
                 {
-                    T_inflow     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
-
+                    //T_inflow     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
+                    T_inflow     = bc->Plume_Temperature;
 
                     cmin = bc->Plume_Center[0] - bc->Plume_Radius;
                     cmax = bc->Plume_Center[0] + bc->Plume_Radius;
@@ -2384,6 +2388,16 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
                 P->phase  = phase_inflow;
                 P->T      = T_inflow;
+                P->S.xx   = 0.0;
+                P->S.xy   = 0.0;
+                P->S.xz   = 0.0;
+                P->S.yy   = 0.0;
+                P->S.yz   = 0.0;
+                P->S.zz   = 0.0;
+                P->U[0]   = 0.0;
+                P->U[1]   = 0.0; 
+                P->U[2]   = 0.0; 
+                P->APS    = 0.0;
             //	PetscPrintf(PETSC_COMM_WORLD,"Plume Temperature P->T=%6f \n",P->T*bc->scal->temperature-bc->scal->Tshift);
 
             }
