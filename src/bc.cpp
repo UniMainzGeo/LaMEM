@@ -1122,8 +1122,8 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
             {
                 PetscScalar x,y;
 
-                x       = COORD_CELL(i, sx, fs->dsx);
-                y       = COORD_CELL(j, sy, fs->dsy);
+                x       = COORD_CELL_GHOST(i, fs->dsx);
+                y       = COORD_CELL_GHOST(j, fs->dsy);
 
                 if(bc->Plume_Dimension==1)	// 2D plume
                 {	
