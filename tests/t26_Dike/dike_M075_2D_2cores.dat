@@ -57,7 +57,7 @@
 	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
 	surf_level         = 0                # initial level
 	surf_air_phase     = 0                # phase ID of sticky air layer
-	surf_max_angle     = 25.0             # maximum angle with horizon (smoothed if larger)
+	surf_max_angle     = 0.0             # maximum angle with horizon (smoothed if larger)
 	
 #===============================================================================
 # Boundary conditions
@@ -71,7 +71,7 @@
 	bvel_bot     =  -20   # bottom coordinate of inflow window
 	bvel_top     =  10    # top coordinate of inflow window
 	bvel_velin   =  -1.0  # 0utflow velocity (halfspreading velocity)
-	bvel_velbot  =  0.41667   # bottom inflow velocity
+	bvel_velbot  =  0.42   # bottom inflow velocity
 #	bvel_veltop  =  -1.0  # top inflow velocity
 
 # temperature on the top & bottom boundaries
@@ -90,7 +90,7 @@
 	p_litho_plast  = 1              # use lithostatic pressure for plasticity
 	eta_min        = 1e18           # viscosity lower limit
 	eta_max        = 1e24           # viscosity upper limit
-	eta_ref        = 1e22           # reference viscosity (initial guess)
+	eta_ref        = 1e19           # reference viscosity (initial guess)
 	min_cohes      = 1e3            # cohesion lower bound
 	min_fric       = 1.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
@@ -215,6 +215,7 @@
 	Mf                      = 0.75
 	Mb                      = 0.75
 	PhaseID                 = 3
+	PhaseTransID		= 0
   <DikeEnd>
 
 
@@ -222,9 +223,9 @@
 
   	 <SofteningStart>
 		ID   = 0
-		A    = 0.95 	# 0.87	# reduction ratio = 1-FinalParameter/InitialParameter
+		A    = 0.95  	 # 0.87	# reduction ratio = 1-FinalParameter/InitialParameter
 		APS1 = 0.01      # 0.5    # make really small so weakenening makes it directly weak
-		APS2 = 0.15     # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
+		APS2 = 0.15      # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
 		healTau = 0.04   # Myr
 	<SofteningEnd>
 
@@ -241,7 +242,12 @@
 		rho   		= 100 	  # density
 		eta		= 1e18 	  # viscosity
 		 Cp             = 1.0e3   # specific heat (capacity)  [J/kg/K]
-		 k              = 5000   # thermal conductivity   [W/m/K]
+		 k              = 5000    # thermal conductivity   [W/m/K]
+                G               = 4.0e10
+                fr              = 30
+                ch              = 30e6
+                chSoftID        = 0
+		healID		= 1
 	<MaterialEnd>
 
 
@@ -255,8 +261,9 @@
 	Cp              = 1.2e3  # specific heat (capacity)
 	k               = 1.0    # thermal conductivity
         ch              = 30e6
+	chSoftID        = 0
         fr  		= 30     # initial friction angle
-	healID          = 1
+	healID          = 0
      <MaterialEnd>
 
 

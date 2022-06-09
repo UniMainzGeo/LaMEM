@@ -1153,7 +1153,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XY, XY1, XY2, XY3, XY4;
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
-	PetscScalar dikeRHS;
+	PetscScalar dikeRHS, y_c;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
@@ -1229,22 +1229,24 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// SECOND INVARIANT
 		//=================
 
-		// access strain rates
-		XX = dxx[k][j][i];
-		YY = dyy[k][j][i];
-		ZZ = dzz[k][j][i];
-
 		if (jr->ctrl.actDike)
 		{
-			dikeRHS = 0.0;
-			// function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-			ierr = GetDikeContr(&ctx, svCell->phRat, dikeRHS);  CHKERRQ(ierr);
-
-			// remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
-			dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
-			dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
-			dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
+		  y_c = COORD_CELL(j,sy,fs->dsy);
+		  
+		  dikeRHS = 0.0;
+		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
+		  ierr = GetDikeContr(&ctx, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c);  CHKERRQ(ierr);
+		  
+		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
+		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
+		  dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
+		  dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
 		}
+
+		// access strain rates
+		XX = dxx[k][j][i];
+                YY = dyy[k][j][i];
+                ZZ = dzz[k][j][i];
 		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];

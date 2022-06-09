@@ -61,7 +61,12 @@ public:
   PetscInt    ID;        // dike ID
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
+  PetscScalar Mc;        // amount of magma-accommodated extension in center of box
+  PetscScalar y_Mc;      // location in y direction of Mc, if in x-direction x_Mc needs to be given or in z-direction z_Mc
+  PetscScalar x_Mc;
+  PetscScalar z_Mc;
   PetscInt PhaseID;      // associated material phase ID
+  PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
 };
       
 struct DBPropDike
@@ -77,7 +82,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // compute the added RHS of the dike for the continuity equation
-PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscScalar &dikeRHS);
+PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscInt &Airphase, PetscScalar &dikeRHS, PetscScalar &y_c);
 
 // compute dike heat after Behn & Ito, 2008
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
@@ -85,7 +90,8 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar &Tc,
                                 PetscScalar *phRat,          // phase ratios in the control volume
                                 PetscScalar &k,
-                                PetscScalar &rho_A);
+				 PetscScalar &rho_A,
+				PetscScalar &y_c);
 
 //---------------------------------------------------------------------------
 #endif

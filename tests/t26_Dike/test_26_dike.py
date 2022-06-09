@@ -23,18 +23,17 @@ def test_M1_2D():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object                                                                                                                                                  
-  ex1 = pth.pthUnitTest('t26_Dike_opt1',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t26_Dike_M1',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
   return(ex1)
 
-
 def test_M075_2D_2cores():
 
-  # Test dike feature using optimized LaMEM with 2 cores
+  # Test dike feature using optimized LaMEM                                                                                                                                      
   ranks = 2
-  launch = '../bin/opt/LaMEM -ParamFile ./t26_Dike/dike_M075_2D_2cores.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = '../bin/opt/LaMEM -ParamFile ./t26_Dike/dike_M075_2D_2cores.dat' # This must be a relative path with respect to runLaMEM_Tests.py        
   expected_file = 't26_Dike/dike_M075_2D_2cores.expected'
 
   def comparefunc(unittest):
@@ -48,20 +47,20 @@ def test_M075_2D_2cores():
     key = re.escape("|mRes|_2")
     unittest.compareFloatingPoint(key,1e-4)
 
-  # Create unit test object
-  ex1 = pth.pthUnitTest('t26_Dike_opt2',ranks,launch,expected_file)
+  # Create unit test object                                                                  
+  ex1 = pth.pthUnitTest('t26_Dike_M075',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
   return(ex1)
 
 
-def test_M05_2D():
+def test_variableM():
 
-  # Test dike in 2D  using debugging version of LaMEM
+  # Test dike feature using optimized LaMEM (one core)
   ranks = 1
-  launch = '../bin/deb/LaMEM -ParamFile ./t26_Dike/dike_M05_2D.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't26_Dike/dike_M05_2D.expected'
+  launch = '../bin/opt/LaMEM -ParamFile ./t26_Dike/dike_variableM.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't26_Dike/dike_variableM.expected'
 
   def comparefunc(unittest):
 
@@ -75,11 +74,37 @@ def test_M05_2D():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('t26_Dike_deb',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t26_Dike_variableM',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
   return(ex1)
+
+
+#def test_M05_2D():
+
+  # Test dike in 2D  using debugging version of LaMEM
+#  ranks = 1
+#  launch = '../bin/deb/LaMEM -ParamFile ./t26_Dike/dike_M05_2D.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+#  expected_file = 't26_Dike/dike_M05_2D.expected'
+
+#  def comparefunc(unittest):
+
+#    key = re.escape("|Div|_inf")
+#    unittest.compareFloatingPoint(key,1e-7)
+
+#    key = re.escape("|Div|_2")
+#    unittest.compareFloatingPoint(key,1e-5)
+
+#    key = re.escape("|mRes|_2")
+#    unittest.compareFloatingPoint(key,1e-4)
+
+  # Create unit test object
+#  ex1 = pth.pthUnitTest('t26_Dike_M05',ranks,launch,expected_file)
+#  ex1.setVerifyMethod(comparefunc)
+#  ex1.appendKeywords('@')
+
+#  return(ex1)
 
 
 def heat_kfac():

@@ -66,7 +66,7 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i]); CHKERRQ(ierr); \
+  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i], COORD_CELL(j,sy,fs->dsy)); CHKERRQ(ierr); \
   buff[k][j][i] = kc;   // added one NULL because of the new variables that are passed
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
@@ -84,7 +84,9 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *k_,      // conductivity
 		PetscScalar *rho_Cp_, // volumetric heat capacity
 		PetscScalar *rho_A_,  // volumetric radiogenic heat
-		PetscScalar Tc)
+		PetscScalar Tc,
+		PetscScalar y_c)
+
 {
 	// compute effective energy parameters in the cell
 
@@ -151,7 +153,7 @@ PetscErrorCode JacResGetTempParam(
 
 	if (ctrl.actDike && ctrl.dikeHeat)
 	{
-	  ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A);  CHKERRQ(ierr);
+	  ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c);  CHKERRQ(ierr);
 	}
 
 	// store
@@ -463,6 +465,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
+	PetscScalar y_c;
 	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -522,8 +525,10 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Tn  = svBulk->Tn;  // temperature history
 		Pc  = P[k][j][i] ; // Current Pressure
 
+		y_c = COORD_CELL(j,sy,fs->dsy);
+
 		// conductivity, heat capacity, radiogenic heat production
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc); CHKERRQ(ierr);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c); CHKERRQ(ierr);
 
 		// shear heating term (effective)
 		Hr = svDev->Hr +
@@ -639,7 +644,8 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, cond;
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff, ***lT;
-
+	PetscScalar y_c;
+	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -680,12 +686,14 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		// access solution variables
 		svCell = &jr->svCell[iter++];
 		svBulk = &svCell->svBulk;
-		  
+
+		y_c = COORD_CELL(j,sy,fs->dsy);
+		
 		// access
 		Tc  = lT[k][j][i]; // current temperature
 		
 		// conductivity, heat capacity
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc); CHKERRQ(ierr);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, y_c); CHKERRQ(ierr);
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }

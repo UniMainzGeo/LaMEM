@@ -1743,7 +1743,6 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
     if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
 
     // check whether internal velocity box condition is activated
-
     if(!bc->nboxes) PetscFunctionReturn(0);
 
     // access context
