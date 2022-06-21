@@ -318,8 +318,14 @@ PetscErrorCode DirMake(const char *name)
 	// create a new directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
+
+#ifdef _WIN32
+		// call this on windows machines
+		status = mkdir(name);
+#else
 		// standard access pattern drwxr-xr-x
 		status = mkdir(name, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+#endif 
 
 		if(status && errno != EEXIST)
 		{

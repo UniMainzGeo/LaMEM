@@ -1153,7 +1153,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XY, XY1, XY2, XY3, XY4;
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
-	PetscScalar dikeRHS;
+	PetscScalar dikeRHS, y_c;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
@@ -1231,7 +1231,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		if (jr->ctrl.actDike)
 		{
-		  PetscScalar y_c;
 		  y_c = COORD_CELL(j,sy,fs->dsy);
 		  
 		  dikeRHS = 0.0;

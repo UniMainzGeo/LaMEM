@@ -88,6 +88,9 @@
 // maximum number of strain rate application periods
 #define _max_periods_ 20
 
+// maximum number of time steps
+#define _max_num_steps_ 2000
+
 // maximum number of Bezier blocks
 #define _max_boxes_ 5
 
@@ -146,7 +149,7 @@
 #define _max_num_eq_ 2
 
 // maximum number of phase transition per each phase
-#define _max_tr_ 5
+#define _max_tr_ 8
 
 // maximum number of phase diagrams
 #define _max_num_pd_ 8
@@ -198,6 +201,9 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#ifdef _WIN32
+#include "asprintf.h"       // required for some windows compilers
+#endif 
 
 using namespace std;
 

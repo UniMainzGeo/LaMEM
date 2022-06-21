@@ -739,7 +739,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
 
-
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
 
@@ -753,7 +752,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = ADVExchange(&lm->actx); CHKERRQ(ierr);
 
 		// Advect Passive tracers
-			ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
+		ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
 
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
