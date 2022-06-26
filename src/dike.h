@@ -83,7 +83,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, 
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, PetscBool PrintOutput);
 
 // compute the added RHS of the dike for the continuity equation
-PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscInt &Airphase, PetscScalar &dikeRHS, PetscScalar &y_c);
+PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscInt &Airphase, PetscScalar &dikeRHS, PetscScalar &y_c, PetscInt J);
 
 // compute dike heat after Behn & Ito, 2008
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
