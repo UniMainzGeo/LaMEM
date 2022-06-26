@@ -776,7 +776,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	    {
 			if (PhaseTrans->v_box)
 			{
-				ierr = MovingBox(PhaseTrans, ts); CHKERRQ(ierr);
+				ierr = MovingBox(PhaseTrans, ts, jr); CHKERRQ(ierr);
 			}
 	    }
 	    
@@ -930,7 +930,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 //----------------------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MovingBox"
-PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts)
+PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
 {
   
   PetscScalar  t0_box, t1_box, v_box;

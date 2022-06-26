@@ -77,10 +77,10 @@ struct DBPropDike
 };
 
 // create the dike strutures for read-in 
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // read in dike parameters
-PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // compute the added RHS of the dike for the continuity equation
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscInt &Airphase, PetscScalar &dikeRHS, PetscScalar &y_c, PetscInt J);

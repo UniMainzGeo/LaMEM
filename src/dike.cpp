@@ -62,7 +62,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, PetscBool PrintOutput)   
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput)   
 {
 
         // read all dike parameter blocks from file
@@ -105,7 +105,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, 
                 // read each individual dike block                                                                                                                   
                 for(jj = 0; jj < fb->nblocks; jj++)
                 {
-                    ierr = DBReadDike(dbdike, dbm, fs, fb, PrintOutput); CHKERRQ(ierr);
+                    ierr = DBReadDike(dbdike, dbm, fb, PrintOutput); CHKERRQ(ierr);
                     fb->blockID++;
                 }
         }
@@ -117,13 +117,12 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBReadDike"
-PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FDSTAG *fs, FB *fb, PetscBool PrintOutput)
+PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
         // read dike parameter from file 
         Dike     *dike;
         PetscInt  ID;
         Scaling  *scal;
-        Discret1D   *dsy;  
 	
         PetscErrorCode ierr;
         PetscFunctionBegin;
