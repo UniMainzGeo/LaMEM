@@ -935,11 +935,20 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
   
   PetscScalar  t0_box, t1_box, v_box;
   PetscScalar  t_c, dt;
+  PetscInt     j, ny;             
+  FDSTAG 	*fs;
+  Discret1D	*dsy;   
+
+
   
   PetscFunctionBegin;
   
   dt  = ts->dt;       // time step
   t_c = ts->time;     // current time stamp, computed at the end of last time step round
+
+  fs = jr->fs;
+  dsy = &fs->dsy;  //dsy points to the address of jr->fs->dsy
+  ny = fs->dsy.ncels;
   
   // access the starting and end times of certain phase transition and the velocity of the phase transition-box
   t0_box = PhaseTrans->t0_box;
@@ -949,8 +958,11 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
   // check if the current time step is equal to the starting time of when the box is supposed to move
   if(t_c >= t0_box && t_c <= t1_box)
     {
-      PhaseTrans->bounds[0] = PhaseTrans->bounds[0] + v_box * dt;
-      PhaseTrans->bounds[1] = PhaseTrans->bounds[1] + v_box * dt;
+      for(j = -1; j < ny+1; j++)
+      {
+         PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundL[j] + v_box * dt;
+         PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundR[j] + v_box * dt;
+      }
     }
   
   PetscFunctionReturn(0);
