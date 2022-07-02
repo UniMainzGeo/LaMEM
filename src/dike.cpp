@@ -189,13 +189,18 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   PetscInt     i, nD, nPtr, numDike, numPhtr, nsegs;
   PetscScalar  v_spread, M, left, right, front, back;
   PetscScalar  y_distance, tempdikeRHS;
+
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
   numPhtr    = ctx->numPhtr;
-  
+
+
   nPtr = 0;
   nD = 0;
+
   
   for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks
     {
@@ -268,7 +273,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		  
 		            dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  // Give full divergence if cell is part dike part air
 
-		        }  // if phRat[i]>0
+		        }  //close if phRat and xboundR>xboundL  
 	        }  // close phase transition and dike phase ID comparison 
 	    }  // close dike block loop
     }  // close phase transition block loop
@@ -285,7 +290,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                  PetscScalar *phRat,          // phase ratios in the control volume 
                                  PetscScalar &k,
                                  PetscScalar &rho_A,
-				 PetscScalar &y_c)
+				                         PetscScalar &y_c)
 
 {
   BCCtx       *bc;
@@ -296,6 +301,9 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
   PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
   PetscScalar  y_distance;
   
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
+
   numDike    = jr->dbdike->numDike; // number of dikes
   numPhtr    = jr->dbm->numPhtr;
   bc         = jr->bc;

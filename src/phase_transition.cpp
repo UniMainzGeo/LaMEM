@@ -419,7 +419,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	Discret1D	*dsy;
 	char         Parameter[_str_len_];
 	PetscInt 	 j,kk, found;
-	PetscMPIInt     rank;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -460,8 +459,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
   	ierr = makeScalArray(&dsy->cbuff, 0, dsy->ncels+2); CHKERRQ(ierr);
   	ph->celly_xboundR = dsy->cbuff + 1;
 
-  	// get MPI processor rank
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
   	for(j = -1; j < dsy->ncels+1; j++)
   	{
   	   found=0;
@@ -489,11 +486,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 			break;
 		}
 	   }
-	   /*
-	   printf(" nseg=%i, rank=%i, j = %i, ycoor= %g, xbounds=[%g %g],  zbounds=[%g, %g] \n", ph->nsegs, rank, j, \
-			dsy->ccoor[j]*scal->length, ph->celly_xboundL[j]*scal->length, ph->celly_xboundR[j]*scal->length,\
-			ph->zbounds[0]*scal->length, ph->zbounds[1]*scal->length);
-	   */
 
 	   if (found==0) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, " Cannot find NotInAirBox seg j=%i, dsy->ccoor=%g\n", \
 	   		j, dsy->ccoor[j]*scal->length);
@@ -936,8 +928,7 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
   PetscScalar  t0_box, t1_box, v_box;
   PetscScalar  t_c, dt;
   PetscInt     j, ny;             
-  FDSTAG 	*fs;
-  Discret1D	*dsy;   
+  FDSTAG 	*fs;  
 
 
   
@@ -947,7 +938,6 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
   t_c = ts->time;     // current time stamp, computed at the end of last time step round
 
   fs = jr->fs;
-  dsy = &fs->dsy;  //dsy points to the address of jr->fs->dsy
   ny = fs->dsy.ncels;
   
   // access the starting and end times of certain phase transition and the velocity of the phase transition-box
@@ -1165,7 +1155,6 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
 	PetscScalar  T, xboundL, xboundR;
 	FDSTAG 	*fs;
 	Discret1D	*dsy;   
- 
   
 	PetscFunctionBegin;
 
