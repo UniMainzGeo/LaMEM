@@ -190,7 +190,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   PetscScalar  v_spread, M, left, right, front, back;
   PetscScalar  y_distance, tempdikeRHS;
 
-  PetscErrorCode ierr;
   PetscFunctionBegin;
   
   numDike    = ctx->numDike;
@@ -290,18 +289,18 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                  PetscScalar *phRat,          // phase ratios in the control volume 
                                  PetscScalar &k,
                                  PetscScalar &rho_A,
-				                         PetscScalar &y_c)
+                                 PetscScalar &y_c,
+                                 PetscInt J) 
 
 {
   BCCtx       *bc;
   Dike        *dike;
   Ph_trans_t  *CurrPhTr;
   Material_t  *mat;
-  PetscInt     i, numDike, nD, nPtr, numPhtr;
+  PetscInt     i, numDike, nD, nPtr, numPhtr, nsegs;
   PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
   PetscScalar  y_distance;
   
-  PetscErrorCode ierr;
   PetscFunctionBegin;
 
   numDike    = jr->dbdike->numDike; // number of dikes
@@ -327,24 +326,25 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 	  
           if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
             {
-	      
-              // check if the phase ratio of a dike phase is greater than 0 in the current cell                   
-              if(phRat[i]>0)
+
+              // if in the dike zone                   
+              if(phRat[i]>0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
                 {
+                  nsegs=CurrPhTr->nsegs;
                   if(dike->Mb == dike->Mf && dike->Mc < 0.0)       // constant M                                  
                     {
                       M = dike->Mf;
                       v_spread = PetscAbs(bc->velin);
-                      left = CurrPhTr->bounds[0];
-                      right = CurrPhTr->bounds[1];
+                      left = CurrPhTr->celly_xboundL[J];
+                      right = CurrPhTr->celly_xboundR[J];
                       tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
-		    }
-		  else if(dike->Mc >= 0.0)   // Mf, Mc and Mb            
+		                }
+		              else if(dike->Mc >= 0.0)   // Mf, Mc and Mb            
                     {
-                      left = CurrPhTr->bounds[0];
-                      right = CurrPhTr->bounds[1];
-                      front = CurrPhTr->bounds[2];
-                      back = CurrPhTr->bounds[3];
+                      left = CurrPhTr->celly_xboundL[J];
+                      right = CurrPhTr->celly_xboundR[J];
+                      front = CurrPhTr->ybounds[0];
+                      back = CurrPhTr->ybounds[2*nsegs-1];
                       v_spread = PetscAbs(bc->velin);
 
                       if(y_c >= dike->y_Mc)
@@ -364,10 +364,10 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                     }
                   else if(dike->Mb != dike->Mf && dike->Mc < 0.0)   // only Mf and Mb, they are different     
                     {
-                      left = CurrPhTr->bounds[0];
-                      right = CurrPhTr->bounds[1];
-                      front = CurrPhTr->bounds[2];
-                      back = CurrPhTr->bounds[3];
+                      left = CurrPhTr->celly_xboundL[J];
+                      right = CurrPhTr->celly_xboundR[J];
+                      front = CurrPhTr->ybounds[0];
+                      back = CurrPhTr->ybounds[2*nsegs-1];
                       v_spread = PetscAbs(bc->velin);
 
                       // linear interpolation between different M values, Mf is M in front, Mb is M in back       
@@ -375,35 +375,35 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                       M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
                       tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
                     }
-		  else
-		    {
-		      tempdikeRHS = 0.0;
-		    } 
+		              else
+		               {
+		                  tempdikeRHS = 0.0;
+		               } 
 		  
-		  mat = &phases[i];
+		              mat = &phases[i];
 		  
-		  //adjust k and heat source according to Behn & Ito [2008]
-		  if (Tc < mat->T_liq && Tc > mat->T_sol)
-		    {
-		      kfac  += phRat[i] / ( 1 + ( mat->Latent_hx/ (mat->Cp*(mat->T_liq-mat->T_sol))) );
-		      rho_A += phRat[i]*(mat->rho*mat->Cp)*(mat->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
-		    }
-		  else if (Tc <= mat->T_sol)
-		    {
-		      kfac  += phRat[i];
-		      rho_A += phRat[i]*( mat->rho*mat->Cp)*( (mat->T_liq-Tc) + mat->Latent_hx/mat->Cp )*tempdikeRHS;
-		    }
-		  else if (Tc >= mat->T_liq)
-		    {
-		      kfac += phRat[i];
-		    }
-		  // end adjust k and heat source according to Behn & Ito [2008]
+		              //adjust k and heat source according to Behn & Ito [2008]
+		              if (Tc < mat->T_liq && Tc > mat->T_sol)
+		               {
+		                 kfac  += phRat[i] / ( 1 + ( mat->Latent_hx/ (mat->Cp*(mat->T_liq-mat->T_sol))) );
+		                 rho_A += phRat[i]*(mat->rho*mat->Cp)*(mat->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
+		               }
+		              else if (Tc <= mat->T_sol)
+		               {
+		                 kfac  += phRat[i];
+		                 rho_A += phRat[i]*( mat->rho*mat->Cp)*( (mat->T_liq-Tc) + mat->Latent_hx/mat->Cp )*tempdikeRHS;
+		               }
+		              else if (Tc >= mat->T_liq)
+		               {
+		                 kfac += phRat[i];
+		               }
+		              // end adjust k and heat source according to Behn & Ito [2008]
 		  
-		  k=kfac*k;
+		              k=kfac*k;
 		  
-		}   // end phase ratio
-	    } // close phase transition and phase ID comparison	  
-	}   // end dike block loop      
+		            }   // end if phRat and xboundR>xboundL
+	          } // close phase transition and phase ID comparison	  
+	      }   // end dike block loop      
     }  // close phase transition block loop
   
   PetscFunctionReturn(0);
