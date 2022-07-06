@@ -51,6 +51,8 @@ struct ConstEqCtx;
 struct DBMat;
 struct FDSTAG;
 struct TSSol;
+struct JacRes;
+struct Controls;
 
 //---------------------------------------------------------------------------       
 //.......................   Dike Parameters  .......................                                                                                                      
@@ -60,6 +62,7 @@ struct Dike
 {
 public:
   PetscInt    ID;        // dike ID
+  PetscInt    dyndike;
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
   PetscScalar Mc;        // amount of magma-accommodated extension in center of box
@@ -68,6 +71,9 @@ public:
   PetscScalar z_Mc;
   PetscInt PhaseID;      // associated material phase ID
   PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
+  Vec devxx_mean;
+  Vec dPm;
+  Vec lthickness;
 };
       
 struct DBPropDike
@@ -77,10 +83,10 @@ struct DBPropDike
 };
 
 // create the dike strutures for read-in 
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput);
 
 // read in dike parameters
-PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput);
 
 // compute the added RHS of the dike for the continuity equation
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscInt &Airphase, PetscScalar &dikeRHS, PetscScalar &y_c, PetscInt J);
@@ -94,6 +100,8 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar &rho_A,
                                 PetscScalar &y_c,
                                 PetscInt J); 
+
+PetscErrorCode Locate_Dike_Zones(JacRes *jr);
 
 //---------------------------------------------------------------------------
 #endif

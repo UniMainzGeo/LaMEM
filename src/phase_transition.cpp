@@ -747,6 +747,9 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	if (!numPhTrn) 	PetscFunctionReturn(0);		// only execute this function if we have phase transitions
 
 	PrintStart(&t, "Phase_Transition", NULL);
+
+	//For dynamic diking
+	ierr = Locate_Dike_Zones(actx->jr); CHKERRQ(ierr);
 	
 	// loop over all phase transition laws		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
 	nPtr        =   0;

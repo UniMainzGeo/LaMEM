@@ -62,7 +62,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBDikeCreate"
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput)   
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)   
 {
 
         // read all dike parameter blocks from file
@@ -90,26 +90,26 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
             for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1;
 
 		// error checking
-                if(fb->nblocks >_max_num_dike_)
-                {
+            if(fb->nblocks >_max_num_dike_)
+            {
                         SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
-                }
+            }
 
-                // store actual number of dike blocks 
-                dbdike->numDike = fb->nblocks;
+            // store actual number of dike blocks 
+            dbdike->numDike = fb->nblocks;
 
-                if (PrintOutput){
+            if (PrintOutput){
                         PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-                }
+            }
 		
-                // read each individual dike block                                                                                                                   
-                for(jj = 0; jj < fb->nblocks; jj++)
-                {
-                    ierr = DBReadDike(dbdike, dbm, fb, PrintOutput); CHKERRQ(ierr);
-                    fb->blockID++;
-                }
+            // read each individual dike block                                                                                                                   
+            for(jj = 0; jj < fb->nblocks; jj++)
+            {
+                ierr = DBReadDike(dbdike, dbm, fb, jr, PrintOutput); CHKERRQ(ierr);
+                fb->blockID++;
+            }
         }
-
+ 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -117,34 +117,34 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBReadDike"
-PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool PrintOutput)
+PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)
 {
-        // read dike parameter from file 
-        Dike     *dike;
-        PetscInt  ID;
-        Scaling  *scal;
+  // read dike parameter from file 
+  Dike     *dike;
+  PetscInt  ID;
+  Scaling  *scal;
 	
-        PetscErrorCode ierr;
-        PetscFunctionBegin;
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
 
 	// access context           
-        scal = dbm->scal;
+  scal = dbm->scal;
 
-        // Dike ID                                                                                                                                                         
-        ierr    = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbdike->numDike-1); CHKERRQ(ierr);
-        fb->ID  = ID;
+  // Dike ID                                                                                                                                                         
+  ierr    = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbdike->numDike-1); CHKERRQ(ierr);
+  fb->ID  = ID;
 
-        // get pointer to specified dike parameters
-        dike = dbdike->matDike + ID;
+  // get pointer to specified dike parameters
+  dike = dbdike->matDike + ID;
 
-        // check ID
-        if(dike->ID != -1)
-        {
-                 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Duplicate of Dike option!");
-        }
+  // check ID
+  if(dike->ID != -1)
+  {
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Duplicate of Dike option!");
+  }
 
-        // set ID 
-        dike->ID = ID;
+  // set ID 
+  dike->ID = ID;
 
 	// set default value for Mc in case no Mc is provided
 	dike->Mc = -1.0;
@@ -158,14 +158,24 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 	ierr = getScalarParam(fb, _OPTIONAL_, "y_Mc",    &dike->y_Mc,    1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
+  ierr = getIntParam(   fb, _OPTIONAL_, "dyndike", &dike->dyndike, 1, dbm->numPhtr-1); CHKERRQ(ierr);
 
 	// scale the location of Mc y_Mc properly:
 	dike->y_Mc /= scal->length;
+  printf("Ready to create devxx vector\n");
+
+  if (dike->dyndike)
+  {
+      ierr = DMCreateLocalVector(jr->DA_CELL_2D, &dike->devxx_mean);  CHKERRQ(ierr);
+      ierr = DMCreateLocalVector (jr->DA_CELL_2D, &dike->dPm);  CHKERRQ(ierr);
+      ierr = DMCreateLocalVector (jr->DA_CELL_2D, &dike->lthickness);  CHKERRQ(ierr);
+  }
 
   
   if (PrintOutput)
   {
-    PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld] : Mf = %g, Mb = %g, Mc = %g, y_Mc = %g\n", (LLD)(dike->ID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
+    PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld] : Mf=%g, Mb=%g, Mc=%g, y_Mc=%g, dyndike=%i \n", 
+      (LLD)(dike->ID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc, dike->dyndike);
     PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
   }
 
@@ -410,3 +420,172 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 }
 //------------------------------------------------------------------------------------------------------------------
 
+#undef __FUNCT__
+#define __FUNCT__ "Locate_Dike_Zones"
+PetscErrorCode Locate_Dike_Zones(JacRes *jr)
+{
+  Vec         vbuff, vbuff2;
+  FDSTAG      *fs;
+  Discret1D   *dsz;
+  MPI_Request srequest, rrequest;
+  PetscScalar ***gdev, ***ibuff, *lbuff, dz, cumk, cumk2;
+  PetscScalar ***lthick, ***ibuff2, *lbuff2;
+  PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, numDike;
+
+  SolVarCell  *svCell;
+  Dike        *dike;
+  Controls    *ctrl;
+  PetscMPIInt    rank;
+
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
+
+  ctrl = &jr->ctrl;
+
+  if (!ctrl->actDike)  PetscFunctionReturn(0);   // only execute this function if dikes are active
+
+  numDike    = jr->dbdike->numDike; // number of dikes
+  fs  =  jr->fs;
+  dsz = &fs->dsz;
+  L   =  (PetscInt)dsz->rank;
+
+  MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+  for(nD = 0; nD < numDike; nD++)
+  {
+    dike = jr->dbdike->matDike+nD;
+    if (!dike->dyndike)
+    {
+      PetscFunctionReturn(0);   // only execute this function if dikes is dynamic
+    }
+    else
+    {
+      printf("proc %d: Entering Locate Dike \n", rank);
+      // much machinery taken from JacResGetLithoStaticPressure
+      // get local grid sizes
+      ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+      // get integration/communication buffer (Gets a PETSc vector, vbuff, that may be used with the DM global routines)
+      ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+      ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff2); CHKERRQ(ierr);
+
+      ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
+      ierr = VecZeroEntries(vbuff2); CHKERRQ(ierr);
+
+      // open index buffer for computation (ibuff the array that shares data with vector vbuff and is indexed with global dimensions<<G.Ito)
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff2, &ibuff2); CHKERRQ(ierr);
+
+      // open linear buffer for send/receive  (returns the point, lbuff, that contains this processor portion of vector data, vbuff<<G.Ito)
+      ierr = VecGetArray(vbuff, &lbuff); CHKERRQ(ierr);
+      ierr = VecGetArray(vbuff2, &lbuff2); CHKERRQ(ierr);
+
+      // (gdev is the array that shares data with devxx_mean and is indexed with global dimensions)
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->devxx_mean, &gdev); CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &lthick); CHKERRQ(ierr);
+
+      // receive from top domain (next)  dsz->grnext is the next proc up (in increasing z). Top to bottom doesn't matter here, its this way
+      // because the code is patterned after GetLithoStaticPressure
+      if(dsz->nproc != 1 && dsz->grnext != -1)
+      {
+        ierr = MPI_Irecv(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+        ierr = MPI_Irecv(lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+      }
+
+      for(k = sz + nz - 1; k >= sz; k--)
+      {
+        START_PLANE_LOOP
+        {
+          GET_CELL_ID(ID, i, j, k, nx, ny);
+          svCell = &jr->svCell[ID]; 
+
+          dz  = SIZE_CELL(k, sz, (*dsz));
+
+          ibuff[L][j][i]+=svCell->hxx*dz;  //integrating weighted stresses
+          ibuff2[L][j][i]+=dz;             //integrating thickeness
+ 
+        }
+        END_PLANE_LOOP
+      }
+
+      //After integrating and averaging, send it down to the next proc. 
+      if(dsz->nproc != 1 && dsz->grprev != -1)
+      {
+        ierr = MPI_Isend(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+        ierr = MPI_Isend(lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+      }
+
+     
+      //Now receive the answer from successive previous (underlying) procs so all procs have the answers
+      if(dsz->nproc != 1 && dsz->grprev != -1)
+      {
+        ierr = MPI_Irecv(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+        ierr = MPI_Irecv(lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+      }
+
+      if(dsz->nproc != 1 && dsz->grnext != -1)
+      {
+        ierr = MPI_Isend(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+        ierr = MPI_Isend(lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+      }
+
+      //now all cores have the same solution so give that to the stress array
+      START_PLANE_LOOP
+        {
+          gdev[L][j][i]=ibuff[L][j][i]/ibuff2[L][j][i];  //Depth weighted mean stress
+          lthick[L][j][i]=ibuff2[L][j][i];
+         }
+      END_PLANE_LOOP
+
+      // restore buffer and mean stress vectors
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->devxx_mean, &gdev); CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &lthick); CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff2, &ibuff2); CHKERRQ(ierr);
+      ierr = VecRestoreArray(vbuff, &lbuff); CHKERRQ(ierr);
+      ierr = VecRestoreArray(vbuff2, &lbuff2); CHKERRQ(ierr);
+      ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+      ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff2); CHKERRQ(ierr);
+
+      // fill ghost points
+      LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->devxx_mean)
+
+//debugging Just checking to see that we have the values in the arrays for later use
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->devxx_mean, &gdev); CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &lthick); CHKERRQ(ierr);
+      START_PLANE_LOOP
+
+          if (j==sy && i<sx+5)
+          {
+            cumk=gdev[L][j][i];
+            cumk2=lthick[L][j][i];
+            printf("ranks=%i,%i,%i: i,j=%i,%i; gdev=%g, lthick=%g\n", fs->dsx.rank,fs->dsy.rank, fs->dsz.rank, i,j,cumk, cumk2);
+ 
+          }
+      END_PLANE_LOOP
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->devxx_mean, &gdev); CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &lthick); CHKERRQ(ierr);
+
+    //Compute excess magma pressure
+
+    //Locate xbounds
+    } //end if dike->dyndike
+  } //End loop over dikes
+
+
+  PetscFunctionReturn(0);
+}

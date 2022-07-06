@@ -204,9 +204,6 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// create material database
 	ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
 
-    // create dike database
-	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, PETSC_TRUE);   CHKERRQ(ierr);
-
 	// create free surface grid
 	ierr = FreeSurfCreate(&lm->surf, fb); 			CHKERRQ(ierr);
 
@@ -215,6 +212,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create residual & Jacobian evaluation context
 	ierr = JacResCreate(&lm->jr, fb); 				CHKERRQ(ierr);
+
+	// create dike database
+	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, &lm->jr, PETSC_TRUE);   CHKERRQ(ierr);
 
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); 				CHKERRQ(ierr);
