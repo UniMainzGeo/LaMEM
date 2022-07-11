@@ -203,7 +203,24 @@
     	vy       =   0.0  # Vy velocity of box (default is unconstrained)
     	vz       =   0.0  # Vz velocity of box (default is unconstrained) 
     	advect   =   0    # box advection flag
-    <VelBoxEnd> 
+    <VelBoxEnd>
+    
+# Internal velocity cylinder(s)
+    <VelCylinderStart>
+        baseX    =   1.0      # X-coordinate of base of cylinder
+        baseY    =   1.0      # Y-coordinate of base of cylinder
+        baseZ    =   1.0      # Z-coordinate of base of cylinder
+        capX     =   1.0      # X-coordinate of cap of cylinder
+        capY     =   1.0      # Y-coordinate of cap of cylinder
+        capZ     =   1.0      # Z-coordinate of cap of cylinder
+        radius   =   1.0      # radius of cylinder
+        vx       =   1.0      # Vx velocity of cylinder (default is unconstrained)
+        vy       =   0.0      # Vy velocity of cylinder (default is unconstrained)
+        vz       =   0.0      # Vz velocity of cylinder (default is unconstrained) 
+        advect   =   0        # cylinder advection flag
+        vmag     =   1.0      # magnitude of velocity applied along the cylinder's axis of orientation
+        type     =   uniform  # velocity profile [uniform or parabolic]
+    <VelCylinderEnd>
     
 # Inflow velocity boundary condition
 
@@ -269,6 +286,7 @@
     Plume_Type              =   Inflow_Type          # Inflow_type or Pressure_type (circular)	
                             =   Permeable_Type       # Combine the open bot boundary with the plume boundary condition (the option herein listed overwrite open_bot, so do not activate) 	
     Plume_Dimension         =   2D          # 2D or 3D (circular)		
+    Plume_areaFrac          =   1.0         # how much of the plume is actually in the model. This usually 1 (default) but lower if the plume is in a corner of a symmetric setup and matters for the outflow
     Plume_Phase             =   4           # phase of plume
     Plume_Depth             =   1885        # depth of provenience of the plume (i.e. how far from the bottom of the model the plume source is) 
     Plume_Mantle_Phase      =   1           # Astenosphere phase (if the inflow occurs outside the plume radius)

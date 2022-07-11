@@ -285,6 +285,108 @@ PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// Velocity cylinder functions
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "VelCylinderCreate"
+PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
+{
+	char           str_type[_str_len_];
+    
+    PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	//========================
+	// velocity cylinder parameters
+	//========================
+
+	velcyl->vx   = DBL_MAX;
+	velcyl->vy   = DBL_MAX;
+	velcyl->vz   = DBL_MAX;
+    velcyl->vmag = DBL_MAX;
+
+	ierr = getScalarParam(fb, _REQUIRED_, "baseX",  &velcyl->baseX,  1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "baseY",  &velcyl->baseY,  1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "baseZ",  &velcyl->baseZ,  1,  scal->length);   CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _REQUIRED_, "capX",   &velcyl->capX,   1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "capY",   &velcyl->capY,   1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "capZ",   &velcyl->capZ,   1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "radius", &velcyl->rad,    1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "vx",     &velcyl->vx,     1,  scal->velocity); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "vy",     &velcyl->vy,     1,  scal->velocity); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "vz",     &velcyl->vz,     1,  scal->velocity); CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _OPTIONAL_, "vmag",   &velcyl->vmag,   1,  scal->velocity); CHKERRQ(ierr);
+    ierr = getStringParam(fb, _OPTIONAL_, "type",    str_type,       "uniform");          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, "advect", &velcyl->advect, 1,  1);              CHKERRQ(ierr);
+
+    if(!strcmp(str_type, "uniform"))
+    {
+        velcyl->type = 0;
+    }
+    else if(!strcmp(str_type, "parabolic"))
+    {
+        velcyl->type = 1;
+    }
+    else
+    {
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity cylinder type must be uniform or parabolic");
+    }
+
+    if((velcyl->vx != DBL_MAX || velcyl->vy != DBL_MAX || velcyl->vz != DBL_MAX) && velcyl->vmag != DBL_MAX)
+    {
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "For velocity cylinder, specify vmag or vx/vy/vz");
+    }
+
+    if(velcyl->vx == DBL_MAX && velcyl->vy == DBL_MAX && velcyl->vz == DBL_MAX && velcyl->vmag == DBL_MAX)
+    {
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity cylinder should specify at least one velocity component");
+    }
+
+    PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "VelCylinderPrint"
+PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt)
+{
+	PetscFunctionBegin;
+
+	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %i \n", cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder base                           : %g, %g, %g %s \n", velcyl->baseX  *scal->length, velcyl->baseY  *scal->length, velcyl->baseZ  *scal->length, scal->lbl_length);
+	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder cap                            : %g, %g, %g %s \n", velcyl->capX*scal->length, velcyl->capY*scal->length, velcyl->capZ*scal->length, scal->lbl_length);
+	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder radius                         : %g %s \n", velcyl->rad*scal->length, scal->lbl_length);
+	if(velcyl->vx != DBL_MAX)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      X-velocity                              : %g %s \n", velcyl->vx*scal->velocity, scal->lbl_velocity);
+	}
+	if(velcyl->vy != DBL_MAX)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      Y-velocity                              : %g %s \n", velcyl->vy*scal->velocity, scal->lbl_velocity);
+	}
+	if(velcyl->vz != DBL_MAX)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      Z-velocity                              : %g %s \n", velcyl->vz*scal->velocity, scal->lbl_velocity);
+	}
+    if(velcyl->vmag != DBL_MAX)
+    {
+        PetscPrintf(PETSC_COMM_WORLD, "      velocity magnitude                      : %g %s \n", velcyl->vmag*scal->velocity, scal->lbl_velocity);
+    }
+    if(velcyl->type == 0)
+    {
+        PetscPrintf(PETSC_COMM_WORLD, "      velocity profile                        : uniform \n");
+    }
+    else
+    {
+        PetscPrintf(PETSC_COMM_WORLD, "      velocity profile                        : parabolic \n");
+    }
+	if(velcyl->advect)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      Advect velocity with flow               @  \n");
+	}
+
+    PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // BCCtx functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -388,6 +490,31 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     }
 
     ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+    // velocity cylinders
+    ierr = FBFindBlocks(fb, _OPTIONAL_, "<VelCylinderStart>", "<VelCylinderEnd>"); CHKERRQ(ierr);
+
+    if(fb->nblocks)
+    {
+        // error checking
+        if(fb->nblocks > _max_boxes_)
+        {
+            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity cylinders! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+        }
+
+        // store actual number of velocity blocks
+        bc->ncylinders = fb->nblocks;
+
+        // read velocity boxes
+        for(jj = 0; jj < fb->nblocks; jj++)
+        {
+            ierr = VelCylinderCreate(bc->vcylinders + jj, scal, fb); CHKERRQ(ierr);
+
+            fb->blockID++;
+        }
+    }
+
+    ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
     
     // boundary inflow/outflow velocities
     ierr = getStringParam(fb, _OPTIONAL_, "bvel_face", str_inflow, NULL); CHKERRQ(ierr);  // must have component
@@ -470,44 +597,43 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         char             str[_str_len_];
         
         // Type of plume (2D or 3D)
+        ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL);                     CHKERRQ(ierr);  // must have component
 
-        ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL);          CHKERRQ(ierr);  // must have component
-        if(!strcmp(str, "Inflow_Type"))             bc->Plume_Type=1;                                // velocity flux
-        else if (!strcmp(str, "Permeable_Type"))
+        // Type of boundary conditions
+        if(!strcmp(str, "Inflow_Type"))
+        {
+            bc->Plume_Type = 1;                                  // velocity flux
+        }             
+        else if(!strcmp(str, "Permeable_Type"))
         {
             bc->Plume_Type = 2;                                // activate open_bot boundary condition
             bc->bot_open   = 1;                                // open the bottom boundary
         }
-        else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);}
-        ierr = getStringParam(fb, _REQUIRED_, "Plume_Dimension", 	str, NULL); 					CHKERRQ(ierr);  // must have component
-        if     	(!strcmp(str, "2D"))      bc->Plume_Dimension=1;		// 2D setup
-        else if (!strcmp(str, "3D"))      bc->Plume_Dimension=2;		// 3D (circular)
-        else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);} 
-        ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"    		, 	&bc->Plume_Phase, 			1, mID); 			CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature"	, 	&bc->Plume_Temperature, 	1, 1); 				CHKERRQ(ierr);
-        
-        if(bc->Plume_Dimension == 1)
+        else
         {	
-            // 2D perturbation in x-direction
-            ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",		bc->Plume_Center,		1,		scal->length);		CHKERRQ(ierr);
+            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);
         }
-        else if(bc->Plume_Dimension == 2)
-        {
-            // 3D circular inflow a given [X,Y] coordinates
-            ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",		bc->Plume_Center,		2,		scal->length);		CHKERRQ(ierr);
-        }
-        ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Radius",			&bc->Plume_Radius,			1,	scal->length);		CHKERRQ(ierr);
 
-        if(bc->Plume_Type ==1)
+        if(bc->Plume_Type == 1)
         {
-            ierr = getScalarParam(fb,_REQUIRED_,"Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
-            ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType", 	str, "Gaussian"); 					CHKERRQ(ierr);  // must have component
-            if     	(!strcmp(str, "Poiseuille"))    bc->Plume_VelocityType = 0;		// Poiseuille
-            else if (!strcmp(str, "Gaussian"))      bc->Plume_VelocityType = 1;		// Gaussian perturbation (smoother)
-            else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);}
-
+            bc->Plume_areaFrac = 1.0;
+            ierr = getScalarParam(fb,_REQUIRED_,  "Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
+            ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType", 	 str, "Gaussian"); 				                    CHKERRQ(ierr);  // must have component
+            ierr = getScalarParam(fb, _OPTIONAL_, "Plume_areaFrac",         &bc->Plume_areaFrac,        1,  1.0);               CHKERRQ(ierr);
+            if(!strcmp(str, "Poiseuille"))
+            {
+                bc->Plume_VelocityType = 0; // Poiseuille
+            }
+            else if(!strcmp(str, "Gaussian"))
+            {
+                bc->Plume_VelocityType = 1;	// Gaussian perturbation (smoother)
+            }      
+            else
+            {	
+                SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);
+            }
         }
-        if(bc->Plume_Type ==2)
+        if(bc->Plume_Type == 2)
         {
             //bc->Plume_Pressure = -1;
             //ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
@@ -515,6 +641,37 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
             ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , &bc->phase_inflow_bot,        1, mID);            CHKERRQ(ierr);
 
         }
+
+        // 2D or 3D
+        ierr = getStringParam(fb, _REQUIRED_, "Plume_Dimension", str, NULL);                 CHKERRQ(ierr);  // must have component
+        if(!strcmp(str, "2D"))
+        {
+            bc->Plume_Dimension = 1; // 2D setup
+        }      
+        else if(!strcmp(str, "3D"))
+        {
+            bc->Plume_Dimension = 2; // 3D (circular)
+        }
+        else
+        {	
+            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);
+        }
+       
+        if(bc->Plume_Dimension == 1)
+        {	
+            // 2D perturbation in x-direction
+            ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",  bc->Plume_Center,      1,		scal->length); CHKERRQ(ierr);
+        }
+        else if(bc->Plume_Dimension == 2)
+        {
+            // 3D circular inflow a given [X,Y] coordinates
+            ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",	 bc->Plume_Center,      2,		scal->length); CHKERRQ(ierr);
+        }
+
+        // other options
+        ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"    	  , &bc->Plume_Phase, 		1, mID);           CHKERRQ(ierr);
+        ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature" , &bc->Plume_Temperature, 1, 1);             CHKERRQ(ierr);
+        ierr = getScalarParam(fb, _REQUIRED_, "Plume_Radius",       &bc->Plume_Radius,		1,	scal->length); CHKERRQ(ierr);
 
     }
 
@@ -582,6 +739,11 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         ierr = VelBoxPrint(bc->vboxes + jj, scal, jj); CHKERRQ(ierr);
     }
 
+    for(jj = 0; jj < bc->ncylinders; jj++)
+    {
+        ierr = VelCylinderPrint(bc->vcylinders + jj, scal, jj); CHKERRQ(ierr);
+    }
+
     if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
     if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                       @ \n");
     if(bc->bot_open && bc->Plume_Type == 2)
@@ -618,6 +780,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, 	 				scal->lbl_temperature);
                             PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %i \n", bc->Plume_Phase);
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %g %s \n", bc->Plume_Inflow_Velocity*scal->velocity, scal->lbl_velocity);
+                            PetscPrintf(PETSC_COMM_WORLD, "      Area fraction of plume                  : %g \n", bc->Plume_areaFrac);
     if(bc->Plume_Dimension == 1){PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g] %s \n", bc->Plume_Center[0]*scal->length,       scal->lbl_length);}
     else{                   PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g, %g] %s \n", bc->Plume_Center[0]*scal->length, bc->Plume_Center[1]*scal->length, scal->lbl_length);}
                             PetscPrintf(PETSC_COMM_WORLD, "      Radius of plume                         : %g %s \n", bc->Plume_Radius*scal->length, scal->lbl_length);
@@ -905,6 +1068,9 @@ PetscErrorCode BCApply(BCCtx *bc)
     // apply velocity boxes
     ierr = BCApplyVelBox(bc); CHKERRQ(ierr);
 
+    // apply velocity cylinders
+    ierr = BCApplyVelCylinder(bc); CHKERRQ(ierr);
+
     // fix all cells occupied by phase
     ierr = BCApplyPhase(bc); CHKERRQ(ierr);
 
@@ -1124,6 +1290,8 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 
                 x       = COORD_CELL(i, sx, fs->dsx);
                 y       = COORD_CELL(j, sy, fs->dsy);
+                x       = COORD_CELL_GHOST(i, fs->dsx);
+                y       = COORD_CELL_GHOST(j, fs->dsy);
 
                 if(bc->Plume_Dimension==1)	// 2D plume
                 {	
@@ -1857,6 +2025,216 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "BCApplyVelCylinder"
+PetscErrorCode BCApplyVelCylinder(BCCtx *bc)
+{
+    FDSTAG      *fs;
+    VelCylinder *velcyl;
+    PetscScalar ***bcvx, ***bcvy, ***bcvz;
+    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, ic;
+    PetscScalar x, y, z, cx, cy, cz, bx, by, bz, t, r, vx, vy, vz, vmag;
+    PetscScalar a, ax, ay, az, px, py, pz, npc, dx, dy, dz, dr, rr;
+    PetscScalar velType;
+
+    PetscErrorCode ierr;
+    PetscFunctionBegin;
+
+    // skip initial guess
+    if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
+
+    // check whether internal velocity cylinder condition is activated
+    if(!bc->ncylinders) PetscFunctionReturn(0);
+
+    // access context
+    fs    =  bc->fs;
+    t     =  bc->ts->time;
+
+    // access velocity constraint vectors
+    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+    // loop over all cylinders
+    for(ic = 0; ic < bc->ncylinders; ic++)
+    {
+    	// get current cylinder
+    	velcyl = bc->vcylinders + ic;
+
+        // get coordinates
+        by = velcyl->baseY; cy = velcyl->capY;
+    	bx = velcyl->baseX; cx = velcyl->capX;
+        bz = velcyl->baseZ; cz = velcyl->capZ;
+        r  = velcyl->rad;
+
+        // get type of velocity profile
+        velType = (PetscScalar)velcyl->type;
+
+        // get velocity components
+        vmag = velcyl->vmag;
+        if(vmag != DBL_MAX)
+        {
+            // get cylinder axis vector
+            ax = cx - bx;
+            ay = cy - by;
+            az = cz - bz;
+            a  = sqrt(ax*ax + ay*ay + az*az);
+
+            // partition velocities
+            vx = vmag * ax / a;
+            vy = vmag * ay / a;
+            vz = vmag * az / a;
+            
+        }
+        else
+        {
+            vy = velcyl->vy;
+            vx = velcyl->vx;
+            vz = velcyl->vz;
+        }
+
+        // advect cylinder (if requested)
+        if(velcyl->advect)
+        {
+            if(vx != DBL_MAX) {bx += vx*t; cx += vx*t;} 
+            if(vy != DBL_MAX) {by += vy*t; cy += vy*t;}
+            if(vz != DBL_MAX) {bz += vz*t; cz += vz*t;}
+        }
+
+        // get cylinder axis vector
+        ax = cx - bx;
+        ay = cy - by;
+        az = cz - bz;
+
+        //---------
+        // X points
+        //----------
+        if(vx != DBL_MAX)
+        {
+        	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+				// get coordinates
+				x = COORD_NODE(i, sx, fs->dsx);
+				y = COORD_CELL(j, sy, fs->dsy);
+				z = COORD_CELL(k, sz, fs->dsz);
+
+                // get vector between a test point and cylinder base
+	            px = x - bx;
+                py = y - by;
+                pz = z - bz;
+
+                // find normalized parametric coordinate of a point-axis projection
+	            npc = (ax*px + ay*py + az*pz)/(ax*ax + ay*ay + az*az);
+
+                // find distance vector between point and axis
+                dx = px - npc*ax;
+                dy = py - npc*ay;
+                dz = pz - npc*az;
+
+                // compare position to radius
+                dr = sqrt(dx*dx + dy*dy + dz*dz);
+                rr = dr / r;
+
+                // check cylinder
+	            if(npc >= 0.0 && npc <= 1.0 && rr <= 1.0)
+	            {
+	            	bcvx[k][j][i] = vx * (1 - rr*rr*velType);
+	            }
+			}
+			END_STD_LOOP
+        }
+
+        //---------
+        // Y points
+        //----------
+        if(vy != DBL_MAX)
+        {
+        	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+				// get coordinates
+				x = COORD_CELL(i, sx, fs->dsx);
+				y = COORD_NODE(j, sy, fs->dsy);
+				z = COORD_CELL(k, sz, fs->dsz);
+
+                // get vector between a test point and cylinder base
+	            px = x - bx;
+                py = y - by;
+                pz = z - bz;
+
+                // find normalized parametric coordinate of a point-axis projection
+	            npc = (ax*px + ay*py + az*pz)/(ax*ax + ay*ay + az*az);
+
+                // find distance vector between point and axis
+                dx = px - npc*ax;
+                dy = py - npc*ay;
+                dz = pz - npc*az;
+
+                // compare position to radius
+                dr = sqrt(dx*dx + dy*dy + dz*dz);
+                rr = dr / r;
+
+                // check cylinder
+	            if(npc >= 0.0 && npc <= 1.0 && rr <= 1.0)
+	            {
+	            	bcvy[k][j][i] = vy * (1 - rr*rr*velType);
+	            }
+			}
+			END_STD_LOOP
+        }
+
+        //---------
+        // Z points
+        //----------
+        if(vz != DBL_MAX)
+        {
+        	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+				// get coordinates
+				x = COORD_CELL(i, sx, fs->dsx);
+				y = COORD_CELL(j, sy, fs->dsy);
+				z = COORD_NODE(k, sz, fs->dsz);
+
+                // get vector between a test point and cylinder base
+	            px = x - bx;
+                py = y - by;
+                pz = z - bz;
+
+                // find normalized parametric coordinate of a point-axis projection
+	            npc = (ax*px + ay*py + az*pz)/(ax*ax + ay*ay + az*az);
+
+                // find distance vector between point and axis
+                dx = px - npc*ax;
+                dy = py - npc*ay;
+                dz = pz - npc*az;
+
+                // compare position to radius
+                dr = sqrt(dx*dx + dy*dy + dz*dz);
+                rr = dr / r;
+
+                // check cylinder
+	            if(npc >= 0.0 && npc <= 1.0 && rr <= 1)
+	            {
+	            	bcvz[k][j][i] = vz * (1 - rr*rr*velType);
+	            }
+			}
+			END_STD_LOOP
+        }
+    }
+
+    // restore access
+    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "BCApplyPhase"
 PetscErrorCode BCApplyPhase(BCCtx *bc)
 {
@@ -2408,7 +2786,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
     PetscInt        i, j, k, nx, ny, nz, sx, sy, sz, iter;
     PetscScalar     ***bcvz;
     PetscScalar     vel, x_min,x_max,y_min,y_max,x,y;
-    PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin;
+    PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin, areaFrac;
     PetscScalar     radius2, R;
 
     PetscErrorCode ierr;
@@ -2418,11 +2796,13 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
     if(!bc->Plume_Inflow) 	PetscFunctionReturn(0);
 
 
-    fs              =   bc->fs;
+    fs                  =   bc->fs;
 
-    ierr 			= 	FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
+    ierr 			    = 	FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
     
-    V_in            = 	bc->Plume_Inflow_Velocity;                      // max. inflow velocity
+    V_in                = 	bc->Plume_Inflow_Velocity;                      // max. inflow velocity
+    areaFrac            =   bc->Plume_areaFrac;
+
     if(bc->Plume_Dimension == 1){   // 2D
         Area_Bottom 	=	(x_max-x_min);
         Area_Inflow 	= 	2.0*bc->Plume_Radius;		    // inflow length
@@ -2443,8 +2823,8 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
         else						{	V_avg = V_in*1.0/2.0; 	}	// 3D	
 
         // outflow velocity is based on mass conservation (i.e.: Qin+Qout=0)
-        Qin 	=	V_avg*Area_Inflow; 
-        V_out 	= 	-Qin/Area_Outflow;                              // outflow velocity 
+        Qin 	=  V_avg * Area_Inflow * areaFrac; // volume influx
+        V_out 	= -Qin / Area_Outflow;             // outflow velocity 
     }
     else{
         
@@ -2466,7 +2846,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
             a       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_max)/c)/2.0/(x_max-x_min);     //dV
             b       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_min)/c)/2.0/(x_max-x_min);     //dV
             
-            V_out   =   -V_in*(a-b)/(1-(a-b));                     // average velocity should be zero
+            V_out   =   -V_in*(a-b)/(1-(a-b))*areaFrac;                     // average velocity should be zero
             
 
         }
@@ -2493,7 +2873,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
             //      so V_avg = V_out + (V_in-V_out)*((a-b)/Area + (d-e)/Area)    
             // since we want V_avg = 0, we can compute V_out as:
 
-            V_out   =   -V_in*(a-b + d-e)/(1-(a-b + d-e));                     // average velocity should be zero    
+            V_out   =   -V_in*(a-b + d-e)/(1-(a-b + d-e))*areaFrac;                     // average velocity should be zero    
 
             
            

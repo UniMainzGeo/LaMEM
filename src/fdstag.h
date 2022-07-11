@@ -306,6 +306,9 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 // get coordinate of i-th NODE
 #define COORD_NODE(i, s, ds) (ds.ncoor[(i-s)])
 
+// get coordinate of i-th CELL (ghost nodes)
+#define COORD_CELL_GHOST(i,ds) (ds.ccoor[(i-ds.pstart)])
+
 // get size of i-th CELL control volume (distance between two bounding nodes)
 #define SIZE_CELL(i, s, ds) (ds.ncoor[(i-s)+1] - ds.ncoor[(i-s)])
 
