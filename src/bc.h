@@ -114,6 +114,8 @@ struct VelBox
 	PetscScalar vx;      // Vx-velocity within box
 	PetscScalar vy;      // Vy-velocity within box
 	PetscScalar vz;      // Vz-velocity within box
+	PetscInt BoxPeriods ; // time intervals
+	PetscScalar BoxTimeDelims[_max_periods_-1]; //time intervals 
 };
 
 //---------------------------------------------------------------------------

@@ -247,11 +247,19 @@ PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "vy",     &velbox->vy,     1,  scal->velocity); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "vz",     &velbox->vz,     1,  scal->velocity); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _REQUIRED_, "advect", &velbox->advect, 1,  1);              CHKERRQ(ierr);
+    ierr = getIntParam   (fb,_OPTIONAL_, "number_time_interval",&velbox->BoxPeriods,1, _max_periods_); CHKERRQ(ierr);
+    ierr = getScalarParam(fb,_OPTIONAL_, "time_intervals",velbox->BoxTimeDelims, velbox->BoxPeriods*2, scal->time); CHKERRQ(ierr);
 
 	if(velbox->vx == DBL_MAX && velbox->vy == DBL_MAX && velbox->vz == DBL_MAX)
 	{
         SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity box should specify at least one velocity component");
 	}
+
+    if(velbox->BoxPeriods && velbox->advect)
+	{
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Advection is incompatibile with a box with time interval activaction");
+	}
+
 
     PetscFunctionReturn(0);
 }
@@ -1732,9 +1740,11 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
     FDSTAG      *fs;
     VelBox      *velbox;
     PetscScalar ***bcvx, ***bcvy, ***bcvz;
-    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, ib;
+    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, ib,it;
     PetscScalar x, y, z, cx, cy, cz, dx, dy, dz, t, vx, vy, vz;
     PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
+    PetscScalar t_min,t_max; 
+    PetscInt    ac_flag; 
 
     PetscErrorCode ierr;
     PetscFunctionBegin;
@@ -1748,6 +1758,7 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
     // access context
     fs    =  bc->fs;
     t     =  bc->ts->time;
+    ac_flag = 0; 
 
     // access velocity constraint vectors
     ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
@@ -1763,6 +1774,18 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
     	vx = velbox->vx; cx = velbox->cenX; dx = velbox->widthX;
         vy = velbox->vy; cy = velbox->cenY; dy = velbox->widthY;
         vz = velbox->vz; cz = velbox->cenZ; dz = velbox->widthZ;
+
+        // Verify if it is active, if not, pass to the next box
+        for(it = 0; it< velbox->BoxPeriods;it++)
+        {
+            t_min = velbox->BoxTimeDelims[2*it];
+            t_max = velbox->BoxTimeDelims[2*it+1];
+            if(t<=t_max && t>=t_min)
+            {
+                ac_flag = 1; 
+            }
+        }
+
 
         // advect box (if requested)
         if(velbox->advect)
@@ -1780,7 +1803,7 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
         //---------
         // X points
         //----------
-        if(vx != DBL_MAX)
+        if(vx != DBL_MAX && ac_flag == 1)
         {
         	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -1804,7 +1827,7 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
         //---------
         // Y points
         //----------
-        if(vy != DBL_MAX)
+        if(vy != DBL_MAX && ac_flag == 1)
         {
         	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -1827,7 +1850,7 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
         //---------
         // Z points
         //----------
-        if(vz != DBL_MAX)
+        if(vz != DBL_MAX && ac_flag == 1)
         {
         	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
