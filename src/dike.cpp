@@ -58,6 +58,7 @@
 #include "scaling.h"
 #include "fdstag.h"
 #include "tools.h"
+#include "surf.h"
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -158,15 +159,20 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	ierr = getScalarParam(fb, _OPTIONAL_, "y_Mc",    &dike->y_Mc,    1, 1.0);              CHKERRQ(ierr);
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
-  ierr = getIntParam(   fb, _OPTIONAL_, "dyndike", &dike->dyndike, 1, dbm->numPhtr-1); CHKERRQ(ierr);
+  ierr = getIntParam(   fb, _OPTIONAL_, "dyndike",      &dike->dyndike, 1, dbm->numPhtr-1); CHKERRQ(ierr);
+
+  ierr = getScalarParam(fb, _OPTIONAL_, "Tsol",         &dike->Tsol,    1, 1.0);              CHKERRQ(ierr);
+  ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",   &dike->zmax_magma,    1, 1.0);              CHKERRQ(ierr);
+  ierr = getScalarParam(fb, _OPTIONAL_, "filtx",   &dike->filtx,    1, 1.0);              CHKERRQ(ierr);
+  ierr = getScalarParam(fb, _OPTIONAL_, "drhomagma",   &dike->drhomagma,    1, 1.0);              CHKERRQ(ierr);
+
 
 	// scale the location of Mc y_Mc properly:
 	dike->y_Mc /= scal->length;
-  printf("Ready to create devxx vector\n");
 
   if (dike->dyndike)
   {
-      ierr = DMCreateLocalVector(jr->DA_CELL_2D, &dike->devxx_mean);  CHKERRQ(ierr);
+      ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave);  CHKERRQ(ierr);
       ierr = DMCreateLocalVector (jr->DA_CELL_2D, &dike->dPm);  CHKERRQ(ierr);
       ierr = DMCreateLocalVector (jr->DA_CELL_2D, &dike->lthickness);  CHKERRQ(ierr);
   }
@@ -174,8 +180,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   
   if (PrintOutput)
   {
-    PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld] : Mf=%g, Mb=%g, Mc=%g, y_Mc=%g, dyndike=%i \n", 
-      (LLD)(dike->ID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc, dike->dyndike);
+    PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld]: PhaseTransID=%i PhaseID=%i Mf=%g, Mb=%g, Mc=%g, y_Mc=%g \n", 
+      (LLD)(dike->ID), dike->PhaseTransID, dike->PhaseID, dike->Mf, dike->Mb, dike->Mc, dike->y_Mc, dike->dyndike);
+    PetscPrintf(PETSC_COMM_WORLD,"                         : dyndike=%i, Tsol=%g, zmax_magma=%g, filtx=%g, drhomagma=%g \n", 
+      dike->dyndike, dike->Tsol, dike->zmax_magma, dike->filtx, dike->drhomagma);
     PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
   }
 
@@ -418,49 +426,155 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
   
   PetscFunctionReturn(0);
 }
+
+
+//------------------------------------------------------------------------------------------------------------------
+
+#undef __FUNCT__
+#define __FUNCT__ "Smooth_sxx_eff"
+PetscErrorCode Smooth_sxx_eff(JacRes *jr)
+{
+
+  FDSTAG      *fs;
+  Dike        *dike;
+  Discret1D   *dsx, *dsz;
+  PetscScalar ***gsxx_eff_ave;
+  PetscScalar lxmin, lxmax, filtx;
+  PetscInt    i, j, sx, sy, sz, nx, ny, nz, nD, L, numDike;
+  PetscScalar ***glthick, ***dPm, dum1, dum2, dum3, dum4; //for debugging only
+
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
+
+  fs  =  jr->fs;
+  dsx = &fs->dsx;
+  dsz = &fs->dsz;
+  L   =  (PetscInt)dsz->rank;
+
+  ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+  lxmin = dsx->ccoor[1];
+  lxmax = dsx->ccoor[nx];
+  numDike    = jr->dbdike->numDike; // number of dikes
+  
+  for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
+  {
+     // access the parameters of the dike depending on the dike block
+     dike = jr->dbdike->matDike+nD;
+     if (!dike->dyndike)
+     {
+        PetscFunctionReturn(0);   // only execute this function if dikes is dynamic
+     }
+     else
+     {
+   
+       filtx = dike->filtx;
+
+//debugging Just checking to see that we have the values in the arrays for later use
+       ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+       ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr);
+       ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr);
+       START_PLANE_LOOP
+       {
+
+         if ((j==sy) && (i < sx+5))
+         {
+            dum1=glthick[L][j][i];;
+            dum2=dPm[L][j][i];
+            dum3=gsxx_eff_ave[L][j][i]-dPm[L][j][i];
+            dum4=gsxx_eff_ave[L][j][i];
+            printf("ranks=%i,%i,%i: i,j=%i,%i; lthick=%g, dPm=%g, devxx=%g, sxx_eff_ave=%g \n", fs->dsx.rank,fs->dsy.rank, fs->dsz.rank, i,j,dum1, dum2, dum3, dum4);  //debugging
+ 
+         }
+       }
+       END_PLANE_LOOP
+       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr);
+       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr);
+     }  //end else dyndike
+  } //end for loop over numdike
+
+  PetscFunctionReturn(0);  
+}  
+
+
 //------------------------------------------------------------------------------------------------------------------
 
 #undef __FUNCT__
 #define __FUNCT__ "Locate_Dike_Zones"
 PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 {
-  Vec         vbuff, vbuff2;
+
+  Controls    *ctrl;
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
+
+  ctrl = &jr->ctrl;
+  if (!ctrl->actDike)  PetscFunctionReturn(0);   // only execute this function if dikes are active
+
+
+  ierr = Compute_sxx_eff(jr);  //compute mean effective sxx across the lithosphere
+
+  ierr = Smooth_sxx_eff(jr);   //smooth mean effective sxx
+  
+  
+  PetscFunctionReturn(0);
+
+}
+//------------------------------------------------------------------------------------------------------------------
+
+#undef __FUNCT__
+#define __FUNCT__ "Compute_sxx_eff"
+PetscErrorCode Compute_sxx_eff(JacRes *jr)
+{
+  MPI_Request srequest, rrequest;
+  Vec         vbuff, vbuff2, vbuff3;
+  PetscScalar ***gsxx_eff_ave;
+  PetscScalar ***ibuff,***ibuff2, ***ibuff3;
+  PetscScalar  *lbuff, *lbuff2, *lbuff3;
+  PetscScalar dz, cumk, cumk2, ***lT, Tc, *grav, Tsol;
+  PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
+  PetscMPIInt    rank;
+  PetscScalar ***glthick, ***dPm; //for debugging only
+
   FDSTAG      *fs;
   Discret1D   *dsz;
-  MPI_Request srequest, rrequest;
-  PetscScalar ***gdev, ***ibuff, *lbuff, dz, cumk, cumk2;
-  PetscScalar ***lthick, ***ibuff2, *lbuff2;
-  PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, numDike;
-
   SolVarCell  *svCell;
   Dike        *dike;
   Controls    *ctrl;
-  PetscMPIInt    rank;
+
+
+/* dPm is magma pressure in excess of dynamic pressure assumed to be the magma-static head 
+   at the depth of the solidus if magma pooling begins at a depth of z = zmax_magma
+   sxx_eff_ave = total effective horizontal normal stress averaged across the lithosphere (ie., above Tsol).
+              sxx_mean=mean(dev. sxx - effective pressure), effective pressure P'=P-Pmagma = -dPm
+*/
 
   PetscErrorCode ierr;
   PetscFunctionBegin;
 
   ctrl = &jr->ctrl;
+  grav = ctrl->grav;
 
-  if (!ctrl->actDike)  PetscFunctionReturn(0);   // only execute this function if dikes are active
 
   numDike    = jr->dbdike->numDike; // number of dikes
   fs  =  jr->fs;
   dsz = &fs->dsz;
   L   =  (PetscInt)dsz->rank;
+  AirPhase  = jr->surf->AirPhase;
 
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
   for(nD = 0; nD < numDike; nD++)
   {
     dike = jr->dbdike->matDike+nD;
+
     if (!dike->dyndike)
     {
       PetscFunctionReturn(0);   // only execute this function if dikes is dynamic
     }
     else
     {
-      printf("proc %d: Entering Locate Dike \n", rank);
       // much machinery taken from JacResGetLithoStaticPressure
       // get local grid sizes
       ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -468,21 +582,24 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
       // get integration/communication buffer (Gets a PETSc vector, vbuff, that may be used with the DM global routines)
       ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
       ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff2); CHKERRQ(ierr);
+      ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff3); CHKERRQ(ierr);
 
       ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
       ierr = VecZeroEntries(vbuff2); CHKERRQ(ierr);
+      ierr = VecZeroEntries(vbuff3); CHKERRQ(ierr);
 
       // open index buffer for computation (ibuff the array that shares data with vector vbuff and is indexed with global dimensions<<G.Ito)
       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff2, &ibuff2); CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff3, &ibuff3); CHKERRQ(ierr);
 
       // open linear buffer for send/receive  (returns the point, lbuff, that contains this processor portion of vector data, vbuff<<G.Ito)
       ierr = VecGetArray(vbuff, &lbuff); CHKERRQ(ierr);
       ierr = VecGetArray(vbuff2, &lbuff2); CHKERRQ(ierr);
+      ierr = VecGetArray(vbuff3, &lbuff3); CHKERRQ(ierr);
 
-      // (gdev is the array that shares data with devxx_mean and is indexed with global dimensions)
-      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->devxx_mean, &gdev); CHKERRQ(ierr);
-      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &lthick); CHKERRQ(ierr);
+      //Access temperatures
+      ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
 
       // receive from top domain (next)  dsz->grnext is the next proc up (in increasing z). Top to bottom doesn't matter here, its this way
       // because the code is patterned after GetLithoStaticPressure
@@ -494,20 +611,33 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
         ierr = MPI_Irecv(lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
         ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
 
+        ierr = MPI_Irecv(lbuff3, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
       }
 
       for(k = sz + nz - 1; k >= sz; k--)
       {
+        dz  = SIZE_CELL(k, sz, (*dsz));
         START_PLANE_LOOP
         {
           GET_CELL_ID(ID, i, j, k, nx, ny);
           svCell = &jr->svCell[ID]; 
+          Tc=lT[k][j][i];
+          
+          if ((Tc<=dike->Tsol) & (svCell->phRat[AirPhase] < 1.0))
+          {
+            dz  = SIZE_CELL(k, sz, (*dsz));
 
-          dz  = SIZE_CELL(k, sz, (*dsz));
+            ibuff[L][j][i]+=svCell->hxx*dz;  //integrating weighted stresses
+            ibuff2[L][j][i]+=dz;             //integrating thickeness
+          }
 
-          ibuff[L][j][i]+=svCell->hxx*dz;  //integrating weighted stresses
-          ibuff2[L][j][i]+=dz;             //integrating thickeness
- 
+          //interpolate depth to the solidus
+          if ((k > sz) & (Tc <= dike->Tsol) & (dike->Tsol <= lT[k-1][j][i]))
+          {
+            ibuff3[L][j][i]=dsz->ccoor[k]+(dsz->ccoor[k-1]-dsz->ccoor[k])/(lT[k-1][j][i]-Tc)*(Tsol-Tc);
+          }
+
         }
         END_PLANE_LOOP
       }
@@ -521,9 +651,10 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
         ierr = MPI_Isend(lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
         ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
 
+        ierr = MPI_Isend(lbuff3, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
       }
-
-     
+      
       //Now receive the answer from successive previous (underlying) procs so all procs have the answers
       if(dsz->nproc != 1 && dsz->grprev != -1)
       {
@@ -532,6 +663,10 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 
         ierr = MPI_Irecv(lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
         ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+        ierr = MPI_Irecv(lbuff3, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
       }
 
       if(dsz->nproc != 1 && dsz->grnext != -1)
@@ -541,44 +676,46 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 
         ierr = MPI_Isend(lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
         ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+        ierr = MPI_Isend(lbuff3, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+        ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
       }
+
+      // (gdev is the array that shares data with devxx_mean and is indexed with global dimensions)
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr);
+      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr);
 
       //now all cores have the same solution so give that to the stress array
       START_PLANE_LOOP
         {
-          gdev[L][j][i]=ibuff[L][j][i]/ibuff2[L][j][i];  //Depth weighted mean stress
-          lthick[L][j][i]=ibuff2[L][j][i];
+          glthick[L][j][i]=ibuff2[L][j][i];  //Dont need this, but using it to check solution for debugging below
+          dPm[L][j][i]=(ibuff3[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //magmastatic pressure at solidus, note z is negative
+          gsxx_eff_ave[L][j][i]=ibuff[L][j][i]/ibuff2[L][j][i]+dPm[L][j][i];  //Depth weighted mean stress + excess magma press.
          }
       END_PLANE_LOOP
 
       // restore buffer and mean stress vectors
-      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->devxx_mean, &gdev); CHKERRQ(ierr);
-      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &lthick); CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr); //debugging
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr); //debugging
+
       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff2, &ibuff2); CHKERRQ(ierr);
+      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff3, &ibuff3); CHKERRQ(ierr);
+
       ierr = VecRestoreArray(vbuff, &lbuff); CHKERRQ(ierr);
       ierr = VecRestoreArray(vbuff2, &lbuff2); CHKERRQ(ierr);
+      ierr = VecRestoreArray(vbuff2, &lbuff3); CHKERRQ(ierr);
+
       ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
       ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff2); CHKERRQ(ierr);
+      ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff3); CHKERRQ(ierr);
 
       // fill ghost points
-      LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->devxx_mean)
-
-//debugging Just checking to see that we have the values in the arrays for later use
-      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->devxx_mean, &gdev); CHKERRQ(ierr);
-      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &lthick); CHKERRQ(ierr);
-      START_PLANE_LOOP
-
-          if (j==sy && i<sx+5)
-          {
-            cumk=gdev[L][j][i];
-            cumk2=lthick[L][j][i];
-            printf("ranks=%i,%i,%i: i,j=%i,%i; gdev=%g, lthick=%g\n", fs->dsx.rank,fs->dsy.rank, fs->dsz.rank, i,j,cumk, cumk2);
- 
-          }
-      END_PLANE_LOOP
-      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->devxx_mean, &gdev); CHKERRQ(ierr);
-      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &lthick); CHKERRQ(ierr);
+      LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
 
     //Compute excess magma pressure
 

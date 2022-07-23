@@ -63,17 +63,20 @@ struct Dike
 public:
   PetscInt    ID;        // dike ID
   PetscInt    dyndike;
+  PetscInt PhaseID;      // associated material phase ID
+  PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
   PetscScalar Mc;        // amount of magma-accommodated extension in center of box
   PetscScalar y_Mc;      // location in y direction of Mc, if in x-direction x_Mc needs to be given or in z-direction z_Mc
   PetscScalar x_Mc;
   PetscScalar z_Mc;
-  PetscInt PhaseID;      // associated material phase ID
-  PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
-  Vec devxx_mean;
-  Vec dPm;
-  Vec lthickness;
+  PetscScalar Tsol;
+  PetscScalar filtx; 
+  PetscScalar drhomagma;
+  PetscScalar zmax_magma;
+  Vec sxx_eff_ave;
+  Vec dPm, lthickness;   //temporary for debugging
 };
       
 struct DBPropDike
@@ -100,6 +103,10 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar &rho_A,
                                 PetscScalar &y_c,
                                 PetscInt J); 
+
+PetscErrorCode Compute_sxx_eff(JacRes *jr);
+
+PetscErrorCode Smooth_sxx_eff(JacRes *jr);
 
 PetscErrorCode Locate_Dike_Zones(JacRes *jr);
 
