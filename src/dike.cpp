@@ -445,9 +445,6 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 
   ierr = Compute_sxx_eff(jr);  //compute mean effective sxx across the lithosphere
 
-  PetscPrintf(PETSC_COMM_WORLD,"Out of Compute_sxx_eff \n");
-
-  PetscFunctionReturn(0); 
   ierr = Smooth_sxx_eff(jr);   //smooth mean effective sxx
   
   
@@ -517,7 +514,6 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
       ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
       ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff2); CHKERRQ(ierr);
       ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff3); CHKERRQ(ierr);
-      PetscPrintf(PETSC_COMM_WORLD,"Got vbuffs\n");
 
       ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
       ierr = VecZeroEntries(vbuff2); CHKERRQ(ierr);
@@ -527,7 +523,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff2, &ibuff2); CHKERRQ(ierr);
       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff3, &ibuff3); CHKERRQ(ierr);
-      PetscPrintf(PETSC_COMM_WORLD,"Got ibuffs\n");
+
 
       // open linear buffer for send/receive  (returns the point, lbuff, that contains this processor portion of vector data, vbuff<<G.Ito)
       ierr = VecGetArray(vbuff, &lbuff); CHKERRQ(ierr);
@@ -536,7 +532,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 
       //Access temperatures
       ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
-      PetscPrintf(PETSC_COMM_WORLD,"Got lT\n");
+
       // receive from top domain (next)  dsz->grnext is the next proc up (in increasing z). Top to bottom doesn't matter here, its this way
       // because the code is patterned after GetLithoStaticPressure
       if(dsz->nproc != 1 && dsz->grnext != -1)
@@ -556,30 +552,23 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
         dz  = SIZE_CELL(k, sz, (*dsz));
         START_PLANE_LOOP
         {
-          GET_CELL_ID(ID, i, j, k, nx, ny);
-          //svCell = &jr->svCell[ID]; 
-          //Tc=lT[k][j][i];
+          GET_CELL_ID(ID, i-sx, j-sy, k-sz, nx, ny);
+          svCell = &jr->svCell[ID]; 
+          Tc=lT[k][j][i];
           
           if ((Tc<=dike->Tsol) & (svCell->phRat[AirPhase] < 1.0))
           {
             dz  = SIZE_CELL(k, sz, (*dsz));
 
-            //ibuff[L][j][i]+=svCell->hxx*dz;  //integrating weighted stresses
+            ibuff[L][j][i]+=svCell->hxx*dz;  //integrating weighted stresses
             ibuff2[L][j][i]+=dz;             //integrating thickeness
           }
           
-
           //interpolate depth to the solidus
-          
-          /*if ((k > sz) & (Tc <= dike->Tsol))
+          if ((k > sz) & (Tc <= dike->Tsol) & (dike->Tsol <= lT[k-1][j][i]))
           {
-
-            if (dike->Tsol <= lT[k-1][j][i])
-            {
-               cumk=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz])/(lT[k-1][j][i]-Tc)*(Tsol-Tc);
-               ibuff3[L][j][i]=cumk;
-            }
-          } */
+               ibuff3[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz])/(lT[k-1][j][i]-Tc)*(Tsol-Tc);
+          } 
 
         }
         END_PLANE_LOOP
@@ -661,13 +650,11 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
       ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff3); CHKERRQ(ierr);
 
       //fill ghost points
-      /*
+      
       LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
       LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->lthickness);
       LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->dPm);
-      */
 
-      PetscPrintf(PETSC_COMM_WORLD,"last plane looop \n");
     //Compute excess magma pressure
 
     //Locate xbounds
