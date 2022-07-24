@@ -170,21 +170,29 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	// scale the location of Mc y_Mc properly:
 	dike->y_Mc /= scal->length;
 
-  if (dike->dyndike)
-  {
-      ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave);  CHKERRQ(ierr);
-      ierr = DMCreateLocalVector (jr->DA_CELL_2D, &dike->dPm);  CHKERRQ(ierr);
-      ierr = DMCreateLocalVector (jr->DA_CELL_2D, &dike->lthickness);  CHKERRQ(ierr);
-  }
-
   
   if (PrintOutput)
   {
     PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld]: PhaseTransID=%i PhaseID=%i Mf=%g, Mb=%g, Mc=%g, y_Mc=%g \n", 
       (LLD)(dike->ID), dike->PhaseTransID, dike->PhaseID, dike->Mf, dike->Mb, dike->Mc, dike->y_Mc, dike->dyndike);
-    PetscPrintf(PETSC_COMM_WORLD,"                         : dyndike=%i, Tsol=%g, zmax_magma=%g, filtx=%g, drhomagma=%g \n", 
-      dike->dyndike, dike->Tsol, dike->zmax_magma, dike->filtx, dike->drhomagma);
-    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+    if (dike->dyndike)
+    {
+      PetscPrintf(PETSC_COMM_WORLD,"                         : dyndike=%i, Tsol=%g, zmax_magma=%g, filtx=%g, drhomagma=%g \n", 
+        dike->dyndike, dike->Tsol, dike->zmax_magma, dike->filtx, dike->drhomagma);
+    }
+    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");    
+  }
+
+   if (dike->dyndike)
+  {
+      ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave);  CHKERRQ(ierr);
+      ierr = DMCreateLocalVector (jr->DA_CELL_2D, &dike->dPm);  CHKERRQ(ierr);
+      ierr = DMCreateLocalVector (jr->DA_CELL_2D, &dike->lthickness);  CHKERRQ(ierr);
+      dike->Tsol = (dike->Tsol +  jr->scal->Tshift)/jr->scal->temperature;
+      dike->filtx /= jr->scal->length;
+      dike->drhomagma /= jr->scal->density;
+      dike->zmax_magma /= jr->scal->length;
+
   }
 
   PetscFunctionReturn(0);
