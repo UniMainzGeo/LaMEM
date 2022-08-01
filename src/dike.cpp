@@ -470,16 +470,17 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   PetscScalar ***gsxx_eff_ave;
   PetscScalar ***ibuff,***ibuff2, ***ibuff3;
   PetscScalar  *lbuff, *lbuff2, *lbuff3;
-  PetscScalar dz, cumk, cumk2, ***lT, Tc, *grav, Tsol;
+  PetscScalar dz, cumk, cumk2, ***lT, Tc, *grav, Tsol, peff;
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
   PetscMPIInt    rank;
   PetscScalar ***glthick, ***dPm; //for debugging only
 
   FDSTAG      *fs;
-  Discret1D   *dsz;
+  Discret1D   *dsz, *dsx;
   SolVarCell  *svCell;
   Dike        *dike;
   Controls    *ctrl;
+  Scaling     *scal;
 
 
 /* dPm is magma pressure in excess of dynamic pressure assumed to be the magma-static head 
@@ -498,8 +499,10 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   numDike    = jr->dbdike->numDike; // number of dikes
   fs  =  jr->fs;
   dsz = &fs->dsz;
+  dsx = &fs->dsx;  //debugging
   L   =  (PetscInt)dsz->rank;
   AirPhase  = jr->surf->AirPhase;
+  scal = fs->scal;
 
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
@@ -554,7 +557,8 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
         ierr = MPI_Irecv(lbuff3, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
         ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
       }
-      
+      Tsol=dike->Tsol;
+
       for(k = sz + nz - 1; k >= sz; k--)
       {
         dz  = SIZE_CELL(k, sz, (*dsz));
@@ -563,21 +567,27 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
           GET_CELL_ID(ID, i-sx, j-sy, k-sz, nx, ny);
           svCell = &jr->svCell[ID]; 
           Tc=lT[k][j][i];
+          if (j==1) printf("%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],svCell->hxx*scal->stress);  //debugging
+
           
-          if ((Tc<=dike->Tsol) & (svCell->phRat[AirPhase] < 1.0))
+          if ((Tc<=Tsol) & (svCell->phRat[AirPhase] < 1.0))
           {
             dz  = SIZE_CELL(k, sz, (*dsz));
 
             ibuff[L][j][i]+=svCell->hxx*dz;  //integrating weighted stresses
             ibuff2[L][j][i]+=dz;             //integrating thickeness
+              //if (j==1  && i == 16 ) printf("i=%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],ibuff[L][j][i]);  //debugging
+            //if (j==1  && i == 32 ) printf("%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],ibuff[L][j][i]);  //debugging
+
           }
           
           //interpolate depth to the solidus
-          if ((k > sz) & (Tc <= dike->Tsol) & (dike->Tsol <= lT[k-1][j][i]))
+          if ((k > sz) & (Tc <= Tsol) & (Tsol < lT[k-1][j][i]))
           {
                ibuff3[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz])/(lT[k-1][j][i]-Tc)*(Tsol-Tc);
+               //ibuff3[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz]);
           } 
-
+ 
         }
         END_PLANE_LOOP
       }
@@ -632,8 +642,9 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
       START_PLANE_LOOP
         {
           glthick[L][j][i]=ibuff2[L][j][i];  //Dont need this, but using it to check solution for debugging below
+          Peff=(ibuff3[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z is negative
           dPm[L][j][i]=(ibuff3[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //magmastatic pressure at solidus, note z is negative
-          gsxx_eff_ave[L][j][i]=ibuff[L][j][i]/ibuff2[L][j][i]+dPm[L][j][i];  //Depth weighted mean stress + excess magma press.
+          gsxx_eff_ave[L][j][i]=ibuff[L][j][i]/ibuff2[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff).
          }
       END_PLANE_LOOP
 
@@ -683,18 +694,23 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   Dike        *dike;
   Discret1D   *dsx, *dsz;
   PetscScalar ***gsxx_eff_ave;
-  PetscScalar lxmin, lxmax, filtx;
+  PetscScalar lxmin, lxmax, filtx, x, y;
   PetscInt    i, j, sx, sy, sz, nx, ny, nz, nD, L, numDike;
+  PetscInt    rank;
+  Scaling     *scal;
 
-  PetscScalar ***glthick, ***dPm, dum1, dum2, dum3, dum4; //for debugging only
+  PetscScalar ***glthick, ***dPm;//for debugging only
 
   PetscErrorCode ierr;
   PetscFunctionBegin;
+
+  MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
   fs  =  jr->fs;
   dsx = &fs->dsx;
   dsz = &fs->dsz;
   L   =  (PetscInt)dsz->rank;
+  scal = fs->scal;
 
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -721,16 +737,18 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
        ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr);
        START_PLANE_LOOP
        {
-
-         if ((j==sy) && (i < sx+5))
+         x = COORD_CELL(i, sx, fs->dsx);
+         y = COORD_CELL(j, sy, fs->dsy);
+         for(ii = sx; ii < sx+nx; ii++) 
          {
-            dum1=glthick[L][j][i];;
-            dum2=dPm[L][j][i];
-            dum3=gsxx_eff_ave[L][j][i]-dPm[L][j][i];
-            dum4=gsxx_eff_ave[L][j][i];
-            printf("ranks=%i,%i,%i: i,j=%i,%i; lthick=%g, dPm=%g, devxx=%g, sxx_eff_ave=%g \n", fs->dsx.rank,fs->dsy.rank, fs->dsz.rank, i,j,dum1, dum2, dum3, dum4);  //debugging
- 
+            xx = COORD_CELL(ii, sx, fs->dsx);
+            if ((x - 0.5*dike->filtx <= xx) & (xx <= x + 0.5*dike->filtx))
+            {
+              sxx_sum=gsxx_eff_ave[L][j][i]
+            }      
          }
+         if (j==1) printf("%g %g %g %g \n", x,glthick[L][j][i],gsxx_eff_ave[L][j][i]*scal->stress,dPm[L][j][i]*scal->stress);  //debugging
+        }
        }
        END_PLANE_LOOP
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
