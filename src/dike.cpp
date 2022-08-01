@@ -470,17 +470,17 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   PetscScalar ***gsxx_eff_ave;
   PetscScalar ***ibuff,***ibuff2, ***ibuff3;
   PetscScalar  *lbuff, *lbuff2, *lbuff3;
-  PetscScalar dz, cumk, cumk2, ***lT, Tc, *grav, Tsol, peff;
+  PetscScalar dz, ***lT, Tc, *grav, Tsol, Peff;
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
   PetscMPIInt    rank;
-  PetscScalar ***glthick, ***dPm; //for debugging only
+  //PetscScalar ***glthick, ***dPm; //for debugging only
 
   FDSTAG      *fs;
-  Discret1D   *dsz, *dsx;
+  Discret1D   *dsz;
   SolVarCell  *svCell;
   Dike        *dike;
   Controls    *ctrl;
-  Scaling     *scal;
+  //Scaling     *scal; debuggin
 
 
 /* dPm is magma pressure in excess of dynamic pressure assumed to be the magma-static head 
@@ -499,10 +499,11 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   numDike    = jr->dbdike->numDike; // number of dikes
   fs  =  jr->fs;
   dsz = &fs->dsz;
-  dsx = &fs->dsx;  //debugging
+  //dsx = &fs->dsx;  //debugging
+  //scal = fs->scal; //debugging
   L   =  (PetscInt)dsz->rank;
   AirPhase  = jr->surf->AirPhase;
-  scal = fs->scal;
+
 
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
@@ -567,7 +568,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
           GET_CELL_ID(ID, i-sx, j-sy, k-sz, nx, ny);
           svCell = &jr->svCell[ID]; 
           Tc=lT[k][j][i];
-          if (j==1) printf("%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],svCell->hxx*scal->stress);  //debugging
+          //if (j==1) printf("%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],svCell->hxx*scal->stress);  //debugging
 
           
           if ((Tc<=Tsol) & (svCell->phRat[AirPhase] < 1.0))
@@ -635,15 +636,16 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 
       // (gdev is the array that shares data with devxx_mean and is indexed with global dimensions)
       ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr);
-      ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr);
+      //ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr);
+      //ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr);
 
       //now all cores have the same solution so give that to the stress array
       START_PLANE_LOOP
         {
-          glthick[L][j][i]=ibuff2[L][j][i];  //Dont need this, but using it to check solution for debugging below
+          //glthick[L][j][i]=ibuff2[L][j][i];  //Dont need this, but using it to check solution for debugging below
+          //dPm[L][j][i]=(ibuff3[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //magmastatic pressure at solidus, note z is negative
+
           Peff=(ibuff3[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z is negative
-          dPm[L][j][i]=(ibuff3[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //magmastatic pressure at solidus, note z is negative
           gsxx_eff_ave[L][j][i]=ibuff[L][j][i]/ibuff2[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff).
          }
       END_PLANE_LOOP
@@ -652,8 +654,8 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
       // restore buffer and mean stress vectors
       ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr); //debugging
-      ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr); //debugging
+      //ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr); //debugging
+      //ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr); //debugging
       
 
       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
@@ -671,8 +673,8 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
       //fill ghost points
       
       LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
-      LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->lthickness);
-      LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->dPm);
+      //LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->lthickness);
+      //LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->dPm);
 
     //Compute excess magma pressure
 
@@ -684,6 +686,9 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 }
 
 //------------------------------------------------------------------------------------------------------------------
+// Apply a box filter to the depth-averaged effective stress.  
+// **NOTE** There is NO message passing between adjacent procs in x, so this wont work well if the zone of high 
+// stress is spit by a processor boundary. This will work completely if cpu_x = 1
 
 #undef __FUNCT__
 #define __FUNCT__ "Smooth_sxx_eff"
@@ -692,14 +697,15 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
 
   FDSTAG      *fs;
   Dike        *dike;
-  Discret1D   *dsx, *dsz;
+  Discret1D   *dsz;
   PetscScalar ***gsxx_eff_ave;
-  PetscScalar lxmin, lxmax, filtx, x, y;
-  PetscInt    i, j, sx, sy, sz, nx, ny, nz, nD, L, numDike;
+  PetscScalar x, sum_sxx, sum_dx, dx, xx;
+  PetscInt    i, ii, j, sx, sy, sz, nx, ny, nz, nD, L, numDike;
   PetscInt    rank;
-  Scaling     *scal;
 
-  PetscScalar ***glthick, ***dPm;//for debugging only
+  //Scaling     *scal;  //debugging
+
+  //PetscScalar ***glthick, ***dPm;//for debugging only
 
   PetscErrorCode ierr;
   PetscFunctionBegin;
@@ -707,15 +713,12 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
   fs  =  jr->fs;
-  dsx = &fs->dsx;
   dsz = &fs->dsz;
   L   =  (PetscInt)dsz->rank;
-  scal = fs->scal;
+  //scal = fs->scal;  //debugging
 
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-  lxmin = dsx->ccoor[0];
-  lxmax = dsx->ccoor[nx];
   numDike    = jr->dbdike->numDike; // number of dikes
 
   for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
@@ -728,32 +731,33 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
      }
      else
      {
-      //printf("ENTERING Smooth_sxx_eff \n");
-       filtx = dike->filtx;
-
-//debugging Just checking to see that we have the values in the arrays for later use
+       //access arrays
        ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-       ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr);
-       ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr);
+       //ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr); //debugging
+       //ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr); //debugging
        START_PLANE_LOOP
        {
          x = COORD_CELL(i, sx, fs->dsx);
-         y = COORD_CELL(j, sy, fs->dsy);
+         sum_sxx=0.0;
+         sum_dx=0.0;
          for(ii = sx; ii < sx+nx; ii++) 
          {
             xx = COORD_CELL(ii, sx, fs->dsx);
+            dx  = SIZE_CELL(ii, sx, fs->dsx);
             if ((x - 0.5*dike->filtx <= xx) & (xx <= x + 0.5*dike->filtx))
             {
-              sxx_sum=gsxx_eff_ave[L][j][i]
+              sum_sxx+=gsxx_eff_ave[L][j][ii]*dx;
+              sum_dx+=dx;
             }      
          }
-         if (j==1) printf("%g %g %g %g \n", x,glthick[L][j][i],gsxx_eff_ave[L][j][i]*scal->stress,dPm[L][j][i]*scal->stress);  //debugging
+         gsxx_eff_ave[L][j][i]=sum_sxx/sum_dx;
+
+         //if (j==1) printf("%g %g %g\n", x,sum_dx,gsxx_eff_ave[L][j][i]*scal->stress);  //debugging
         }
-       }
        END_PLANE_LOOP
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr);
-       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr);
+       //ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr); //debugging
+       //ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr); //debugging
      }  //end else dyndike
   } //end for loop over numdike
 
