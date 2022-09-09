@@ -75,7 +75,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
 		}
 
 		// open input file
-		fp = fopen(filename, "r");
+		fp = fopen(filename, "rb");
 
 		if(fp == NULL)
 		{
