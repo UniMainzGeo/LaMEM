@@ -26,12 +26,14 @@ np          =   H(6);
 
 M           =   dlmread(PD_name, ' ', 55, 0);
 
-rho         =   reshape(M(:,3),np,nt);
-rho_fluid   =   reshape(M(:,1),np,nt);
-melt        =   reshape(M(:,2),np,nt);
-T_C         =   reshape(M(:,4),np,nt)-273.15;       % (LaMEM: degree K), Here: Celcius
-P           =   reshape(M(:,5),np,nt)./1e3;         % kbar  - LaMEM input must be bar!
+rho         =   reshape(M(:,3),nt,np);
+rho_fluid   =   reshape(M(:,1),nt,np);
+melt        =   reshape(M(:,2),nt,np);
+T_C         =   reshape(M(:,4),nt,np)'-273.15;       % (LaMEM: degree K), Here: Celcius
+P           =   reshape(M(:,5),nt,np)'./1e3;         % kbar  - LaMEM input must be bar!
 
+T_vec = T_C(1,:);
+P_vec = P(:,1);
 
 % Clear strange values in the PD and give warnings
 NaN_in_Diagram = false;
@@ -105,7 +107,7 @@ end
 
 figure(1),clf
 subplot(221)
-pcolor(T_C,P,rho)
+pcolor(T_vec,P_vec,rho')
 shading interp
 colorbar
 ylabel('P [kbar]')
@@ -113,7 +115,7 @@ xlabel('T [Celcius]')
 title('density rock w/out melt!')
 
 subplot(222)
-pcolor(T_C,P,melt)
+pcolor(T_vec,P_vec,melt')
 shading interp
 colorbar
 ylabel('P [kbar]')
@@ -121,7 +123,7 @@ xlabel('T [Celcius]')
 title('Melt content')
 
 subplot(223)
-pcolor(T_C,P,rho_fluid)
+pcolor(T_vec,P_vec,rho_fluid')
 ylabel('P [kbar]')
 xlabel('T')
 title('density of fluid')
@@ -130,7 +132,7 @@ colorbar
 
 subplot(224)
 rho_average = (1-melt).*rho + melt.*rho_fluid;
-pcolor(T_C,P,rho_average)
+pcolor(T_vec,P_vec,rho_average')
 ylabel('P [kbar]')
 xlabel('T')
 title('Combined density of fluid + solid (should NOT be passed to LaMEM!)')

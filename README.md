@@ -1,4 +1,4 @@
-# LaMEM 1.1.0
+# LaMEM 1.2.0
 ## Lithosphere and Mantle Evolution Model
 
 LaMEM is a parallel 3D numerical code that can be used to model various thermomechanical 
@@ -62,12 +62,60 @@ LaMEM consists of the following directories:
 /input_models -  Various input models (run with ../bin/LaMEM -ParamFile *.dat). See the README file in that directory.
 ```
 
-## 2. Dependencies of LaMEM
+## 2. Download and build LaMEM
+You can download pre-compiled binaries of LaMEM and directly use it (also in parallel), through the [LaMEM julia](https://github.com/JuliaGeodynamics/LaMEM.jl) package, as explained below. You can also compile LaMEM manually to get the latest update of the code.
 
-### Main dependencies
+For changing input files, logging in to remote machines etc. etc, we recommend [Visual Studio Code](https://code.visualstudio.com), along with the remoteSSH and julia plugins.
+
+### 2.1 Using pre-compiled binaries
+The recommended way to install LaMEM on your machine (windows/mac/linux) is to use the julia package manager. For this download a recent version of [julia](https://julialang.org), and start it.
+```julia
+julia>]
+pkg> add LaMEM
+pkg> test LaMEM
+```
+Once this is installed, you can use it from within julia with:
+```julia
+julia> using LaMEM
+```
+
+(Note: use the backspace to go back from the package manager to the julia REPL.)
+Running a simulation can be done with
+```julia
+julia> ParamFile="../../input_models/BuildInSetups/FallingBlock_Multigrid.dat";
+julia> run_lamem(ParamFile, 2, "-nstep_max = 1")
+```
+This will run the simulation on 2 processors for 1 timestep. 
+You do have to make sure that the path to the input `*.dat` file is correct in your system. 
+Most likely you will have to change the path, which can be done with the build-in terminal (or PowerShell) in julia:
+```julia
+julia>; 
+shell> cd ~/WORK/LaMEM/input_models/BuildInSetups/
+```
+
+If you wish, you can also directly run the downloaded binaries from your terminal without using julia. In that case you'll need to set the correct paths to the required binaries (`LaMEM`,`mpiexec`) and required dynamic libraries, which you can show with:
+```julia
+julia> show_paths_LaMEM()
+LaMEM & mpiexec executables path : /Users/kausb/.julia/artifacts/26630bc992637321a5e5d3c0bc66005163370db6/bin:/Users/kausb/.julia/artifacts/483cb6f025b5a8266429afcb3f4ad498c58aaaee/bin
+Dynamic libraries                : /Applications/Julia-1.7.app/Contents/Resources/julia/lib/julia:
+```
+
+The [LaMEM](https://github.com/JuliaGeodynamics/LaMEM.jl) julia package has a number of other functions that may come in handy, such as reading timesteps back into julia. 
+
+If you want test some of the LaMEM examples in this repository, either clone the repo (below) or download it (three dots at the top of this page).
+
+**Limitations** 
+Whereas the pre-build libraries are quite handy, there are some limitations:
+- On Windows the MUMPS parallel direct solver is not available. SuperLU_dist does work, so we recommend using that instead.
+- On Mac, the current compilation of SuperLU_dist does not seem to work, so use MUMPS instead. Linux has both SuperLU_dist & MUMPS available.
+- The PASTIX parallel direct solver is not available. Use MUMPS, SuperLU_dist or iterative solvers instead.
+
+### 2.2 Compiling it yourself
+If want, you can ofcourse also compile LaMEM yourself, which will give you the latest version of the code. On large HPC clusters, this is often necessary as you need to link PETSc to the optimized MPI implementation on that system. 
+#### 2.2.1 Main dependencies
 LaMEM crucially relies on:
 
-  * PETSc 3.16.4, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX
+  * PETSc 3.16.x, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX.
 
 and to a minor extend on:
 
@@ -77,9 +125,8 @@ and to a minor extend on:
   * MATLAB (version not important), in order to facilitate creating more complicated input geometries
   * geomIO, to create input geometries from Inkscape (see https://geomio.bitbucket.io) 
   * Any text editor, to modify the LaMEM input files. 
-  * Visual Studio Code, in case you want to develop new code (some on the development team prefer Eclipse for this)
-
-### Dependency installation
+  
+#### 2.2.2 Dependency installation
 We develop LaMEM on Linux and Mac machines, but we also have had success on Windows 10, where we recommend installing it through the (new) bash shell. In order for LaMEM to work, you'll need to install the correct version of PETSc first. PETSc is usually not backwards compatible, so it won't work with the incorrect version. Also please note that we do not always immediately update LaMEM to the latest version of PETSc, so you may have to download/install an older version.
 
 * PETSc: 
@@ -87,12 +134,12 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
      for installation instructions. We also provide some installation instructions on how to compile 
      PETSc (and mpich, gcc, as well as PETSc) on various machines in /doc/installation. The simplest manner is sometimes to let PETSc install all additional packages (like MPICH), but that often does not result in the most efficient code. You also have to make sure that the path is set correctly in that case (for MPICH, for example). On a large scale cluster, you will have to link against the cluster libraries (for MPI, for example).
 
-* If you want to do debugging of LaMEM as well, it is a good idea to install both a DEBUG and an OPTIMIZED version of LaMEM, in separate directories.
+* If you want to do debugging of LaMEM as well, it is a good idea to install both a DEBUG and an OPTIMIZED version of PETSc, in separate directories.
 
 * Nothing else - if the correct version of PETSc is installed, LaMEM will work fine.
 
-	
-## 2. Download and build LaMEM
+#### 2.2.3 Install LaMEM
+
 * Download LaMEM from BitBucket, preferable by using GIT on your system:
 
 ```
@@ -131,7 +178,7 @@ Note that you can look at the ```tests``` directory contains subdirectories that
 
 
 ## 3. Getting started
-#### 3a. First simulation
+### 3.1 First simulation
   You can run your first LaMEM simulation with 
 
 ```
@@ -149,7 +196,7 @@ Note that you can look at the ```tests``` directory contains subdirectories that
   
   You can change the input parameters (such as resolution) by opening the file ```FallingBlock_IterativeSolver.dat``` with a texteditor and changing the parameters.
 
-#### 3b. Learning more
+### 3.2 Learning more
  As we do not have an extensive user-guide yet (it takes time to create one, but will come at some point..), the best way to learn LaMEM is by looking at the input files in the order that is recommended in the README files. Start with ```/BuildInSetups```, which shows various example with geometries that are specified in the LaMEM input file. 
 
 In addition, you can also look at the [Wiki](https://bitbucket.org/bkaus/lamem/wiki/Home) page (left menu). This will be the location where we will add more extensive documentation on how to use LaMEM.

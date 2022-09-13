@@ -472,6 +472,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,   1, 1.0);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
 
+	PetscPrintf(PETSC_COMM_WORLD,"- Melt factor mfc = %f", m->mfc);
+
 	// check energy parameters
 	if((m->Latent_hx && (!m->T_liq || !m->T_sol))
 	||	 (m->T_liq && (!m->Latent_hx || !m->T_sol)) 
