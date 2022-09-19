@@ -108,6 +108,8 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr);
 
 PetscErrorCode Smooth_sxx_eff(JacRes *jr);
 
+PetscErrorCode Set_dike_zones(JacRes *jr);
+
 PetscErrorCode Locate_Dike_Zones(JacRes *jr);
 
 //---------------------------------------------------------------------------

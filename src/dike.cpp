@@ -160,11 +160,16 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
 	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
   ierr = getIntParam(   fb, _OPTIONAL_, "dyndike",      &dike->dyndike, 1, dbm->numPhtr-1); CHKERRQ(ierr);
-
-  ierr = getScalarParam(fb, _OPTIONAL_, "Tsol",         &dike->Tsol,    1, 1.0);              CHKERRQ(ierr);
-  ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",   &dike->zmax_magma,    1, 1.0);              CHKERRQ(ierr);
-  ierr = getScalarParam(fb, _OPTIONAL_, "filtx",   &dike->filtx,    1, 1.0);              CHKERRQ(ierr);
-  ierr = getScalarParam(fb, _OPTIONAL_, "drhomagma",   &dike->drhomagma,    1, 1.0);              CHKERRQ(ierr);
+  if (dike->dyndike==1)
+  {
+    dike->Tsol = 1000;
+    dike->zmax_magma = -15.0;
+    dike->drhomagma = 400;
+    ierr = getScalarParam(fb, _OPTIONAL_, "Tsol",         &dike->Tsol,    1, 1.0);              CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",   &dike->zmax_magma,    1, 1.0);              CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _REQUIRED_, "filtx",   &dike->filtx,    1, 1.0);              CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _OPTIONAL_, "drhomagma",   &dike->drhomagma,    1, 1.0);              CHKERRQ(ierr);
+  }
 
 
 	// scale the location of Mc y_Mc properly:
@@ -445,15 +450,18 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 
   Controls    *ctrl;
   PetscErrorCode ierr;
+  
   PetscFunctionBegin;
 
   ctrl = &jr->ctrl;
 
-  if (!ctrl->actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
+  if (!ctrl->actDike || jr->ts->istep == 0) PetscFunctionReturn(0);   // only execute this function if dikes are active
 
   ierr = Compute_sxx_eff(jr);  //compute mean effective sxx across the lithosphere
 
   ierr = Smooth_sxx_eff(jr);   //smooth mean effective sxx
+
+  ierr = Set_dike_zones(jr);  //centered on peak sxx_eff_ave
   
   
   PetscFunctionReturn(0);
@@ -519,6 +527,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
     {
       //printf("ENTERING Compute_sxx_eff \n");
       // much machinery taken from JacResGetLithoStaticPressure
+
       // get local grid sizes
       ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -565,7 +574,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
         dz  = SIZE_CELL(k, sz, (*dsz));
         START_PLANE_LOOP
         {
-          GET_CELL_ID(ID, i-sx, j-sy, k-sz, nx, ny);
+          GET_CELL_ID(ID, i-sx, j-sy, k-sz, nx, ny);  //GET_CELL_ID needs local indices
           svCell = &jr->svCell[ID]; 
           Tc=lT[k][j][i];
           //if (j==1) printf("%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],svCell->hxx*scal->stress);  //debugging
@@ -577,8 +586,8 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 
             ibuff[L][j][i]+=svCell->hxx*dz;  //integrating weighted stresses
             ibuff2[L][j][i]+=dz;             //integrating thickeness
-              //if (j==1  && i == 16 ) printf("i=%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],ibuff[L][j][i]);  //debugging
-            //if (j==1  && i == 32 ) printf("%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],ibuff[L][j][i]);  //debugging
+            //if (j==1  && i == 16 ) printf("i=%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],ibuff[L][j][i]);  //debugging
+            //if (j==1  && i == 32 ) PetscPrintf(PETSC_COMM_WORLD, "%i %i %g %g %g\n", i, k, dsz->ccoor[k-sz],ibuff[L][j][i],ibuff2[L][j][i]);  //debugging
 
           }
           
@@ -647,6 +656,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 
           Peff=(ibuff3[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z is negative
           gsxx_eff_ave[L][j][i]=ibuff[L][j][i]/ibuff2[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff).
+          //if (j==1) PetscPrintf(PETSC_COMM_WORLD,"compute_sxx_eff: i=%i, Peff=%g, ibuff=%g, ibuff2=%g, gsxx=%g \n", i, Peff, ibuff[L][j][i], ibuff2[L][j][i], gsxx_eff_ave[L][j][i]);  //debugging
          }
       END_PLANE_LOOP
 
@@ -717,6 +727,8 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   L   =  (PetscInt)dsz->rank;
   //scal = fs->scal;  //debugging
 
+
+
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
   numDike    = jr->dbdike->numDike; // number of dikes
@@ -761,5 +773,94 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
      }  //end else dyndike
   } //end for loop over numdike
 
+
   PetscFunctionReturn(0);  
 }  
+
+//----------------------------------------------------------------------------------------------------
+// Set bounds of NotInAir box based on peak sxx_eff_ave
+// NOTE that NOW, this only works if cpu_x =1
+//
+#undef __FUNCT__
+#define __FUNCT__ "Set_dike_zones"
+PetscErrorCode Set_dike_zones(JacRes *jr)
+{
+
+  FDSTAG      *fs;
+  Dike        *dike;
+  Discret1D   *dsx, *dsz;
+  Ph_trans_t  *CurrPhTr;
+  PetscScalar ***gsxx_eff_ave;
+  PetscScalar xcenter, sxx_max, dike_width;
+  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike;
+ 
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
+
+  fs  =  jr->fs;
+  dsz = &fs->dsz;
+  dsx = &fs->dsx;
+  L   =  dsz->rank;
+  Lx  =  dsx->rank;
+  numDike    = jr->dbdike->numDike; // number of dikes
+  numPhtr    = jr->dbm->numPhtr;
+
+  for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
+  {
+     dike = jr->dbdike->matDike+nD;
+     if (!dike->dyndike)
+     {
+        PetscFunctionReturn(0);   // only execute this function if dikes is dynamic
+     }
+     else
+     {
+       if (Lx>0)
+       {
+         PetscPrintf(PETSC_COMM_WORLD,"Set_dike_zones requires cpu_x = 1 Lx = %i \n", Lx);
+         SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Set_dike_zones requires cpu_x = 1 Lx = %i \n", Lx);
+       }
+       ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+       ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+       for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks                        
+       {                                               
+         CurrPhTr = jr->dbm->matPhtr+nPtr;
+         if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
+         {
+            for(lj = 0; lj < ny; lj++)  //local index
+            {
+              xcenter=1e12;
+              sxx_max=-1e12;
+              j=sy+lj;  //global index
+
+              for(i=sx; i < sx+nx; i++) //find max gsxx_eff at each value of y
+              {
+                if ((gsxx_eff_ave[L][j][i] > 0) & (gsxx_eff_ave[L][j][i] > sxx_max))
+                {
+                  sxx_max=gsxx_eff_ave[L][j][i];
+                  xcenter = COORD_CELL(i, sx, fs->dsx);
+                }
+              }
+              dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
+              CurrPhTr->celly_xboundL[lj]=xcenter-dike_width/2;
+              CurrPhTr->celly_xboundR[lj]=xcenter+dike_width/2;
+              if (lj==1)
+              {
+                PetscPrintf(PETSC_COMM_WORLD,"xboundL=%g, xboundR=%g \n", CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj]);
+              }
+ 
+            }//end loop over j cell row
+          }
+       }  //end loop over nPtr
+       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+
+     } //end if !dike->dyn
+
+
+  }  //end loop over nD dikes
+     
+  PetscFunctionReturn(0);  
+}
+
+
+  
