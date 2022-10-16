@@ -1176,17 +1176,17 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
        if (P->X[1] <= dsy->ccoor[J] && PhaseTrans->celly_xboundL[J-1] < PhaseTrans->celly_xboundR[J-1])  
 	{
  	 	xboundL = PhaseTrans->celly_xboundL[J-1] + 
- 	 	(PhaseTrans->celly_xboundL[J]-PhaseTrans->celly_xboundL[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[2]-dsy->ccoor[J-1]);
+ 	 	(PhaseTrans->celly_xboundL[J]-PhaseTrans->celly_xboundL[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[1]-dsy->ccoor[J-1]);
  	 	xboundR = PhaseTrans->celly_xboundR[J-1] + 
- 	 	(PhaseTrans->celly_xboundR[J]-PhaseTrans->celly_xboundR[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[2]-dsy->ccoor[J-1]);
+ 	 	(PhaseTrans->celly_xboundR[J]-PhaseTrans->celly_xboundR[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[1]-dsy->ccoor[J-1]);
   	}
   	//particle is forward of the cell center and next cell is within phase trans box
   	else if (P->X[1] > dsy->ccoor[J] && PhaseTrans->celly_xboundL[J+1] < PhaseTrans->celly_xboundR[J+1]) 
   	{
   		xboundL = PhaseTrans->celly_xboundL[J] + 
-  		(PhaseTrans->celly_xboundL[J+1]-PhaseTrans->celly_xboundL[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[2]-dsy->ccoor[J]);
+  		(PhaseTrans->celly_xboundL[J+1]-PhaseTrans->celly_xboundL[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[1]-dsy->ccoor[J]);
   		xboundR = PhaseTrans->celly_xboundR[J] + 
-  		(PhaseTrans->celly_xboundR[J+1]-PhaseTrans->celly_xboundR[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[2]-dsy->ccoor[J]);
+  		(PhaseTrans->celly_xboundR[J+1]-PhaseTrans->celly_xboundR[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[1]-dsy->ccoor[J]);
   	}
   	//particle outside of phase transition box
   	else 
