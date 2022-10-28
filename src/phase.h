@@ -155,6 +155,10 @@ public:
   PetscScalar     t0_box;
   PetscScalar     t1_box;
   PetscScalar     v_box;
+
+  //for linking NotInAirBoxes
+  PetscInt      phtr_link_left;  
+
   
 };
 

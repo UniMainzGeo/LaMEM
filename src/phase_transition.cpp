@@ -447,9 +447,9 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Phase Transition, NotInAirbox [%lld]: seg = %i, xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", \
 			(LLD)(ph->ID), kk, \
-			ph->xbounds[2*kk]* scal->length, ph->xbounds[2*kk+1]*scal->length,\
-			ph->ybounds[2*kk]* scal->length, ph->ybounds[2*kk+1]*scal->length,\
-			ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
+		ph->xbounds[2*kk]* scal->length, ph->xbounds[2*kk+1]*scal->length,\
+		ph->ybounds[2*kk]* scal->length, ph->ybounds[2*kk+1]*scal->length,\
+		ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
 	}
 
 
@@ -489,6 +489,12 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 
 	   if (found==0) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, " Cannot find NotInAirBox seg j=%i, dsy->ccoor=%g\n", \
 	   		j, dsy->ccoor[j]*scal->length);
+	}
+
+       ph->phtr_link_left = -1; 
+	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1);
+	if (ph->phtr_link_left>=0) {
+	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %i\n", ph->phtr_link_left);	CHKERRQ(ierr);
 	}
 
 	
@@ -758,21 +764,24 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	    PhaseTrans = jr->dbm->matPhtr+nPtr;
 
 	    // Is the phase transition changing the phase, or other properites?
-		if((PhaseTrans->PhaseInside[0]>0 && PhaseTrans->PhaseOutside[0]>0) || (PhaseTrans->PhaseAbove[0]>0 && PhaseTrans->PhaseBelow[0]>0))
-		{
-			nphc = 1;
-		}
-		else
-		{
-			nphc = 0;
-		}
+	    if((PhaseTrans->PhaseInside[0]>0 && PhaseTrans->PhaseOutside[0]>0) || (PhaseTrans->PhaseAbove[0]>0 && PhaseTrans->PhaseBelow[0]>0))
+	    {
+              nphc = 1;
+	    }
+	    else
+	    {
+              nphc = 0;
+	    }
 	    // calling the moving dike function
 	    if ( PhaseTrans->Type == _NotInAirBox_ )
 	    {
-			if (PhaseTrans->v_box)
-			{
-				ierr = MovingBox(PhaseTrans, ts, jr); CHKERRQ(ierr);
-			}
+              if (PhaseTrans->v_box) {
+                ierr = MovingBox(PhaseTrans, ts, jr); CHKERRQ(ierr);
+              }
+
+              ierr = LinkNotInAirBoxes(PhaseTrans, jr); CHKERRQ(ierr);
+
+
 	    }
 	    
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
@@ -958,6 +967,37 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
       }
     }
   
+  PetscFunctionReturn(0);
+}
+//----------------------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LinkNotInAirBoxes"
+PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
+{
+  
+  Ph_trans_t   *PhaseTransLinkLeft;
+  PetscScalar  Phase_Width;
+  PetscInt     j, ny;             
+  FDSTAG 	*fs;  
+
+
+  
+  PetscFunctionBegin;
+  
+  fs = jr->fs;
+  ny = fs->dsy.ncels;
+  
+  if (PhaseTrans->phtr_link_left>=0)
+  {
+     PhaseTransLinkLeft = jr->dbm->matPhtr+PhaseTrans->phtr_link_left;
+     for(j = -1; j < ny+1; j++)
+      {
+      	  Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
+         PhaseTrans->celly_xboundL[j] = PhaseTransLinkLeft->celly_xboundR[j];
+         PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundL[j]+Phase_Width;
+      }
+  }
+
   PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------
