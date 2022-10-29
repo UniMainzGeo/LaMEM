@@ -158,7 +158,7 @@ public:
 
   //for linking NotInAirBoxes
   PetscInt      phtr_link_left;  
-
+  PetscInt      phtr_link_right;  
   
 };
 

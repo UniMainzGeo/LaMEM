@@ -856,14 +856,14 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
               //    if (lj==1) xcenter=-1;
               //  }
 
-              //if (jr->ts->istep+1>7) xcenter=-1.5*(jr->ts->istep+1-5);
+              //if (jr->ts->istep+1>1) xcenter=(jr->ts->istep+1-1);  //debugging
               dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
               CurrPhTr->celly_xboundL[lj]=xcenter-dike_width/2;
               CurrPhTr->celly_xboundR[lj]=xcenter+dike_width/2;
               if (lj<100) //debugging
               {
-                if (lj==0) PetscPrintf(PETSC_COMM_WORLD," \n");
-                PetscPrintf(PETSC_COMM_WORLD,"istep=%i, lj=%i, xboundL=%g, center=%g, xboundR=%g \n", jr->ts->istep+1, lj, CurrPhTr->celly_xboundL[lj], xcenter, CurrPhTr->celly_xboundR[lj]);  //debugging
+                 if (lj==0) PetscPrintf(PETSC_COMM_WORLD," \n");
+                 PetscPrintf(PETSC_COMM_WORLD,"istep=%i, lj=%i, xboundL=%g, center=%g, xboundR=%g \n", jr->ts->istep+1, lj, CurrPhTr->celly_xboundL[lj], xcenter, CurrPhTr->celly_xboundR[lj]);  //debugging
               }
  
             }//end loop over j cell row

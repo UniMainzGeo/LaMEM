@@ -497,6 +497,13 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %i\n", ph->phtr_link_left);	CHKERRQ(ierr);
 	}
 
+	ph->phtr_link_right = -1; 
+	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkRight",   &ph->phtr_link_right,  1, dbm->numPhtr-1);
+	if (ph->phtr_link_right>=0) {
+	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %i\n", ph->phtr_link_right);	CHKERRQ(ierr);
+	}
+
+
 	
 	ierr = getIntParam(fb, _OPTIONAL_, "BoxVicinity",   &ph->BoxVicinity,  1, 1);
 
@@ -976,6 +983,7 @@ PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
 {
   
   Ph_trans_t   *PhaseTransLinkLeft;
+  Ph_trans_t   *PhaseTransLinkRight;
   PetscScalar  Phase_Width;
   PetscInt     j, ny;             
   FDSTAG 	*fs;  
@@ -995,6 +1003,17 @@ PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
       	  Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
          PhaseTrans->celly_xboundL[j] = PhaseTransLinkLeft->celly_xboundR[j];
          PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundL[j]+Phase_Width;
+      }
+  }
+
+  if (PhaseTrans->phtr_link_right>=0)
+  {
+     PhaseTransLinkRight = jr->dbm->matPhtr+PhaseTrans->phtr_link_right;
+     for(j = -1; j < ny+1; j++)
+      {
+      	  Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
+         PhaseTrans->celly_xboundR[j] = PhaseTransLinkRight->celly_xboundL[j];
+         PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundR[j]-Phase_Width;
       }
   }
 
