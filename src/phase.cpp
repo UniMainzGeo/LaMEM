@@ -430,6 +430,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "gamma",    &m->gamma, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "q",        &m->q,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
+	// Frank-Kamenetzky
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "gamma_fk", &m->gamma_fk,1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "TRef_fk",  &m->TRef_fk, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_fk",   &m->eta_fk,  1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
 	// dc-creep
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "Bdc",      &m->Bdc,   1, 1.0); CHKERRQ(ierr);
@@ -632,9 +638,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 
 	// check that at least one essential deformation mechanism is specified
-	if(!m->Bd && !m->Bn && !m->G && !m->Bdc)
+	if(!m->Bd && !m->Bn && !m->G && !m->Bdc && !m->eta_fk)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G must be specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G, must be specified for phase %lld", (LLD)ID);
 	}
 
 	// PRINT (optional)
@@ -761,6 +767,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// ps-creep
 	m->Bps   *= scal->viscosity/scal->volume_si/scal->temperature;
 	m->d     /= scal->length_si;
+
+	// Frank-Kamenetzky
+	m->gamma_fk = m->gamma_fk * scal->temperature;
+	m->TRef_fk  = (m->TRef_fk + scal->Tshift)/scal->temperature;
+	m->eta_fk  /= scal->viscosity;
 
 	// elasticity
 	m->G      /= scal->stress_si;
