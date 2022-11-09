@@ -712,7 +712,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   Dike        *dike;
   Discret1D   *dsz;
   PetscScalar ***gsxx_eff_ave;
-  PetscScalar x, sum_sxx, sum_dx, dx, xx;
+  PetscScalar x, sum_sxx, sum_dx, dx, xx, mindist;
   PetscInt    i, ii, j, sx, sy, sz, nx, ny, nz, nD, L, numDike;
   PetscInt    rank;
 
@@ -794,8 +794,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   Discret1D   *dsx, *dsz;
   Ph_trans_t  *CurrPhTr;
   PetscScalar ***gsxx_eff_ave;
-  PetscScalar xcenter, sxx_max, dike_width, xdebugging;
-  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike;
+  PetscScalar xcenter, sxx_max, dike_width, mindist, xnode, xmax_effave, xshift, xdebugging;
+  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike,ixcenter;
  
   PetscErrorCode ierr;
   PetscFunctionBegin;
@@ -832,38 +832,53 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
          {
             for(lj = 0; lj < ny; lj++)  //local index
             {
-              xcenter=1e12;
               sxx_max=-1e12;
+              mindist=1e12;
+              ixcenter = 0;
+
               j=sy+lj;  //global index
+              dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
+              xcenter=(CurrPhTr->celly_xboundR[lj] + CurrPhTr->celly_xboundL[lj])/2;
 
               for(i=sx; i < sx+nx; i++) //find max gsxx_eff at each value of y
               {
                 if ((gsxx_eff_ave[L][j][i] > 0) & (gsxx_eff_ave[L][j][i] > sxx_max))
                 {
                   sxx_max=gsxx_eff_ave[L][j][i];
-                  xcenter = COORD_CELL(i, sx, fs->dsx);
+                  xmax_effave = COORD_CELL(i, sx, fs->dsx);
                 }
-                //if (lj==1)  //debugging
+                xnode=COORD_NODE(i, sx, fs->dsx);
+
+                if (fabs(xcenter-xnode) <= mindist) //find the node in center of dike
+                {
+                  ixcenter=i;
+                  mindist=fabs(xcenter-xnode);
+                }
+                //if (lj==0)  //debugging
                 //{
-                //xdebugging = COORD_CELL(i, sx, fs->dsx);
-                //PetscPrintf(PETSC_COMM_WORLD,"j=%i %i %g %g\n", j, i, xdebugging, gsxx_eff_ave[L][j][i]);   //debugging
+                //  xdebugging = COORD_CELL(i, sx, fs->dsx);
+                //  PetscPrintf(PETSC_COMM_WORLD,"tstep=%i %i %g %g\n", jr->ts->istep+1, lj, xdebugging, gsxx_eff_ave[L][j][i]);   //debugging
                 //}
 
               }
-              //if (jr->ts->istep+1>2) 
-              //  {
-              //    if (lj==0) xcenter=1;
-              //    if (lj==1) xcenter=-1;
-              //  }
+              xshift=xmax_effave-xcenter;
 
-              //if (jr->ts->istep+1>1) xcenter=(jr->ts->istep+1-1);  //debugging
-              dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
-              CurrPhTr->celly_xboundL[lj]=xcenter-dike_width/2;
-              CurrPhTr->celly_xboundR[lj]=xcenter+dike_width/2;
+              if (xshift>0 & xshift > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
+              {
+                xshift=0.5*SIZE_CELL(ixcenter, sx, fs->dsx);
+              }
+              else if (xshift<0 & fabs(xshift) > 0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx)) //ensure its within the width of cell left of center
+              {
+
+                xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
+              }
+
+              CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;
+              CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;
               if (lj<100) //debugging
               {
                  if (lj==0) PetscPrintf(PETSC_COMM_WORLD," \n");
-                 PetscPrintf(PETSC_COMM_WORLD,"istep=%i, lj=%i, xboundL=%g, center=%g, xboundR=%g \n", jr->ts->istep+1, lj, CurrPhTr->celly_xboundL[lj], xcenter, CurrPhTr->celly_xboundR[lj]);  //debugging
+                 PetscPrintf(PETSC_COMM_WORLD,"istep=%i, lj=%i, xboundL=%g, center=%g, xshift=%g, xboundR=%g \n", jr->ts->istep+1, lj, CurrPhTr->celly_xboundL[lj], xcenter+xshift, xshift, CurrPhTr->celly_xboundR[lj]);  //debugging
               }
  
             }//end loop over j cell row
