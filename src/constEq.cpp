@@ -285,7 +285,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	}
 
 	// Frank-Kamenetzky Viscosity
-	if(mat->gamma_fk)
+	if(mat->gamma_fk && T)
 	{
 		ctx->A_fk = 1.0/(mat->eta_fk*exp(-mat->gamma_fk*(T-mat->TRef_fk)))/2.0;
 	}
