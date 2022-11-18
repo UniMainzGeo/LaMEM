@@ -740,6 +740,9 @@
         taup       = 8.5e9  # scaling stress
         gamma      = 0.1    # approximation parameter
         q          = 2.0    # stress-dependence parameter
+        eta_fk     = 1e20   # reference viscosity for Frank-Kamenetzky viscosity
+        gamma_fk   = 1e-3   # gamma parameter for Frank-Kamenetzky viscosity
+        TRef_fk    = 1000.0 # reference Temperature for Frank-Kamenetzky viscosity (if not set it is 0°C) 
         ch         = 2e7    # cohesion
         fr         = 30.0   # friction angle
         eta_st     = 1e19   # stabilization viscosity (default is eta_min)

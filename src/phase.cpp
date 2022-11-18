@@ -301,6 +301,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	chSoftID = -1;
 	frSoftID = -1;
 	healID   = -1;
+	
 	MSN      =  dbm->numSoft - 1;
 	
 	// phase ID
@@ -429,6 +430,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "taup",     &m->taup,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gamma",    &m->gamma, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "q",        &m->q,     1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
+	// Frank-Kamenetzky
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "gamma_fk", &m->gamma_fk,1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "TRef_fk",  &m->TRef_fk, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_fk",   &m->eta_fk,  1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
 	// dc-creep
 	//=================================================================================
@@ -561,6 +568,13 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep requires dislocation creep for phase %lld (Bp, Bn)", (LLD)ID);
 	}
 
+	// Frank-Kamenetzky
+
+		if((m->eta_fk && (!m->gamma_fk)) || (m->gamma_fk && (!m->eta_fk)))
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Frank-Kamenetzky parameters are incomplete for phase %lld (eta_fk + gamma_fk)", (LLD)ID);
+	}
+
 	// DC
 
 	if(m->Bdc && (!m->Edc || !m->Rdc || !m->mu))
@@ -632,9 +646,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 
 	// check that at least one essential deformation mechanism is specified
-	if(!m->Bd && !m->Bn && !m->G && !m->Bdc)
+	if(!m->Bd && !m->Bn && !m->G && !m->Bdc && !m->eta_fk)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G must be specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G, eta_fk must be specified for phase %lld", (LLD)ID);
 	}
 
 	// PRINT (optional)
@@ -694,6 +708,13 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->taup,  "taup",  "[Pa]",      scal, title, &print_title);
 		MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal, title, &print_title);
 		MatPrintScalParam(m->q,     "q",     "[ ]",       scal, title, &print_title);
+
+		sprintf(title, "   (FK)     : "); print_title = 1;
+		MatPrintScalParam(m->eta_fk,   "eta_fk",    "[Pa*s]", scal, title, &print_title);
+		MatPrintScalParam(m->gamma_fk, "gamma_fk",  "[1/K]",  scal, title, &print_title);
+		MatPrintScalParam(m->TRef_fk,  "TRef_fk",   "[C]",    scal, title, &print_title);
+		if(m->TRef_fk == 0.0 && m->eta_fk) PetscPrintf(PETSC_COMM_WORLD, "TRef_fk = %g [C]", m->TRef_fk);
+		
 
 		sprintf(title, "   (dc)     : "); print_title = 1;
 		MatPrintScalParam(m->Bdc,   "Bdc",  "[1/s]",   scal, title, &print_title);
@@ -761,6 +782,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// ps-creep
 	m->Bps   *= scal->viscosity/scal->volume_si/scal->temperature;
 	m->d     /= scal->length_si;
+
+	// Frank-Kamenetzky
+	m->gamma_fk = m->gamma_fk * scal->temperature;
+	m->TRef_fk  = (m->TRef_fk + scal->Tshift)/scal->temperature;
+	m->eta_fk  /= scal->viscosity;
 
 	// elasticity
 	m->G      /= scal->stress_si;
