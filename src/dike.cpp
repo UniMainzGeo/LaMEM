@@ -658,7 +658,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
           gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff).
           junk=sxx[L][j][i]/liththick[L][j][i];
           //if (j==1) PetscPrintf(PETSC_COMM_WORLD,"compute_sxx_eff: i=%i, Peff=%g, zsol=%g, liththick=%g, sxx=%g, gsxx_eff=%g \n", i, Peff, zsol[L][j][i], liththick[L][j][i], junk, gsxx_eff_ave[L][j][i]);  //debugging
-          //if (j==1) PetscPrintf(PETSC_COMM_WORLD,"%i %g %g %g %g %g \n", i, Peff, zsol[L][j][i], liththick[L][j][i], junk, gsxx_eff_ave[L][j][i]);  //debugging
+          //PetscPrintf(PETSC_COMM_WORLD,"tstep1=%i %i %g %g %g %g \n", jr->ts->istep+1, i, Peff, zsol[L][j][i], liththick[L][j][i], gsxx_eff_ave[L][j][i]);  //debugging
           //if (j==1) PetscPrintf(PETSC_COMM_WORLD,"%i %g %g %g %g \n", i, Peff, zsol[L][j][i], sxx[L][j][i], liththick[L][j][i], gsxx_eff_ave[L][j][i]);  //debugging
          }
       END_PLANE_LOOP
@@ -738,7 +738,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
 
   for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
   {
-       // access the parameters of the dike depending on the dike block
+     // access the parameters of the dike depending on the dike block
      dike = jr->dbdike->matDike+nD;
      if (!dike->dyndike_start || jr->ts->istep+1 < dike->dyndike_start)
      {
@@ -748,8 +748,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
      {
        //access arrays
        ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-       //ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr); //debugging
-       //ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr); //debugging
        START_PLANE_LOOP
        {
          x = COORD_CELL(i, sx, fs->dsx);
@@ -758,9 +756,9 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
          for(ii = sx; ii < sx+nx; ii++) 
          {
             xx = COORD_CELL(ii, sx, fs->dsx);
-            dx  = SIZE_CELL(ii, sx, fs->dsx);
             if ((x - 0.5*dike->filtx <= xx) & (xx <= x + 0.5*dike->filtx))
             {
+              dx  = SIZE_CELL(ii, sx, fs->dsx);
               sum_sxx+=gsxx_eff_ave[L][j][ii]*dx;
               sum_dx+=dx;
             }      
@@ -771,8 +769,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
         }
        END_PLANE_LOOP
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-       //ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->lthickness, &glthick); CHKERRQ(ierr); //debugging
-       //ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->dPm, &dPm); CHKERRQ(ierr); //debugging
+
      }  //end else dyndike_start
   } //end for loop over numdike
 
@@ -856,8 +853,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
                 }
                 //if (lj==0)  //debugging
                 //{
-                //  xdebugging = COORD_CELL(i, sx, fs->dsx);
-                //  PetscPrintf(PETSC_COMM_WORLD,"tstep=%i %i %g %g\n", jr->ts->istep+1, lj, xdebugging, gsxx_eff_ave[L][j][i]);   //debugging
+                //xdebugging = COORD_CELL(i, sx, fs->dsx);
+                //PetscPrintf(PETSC_COMM_WORLD,"tstep=%i %i %g %g\n", jr->ts->istep+1, lj, xdebugging, gsxx_eff_ave[L][j][i]);   //debugging
                 //}
 
               }
