@@ -75,6 +75,8 @@ public:
   PetscScalar filtx; 
   PetscScalar drhomagma;
   PetscScalar zmax_magma;
+  PetscScalar npseg;
+  PetscScalar npseg0;
   Vec sxx_eff_ave;
   Vec dPm, lthickness;   //temporary for debugging
 };
