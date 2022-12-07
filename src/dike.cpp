@@ -125,7 +125,6 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   FDSTAG   *fs;
   PetscInt  ID;
   Scaling  *scal;
-  Discret1D  *dsy;
 	
   PetscErrorCode ierr;
   PetscFunctionBegin;
@@ -133,7 +132,6 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	// access context           
   scal = dbm->scal;
   fs = jr->fs;
-  dsy = &fs->dsy;
 
   // Dike ID                                                                                                                                                         
   ierr    = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbdike->numDike-1); CHKERRQ(ierr);
@@ -461,8 +459,8 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 {
 
   Controls    *ctrl;
-  PetscErrorCode ierr;
   
+  PetscErrorCode ierr; 
   PetscFunctionBegin;
 
   ctrl = &jr->ctrl;
@@ -491,7 +489,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   PetscScalar ***sxx,***liththick, ***zsol;
   PetscScalar  *lsxx, *lliththick, *lzsol;
   PetscScalar dz, ***lT, Tc, *grav, Tsol, Peff;
-  PetscScalar junk;  //debugging
+  //PetscScalar junk;  //debugging
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
   PetscMPIInt    rank;
   //PetscScalar ***glthick, ***dPm; //for debugging only
@@ -668,7 +666,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
           Peff=(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
           if (Peff>0) Peff=Peff*10.0;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
           gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff).
-          junk=sxx[L][j][i]/liththick[L][j][i];
+          //junk=sxx[L][j][i]/liththick[L][j][i];
           //if (j==1) PetscPrintf(PETSC_COMM_WORLD,"compute_sxx_eff: i=%i, Peff=%g, zsol=%g, liththick=%g, sxx=%g, gsxx_eff=%g \n", i, Peff, zsol[L][j][i], liththick[L][j][i], junk, gsxx_eff_ave[L][j][i]);  //debugging
           //PetscPrintf(PETSC_COMM_WORLD,"tstep1=%i %i %g %g %g %g \n", jr->ts->istep+1, i, Peff, zsol[L][j][i], liththick[L][j][i], gsxx_eff_ave[L][j][i]);  //debugging
           //if (j==1) PetscPrintf(PETSC_COMM_WORLD,"%i %g %g %g %g \n", i, Peff, zsol[L][j][i], sxx[L][j][i], liththick[L][j][i], gsxx_eff_ave[L][j][i]);  //debugging
@@ -727,7 +725,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   PetscScalar x, sum_sxx, sum_dx, dx, xx;
   PetscInt    i, ii, j, sx, sy, sz, nx, ny, nz, nD, numDike;
   PetscInt    L, M, rank, nseg, npseg, npseg0, jback, jj;
-
   Vec         vsxx_eff_avey;
   PetscScalar ***sxx_eff_avey, *lsxx_eff_avey;
 
@@ -782,7 +779,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
               sum_dx+=dx;
             }      
          }
-         gsxx_eff_ave[L][j][i]=sum_sxx/sum_dx;
+         gsxx_eff_ave[L][j][i]=(PetscScalar)round(sum_sxx/sum_dx*1e4)/1e4;
 
          //printf("j=%i,%g %g %g\n", j, x,sum_dx,gsxx_eff_ave[L][j][i]*scal->stress);  //debugging
         }
@@ -799,7 +796,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
        ierr = VecGetArray(vsxx_eff_avey, &lsxx_eff_avey); CHKERRQ(ierr);
 
        npseg0=(PetscInt)dike->npseg0;
-       PetscPrintf(PETSC_COMM_WORLD,"\n"); //debugging
 
        for (j=sy; j<sy+ny; j++)
        {
@@ -858,10 +854,9 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
          {
            ierr = MPI_Isend(lsxx_eff_avey, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
            ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-
+ 
            ierr = MPI_Irecv(lsxx_eff_avey, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
            ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-
            for (jback=0; jback<jj; jback++) //fill in mean values in segment received from next core
            {
              for (i=sx; i<=sx+nx; i++)
@@ -901,6 +896,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   PetscScalar ***gsxx_eff_ave;
   PetscScalar xcenter, sxx_max, dike_width, mindist, xnode, xmax_effave, xshift, xdebugging;
   PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike,ixcenter;
+  PetscScalar dbug1, dbug2, dbug3;
  
   PetscErrorCode ierr;
   PetscFunctionBegin;
@@ -960,11 +956,11 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
                   ixcenter=i;
                   mindist=fabs(xcenter-xnode);
                 }
-                if (i==120) //debugging
-                {
-                xdebugging = COORD_CELL(i, sx, fs->dsx);
-                printf("tstep=%i j=%i, %g %g\n", jr->ts->istep+1, j, xdebugging, gsxx_eff_ave[L][j][i]);   //debugging
-                }
+                //if (i==120) //debugging
+                //{
+                //xdebugging = COORD_CELL(i, sx, fs->dsx);
+                //printf("tstep=%i j=%i, x=%g sxx_eff=%g\n", jr->ts->istep+1, j, xdebugging, gsxx_eff_ave[L][j][i]);   //debugging
+                //} 
 
               }
               xshift=xmax_effave-xcenter;
@@ -981,12 +977,16 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
 
               CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;
               CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;
-              //if (lj<100) //debugging
-              //{
-              //   if (lj==0) PetscPrintf(PETSC_COMM_WORLD," \n");
-              //   PetscPrintf(PETSC_COMM_WORLD,"istep=%i, lj=%i, xboundL=%g, center=%g, xshift=%g, xboundR=%g \n", jr->ts->istep+1, lj, CurrPhTr->celly_xboundL[lj], xcenter+xshift, xshift, CurrPhTr->celly_xboundR[lj]);  //debugging
-              //}
- 
+              if (lj==0 && L==0) PetscPrintf(PETSC_COMM_WORLD," \n");
+
+              dbug1=(((PetscScalar)jr->ts->istep+1)/5.0);
+              dbug2=floor(((PetscScalar)jr->ts->istep+1)/5.0);
+              dbug3=dbug1-dbug2;
+              if (L==0 && dbug3 < 0.1)
+              {
+                
+                printf("istep=%i, j=%i, center=%g, xshift=%g, dike_width=%g, %g, %g, %g \n", jr->ts->istep+1, j, xcenter+xshift, xshift, dike_width,dbug1,dbug2,dbug3);  //debugging
+              }
             }//end loop over j cell row
           }
        }  //end loop over nPtr
