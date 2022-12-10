@@ -779,7 +779,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
               sum_dx+=dx;
             }      
          }
-         gsxx_eff_ave[L][j][i]=(PetscScalar)round(sum_sxx/sum_dx*1e4)/1e4;
+         gsxx_eff_ave[L][j][i]=sum_sxx/sum_dx;
 
          //printf("j=%i,%g %g %g\n", j, x,sum_dx,gsxx_eff_ave[L][j][i]*scal->stress);  //debugging
         }
