@@ -466,10 +466,12 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
   ctrl = &jr->ctrl;
 
   if (!ctrl->actDike || jr->ts->istep+1 == 0) PetscFunctionReturn(0);   // only execute this function if dikes are active
+  
+  PetscPrintf(PETSC_COMM_WORLD, "\n");
 
   ierr = Compute_sxx_eff(jr);  //compute mean effective sxx across the lithosphere
 
-  ierr = Smooth_sxx_eff(jr);   //smooth mean effective sxx
+  //ierr = Smooth_sxx_eff(jr);   //smooth mean effective sxx  //debugging
 
   ierr = Set_dike_zones(jr);  //centered on peak sxx_eff_ave
   
@@ -489,7 +491,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   PetscScalar ***sxx,***liththick, ***zsol;
   PetscScalar  *lsxx, *lliththick, *lzsol;
   PetscScalar dz, ***lT, Tc, *grav, Tsol, Peff;
-  //PetscScalar junk;  //debugging
+  PetscScalar xdebugging, ydebugging;  //debugging
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
   PetscMPIInt    rank;
   //PetscScalar ***glthick, ***dPm; //for debugging only
@@ -666,10 +668,6 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
           Peff=(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
           if (Peff>0) Peff=Peff*10.0;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
           gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff).
-          //junk=sxx[L][j][i]/liththick[L][j][i];
-          //if (j==1) PetscPrintf(PETSC_COMM_WORLD,"compute_sxx_eff: i=%i, Peff=%g, zsol=%g, liththick=%g, sxx=%g, gsxx_eff=%g \n", i, Peff, zsol[L][j][i], liththick[L][j][i], junk, gsxx_eff_ave[L][j][i]);  //debugging
-          //PetscPrintf(PETSC_COMM_WORLD,"tstep1=%i %i %g %g %g %g \n", jr->ts->istep+1, i, Peff, zsol[L][j][i], liththick[L][j][i], gsxx_eff_ave[L][j][i]);  //debugging
-          //if (j==1) PetscPrintf(PETSC_COMM_WORLD,"%i %g %g %g %g \n", i, Peff, zsol[L][j][i], sxx[L][j][i], liththick[L][j][i], gsxx_eff_ave[L][j][i]);  //debugging
          }
       END_PLANE_LOOP
 
@@ -894,9 +892,9 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   Discret1D   *dsx, *dsz;
   Ph_trans_t  *CurrPhTr;
   PetscScalar ***gsxx_eff_ave;
-  PetscScalar xcenter, sxx_max, dike_width, mindist, xnode, xmax_effave, xshift, xdebugging;
+  PetscScalar xcenter, sxx_max, dike_width, mindist, xnode, xmax_effave, xshift;
   PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike,ixcenter;
-  PetscScalar dbug1, dbug2, dbug3;
+  PetscScalar dbug1, dbug2, dbug3, xdebugging, ydebugging;
  
   PetscErrorCode ierr;
   PetscFunctionBegin;
@@ -908,6 +906,10 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   Lx  =  dsx->rank;
   numDike    = jr->dbdike->numDike; // number of dikes
   numPhtr    = jr->dbm->numPhtr;
+
+  dbug1=(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out);  //debugging
+  dbug2=floor(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out); //debugging
+  dbug3=dbug1-dbug2; //debugging
 
   for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
   {
@@ -956,13 +958,14 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
                   ixcenter=i;
                   mindist=fabs(xcenter-xnode);
                 }
-                //if (i==120) //debugging
-                //{
-                //xdebugging = COORD_CELL(i, sx, fs->dsx);
-                //printf("tstep=%i j=%i, x=%g sxx_eff=%g\n", jr->ts->istep+1, j, xdebugging, gsxx_eff_ave[L][j][i]);   //debugging
-                //} 
+                if (L==0 && dbug3 < 0.1)
+                {
+                  xdebugging = COORD_CELL(i, sx, fs->dsx);
+                  ydebugging = COORD_CELL(j, sy, fs->dsy);
+                  printf("ISTEP1=%i %g %g %g\n", jr->ts->istep+1, xdebugging, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging
+                }
 
-              }
+              } //end loop over x
               xshift=xmax_effave-xcenter;
 
               if (xshift>0 && xshift > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
@@ -975,17 +978,15 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
                 xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
               }
 
-              CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;
-              CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;
-              if (lj==0 && L==0) PetscPrintf(PETSC_COMM_WORLD," \n");
+              //CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;  debugging
+              //CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;   debugging
 
-              dbug1=(((PetscScalar)jr->ts->istep+1)/5.0);
-              dbug2=floor(((PetscScalar)jr->ts->istep+1)/5.0);
-              dbug3=dbug1-dbug2;
               if (L==0 && dbug3 < 0.1)
               {
-                
-                printf("istep=%i, j=%i, center=%g, xshift=%g, dike_width=%g, %g, %g, %g \n", jr->ts->istep+1, j, xcenter+xshift, xshift, dike_width,dbug1,dbug2,dbug3);  //debugging
+                ydebugging = COORD_CELL(j, sy, fs->dsy);
+                printf("ISTEP2=%i %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter, xmax_effave, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
+               
+                ///printf("istep=%i, j=%i, center=%g, xshift=%g, dike_width=%g, %g, %g, %g \n", jr->ts->istep+1, j, xcenter+xshift, xshift, dike_width,dbug1,dbug2,dbug3);  //debugging
               }
             }//end loop over j cell row
           }
