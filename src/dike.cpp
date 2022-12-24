@@ -471,7 +471,7 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 
   ierr = Compute_sxx_eff(jr);  //compute mean effective sxx across the lithosphere
 
-  //ierr = Smooth_sxx_eff(jr);   //smooth mean effective sxx  //debugging
+  ierr = Smooth_sxx_eff(jr);   //smooth mean effective sxx  //debugging
 
   ierr = Set_dike_zones(jr);  //centered on peak sxx_eff_ave
   
@@ -491,7 +491,6 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   PetscScalar ***sxx,***liththick, ***zsol;
   PetscScalar  *lsxx, *lliththick, *lzsol;
   PetscScalar dz, ***lT, Tc, *grav, Tsol, Peff;
-  PetscScalar xdebugging, ydebugging;  //debugging
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
   PetscMPIInt    rank;
   //PetscScalar ***glthick, ***dPm; //for debugging only
@@ -725,6 +724,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   PetscInt    L, M, rank, nseg, npseg, npseg0, jback, jj;
   Vec         vsxx_eff_avey;
   PetscScalar ***sxx_eff_avey, *lsxx_eff_avey;
+  PetscScalar dbug1, dbug2, dbug3, xdebugging, ydebugging;
 
   //Scaling     *scal;  //debugging
 
@@ -742,6 +742,9 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   L   =  (PetscInt)dsz->rank;
   M   =  (PetscInt)dsy->rank;
   //scal = fs->scal;  //debugging
+  dbug1=(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out);  //debugging
+  dbug2=floor(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out); //debugging
+  dbug3=dbug1-dbug2; //debugging
 
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -767,17 +770,27 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
          x = COORD_CELL(i, sx, fs->dsx);
          sum_sxx=0.0;
          sum_dx=0.0;
+         if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)  //debugging
+          {
+            xdebugging = COORD_CELL(i, sx, fs->dsx);  //debugging
+            ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
+            printf("ISTEP0=%i %g %g %g \n", jr->ts->istep+1, xdebugging, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging
+         }
+
+
          for(ii = sx; ii < sx+nx; ii++) 
          {
             xx = COORD_CELL(ii, sx, fs->dsx);
-            if ((x - 0.5*dike->filtx <= xx) & (xx <= x + 0.5*dike->filtx))
-            {
-              dx  = SIZE_CELL(ii, sx, fs->dsx);
-              sum_sxx+=gsxx_eff_ave[L][j][ii]*dx;
-              sum_dx+=dx;
-            }      
+            //if ((x - 0.5*dike->filtx <= xx) & (xx <= x + 0.5*dike->filtx)) //box filter
+            //{
+            dx  = SIZE_CELL(ii, sx, fs->dsx);
+            sum_sxx+=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
+            sum_dx+=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
+            //}      
          }
+
          gsxx_eff_ave[L][j][i]=sum_sxx/sum_dx;
+
 
          //printf("j=%i,%g %g %g\n", j, x,sum_dx,gsxx_eff_ave[L][j][i]*scal->stress);  //debugging
         }
@@ -892,9 +905,9 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   Discret1D   *dsx, *dsz;
   Ph_trans_t  *CurrPhTr;
   PetscScalar ***gsxx_eff_ave;
-  PetscScalar xcenter, sxx_max, dike_width, mindist, xnode, xmax_effave, xshift;
-  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike,ixcenter;
-  PetscScalar dbug1, dbug2, dbug3, xdebugging, ydebugging;
+  PetscScalar xcenter, sxx_max, dike_width, mindist, xshift, xcell, dx;
+  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike, ixcenter, evendikelem;
+  PetscScalar dbug1, dbug2, dbug3, ydebugging;
  
   PetscErrorCode ierr;
   PetscFunctionBegin;
@@ -938,56 +951,58 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
               sxx_max=-1e12;
               mindist=1e12;
               ixcenter = 0;
-              xmax_effave=0;
+              evendikelem=0;
 
               j=sy+lj;  //global index
               dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
               xcenter=(CurrPhTr->celly_xboundR[lj] + CurrPhTr->celly_xboundL[lj])/2;
 
-              for(i=sx; i < sx+nx; i++) //find max gsxx_eff at each value of y
+              for(i=sx; i < sx+nx; i++) //find indice of xcenter
+              {
+                xcell=COORD_CELL(i, sx, fs->dsx);
+                if (fabs(xcell-xcenter) <= mindist)
+                {
+                  ixcenter=i;
+                  if (fabs(xcell-xcenter)==mindist)
+                  evendikelem=1;
+                  mindist=fabs(xcell-xcenter);
+                }    
+                
+                if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)  //debugging
+                {                  
+                  ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
+                  printf("ISTEP1=%i %g %g %g\n", jr->ts->istep+1, xcell, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging
+                }
+              } //end loop to find ixcenter
+
+              for(i=ixcenter-1-evendikelem; i < ixcenter+1; i++) //find max gsxx_eff at each value of y
               {
                 if ((gsxx_eff_ave[L][j][i] > 0) & (gsxx_eff_ave[L][j][i] > sxx_max))
                 {
                   sxx_max=gsxx_eff_ave[L][j][i];
-                  xmax_effave = COORD_CELL(i, sx, fs->dsx);
+                  xshift=COORD_CELL(i, sx, fs->dsx)-xcenter;
                 }
-                xnode=COORD_NODE(i, sx, fs->dsx);
+              } 
 
-                if (fabs(xcenter-xnode) <= mindist) //find the node in center of dike
-                {
-                  ixcenter=i;
-                  mindist=fabs(xcenter-xnode);
-                }
-                if (L==0 && dbug3 < 0.1)
-                {
-                  xdebugging = COORD_CELL(i, sx, fs->dsx);
-                  ydebugging = COORD_CELL(j, sy, fs->dsy);
-                  printf("ISTEP1=%i %g %g %g\n", jr->ts->istep+1, xdebugging, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging
-                }
-
-              } //end loop over x
-              xshift=xmax_effave-xcenter;
-
-              if (xshift>0 && xshift > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
+              dx=SIZE_CELL(ixcenter,sx, fs->dsx);  
+              if (xshift>0 && xshift>dx)
               {
-                xshift=0.5*SIZE_CELL(ixcenter, sx, fs->dsx);
+                xshift=dx;
               }
-              else if (xshift<0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx)) //ensure its within the width of cell left of center
+              else if (xshift<0 && xshift < -dx)
               {
-
-                xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
+                xshift=-dx;
               }
 
-              //CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;  debugging
-              //CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;   debugging
+//              CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;  
+//              CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;  
 
-              if (L==0 && dbug3 < 0.1)
+              if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)   //debugging
               {
-                ydebugging = COORD_CELL(j, sy, fs->dsy);
-                printf("ISTEP2=%i %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter, xmax_effave, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
-               
-                ///printf("istep=%i, j=%i, center=%g, xshift=%g, dike_width=%g, %g, %g, %g \n", jr->ts->istep+1, j, xcenter+xshift, xshift, dike_width,dbug1,dbug2,dbug3);  //debugging
+                ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
+                printf("ISTEP2=%i %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
               }
+
             }//end loop over j cell row
           }
        }  //end loop over nPtr
