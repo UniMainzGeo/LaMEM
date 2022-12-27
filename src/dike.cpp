@@ -724,7 +724,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   PetscInt    L, M, rank, nseg, npseg, npseg0, jback, jj;
   Vec         vsxx_eff_avey;
   PetscScalar ***sxx_eff_avey, *lsxx_eff_avey;
-  PetscScalar dbug1, dbug2, dbug3, xdebugging, ydebugging;
+  PetscScalar dbug1, dbug2, dbug3, ydebugging;
 
   //Scaling     *scal;  //debugging
 
@@ -770,29 +770,40 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
          x = COORD_CELL(i, sx, fs->dsx);
          sum_sxx=0.0;
          sum_dx=0.0;
-         if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)  //debugging
-          {
-            xdebugging = COORD_CELL(i, sx, fs->dsx);  //debugging
-            ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
-            printf("ISTEP0=%i %g %g %g \n", jr->ts->istep+1, xdebugging, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging
-         }
 
+         ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
 
          for(ii = sx; ii < sx+nx; ii++) 
          {
             xx = COORD_CELL(ii, sx, fs->dsx);
             //if ((x - 0.5*dike->filtx <= xx) & (xx <= x + 0.5*dike->filtx)) //box filter
-            //{
-            dx  = SIZE_CELL(ii, sx, fs->dsx);
-            sum_sxx+=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
-            sum_dx+=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
-            //}      
+            if (fabs(xx-x) <= 2*dike->filtx)
+            {                 
+              dx  = SIZE_CELL(ii, sx, fs->dsx);
+              sum_sxx+=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
+              sum_dx+=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
+              if (L==0 && (dbug3 < 0.5/jr->ts->nstep_out) && (j==24) && (i==131))
+              {
+                dbug1=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
+                dbug2=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
+                printf("ISTEP00=%i %i %i %i %g %g %g %g %g %g\n", jr->ts->istep+1, i,ii,j, x,xx, ydebugging, gsxx_eff_ave[L][j][ii],dbug1,dbug2);   //debugging
+              }
+ 
+            }     
+         }
+
+         if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)  //debugging
+          {
+            printf("ISTEP0=%i %i %i %g %g %g \n", jr->ts->istep+1, i, j, x, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging
          }
 
          gsxx_eff_ave[L][j][i]=sum_sxx/sum_dx;
 
+         if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)  //debugging
+         {                  
+           printf("ISTEP1=%i %g %g %g %g %g\n", jr->ts->istep+1, x, ydebugging, gsxx_eff_ave[L][j][i], sum_sxx, sum_dx);   //debugging
+         }
 
-         //printf("j=%i,%g %g %g\n", j, x,sum_dx,gsxx_eff_ave[L][j][i]*scal->stress);  //debugging
         }
        END_PLANE_LOOP
 //---------------------------------------------------------------------------------------------
@@ -967,12 +978,6 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
                   evendikelem=1;
                   mindist=fabs(xcell-xcenter);
                 }    
-                
-                if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)  //debugging
-                {                  
-                  ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
-                  printf("ISTEP1=%i %g %g %g\n", jr->ts->istep+1, xcell, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging
-                }
               } //end loop to find ixcenter
 
               for(i=ixcenter-1-evendikelem; i < ixcenter+1; i++) //find max gsxx_eff at each value of y
@@ -1000,7 +1005,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
               if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)   //debugging
               {
                 ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
-                printf("ISTEP2=%i %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
+                printf("ISTEP2=%i %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
               }
 
             }//end loop over j cell row
