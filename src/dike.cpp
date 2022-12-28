@@ -760,63 +760,67 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
      }
      else
      {
-       //access arrays
+//-------------------------------------------------------------------------------------------------------
+// Set up a temporary array (only need a 1D array but its 2D because G.Ito doesn't now how to create a 1D array) for
+// (1) 1st: storing data while smoothing across x and..
+// (2) 2nd: storing data to pass between proc for averaging in y
+// get communication buffer (Gets a PETSc vector, vsxx_eff_avey, that may be used with the DM global routines)
+       ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vsxx_eff_avey); CHKERRQ(ierr);
+       ierr = VecZeroEntries(vsxx_eff_avey); CHKERRQ(ierr);
+// open index buffer for computation (sxx_eff_avey is the array that shares data with vector vsxx_eff_avey & indexed with global dimensions)
+       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx_eff_avey, &sxx_eff_avey); CHKERRQ(ierr);
+// open linear buffer for send/receive  (returns the pointer, lsxx..., that contains this processor portion of vector data, vsxx_eff_avey)
+       ierr = VecGetArray(vsxx_eff_avey, &lsxx_eff_avey); CHKERRQ(ierr);
+//-------------------------------------------------------------------------------------------------------
+
+//access depth-averaged effective sxx array
        ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 //---------------------------------------------------------------------------------------------
 //  moving box filter in x
 //---------------------------------------------------------------------------------------------
-       START_PLANE_LOOP
+       for(j = sy; j < sy+ny; j++) 
        {
-         x = COORD_CELL(i, sx, fs->dsx);
-         sum_sxx=0.0;
-         sum_dx=0.0;
-
-         ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
-
-         for(ii = sx; ii < sx+nx; ii++) 
-         {
-            xx = COORD_CELL(ii, sx, fs->dsx);
-            //if ((x - 0.5*dike->filtx <= xx) & (xx <= x + 0.5*dike->filtx)) //box filter
-            if (fabs(xx-x) <= 2*dike->filtx)
-            {                 
-              dx  = SIZE_CELL(ii, sx, fs->dsx);
-              sum_sxx+=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
-              sum_dx+=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
-              if (L==0 && (dbug3 < 0.5/jr->ts->nstep_out) && (j==24) && (i==131))
-              {
-                dbug1=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
-                dbug2=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
-                printf("ISTEP00=%i %i %i %i %g %g %g %g %g %g\n", jr->ts->istep+1, i,ii,j, x,xx, ydebugging, gsxx_eff_ave[L][j][ii],dbug1,dbug2);   //debugging
-              }
- 
-            }     
-         }
-
-         if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)  //debugging
+          ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
+          for(i = sx; i < sx+nx; i++)
           {
-            printf("ISTEP0=%i %i %i %g %g %g \n", jr->ts->istep+1, i, j, x, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging
-         }
+            x = COORD_CELL(i, sx, fs->dsx);
+            sum_sxx=0.0;
+            sum_dx=0.0;
 
-         gsxx_eff_ave[L][j][i]=sum_sxx/sum_dx;
+            for(ii = sx; ii < sx+nx; ii++) 
+            {
+               xx = COORD_CELL(ii, sx, fs->dsx);
+               if (fabs(xx-x) <= 2*dike->filtx)
+               {                 
+                  dx  = SIZE_CELL(ii, sx, fs->dsx);
+                  sum_sxx+=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
+                  sum_dx+=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
 
-         if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)  //debugging
-         {                  
-           printf("ISTEP1=%i %g %g %g %g %g\n", jr->ts->istep+1, x, ydebugging, gsxx_eff_ave[L][j][i], sum_sxx, sum_dx);   //debugging
-         }
+                  /*if (L==0 && (dbug3 < 0.5/jr->ts->nstep_out) && (j==24) && (i==131))
+                  {
+                    dbug1=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
+                    dbug2=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
+                    printf("ISTEP00=%i %i %i %i %g %g %g %g %g %g\n", jr->ts->istep+1, i,ii,j, x,xx, ydebugging, gsxx_eff_ave[L][j][ii],dbug1,dbug2);   //debugging
+                   }*/
+                }     
+            }
+            sxx_eff_avey[L][sy][i]=sum_sxx/sum_dx;
+            if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
+            { 
+              printf("ISTEP0=%i %g %g %g %g %g %g \n", jr->ts->istep+1,x, ydebugging, \
+              gsxx_eff_ave[L][j][i],sxx_eff_avey[L][sy][i], sum_sxx, sum_dx);   //debugging               
+            }
+          } //end ist loop over x to build filtered row
 
-        }
-       END_PLANE_LOOP
+          for(i = sx; i < sx+nx; i++)  //set the smoothed values into permanent array here
+          {
+            gsxx_eff_ave[L][j][i]=sxx_eff_avey[L][sy][i];
+            sxx_eff_avey[L][sy][i]=0.0;  //clean this up for use below
+          }
+       } //end 1st loop over j for smoothing in x
 //---------------------------------------------------------------------------------------------
-//  averaging in segments along axis
+//  averaging in y-increments (i.e., "segments") along axis
 //---------------------------------------------------------------------------------------------
-       // get communication buffer (Gets a PETSc vector, vsxx_eff_avey, that may be used with the DM global routines)
-       ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vsxx_eff_avey); CHKERRQ(ierr);
-       ierr = VecZeroEntries(vsxx_eff_avey); CHKERRQ(ierr);
-       // open index buffer for computation (sxx_eff_avey is the array that shares data with vector vsxx_eff_avey & indexed with global dimensions)
-       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx_eff_avey, &sxx_eff_avey); CHKERRQ(ierr);
-       // open linear buffer for send/receive  (returns the pointer, lsxx..., that contains this processor portion of vector data, vsxx_eff_avey)
-       ierr = VecGetArray(vsxx_eff_avey, &lsxx_eff_avey); CHKERRQ(ierr);
-
        npseg0=(PetscInt)dike->npseg0;
 
        for (j=sy; j<sy+ny; j++)
@@ -888,7 +892,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
            }
          }
 
-       } //end loop in j
+       } //end 2nd loop over j for averaging in y-increments
 
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx_eff_avey, &sxx_eff_avey); CHKERRQ(ierr);
        ierr = VecRestoreArray(vsxx_eff_avey, &lsxx_eff_avey); CHKERRQ(ierr);
@@ -963,10 +967,12 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
               mindist=1e12;
               ixcenter = 0;
               evendikelem=0;
+              xshift=0;
 
               j=sy+lj;  //global index
               dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
               xcenter=(CurrPhTr->celly_xboundR[lj] + CurrPhTr->celly_xboundL[lj])/2;
+              ydebugging=COORD_CELL(j, sy, fs->dsy);  //debugging
 
               for(i=sx; i < sx+nx; i++) //find indice of xcenter
               {
@@ -977,10 +983,14 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
                   if (fabs(xcell-xcenter)==mindist)
                   evendikelem=1;
                   mindist=fabs(xcell-xcenter);
-                }    
+                }   
+                if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
+                { 
+                   printf("ISTEP1=%i %g %g %g\n", jr->ts->istep+1,xcell, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging    
+                }            
               } //end loop to find ixcenter
 
-              for(i=ixcenter-1-evendikelem; i < ixcenter+1; i++) //find max gsxx_eff at each value of y
+              for(i=ixcenter-1; i <= ixcenter+1; i++) //find max gsxx_eff at each value of y
               {
                 if ((gsxx_eff_ave[L][j][i] > 0) & (gsxx_eff_ave[L][j][i] > sxx_max))
                 {
@@ -1002,10 +1012,10 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
 //              CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;  
 //              CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;  
 
-              if (L==0 && dbug3 < 0.5/jr->ts->nstep_out)   //debugging
+              if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)   //debugging
               {
                 ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
-                printf("ISTEP2=%i %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
+                printf("ISTEP2=%i %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
               }
 
             }//end loop over j cell row
