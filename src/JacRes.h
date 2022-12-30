@@ -290,6 +290,17 @@ struct JacRes
 	// 2D integration primitives
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
+
+
+	//===========================================
+	// 2D planview plus levels for time averaging
+	//===========================================
+	DM DA_CELL_2D_tave; // 2D cell center grid
+
+	//==================================
+	// For 1D arrays
+	//==================================
+	DM DA_CELL_1D; // 1D cell center grid
 };
 //---------------------------------------------------------------------------
 

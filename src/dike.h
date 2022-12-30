@@ -63,8 +63,8 @@ struct Dike
 public:
   PetscInt    ID;        // dike ID
   PetscInt    dyndike_start;  //starting timestep for dynamic diking if 0 then no dynamic diking
-  PetscInt PhaseID;      // associated material phase ID
-  PetscInt PhaseTransID; // associated phase transition ID (necessary for moving dike)
+  PetscInt PhaseID,  PhaseTransID;;      // associated material phase and phase transition IDs
+  PetscInt nt_ave;       //number of timesteps for time averaging
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
   PetscScalar Mc;        // amount of magma-accommodated extension in center of box
