@@ -124,8 +124,8 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   Dike     *dike;
   FDSTAG   *fs;
   PetscInt  ID;
-  const PetscInt *lx, *ly;
   Scaling  *scal;
+  PetscInt sx, ssy, ssz, nx, nny, nnz;
 	
   PetscErrorCode ierr;
   PetscFunctionBegin;
@@ -182,21 +182,18 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     dike->npseg0=fs->dsy.tcels - floor((PetscScalar)fs->dsy.tcels/dike->npseg)*dike->npseg;
     if (dike->npseg0==0) dike->npseg0=dike->npseg;
 
-    // get # cells per proc
-    ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, NULL); CHKERRQ(ierr);
-
     // DM for 1D cell center vector
     ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
-    fs->dsx.tcels, fs->dsz.nproc, fs->dsz.nproc, 
+    fs->dsx.tcels, fs->dsy.nproc, fs->dsz.nproc, 
     fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-    1, 1, lx, NULL, NULL, &jr->DA_CELL_1D); CHKERRQ(ierr);
+    1, 1, 0, 0, 0, &jr->DA_CELL_1D); CHKERRQ(ierr);
 
-    // DM for 2D cell center vector, with nt_ave planes for time averaging
+
+    //DM for 2D cell center vector, with nt_ave planes for time averaging
     ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
-    fs->dsx.tcels, fs->dsx.tcels, fs->dsz.nproc*dike->nt_ave, 
+    fs->dsx.tcels, fs->dsy.tcels, fs->dsy.nproc*dike->nt_ave, 
     fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-    1, 1, lx, ly, &dike->nt_ave, &jr->DA_CELL_2D_tave); CHKERRQ(ierr);
-
+    1, 1, 0, 0, 0, &jr->DA_CELL_2D_tave); CHKERRQ(ierr);
 
   }
 
