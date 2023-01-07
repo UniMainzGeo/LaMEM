@@ -4,8 +4,8 @@
 using GeophysicalModelGenerator  
 
 # Load LaMEM particles grid
-file        =   "Subduction2D_FreeSlip_Particles_Linear_DirectSolver.dat"
-Grid        =   ReadLaMEM_InputFile(file)
+ParamFile_2 =   "Subduction2D_FreeSlip_Particles_Linear_DirectSolver.dat"
+Grid        =   ReadLaMEM_InputFile(ParamFile_2)
 
 # Specify slab parameters
 Trench_x_location   = -500;     # trench location

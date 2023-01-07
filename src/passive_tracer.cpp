@@ -1249,7 +1249,7 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 		asprintf(&fileName, "./Passive_Tracers/PT_%1.8lld.dat",(LLD)step);
 
 	// open temporary restart file for writing in binary mode
-		fp = fopen(fileName, "w");
+		fp = fopen(fileName, "wb");
 		fprintf(fp,"number_marker = %d \n ", actx->Ptr->nummark);
 
 		fprintf(fp,"\n");
