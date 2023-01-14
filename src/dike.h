@@ -64,7 +64,8 @@ public:
   PetscInt    ID;        // dike ID
   PetscInt    dyndike_start;  //starting timestep for dynamic diking if 0 then no dynamic diking
   PetscInt PhaseID,  PhaseTransID;;      // associated material phase and phase transition IDs
-  PetscInt nt_ave;       //number of timesteps for time averaging
+  PetscInt istep_count;
+  PetscInt istep_nave;       //number of timesteps for time averaging
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
   PetscScalar Mc;        // amount of magma-accommodated extension in center of box
@@ -78,7 +79,7 @@ public:
   PetscScalar npseg;
   PetscScalar npseg0;
   Vec sxx_eff_ave;
-  Vec dPm, lthickness;   //temporary for debugging
+  Vec sxx_eff_ave_hist;
 };
       
 struct DBPropDike

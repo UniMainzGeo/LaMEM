@@ -124,9 +124,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   Dike     *dike;
   FDSTAG   *fs;
   PetscInt  ID;
+  PetscScalar ***gsxx_eff_ave_hist;
   Scaling  *scal;
-  PetscInt sx, ssy, ssz, nx, nny, nnz;
-	
+  PetscInt i, j, istep_count, sx, sy, sisc, nx, ny, istep_nave;
+  	
   PetscErrorCode ierr;
   PetscFunctionBegin;
 
@@ -171,13 +172,16 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     dike->drhomagma = 500;
     dike->npseg = 4.0; 
     dike->filtx = 2.0;
-    dike->nt_ave = 2;
+    dike->istep_nave = 2;
+
     ierr = getScalarParam(fb, _OPTIONAL_, "Tsol",         &dike->Tsol,         1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",   &dike->zmax_magma,   1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "filtx",        &dike->filtx,        1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "drhomagma",    &dike->drhomagma,    1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "npseg",        &dike->npseg,        1, 1.0); CHKERRQ(ierr);
-    ierr = getIntParam(fb, _OPTIONAL_, "nt_ave",     &dike->nt_ave,        1, 50); CHKERRQ(ierr);
+    ierr = getIntParam(fb, _OPTIONAL_, "istep_nave",     &dike->istep_nave,        1, 50); CHKERRQ(ierr);
+
+    dike->istep_count=dike->istep_nave;   //initialize so that when istep=dike_start, it is set to 0
 
     dike->npseg0=fs->dsy.tcels - floor((PetscScalar)fs->dsy.tcels/dike->npseg)*dike->npseg;
     if (dike->npseg0==0) dike->npseg0=dike->npseg;
@@ -185,15 +189,40 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     // DM for 1D cell center vector
     ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
     fs->dsx.tcels, fs->dsy.nproc, fs->dsz.nproc, 
-    fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-    1, 1, 0, 0, 0, &jr->DA_CELL_1D); CHKERRQ(ierr);
+    fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
+    0, 0, 0, &jr->DA_CELL_1D); CHKERRQ(ierr);
 
 
-    //DM for 2D cell center vector, with nt_ave planes for time averaging
+    //DM for 2D cell center vector, with istep_nave planes for time averaging
     ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
-    fs->dsx.tcels, fs->dsy.tcels, fs->dsy.nproc*dike->nt_ave, 
-    fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-    1, 1, 0, 0, 0, &jr->DA_CELL_2D_tave); CHKERRQ(ierr);
+    fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
+    fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
+    0, 0, 0, &jr->DA_CELL_2D_tave); CHKERRQ(ierr);
+
+    //creating local vectors and inializing the history vector
+    ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave);  CHKERRQ(ierr);
+
+    ierr = DMCreateLocalVector( jr->DA_CELL_2D_tave, &dike->sxx_eff_ave_hist);  CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+    ierr = DMDAGetCorners(jr->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave); CHKERRQ(ierr);    
+
+    if(istep_nave!=dike->istep_nave) 
+    {
+       SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems in setting up DA_CELL_2D_tave: istep_nave=%i, dike->istep_nave=%i\n", istep_nave, dike->istep_nave);
+    }
+
+    for(j = sy; j < sy+ny; j++) 
+    {
+      for(i = sx; i < sx+nx; i++)
+      {
+        for (istep_count=sisc; istep_count<sisc+istep_nave; istep_count++)
+        {
+          gsxx_eff_ave_hist[istep_count][j][i]=0.0;
+        }
+      }
+    }
+
+    ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
 
   }
 
@@ -210,7 +239,8 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     {
       PetscPrintf(PETSC_COMM_WORLD,"                         dyndike_start=%i, Tsol=%g, zmax_magma=%g, filtx=%g, drhomagma=%g \n", 
         dike->dyndike_start, dike->Tsol, dike->zmax_magma, dike->filtx, dike->drhomagma);
-      PetscPrintf(PETSC_COMM_WORLD,"                         npseg=%g, npseg0=%g \n",dike->npseg, dike->npseg0);
+      PetscPrintf(PETSC_COMM_WORLD,"                         npseg=%g, npseg0=%g, istep_nave=%i, istep_count=%i \n",
+        dike->npseg, dike->npseg0, dike->istep_nave, dike->istep_count);
 
     }
     PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");    
@@ -218,7 +248,6 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 
    if (dike->dyndike_start)
   {
-      ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave);  CHKERRQ(ierr);
       dike->Tsol = (dike->Tsol +  jr->scal->Tshift)/jr->scal->temperature;
       dike->filtx /= jr->scal->length;
       dike->drhomagma /= jr->scal->density;
@@ -717,10 +746,11 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   FDSTAG      *fs;
   Dike        *dike;
   Discret1D   *dsz, *dsy;
-  PetscScalar ***gsxx_eff_ave;
+  PetscScalar ***gsxx_eff_ave, ***gsxx_eff_ave_hist;
   PetscScalar x, sum_sxx, sum_dx, dx, xx;
   PetscInt    i, ii, j, sx, sy, sz, nx, ny, nz, nD, numDike;
   PetscInt    L, M, rank, nseg, npseg, npseg0, jback, jj;
+  PetscInt    sisc, istep_count, istep_nave;
   Vec         vvec1d;
   PetscScalar ***vec1d, *lvec1d;
   PetscScalar dbug1, dbug2, dbug3, ydebugging;
@@ -777,7 +807,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
 //---------------------------------------------------------------------------------------------
        for(j = sy; j < sy+ny; j++) 
        {
-          ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
           for(i = sx; i < sx+nx; i++)
           {
             x = COORD_CELL(i, sx, fs->dsx);
@@ -792,21 +821,9 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
                   dx  = SIZE_CELL(ii, sx, fs->dsx);
                   sum_sxx+=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
                   sum_dx+=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
-
-                  /*if (L==0 && (dbug3 < 0.5/jr->ts->nstep_out) && (j==24) && (i==131))
-                  {
-                    dbug1=exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
-                    dbug2=gsxx_eff_ave[L][j][ii]*exp(-0.5*pow(((xx-x)/dike->filtx),2))*dx;
-                    printf("ISTEP00=%i %i %i %i %g %g %g %g %g %g\n", jr->ts->istep+1, i,ii,j, x,xx, ydebugging, gsxx_eff_ave[L][j][ii],dbug1,dbug2);   //debugging
-                   }*/
                 }     
             }
             vec1d[L][M][i]=sum_sxx/sum_dx;
-            if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
-            { 
-              printf("ISTEP0=%i %g %g %g %g %g %g \n", jr->ts->istep+1,x, ydebugging, \
-              gsxx_eff_ave[L][j][i],vec1d[L][M][i], sum_sxx, sum_dx);   //debugging               
-            }
           } //end ist loop over x to build filtered row
 
           for(i = sx; i < sx+nx; i++)  //set the smoothed values into permanent array here
@@ -884,7 +901,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
            {
              for (i=sx; i<=sx+nx; i++)
              {
-               gsxx_eff_ave[L][j-jback][i]=vec1d[L][M][i];
+               gsxx_eff_ave[L][j-jback][i]=vec1d[L][M][i];           
              }
            }
          }
@@ -895,7 +912,47 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
        ierr = VecRestoreArray(vvec1d, &lvec1d); CHKERRQ(ierr);
        ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vvec1d); CHKERRQ(ierr);
 
+//---------------------------------------------------------------------------------------------
+//  averaging over time
+//---------------------------------------------------------------------------------------------
+       ierr = DMDAGetCorners(jr->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave); CHKERRQ(ierr);
+
+       if(istep_nave!=dike->istep_nave) 
+       {
+          SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems: istep_nave=%i, dike->istep_nave=%i\n", istep_nave, dike->istep_nave);
+       }
+
+       ierr = DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+
+       dike->istep_count++;
+
+       if (dike->istep_count+1 > istep_nave) 
+       {
+         dike->istep_count=0;
+       }  
+    
+       START_PLANE_LOOP
+         sum_sxx=0;
+         gsxx_eff_ave_hist[sisc+dike->istep_count][j][i]=gsxx_eff_ave[L][j][i];  //array for current step
+
+         for (istep_count=sisc; istep_count<sisc+istep_nave; istep_count++)
+         {
+           sum_sxx+=gsxx_eff_ave_hist[istep_count][j][i];
+         }
+
+         /* if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
+         {  
+           ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging           
+           x = COORD_CELL(i, sx, fs->dsx);
+           printf("dyndike0=%i %g %g %g %g %i %g \n", jr->ts->istep+1,x, ydebugging, gsxx_eff_ave[L][j][i], sum_sxx, dike->istep_count,(PetscScalar)istep_nave);   //debugging 
+         } */
+         gsxx_eff_ave[L][j][i]=sum_sxx/((PetscScalar)istep_nave);
+ 
+       END_PLANE_LOOP
+
+       //restore arrays
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+       ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
 
      }  //end else dyndike_start
   } //end for loop over numdike
@@ -939,7 +996,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
   {
      dike = jr->dbdike->matDike+nD;
-     if (!dike->dyndike_start || jr->ts->istep+1 < dike->dyndike_start)
+     if (!dike->dyndike_start || jr->ts->istep+1 < dike->dyndike_start+dike->istep_nave-1)
      {
         PetscFunctionReturn(0);   // only execute this function if dikes is dynamic
      }
@@ -983,7 +1040,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
                 }   
                 if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
                 { 
-                   printf("ISTEP1=%i %g %g %g\n", jr->ts->istep+1,xcell, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging    
+                   printf("dyndike1=%i %g %g %g\n", jr->ts->istep+1,xcell, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging    
                 }            
               } //end loop to find ixcenter
 
@@ -1012,7 +1069,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
               if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)   //debugging
               {
                 ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
-                printf("ISTEP2=%i %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
+                printf("dyndike2=%i %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
               }
 
             }//end loop over j cell row
