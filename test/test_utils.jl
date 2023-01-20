@@ -48,12 +48,13 @@ end
 
 
 """
-    out = extract_info_logfiles(file::String, keyword::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), split_sign="=")
+    out = extract_info_logfiles(file::String, keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), split_sign="=")
 
 Extracts values from the logfile `file` specified after `keywords` (optionally defining a `split_sign`).
 This will generally return a NamedTuple with Vectors 
+
 """
-function extract_info_logfiles(file::String, keyword::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), split_sign="=") where N
+function extract_info_logfiles(file::String, keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), split_sign="=") where N
 
     out=()
     for i=1:N        
@@ -62,7 +63,7 @@ function extract_info_logfiles(file::String, keyword::NTuple{N,String}=("|Div|_i
             while ! eof(f) 
                 # read a new / next line for every iteration          
                 line = readline(f)
-                    if contains(line, keyword[i])
+                    if contains(line, keywords[i])
                         num = parse(Float64,split(line,split_sign)[end])
                         push!(d,num)    # add value to vector
                     end
@@ -72,50 +73,55 @@ function extract_info_logfiles(file::String, keyword::NTuple{N,String}=("|Div|_i
         out =  (out..., Float64.(d))    # add vector to tuple
     end
 
-    out_NT = NamedTuple{Symbol.(keyword)}(out)
+    out_NT = NamedTuple{Symbol.(keywords)}(out)
 
     return out_NT
 end
 
 
+"""
+    compare_logfiles(new::String, expected::String, 
+                        keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), 
+                        accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,)))
+
+This compares two logfiles (different parameters which can be indicated) 
+"""
 function compare_logfiles(new::String, expected::String, 
-                    keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), 
-                    accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,))) where N
+                        keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), 
+                        accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,))) where N
 
     new_out = extract_info_logfiles(new, keywords)
     exp_out = extract_info_logfiles(expected, keywords)
-    
 
     test_status = true
 
     for i=1:N 
-        
-       rtol, atol = 0,0
-       if  haskey(accuracy[i], :rtol)
+
+        rtol, atol = 0,0
+        if  haskey(accuracy[i], :rtol)
             rtol = accuracy[i].rtol;
-       end
-       if  haskey(accuracy[i], :atol)
+        end
+        if  haskey(accuracy[i], :atol)
             atol = accuracy[i].atol;
-       end
-   
-       te =  isapprox(new_out[i], exp_out[i], rtol=rtol, atol=atol)
-       if te==false
+        end
+
+        te =  isapprox(new_out[i], exp_out[i], rtol=rtol, atol=atol)
+        if te==false
             println("Problem with comparison of $(keywords[i]):")
             print_differences( new_out[i], exp_out[i], accuracy[i])
             test_status = false
         end
 
     end
-    
+
     return test_status
 end
 
 # Pretty formatting of errors
 function print_differences(new, expected, accuracy)
-
     n = 24;
     println("      $(rpad("New",n)) | $(rpad("Expected",n)) | $(rpad("rtol",n)) | $(rpad("atol",n))")
-    
+
 
     for i=1:length(new)
         atol = abs(new[i] - expected[i])
@@ -125,3 +131,27 @@ function print_differences(new, expected, accuracy)
 
     return nothing
 end
+
+
+function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String; 
+                keywords=("|Div|_inf","|Div|_2","|mRes|_2"), accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,)), 
+                cores::Int64=1, args::String="",
+                bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec")
+
+    cur_dir = pwd();
+    cd(dir)
+
+    bin_dir = joinpath(cur_dir,bin_dir);
+    outfile = "test_$(cores).out";
+
+    # perform simulation 
+    run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec);
+
+    # compare logfiles 
+    success = compare_logfiles(outfile, expectedFile, keywords, accuracy)
+
+    cd(cur_dir)  # return to directory       
+    
+    return success
+end 
+
