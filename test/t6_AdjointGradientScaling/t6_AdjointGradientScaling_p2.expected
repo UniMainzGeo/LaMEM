@@ -1,0 +1,208 @@
+| ------------------------------------------------------------------------- 
+|                                      LaMEM                                
+|                        Adjoint Gradient Framework Active                  
+| ------------------------------------------------------------------------- 
+| Adjoint parameters:  
+|    Adjoint mode                             : AdjointGradients  
+|    Gradients are computed w.r.t.            : Solution     
+|    Field-based gradient evaluation          : 0    
+|    Gradient evaluation points               : several observation points 
+|    Advect evaluation points with flow       : 0    
+|    Objective function type                  : 0    
+|    Objective function defined in input      : 1    
+| 
+| Adjoint: using all listed material parameters to compute gradients:   
+|   1 : adjoint          rho[0 ] = 1           
+|   2 : adjoint          eta[0 ] = 0.01        
+|   3 : adjoint          rho[1 ] = 0           
+|   4 : adjoint          eta[1 ] = 1           
+|   Total number of adjoint gradients      : 4   
+|   Total number of FD gradients           : 0   
+| 
+|   Total number of observation points     : 1   
+|       [0.000000,0.000000,0.500000] will compute gradient w.r.t. Vz
+| 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Jun  3 2020 - Time: 12:29:01 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t6_AdjointGradientScaling/t6_RTI_ScalingLaw.dat 
+   Adding PETSc option: -FreeSurf_Wavelength 1.0
+   Adding PETSc option: -FreeSurf_AmplCos 1e-3
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_rtol 1e-11
+Finished parsing input file : ./t6_AdjointGradientScaling/t6_RTI_ScalingLaw.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 10000. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 100. [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 3000. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 200. [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 0.01 [ ]  Bd = 50. [ ]  
+
+   Phase ID : 1
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 2 
+   Processor grid  [nx, ny, nz]         : [1, 1, 2]
+   Fine grid cells [nx, ny, nz]         : [32, 1, 64]
+   Number of cells                      :  2048
+   Number of faces                      :  8288
+   Maximum cell aspect ratio            :  15.62500
+   Lower coordinate bounds [bx, by, bz] : [-0.5, -0.001, 0.]
+   Upper coordinate bounds [ex, ey, ez] : [0.5, 0.001, 1.]
+--------------------------------------------------------------------------
+ Don't expect any magic with this aspect ratio 15.625 ...
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0.1 [ ] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
+   Open top boundary                          @ 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.000494003 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : RTI_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : parallel direct/lu 
+   Solver package                : superlu_dist 
+--------------------------------------------------------------------------
+Saving output ... done (0.005265 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 100.00000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.270119966917e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+  1 SNES Function norm 5.051588359505e-08 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 0.356309 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.636097127226e-09 
+      |Div|_2   = 5.051583127151e-08 
+   Momentum: 
+      |mRes|_2  = 7.270719520010e-11 
+--------------------------------------------------------------------------
+Actual time step : 110.00000 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.00569892 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 0.87088 (sec) 
+--------------------------------------------------------------------------
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 5.9328970697e-06
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|  adjoint     1:          rho[ 0]            5.925987e-06 
+|  adjoint     2:          eta[ 0]           -4.645325e-06 
+|  adjoint     3:          rho[ 1]           nan 
+|  adjoint     4:          eta[ 1]           -5.868922e-06 
+| 
+| 
+| Observation points: 
+|                                                   Velocity [ ]       
+|                       Location         |      Target         Value     
+|       ---------------------------------  -- ------------- ------------- 
+| 
+| 1   : [    0.000;     0.000;     0.500]  Vz -4.24800e-02   5.93290e-06 
+| 
+| -------------------------------------------------------------------------
+| 
+| Scaling laws: 
+| 
+|   Assumption: 
+|              Vel = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ... 
+|                where 
+|                      Vel - velocity;   p[] - parameter 
+|                      b[] - exponent;   A   - prefactor (computed for p>0) 
+|       
+|   Results: 
+|            Parameter      |    Exponent b[]  |  Phase Description    
+|     ----------------------  -----------------  ----------------------- 
+|                  rho[  0]       0.999           Upper
+|                  eta[  1]      -0.989           Lower
+|                  eta[  0]      -0.008           Upper
+|                  rho[  1]      nan              Lower
+|       
+|   Prefactor A               :  5.72278280e-06 
+|   Reference Density         :  0.00  
+|   Velocity check            :  5.93289707e-06 
+|   Scaling law data saved to :  ScalingLaw.dat 
+|       
+| -------------------------------------------------------------------------
+| Adjoint computation was successful & took 0.875024 s                         	 
+| ************************************************************************ 

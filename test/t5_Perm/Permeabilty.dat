@@ -1,0 +1,128 @@
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt_max    = 1.0;  # maximum time step
+	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 4
+	nel_y = 4
+	nel_z = 4
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 1.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+	noslip   = 1 1 0 0 0 0
+
+	pres_top = 0.0;
+	pres_bot = 1.0;
+
+	fix_phase = 0
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	init_guess  = 0
+	FSSA        = 0.0;
+
+	set_phase = 1
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+
+
+	<BoxStart>
+		phase  = 1
+		bounds = 0.25 0.75 0.0 1.0 0.0 1.0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name  = permea  # output file name
+	out_pvd        = 1       # activate writing .pvd file
+	out_visc_creep = 0
+	out_moment_res = 1
+	out_cont_res   = 1
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID  = 0   # phase id
+		eta = 1   # viscosity
+	<MaterialEnd>
+
+	# Define properties of fracture
+	<MaterialStart>
+		ID  = 1   # phase id
+		eta = 1   # viscosity
+	<MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_type ksponly # no nonlinear solver
+
+	# Jacobian (linear) outer KSP
+	-js_ksp_type fgmres
+	-js_ksp_max_it 50
+ 	-js_ksp_monitor
+	-js_ksp_rtol 1e-6
+	-js_ksp_atol 1e-10
+
+	# Direct solver with penalty method
+	-pcmat_type    mono
+	-pcmat_pgamma  1e5	# penalty parameter
+	-jp_type       user
+	-jp_pc_type    lu
+
+	-objects_dump
+
+<PetscOptionsEnd>
+
+#===============================================================================

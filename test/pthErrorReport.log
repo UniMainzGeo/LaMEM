@@ -1,0 +1,15 @@
+[t1_FB1_d_PaStiX_opt] reason for failure
+--------------------------------------------------------------
+Key = "\|Div\|_inf" --> compareFloatingPointAbsolute [failed]
+Reason: input and expected are of different length
+  expected: [5.55072953e-06 1.75130776e-10]
+  input:    []
+Key = "\|Div\|_2" --> compareFloatingPointAbsolute [failed]
+Reason: input and expected are of different length
+  expected: [2.11021079e-04 5.49214974e-09]
+  input:    []
+Key = "\|mRes\|_2" --> compareFloatingPointAbsolute [failed]
+Reason: input and expected are of different length
+  expected: [9.89753203e-04 3.15875323e-07]
+  input:    []
+

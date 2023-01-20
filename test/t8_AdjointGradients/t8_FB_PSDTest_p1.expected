@@ -1,0 +1,48 @@
+| ------------------------------------------------------------------------- 
+|                                      LaMEM                                
+|                        Adjoint Gradient Framework Active                  
+| ------------------------------------------------------------------------- 
+| Adjoint parameters:  
+|    Adjoint mode                             : AdjointGradients  
+|    Gradients are computed w.r.t.            : Solution     
+|    Field-based gradient evaluation          : 0    
+|    Gradient evaluation points               : several observation points 
+|    Advect evaluation points with flow       : 0    
+|    Objective function type                  : 0    
+|    Objective function defined in input      : 1    
+|   1 : adjoint          rho[2 ] = 2        ; bnd=[-        ; -        ]   
+|   2 : FD               rho[2 ] = 2        ; bnd=[-        ; -        ]   
+|   Total number of adjoint gradients      : 1   
+|   Total number of FD gradients           : 1   
+| 
+|   Total number of observation points     : 1   
+|       [0.150000,0.300000,0.900000] will compute gradient w.r.t. PSD 
+| 
+| ************************************************************************ 
+|                       FINITE DIFFERENCE GRADIENTS                        
+| ************************************************************************ 
+| Reference objective function: 2.96938e+00 
+|  Brute force FD gradient   rho[ 2] = 8.992409e-02, with eps=1.0000e-06 
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 2.9693797156e+00
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|  adjoint     1:          rho[ 2]            8.992435e-02 
+|       FD     2:          rho[ 2]            8.992409e-02 
+| 
+| 
+| Observation points: 
+|                                                    Center values         
+|                       Location         |      Target         Value     
+|       --------------------------------- --- ------------- ------------- 
+| 1   : [    0.150;     0.300;     0.900] PSD   9.00000e+01   1.70133e+02
+| 
+| Adjoint computation was successful & took 0.65282 s                         	 
+| ************************************************************************ 

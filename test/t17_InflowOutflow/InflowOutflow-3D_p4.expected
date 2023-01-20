@@ -1,0 +1,312 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Mar  3 2022 - Time: 16:55:02 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t17_InflowOutflow/PlumeLithos_Interaction_3D.dat 
+   Adding PETSc option: -snes_rtol 1e-4
+   Adding PETSc option: -snes_atol 1e-3
+   Adding PETSc option: -snes_max_it 30
+   Adding PETSc option: -snes_PicardSwitchToNewton_rtol 1e-4
+   Adding PETSc option: -snes_NewtonSwitchToPicard_it 20
+   Adding PETSc option: -js_ksp_type fgmres
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_max_it 20
+   Adding PETSc option: -js_ksp_atol 1e-3
+   Adding PETSc option: -js_ksp_rtol 1e-4
+   Adding PETSc option: -snes_linesearch_type l2
+   Adding PETSc option: -snes_linesearch_monitor
+   Adding PETSc option: -snes_linesearch_maxstep 10
+Finished parsing input file : ./t17_InflowOutflow/PlumeLithos_Interaction_3D.dat 
+--------------------------------------------------------------------------
+Scaling parameters:
+   Temperature : 1000. [C/K] 
+   Length      : 100000. [m] 
+   Viscosity   : 1e+20 [Pa*s] 
+   Stress      : 1e+09 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 100. [Myr] 
+   Maximum number of steps      : 3 
+   Time step                    : 0.001 [Myr] 
+   Minimum time step            : 1e-05 [Myr] 
+   Maximum time step            : 1. [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.8 
+   Output every [n] steps       : 10 
+   Output [n] initial steps     : 1 
+   Save restart every [n] steps : 2000 
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 1e+22 [Pa*s]  Bd = 5e-23 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1e+06 [J/kg/K]  k = 100. [W/m/k]  
+
+   Phase ID : 1   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 1e+24 [Pa*s]  Bd = 5e-25 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 2   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 3   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 1e+20 [Pa*s]  Bd = 5e-21 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 4   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 1e+20 [Pa*s]  Bd = 5e-21 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 4 
+   Processor grid  [nx, ny, nz]         : [2, 1, 2]
+   Fine grid cells [nx, ny, nz]         : [64, 32, 32]
+   Number of cells                      :  65536
+   Number of faces                      :  201728
+   Maximum cell aspect ratio            :  2.00000
+   Lower coordinate bounds [bx, by, bz] : [-1400., -1000., -1000.]
+   Upper coordinate bounds [ex, ey, ez] : [1400., 1000., 0.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+   Top boundary temperature                   : 0. [C] 
+   Bottom boundary temperature                : 1300. [C] 
+   Adding plume inflow bottom condition       @ 
+      Type of plume                           : Inflow 
+      Type of velocity perturbation           : Poiseuille flow (and constant outflow) 
+      Temperature of plume                    : 1600. [C] 
+      Phase of plume                          : 4 
+      Inflow velocity                         : 5. [cm/yr] 
+      Location of center                      : [0., 0.] [km] 
+      Radius of plume                         : 50. [km] 
+   Adding inflow velocity at boundary         @ 
+      Inflow velocity boundary                : Left 
+      Outflow at opposite boundary            @ 
+      Inflow phase from next to boundary      @ 
+      Inflow window [bottom, top]             : [-100.00,150.00] [km] 
+      Inflow velocity                         : 5.00 [cm/yr] 
+      Velocity smoothening distance           : 100.00 [km] 
+      Inflow temperature from closest marker  @ 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -10.] [m/s^2] 
+   Surface stabilization (FSSA)            :  1. 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Enforce zero average pressure on top    @ 
+   Minimum viscosity                       : 1e+18 [Pa*s] 
+   Maximum viscosity                       : 1e+24 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
+   Max. melt fraction (viscosity, density) : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : empirical STAGP (STAG + pressure points)
+   Marker control type           : subgrid 
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+   Background phase ID           : 0 
+   Interpolation constant        : 0.666667 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.0286965 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : PlumeLithosphereInteraction_3D 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Total Pressure                          @ 
+   Temperature                             @ 
+   Deviatoric stress tensor                @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate tensor           @ 
+   Deviatoric strain rate second invariant @ 
+   Yield stress                            @ 
+   Accumulated Plastic Strain (APS)        @ 
+   Plastic dissipation                     @ 
+   Total displacements                     @ 
+   Momentum residual                       @ 
+   Continuity residual                     @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : coupled Galerkin geometric multigrid
+   Global coarse grid [nx,ny,nz] : [16, 8, 8]
+   Local coarse grid  [nx,ny,nz] : [8, 8, 4]
+   Number of multigrid levels    :  3
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : fgmres 
+   Solver type                   : multigrid 
+   Multigrid smoother levels KSP : chebyshev 
+   Multigrid smoother levels PC  : sor 
+   Number of smoothening steps   : 10 
+   Coarse level KSP              : preonly 
+   Coarse level PC               : lu 
+   Coarse level solver package   : (null) 
+--------------------------------------------------------------------------
+Initializing pressure with lithostatic pressure ... done (0.00579548 sec)
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.998513713821e+02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.998513713821e+02 
+    1 KSP Residual norm 6.269583201537e+02 
+    2 KSP Residual norm 2.050877303470e+02 
+    3 KSP Residual norm 1.214287081101e+01 
+    4 KSP Residual norm 3.420455807480e+00 
+    5 KSP Residual norm 8.131181743864e-01 
+    6 KSP Residual norm 1.363522197351e-01 
+    7 KSP Residual norm 4.688977757059e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.0468898, 399.926, 799.851]
+      Line search terminated: lambda = 1., fnorms = 0.0468898
+  1 SNES Function norm 4.688977757062e-02 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 1.40687 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.498946093186e-03 
+      |Div|_2   = 3.410888792981e-02 
+   Momentum: 
+      |mRes|_2  = 3.217506806230e-02 
+--------------------------------------------------------------------------
+Saving output ... done (0.283416 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.00100000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.544404119118e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.544404119118e+01 
+    1 KSP Residual norm 1.607545071070e+00 
+    2 KSP Residual norm 8.088100861148e-02 
+    3 KSP Residual norm 2.040594470033e-02 
+    4 KSP Residual norm 1.056556817959e-02 
+    5 KSP Residual norm 5.471927951690e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 5
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.00547193, 42.722, 85.444]
+      Line search terminated: lambda = 1., fnorms = 0.00547193
+  1 SNES Function norm 5.471927951708e-03 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 0.891107 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.233046216521e-04 
+      |Div|_2   = 4.668516283349e-03 
+   Momentum: 
+      |mRes|_2  = 2.854286464387e-03 
+--------------------------------------------------------------------------
+Actual time step : 0.00110 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 426 markers and merged 423 markers in 2.2675e-02 s
+--------------------------------------------------------------------------
+Saving output ... done (0.267662 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00110000 [Myr] 
+Tentative time step : 0.00110000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.574191699374e-02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.574191699374e-02 
+    1 KSP Residual norm 1.238510677118e-02 
+    2 KSP Residual norm 2.356395318252e-03 
+    3 KSP Residual norm 1.120152322178e-03 
+    4 KSP Residual norm 8.056638859478e-04 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 4
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000805664, 0.0378774, 0.0757419]
+      Line search terminated: lambda = 1., fnorms = 0.000805664
+  1 SNES Function norm 8.056638859420e-04 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.716947 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 8.417044457252e-05 
+      |Div|_2   = 5.221788395668e-04 
+   Momentum: 
+      |mRes|_2  = 6.135336638033e-04 
+--------------------------------------------------------------------------
+Actual time step : 0.00121 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 533 markers and merged 537 markers in 2.2923e-02 s
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00231000 [Myr] 
+Tentative time step : 0.00121000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.476435056963e-01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.476435056963e-01 
+    1 KSP Residual norm 2.187835529130e-03 
+    2 KSP Residual norm 1.188412384040e-03 
+    3 KSP Residual norm 5.329926481363e-04 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 3
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000532993, 0.0738232, 0.147644]
+      Line search terminated: lambda = 1., fnorms = 0.000532993
+  1 SNES Function norm 5.329926481354e-04 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.622687 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.084262176616e-04 
+      |Div|_2   = 4.058864455542e-04 
+   Momentum: 
+      |mRes|_2  = 3.454523936548e-04 
+--------------------------------------------------------------------------
+Actual time step : 0.00133 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 604 markers and merged 602 markers in 2.3129e-02 s
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 5.48149 (sec) 
+--------------------------------------------------------------------------

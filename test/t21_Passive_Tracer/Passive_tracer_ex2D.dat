@@ -1,0 +1,403 @@
+# This is 2D setup to simulate plume-lithosphere interaction with a heterogenous plume 
+# impinging on a moving lithosphere, with the aim to understand how long heterogeneities 
+# can stay stable underneath the moving lithosphere 
+
+
+#===============================================================================
+# Scaling
+#===============================================================================
+	units            = geo		# geological units 
+	
+	unit_temperature = 1000
+	unit_length      = 100e3
+	unit_viscosity   = 1e20
+	unit_stress      = 1e9
+	
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+	time_end  = 100   	# simulation end time
+	dt        = 0.1   # initial time step
+	dt_min    = 1e-5  	# minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 1   	# maximum time step
+	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
+	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
+	nstep_max = 10  	# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 5     	# save output every n steps
+	nstep_rdb = 2000   	# save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+	nel_x 	= 	64
+	nel_y 	= 	1
+	nel_z 	= 	32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = -1400 1400
+	coord_y = -10   10
+	coord_z = -1000 0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+	surf_use           = 0                # free surface activation flag
+	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+	surf_level         = 0                # initial level
+	surf_air_phase     = 0                # phase ID of sticky air layer
+	surf_max_angle     = 10.0             # maximum angle with horizon (smoothed if larger)
+	
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+	
+# temperature on the top & bottom boundaries
+	temp_top  = 0.0
+	temp_bot  = 1350.0;
+	
+# No-slip boundary flag mask (left right front back bottom top)
+	noslip 					= 	0 0 0 0 0 0
+	
+	open_top_bound 			= 	0
+
+# In/Out flow BC
+	bvel_face   	        = 	Left     	#   Face identifier  (Left; Right; Front; Back)
+	bvel_face_out 	        = 	1		    #   Have outflow @ the opposite boundary?
+	bvel_bot    	        =  -100.0  	    #   Bottom coordinate of inflow window
+	bvel_top    	        =  	0.0  	    #   Top coordinate of inflow window
+	bvel_velin  	        =  	5.0   	    #	inflow velocity [cm/yr if geo units]
+	bvel_relax_d            = 	100
+	bvel_temperature_inflow =   Fixed_thermal_age
+	bvel_thermal_age 		=   30         	#   In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
+	bvel_temperature_mantle = 	1300        #   In dimensional unit. Temperature of the mantle
+	bvel_temperature_top    = 	0           #   In dimensional unit. temperature of the top  			
+
+# Plume_like inflow boundary condition
+	Plume_InflowBoundary 	= 	1			# have a plume-like inflow boundary @ bottom
+	Plume_Type         		= 	Inflow_Type			# 2D or 3D (circular)
+	Plume_Dimension                 =       2D		
+	Plume_Phase 			=	4			# phase of plume
+	Plume_Temperature 		=	1700		# temperature of inflow plume
+	Plume_Inflow_Velocity 	= 	15			# Inflow velocity			
+	Plume_VelocityType 		=	Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better  			
+	Plume_Center 			=	0 50 		# [X,Y] of center  (2nd only in case of 3D plume)
+	Plume_Radius 			=	100			# Width/Radius of plume
+
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -10    # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess     = 1              # initial guess flag
+	act_temp_diff  = 1  			# activate thermal diffusion
+	shear_heat_eff = 0.0  
+	eta_min        = 1e18           # viscosity upper bound
+	eta_ref 	   = 1e20			# reference viscosity for initial guess	
+	eta_max        = 1e24           # viscosity lower limit
+    init_lith_pres = 1
+	DII_ref        = 1e-15          # background (reference) strain-rate
+	Phase_melt 	   = 1 
+	mfmax 		   = 0.03			# 	maximum melt fraction used for computation of density & viscosity
+
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e4
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+	msetup         = geom              # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	advect         = rk2               # advection scheme
+	interp         = stagp             # velocity interpolation scheme
+	mark_ctrl      = subgrid           # marker control type
+	nmark_sub      = 10                # max number of same phase markers per subcell (subgrid marker control)
+
+
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+	Passive_Tracer              = 1                             # Activate passive tracers?
+	PassiveTracer_Box           =  -600 600 -1 1 -300 -50       # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  100 1 100                    # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Always                # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.001                        # When this value is exceeded the tracers are being activated 
+    
+    # Passive Tracer activation type specification:
+
+    #	PassiveTracer_ActiveType = Always               # always on
+    #	PassiveTracer_ActiveType = Melt_Fraction        # always on
+    #	PassiveTracer_ActiveType = Temperature          # always on
+    #	PassiveTracer_ActiveType = Pressure             # always on
+    #	PassiveTracer_ActiveType = Time                 # always on
+    
+
+# Geometric primitives to define the initial setup:
+	# sticky air
+	<LayerStart>
+		phase  	= 	0
+		top 	= 	300  
+		bottom 	= 	0  
+		
+		Temperature = constant
+		cstTemp     = 0
+	<LayerEnd>
+	
+	# Define mantle and lithosphere (for Temperature structure)
+	<LayerStart>
+		phase  	= 	3
+		top 	= 	0  
+		bottom 	= 	-1000
+
+		Temperature = halfspace
+		thermalAge  = 30		# thermal age
+	
+		botTemp     = 1350		# bottom T for halfspace cooling
+		topTemp     = 0			# top T for halfspace cooling
+	<LayerEnd>
+	
+	# Define oceanic crust (for Phase)
+	<LayerStart>
+		phase  	= 	1
+		top 	= 	0  
+		bottom 	= 	-10
+	<LayerEnd>
+	
+	# Define mantle lithosphere (for Phase)
+	<LayerStart>
+		phase  	= 	2
+		top 	= 	-10  
+		bottom 	= 	-100
+	<LayerEnd>
+	
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = PlumeLithosphereInteraction # output file name
+	out_pvd             = 1       	# activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_visc_plast      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+	out_tot_press       = 1  
+	out_eff_press       = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_yield           = 1
+	out_plast_strain    = 1
+	out_plast_dissip    = 1
+	out_tot_displ       = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	out_melt_fraction 	= 1 
+
+
+	
+# AVD phase viewer output options (requires activation)
+
+	out_avd     		= 1 # activate AVD phase output
+	out_avd_pvd 		= 1 # activate writing .pvd file
+	out_avd_ref 		= 3 # AVD grid refinement factor
+
+# Passive Tracers 
+	out_ptr 			 = 1
+  	out_ptr_ID           = 1   # ID of the passive tracers
+	out_ptr_phase        = 1 # phase of the passive tracers
+  	out_ptr_Pressure     = 1 # interpolated pressure
+	out_ptr_Temperature  = 1 # temperature
+	out_ptr_MeltFraction = 1 # melt fraction
+	out_ptr_Active       = 1 # option that highlight the marker that are currently active
+
+
+	
+
+#===============================================================================
+# Phase transitions
+#===============================================================================
+
+	# 660 km PT
+	#<PhaseTransitionStart>
+	#	ID                      =   0         #     Phase_transition law ID
+	#	Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
+	#	Parameter_transition    =   Depth     #     [T = Temperature, P = Pressure, Depth = z-coordinate, APS = accumulated plastic strain] parameter that triggers the phase transition
+	#	ConstantValue           =   -660      #     Value of the parameter [unit of T,P,z, APS]
+    #    
+    #    number_phases           =   1         #     The number of involved phases [default=1]
+	#	PhaseAbove              =   3         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
+	#	PhaseBelow              =   5         #       
+    #    PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
+	#<PhaseTransitionEnd>
+
+	<PhaseTransitionStart>
+		ID                      =   0                           # Phase_transition law ID
+		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
+        number_phases           =   1
+		PhaseAbove              =   5
+		PhaseBelow              =   3
+        PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of sticky air
+	<MaterialStart>
+		ID  		= 	0 				# phase id
+		rho 		= 	3300 			# density
+		eta 		= 	1e22 			# viscosity
+		alpha  	 	= 	3e-5 
+
+		rho 		= 	0 				# density
+
+		# Thermal properties
+        k           =   100        		# conductivity
+        Cp          =   1e6        		# heat capacity - should be artificially large for sticky air
+	<MaterialEnd>
+	
+	# Define properties of oceanic crust
+	<MaterialStart>
+		ID  		= 1       # phase id
+
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		eta  		= 	1e24
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	
+	
+	# Define properties of oceanic mantle lithosphere
+	<MaterialStart>
+		ID  		= 	2       # phase id
+
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		# dislocation creep		
+		#diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+
+		#eta 	    =  	1e23
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+		
+		
+	<MaterialEnd>
+	
+	# Define properties of upper mantle
+	<MaterialStart>
+		ID  		= 	3 				# phase id
+		
+#		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+        rho         = 3300
+		
+
+		# Linear viscous	
+		eta 		= 	1e20
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Define properties of plume
+	<MaterialStart>
+		ID  		= 	4 	# phase id
+		
+		#rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+
+		rho         = 3300
+        
+
+		eta 		= 	1e20
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>
+
+
+	# Define properties of lower mantle
+	<MaterialStart>
+		ID  		= 	5 				# phase id
+		
+		rho        	= 	3400			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+        rho         = 3300
+
+
+		# Linear viscous	
+		eta 		= 	5e21
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+#	-snes_ksp_ew
+#	-snes_ksp_ew_rtolmax 1e-4
+	-snes_rtol 1e-6					
+	-snes_atol 1e-4					
+	-snes_max_it 50					
+	
+	-snes_PicardSwitchToNewton_rtol 1e-4   # relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
+
+	
+	-js_ksp_type fgmres
+	-js_ksp_monitor 				# display how the inner iterations converge
+	-js_ksp_max_it 20				# inner
+	-js_ksp_atol 1e-8
+	-js_ksp_rtol 1e-5
+
+	-snes_linesearch_type l2
+	-snes_linesearch_monitor
+	-snes_linesearch_maxstep 10
+	
+<PetscOptionsEnd>
+
+#===============================================================================

@@ -1,0 +1,21 @@
+# Scaling Law, computed on Jul  8 2020 17:22:52  
+#  
+#   Vel = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ... 
+#  
+# Prefactor A       : -3.07113311e-08  
+# Reference Density :  1.00000000  
+#  
+# Observation points:  
+#     x              y              z               Component   Measured value   
+# --- -------------- -------------- --------------  ----------  --------------- 
+#   1  0.50000        0.50000        0.90000         Vz         -2.51773e-04  
+#  
+#  
+# Scaling law parameters:
+# Parameter             Phase    Exponent b[]       Value p[]          Type     Gradient           Phase Description   
+# --------------------  -------  -----------------  -----------------  -------  -----------------  --------------------
+            radius[0]     -1     -1.493055476e+01    4.000000000e-01    FD       9.397778823e-03    
+           delta(rho)      1      1.000002157e+00    1.000000000e+00    adjoint -2.517736077e-04   FallingSphere 
+                  eta      1     -6.759181551e-01    1.000000000e+03    adjoint  1.701779854e-07   FallingSphere 
+                  eta      0     -3.230956619e-01    1.000000000e+00    adjoint  8.134678498e-05   Matrix 
+           delta(rho)      0     -0.000000000e+00    0.000000000e+00    adjoint  2.518289396e-04   Matrix 

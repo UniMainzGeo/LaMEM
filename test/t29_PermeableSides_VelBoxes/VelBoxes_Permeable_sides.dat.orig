@@ -1,0 +1,1605 @@
+<<<<<<< HEAD
+# This is a 2D setup with permeable sides and two pushing boxes
+
+
+#===============================================================================
+# Scaling
+#===============================================================================
+	units            = geo		# geological units 
+	
+	unit_temperature = 1000
+	unit_length      = 100e3
+	unit_viscosity   = 1e20
+	unit_stress      = 1e9
+	
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+	time_end  = 1000   	# simulation end time
+	dt        = 0.001   # initial time step
+	dt_min    = 1e-9  	# minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 1   	# maximum time step
+	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
+	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
+	nstep_max = 1  		# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1    	# save output every n steps
+	nstep_rdb = 200     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+	nel_x 	= 	128
+	nel_y 	= 	1
+	nel_z 	= 	32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = -2100.0 2100.0
+	coord_y = -20.0   20.0
+	coord_z = -1000.0 0.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+	surf_use           = 0                # free surface activation flag
+	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+	surf_level         = 0                # initial level
+	surf_air_phase     = 0                # phase ID of sticky air layer
+	surf_max_angle     = 10.0             # maximum angle with horizon (smoothed if larger)
+	
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+	
+# temperature on the top & bottom boundaries
+	temp_top  = 0.0
+	temp_bot  = 1350.0;
+	
+# No-slip boundary flag mask (left right front back bottom top)
+	noslip 					= 	0 0 0 0 1 0
+	
+# Internal velocity box
+    VelBox_num      =   2                       # The number of internal velocity boxes active
+    VelBox_cenX     =  -1500  1500            	# X-coordinate of center of box
+    VelBox_cenY     =   0.0   0.0             	# Y-coordinate of center of box
+    VelBox_cenZ     =   -25  -25             	# Z-coordinate of center of box
+    VelBox_widthX   =   200   200            	# Width of box in x-direction
+    VelBox_widthY   =   200   200            	# Width of box in y-direction
+    VelBox_widthZ   =   50    50                # Width of box in z-direction
+    VelBox_Vx       =   1.0  -2.0             	# Vx velocity of box (employ NaN if you don't want to constrain it)
+    VelBox_Vy       =   NaN   NaN             	# Vy velocity of box 
+    VelBox_Vz       =   NaN   NaN             	# Vz velocity of box 
+    VelBox_Advect   =   0     1               	# Advect the box with the flow? 
+
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -9.81    # gravity vector
+	FSSA           = 0.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 1              # initial guess flag
+	act_temp_diff  = 1  			# activate thermal diffusion
+	shear_heat_eff = 0.0  
+	eta_min        = 1e18           # viscosity upper bound
+	eta_ref 	   = 1e20			# reference viscosity for initial guess	
+	eta_max        = 1e24           # viscosity lower limit
+    init_lith_pres = 1
+	DII_ref        = 1e-15          # background (reference) strain-rate
+
+	Adiabatic_Heat  = 0.0            # Adiabatic Heating activaction flag and efficiency. [0.0 - 1.0] (e.g. 0.5 means that only 50% of the potential adiabatic heating affects the energy equation)   
+	act_p_shift     = 1              # pressure shift activation flag (enforce zero pressure on average in the top cell layer); note: this overwrites p_shift above!
+	Phase_melt 	   = 1 
+	mfmax 		   = 0.08			# 	maximum melt fraction used for computation of density & viscosity
+	
+	#adiabatic_gradient     = 0.3
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e4
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+	msetup         = geom              # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	advect         = rk2               # advection scheme
+	interp         = stagp             # velocity interpolation scheme
+	mark_ctrl      = subgrid           # marker control type
+	nmark_lim      = 8 100             # min/max number per cell
+	nmark_sub      = 10                # max number of same phase markers per subcell (subgrid marker control)
+
+# Geometric primitives to define the initial setup:
+	# sticky air
+	<LayerStart>
+		phase  	= 	0
+		top 	= 	300  
+		bottom 	= 	0  
+		
+		Temperature = constant
+		cstTemp     = 0
+	<LayerEnd>
+	
+	# Define mantle and lithosphere (for Temperature structure)
+	<LayerStart>
+		phase  	= 	3
+		top 	= 	0  
+		bottom 	= 	-1000
+
+		Temperature = halfspace
+		thermalAge  = 30		# thermal age
+	
+		botTemp     = 1350		# bottom T for halfspace cooling
+		topTemp     = 0			# top T for halfspace cooling
+	<LayerEnd>
+	
+	# Define oceanic crust (for Phase)
+	<LayerStart>
+		phase  	= 	1
+		top 	= 	0  
+		bottom 	= 	-10
+	<LayerEnd>
+	
+	# Define mantle lithosphere (for Phase)
+	<LayerStart>
+		phase  	= 	2
+		top 	= 	-10  
+		bottom 	= 	-100
+	<LayerEnd>
+
+	<LayerStart>
+		phase  	= 	5
+		top 	= 	-660  
+		bottom 	= 	-1000
+	<LayerEnd>
+	
+
+	<BoxStart>
+		phase       = 8
+		bounds      = -100 100 -10 10 -1000 -500  # box bound coordinates: left, right, front, back, bottom, top
+		Temperature = constant  # optional: Temperature structure. possibilities: [constant, linear, halfspace]
+		cstTemp     = 1650    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+	<BoxEnd>
+	#<SphereStart>
+	#	phase       = 8
+	#	radius      = 200
+	#	center      = 0.0 0.0 -1000.0
+	#	Temperature = constant # optional: Temperature of the sphere. possibilities: [constant]
+	#	cstTemp     = 1600     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+	#<SphereEnd>
+
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+	Passive_Tracer              = 1                               # Activate passive tracers?
+	PassiveTracer_Box           =  -1200 1200 -1 1 -200 -100         # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  300 1 300                      # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Melt_Fraction 	              # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.08                           # When this value is exceeded the tracers are being activated 
+
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = PlumeLithosphereInteraction # output file name
+	out_pvd             = 1       	# activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_visc_plast      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+        out_tot_press       = 1  
+        out_eff_press       = 1
+	out_over_press = 1
+	out_litho_press = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_yield           = 1
+	out_plast_strain    = 1
+	out_plast_dissip    = 1
+	out_tot_displ       = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	out_melt_fraction 	= 1 
+
+
+	
+# AVD phase viewer output options (requires activation)
+
+	out_avd     		= 1 # activate AVD phase output
+	out_avd_pvd 		= 1 # activate writing .pvd file
+	out_avd_ref 		= 3 # AVD grid refinement factor
+	
+# Passive Tracers viewer output option (if the Passive Tracers are active, 
+# X,Y,Z, P, T & ID are automatically activated) 
+  	out_ptr_ID           = 1   	# ID of the passive tracers
+	out_ptr_phase        = 1 	# phase of the passive tracers
+  	out_ptr_Pressure     = 1 	# interpolated pressure
+	out_ptr_Temperature  = 1 	# temperature
+	out_ptr_MeltFraction = 1 	# melt fraction
+	out_ptr_Active       = 1 	# option that highlight the marker that are currently active
+	out_ptr_Grid_Mf = 1
+
+
+#===============================================================================
+# Phase transitions
+#===============================================================================
+
+		
+	# transfer plume material -> weak layer (right side)
+	<PhaseTransitionStart>
+	    ID   					= 	0   							# Phase_transition law ID
+     	Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   2000  2100 -100 100 -1000 0 
+		BoxVicinity 			=	1				# 1: only check within the vicinity of the box boundaries (*2 in all directions)
+		
+	  	number_phases 			= 	4					# Number of phases involved			
+		PhaseInside 			= 	13  13  13 13 		# Phases below the phase transition 
+		PhaseOutside 			= 	9   10   11  12    	# Phases below
+        PhaseDirection          =   OutsideToInside    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+
+	# No-stress layer @ right side of domain
+	<PhaseTransitionStart>
+	    ID   					= 	1   							# Phase_transition law ID
+		Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   2000 2100 -100 100 -1000 0 
+		BoxVicinity 			=	1					# 1: only check within the vicinity of the box boundaries (*2 in all directions)
+		
+	  	number_phases 			= 	4					# Number of phases involved			
+		PhaseInside 			= 	13  14  15 16 		# Phases below the phase transition 
+		PhaseOutside 			= 	3   5   2  1   		# Phases below
+        PhaseDirection          =   BothWays    		# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+	# transfer plume material -> weak layer (left side)
+	<PhaseTransitionStart>
+	    ID   					= 	2   							# Phase_transition law ID
+     	Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   -2100 -2000 -100 100 -1000 0 
+		BoxVicinity 			=	1				# 1: only check within the vicinity of the box boundaries (*2 in all directions)
+		
+	  	number_phases 			= 	4					# Number of phases involved			
+		PhaseInside 			= 	13  13  13 13 		# Phases below the phase transition 
+		PhaseOutside 			= 	9   10   11  12    	# Phases below
+        PhaseDirection          =   OutsideToInside    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+	# No-stress layer @ left side of domain
+	<PhaseTransitionStart>
+	    ID   					= 	3   							# Phase_transition law ID
+     	Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   -2100 -2000 -100 100 -1000 0 
+		BoxVicinity 			=	1				# 1: only check within the vicinity of the box boundaries (*2 in all directions)
+		
+	  	number_phases 			= 	4				# Number of phases involved			
+		PhaseInside 			= 	13  14  15 16 	# Phases below the phase transition 
+		PhaseOutside 			= 	3   5   2  1    # Phases below
+        PhaseDirection          =   BothWays    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+
+	# Keep temperature constant @ left side of model
+	<PhaseTransitionStart>
+	    ID   					= 	4   							# Phase_transition law ID
+		Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   -2100 -1850 -100 100 -1000 0 
+		number_phases 			= 	-1
+		#PhaseInside 			=	-1
+		
+		PTBox_TempType          =	halfspace                       # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_topTemp           =   0                               # Temp @ top of box [for linear & halfspace]
+       	PTBox_botTemp           =   1350                            # Temp @ bottom of box [for linear & halfspace]
+        PTBox_thermalAge        =   30                              # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
+	<PhaseTransitionEnd>
+
+	# Keep temperature constant @ right side of model
+	<PhaseTransitionStart>
+	    ID   					= 	5   							# Phase_transition law ID
+		Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   1950 2200 -100 100 -1000 0 
+		number_phases 			= 	-1
+		#PhaseInside 			=	-1
+		
+		PTBox_TempType          =	halfspace                       # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_topTemp           =   0                               # Temp @ top of box [for linear & halfspace]
+       	PTBox_botTemp           =   1350                            # Temp @ bottom of box [for linear & halfspace]
+        PTBox_thermalAge        =   30                              # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
+	<PhaseTransitionEnd>
+
+	<PhaseTransitionStart>
+	    ID   					= 	6   			# Phase_transition law ID
+     	Type 					= 	Constant		# [Constant, Clapeyron, Box_type]
+		Parameter_transition 	= 	T 				# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	1200			# The value @ which the phase transition occurs
+		
+	  	number_phases 			= 	2				# Number of phases involved			
+		PhaseAbove 				= 	3 13	      	# Phases below the phase transition 
+		PhaseBelow 				= 	2 15           	# Phases below
+        PhaseDirection          =   BothWays    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+	<PhaseTransitionStart>
+		ID                      =   7                           # Phase_transition law ID
+		Type                    =   Constant                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Parameter_transition 	= 	Depth 				# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	-660			# The value @ which the phase transition occurs
+        number_phases           =   5
+		PhaseAbove              =   3 4 9 10 13   
+		PhaseBelow              =   5 8 11 12 14 
+		DensityBelow            =   3600 3600 3600 3600 3600
+		DensityAbove            =   3300 3300 3300 3300 3300
+        PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+	
+	<PhaseTransitionStart>
+	    ID   					= 	8 				# Phase_transition law ID
+   		Type 					= 	Constant		# [Constant, Clapeyron, Box_type]
+		Parameter_transition 	= 	MeltFraction 	# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	0.04			# The value @ which the phase transition occurs
+	  	number_phases 			= 	2				# Number of phases involved			
+		PhaseAbove 				= 	6 7		        # Phases below the phase transition 
+		PhaseBelow 				= 	3 4             # Phases below
+      	PhaseDirection          =   BelowToAbove    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+	
+	<PhaseTransitionStart>
+		ID                      =   9                          # Phase_transition law ID
+		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Name_Clapeyron          =   Zircon_Reidite              # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
+        number_phases           =   2
+		PhaseAbove              =   9 10
+		PhaseBelow              =   6 7
+		DensityBelow            =   3300 3300 
+		DensityAbove            =   3300 3300 
+        PhaseDirection          =   BelowToAbove    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+	
+	<PhaseTransitionStart>
+		ID                      =   10              # Phase_transition law ID
+		Type                    =   Constant        # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Parameter_transition 	= 	Depth 			# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	-10				# The value @ which the phase transition occurs
+        number_phases           =   1
+		PhaseAbove              =   16   
+		PhaseBelow              =   15 
+		PhaseDirection          =   BothWays    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+	<PhaseTransitionStart>
+		ID                      =   11              # Phase_transition law ID
+		Type                    =   Constant        # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Parameter_transition 	= 	Depth 			# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	-80				# The value @ which the phase transition occurs
+        number_phases           =   1
+		PhaseAbove              =   15   
+		PhaseBelow              =   13 
+		PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of sticky air
+	<MaterialStart>
+		ID  		= 	0 				# phase id
+		Name        = 	StickyAir   	# description of the phase
+		rho 		= 	10 			# density
+		eta 		= 	1e18 			# viscosity
+		alpha  	 	= 	3e-5 
+		
+
+		# Thermal properties
+        k           =   100        		# conductivity
+        Cp          =   1e6        		# heat capacity - should be artificially large for sticky air
+	<MaterialEnd>
+	
+	# Define properties of oceanic crust
+	<MaterialStart>
+		ID  		=	1       		# phase id
+		Name        = 	OceanicCrust   	# description of the phase
+		rho        	= 	3000			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+	#	eta         =   1e24
+		diff_prof   =   Wet_Plagioclase_RybackiDresen_2000
+		disl_prof   =   Wet_Plagioclase_RybackiDresen_2000
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Define properties of oceanic mantle lithosphere
+	<MaterialStart>
+		ID  		= 	2       					# phase id
+		Name        = 	OceanicMantleLithosphere   	# description of the phase
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+		#eta             =     1e23
+		# dislocation creep		
+		
+		#eta 	    =  	1e23
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+		Vd 			=	10e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+		
+		
+	<MaterialEnd>
+	
+	# Define properties of upper mantle
+	<MaterialStart>
+		ID  		= 	3 				# phase id
+		Name        = 	UpperMantle   	# description of the phase
+		
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+		
+
+		# Linear viscous	
+	#	eta 		= 	1e21
+
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+#		Vn 			=	10e-6
+		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Define properties of plume
+	<MaterialStart>
+		ID  		= 	4 				# phase id
+		Name        = 	Plume   		# description of the phase
+		
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+
+	
+		
+	#	eta 		= 	1e21
+
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+#		Vn                      =      10e-6
+		Vd 			=	8e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>
+
+
+	# Define properties of lower mantle
+	<MaterialStart>
+		ID  		= 	5 				# phase id
+		Name        = 	LowerMantle   	# description of the phase
+		
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+
+		# Linear viscous	
+		
+		#eta 		= 	1e21
+		
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+#		Vn 			=	10e-6
+		Vd 			=	8e-6
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	# Upper mantle material with zircons
+	<MaterialStart>
+		ID  		= 	6 							# phase id
+		Name        = 	ZirconsRichUpperMantle   	# description of the phase
+			
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+		# Linear viscous	
+		#eta 		= 	1e21
+		
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		Vd 			=	8e-6
+#		Vn                      =      10e-6
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	# Plume material that generated zircons
+	<MaterialStart>
+		ID  		= 	7 	# phase id
+		#Name        = 	ZirconsRichPlume   	# description of the phase
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+        
+	#	eta 		= 	1e21
+			
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+		Vd 			=	8e-6
+#		Vn                      =       10e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>
+
+	<MaterialStart>
+		ID  		= 	8 	# phase id
+		Name        = 	LowerPlume   	# description of the phase
+		alpha  	 	= 	3e-5 				# coeff. of thermal expansion [1/K]
+
+		rho        	= 	3200			# density [kg/m3]
+		
+		
+	#	eta 		= 	1e21
+			
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+#		Vn                      =      10e-6
+		Vd 			=	8e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>
+	
+	# Upper mantle material with zircons
+	<MaterialStart>
+		ID  		= 	9 							# phase id
+		Name        = 	ZirconsRich_Reidite   	# description of the phase
+		alpha  	 	= 	3e-5 						# coeff. of thermal expansion [1/K]
+        rho         = 	3300
+       
+		# Linear viscous	
+		#eta 		= 	1e21
+		
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+#		Vn                      =      10e-6
+		Vd 			=	8e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	# Plume material that generated zircons
+	<MaterialStart>
+		ID  		= 	10 	# phase id
+		Name        = 	ZirconsRichPlume_Reidite  	# description of the phase
+		alpha  	 	= 	3e-5 				# coeff. of thermal expansion [1/K]
+
+		rho         = 	3300
+		
+		
+#		eta 		= 	1e21
+			
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+
+#		Vn                      =      8e-6
+		Vd 			=	8e-6
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>
+	
+		# Upper mantle material with zircons
+	<MaterialStart>
+		ID  		= 	11 							# phase id
+		Name        = 	LowerMantle_Reidite   	# description of the phase
+		alpha  	 	= 	3e-5 						# coeff. of thermal expansion [1/K]
+        rho         = 	3660
+       
+
+		# Linear viscous	
+		#eta 		= 	1e21
+		
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+		Vd 			=	8e-6
+#		Vn                     =      10e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	# Plume material that generated zircons
+	<MaterialStart>
+		ID  		= 	12 	# phase id
+		#Name        = 	LowerPlume_Reidite  	# description of the phase
+		alpha  	 	= 	3e-5 				# coeff. of thermal expansion [1/K]
+
+		rho         = 	3660
+	
+		#eta 		= 	1e21
+			
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+		Vd 			=	8e-6
+#		Vn                      =      10e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>	
+
+	<MaterialStart>
+		ID  		= 	13 							# phase id
+		Name        = 	UpperMantlePermeableSide   	# description of the phase
+		
+		rho        	= 	3300						# density [kg/m3]
+		alpha  	 	= 	3e-5 						# coeff. of thermal expansion [1/K]
+       
+		# Linear viscous	
+		eta 		= 	1e18
+
+		# diffusion & dislocation creep		
+#		Vn 			=	10e-6
+#		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	<MaterialStart>
+		ID  		= 	14 							# phase id
+		Name        = 	LowerMantlePermeableSide   	# description of the phase
+		
+		rho        	= 	3600				# density [kg/m3]
+		alpha  	 	= 	3e-5 				# coeff. of thermal expansion [1/K]
+        
+       
+		# Linear viscous	
+		eta 		= 	1e18
+
+		# diffusion & dislocation creep		
+#		Vn 			=	10e-6
+#		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	<MaterialStart>
+		ID  		= 	15 							# phase id
+		Name        = 	OceanicMantleLithospherePermeableSide   	# description of the phase
+		rho        	= 	3300						# density [kg/m3]
+		alpha  	 	= 	3e-5 						# coeff. of thermal expansion [1/K]
+	
+		# Linear viscous	
+		eta 		= 	1e18
+
+		# diffusion & dislocation creep		
+#		Vn 			=	10e-6
+#		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	<MaterialStart>
+		ID  		= 	16 							# phase id
+		Name        = 	OceanicCrustPermeableSide   	# description of the phase
+		rho        	= 	3000			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+
+		# Linear viscous	
+		eta 		= 	1e18
+
+		# diffusion & dislocation creep		
+#		Vn 			=	10e-6
+#		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	#-snes_ksp_ew
+	#-snes_ksp_ew_rtolmax 1e-4
+	-snes_rtol 1e-4					
+	-snes_atol 1e-4					
+	-snes_max_it 30					
+	
+	-snes_PicardSwitchToNewton_rtol 1e-4   # relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	5     # number of Newton iterations after which we switch back to Picard
+
+	
+	-js_ksp_type fgmres
+	#-js_ksp_monitor 				# display how the inner iterations converge
+	-js_ksp_max_it 20				# inner
+	-js_ksp_atol 1e-8
+	-js_ksp_rtol 1e-5
+
+	-snes_linesearch_type l2
+	#-snes_linesearch_monitor
+	-snes_linesearch_maxstep 10
+	
+<PetscOptionsEnd>
+
+#===============================================================================
+
+=======
+# This is a 2D setup with permeable sides and two pushing boxes
+
+
+#===============================================================================
+# Scaling
+#===============================================================================
+	units            = geo		# geological units 
+	
+	unit_temperature = 1000
+	unit_length      = 100e3
+	unit_viscosity   = 1e20
+	unit_stress      = 1e9
+	
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+	time_end  = 1000   	# simulation end time
+	dt        = 0.001   # initial time step
+	dt_min    = 1e-9  	# minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 1   	# maximum time step
+	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
+	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
+	nstep_max = 1  		# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1    	# save output every n steps
+	nstep_rdb = 200     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+	nel_x 	= 	128
+	nel_y 	= 	1
+	nel_z 	= 	32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = -2100.0 2100.0
+	coord_y = -20.0   20.0
+	coord_z = -1000.0 0.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+	surf_use           = 0                # free surface activation flag
+	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+	surf_level         = 0                # initial level
+	surf_air_phase     = 0                # phase ID of sticky air layer
+	surf_max_angle     = 10.0             # maximum angle with horizon (smoothed if larger)
+	
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+	
+# temperature on the top & bottom boundaries
+	temp_top  = 0.0
+	temp_bot  = 1350.0;
+	
+# No-slip boundary flag mask (left right front back bottom top)
+	noslip 					= 	0 0 0 0 1 0
+	
+# Internal velocity boxes
+ 	<VelBoxStart>
+    	cenX     =   -1500 # X-coordinate of center of box
+    	cenY     =    0.0  # Y-coordinate of center of box
+    	cenZ     =    -25  # Z-coordinate of center of box
+   		widthX   =    200  # Width of box in x-direction
+    	widthY   =    200  # Width of box in y-direction
+    	widthZ   =    50   # Width of box in z-direction
+    	vx       =    1.0  # Vx velocity of box (default is unconstrained)
+    	advect   =    0    # box advection flag
+    <VelBoxEnd> 
+ 
+ 	<VelBoxStart>
+    	cenX     =   1500 # X-coordinate of center of box
+    	cenY     =   0.0  # Y-coordinate of center of box
+    	cenZ     =  -25   # Z-coordinate of center of box
+   		widthX   =   200  # Width of box in x-direction
+    	widthY   =   200  # Width of box in y-direction
+    	widthZ   =   50   # Width of box in z-direction
+    	vx       =  -2.0  # Vx velocity of box (default is unconstrained)
+    	advect   =   1    # box advection flag
+    <VelBoxEnd>    
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -9.81    # gravity vector
+	FSSA           = 0.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 1              # initial guess flag
+	act_temp_diff  = 1  			# activate thermal diffusion
+	shear_heat_eff = 0.0  
+	eta_min        = 1e18           # viscosity upper bound
+	eta_ref 	   = 1e20			# reference viscosity for initial guess	
+	eta_max        = 1e24           # viscosity lower limit
+    init_lith_pres = 1
+	DII_ref        = 1e-15          # background (reference) strain-rate
+
+	Adiabatic_Heat  = 0.0            # Adiabatic Heating activaction flag and efficiency. [0.0 - 1.0] (e.g. 0.5 means that only 50% of the potential adiabatic heating affects the energy equation)   
+	act_p_shift     = 1              # pressure shift activation flag (enforce zero pressure on average in the top cell layer); note: this overwrites p_shift above!
+	Phase_melt 	   = 1 
+	mfmax 		   = 0.08			# 	maximum melt fraction used for computation of density & viscosity
+	
+	#adiabatic_gradient     = 0.3
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e4
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+	msetup         = geom              # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	advect         = rk2               # advection scheme
+	interp         = stagp             # velocity interpolation scheme
+	mark_ctrl      = subgrid           # marker control type
+	nmark_lim      = 8 100             # min/max number per cell
+	nmark_sub      = 10                # max number of same phase markers per subcell (subgrid marker control)
+
+# Geometric primitives to define the initial setup:
+	# sticky air
+	<LayerStart>
+		phase  	= 	0
+		top 	= 	300  
+		bottom 	= 	0  
+		
+		Temperature = constant
+		cstTemp     = 0
+	<LayerEnd>
+	
+	# Define mantle and lithosphere (for Temperature structure)
+	<LayerStart>
+		phase  	= 	3
+		top 	= 	0  
+		bottom 	= 	-1000
+
+		Temperature = halfspace
+		thermalAge  = 30		# thermal age
+	
+		botTemp     = 1350		# bottom T for halfspace cooling
+		topTemp     = 0			# top T for halfspace cooling
+	<LayerEnd>
+	
+	# Define oceanic crust (for Phase)
+	<LayerStart>
+		phase  	= 	1
+		top 	= 	0  
+		bottom 	= 	-10
+	<LayerEnd>
+	
+	# Define mantle lithosphere (for Phase)
+	<LayerStart>
+		phase  	= 	2
+		top 	= 	-10  
+		bottom 	= 	-100
+	<LayerEnd>
+
+	<LayerStart>
+		phase  	= 	5
+		top 	= 	-660  
+		bottom 	= 	-1000
+	<LayerEnd>
+	
+
+	<BoxStart>
+		phase       = 8
+		bounds      = -100 100 -10 10 -1000 -500  # box bound coordinates: left, right, front, back, bottom, top
+		Temperature = constant  # optional: Temperature structure. possibilities: [constant, linear, halfspace]
+		cstTemp     = 1650    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+	<BoxEnd>
+	#<SphereStart>
+	#	phase       = 8
+	#	radius      = 200
+	#	center      = 0.0 0.0 -1000.0
+	#	Temperature = constant # optional: Temperature of the sphere. possibilities: [constant]
+	#	cstTemp     = 1600     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+	#<SphereEnd>
+
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+	Passive_Tracer              = 1                               # Activate passive tracers?
+	PassiveTracer_Box           =  -1200 1200 -1 1 -200 -100         # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  300 1 300                      # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Melt_Fraction 	              # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.08                           # When this value is exceeded the tracers are being activated 
+
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = PlumeLithosphereInteraction # output file name
+	out_pvd             = 1       	# activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_visc_plast      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+        out_tot_press       = 1  
+        out_eff_press       = 1
+	out_over_press = 1
+	out_litho_press = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_yield           = 1
+	out_plast_strain    = 1
+	out_plast_dissip    = 1
+	out_tot_displ       = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	out_melt_fraction 	= 1 
+
+
+	
+# AVD phase viewer output options (requires activation)
+
+	out_avd     		= 1 # activate AVD phase output
+	out_avd_pvd 		= 1 # activate writing .pvd file
+	out_avd_ref 		= 3 # AVD grid refinement factor
+	
+# Passive Tracers viewer output option (if the Passive Tracers are active, 
+# X,Y,Z, P, T & ID are automatically activated) 
+  	out_ptr_ID           = 1   	# ID of the passive tracers
+	out_ptr_phase        = 1 	# phase of the passive tracers
+  	out_ptr_Pressure     = 1 	# interpolated pressure
+	out_ptr_Temperature  = 1 	# temperature
+	out_ptr_MeltFraction = 1 	# melt fraction
+	out_ptr_Active       = 1 	# option that highlight the marker that are currently active
+	out_ptr_Grid_Mf = 1
+
+
+#===============================================================================
+# Phase transitions
+#===============================================================================
+
+		
+	# transfer plume material -> weak layer (right side)
+	<PhaseTransitionStart>
+	    ID   					= 	0   							# Phase_transition law ID
+     	Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   2000  2100 -100 100 -1000 0 
+		BoxVicinity 			=	1				# 1: only check within the vicinity of the box boundaries (*2 in all directions)
+		
+	  	number_phases 			= 	4					# Number of phases involved			
+		PhaseInside 			= 	13  13  13 13 		# Phases below the phase transition 
+		PhaseOutside 			= 	9   10   11  12    	# Phases below
+        PhaseDirection          =   OutsideToInside    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+
+	# No-stress layer @ right side of domain
+	<PhaseTransitionStart>
+	    ID   					= 	1   							# Phase_transition law ID
+		Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   2000 2100 -100 100 -1000 0 
+		BoxVicinity 			=	1					# 1: only check within the vicinity of the box boundaries (*2 in all directions)
+		
+	  	number_phases 			= 	4					# Number of phases involved			
+		PhaseInside 			= 	13  14  15 16 		# Phases below the phase transition 
+		PhaseOutside 			= 	3   5   2  1   		# Phases below
+        PhaseDirection          =   BothWays    		# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+	# transfer plume material -> weak layer (left side)
+	<PhaseTransitionStart>
+	    ID   					= 	2   							# Phase_transition law ID
+     	Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   -2100 -2000 -100 100 -1000 0 
+		BoxVicinity 			=	1				# 1: only check within the vicinity of the box boundaries (*2 in all directions)
+		
+	  	number_phases 			= 	4					# Number of phases involved			
+		PhaseInside 			= 	13  13  13 13 		# Phases below the phase transition 
+		PhaseOutside 			= 	9   10   11  12    	# Phases below
+        PhaseDirection          =   OutsideToInside    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+	# No-stress layer @ left side of domain
+	<PhaseTransitionStart>
+	    ID   					= 	3   							# Phase_transition law ID
+     	Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   -2100 -2000 -100 100 -1000 0 
+		BoxVicinity 			=	1				# 1: only check within the vicinity of the box boundaries (*2 in all directions)
+		
+	  	number_phases 			= 	4				# Number of phases involved			
+		PhaseInside 			= 	13  14  15 16 	# Phases below the phase transition 
+		PhaseOutside 			= 	3   5   2  1    # Phases below
+        PhaseDirection          =   BothWays    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+
+	# Keep temperature constant @ left side of model
+	<PhaseTransitionStart>
+	    ID   					= 	4   							# Phase_transition law ID
+		Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   -2100 -1850 -100 100 -1000 0 
+		number_phases 			= 	-1
+		#PhaseInside 			=	-1
+		
+		PTBox_TempType          =	halfspace                       # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_topTemp           =   0                               # Temp @ top of box [for linear & halfspace]
+       	PTBox_botTemp           =   1350                            # Temp @ bottom of box [for linear & halfspace]
+        PTBox_thermalAge        =   30                              # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
+	<PhaseTransitionEnd>
+
+	# Keep temperature constant @ right side of model
+	<PhaseTransitionStart>
+	    ID   					= 	5   							# Phase_transition law ID
+		Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   1950 2200 -100 100 -1000 0 
+		number_phases 			= 	-1
+		#PhaseInside 			=	-1
+		
+		PTBox_TempType          =	halfspace                       # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_topTemp           =   0                               # Temp @ top of box [for linear & halfspace]
+       	PTBox_botTemp           =   1350                            # Temp @ bottom of box [for linear & halfspace]
+        PTBox_thermalAge        =   30                              # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
+	<PhaseTransitionEnd>
+
+	<PhaseTransitionStart>
+	    ID   					= 	6   			# Phase_transition law ID
+     	Type 					= 	Constant		# [Constant, Clapeyron, Box_type]
+		Parameter_transition 	= 	T 				# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	1200			# The value @ which the phase transition occurs
+		
+	  	number_phases 			= 	2				# Number of phases involved			
+		PhaseAbove 				= 	3 13	      	# Phases below the phase transition 
+		PhaseBelow 				= 	2 15           	# Phases below
+        PhaseDirection          =   BothWays    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+	<PhaseTransitionStart>
+		ID                      =   7                           # Phase_transition law ID
+		Type                    =   Constant                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Parameter_transition 	= 	Depth 				# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	-660			# The value @ which the phase transition occurs
+        number_phases           =   5
+		PhaseAbove              =   3 4 9 10 13   
+		PhaseBelow              =   5 8 11 12 14 
+		DensityBelow            =   3600 3600 3600 3600 3600
+		DensityAbove            =   3300 3300 3300 3300 3300
+        PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+	
+	<PhaseTransitionStart>
+	    ID   					= 	8 				# Phase_transition law ID
+   		Type 					= 	Constant		# [Constant, Clapeyron, Box_type]
+		Parameter_transition 	= 	MeltFraction 	# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	0.04			# The value @ which the phase transition occurs
+	  	number_phases 			= 	2				# Number of phases involved			
+		PhaseAbove 				= 	6 7		        # Phases below the phase transition 
+		PhaseBelow 				= 	3 4             # Phases below
+      	PhaseDirection          =   BelowToAbove    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+	
+	<PhaseTransitionStart>
+		ID                      =   9                          # Phase_transition law ID
+		Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Name_Clapeyron          =   Zircon_Reidite              # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
+        number_phases           =   2
+		PhaseAbove              =   9 10
+		PhaseBelow              =   6 7
+		DensityBelow            =   3300 3300 
+		DensityAbove            =   3300 3300 
+        PhaseDirection          =   BelowToAbove    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+	
+	<PhaseTransitionStart>
+		ID                      =   10              # Phase_transition law ID
+		Type                    =   Constant        # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Parameter_transition 	= 	Depth 			# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	-10				# The value @ which the phase transition occurs
+        number_phases           =   1
+		PhaseAbove              =   16   
+		PhaseBelow              =   15 
+		PhaseDirection          =   BothWays    	# [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+	<PhaseTransitionStart>
+		ID                      =   11              # Phase_transition law ID
+		Type                    =   Constant        # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+		Parameter_transition 	= 	Depth 			# T = Temperature, P = Pressure, Depth = z coordinate, MeltFraction = [guess..]
+		ConstantValue 			= 	-80				# The value @ which the phase transition occurs
+        number_phases           =   1
+		PhaseAbove              =   15   
+		PhaseBelow              =   13 
+		PhaseDirection          =   BothWays    # [BothWays=default; BelowToAbove; AboveToBelow]
+	<PhaseTransitionEnd>
+
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of sticky air
+	<MaterialStart>
+		ID  		= 	0 				# phase id
+		Name        = 	StickyAir   	# description of the phase
+		rho 		= 	10 			# density
+		eta 		= 	1e18 			# viscosity
+		alpha  	 	= 	3e-5 
+		
+
+		# Thermal properties
+        k           =   100        		# conductivity
+        Cp          =   1e6        		# heat capacity - should be artificially large for sticky air
+	<MaterialEnd>
+	
+	# Define properties of oceanic crust
+	<MaterialStart>
+		ID  		=	1       		# phase id
+		Name        = 	OceanicCrust   	# description of the phase
+		rho        	= 	3000			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+	#	eta         =   1e24
+		diff_prof   =   Wet_Plagioclase_RybackiDresen_2000
+		disl_prof   =   Wet_Plagioclase_RybackiDresen_2000
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Define properties of oceanic mantle lithosphere
+	<MaterialStart>
+		ID  		= 	2       					# phase id
+		Name        = 	OceanicMantleLithosphere   	# description of the phase
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+		#eta             =     1e23
+		# dislocation creep		
+		
+		#eta 	    =  	1e23
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+		Vd 			=	10e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+		
+		
+	<MaterialEnd>
+	
+	# Define properties of upper mantle
+	<MaterialStart>
+		ID  		= 	3 				# phase id
+		Name        = 	UpperMantle   	# description of the phase
+		
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+		
+
+		# Linear viscous	
+	#	eta 		= 	1e21
+
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+#		Vn 			=	10e-6
+		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Define properties of plume
+	<MaterialStart>
+		ID  		= 	4 				# phase id
+		Name        = 	Plume   		# description of the phase
+		
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+
+	
+		
+	#	eta 		= 	1e21
+
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+#		Vn                      =      10e-6
+		Vd 			=	8e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>
+
+
+	# Define properties of lower mantle
+	<MaterialStart>
+		ID  		= 	5 				# phase id
+		Name        = 	LowerMantle   	# description of the phase
+		
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+
+		# Linear viscous	
+		
+		#eta 		= 	1e21
+		
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+#		Vn 			=	10e-6
+		Vd 			=	8e-6
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	# Upper mantle material with zircons
+	<MaterialStart>
+		ID  		= 	6 							# phase id
+		Name        = 	ZirconsRichUpperMantle   	# description of the phase
+			
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+		# Linear viscous	
+		#eta 		= 	1e21
+		
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		Vd 			=	8e-6
+#		Vn                      =      10e-6
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	# Plume material that generated zircons
+	<MaterialStart>
+		ID  		= 	7 	# phase id
+		#Name        = 	ZirconsRichPlume   	# description of the phase
+		rho        	= 	3200			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+		
+        
+	#	eta 		= 	1e21
+			
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+		Vd 			=	8e-6
+#		Vn                      =       10e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>
+
+	<MaterialStart>
+		ID  		= 	8 	# phase id
+		Name        = 	LowerPlume   	# description of the phase
+		alpha  	 	= 	3e-5 				# coeff. of thermal expansion [1/K]
+
+		rho        	= 	3200			# density [kg/m3]
+		
+		
+	#	eta 		= 	1e21
+			
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+#		Vn                      =      10e-6
+		Vd 			=	8e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>
+	
+	# Upper mantle material with zircons
+	<MaterialStart>
+		ID  		= 	9 							# phase id
+		Name        = 	ZirconsRich_Reidite   	# description of the phase
+		alpha  	 	= 	3e-5 						# coeff. of thermal expansion [1/K]
+        rho         = 	3300
+       
+		# Linear viscous	
+		#eta 		= 	1e21
+		
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+#		Vn                      =      10e-6
+		Vd 			=	8e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	# Plume material that generated zircons
+	<MaterialStart>
+		ID  		= 	10 	# phase id
+		Name        = 	ZirconsRichPlume_Reidite  	# description of the phase
+		alpha  	 	= 	3e-5 				# coeff. of thermal expansion [1/K]
+
+		rho         = 	3300
+		
+		
+#		eta 		= 	1e21
+			
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+
+#		Vn                      =      8e-6
+		Vd 			=	8e-6
+		
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>
+	
+		# Upper mantle material with zircons
+	<MaterialStart>
+		ID  		= 	11 							# phase id
+		Name        = 	LowerMantle_Reidite   	# description of the phase
+		alpha  	 	= 	3e-5 						# coeff. of thermal expansion [1/K]
+        rho         = 	3660
+       
+
+		# Linear viscous	
+		#eta 		= 	1e21
+		
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+		Vd 			=	8e-6
+#		Vn                     =      10e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	# Plume material that generated zircons
+	<MaterialStart>
+		ID  		= 	12 	# phase id
+		#Name        = 	LowerPlume_Reidite  	# description of the phase
+		alpha  	 	= 	3e-5 				# coeff. of thermal expansion [1/K]
+
+		rho         = 	3660
+	
+		#eta 		= 	1e21
+			
+		# diffusion & dislocation creep		
+		diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+		disl_prof   =   Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+		
+		Vd 			=	8e-6
+#		Vn                      =      10e-6
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+
+	<MaterialEnd>	
+
+	<MaterialStart>
+		ID  		= 	13 							# phase id
+		Name        = 	UpperMantlePermeableSide   	# description of the phase
+		
+		rho        	= 	3300						# density [kg/m3]
+		alpha  	 	= 	3e-5 						# coeff. of thermal expansion [1/K]
+       
+		# Linear viscous	
+		eta 		= 	1e18
+
+		# diffusion & dislocation creep		
+#		Vn 			=	10e-6
+#		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	<MaterialStart>
+		ID  		= 	14 							# phase id
+		Name        = 	LowerMantlePermeableSide   	# description of the phase
+		
+		rho        	= 	3600				# density [kg/m3]
+		alpha  	 	= 	3e-5 				# coeff. of thermal expansion [1/K]
+        
+       
+		# Linear viscous	
+		eta 		= 	1e18
+
+		# diffusion & dislocation creep		
+#		Vn 			=	10e-6
+#		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	<MaterialStart>
+		ID  		= 	15 							# phase id
+		Name        = 	OceanicMantleLithospherePermeableSide   	# description of the phase
+		rho        	= 	3300						# density [kg/m3]
+		alpha  	 	= 	3e-5 						# coeff. of thermal expansion [1/K]
+	
+		# Linear viscous	
+		eta 		= 	1e18
+
+		# diffusion & dislocation creep		
+#		Vn 			=	10e-6
+#		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+	<MaterialStart>
+		ID  		= 	16 							# phase id
+		Name        = 	OceanicCrustPermeableSide   	# description of the phase
+		rho        	= 	3000			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		
+
+		# Linear viscous	
+		eta 		= 	1e18
+
+		# diffusion & dislocation creep		
+#		Vn 			=	10e-6
+#		Vd 			=	8e-6
+		
+
+     	# Thermal properties
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	#-snes_ksp_ew
+	#-snes_ksp_ew_rtolmax 1e-4
+	-snes_rtol 1e-4					
+	-snes_atol 1e-4					
+	-snes_max_it 30					
+	
+	-snes_PicardSwitchToNewton_rtol 1e-4   # relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	5     # number of Newton iterations after which we switch back to Picard
+
+	
+	-js_ksp_type fgmres
+	#-js_ksp_monitor 				# display how the inner iterations converge
+	-js_ksp_max_it 20				# inner
+	-js_ksp_atol 1e-8
+	-js_ksp_rtol 1e-5
+
+	-snes_linesearch_type l2
+	#-snes_linesearch_monitor
+	-snes_linesearch_maxstep 10
+	
+<PetscOptionsEnd>
+
+#===============================================================================
+>>>>>>> master

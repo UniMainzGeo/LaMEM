@@ -1,0 +1,4 @@
+name = "LaMEM"
+uuid = "29b6043d-3311-4c16-b469-b02bf85cb680"
+authors = ["Boris Kaus <kaus@uni-mainz.de>"]
+version = "0.1.0"

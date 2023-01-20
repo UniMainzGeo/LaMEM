@@ -1,0 +1,244 @@
+
+# PLEASE DON'T USE TABS ANYWERE EXCEPT THE FIRST CHARACTERS IN A ROW (LOOKS UGLY)
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = geo       # geological units
+
+	unit_temperature = 1000
+	unit_length      = 1e3
+	unit_viscosity   = 1e19
+	unit_stress      = 1e9
+	unit_density     = 1e3
+
+
+# units = none - input & output is non-dimensional
+# units = si   - input & output is in SI units
+# units = geo  - input & output is in SI units, except:
+#
+#    time        - Myr
+#    length      - km
+#    velocity    - cm/yr
+#    stress      - MPa
+#    heat_flux   - mW/m^2
+#    Temperature - C
+#
+# NOTE:
+#
+# * characteristic values must ALWAYS be provided in SI units
+# * material parameters must ALWAYS be provided in SI units
+# * in all dimensional cases (si & geo) angles are measured in degrees
+#   angular velocities are measured in degrees per unit time
+# * number of primary units is one more than usual
+#   Newton's 2nd law can be violated for quasi-static problems
+#   If density is not provided, Newton's 2nd law is enforced
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 3     # simulation end time
+	dt        = 0.01  # time step
+	dt_min    = 1e-3  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 1.0   # maximum time step
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	nstep_max = 3     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+        nel_x = 64
+        nel_y = 1
+        nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+        coord_x = -50  50
+        coord_y = -0.5 0.5
+        coord_z = -40  10
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+	surf_use           = 1                # free surface activation flag  or 0?
+	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+	surf_level         = 0                # initial level
+	surf_air_phase     = 0                # phase ID of sticky air layer
+	surf_max_angle     = 15.0             # maximum angle with horizon (smoothed if larger) up to 45, or more?
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default conditions on all the boundaries:
+# * (mechanical): free-slip with zero normal velocity
+# * (thermal)   : zero heat flux
+
+# Background strain rate parameters  
+
+#	exx_num_periods  = 1                 # number intervals of constant strain rate (x-axis)
+#	exx_strain_rates = 1e-15             # strain rates for each interval
+
+# Inflow velocity boundary condition
+        bvel_face                 =         CompensatingInflow                         # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
+		bvel_face_out             =         1                            # 1-Left, 2-Right, 3-Front, 4-Back
+        bvel_bot                  =        -20.0                         # bottom coordinate of inflow window
+        bvel_top                  =        -10.0                         # top coordinate of inflow window
+        bvel_velin                =         5.0                         # inflow velocity
+        bvel_relax_d              =         50                          # distance over which velocity is reduced
+	
+# temperature on the top & bottom boundaries
+#	temp_top  = 0.0
+#	temp_bot  = 1300.0;
+	
+	
+	open_top_bound = 1
+
+	
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity         = 0.0 0.0 -10.0  # gravity vector
+	FSSA            = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess      = 1              # initial guess flag
+	p_litho_visc    = 1              # use lithostatic pressure for creep laws
+	p_litho_plast   = 1              # use lithostatic pressure for plasticity
+	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
+	eta_min         = 1e18           # viscosity lower bound [Pas]
+	eta_max         = 1e25           # viscosity upper limit [Pas]
+	eta_ref         = 1e22           # reference viscosity (initial guess) [Pas]
+	min_cohes       = 1e6            # cohesion lower bound  [Pa]
+	min_fric        = 1.0            # friction lower bound  [degree]
+	tau_ult         = 1e9            # ultimate yield stress [Pa]
+	
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct	# solver [direct or multigrid]
+	DirectPenalty 		=	1e3			# penalty parameter [employed if we use a direct solver]
+#	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
+	
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup          = geom              # setup type
+	nmark_x         = 3                 # markers per cell in x-direction
+	nmark_y         = 3                 # ...                 y-direction
+	nmark_z         = 3                 # ...                 z-direction
+	rand_noise      = 1                 # random noise flag
+	bg_phase        = 2                 # background phase ID
+	advect          = basic             # advection scheme
+	interp          = stag              # velocity interpolation scheme
+	mark_ctrl       = basic             # marker control type
+	nmark_lim       = 8 50              # min/max number per cell (marker control)
+
+# Geometric primitives:
+
+	<RidgeSegStart>
+		phase = 1
+		bounds      = -50 50 -2 2 -40 0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+		ridgeseg_x  = 10 10               # coordinate order: left, right 
+		ridgeseg_y  = -2 2                # coordinate order: front, back
+		topTemp     = 0                   # temperature @ top [in Celcius in case of GEO units]
+		botTemp     = 1300                # temperature @ bottom [in Celcius in case of GEO units]
+		Temperature = halfspace_age       # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
+		age0	    = 0.001               # initial age right at the ridge in Myr, required
+	<RidgeSegEnd>
+
+        # sticky air
+        <BoxStart>
+                phase  = 0
+                bounds = -50 50 -2 2 0 10  # (left, right, front, back, bottom, top)
+        <BoxEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = 2D_ridge    # output file name
+	out_pvd             = 1                   # activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_temperature     = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	out_energ_res       = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1                  # activate AVD phase output
+	out_avd_pvd = 1                  # activate writing .pvd file
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+        # Sticky Air
+        <MaterialStart>
+                ID  = 0         # phase id
+                rho = 500         # density
+                G   = 5e10
+                eta = 1e18      # viscosity
+        <MaterialEnd>
+
+        # background
+        <MaterialStart>
+                ID  = 2         # phase id
+                rho = 200         # density
+                G   = 5e10
+                eta = 1e19      # viscosity
+        <MaterialEnd>
+
+
+        # Upper Lithosphere 1
+        <MaterialStart>
+                ID              =       1       # phase id
+                rho             =       3300    # density
+                eta             =       1e24    # viscosity
+                G               =       5e10
+        <MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+        # LINEAR & NONLINEAR SOLVER OPTIONS
+#        -snes_ksp_ew
+#        -snes_ksp_ew_rtolmax 1e-4
+        -snes_rtol 1e-4
+        -snes_atol 1e-4                                 # following Le Pourhiet et al. (EPSL, 2017)
+        -snes_max_it 50
+
+        -snes_PicardSwitchToNewton_rtol 1e-4   # relative tolerance to switch to Newton (1e-2) 1e-4
+        -snes_NewtonSwitchToPicard_it   20     # number of Newton iterations after which we switch back to Picard
+
+        -js_ksp_type fgmres
+        -js_ksp_monitor                                 # display how the inner iterations converge
+        -js_ksp_max_it 20                               # inner
+        -js_ksp_atol 1e-8
+        -js_ksp_rtol 1e-4
+
+        -snes_linesearch_type l2
+        -snes_linesearch_monitor
+        -snes_linesearch_maxstep 10
+
+<PetscOptionsEnd>
+
+#===============================================================================

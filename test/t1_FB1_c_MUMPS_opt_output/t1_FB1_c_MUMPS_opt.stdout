@@ -1,0 +1,163 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Nov 20 2020 - Time: 21:11:32 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : /Users/kausb/WORK/LaMEM/LaMEM/tests/t1_FB1_Direct/FallingBlock_mono_PenaltyDirect.dat 
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 25
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-4
+   Adding PETSc option: -js_ksp_atol 1e-10
+   Adding PETSc option: -objects_dump
+Finished parsing input file : /Users/kausb/WORK/LaMEM/LaMEM/tests/t1_FB1_Direct/FallingBlock_mono_PenaltyDirect.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 2 
+   Time step                    : 0.01 [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 0.1 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 0.2 [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0   
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 1   
+   (dens)   : rho = 2. [ ]  
+   (diff)   : eta = 100. [ ]  Bd = 0.005 [ ]  
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 2 
+   Processor grid  [nx, ny, nz]         : [1, 1, 2]
+   Fine grid cells [nx, ny, nz]         : [16, 16, 16]
+   Number of cells                      :  4096
+   Number of faces                      :  13056
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
+   Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Enforce zero average pressure on top    @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+12 [ ] 
+   Max. melt fraction (viscosity, density) : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [2, 2, 2] 
+   Marker distribution type      : uniform
+   Background phase ID           : 0 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.00023818 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : FB_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Penalty parameter (pgamma)    : 1.000000e+05
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : parallel direct/lu 
+   Solver package                : mumps 
+--------------------------------------------------------------------------
+Saving output ... done (0.0291691 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 0.01000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.310266752999e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.136017315766e+01 
+    1 KSP Residual norm 1.604128941291e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 1.011998662274e-03 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 0.794444 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.550729532081e-06 
+      |Div|_2   = 2.110210787595e-04 
+   Momentum: 
+      |mRes|_2  = 9.897531999263e-04 
+--------------------------------------------------------------------------
+Actual time step : 0.01100 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0383639 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01100 [ ] 
+Tentative time step : 0.01100 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.201208073506e-02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.880246326246e-04 
+    1 KSP Residual norm 2.575359001068e-09 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 3.159230848582e-07 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 0.582142 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.751307805373e-10 
+      |Div|_2   = 5.492149890511e-09 
+   Momentum: 
+      |mRes|_2  = 3.158753422411e-07 
+--------------------------------------------------------------------------
+Actual time step : 0.01210 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.033838 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 1.51965 (sec) 
+--------------------------------------------------------------------------
