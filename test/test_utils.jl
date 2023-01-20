@@ -76,3 +76,52 @@ function extract_info_logfiles(file::String, keyword::NTuple{N,String}=("|Div|_i
 
     return out_NT
 end
+
+
+function compare_logfiles(new::String, expected::String, 
+                    keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), 
+                    accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,))) where N
+
+    new_out = extract_info_logfiles(new, keywords)
+    exp_out = extract_info_logfiles(expected, keywords)
+    
+
+    test_status = true
+
+    for i=1:N 
+        
+       rtol, atol = 0,0
+       if  haskey(accuracy[i], :rtol)
+            rtol = accuracy[i].rtol;
+       end
+       if  haskey(accuracy[i], :atol)
+            atol = accuracy[i].atol;
+       end
+   
+       te =  isapprox(new_out[i], exp_out[i], rtol=rtol, atol=atol)
+       if te==false
+            println("Problem with comparison of $(keywords[i]):")
+            print_differences( new_out[i], exp_out[i], accuracy[i])
+            test_status = false
+        end
+
+    end
+    
+    return test_status
+end
+
+# Pretty formatting of errors
+function print_differences(new, expected, accuracy)
+
+    n = 24;
+    println("      $(rpad("New",n)) | $(rpad("Expected",n)) | $(rpad("rtol",n)) | $(rpad("atol",n))")
+    
+
+    for i=1:length(new)
+        atol = abs(new[i] - expected[i])
+        rtol = abs(atol/new[i])
+        println("$(rpad(i,4))  $(rpad(new[i],n)) | $(rpad(expected[i],n)) | $(rpad(rtol,n)) | $(rpad(atol,n))")
+    end
+
+    return nothing
+end
