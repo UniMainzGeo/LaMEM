@@ -239,7 +239,9 @@
 		ID  		= 	3 				# phase id
 		
 		rho 		=	3300
-		rho_ph      = 	./t16_PhaseTransitions/PMD_extrapolate
+		#rho_ph      = 	./t16_PhaseTransitions/PMD_extrapolate
+		rho_ph      = 	PMD_extrapolate
+		
         Phase_melt  = 1
 
 
@@ -256,7 +258,9 @@
 		ID  		= 	4 	# phase id
 		
 		rho         = 3300
-        rho_ph      = ./t16_PhaseTransitions/PMD_extrapolate
+        #rho_ph      = ./t16_PhaseTransitions/PMD_extrapolate
+		rho_ph      = PMD_extrapolate
+		
         Phase_melt  = 1
 
 		eta 		= 	1e20
@@ -271,7 +275,9 @@
 		ID  		= 	5 				# phase id
 		
 		rho         = 3300
-        rho_ph      = ./t16_PhaseTransitions/PMD_extrapolate
+        #rho_ph      = ./t16_PhaseTransitions/PMD_extrapolate
+		rho_ph      = PMD_extrapolate
+		
         Phase_melt  = 1
 
 		# Linear viscous	
@@ -287,8 +293,10 @@
 		ID  		= 	6 	# phase id
 		
 		rho         = 3300
-        rho_ph      = ./t16_PhaseTransitions/PMD_extrapolate
-        Phase_melt  = 1
+        #rho_ph      = ./t16_PhaseTransitions/PMD_extrapolate
+
+        rho_ph      = PMD_extrapolate
+		Phase_melt  = 1
 
 		eta 		= 	1e20
 		
@@ -297,8 +305,6 @@
         Cp          =   1050        	# heat capacity
 	<MaterialEnd>
 
-
-	
 
 #===============================================================================
 # Define phase transitions

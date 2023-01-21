@@ -44,7 +44,8 @@ end
 end
 
 
-# t3_SubductionMATLABinput - to be added  
+# t3_SubductionMATLABinput - to be added  & changed to julia
+
 
 @testset "t4_Loc" begin
     dir = "t4_Loc";
@@ -97,3 +98,137 @@ end
 
 end
 =#
+
+#=
+@testset "t7_AdjointGradientInversion" begin
+
+    dir = "t7_AdjointGradientInversion";
+    ParamFile = "t7_Subduction2D_FreeSlip_Inversion.dat";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2", "|   Prefactor A               :")
+    acc      = ((rtol=1e-7,), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=2e-8,));
+    
+    # Perform tests
+    @test perform_lamem_test(dir,ParamFile,"t6_AdjointGradientScaling_p2.expected",
+                            args="-nel_z 16 -nel_x 64",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+
+
+end
+=#
+
+#t8 to be done
+
+@testset "t9_PhaseDiagrams" begin
+    dir = "t9_PhaseDiagrams";
+    ParamFile = "test_9_FallingBlock_PhaseDiagrams.dat";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-11));
+    
+    # Perform tests
+    @test perform_lamem_test(dir,ParamFile,"test_9_FallingBlock_PhaseDiagrams.expected",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+
+end
+
+#=
+# this ia a more complicated one, that requires a devoted script (with plotting)
+
+@testset "t10_Compressibility" begin
+    dir = "t10_Compressibility";
+    ParamFile = "test_9_FallingBlock_PhaseDiagrams.dat";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-11), (rtol=2e-8,));
+    
+    # Perform tests
+    @test perform_lamem_test(dir,ParamFile,"test_9_FallingBlock_PhaseDiagrams.expected",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+
+end
+=#
+
+#=
+fails
+@testset "t11_subgrid" begin
+    dir = "t11_subgrid";
+    ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-11));
+    
+    # Perform tests
+    @test perform_lamem_test(dir,ParamFile,"t11_Subgrid_opt-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+end
+=#
+
+#=
+another more complicated test
+@testset "t12_Temperature_diffusion" begin
+    dir = "t12_Temperature_diffusion";
+    ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-11));
+    
+    # Perform tests
+    @test perform_lamem_test(dir,ParamFile,"t11_Subgrid_opt-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+end
+=#
+
+
+@testset "t16_PhaseTransitions" begin
+    dir = "t16_PhaseTransitions";
+    ParamFile = "Plume_PhaseTransitions.dat";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-9));
+    
+    # Perform tests
+    @test perform_lamem_test(dir,ParamFile,"PhaseTransitions-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    @test perform_lamem_test(dir,ParamFile,"PhaseTransitions-FreeSlip_p1.expected",
+                            args="-open_top_bound 0 -act_press_shift 1",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    @test perform_lamem_test(dir,"Plume_PhaseTransitions_Melting.dat","PhaseTransitions-Melting_p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # Tests phase transitions with X/Z and Box coordinates
+    @test perform_lamem_test(dir,"Plume_PhaseTransitions_Box_XZ.dat","PhaseTransitions-XBox-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # Tests phase transition triggered by time       
+    @test perform_lamem_test(dir,"TimeTransition.dat","TimeTransition-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+                            
+    # Test dike feature using optimized LaMEM
+    @test perform_lamem_test(dir,"PhaseTransitionBox_move.dat","PhaseTransitionBox_move.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+end
+
+
+@testset "t17_InflowOutflow" begin
+    dir = "t17_InflowOutflow";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2","|eRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=1e-7,atol=1e-11));
+    
+    # 2D test
+    @test perform_lamem_test(dir,"PlumeLithos_Interaction_2D.dat","InflowOutflow-2D_p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+    # 3D test
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+    @test perform_lamem_test(dir,"PlumeLithos_Interaction_3D.dat","InflowOutflow-2D_p1.expected",
+                            keywords=keywords, accuracy=acc, cores=4, opt=true)
+
+    # Test inflow/outflow conditions in 2D using optimized LaMEM    
+
+end

@@ -132,7 +132,9 @@
 		rho = 3000 # density
 		disl_prof = Quarzite-Ranalli_1995
 		rho_ph = TestPD
-		rho_ph_file = t9_PhaseDiagrams/
+		#rho_ph_file = t9_PhaseDiagrams/
+		#rho_ph_file = t9_Phase
+		
 	<MaterialEnd>
 
 	# Define properties of block
@@ -142,7 +144,9 @@
 		disl_prof = Quarzite-Ranalli_1995
 		T   = 800.0  # optional temperature to set within the phase
 		rho_ph = TestPD1
-		rho_ph_file = t9_PhaseDiagrams/PD_Dir1/
+		#rho_ph_file = t9_PhaseDiagrams/PD_Dir1/
+		rho_ph_file = PD_Dir1/
+		
 	<MaterialEnd>
 
 #===============================================================================

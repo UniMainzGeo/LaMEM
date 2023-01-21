@@ -136,14 +136,18 @@ end
 function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String; 
                 keywords=("|Div|_inf","|Div|_2","|mRes|_2"), accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,)), 
                 cores::Int64=1, args::String="",
-                bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec")
+                bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec",
+                debug=false)
 
     cur_dir = pwd();
     cd(dir)
 
     bin_dir = joinpath(cur_dir,bin_dir);
-    outfile = "test_$(cores).out";
-
+    if debug==true
+        outfile = "";
+    else
+        outfile = "test_$(cores).out";
+    end
     # perform simulation 
     run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec);
 
