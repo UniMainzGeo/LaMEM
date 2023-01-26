@@ -242,3 +242,211 @@ end
                             keywords=keywords, accuracy=acc, cores=4, opt=true)
                               
 end
+
+@testset "t18_SimpleShear" begin
+    dir = "t18_SimpleShear";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_xz
+    @test perform_lamem_test(dir,"SS.dat","SimpleShear_xz-p2.expected",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+    
+    # test_yz
+    @test perform_lamem_test(dir,"SS.dat","SimpleShear_yz-p2.expected",
+                            args="-exz_strain_rates 0 -eyz_strain_rates 1e-15 -eyz_num_periods 1",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+    # test_xy
+    @test perform_lamem_test(dir,"SS.dat","SimpleShear_xy-p2.expected",
+                            args="-exz_strain_rates 0 -exy_strain_rates 1e-15 -exy_num_periods 1",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+
+    # test_xz_yz
+    @test perform_lamem_test(dir,"SS.dat","SimpleShear_xz_yz-p2.expected",
+                            args="-exz_strain_rates 1e-15 -eyz_strain_rates 1e-15 -eyz_num_periods 1",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+end
+
+
+@testset "t19_CompensatedInflow" begin
+    dir = "t19_CompensatedInflow";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_a
+    @test perform_lamem_test(dir,"CompensatedInflow_test_2D.dat","/CompensatedInflow-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # test_b
+    @test perform_lamem_test(dir,"CompensatedInflow_test_3D.dat","/CompensatedInflow3D-p2.expected",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+
+
+end
+
+@testset "t20_FSSA" begin
+    dir = "t20_FSSA";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-5,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_1
+    @test perform_lamem_test(dir,"RTI_FSSA.dat","RTI_FSSA_1-p1.expected",
+                            args="-nstep_max 20 -nel_x 50 -nel_z 100",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+end
+
+@testset "t21_Passive_Tracer" begin
+    dir = "t21_Passive_Tracer";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_a
+    @test perform_lamem_test(dir,"Passive_tracer_ex2D.dat","Passive_tracer-2D_p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # test_b
+    @test perform_lamem_test(dir,"Passive_tracer_ex2D_Condition.dat","Passive_tracer-2D_Condition_p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+end
+
+@testset "t22_RidgeGeom/" begin
+    dir = "t22_RidgeGeom";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_2D
+    @test perform_lamem_test(dir,"ridge_geom_2D.dat","RidgeGeom2D.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # Test oblique ridge geometry conditions in 3D using optimized LaMEM   
+    @test perform_lamem_test(dir,"ridge_geom_oblique_2cores.dat","RidgeGeom_oblique_2cores.expected",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+    
+  
+end
+
+@testset "t23_Permeable" begin
+    dir = "t23_Permeable";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_a
+    @test perform_lamem_test(dir,"Permeable.dat","Permeable_p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+  
+end
+
+#=
+MATLAB setup
+@testset "t24_Erosion_Sedimentation" begin
+    dir = "t24_Erosion_Sedimentation";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_a
+    @test perform_lamem_test(dir,"Permeable.dat","Permeable_p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+  
+end
+=#
+
+@testset "t25_APS_Healing" begin
+    dir = "t25_APS_Healing";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_2D
+    @test perform_lamem_test(dir,"APS_Healing2D.dat","APS_Healing2D.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+  
+end
+
+
+
+@testset "t26_Dike" begin
+    dir = "t26_Dike";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_M1_2D
+    @test perform_lamem_test(dir,"dike_M1_2D.dat","dike_M1_2D.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # test_M075_2D_2cores
+    @test perform_lamem_test(dir,"dike_M075_2D_2cores.dat","dike_M075_2D_2cores.expected",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+
+
+    # test_variableM
+    @test perform_lamem_test(dir,"dike_variableM.dat","dike_variableM.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # heat_kfac
+    keywords = ("|eRes|_2",)
+    acc      = ((rtol=1e-4,atol=1e-11),);
+    @test perform_lamem_test(dir,"dike_heating_kfac.dat","dike_heating_kfac.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # heat_rhoA
+    keywords = ("|eRes|_2",)
+    acc      = ((rtol=1e-4,atol=1e-11),);
+    @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+end
+
+
+@testset "t27_T-dep_Conductivity" begin
+    dir = "t27_T-dep_Conductivity";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+
+    # test_2fields_dike():
+    @test perform_lamem_test(dir,"t27_TDep_NuK_Conductivity.dat","t27_TDep_NuK_Conductivity.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+end
+
+@testset "t28_HeatRecharge" begin
+    dir = "t28_HeatRecharge";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=5e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-5,atol=1e-11));
+
+    # test_recharge1
+    @test perform_lamem_test(dir,"FallingBlockHeatReacharge1.dat","t28_HeatRecharge1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # test_recharge2
+    acc      = ((rtol=3e-6,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=3e-5,atol=1e-11));
+    @test perform_lamem_test(dir,"FallingBlockHeatReacharge2.dat","t28_HeatRecharge2.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+end
+
+
+@testset "t29_PermeableSides_VelBoxes" begin
+    dir = "t29_PermeableSides_VelBoxes";
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=5e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-5,atol=1e-11));
+
+    # test_permeableSides_VelBoxes
+    @test perform_lamem_test(dir,"VelBoxes_Permeable_sides.dat","t29_PermeableSides_VelBoxes.expected",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
+
+end
+
+
+
+@testset "t30_Timestep_Schedule" begin
+    dir = "t30_Timestep_Schedule";
+    keywords = ("Actual time step",)
+    acc      = ((rtol=1e6,atol=1e-11),);
+
+    # test_TS_Schedule():
+    @test perform_lamem_test(dir,"TS_Schedule.dat","t30_TS_Schedule.expected",
+                            keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":")
+
+end
