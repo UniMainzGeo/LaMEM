@@ -44,7 +44,7 @@ end
 end
 
 
-# t3_SubductionMATLABinput - to be added  & changed to julia
+# t3_SubductionMATLABinput - to be added  & changed to
 
 
 @testset "t4_Loc" begin
@@ -197,6 +197,7 @@ end
                             args="-open_top_bound 0 -act_press_shift 1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-9));
     @test perform_lamem_test(dir,"Plume_PhaseTransitions_Melting.dat","PhaseTransitions-Melting_p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
@@ -223,12 +224,21 @@ end
     # 2D test
     @test perform_lamem_test(dir,"PlumeLithos_Interaction_2D.dat","InflowOutflow-2D_p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
-    # 3D test
+    
+     # 3D test
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
     @test perform_lamem_test(dir,"PlumeLithos_Interaction_3D.dat","InflowOutflow-2D_p1.expected",
                             keywords=keywords, accuracy=acc, cores=4, opt=true)
 
     # Test inflow/outflow conditions in 2D using optimized LaMEM    
+    acc      = ((rtol=2e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=1e-7,atol=1e-11));
+    @test perform_lamem_test(dir,"PlumeLithos_Interaction_2D_Perm.dat","InflowOutflow-2D_Perm_p1.expected",
+                            keywords=keywords, accuracy=acc, cores=4, opt=true)
 
+    # test_3D_Pres():
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=1e-7,atol=1e-11));
+    @test perform_lamem_test(dir,"PlumeLithos_Interaction_3D_Perm.dat","InflowOutflow-3D_Perm_p4.expected",
+                            keywords=keywords, accuracy=acc, cores=4, opt=true)
+                              
 end
