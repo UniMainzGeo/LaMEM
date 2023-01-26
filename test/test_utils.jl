@@ -74,10 +74,15 @@ function extract_info_logfiles(file::String, keywords::NTuple{N,String}=("|Div|_
             while ! eof(f) 
                 # read a new / next line for every iteration          
                 line = readline(f)
-                    if contains(line, keywords[i])
-                        num = parse(Float64,split(line,split_sign)[end])
-                        push!(d,num)    # add value to vector
-                    end
+                if contains(line, keywords[i])
+                    if contains(line, "[")
+                        # remove everything in between [  ] (units etc.)
+                        line = split(line,"[")[1]
+                    end 
+
+                    num = parse(Float64,split(line,split_sign)[end])
+                    push!(d,num)    # add value to vector
+                end
             end
         end
         
@@ -100,10 +105,11 @@ This compares two logfiles (different parameters which can be indicated). If the
 """
 function compare_logfiles(new::String, expected::String, 
                         keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), 
-                        accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,))) where N
+                        accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,));
+                        split_sign="=") where N
 
-    new_out = extract_info_logfiles(new, keywords)
-    exp_out = extract_info_logfiles(expected, keywords)
+    new_out = extract_info_logfiles(new, keywords, split_sign)
+    exp_out = extract_info_logfiles(expected, keywords, split_sign)
 
     test_status = true
     for i=1:N 
@@ -153,7 +159,7 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
                 keywords=("|Div|_inf","|Div|_2","|mRes|_2"), accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,)), 
                 cores::Int64=1, args::String="",
                 bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec",
-                debug=false)
+                debug=false, split_sign="=")
 
     cur_dir = pwd();
     cd(dir)
@@ -168,16 +174,16 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     # perform simulation 
     success = run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec);
 
-    if success
+    if success && debug==false
         # compare logfiles 
-        success = compare_logfiles(outfile, expectedFile, keywords, accuracy)
+        success = compare_logfiles(outfile, expectedFile, keywords, accuracy, split_sign=split_sign)
     end
 
     if !success
         # something went wrong with executing the file (likely @ PETSc error)
         # Display some useful info here that helps debugging
         println("Problem detected with test; see this on commandline with: ")
-        println("  dir=$(cur_dir) ")
+        println("  dir=$(join(cur_dir,dir)) ")
         println("  ParamFile=$(ParamFile) ")
         println("  cores=$(cores) ")
         println("  args=$(args) ")
