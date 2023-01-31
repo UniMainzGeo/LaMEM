@@ -535,6 +535,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   PetscScalar ***sxx,***liththick, ***zsol;
   PetscScalar  *lsxx, *lliththick, *lzsol;
   PetscScalar dz, ***lT, Tc, *grav, Tsol, Peff;
+  PetscScalar dbug1, dbug2, dbug3, xcell, ycell;
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
   PetscMPIInt    rank;
 
@@ -543,10 +544,14 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   SolVarCell  *svCell;
   Dike        *dike;
   Controls    *ctrl;
-  //Scaling     *scal; debuggin
 
   PetscErrorCode ierr;
   PetscFunctionBegin;
+
+
+  dbug1=(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out);  //debugging
+  dbug2=floor(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out); //debugging
+  dbug3=dbug1-dbug2; //debugging
 
   ctrl = &jr->ctrl;
   grav = ctrl->grav;
@@ -701,8 +706,15 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
           Peff=(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
           if (Peff>0) Peff=Peff*10.0;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
           gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff).
-         }
-      END_PLANE_LOOP
+          if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
+          { 
+            xcell=COORD_CELL(i, sx, fs->dsx);
+            ycell=COORD_CELL(j, sy, fs->dsy);
+            printf("1010.10 %i %g %g %g %g\n", jr->ts->istep+1,xcell, ycell, gsxx_eff_ave[L][j][i], Peff);   //debugging    
+          }   
+        }
+      END_PLANE_LOOP     
+
 
       // restore buffer and mean stress vectors
       ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
@@ -824,7 +836,14 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
                 }     
             }
             vec1d[L][M][i]=sum_sxx/sum_dx;
-          } //end ist loop over x to build filtered row
+
+            /*if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
+            {  
+               ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging           
+               x = COORD_CELL(i, sx, fs->dsx);
+               printf("10101010 %i %g %g %g %g %i %g \n", jr->ts->istep+1,x, ydebugging, gsxx_eff_ave[L][j][i], sum_sxx);   //debugging 
+            } */
+          } //end 1st loop over x to build filtered row
 
           for(i = sx; i < sx+nx; i++)  //set the smoothed values into permanent array here
           {
@@ -940,12 +959,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
            sum_sxx+=gsxx_eff_ave_hist[istep_count][j][i];
          }
 
-         /* if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
-         {  
-           ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging           
-           x = COORD_CELL(i, sx, fs->dsx);
-           printf("dyndike0=%i %g %g %g %g %i %g \n", jr->ts->istep+1,x, ydebugging, gsxx_eff_ave[L][j][i], sum_sxx, dike->istep_count,(PetscScalar)istep_nave);   //debugging 
-         } */
          gsxx_eff_ave[L][j][i]=sum_sxx/((PetscScalar)istep_nave);
  
        END_PLANE_LOOP
@@ -975,8 +988,10 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   Ph_trans_t  *CurrPhTr;
   PetscScalar ***gsxx_eff_ave;
   PetscScalar xcenter, sxx_max, dike_width, mindist, xshift, xcell, dx;
-  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike, ixcenter, evendikelem;
+  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike, ixcenter;
   PetscScalar dbug1, dbug2, dbug3, ydebugging;
+  PetscScalar sxxm, sxxp, dx12, dsdx1, dsdx2, x_maxsxx;   
+  PetscInt    ixmax;
  
   PetscErrorCode ierr;
   PetscFunctionBegin;
@@ -1020,47 +1035,67 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
               sxx_max=-1e12;
               mindist=1e12;
               ixcenter = 0;
-              evendikelem=0;
               xshift=0;
+              ixmax=sx+1;
 
               j=sy+lj;  //global index
               dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
               xcenter=(CurrPhTr->celly_xboundR[lj] + CurrPhTr->celly_xboundL[lj])/2;
               ydebugging=COORD_CELL(j, sy, fs->dsy);  //debugging
 
-              for(i=sx; i < sx+nx; i++) //find indice of xcenter
+              for(i=sx+1; i < sx+nx-1; i++) 
               {
                 xcell=COORD_CELL(i, sx, fs->dsx);
-                if (fabs(xcell-xcenter) <= mindist)
+                if (fabs(xcell-xcenter) <= mindist) //find indice of dike zone center (xcenter)
                 {
                   ixcenter=i;
-                  if (fabs(xcell-xcenter)==mindist)
-                  evendikelem=1;
                   mindist=fabs(xcell-xcenter);
-                }   
+                }
                 if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
                 { 
-                   printf("dyndike1=%i %g %g %g\n", jr->ts->istep+1,xcell, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging    
+                   printf("2020.20 %i %g %g %g\n", jr->ts->istep+1,xcell, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging    
                 }            
               } //end loop to find ixcenter
 
-              for(i=ixcenter-1; i <= ixcenter+1; i++) //find max gsxx_eff at each value of y
+              for(i=ixcenter-2; i <= ixcenter+2; i++) //find max gsxx_eff at each value of y
               {
-                if ((gsxx_eff_ave[L][j][i] > 0) & (gsxx_eff_ave[L][j][i] > sxx_max))
+                if ((gsxx_eff_ave[L][j][i] > sxx_max))
                 {
                   sxx_max=gsxx_eff_ave[L][j][i];
-                  xshift=COORD_CELL(i, sx, fs->dsx)-xcenter;
+                  //xshift=COORD_CELL(i, sx, fs->dsx)-xcenter;
+                  ixmax=i;
                 }
+   
               } 
+              //finding where slope of dsxx/dx=0
+              sxxm =  gsxx_eff_ave[L][j][ixmax-1];  //left of maximum point
+              sxxp =  gsxx_eff_ave[L][j][ixmax+1]; ;  //right of max. point
+ 
+              dsdx1=2*(sxx_max-sxxm)/(SIZE_CELL(ixmax-1, sx, fs->dsx)+SIZE_CELL(ixmax, sx, fs->dsx));  //slope left of max
+              dsdx2=2*(sxxp-sxx_max)/(SIZE_CELL(ixmax+1, sx, fs->dsx)+SIZE_CELL(ixmax, sx, fs->dsx));  //slope right of max
+              dx12=(COORD_CELL(ixmax+1, sx, fs->dsx)-COORD_CELL(ixmax-1, sx, fs->dsx))/2;
+
+              if ((dsdx1>0) & (dsdx2<0))  //if local maximum, interpolate to find where dsdx=0;
+              {
+                x_maxsxx=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2-dsdx1/(dsdx2-dsdx1)*dx12;
+              }
+              else  //just higher on either side of dike
+              {
+                x_maxsxx=COORD_CELL(ixmax,sx,fs->dsx);
+              }
+
+              xshift=x_maxsxx-xcenter;
+
 
               dx=SIZE_CELL(ixcenter,sx, fs->dsx);  
-              if (xshift>0 && xshift>dx)
+              if (xshift>0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
               {
-                xshift=dx;
+                xshift=0.5*SIZE_CELL(ixcenter, sx, fs->dsx);
               }
-              else if (xshift<0 && xshift < -dx)
+              else if (xshift<0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx)) //ensure its within the width of cell left of center
               {
-                xshift=-dx;
+
+                xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
               }
 
               CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;  
@@ -1069,7 +1104,9 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
               if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)   //debugging
               {
                 ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
-                printf("dyndike2=%i %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2);  //debugging
+                xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
+                printf("3030.30 %i %g %g %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, 
+                xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2, x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx));  //debugging
               }
 
             }//end loop over j cell row
