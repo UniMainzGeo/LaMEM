@@ -199,6 +199,11 @@ public:
 	PetscScalar  taup;              // scaling stress                             [Pa]
 	PetscScalar  gamma;             // approximation parameter                    [ ]
 	PetscScalar  q;                 // stress-dependence parameter                [ ]
+	// Frank-Kamenetzky parameters
+    PetscScalar  gamma_fk;          // parameter in Frank-Kamenetzky approximation [1/K]
+	PetscScalar  TRef_fk;           // Frank-Kamenetzky reference Temperature [K]
+	PetscScalar  eta_fk;            // reference viscosity for Frank-Kamenetzky [Pas]
+	
 	// dc-creep
 	PetscScalar  Bdc;               // pre-exponential constant                   [1/s]
 	PetscScalar  Edc;               // activation energy                          [J/mol]

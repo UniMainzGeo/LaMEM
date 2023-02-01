@@ -765,7 +765,7 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 
 	// open outfile.pvts file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvtr", dirName, pvavd->outfile);
-	fp = fopen(fname,"w");
+	fp = fopen(fname,"wb");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
@@ -844,7 +844,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
 	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvavd->outfile, (LLD)rank);
-	fp = fopen(fname,"w");
+	fp = fopen(fname,"wb");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 

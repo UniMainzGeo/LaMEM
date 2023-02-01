@@ -117,9 +117,32 @@ struct VelBox
 };
 
 //---------------------------------------------------------------------------
+// Internal velocity cylinders (cylinders with constant prescribed velocity that are either fixed or move)
+//---------------------------------------------------------------------------
+
+struct VelCylinder
+{
+	PetscInt 	advect;  // cylinder advection flag
+	PetscScalar baseX;   // x-coordinates of base
+	PetscScalar baseY;   // y-coordinates of base
+	PetscScalar baseZ;   // z-coordinates of base
+	PetscScalar capX;    // x-coordinates of cap
+	PetscScalar capY;    // y-coordinates of cap
+	PetscScalar capZ;    // z-coordinates of cap
+	PetscScalar rad;     // radius of cylidner
+	PetscScalar vx;      // Vx-velocity within box
+	PetscScalar vy;      // Vy-velocity within box
+	PetscScalar vz;      // Vz-velocity within box
+	PetscScalar vmag;    // velocity magnitude
+	PetscInt    type;    // velocity profile type
+};
+
+//---------------------------------------------------------------------------
 
 PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb);
 PetscErrorCode VelBoxPrint (VelBox *velbox, Scaling *scal, PetscInt cnt);
+PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb);
+PetscErrorCode VelCylinderPrint (VelCylinder *velcyl, Scaling *scal, PetscInt cnt);
 
 //---------------------------------------------------------------------------
 
@@ -230,29 +253,34 @@ struct BCCtx
 	PetscInt 	 nboxes;              // number of velocity boxes
     VelBox       vboxes[_max_boxes_]; // velocity boxes
 
+	// internal velocity cylinders
+	PetscInt 	 ncylinders;                            // number of velocity boxes
+    VelCylinder  vcylinders[_max_boxes_];               // velocity boxes
+
 	// velocity inflow & outflow boundary condition
 	PetscInt     face,face_out,num_phase_bc,phase[5];   // face (1-left 2-right 3-front 4-back) & phase identifiers
 	PetscScalar  bot, top,relax_dist,phase_interval[6]; // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; 			            // inflow & outflow velocities
-	PetscScalar  velbot, veltop; 		// bottom/top inflow velocities
+	PetscScalar  velbot, veltop; 		                // bottom/top inflow velocities
 	PetscInt     bvel_temperature_inflow;
 	PetscScalar  bvel_thermal_age,bvel_potential_temperature, bvel_temperature_top;
 	PetscScalar  bvel_constant_temperature;
 
 	// Plume inflow bottom boundary condition
 	PetscInt        Plume_Inflow;
-	PetscInt		Plume_Type;				// Do we have a plume-like inflow boundary?
-	PetscInt 		Plume_flux_ctr;				// Plume flux is constrained or not?
-	PetscInt 		Plume_Dimension;		    // Type [2D=1, or 3D=2]
-	PetscInt		Plume_Phase;				// Phase of plume
+	PetscInt		Plume_Type;                 // Do we have a plume-like inflow boundary?
+	PetscInt 		Plume_flux_ctr;             // Plume flux is constrained or not?
+	PetscInt 		Plume_Dimension;            // Type [2D=1, or 3D=2]
+	PetscInt		Plume_Phase;                // Phase of plume
 	PetscInt        Plume_Phase_Mantle;         // Mantle phase (astenosphere)
 	PetscScalar     Plume_Depth;                // Column plume height
-	PetscScalar		Plume_Temperature;			// Temperature
-	PetscScalar		Plume_Center[2];			// center [x,y] coordinates (for 3D plume)		
-	PetscScalar		Plume_Radius;				// radius of plume (for 3D plume)
-	PetscScalar		Plume_Inflow_Velocity;		// inflow velocity
-	PetscInt 		Plume_VelocityType;			// type of inflow [Gaussian=0=default or Poiseuille=1]
-	PetscScalar     Plume_Pressure ;            // Plume Pressure at the bottom of the model (i.e. the bottom pressure boundary condition)
+	PetscScalar		Plume_Temperature;          // Temperature
+	PetscScalar		Plume_Center[2];            // center [x,y] coordinates (for 3D plume)		
+	PetscScalar		Plume_Radius;               // radius of plume (for 3D plume)
+	PetscScalar		Plume_Inflow_Velocity;      // inflow velocity
+	PetscInt 		Plume_VelocityType;         // type of inflow [Gaussian=0=default or Poiseuille=1]
+	PetscScalar     Plume_areaFrac;             // how much of the plume area is actually in the model
+	PetscScalar     Plume_Pressure;             // Plume Pressure at the bottom of the model (i.e. the bottom pressure boundary condition)
 	// open boundary flag
 	PetscInt     	top_open;
 	PetscInt 		bot_open;
@@ -344,6 +372,9 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 
 // apply internal velocity boxes
 PetscErrorCode BCApplyVelBox(BCCtx *bc);
+
+// apply internal velocity cylinders
+PetscErrorCode BCApplyVelCylinder(BCCtx *bc);
 
 // constraint all cells containing phase
 PetscErrorCode BCApplyPhase(BCCtx *bc);

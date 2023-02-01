@@ -3915,7 +3915,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			PetscMemcpy(filename, IOparam->ScalLawFilename,   (size_t)_str_len_*sizeof(char) ); 		
 		}
 
-		db = fopen(filename, "w");
+		db = fopen(filename, "wb");
 
 		fprintf(db,"# Scaling Law, computed on %s %s  \n",__DATE__,__TIME__);
 		fprintf(db,"#  \n");

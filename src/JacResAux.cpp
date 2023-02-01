@@ -617,7 +617,7 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 		strcpy(path, outfile);
 		strcat(path, ".darcy.dat");
 
-		db = fopen(path, "w");
+		db = fopen(path, "wb");
 
 		fprintf(db,"# ==============================================\n");
 		fprintf(db,"# EFFECTIVE PERMEABILITY CONSTANT: %E %s \n ", ks*scal->area_si, scal->lbl_area_si);

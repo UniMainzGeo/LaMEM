@@ -149,7 +149,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	asprintf(&fname, "%s/%s_p%1.8lld.vtu", dirName, pvptr->outfile, (LLD)pvptr->actx->iproc);
 
 	// open file
-	fp = fopen( fname, "w" );
+	fp = fopen( fname, "wb" );
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
@@ -464,7 +464,7 @@ PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
 	asprintf(&fname, "%s/%s.pvtu", dirName, pvptr->outfile);
 
 	// open file
-	fp = fopen( fname, "w" );
+	fp = fopen( fname, "wb" );
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
