@@ -72,6 +72,8 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
         PetscErrorCode ierr;
         PetscFunctionBegin;
 
+        if (!jr->ctrl.actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
+ 
         //===============                                                                                                                                               
         // DIKE PARAMETER                                                                                                               
         //===============                                                                                                                                               

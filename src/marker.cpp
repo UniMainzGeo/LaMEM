@@ -2098,15 +2098,15 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
         
         if (x_ridgeLeft == x_ridgeRight)
         {
-            thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
-            thermalAgeRidge = max(thermalAgeRidge,age0);
+            thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread + age0;
+            //thermalAgeRidge = max(thermalAgeRidge,age0);
             
         }
         else
         {
             x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
-            thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;
-            thermalAgeRidge = max(thermalAgeRidge,age0);
+            thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread + age0;
+            //thermalAgeRidge = max(thermalAgeRidge,age0);
         }
         
         thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff
