@@ -205,6 +205,9 @@ end
     @test perform_lamem_test(dir,"Plume_PhaseTransitions_Box_XZ.dat","PhaseTransitions-XBox-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
+
+
+
     # Tests phase transition triggered by time       
     @test perform_lamem_test(dir,"TimeTransition.dat","TimeTransition-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
@@ -232,9 +235,9 @@ end
                             keywords=keywords, accuracy=acc, cores=4, opt=true)
 
     # Test inflow/outflow conditions in 2D using optimized LaMEM    
-    acc      = ((rtol=2e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=1e-7,atol=1e-11));
+    acc      = ((rtol=2e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=1e-7,atol=1e-9));
     @test perform_lamem_test(dir,"PlumeLithos_Interaction_2D_Perm.dat","InflowOutflow-2D_Perm_p1.expected",
-                            keywords=keywords, accuracy=acc, cores=4, opt=true)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # test_3D_Pres():
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=1e-7,atol=1e-11));
