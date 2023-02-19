@@ -479,12 +479,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,   1, 1.0);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"- Melt factor mfc = %f", m->mfc);
+//	PetscPrintf(PETSC_COMM_WORLD,"- Melt factor mfc = %f", m->mfc);
 
 	// check energy parameters
-	if((m->Latent_hx && (!m->T_liq || !m->T_sol))
-	||	 (m->T_liq && (!m->Latent_hx || !m->T_sol)) 
-	||   (m->T_sol && (!m->Latent_hx || !m->T_liq)))
+	if( (m->Latent_hx && (!m->T_liq || !m->T_sol))
+	||	(m->T_liq && (!m->Latent_hx || !m->T_sol)) 
+	||  (m->T_sol && (!m->Latent_hx || !m->T_liq)))
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %lld (T_sol, T_liq, Latent_hx) \n", (LLD)ID);
 	}
@@ -534,9 +534,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// DIFFUSION
 
-	if(!(( eta && !m->Bd)   // eta
-	||   (!eta &&  m->Bd)   // Bd
-	||   (!eta && !m->Bd))) // nothing
+	if(!(( eta>DBL_EPSILON && m->Bd<DBL_EPSILON)   // eta
+	||   ( eta<DBL_EPSILON && m->Bd>DBL_EPSILON)   // Bd
+	||   ( eta<DBL_EPSILON && m->Bd<DBL_EPSILON))) // nothing
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %lld (eta, Bd)\n", (LLD)ID);
 	}
@@ -546,9 +546,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// DISLOCATION
 
-	if(!(( eta0 &&  e0 &&  m->n && !m->Bn)   // eta0, e0, n
-	||   (!eta0 && !e0 &&  m->n &&  m->Bn)   // Bn, n
-	||   (!eta0 && !e0 && !m->n && !m->Bn))) // nothing
+	if(!(( eta0>DBL_EPSILON &&  e0>DBL_EPSILON &&  m->n>DBL_EPSILON &&  m->Bn<DBL_EPSILON)   // eta0, e0, n
+	||   ( eta0<DBL_EPSILON &&  e0<DBL_EPSILON &&  m->n>DBL_EPSILON &&  m->Bn>DBL_EPSILON)   // Bn, n
+	||   ( eta0<DBL_EPSILON &&  e0<DBL_EPSILON &&  m->n<DBL_EPSILON &&  m->Bn<DBL_EPSILON))) // nothing
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %lld (eta0 + e0 + n, Bn + n)\n", (LLD)ID);
 	}
@@ -577,12 +577,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// DC
 
-	if(m->Bdc && (!m->Edc || !m->Rdc || !m->mu))
+	if(m->Bdc>DBL_EPSILON && (!m->Edc || !m->Rdc || !m->mu))
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "dc-creep parameters are incomplete for phase %lld (Bdc + Edc + Rdc + mu)", (LLD)ID);
 	}
 
-	if(m->Bdc && m->Bn)
+	if(m->Bdc>DBL_EPSILON && m->Bn>DBL_EPSILON)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine dc-creep with dislocation creep for phase %lld (Bdc + Bn)", (LLD)ID);
 	}
@@ -599,7 +599,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep requires either dc-creep or dislocation creep for phase %lld (Bps + Bdc, Bps + Bn)", (LLD)ID);
 	}
 
-	if(m->Bps && m->Bd)
+	if(m->Bps>DBL_EPSILON && m->Bd>DBL_EPSILON)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine ps-creep with diffusion creep for phase %lld (Bps + Bd)", (LLD)ID);
 	}
@@ -621,12 +621,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %lld (G, Kb, G + Kb, G + nu, Kb + nu, E + nu)\n", (LLD)ID);
 	}
 
-	if(m->Kp && !Kb)
+	if(m->Kp>DBL_EPSILON && Kb<DBL_EPSILON)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Bulk modulus (Kb) must be specified for phase %lld (Kb + Kp)", (LLD)ID);
 	}
 
-	if(m->beta && Kb)
+	if(m->beta>DBL_EPSILON && Kb>DBL_EPSILON)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta, Kb)", (LLD)ID);
 	}
