@@ -543,7 +543,8 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = ADVDestroy     (&lm->actx);   CHKERRQ(ierr);
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
-	
+	//ierr = DynamicPhTrDestroy (&lm->db)
+
 
 	PetscFunctionReturn(0);
 }

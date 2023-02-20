@@ -461,7 +461,7 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
   	ierr = makeScalArray(&ph->cbuffR, 0, dsy->ncels+2); CHKERRQ(ierr);
   	ph->celly_xboundR = ph->cbuffR + 1;
 
-  	/* DEBUGGING
+
   	for(j = -1; j < dsy->ncels+1; j++)
   	{
   	   found=0;
@@ -494,7 +494,7 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	   		j, dsy->ccoor[j]*scal->length);
 	}
 
-       */ //DEBUGGING
+
        ph->phtr_link_left = -1; 
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1);
 	if (ph->phtr_link_left>=0) {
@@ -506,7 +506,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	if (ph->phtr_link_right>=0) {
 	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %i\n", ph->phtr_link_right);	CHKERRQ(ierr);
 	}
-	/* */
 
 
 	
@@ -1025,7 +1024,7 @@ PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
   PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------
-PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, Controls ctrl, Scaling *scal, 
+PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, PetscInt PH2, Controls ctrl, Scaling *scal, 
 		    SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr, PetscInt cellID)
 {
 	PetscInt    ph, InAbove;
