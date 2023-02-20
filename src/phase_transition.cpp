@@ -427,6 +427,7 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 
 	ierr = getIntParam   (fb, _OPTIONAL_, "nsegs",  &ph->nsegs,  1,           _max_NotInAir_segs_);  CHKERRQ(ierr);
 	
+	//*
 	if (ph->nsegs==0){
 		ierr = getScalarParam(fb, _REQUIRED_, "PTBox_Bounds", ph->bounds, 6, scal->length);  CHKERRQ(ierr);
 		ph->xbounds[0]=ph->bounds[0];
@@ -453,12 +454,14 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	}
 
 
-  	//create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
-  	ierr = makeScalArray(&dsy->cbuff, 0, dsy->ncels+2); CHKERRQ(ierr);
-  	ph->celly_xboundL = dsy->cbuff + 1;
-  	ierr = makeScalArray(&dsy->cbuff, 0, dsy->ncels+2); CHKERRQ(ierr);
-  	ph->celly_xboundR = dsy->cbuff + 1;
 
+  	//create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
+  	ierr = makeScalArray(&ph->cbuffL, 0, dsy->ncels+2); CHKERRQ(ierr);
+  	ph->celly_xboundL = ph->cbuffL + 1;
+  	ierr = makeScalArray(&ph->cbuffR, 0, dsy->ncels+2); CHKERRQ(ierr);
+  	ph->celly_xboundR = ph->cbuffR + 1;
+
+  	/* DEBUGGING
   	for(j = -1; j < dsy->ncels+1; j++)
   	{
   	   found=0;
@@ -491,6 +494,7 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	   		j, dsy->ccoor[j]*scal->length);
 	}
 
+       */ //DEBUGGING
        ph->phtr_link_left = -1; 
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1);
 	if (ph->phtr_link_left>=0) {
@@ -502,6 +506,7 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	if (ph->phtr_link_right>=0) {
 	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %i\n", ph->phtr_link_right);	CHKERRQ(ierr);
 	}
+	/* */
 
 
 	
@@ -780,6 +785,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
               nphc = 0;
 	    }
 	    // calling the moving dike function
+
 	    if ( PhaseTrans->Type == _NotInAirBox_ )
 	    {
               if (PhaseTrans->v_box) {
@@ -787,7 +793,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
               }
 
               ierr = LinkNotInAirBoxes(PhaseTrans, jr); CHKERRQ(ierr);
-
 
 	    }
 	    
@@ -1231,6 +1236,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
 
 	GET_CELL_IJK(cellID, I, J, K, nx, ny) //need to know J for celly_xboundL/R
 
+	/* DEBUGGING
        //particle backward of the cell center and adjacent cell is within phase trans box
        if (P->X[1] <= dsy->ccoor[J] && PhaseTrans->celly_xboundL[J-1] < PhaseTrans->celly_xboundR[J-1])  
 	{
@@ -1253,7 +1259,11 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
   		xboundL = PhaseTrans->celly_xboundL[J];
        	xboundR = PhaseTrans->celly_xboundR[J];
        }
-       
+       */
+
+         	xboundL = PhaseTrans->xbounds[0];  //DEBUGGING
+       	xboundR = PhaseTrans->xbounds[1]; //DEBUGGING
+
 
   	if 	( (xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
        	(PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )

@@ -150,6 +150,9 @@ public:
 	PetscScalar		zbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in z
 	PetscScalar  	*celly_xboundL;  //left boundary of segment evaluated at ycoord of cell
 	PetscScalar  	*celly_xboundR;  //right boundary of segment evaluated at ycoord of cell
+	PetscScalar   *cbuffL;    // memory buffer for celly_xboundL
+	PetscScalar   *cbuffR;    // memory buffer for celly_xboundR
+
   
   // for moving NotInAirBox
   PetscScalar     t0_box;

@@ -33,4 +33,6 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Pet
 PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr);
 PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr);
 
+//PetscErrorCode DynamicPhTrDestroy(DBMat *dbm);
+
 #endif /* PHASE_TRANSITION_H_ */

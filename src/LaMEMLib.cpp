@@ -315,6 +315,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// staggered grid
 	ierr = FDSTAGReadRestart(&lm->fs, fp); CHKERRQ(ierr);
 
+	ierr = DebugFunct(&lm->jr); CHKERRQ(ierr);   //debugging
+
 	// free surface
 	ierr = FreeSurfReadRestart(&lm->surf, fp); CHKERRQ(ierr);
 
@@ -335,6 +337,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
+
+	ierr = DebugFunct(&lm->jr); CHKERRQ(ierr);   //debugging
 
 	// close temporary restart file
 	fclose(fp);
@@ -372,6 +376,44 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	PetscFunctionReturn(0);
 }
+
+// debugging Function------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DebugFunct"
+PetscErrorCode DebugFunct(JacRes *jr)
+{
+	PetscInt 		numPhases, numPhTrn;  //debugging
+	Ph_trans_t      *PhaseTrans;
+	FDSTAG      *fs;
+	Discret1D *dsy, *dsx, *dsz;
+	PetscFunctionBegin;
+
+	fs  =  jr->fs;
+	dsy = &fs->dsy;
+	dsx = &fs->dsx;
+	dsz = &fs->dsz; 
+
+	PhaseTrans = jr->dbm->matPhtr;
+	numPhTrn    =   jr->dbm->numPhtr;
+	numPhases =  jr->dbm->numPhases;
+
+	PetscPrintf(PETSC_COMM_WORLD, "\n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: numPhases, numPhTrn= %i, %i \n", numPhases, numPhTrn);
+	PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: ccoor: x=%g, y=%g, z=%g\n", dsx->ccoor[0], dsy->ccoor[0],dsz->ccoor[0]);
+	PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: ccoor: x=%g, y=%g, z=%g\n", dsx->ccoor[1], dsy->ccoor[1],dsz->ccoor[1]);
+
+	if (PhaseTrans->Type == _NotInAirBox_ )
+	{
+	  PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", PhaseTrans->bounds[0], PhaseTrans->bounds[1]);
+	  PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", PhaseTrans->xbounds[0], PhaseTrans->xbounds[1]);
+	  PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", PhaseTrans->ybounds[0], PhaseTrans->ybounds[1]);
+	  PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", PhaseTrans->zbounds[0], PhaseTrans->zbounds[1]);
+	}
+
+	PetscFunctionReturn(0);
+}
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibSaveRestart"
@@ -501,6 +543,7 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = ADVDestroy     (&lm->actx);   CHKERRQ(ierr);
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
+	
 
 	PetscFunctionReturn(0);
 }
