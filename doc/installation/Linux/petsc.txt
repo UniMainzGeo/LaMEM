@@ -44,6 +44,14 @@ Logout and login from Linux DESKTOP! or just restart.
 
 Check your environment with echo command (e.g. echo $PATH).
 
+WARNING! Eclipse IDE does not require PETSC_DEB to be set globally
+To set it at the project level, do the folowing:
+	In the project properties select C/C++ Build -> Environment -> Add
+	As name set PETSC_DEB
+	As value set actual path
+	Select "Add to all configurations"
+This option is useful if multiple projects with different PETSc versions are developed 
+
 ------------------------------------------------------------------
 MPICH 3
 ------------------------------------------------------------------
