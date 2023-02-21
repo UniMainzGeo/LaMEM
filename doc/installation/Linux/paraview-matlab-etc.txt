@@ -4,6 +4,7 @@ GIT
 
 git config --global user.name "Your User Name"
 git config --global user.email "your_email@example.com"
+git config remote.origin.prune true
 
 ------------------------------------------------------------------
 PARAVIEW
