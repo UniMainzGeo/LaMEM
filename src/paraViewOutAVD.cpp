@@ -294,16 +294,16 @@ void AVD3DAllocate(
 	avd3D->mz_mesh = mz+2;
 
 	AVDCell3DCreate(
-		(const PetscInt)avd3D->mx_mesh,
-		(const PetscInt)avd3D->my_mesh,
-		(const PetscInt)avd3D->mz_mesh,
+		 avd3D->mx_mesh,
+		 avd3D->my_mesh,
+		 avd3D->mz_mesh,
 		&avd3D->cells);
 
 	avd3D->npoints = npoints;
 
 	AVDPoint3DCreate(npoints, &avd3D->points);
 
-	AVDChain3DCreate(npoints, (const PetscInt)avd3D->buffer, &avd3D->chains);
+	AVDChain3DCreate(npoints, avd3D->buffer, &avd3D->chains);
 
 	(*A) = avd3D;
 }
