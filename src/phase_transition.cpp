@@ -492,6 +492,8 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 
 	   if (found==0) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, " Cannot find NotInAirBox seg j=%i, dsy->ccoor=%g\n", \
 	   		j, dsy->ccoor[j]*scal->length);
+	   PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", ph->celly_xboundL[j], ph->celly_xboundR[j]); //DEBUGGING
+
 	}
 
 
@@ -852,6 +854,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 				ph 			= P->phase;
 				InsideAbove = 0;
+				printf("DEBUGGING: Before Transition\n"); //DEBUGGING
+
 				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr, ID);
 
 				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) )
@@ -1235,7 +1239,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
 
 	GET_CELL_IJK(cellID, I, J, K, nx, ny) //need to know J for celly_xboundL/R
 
-	/* DEBUGGING
+	/*
        //particle backward of the cell center and adjacent cell is within phase trans box
        if (P->X[1] <= dsy->ccoor[J] && PhaseTrans->celly_xboundL[J-1] < PhaseTrans->celly_xboundR[J-1])  
 	{
@@ -1260,7 +1264,8 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
        }
        */
 
-         	xboundL = PhaseTrans->xbounds[0];  //DEBUGGING
+
+        	xboundL = PhaseTrans->xbounds[0];  //DEBUGGING
        	xboundR = PhaseTrans->xbounds[1]; //DEBUGGING
 
 
@@ -1378,4 +1383,35 @@ PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_p
 	}
 
 	return n;
+}
+//------------------------------------------------------------------------------------------------------------//
+#undef __FUNCT__
+#define __FUNCT__ "DynamicPhTrDestroy"
+PetscErrorCode DynamicPhTrDestroy(DBMat *dbm)
+{
+
+	Ph_trans_t      *PhaseTrans;
+	PetscInt   nPtr, numPhTrn;
+
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	printf("DEBUGGING:  DynamicPhTrDestroy 1 \n");
+
+	numPhTrn    =   dbm->numPhtr;
+	nPtr        =   0;
+
+	for(nPtr=0; nPtr<numPhTrn; nPtr++)
+	{
+	  printf("DEBUGGING:  DynamicPhTrDestroy 2 \n");
+
+	  PhaseTrans = dbm->matPhtr+nPtr;
+	  printf("DEBUGGING:  DynamicPhTrDestroy 3 \n");
+
+	  ierr = PetscFree(PhaseTrans->cbuffL);        CHKERRQ(ierr);
+	  ierr = PetscFree(PhaseTrans->cbuffR);       CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
 }
