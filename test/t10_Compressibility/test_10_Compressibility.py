@@ -234,7 +234,7 @@ def test_b():
   ranks = 2
   launch = ['rm -r Timestep* 2>/dev/null',
             'rm -rf ./t10_Compressibility/Out2Core; mkdir ./t10_Compressibility/Out2Core',
-            '../bin/deb/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat',
+            '../bin/opt/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat',
             'mv Timestep* ./t10_Compressibility/Out2Core 2>/dev/null'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't10_Compressibility/Compressibility_Direct_deb-p2.expected'
 
