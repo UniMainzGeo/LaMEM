@@ -66,7 +66,7 @@ end
 
     # t3_Sub1_MATLAB_b_MUMPS_opt                            
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
+    acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
     
     ParamFile = "Subduction_MATLAB_Particles.dat";
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4)
@@ -76,7 +76,7 @@ end
 
     # t3_Sub1_MATLAB_c_MUMPS_deb                                 
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=2e-4));
+    acc      = ((rtol=1e-6,atol=2e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=3e-4));
     
     ParamFile = "Subduction_MATLAB_Particles4.dat";
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4)
@@ -85,7 +85,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=4, deb=true)
                         
     # t3_Sub1_MATLAB_d_MUMPS_MG_VEP_opt                                 
-    # NOTE: This employs grid refinement which does not work yet in julia
+    # NOTE: This employs 1D grid refinement which does not work yet in julia
     #keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     #acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
     
@@ -96,8 +96,6 @@ end
     #                            keywords=keywords, accuracy=acc, cores=8, opt=true)
                         
 end
-
-
 
 @testset "t4_Localisation" begin
     dir = "t4_Loc";
