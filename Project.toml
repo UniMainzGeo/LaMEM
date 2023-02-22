@@ -1,4 +1,7 @@
 name = "LaMEM"
 uuid = "29b6043d-3311-4c16-b469-b02bf85cb680"
-authors = ["Anton Popov <popov@uni-mainz.de>","Boris Kaus <kaus@uni-mainz.de>"]
+authors = ["Anton Popov <popov@uni-mainz.de>", "Boris Kaus <kaus@uni-mainz.de>"]
 version = "1.2.1"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
