@@ -46,8 +46,57 @@ end
 
 # t3_SubductionMATLABinput - to be added  & changed to julia.
 @testset "t3_Subduction" begin
+    dir = "t3_SubductionMATLABinput";
 
+    # input script 
+    include(joinpath(dir,"CreateMarkers_Subduction.jl"));      
+
+    ParamFile = "Subduction_MATLAB_Particles.dat";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-6,), (rtol=1e-5,), (rtol=5e-4,));
+    
+    # test on 1 core
+    # t3_Sub1_MATLAB_a_Direct_opt
+    CreateMarkers_Subduction(dir, ParamFile, NumberCores=1)
+
+    @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_a_Direct_opt-p1.expected", 
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+
+    # t3_Sub1_MATLAB_b_MUMPS_opt                            
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
+    
+    ParamFile = "Subduction_MATLAB_Particles.dat";
+    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4)
+    @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_b_MUMPS_opt-p4.expected", 
+                                keywords=keywords, accuracy=acc, cores=4, opt=true)
+                        
+
+    # t3_Sub1_MATLAB_c_MUMPS_deb                                 
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=2e-4));
+    
+    ParamFile = "Subduction_MATLAB_Particles4.dat";
+    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4)
+    @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_c_MUMPS_deb-p4.expected", 
+                                args="-jp_pc_factor_mat_solver_type mumps",
+                                keywords=keywords, accuracy=acc, cores=4, deb=true)
+                        
+    # t3_Sub1_MATLAB_d_MUMPS_MG_VEP_opt                                 
+    # NOTE: This employs grid refinement which does not work yet in julia
+    #keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    #acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
+    
+    #ParamFile = "Subduction_VEP.dat";
+    #CreateMarkers_Subduction(dir, ParamFile, NumberCores=8)
+    #@test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_d_MUMPS_MG_VEP_opt-p8.expected", 
+    #                           args="",
+    #                            keywords=keywords, accuracy=acc, cores=8, opt=true)
+                        
 end
+
 
 
 @testset "t4_Localisation" begin
@@ -84,7 +133,6 @@ end
     # t5_Permeability_Direct_opt
     @test perform_lamem_test(dir,ParamFile,"Permeability_direct_opt-p4.expected", 
                             keywords=keywords, accuracy=acc, cores=4, opt=true)
-
 end
 
 @testset "t6_AdjointGradientScalingLaws_p2" begin
@@ -129,10 +177,10 @@ end
     
     # t7_AdjointGradientInversion_1
     keywords   = (  "F / FINI",
-                    "| 1. Diff parameter value =",
-                    "| 2. Diff parameter value =",
-                    "| 1. Parameter value =",
-                    "| 2. Parameter value =")
+                    "| 1. Diff parameter value",
+                    "| 2. Diff parameter value",
+                    "| 1. Parameter value",
+                    "| 2. Parameter value")
 
     acc        = (  (rtol=1e-6, atol=1e-6), 
                     (rtol=1e-5, atol=1e-5), 
@@ -140,13 +188,12 @@ end
                     (rtol=1e-5, atol=1e-6),
                     (rtol=1e-5, atol=1e-6),
                 );
-    split_sign = ("=","=","=","=","=")
 
     # Perform tests
     ParamFile = "t7_Subduction2D_FreeSlip_Inversion.dat";
     @test perform_lamem_test(dir,ParamFile,"t7_AdjointGradientInversion_1.expected",
                             args="-nel_z 16 -nel_x 64",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, split_sign=split_sign)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # t7_AdjointGradientInversion_2
     keywords   = (  "| misfit          ",
@@ -168,7 +215,7 @@ end
     ParamFile = "t7_Subduction2D_FreeSlip_Inversion.dat";
     @test perform_lamem_test(dir,ParamFile,"t7_AdjointGradientInversion_2.expected",
                             args="-tao_fmin 1e-6 -nel_z 16 -nel_x 64 -Inversion_EmployTAO 1",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, split_sign=split_sign)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true); 
 
     # t7_AdjointGradientInversion_3
     keywords   = (  "| misfit          ",
@@ -185,12 +232,11 @@ end
                     (rtol=1e-3, atol=1e-6),
                     (rtol=2e-5, atol=1e-6),
                 );
-    split_sign = ("=","=","=","=","eta","rho")
 
     ParamFile = "t7_Subduction2D_FreeSlip_Inversion_FD.dat";
     @test perform_lamem_test(dir,ParamFile,"t7_AdjointGradientInversion_3.expected",
                             args="-tao_fmin 1e-6 -nel_z 16 -nel_x 32",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, split_sign=split_sign)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true) 
 
     # PSD paper inversion for nonlinear materials:
     # t7_PSDInversion_1
@@ -203,12 +249,11 @@ end
                     (rtol=1e-3, atol=1e-5), 
                     (rtol=1e-5, atol=1e-5),
                 );
-    split_sign = ("=","=","=")
-
+    
     ParamFile = "t7_PSDInversionPaper.dat";
     @test perform_lamem_test(dir,ParamFile,"t7_PSDInversionPaper_1.expected",
                             args="-Inversion_rtol 4.6e-2",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, split_sign=split_sign)
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
 
     # PSD paper inversion for linear materials:   
     # t7_PSDInversion_2                            
@@ -221,12 +266,11 @@ end
                     (rtol=1e-3, atol=1e-5), 
                     (rtol=5e-5, atol=1e-5),
                 );
-    split_sign = ("=","=","=")
 
     ParamFile = "t7_PSDInversionPaper.dat";
     @test perform_lamem_test(dir,ParamFile,"t7_PSDInversionPaper_2.expected",
                             args="-nel_x 8 -nel_y 8 -nel_z 8  -n[0] 1 -n[1] 1 -n[2] 1  -Value[0] 135",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, split_sign=split_sign)
+                            keywords=keywords, accuracy=acc, cores=2, opt=true) 
 
 end
 

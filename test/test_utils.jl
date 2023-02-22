@@ -53,7 +53,6 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
         end
     end
   
-
     return success
 end
 
@@ -65,18 +64,14 @@ Extracts values from the logfile `file` specified after `keywords` (optionally d
 This will generally return a NamedTuple with Vectors 
 
 """
-function extract_info_logfiles(file::String, keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), split_signs="=", remove_substrings="") where N
+function extract_info_logfiles(file::String, keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), split_signs="=") where N
 
     split_sign = split_signs;
-    remove_substring = remove_substrings;
     out=()
     for i=1:N        
         d =  []
         if isa(split_signs,Tuple)
             split_sign = split_signs[i]
-        end
-        if isa(remove_substrings,Tuple)
-            remove_substring = remove_substrings[i]
         end
         
         open(file) do f
@@ -84,22 +79,7 @@ function extract_info_logfiles(file::String, keywords::NTuple{N,String}=("|Div|_
                 # read a new / next line for every iteration          
                 line = readline(f)
                 if contains(line, keywords[i])
-                    if contains(line, "[")
-                        # remove everything in between [  ] (units etc.)
-                        ind = (findfirst("[", line)[1],findlast("]", line)[1])
-                        line = line[1:ind[1]-1]*line[ind[end]+1:end]
-                    end 
-                    if !isempty(remove_substring)
-                        if contains(line,remove_substring)
-                            line = replace(line, remove_substring=>"")
-                        end
-                    end
-                    num=NaN
-                    try
-                        num = parse(Float64,split(line,split_sign)[end])
-                    catch
-                        println("Problem parsing line: $line")
-                    end
+                    num = extract_value_from_string(line, keywords[i], split_sign);
                     push!(d,num)    # add value to vector
                 end
             end
@@ -115,6 +95,34 @@ end
 
 
 """
+    extract_value_from_string(line_origin::String, keyword::String, split_sign="=", type=Float64)
+
+This extracts a numerical value from `line_origin` after the `keyword`. Optionally, there can be a `split_sign` in between and we can transfer it to another `type` than `Float64`.`
+"""
+function extract_value_from_string(line_origin::String, keyword::String, split_sign="=", type=Float64)
+    # find keyword
+    ind  = findlast(keyword,line_origin)
+    line = line_origin[ind[end]+1:end]
+
+    # remove split signs
+    line = replace(line, split_sign=>"") 
+    line = replace(line, ","=>"")           # comma
+
+    # Extract value
+    num=NaN
+    if !isempty(ind)
+        line_vec = split(line)
+        try
+            num = parse(type,line_vec[1])
+        catch
+            println("Problem parsing line: $line_origin")
+        end
+    end
+
+    return num
+end
+
+"""
     success = compare_logfiles(new::String, expected::String, 
                         keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), 
                         accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,)),
@@ -126,17 +134,15 @@ We scan the file for lines with the given `keywords`, and extract numerical valu
 
 Arguments:
     `split_sign`        : Can be a `Tuple`, containing the sign after which we split the string
-    `remove_substring`  : Optional `Tuple` with substrings to be stripped from the line, before numerical value is extracted
     
-
 """
 function compare_logfiles(new::String, expected::String, 
                         keywords::NTuple{N,String}=("|Div|_inf","|Div|_2","|mRes|_2"), 
                         accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,));
-                        split_sign="=", remove_substring="") where N
+                        split_sign="=") where N
 
-    new_out = extract_info_logfiles(new, keywords, split_sign, remove_substring)
-    exp_out = extract_info_logfiles(expected, keywords, split_sign, remove_substring)
+    new_out = extract_info_logfiles(new, keywords, split_sign)
+    exp_out = extract_info_logfiles(expected, keywords, split_sign)
 
     test_status = true
     for i=1:N 
@@ -169,13 +175,22 @@ end
 # Pretty formatting of errors
 function print_differences(new, expected, accuracy)
     n = 24;
-    println("      $(rpad("New",n)) | $(rpad("Expected",n)) | $(rpad("rtol (<$(accuracy.rtol))",n)) | $(rpad("atol  (<$(accuracy.atol))",n))")
+    atol_expected = 0.0;
+    if haskey(accuracy, :atol)
+        atol_expected = accuracy.atol;
+    end
+    rtol_expected = 0.0;
+    if haskey(accuracy, :rtol)
+        rtol_expected = accuracy.rtol;
+    end
 
-    for i=1:length(new)
+    println("      $(rpad("New",n)) | $(rpad("Expected",n)) | $(rpad("rtol (<$(rtol_expected))",n)) | $(rpad("atol  (<$(atol_expected))",n))")
+
+    for i in eachindex(new)
         atol = norm(new[i] - expected[i])
         rtol = atol/max(norm(new[i]), norm(expected[i]))
         col = :normal
-        if atol  d>  max(accuracy.atol, accuracy.rtol*max(norm(new[i]), norm(expected[i])))
+        if atol >  max(atol_expected, rtol_expected*max(norm(new[i]), norm(expected[i])))
             col = :red
         end
         printstyled("$(rpad(i,4))  $(rpad(new[i],n)) | $(rpad(expected[i],n)) | $(rpad(rtol,n)) | $(rpad(atol,n)) \n", color=col)
@@ -185,11 +200,48 @@ function print_differences(new, expected, accuracy)
 end
 
 
+"""
+    perform_lamem_test( dir::String, 
+                        ParamFile::String, 
+                        expectedFile::String; 
+                        keywords=("|Div|_inf","|Div|_2","|mRes|_2"), 
+                        accuracy=((rtol=1e-6,atol=1e-10), (rtol=1e-6,), (rtol=1e-6,)), 
+                        cores::Int64=1, 
+                        args::String="",
+                        bin_dir="../bin",  
+                        opt=true, 
+                        deb=false, 
+                        mpiexec="mpiexec",
+                        split_sign="=", 
+                        debug=false, 
+                        create_expected_file=false)
+
+This performs a LaMEM simulation and compares certain keywords of the logfile with results of a previous simulation        
+
+Parameters:
+- `dir`: directory in which the LaMEM `*.dat` ParamFile is located
+- `ParamFile`: name of the LaMEM input file
+- `expectedFile`: name of the file with earlier results, versus which we compare
+- `keywords`: Tuple with keywords, which contain numerical values
+- `accuracy`: Tuple that contains relative (`rtol`), and (optionally) absolute `atol` tolerances
+- `cores`: Number of cores on which to perform the test
+- `args`: Optional LaMEM command line Arguments
+- `bin_dir`: directory where the LaMEM binaries are, relative to the current one
+- `opt`: run with optimized LaMEM?
+- `deb`: run with debug version of LaMEM?
+- `mpiexec`: mpi executable
+- `split_sign`: split sign (or Tuple of it)
+- `debug`: set to true if you simply want to see the output of the simulation (no test done)
+- `create_expected_file`: create an expected file
+
+"""
 function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String; 
                 keywords=("|Div|_inf","|Div|_2","|mRes|_2"), accuracy=((rtol=1e-6,), (rtol=1e-6,), (rtol=1e-6,)), 
                 cores::Int64=1, args::String="",
                 bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec",
-                debug=false, split_sign="=", remove_substring="")
+                split_sign="=", 
+                debug=false, create_expected_file=false,
+                )
 
     cur_dir = pwd();
     cd(dir)
@@ -200,15 +252,21 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     else
         outfile = "test_$(cores).out";
     end
+    if create_expected_file==true
+        outfile = expectedFile;
+        debug = true;
+    end
 
     # perform simulation 
     success = run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec);
 
     if success && debug==false
         # compare logfiles 
-        success = compare_logfiles(outfile, expectedFile, keywords, accuracy, split_sign=split_sign, remove_substring=remove_substring)
+        success = compare_logfiles(outfile, expectedFile, keywords, accuracy, split_sign=split_sign)
     end
-
+    if create_expected_file==true
+        println("Created expected file: $expectedFile in directory $dir")
+    end
     if !success
         # something went wrong with executing the file (likely @ PETSc error)
         # Display some useful info here that helps debugging
