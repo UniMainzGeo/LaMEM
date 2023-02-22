@@ -98,7 +98,7 @@ function extract_info_logfiles(file::String, keywords::NTuple{N,String}=("|Div|_
                     try
                         num = parse(Float64,split(line,split_sign)[end])
                     catch
-                        error("Problem parsing line: $line")
+                        println("Problem parsing line: $line")
                     end
                     push!(d,num)    # add value to vector
                 end
@@ -175,7 +175,7 @@ function print_differences(new, expected, accuracy)
         atol = norm(new[i] - expected[i])
         rtol = atol/max(norm(new[i]), norm(expected[i]))
         col = :normal
-        if atol>  max(accuracy.atol, accuracy.rtol*max(norm(new[i]), norm(expected[i])))
+        if atol  d>  max(accuracy.atol, accuracy.rtol*max(norm(new[i]), norm(expected[i])))
             col = :red
         end
         printstyled("$(rpad(i,4))  $(rpad(new[i],n)) | $(rpad(expected[i],n)) | $(rpad(rtol,n)) | $(rpad(atol,n)) \n", color=col)
