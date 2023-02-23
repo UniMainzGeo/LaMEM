@@ -315,8 +315,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// staggered grid
 	ierr = FDSTAGReadRestart(&lm->fs, fp); CHKERRQ(ierr);
 
-	ierr = DebugFunct(&lm->jr); CHKERRQ(ierr);   //debugging
-
 	// free surface
 	ierr = FreeSurfReadRestart(&lm->surf, fp); CHKERRQ(ierr);
 
@@ -325,6 +323,11 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// solution variables
 	ierr = JacResReadRestart(&lm->jr, fp); CHKERRQ(ierr);
+
+	// arrays for dynamic NotInAir phase_trans
+	ierr = DebugFunct(&lm->jr, 0); CHKERRQ(ierr);   //DEBUGGING
+	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
+	ierr = DebugFunct(&lm->jr, 1); CHKERRQ(ierr);   //DEBUGGING
 
 	// markers
 	ierr = ADVReadRestart(&lm->actx, fp); CHKERRQ(ierr);
@@ -338,7 +341,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
 
-	ierr = DebugFunct(&lm->jr); CHKERRQ(ierr);   //debugging
 
 	// close temporary restart file
 	fclose(fp);
@@ -359,6 +361,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
     // Store Material DB in intermediate structure (for use with Adjoint)
 	ierr = DBMatCreate(&dbm_modified, fb, &lm->fs, PETSC_TRUE); 							CHKERRQ(ierr);
 
+
 	// swap material structure with the one from file (for adjoint)
 	for (i=0; i < lm->dbm.numPhases; i++)
 	{
@@ -372,17 +375,20 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// free space
 	free(fileName);
 
+
+
+
 	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
 
-// debugging Function------------------------------------------------
+//DEBUGGING Function------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DebugFunct"
-PetscErrorCode DebugFunct(JacRes *jr)
+PetscErrorCode DebugFunct(JacRes *jr, PetscInt k)
 {
-	PetscInt 		numPhases, numPhTrn;  //debugging
+	PetscInt 		nPtr, numPhases, numPhTrn;  //debugging
 	Ph_trans_t      *PhaseTrans;
 	FDSTAG      *fs;
 	Discret1D *dsy, *dsx, *dsz;
@@ -393,26 +399,40 @@ PetscErrorCode DebugFunct(JacRes *jr)
 	dsx = &fs->dsx;
 	dsz = &fs->dsz; 
 
-	PhaseTrans = jr->dbm->matPhtr;
 	numPhTrn    =   jr->dbm->numPhtr;
 	numPhases =  jr->dbm->numPhases;
 
-	PetscPrintf(PETSC_COMM_WORLD, "\n");
+	PetscPrintf(PETSC_COMM_WORLD, "DebugFunct k= %i \n", k);
+	PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: k, numPhases, numPhTrn= %i, %i, %i \n", k, numPhases, numPhTrn);
+	PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: ccoor: x=%g, y=%g, z=%g\n", dsx->ccoor[0], dsy->ccoor[0],dsz->ccoor[0]);
+	PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: ccoor: x=%g, y=%g, z=%g\n", dsx->ccoor[1], dsy->ccoor[1],dsz->ccoor[1]);
 
-	PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: numPhases, numPhTrn= %i, %i \n", numPhases, numPhTrn);
-	PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: ccoor: x=%g, y=%g, z=%g\n", dsx->ccoor[0], dsy->ccoor[0],dsz->ccoor[0]);
-	PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: ccoor: x=%g, y=%g, z=%g\n", dsx->ccoor[1], dsy->ccoor[1],dsz->ccoor[1]);
-
-	if (PhaseTrans->Type == _NotInAirBox_ )
+	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	{
-	  PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", PhaseTrans->bounds[0], PhaseTrans->bounds[1]);
-	  PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", PhaseTrans->xbounds[0], PhaseTrans->xbounds[1]);
-	  PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", PhaseTrans->ybounds[0], PhaseTrans->ybounds[1]);
-	  PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", PhaseTrans->zbounds[0], PhaseTrans->zbounds[1]);
+		PhaseTrans = jr->dbm->matPhtr+nPtr;
+
+
+/*		if (PhaseTrans->Type == _NotInAirBox_ )
+	    {
+	       PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: bounds: %g, %g\n", PhaseTrans->bounds[0], PhaseTrans->bounds[1]);
+	       PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: xbounds: %g, %g\n", PhaseTrans->xbounds[0], PhaseTrans->xbounds[1]);
+	       PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: ybounds: %g, %g\n", PhaseTrans->ybounds[0], PhaseTrans->ybounds[1]);
+	       PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: zbounds: %g, %g\n", PhaseTrans->zbounds[0], PhaseTrans->zbounds[1]);
+	    }
+*/
+
+	    if (k)
+	    {  
+		   PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: Accessing celly \n");
+		   PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: celly: %g, %g\n", PhaseTrans->celly_xboundL[0], PhaseTrans->celly_xboundR[0]);
+
+	    }
 	}
+
 
 	PetscFunctionReturn(0);
 }
+
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -465,11 +485,15 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	// solution variables
 	ierr = JacResWriteRestart(&lm->jr, fp); CHKERRQ(ierr);
 
+	// dynamic phase transition 
+	ierr = DynamicPhTr_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
+
 	// markers
 	ierr = ADVWriteRestart(&lm->actx, fp); CHKERRQ(ierr);
 
 	// passive tracers
 	ierr = Passive_Tracer_WriteRestart(&lm->actx, fp); CHKERRQ(ierr);
+
 
 	// close temporary restart file
 	fclose(fp);
@@ -544,7 +568,7 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
 
-	//ierr = DynamicPhTrDestroy (&lm->dbm); CHKERRQ(ierr);
+	ierr = DynamicPhTrDestroy (&lm->dbm); CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);

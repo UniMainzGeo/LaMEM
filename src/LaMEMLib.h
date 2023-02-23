@@ -84,7 +84,7 @@ struct LaMEMLib
 // LAMEM LIBRARY FUNCTIONS
 //---------------------------------------------------------------------------
 
-PetscErrorCode DebugFunct(JacRes *jr); //debugging
+PetscErrorCode DebugFunct(JacRes *jr,  PetscInt k); //debugging
 
 PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param);
 

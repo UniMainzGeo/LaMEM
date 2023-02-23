@@ -425,6 +425,8 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	scal = dbm -> scal;
 	dsy = &fs->dsy;
 
+	ph->nsegs=0;
+
 	ierr = getIntParam   (fb, _OPTIONAL_, "nsegs",  &ph->nsegs,  1,           _max_NotInAir_segs_);  CHKERRQ(ierr);
 	
 	//*
@@ -492,8 +494,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 
 	   if (found==0) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, " Cannot find NotInAirBox seg j=%i, dsy->ccoor=%g\n", \
 	   		j, dsy->ccoor[j]*scal->length);
-	   PetscPrintf(PETSC_COMM_WORLD, "DEBUGGING: NotInAirBox: %g, %g\n", ph->celly_xboundL[j], ph->celly_xboundR[j]); //DEBUGGING
-
 	}
 
 
@@ -854,7 +854,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 				ph 			= P->phase;
 				InsideAbove = 0;
-				printf("DEBUGGING: Before Transition\n"); //DEBUGGING
 
 				Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr, ID);
 
@@ -941,8 +940,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	}
 	ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
 
-    PrintDone(t);
-
+    	PrintDone(t);
 	PetscFunctionReturn(0);
 }
 
@@ -1239,7 +1237,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
 
 	GET_CELL_IJK(cellID, I, J, K, nx, ny) //need to know J for celly_xboundL/R
 
-	/*
+	
        //particle backward of the cell center and adjacent cell is within phase trans box
        if (P->X[1] <= dsy->ccoor[J] && PhaseTrans->celly_xboundL[J-1] < PhaseTrans->celly_xboundR[J-1])  
 	{
@@ -1262,13 +1260,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
   		xboundL = PhaseTrans->celly_xboundL[J];
        	xboundR = PhaseTrans->celly_xboundR[J];
        }
-       */
-
-
-        	xboundL = PhaseTrans->xbounds[0];  //DEBUGGING
-       	xboundR = PhaseTrans->xbounds[1]; //DEBUGGING
-
-
+       
   	if 	( (xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
        	(PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )
     	{
@@ -1384,6 +1376,82 @@ PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_p
 
 	return n;
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DynamicPhTr_WriteRestart"
+PetscErrorCode DynamicPhTr_WriteRestart(JacRes *jr, FILE *fp)
+{
+
+	Discret1D  *dsy;
+	FDSTAG     *fs;
+	Ph_trans_t *PhaseTrans;
+	PetscInt   nPtr, numPhTrn;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+
+	PhaseTrans = jr->dbm->matPhtr;
+	numPhTrn   = jr->dbm->numPhtr;
+	fs = jr->fs;
+	dsy = &fs->dsy;
+
+	for(nPtr=0; nPtr<numPhTrn; nPtr++)
+	{
+	   PhaseTrans = jr->dbm->matPhtr+nPtr;
+
+          if (PhaseTrans->Type == _NotInAirBox_ )
+	   {
+	      fwrite(PhaseTrans->cbuffL,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
+	      fwrite(PhaseTrans->cbuffR,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
+           }
+	}
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DynamicPhTr_ReadRestart"
+PetscErrorCode DynamicPhTr_ReadRestart(JacRes *jr, FILE *fp)
+{
+
+	Discret1D  *dsy;
+	FDSTAG     *fs;
+	Ph_trans_t *PhaseTrans;
+	PetscInt   nPtr, numPhTrn;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+
+	PhaseTrans = jr->dbm->matPhtr;
+	numPhTrn   = jr->dbm->numPhtr;
+	fs = jr->fs;
+	dsy = &fs->dsy;
+
+	for(nPtr=0; nPtr<numPhTrn; nPtr++)
+	{
+	   PhaseTrans = jr->dbm->matPhtr+nPtr;
+
+          if (PhaseTrans->Type == _NotInAirBox_ )
+	   {
+
+  	      ierr = makeScalArray(&PhaseTrans->cbuffL, NULL, dsy->ncels+2); CHKERRQ(ierr);
+  	      ierr = makeScalArray(&PhaseTrans->cbuffR, NULL, dsy->ncels+2); CHKERRQ(ierr);
+
+	      fread(PhaseTrans->cbuffL,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
+	      fread(PhaseTrans->cbuffR,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
+
+
+	      PhaseTrans->celly_xboundL = PhaseTrans->cbuffL + 1;
+	      PhaseTrans->celly_xboundR = PhaseTrans->cbuffR + 1;
+	    }
+	}
+
+
+	PetscFunctionReturn(0);
+}
 //------------------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "DynamicPhTrDestroy"
@@ -1397,20 +1465,17 @@ PetscErrorCode DynamicPhTrDestroy(DBMat *dbm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	printf("DEBUGGING:  DynamicPhTrDestroy 1 \n");
-
 	numPhTrn    =   dbm->numPhtr;
 	nPtr        =   0;
 
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	{
-	  printf("DEBUGGING:  DynamicPhTrDestroy 2 \n");
-
-	  PhaseTrans = dbm->matPhtr+nPtr;
-	  printf("DEBUGGING:  DynamicPhTrDestroy 3 \n");
-
-	  ierr = PetscFree(PhaseTrans->cbuffL);        CHKERRQ(ierr);
-	  ierr = PetscFree(PhaseTrans->cbuffR);       CHKERRQ(ierr);
+	   PhaseTrans = dbm->matPhtr+nPtr;
+          if (PhaseTrans->Type == _NotInAirBox_ )
+	   {
+	      ierr = PetscFree(PhaseTrans->cbuffL);        CHKERRQ(ierr);
+	      ierr = PetscFree(PhaseTrans->cbuffR);       CHKERRQ(ierr);
+	   }
 	}
 
 	PetscFunctionReturn(0);
