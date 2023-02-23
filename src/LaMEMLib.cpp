@@ -325,9 +325,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	ierr = JacResReadRestart(&lm->jr, fp); CHKERRQ(ierr);
 
 	// arrays for dynamic NotInAir phase_trans
-	ierr = DebugFunct(&lm->jr, 0); CHKERRQ(ierr);   //DEBUGGING
 	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
-	ierr = DebugFunct(&lm->jr, 1); CHKERRQ(ierr);   //DEBUGGING
 
 	// markers
 	ierr = ADVReadRestart(&lm->actx, fp); CHKERRQ(ierr);
@@ -379,56 +377,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 
 	PrintDone(t);
-
-	PetscFunctionReturn(0);
-}
-
-//DEBUGGING Function------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DebugFunct"
-PetscErrorCode DebugFunct(JacRes *jr, PetscInt k)
-{
-	PetscInt 		nPtr, numPhases, numPhTrn;  //debugging
-	Ph_trans_t      *PhaseTrans;
-	FDSTAG      *fs;
-	Discret1D *dsy, *dsx, *dsz;
-	PetscFunctionBegin;
-
-	fs  =  jr->fs;
-	dsy = &fs->dsy;
-	dsx = &fs->dsx;
-	dsz = &fs->dsz; 
-
-	numPhTrn    =   jr->dbm->numPhtr;
-	numPhases =  jr->dbm->numPhases;
-
-	PetscPrintf(PETSC_COMM_WORLD, "DebugFunct k= %i \n", k);
-	PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: k, numPhases, numPhTrn= %i, %i, %i \n", k, numPhases, numPhTrn);
-	PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: ccoor: x=%g, y=%g, z=%g\n", dsx->ccoor[0], dsy->ccoor[0],dsz->ccoor[0]);
-	PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: ccoor: x=%g, y=%g, z=%g\n", dsx->ccoor[1], dsy->ccoor[1],dsz->ccoor[1]);
-
-	for(nPtr=0; nPtr<numPhTrn; nPtr++)
-	{
-		PhaseTrans = jr->dbm->matPhtr+nPtr;
-
-
-/*		if (PhaseTrans->Type == _NotInAirBox_ )
-	    {
-	       PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: bounds: %g, %g\n", PhaseTrans->bounds[0], PhaseTrans->bounds[1]);
-	       PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: xbounds: %g, %g\n", PhaseTrans->xbounds[0], PhaseTrans->xbounds[1]);
-	       PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: ybounds: %g, %g\n", PhaseTrans->ybounds[0], PhaseTrans->ybounds[1]);
-	       PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: zbounds: %g, %g\n", PhaseTrans->zbounds[0], PhaseTrans->zbounds[1]);
-	    }
-*/
-
-	    if (k)
-	    {  
-		   PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: Accessing celly \n");
-		   PetscPrintf(PETSC_COMM_WORLD, "DEBUGFunct: celly: %g, %g\n", PhaseTrans->celly_xboundL[0], PhaseTrans->celly_xboundR[0]);
-
-	    }
-	}
-
 
 	PetscFunctionReturn(0);
 }
