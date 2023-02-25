@@ -10,13 +10,12 @@ acc        = (  (rtol=1e-7, atol=1e-6),
                 (rtol=1e-5, atol=1e-5), 
                 (rtol=1e-5, atol=1e-5), 
              );
-split_sign = ("=","=","=")
 
 # Perform tests
 ParamFile = "t8_AdjointGradients.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_Sphere_ND_all.expected",
                         args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true, split_sign=split_sign)
+                        keywords=keywords, accuracy=acc, cores=2, opt=true)
 
 # t8_AdjointGradients_Sphere_ND_all
 keywords   = (  "|Div|_inf",
@@ -35,14 +34,11 @@ acc        = (  (rtol=1e-7, atol=1e-6),
                 (rtol=1e-6, atol=1e-5), 
                 (rtol=1e-6, atol=1e-5), 
              );
-split_sign = ("=","=","=","delta(rho)","eta",":","eta")
-remove_substring = ("","","","FallingSphere","Matrix","","")
 
 ParamFile = "t8_AdjointGradients.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_Sphere_ND_all.expected",
                         args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true, 
-                        split_sign=split_sign, remove_substring=remove_substring)
+                        keywords=keywords, accuracy=acc, cores=2, opt=true)
 
 # t8_AdjointGradients_CompareGradients_1
 keywords   = (  "|Div|_inf",
@@ -61,13 +57,11 @@ acc        = (  (rtol=1e-7, atol=1e-6),
                 (rtol=1e-8, atol=1e-5), 
                 (rtol=1e-8, atol=1e-5), 
              );
-split_sign = ("=","=","=","eta","eta","eta","eta")
 
 ParamFile = "t8_AdjointGradients_CompareGradients.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_CompareGradients_1.expected",
                         args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true, 
-                        split_sign=split_sign)
+                        keywords=keywords, accuracy=acc, cores=2, opt=true)
 
 # t8_AdjointGradients_CompareGradients_geo
 keywords   = (  "|       FD     1:          eta[ 1]",
@@ -82,14 +76,11 @@ acc        = (  (atol=1e-30, ),
                 (atol=1e-28, ), 
                 (atol=1e-3,  ),  
              );
-split_sign = ("eta","eta","eta","eta","delta(rho)")
-remove_substring = ("","","","","FallingSphere")
 
 ParamFile = "t8_AdjointGradients_CompareGradients_geo.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_CompareGradients_geo.expected",
                         args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true, 
-                        split_sign=split_sign, remove_substring=remove_substring)
+                        keywords=keywords, accuracy=acc, cores=2, opt=true)
 
 
 
@@ -99,7 +90,7 @@ keywords   = (  "|Div|_inf",
                 "|mRes|_2",
                 "|       FD     1:            n[ 0]",
                 "|  adjoint     2:            n[ 0]",
-                "|   Prefactor A               ")
+                "|   Prefactor A               :")
 
 acc        = (  (rtol=1e-7, atol=1e-6), 
                 (rtol=1e-8, atol=1e-5), 
@@ -108,13 +99,11 @@ acc        = (  (rtol=1e-7, atol=1e-6),
                 (rtol=2e-6, atol=1e-5), 
                 (rtol=1e-8, atol=1e-5), 
              );
-split_sign = ("=","=","="," n"," n",":")       
 
 ParamFile = "t8_AdjointGradients_CompareGradients_2.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_CompareGradients_2.expected",
                         args="",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true, 
-                        split_sign=split_sign)
+                        keywords=keywords, accuracy=acc, cores=1, opt=true)
 
 # t8_Adjoint_Subduction2D_FreeSlip
 keywords   = (  "|Div|_inf",
@@ -140,14 +129,11 @@ acc        = (  (rtol=1e-7, atol=1e-6),
                 (rtol=1e-3, atol=1e-5),
                 (rtol=1e-8, atol=1e-5),
              );
-split_sign       = ("=","=","=","eta","delta(rho)","delta(rho)",   "eta" ,        "eta" ,"eta","fr")       
-remove_substring = ("","","","Mantle","Slab",      "PlasticCrust", "PlasticCrust","Slab","Mantle","")
 
 ParamFile = "t8_Subduction2D_FreeSlip_DirectSolver.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_Subduction2D_FreeSlip_DirectSolver_p1.expected",
                         args="-nel_y 1",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true, 
-                        split_sign=split_sign, remove_substring=remove_substring)
+                        keywords=keywords, accuracy=acc, cores=1, opt=true)
 
 
 # t8_Adjoint_PSD
@@ -160,13 +146,11 @@ acc        = (  (rtol=1e-6, atol=1e-6),
                 (rtol=1e-6, atol=1e-5), 
                 (rtol=1e-6, atol=1e-5), 
              );
-split_sign       = ("rho","rho","=")       
 
 ParamFile = "t8_FB_PSDTest.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_FB_PSDTest_p1.expected",
                         args="-nel_x 8 -nel_y 8 -nel_z 8 ",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true, 
-                        split_sign=split_sign)
+                        keywords=keywords, accuracy=acc, cores=1, opt=true)
 
 # t8_Adjoint_rho_SensitivityKernel_PSD
 keywords   = ( "|Div|_inf",
@@ -179,14 +163,12 @@ acc        = (  (rtol=1e-7, atol=1e-6),
                 (rtol=1e-5, atol=1e-5), 
                 (rtol=1e-4, atol=1e-5), 
                 (rtol=1e-6, atol=1e-5), 
-             );
-split_sign       = ("=","=","=","=")       
+             );   
 
 ParamFile = "t8_AdjointGradients_SensitivityKernel_PSD.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_Adjoint_rho_SensitivityKernel_PSD_p2.expected",
                         args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true, 
-                        split_sign=split_sign)
+                        keywords=keywords, accuracy=acc, cores=2, opt=true)
 
 # t8_Adjoint_n_SensitivityKernel_PSD
 keywords   = ( "|   Norm of field gradient vector :",
@@ -199,8 +181,7 @@ split_sign       = (":",)
 ParamFile = "t8_PSDKernelPaper.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_Adjoint_n_SensitivityKernelPaper_PSD.expected",
                         args="-nel_x 8  -nel_y 8 -nel_z 8 ",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true, 
-                        split_sign=split_sign)
+                        keywords=keywords, accuracy=acc, cores=1, opt=true)
 
 # t8_Adjoint_eta0_SensitivityKernel_PSD
 keywords   = ( "|   Norm of field gradient vector :",
