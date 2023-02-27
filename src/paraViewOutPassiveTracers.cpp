@@ -88,9 +88,6 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Active",          &pvptr->Active   , 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Grid_Mf",          &pvptr->Grid_mf   , 1, 1); CHKERRQ(ierr);
 
-
-
-
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Passive Tracers output parameters:\n");
 	if(pvptr->outpvd) PetscPrintf(PETSC_COMM_WORLD, "   Write Passive tracers pvd file  \n");
@@ -132,7 +129,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	P_Tr       *ptr;
 	char       *fname;
 	FILE       *fp;
-	PetscInt    i, idx, connect, length;
+	PetscInt    i, idx, connect;
+	uint64_t 	length;
 	PetscScalar scal_length;
 	float       var,Xp[3];
 	PetscInt    var_int;
@@ -168,14 +166,14 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 	// connectivity
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += sizeof(int) + sizeof(int)*(size_t)connect;
+	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
 
 	// offsets
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += sizeof(int) + sizeof(int)*(size_t)connect;
+	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
 	// types
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += sizeof(int) + sizeof(int)*(size_t)connect;
+	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
 
 	fprintf( fp, "\t\t\t</Cells>\n");
 
@@ -188,50 +186,50 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 	// point coordinates
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\" />\n",(LLD)offset);
-	offset += sizeof(int) + sizeof(float)*(size_t)(ptr->nummark*3);
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)(ptr->nummark*3);
 
 	fprintf( fp, "\t\t\t</Points>\n");
 
 	// point data - marker phase
-	fprintf( fp, "\t\t\t<PointData Scalars=\"\">\n");
+	fprintf( fp, "\t\t\t<PointData>\n");
 	if(pvptr->Phase)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
-		offset += sizeof(int) + sizeof(int)*(size_t)ptr->nummark;
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
+		offset += sizeof(uint64_t) + sizeof(int)*(size_t)ptr->nummark;
 	}
 
 	if(pvptr->Temperature)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Temperature %s\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_temperature, (LLD)offset);
-		offset += sizeof(int) + sizeof(float)*(size_t)ptr->nummark;
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Temperature %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_temperature, (LLD)offset);
+		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
 	}
 	if(pvptr->Pressure)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Pressure %s\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_stress ,(LLD)offset);
-		offset += sizeof(int) + sizeof(float)*(size_t)ptr->nummark;
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Pressure %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_stress ,(LLD)offset);
+		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
 	}
 	if(pvptr->MeltFraction)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf %s\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_unit  ,(LLD)offset);
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_unit  ,(LLD)offset);
 
-		offset += sizeof(int) + sizeof(float)*(size_t)ptr->nummark;
+		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
 	}
 	if(pvptr->Grid_mf)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf_Grid %s\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_unit  ,(LLD)offset);
-		offset += sizeof(int) + sizeof(float)*(size_t)ptr->nummark;
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf_Grid %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_unit  ,(LLD)offset);
+		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
 		}
 
 	if(pvptr->ID)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"ID\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
-		offset += sizeof(int) + sizeof(int)*(size_t)ptr->nummark;
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"ID\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
+		offset += sizeof(uint64_t) + sizeof(int)*(size_t)ptr->nummark;
 	}
 
 	if(pvptr->Active)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Active\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
-		offset += sizeof(int) + sizeof(int)*(size_t)ptr->nummark;
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Active\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
+		offset += sizeof(uint64_t) + sizeof(int)*(size_t)ptr->nummark;
 	}
 
 	fprintf( fp, "\t\t\t</PointData>\n");
@@ -245,8 +243,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	// -------------------
 	// write connectivity
 	// -------------------
-	length = (int)sizeof(int)*connect;
-	fwrite( &length,sizeof(int),1, fp);
+	length = (uint64_t)sizeof(int)*connect;
+	fwrite( &length,sizeof(uint64_t),1, fp);
 
 	for( i = 0; i < connect; i++)
 	{
@@ -256,8 +254,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	// -------------------
 	// write offsets
 	// -------------------
-	length = (int)sizeof(int)*connect;
-	fwrite( &length,sizeof(int),1, fp);
+	length = (uint64_t)sizeof(int)*connect;
+	fwrite( &length,sizeof(uint64_t),1, fp);
 
 	for( i = 0; i < connect; i++)
 	{
@@ -267,8 +265,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	// -------------------
 	// write types
 	// -------------------
-	length = (int)sizeof(int)*connect;
-	fwrite( &length,sizeof(int),1, fp);
+	length = (uint64_t)sizeof(int)*connect;
+	fwrite( &length,sizeof(uint64_t),1, fp);
 
 	for( i = 0; i < connect; i++)
 	{
@@ -287,8 +285,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 
 
-	length = (int)sizeof(float)*(3*ptr->nummark);
-	fwrite( &length,sizeof(int),1, fp);
+	length = (uint64_t)sizeof(float)*(3*ptr->nummark);
+	fwrite( &length,sizeof(uint64_t),1, fp);
 
 	for( i = 0; i < ptr->nummark; i++)
 	{
@@ -311,8 +309,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	{
 		ierr = VecGetArray(ptr->phase, &buf)           ; CHKERRQ(ierr);
 
-		length = (int)sizeof(int)*(ptr->nummark);
-		fwrite( &length,sizeof(int),1, fp);
+		length = (uint64_t)sizeof(int)*(ptr->nummark);
+		fwrite( &length,sizeof(uint64_t),1, fp);
 
 		for( i = 0; i < ptr->nummark; i++)
 		{
@@ -329,8 +327,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 		{
 			ierr = VecGetArray(ptr->T, &buf)           ; CHKERRQ(ierr);
 
-			length = (int)sizeof(float)*(ptr->nummark);
-			fwrite( &length,sizeof(float),1, fp);
+			length = (uint64_t)sizeof(float)*(ptr->nummark);
+			fwrite( &length,sizeof(uint64_t),1, fp);
 
 			for( i = 0; i < ptr->nummark; i++)
 			{
@@ -349,8 +347,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 		{
 			ierr = VecGetArray(ptr->p, &buf)           ; CHKERRQ(ierr);
 
-			length = (int)sizeof(float)*(ptr->nummark);
-			fwrite( &length,sizeof(float),1, fp);
+			length = (uint64_t)sizeof(float)*(ptr->nummark);
+			fwrite( &length,sizeof(uint64_t),1, fp);
 
 			for( i = 0; i < ptr->nummark; i++)
 			{
@@ -367,8 +365,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 		{
 			ierr = VecGetArray(ptr->Melt_fr, &buf)           ; CHKERRQ(ierr);
 
-			length = (int)sizeof(float)*(ptr->nummark);
-			fwrite( &length,sizeof(float),1, fp);
+			length = (uint64_t)sizeof(float)*(ptr->nummark);
+			fwrite( &length,sizeof(uint64_t),1, fp);
 
 			for( i = 0; i < ptr->nummark; i++)
 			{
@@ -385,8 +383,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 		{
 			ierr = VecGetArray(ptr->Melt_Grid, &buf)           ; CHKERRQ(ierr);
 
-			length = (int)sizeof(float)*(ptr->nummark);
-			fwrite( &length,sizeof(float),1, fp);
+			length = (uint64_t)sizeof(float)*(ptr->nummark);
+			fwrite( &length,sizeof(uint64_t),1, fp);
 
 			for( i = 0; i < ptr->nummark; i++)
 			{
@@ -403,8 +401,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 			{
 				ierr = VecGetArray(ptr->ID, &buf)           ; CHKERRQ(ierr);
 
-				length = (int)sizeof(int)*(ptr->nummark);
-				fwrite( &length,sizeof(int),1, fp);
+				length = (uint64_t)sizeof(int)*(ptr->nummark);
+				fwrite( &length,sizeof(uint64_t),1, fp);
 
 				for( i = 0; i < ptr->nummark; i++)
 				{
@@ -421,8 +419,8 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 			{
 				ierr = VecGetArray(ptr->C_advection, &buf)           ; CHKERRQ(ierr);
 
-				length = (int)sizeof(int)*(ptr->nummark);
-				fwrite( &length,sizeof(int),1, fp);
+				length = (uint64_t)sizeof(int)*(ptr->nummark);
+				fwrite( &length,sizeof(uint64_t),1, fp);
 
 				for( i = 0; i < ptr->nummark; i++)
 				{

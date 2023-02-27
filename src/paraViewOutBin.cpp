@@ -119,13 +119,13 @@ void OutBufDump(OutBuf *outbuf)
 {
 	// dump output buffer contents to disk
 
-	int nbytes;
+	uint64_t nbytes;
 
 	// compute number of bytes
-	nbytes = (int)outbuf->cn*(int)sizeof(float);
+	nbytes = (uint64_t)outbuf->cn*(int)sizeof(float);
 
 	// dump number of bytes
-	fwrite(&nbytes, sizeof(int), 1, outbuf->fp);
+	fwrite(&nbytes, sizeof(uint64_t), 1, outbuf->fp);
 
 	// dump buffer contents
 	fwrite(outbuf->buff, sizeof(float), (size_t)outbuf->cn, outbuf->fp);
@@ -664,9 +664,9 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 
 	// write coordinate block
 	fprintf(fp, "\t\t<PCoordinates>\n");
-	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"Coordinates_X\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"Coordinates_Y\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"Coordinates_Z\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
+	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"x\" NumberOfComponents=\"1\" format=\"appended\" header_type=\"UInt64\"/>\n");
+	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"y\" NumberOfComponents=\"1\" format=\"appended\" header_type=\"UInt64\"/>\n");
+	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"z\" NumberOfComponents=\"1\" format=\"appended\" header_type=\"UInt64\"/>\n");
 	fprintf(fp, "\t\t</PCoordinates>\n");
 
 	// write description of output vectors (parameterized)
@@ -764,14 +764,14 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	// write coordinate block
 	fprintf(fp, "\t\t\t<Coordinates>\n");
 
-	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Coordinates_X\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
-	offset += sizeof(int) + sizeof(float)*(size_t)nx;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)nx;
 
-	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Coordinates_Y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
-	offset += sizeof(int) + sizeof(float)*(size_t)ny;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)ny;
 
-	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Coordinates_Z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
-	offset += sizeof(int) + sizeof(float)*(size_t)nz;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)nz;
 
 	fprintf(fp, "\t\t\t</Coordinates>\n");
 
@@ -782,7 +782,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	{	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%lld\" format=\"appended\" offset=\"%lld\"/>\n",
 			outvecs[i].name, (LLD)outvecs[i].ncomp, (LLD)offset);
 		// update offset
-		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny*nz*outvecs[i].ncomp);
+		offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*nz*outvecs[i].ncomp);
 	}
 	fprintf(fp, "\t\t\t</PointData>\n");
 
@@ -824,9 +824,9 @@ void WriteXMLHeader(FILE *fp, const char *file_type)
 	// write standard header to ParaView XML file
 	fprintf(fp,"<?xml version=\"1.0\"?>\n");
 #ifdef PETSC_WORDS_BIGENDIAN
-	fprintf(fp,"<VTKFile type=\"%s\" version=\"0.1\" byte_order=\"BigEndian\">\n", file_type);
+	fprintf(fp,"<VTKFile type=\"%s\" version=\"1.0\" byte_order=\"BigEndian\" header_type=\"UInt64\">\n", file_type);
 #else
-	fprintf(fp,"<VTKFile type=\"%s\" version=\"0.1\" byte_order=\"LittleEndian\">\n", file_type);
+	fprintf(fp,"<VTKFile type=\"%s\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n", file_type);
 #endif
 }
 //---------------------------------------------------------------------------
