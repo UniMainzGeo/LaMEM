@@ -22,7 +22,7 @@ Download paraview binaries instead (see etc.txt)
 You need to apt purge all MPI installations (if you have any)
 
 sudo apt update
-sudo apt install build-essential gfortran python-is-python3 python-numpy
+sudo apt install build-essential gfortran python-is-python3 python3-numpy
 sudo apt install bison flex cmake git-all valgrind
 sudo apt-get install libtool libtool-bin
 
