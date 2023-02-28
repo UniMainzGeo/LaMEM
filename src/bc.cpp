@@ -449,7 +449,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         // error checking
         if(fb->nblocks > _max_boxes_)
         {
-            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many Bezier blocks! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many Bezier blocks! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
         }
 
         // store actual number of Bezier blocks
@@ -474,7 +474,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         // error checking
         if(fb->nblocks > _max_boxes_)
         {
-            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity boxes! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity boxes! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
         }
 
         // store actual number of velocity blocks
@@ -499,7 +499,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         // error checking
         if(fb->nblocks > _max_boxes_)
         {
-            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity cylinders! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity cylinders! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
         }
 
         // store actual number of velocity blocks
@@ -611,7 +611,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         }
         else
         {	
-            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);
         }
 
         if(bc->Plume_Type == 1)
@@ -630,7 +630,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
             }      
             else
             {	
-                SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);
+                SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);
             }
         }
         if(bc->Plume_Type == 2)
@@ -654,7 +654,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         }
         else
         {	
-            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);
         }
        
         if(bc->Plume_Dimension == 1)
@@ -757,7 +757,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     }
     else{
         // We have a Tbot that changes with time
-        PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", bc->TbotNumPeriods);
+        PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", (LLD)bc->TbotNumPeriods);
         PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperatures               : ");
         for (jj=0; jj<bc->TbotNumPeriods; jj++){
             PetscPrintf(PETSC_COMM_WORLD, "%g ", bc->Tbot[jj]);
@@ -790,7 +790,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %s \n", str_inflow);
      if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }
-     if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
+     if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %lld \n", (LLD)bc->phase);      }
      else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }     
 
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow window [bottom, top]             : [%3.2f,%3.2f] %s \n", bc->bot*scal->length, bc->top*scal->length, scal->lbl_length); 
@@ -990,7 +990,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 
     if(fp == NULL)
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
     }
 
     // check file size
@@ -998,7 +998,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 
     if((PetscInt)sb.st_size != bc->fs->nCells)
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Wrong fixed cell file size %s\n", filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Wrong fixed cell file size %s\n", filename);
     }
 
     // read flags

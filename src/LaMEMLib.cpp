@@ -110,7 +110,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 		else if(!strcmp(str, "restart"))   mode = _RESTART_;
 		else if(!strcmp(str, "dry_run"))   mode = _DRY_RUN_;
 		else if(!strcmp(str, "save_grid")) mode = _SAVE_GRID_;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect run mode type: %s", str);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect run mode type: %s", str);
 	}
 
 	// cancel restart if no database is available
@@ -303,7 +303,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	if(fp == NULL)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileName);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileName);
 	}
 
 	// read LaMEM library database
@@ -405,7 +405,7 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 
 	if(fp == NULL)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileNameTmp);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileNameTmp);
 	}
 
 	// write LaMEM library database
@@ -474,7 +474,7 @@ PetscErrorCode LaMEMLibDeleteRestart()
 
 		if(status && errno != ENOENT)
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to delete file %s", fileName);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to delete file %s", fileName);
 		}
 
 		ierr = DirRemove("./restart"); CHKERRQ(ierr);

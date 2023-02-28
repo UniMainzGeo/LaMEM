@@ -469,12 +469,12 @@ PetscErrorCode AVD3DInit(AVD3D A)
 		if (k == mz) { k--; }
 
 		// check bounds
-		if (i==0)            SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: i==0:  %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
-		if (j==0)            SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: j==0:  %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
-		if (k==0)            SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: k==0:  %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
-		if (i==A->mx_mesh-1) SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: i==mx: %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
-		if (j==A->my_mesh-1) SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: j==my: %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
-		if (k==A->mz_mesh-1) SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: k==mz: %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
+		if (i==0)            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: i==0:  %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
+		if (j==0)            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: j==0:  %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
+		if (k==0)            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: k==0:  %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
+		if (i==A->mx_mesh-1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: i==mx: %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
+		if (j==A->my_mesh-1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: j==my: %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
+		if (k==A->mz_mesh-1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: k==mz: %lf %lf %lf\n", points[p].x, points[p].y, points[p].z);
 
 		ind = i+j*mx+k*mx*my;
 		if (A->cells[ind].p == AVD_CELL_MASK)
@@ -766,7 +766,7 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	// open outfile.pvts file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvtr", dirName, pvavd->outfile);
 	fp = fopen(fname,"wb");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	pk  = rank/(A->M*A->N);
@@ -846,7 +846,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
 	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvavd->outfile, (LLD)rank);
 	fp = fopen(fname,"wb");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	pk  = rank/(A->M*A->N);

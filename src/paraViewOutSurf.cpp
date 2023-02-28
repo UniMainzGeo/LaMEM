@@ -188,7 +188,7 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	// open outfile.pvts file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvts", dirName, pvsurf->outfile);
 	fp = fopen(fname,"wb");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// write header
@@ -281,7 +281,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		// open outfile_p_XXXXXX.vts file in the output directory (write mode)
 		asprintf(&fname, "%s/%s_p%1.8lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
 		fp = fopen(fname,"wb");
-		if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+		if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 		free(fname);
 
 		// get sizes of output grid

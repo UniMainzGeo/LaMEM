@@ -71,7 +71,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 	if     (!strcmp(utype, "none")) scal->utype = _NONE_;
 	else if(!strcmp(utype, "si"))   scal->utype = _SI_;
 	else if(!strcmp(utype, "geo"))  scal->utype = _GEO_;
-	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect unit type: %s", utype);
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect unit type: %s", utype);
 
 	if(scal->utype == _NONE_)
 	{

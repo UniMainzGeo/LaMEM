@@ -329,7 +329,7 @@ PetscErrorCode DirMake(const char *name)
 
 		if(status && errno != EEXIST)
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to create directory %s", name);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to create directory %s", name);
 		}
 	}
 
@@ -358,7 +358,7 @@ PetscErrorCode DirRemove(const char *name)
 
 		if(status)
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to remove directory %s", name);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to remove directory %s", name);
 		}
 	}
 
@@ -384,7 +384,7 @@ PetscErrorCode DirRename(const char *old_name, const char *new_name)
 
 		if(status)
 		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to rename directory %s into %s", old_name, new_name);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to rename directory %s into %s", old_name, new_name);
 		}
 	}
 

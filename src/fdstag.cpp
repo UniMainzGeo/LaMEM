@@ -106,7 +106,7 @@ PetscErrorCode MeshSeg1DReadParam(
 	{
 		if(ms->xstart[i] >= ms->xstart[i+1])
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unordered coordinates in parameter %s\n", coord);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unordered coordinates in parameter %s\n", coord);
 		}
 	}
 
@@ -588,19 +588,19 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 	// check whether local grid size is an even number
 	if(ds->ncels % 2)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Local grid size is an odd number in %s-direction", dir);
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Local grid size is an odd number in %s-direction", dir);
 	}
 
 	// check uniform local grid size (constant on all processors)
 	if(ds->tcels % ds->nproc)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Uniform local grid size doesn't exist in %s-direction", dir);
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Uniform local grid size doesn't exist in %s-direction", dir);
 	}
 
 	// compare actual grid size with uniform value
 	if(ds->tcels/ds->nproc != ds->ncels)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Local grid size is not constant on all processors in %s-direction", dir);
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Local grid size is not constant on all processors in %s-direction", dir);
 	}
 
 	// determine maximum number of coarsening steps
@@ -1393,7 +1393,7 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	if(maxAspRat > 10.0) PetscPrintf(PETSC_COMM_WORLD, " Don't expect any magic with this aspect ratio %g ...\n", maxAspRat);
-	if(maxAspRat > 30.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, " Everything has a limit, reduce this aspect ratio: %g ...\n", maxAspRat);
+	if(maxAspRat > 30.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Everything has a limit, reduce this aspect ratio: %g ...\n", maxAspRat);
 
 	PetscFunctionReturn(0);
 }

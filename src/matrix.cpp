@@ -287,7 +287,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
 			pm->type = _BLOCK_;
 		}
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
 	}
 	else
 	{

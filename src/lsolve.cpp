@@ -81,7 +81,7 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
 			pc->type = _STOKES_USER_;
 		}
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Jacobian preconditioner type: %s", pname);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Jacobian preconditioner type: %s", pname);
 	}
 	else
 	{
@@ -261,7 +261,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 			bf->type = _LOWER_;
 		}
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect block factorization type: %s", pname);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect block factorization type: %s", pname);
 	}
 	else
 	{
@@ -287,7 +287,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 			bf->vtype = _VEL_USER_;
 		}
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type: %s", pname);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type: %s", pname);
 	}
 	else
 	{

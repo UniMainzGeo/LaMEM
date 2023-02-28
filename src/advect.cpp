@@ -158,31 +158,31 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	if     (!strcmp(msetup, "geom"))     actx->msetup = _GEOM_;
 	else if(!strcmp(msetup, "files"))    actx->msetup = _FILES_;
 	else if(!strcmp(msetup, "polygons")) actx->msetup = _POLYGONS_;
-	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect setup type (msetup): %s", msetup);
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect setup type (msetup): %s", msetup);
 
 	if     (!strcmp(interp, "stag"))     actx->interp = STAG;
 	else if(!strcmp(interp, "minmod"))   actx->interp = MINMOD;
 	else if(!strcmp(interp, "stagp"))    actx->interp = STAG_P;
-	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect velocity interpolation type (interp): %s", interp);
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect velocity interpolation type (interp): %s", interp);
 
 	if     (!strcmp(mctrl,  "none"))     actx->mctrl = CTRL_NONE;
 	else if(!strcmp(mctrl,  "basic"))    actx->mctrl = CTRL_BASIC;
 	else if(!strcmp(mctrl,  "avd"))      actx->mctrl = CTRL_AVD;
 	else if(!strcmp(mctrl,  "subgrid"))  actx->mctrl = CTRL_SUB;
-	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect marker control type (mark_ctrl): %s", mctrl);
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect marker control type (mark_ctrl): %s", mctrl);
 
 	// check marker resolution
 	if(actx->NumPartX < _min_nmark_)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartX, _min_nmark_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartX, (LLD)_min_nmark_);
 	}
 	if(actx->NumPartY < _min_nmark_)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartY, _min_nmark_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartY, (LLD)_min_nmark_);
 	}
 	if(actx->NumPartZ < _min_nmark_)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, _min_nmark_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, (LLD)_min_nmark_);
 	}
 
 	// check advection & interpolation types compatibility
@@ -308,7 +308,7 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	else if(!strcmp(advect, "basic"))    actx->advect = BASIC_EULER;
 	else if(!strcmp(advect, "euler"))    actx->advect = EULER;
 	else if(!strcmp(advect, "rk2"))      actx->advect = RUNGE_KUTTA_2;
-	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect advection type (advect): %s", advect);
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect advection type (advect): %s", advect);
 
 	PetscPrintf(PETSC_COMM_WORLD, "Advection parameters:\n");
 

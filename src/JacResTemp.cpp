@@ -191,10 +191,10 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
 		// check density of the rock phases
 		if((AirPhase != -1 && i != AirPhase) || AirPhase == -1)
 		{
-			if(M->rho == 0.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define density of phase %lld\n", (LLD)i);
+			if(M->rho == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define density of phase %lld\n", (LLD)i);
 		}
-			if(M->k   == 0.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define conductivity of phase %lld\n", (LLD)i);
-			if(M->Cp  == 0.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define heat capacity of phase %lld\n", (LLD)i);
+			if(M->k   == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define conductivity of phase %lld\n", (LLD)i);
+			if(M->Cp  == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define heat capacity of phase %lld\n", (LLD)i);
 	}
 
 	PetscFunctionReturn(0);
