@@ -314,6 +314,8 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 	PetscInt pid,i,j,k,sum;
 	PetscErrorCode ierr;
 
+	PetscFunctionBegin;
+
 	A->M = M;
 	A->N = N;
 	A->P = P;
@@ -449,6 +451,8 @@ PetscErrorCode AVD3DInit(AVD3D A)
 	AVDPoint3D points;
 	PetscInt   p, i, j, k, npoints;
 	PetscInt   mx, my, mz, ind;
+
+	PetscFunctionBegin;
 
 	npoints = A->npoints;
 	points  = A->points;

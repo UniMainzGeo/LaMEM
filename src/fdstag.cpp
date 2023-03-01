@@ -704,6 +704,8 @@ PetscErrorCode Discret1DFindPoint(Discret1D *ds, PetscScalar x, PetscInt &ID)
 	PetscScalar  *px, dx, tol;
 	PetscInt      n, M, L, R;
 
+	PetscFunctionBegin;
+
 	n   =  ds->ncels;
 	px  =  ds->ncoor;
 	dx  = (px[n] - px[0])/((PetscScalar)n);

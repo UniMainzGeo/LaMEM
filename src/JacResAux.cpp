@@ -71,6 +71,8 @@ PetscErrorCode getGradientVel(
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar vnrm, vx[10], vy[10], vz[10], vxc, vyc, vzc;
 
+	PetscFunctionBegin;
+
 	// get cell sizes
 	dx = SIZE_CELL(i, sx, fs->dsx);   bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
 	dy = SIZE_CELL(j, sy, fs->dsy);   bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);

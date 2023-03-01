@@ -78,6 +78,8 @@ Main advection routine
 #define __FUNCT__ "MarkerMerge"
 PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 {
+	PetscFunctionBegin;
+
 	if(A.phase != B.phase)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Attempt to merge markers with different phases");
@@ -392,6 +394,8 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 #define __FUNCT__ "ADVWriteRestart"
 PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp)
 {
+	PetscFunctionBegin;
+
 	// check activation
  	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 

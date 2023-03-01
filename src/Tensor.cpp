@@ -642,6 +642,8 @@ PetscErrorCode Tensor2RS2DSpectral(
 {
 	PetscScalar theta, t, c, s, tau, nrm, sum, a1, a2, a, v[2];
 
+	PetscFunctionBegin;
+
 	// get stress norm
 	sum = fabs(axx) + fabs(axy);               nrm = sum;
 	sum = fabs(axy) + fabs(ayy); if(sum > nrm) nrm = sum;

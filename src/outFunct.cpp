@@ -702,8 +702,6 @@ PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_ATS, 1, 0)
 
 	PetscFunctionReturn(0);
-
-	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__

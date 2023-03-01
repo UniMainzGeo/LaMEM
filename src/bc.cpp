@@ -1148,8 +1148,9 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
     FDSTAG   *fs;
     DOFIndex *dof;
     PetscInt i, vShift=0, pShift=0;
-
     PetscInt vNumSPC, pNumSPC, *vSPCList, *pSPCList;
+
+    PetscFunctionBegin;
 
     // error checking
     if(stype == bc->stype)
@@ -2470,6 +2471,8 @@ PetscErrorCode BCGetBGStrainRates(
 
     PetscInt    jj;
     PetscScalar time, Exx, Eyy, Ezz, Exz, Eyz, Exy;
+
+    PetscFunctionBegin;
 
     // initialize
     time = bc->ts->time;
