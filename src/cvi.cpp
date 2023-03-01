@@ -370,6 +370,8 @@ PetscErrorCode ADVelInitCoord(AdvCtx *actx, VelInterp *interp, PetscInt n)
 {
 	PetscInt     jj;
 
+	PetscFunctionBegin;
+
 	// scan all markers
 	for(jj = 0; jj < n; jj++)
 	{
@@ -401,6 +403,8 @@ PetscErrorCode ADVelCalcEffVel(VelInterp *interp, PetscInt n, PetscScalar a)
 {
 	PetscInt     jj;
 
+	PetscFunctionBegin;
+
 	// scan all markers
 	for(jj = 0; jj < n; jj++)
 	{
@@ -417,6 +421,8 @@ PetscErrorCode ADVelCalcEffVel(VelInterp *interp, PetscInt n, PetscScalar a)
 PetscErrorCode ADVelAdvectCoord(VelInterp *interp, PetscInt n, PetscScalar dt, PetscInt type)
 {
 	PetscInt     jj;
+
+	PetscFunctionBegin;
 
 	// scan all markers
 	for(jj = 0; jj < n; jj++)
@@ -445,6 +451,8 @@ PetscErrorCode ADVelAdvectCoord(VelInterp *interp, PetscInt n, PetscScalar dt, P
 PetscErrorCode ADVelResetCoord(VelInterp *interp, PetscInt n)
 {
 	PetscInt     jj;
+
+	PetscFunctionBegin;
 
 	// scan all markers
 	for(jj = 0; jj < n; jj++)

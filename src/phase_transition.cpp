@@ -101,13 +101,14 @@
 PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 {
 	// read phase transitions from file
-	PetscFunctionBegin;
 
 	Ph_trans_t      *ph;
 	PetscInt        ID, i;
 	Scaling         *scal;   // for the moving box
 	PetscErrorCode  ierr;
 	char            str_direction[_str_len_], Type_[_str_len_], Parameter[_str_len_];
+
+	PetscFunctionBegin;
 
 	// Phase transition law ID
 	ierr    =   getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
@@ -241,6 +242,7 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 {
 	Scaling      *scal;
 	char         Parameter[_str_len_];
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -415,11 +417,11 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 #define __FUNCT__ "Set_Clapeyron_Phase_Transition"
 PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 {
-	PetscFunctionBegin;
-
 	PetscErrorCode  ierr;
 	Scaling         *scal;
 	PetscInt        it=0;
+
+	PetscFunctionBegin;
 
 	scal    = dbm -> scal;
 	ierr    = getStringParam(fb, _OPTIONAL_, "Name_Clapeyron", ph->Name_clapeyron, "none");  CHKERRQ(ierr);
@@ -471,13 +473,14 @@ PetscErrorCode  Overwrite_density(DBMat *dbm)
         for example) 
     */
 
-	PetscFunctionBegin;
 	Scaling         *scal;
 	Ph_trans_t      *ph;
 	Material_t      *mat;
 	PetscInt        numPhTrn,   nPtr,       num_phases, iter, jj1, jj2;
 	PetscScalar     rho_above,  rho_below,  rho_scal;
     
+	PetscFunctionBegin;
+
     // Retrieve parameters:
     scal        = dbm->scal;
 	rho_scal    = scal->density;
@@ -528,6 +531,7 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
     */
 
 	PetscFunctionBegin;
+
 	if (!strcmp(ph->Name_clapeyron,"Eclogite"))
 	{
 		//[1][2]
@@ -581,7 +585,6 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 PetscErrorCode Phase_Transition(AdvCtx *actx)
 {
 	// creates arrays to optimize marker-cell interaction
-	PetscFunctionBegin;
 
 	PetscErrorCode  ierr;
 	DBMat           *dbm;
@@ -595,6 +598,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	PetscLogDouble  t;
 	SolVarCell  	*svCell;
 	Scaling      	*scal;
+
+	PetscFunctionBegin;
 
     // Retrieve parameters
 	jr          =   actx->jr;
@@ -814,6 +819,8 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 	PetscInt    ph, InAbove;
 	PetscScalar T;
 
+	PetscFunctionBegin;
+
 	ph = P->phase;
 	T  = P->T;
 	InAbove = 0;
@@ -853,6 +860,8 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
     PetscInt 	ph, InAb;
 	PetscScalar pShift;
 	
+	PetscFunctionBegin;
+
 	if (ctrl.pShift){
 		pShift = ctrl.pShift;
 	}
@@ -934,6 +943,8 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 	PetscInt 	ph, InAb;
 	PetscScalar T;
 	
+	PetscFunctionBegin;
+
 	ph = P->phase;
 	T  = P->T;
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
@@ -1072,6 +1083,8 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 {
 	PetscInt 		ph,ip,neq, InAb;
 	PetscScalar 	Pres[2], pShift;
+
+	PetscFunctionBegin;
 
   	if (ctrl.pShift){
 		pShift = ctrl.pShift;

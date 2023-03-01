@@ -187,6 +187,8 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   PetscScalar  v_spread, M, left, right, front, back;
   PetscScalar  y_distance, tempdikeRHS;
   
+  PetscFunctionBegin;
+
   numDike    = ctx->numDike;
   bc         = ctx->bc;
   numPhtr    = ctx->numPhtr;
@@ -291,6 +293,8 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
   PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
   PetscScalar  y_distance;
   
+  PetscFunctionBegin;
+
   numDike    = jr->dbdike->numDike; // number of dikes
   numPhtr    = jr->dbm->numPhtr;
   bc         = jr->bc;

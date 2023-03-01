@@ -2182,6 +2182,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 */
 PetscErrorCode PrintCostFunction(ModParam *IOparam)
 {
+	PetscFunctionBegin;
+
 	PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
     PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE COST FUNCTION                    \n");
     PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
