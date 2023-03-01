@@ -60,7 +60,7 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 	char      pname[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscOptionsGetString(NULL, NULL,"-jp_type", pname, _str_len_, &found); CHKERRQ(ierr);
 
@@ -104,7 +104,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 	PMatType pm_type;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(p_PCStokes), &pc); CHKERRQ(ierr);
@@ -163,7 +163,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 PetscErrorCode PCStokesSetup(PCStokes pc)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = pc->Setup(pc); CHKERRQ(ierr);
 
@@ -175,7 +175,7 @@ PetscErrorCode PCStokesSetup(PCStokes pc)
 PetscErrorCode PCStokesDestroy(PCStokes pc)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = pc->Destroy(pc); CHKERRQ(ierr);
 	ierr = PetscFree(pc);   CHKERRQ(ierr);
@@ -194,7 +194,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	JacRes     *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(PCStokesBF), (void**)&bf); CHKERRQ(ierr);
@@ -239,7 +239,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	char        pname[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	bf = (PCStokesBF*)pc->data;
@@ -306,7 +306,7 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 	PCStokesBF *bf;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	bf = (PCStokesBF*)pc->data;
@@ -331,7 +331,7 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	PMatBlock  *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	bf = (PCStokesBF*)pc->data;
@@ -363,7 +363,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	PMatBlock  *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
@@ -421,7 +421,7 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 	JacRes     *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(PCStokesMG), (void**)&mg); CHKERRQ(ierr);
@@ -445,7 +445,7 @@ PetscErrorCode PCStokesMGDestroy(PCStokes pc)
 	PCStokesMG *mg;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	mg = (PCStokesMG*)pc->data;
@@ -464,7 +464,7 @@ PetscErrorCode PCStokesMGSetup(PCStokes pc)
 	PMatMono   *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// acces context
 	mg = (PCStokesMG*)pc->data;
@@ -483,7 +483,7 @@ PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y)
 	PCStokesMG *mg;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
 
@@ -504,7 +504,7 @@ PetscErrorCode PCStokesUserCreate(PCStokes pc)
 	PCStokesUser *user;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(PCStokesUser), (void**)&user); CHKERRQ(ierr);
@@ -533,7 +533,7 @@ PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
 	PetscInt      st, lnv, lnp;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	user = (PCStokesUser*)pc->data;
@@ -564,7 +564,7 @@ PetscErrorCode PCStokesUserDestroy(PCStokes pc)
 	PCStokesUser *user;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	user = (PCStokesUser*)pc->data;
@@ -587,7 +587,7 @@ PetscErrorCode PCStokesUserSetup(PCStokes pc)
 	PMatMono     *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	user = (PCStokesUser*)pc->data;
@@ -616,7 +616,7 @@ PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y)
 	PCStokesUser *user;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
 

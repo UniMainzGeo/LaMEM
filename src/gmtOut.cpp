@@ -69,7 +69,7 @@ PetscErrorCode gmtInterface()
 	PetscScalar *data;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 
 	// Start a GMT session

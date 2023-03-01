@@ -58,7 +58,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
 	char      filename[_str_len_], *all_options;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscMalloc(sizeof(FB), &fb); CHKERRQ(ierr);
 	ierr = PetscMemzero(fb, sizeof(FB)); CHKERRQ(ierr);
@@ -168,7 +168,7 @@ PetscErrorCode FBDestroy(FB **pfb)
 	FB *fb;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get pointer
 	fb = (*pfb);
@@ -197,7 +197,7 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	PetscInt  i, nchar, nlines, comment, cnt, block, *fblock;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// process buffer
 	b     = fb->fbuf;
@@ -305,7 +305,7 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 	PetscInt i, nbeg, nend;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	nbeg = 0;
 	nend = 0;
@@ -361,7 +361,7 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 PetscErrorCode FBFreeBlocks(FB *fb)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fb->nblocks = 0;
 	fb->blockID = 0;
@@ -404,7 +404,7 @@ PetscErrorCode FBGetIntArray(
 		PetscInt    num,
 		PetscBool  *found)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	char     *ptr, *line, **lines;
 	PetscInt  i, lnbeg, lnend, count;
@@ -467,7 +467,7 @@ PetscErrorCode FBGetScalarArray(
 		PetscInt     num,
 		PetscBool   *found)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	char     *ptr, *line, **lines;
 	PetscInt  i, lnbeg, lnend, count;
@@ -528,7 +528,7 @@ PetscErrorCode FBGetString(
 		char       *str,    // output string
 		PetscBool  *found)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	char     *ptr, *line, **lines;
 	PetscInt  i, lnbeg, lnend;
@@ -597,7 +597,7 @@ PetscErrorCode getIntParam(
 	char     *dbkey;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(num < 1) PetscFunctionReturn(0);
 
@@ -667,7 +667,7 @@ PetscErrorCode getScalarParam(
 	char     *dbkey;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(num < 1) PetscFunctionReturn(0);
 
@@ -722,7 +722,7 @@ PetscErrorCode getStringParam(
 	char     *dbkey;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	found = PETSC_FALSE;
 
@@ -774,7 +774,7 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
 	char     *line, **lines, *key, *val, *option;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(!fb) PetscFunctionReturn(0);
 
@@ -832,7 +832,7 @@ PetscErrorCode PetscOptionsReadRestart(FILE *fp)
 	char   *all_options;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
 
@@ -860,7 +860,7 @@ PetscErrorCode PetscOptionsWriteRestart(FILE *fp)
 	char   *all_options;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscOptionsGetAll(NULL, &all_options);  CHKERRQ(ierr);
 
@@ -886,7 +886,7 @@ PetscErrorCode  PetscOptionsGetCheckString(
 	// prohibit empty parameters & check for overruns (two null characters are reserved in the end)
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscOptionsGetString(NULL, NULL, key, str, _str_len_, set); CHKERRQ(ierr);
 
@@ -914,7 +914,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	PetscScalar 	scalar;
 	PetscInt 		integer, nel_y;
 	
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	
 	// Set some 'best-guess' default solver paramaters to help the average user
 	// All options can be overridden by the usual PETSC options

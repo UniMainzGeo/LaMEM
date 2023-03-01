@@ -78,7 +78,7 @@ Main advection routine
 #define __FUNCT__ "MarkerMerge"
 PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(A.phase != B.phase)
 	{
@@ -118,7 +118,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	char     msetup[_str_len_], interp[_str_len_], mctrl[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// set advection type
 	ierr = ADVSetType(actx, fb); CHKERRQ(ierr);
@@ -297,7 +297,7 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	char     advect[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	fs         = actx->fs;
@@ -360,7 +360,7 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 	// read advection object from restart database
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
  	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
@@ -394,7 +394,7 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 #define __FUNCT__ "ADVWriteRestart"
 PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
  	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
@@ -415,7 +415,7 @@ PetscErrorCode ADVCreateData(AdvCtx *actx)
 	PetscMPIInt  nproc, iproc;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = actx->fs;
@@ -442,7 +442,7 @@ PetscErrorCode ADVDestroy(AdvCtx *actx)
 	// destroy advection context
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
  	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
@@ -470,7 +470,7 @@ PetscErrorCode ADVSetBGPhase(AdvCtx *actx)
 	PetscInt  i, n, svBuffSz, bgPhase;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr      = actx->jr;
@@ -506,7 +506,7 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 	Marker *markers;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check whether current storage is insufficient
 	if(nummark > actx->markcap)
@@ -548,7 +548,7 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	//=======================================================================
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
@@ -578,7 +578,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	//=======================================================================
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE)
 	{
@@ -654,7 +654,7 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 	//=======================================================================
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
@@ -690,7 +690,7 @@ PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx)
 	// project history INCREMENTS from grid to markers
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = ADVInterpFieldToMark(actx, _APS_);       CHKERRQ(ierr);
 
@@ -731,7 +731,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	PetscInt     healID, phase_ID;
 	  
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 	jr = actx->jr;
@@ -916,7 +916,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	}
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = actx->fs;
@@ -1016,7 +1016,7 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 	FDSTAG      *fs;
 
 	PetscErrorCode  ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -1060,7 +1060,7 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 	MPI_Request rrequest[_num_neighb_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -1109,7 +1109,7 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	PetscMPIInt grank;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -1168,7 +1168,7 @@ PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
     PetscScalar  dx,  dy, dz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = actx->fs;
@@ -1232,7 +1232,7 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	MPI_Request rrequest[_num_neighb_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -1277,7 +1277,7 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// destroy buffers
 	ierr = PetscFree(actx->sendbuf); CHKERRQ(ierr);
@@ -1297,7 +1297,7 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 	PetscInt *idel, nummark, nrecv, ndel;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access storage
 	nummark = actx->nummark;
@@ -1365,7 +1365,7 @@ PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
 	PetscInt     i, ID, I, J, K, M, N, nummark;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	fs = actx->fs;
@@ -1441,7 +1441,7 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	PetscLogDouble t0,t1;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -1540,7 +1540,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscLogDouble t0,t1;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	bc = actx->jr->bc;
 
@@ -1807,7 +1807,7 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	PetscInt  ii, jj, numPhases;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs        = actx->fs;
 	jr        = actx->jr;
@@ -1873,7 +1873,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w = 0.0;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs        = actx->fs;
 	jr        = actx->jr;
@@ -1992,7 +1992,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	PetscScalar  xc, yc, zc, xp, yp, zp, wxc, wyc, wzc, wxn, wyn, wzn;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 	jr = actx->jr;
@@ -2116,7 +2116,7 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 	PetscInt  jj;
 	PetscInt  numPhases;
 	
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	numPhases = actx->dbm->numPhases;
 
@@ -2158,7 +2158,7 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 	PetscInt     i, j, k, jj, nx, ny, nz, sx, sy, sz, iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 	jr = actx->jr;
@@ -2208,7 +2208,7 @@ PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart)
 	PetscScalar  lidtmax, gidtmax;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE)
 	{
@@ -2252,7 +2252,7 @@ PetscErrorCode ADVMarkerAdiabatic(AdvCtx *actx)
 	PetscScalar Z, Z_Top, dT;
 	PetscInt    jj;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	if(actx->jr->ctrl.Adiabatic_gr==0.0) PetscFunctionReturn(0);
 
 	if(actx->jr->surf->UseFreeSurf)

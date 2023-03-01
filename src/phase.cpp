@@ -63,7 +63,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscInt jj;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	//===============
 	// SOFTENING LAWS
@@ -207,7 +207,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscInt  ID;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	scal = dbm->scal;
@@ -281,7 +281,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	scal = dbm->scal;
@@ -850,7 +850,7 @@ PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key
 	// read profile name from file
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = getStringParam(fb, _OPTIONAL_, key, name, NULL);  CHKERRQ(ierr);
 
@@ -896,7 +896,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	PetscScalar      C_OH_0, r;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check for empty string
 	if(!strlen(name)) PetscFunctionReturn(0);
@@ -1015,7 +1015,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	PetscScalar      C_OH_0, r;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check for empty string
 	if(!strlen(name)) PetscFunctionReturn(0);
@@ -1406,7 +1406,7 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	PetscInt MPa;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check for empty string
 	if(!strlen(name)) PetscFunctionReturn(0);
@@ -1446,7 +1446,7 @@ PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar n, ExpType type, Pet
 	// B - creep prefactor
 	// n - power law exponent
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// apply experimental to tensor correction
 	if      (type == _UniAxial_)    B *= pow(3.0, (n + 1.0)/2.0)/2.0; //  F = (3^(n+1)/2)/2
@@ -1472,7 +1472,7 @@ PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType t
 	// D - creep strain rate parameter (e.g. Peierls prefactor)
 	// S - creep stress parameter (e.g. Peierls stress)
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// apply experimental to tensor correction
 	if      (type == _UniAxial_)    { D *= sqrt(3.0)/2.0; S /= sqrt(3.0); }
@@ -1505,7 +1505,7 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 	PetscScalar eta, eta0, e0;
 	Material_t  *m;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(mod == NULL) PetscFunctionReturn(0);
 
@@ -1598,7 +1598,7 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 	PetscScalar eta, eta0, e0;
 	Material_t *m;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	flg = PETSC_FALSE;
 	get_options = PETSC_FALSE;
@@ -1672,7 +1672,7 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 PetscErrorCode PrintMatProp(Material_t *MatProp)
 {
 	// Prints an overview of the material properties specified for a certain phase (for debugging)
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %i with visId=%i : \n",MatProp->ID, MatProp->visID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Density:          rho   = %1.7e,  rho_n = %1.7e,    rho_c = %1.7e,   beta = %1.7e \n",  MatProp->rho,MatProp->rho_c, MatProp->rho_c, MatProp->beta);
@@ -1699,14 +1699,14 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 #define __FUNCT__ "DBMatOverwriteWithGlobalVariables"
 PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb)
 {
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     PetscErrorCode  ierr;
     PetscScalar     eta_min;
     PetscInt        ID;
     Material_t      *m;
     Scaling         *scal;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	scal    = dbm->scal;

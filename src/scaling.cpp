@@ -59,7 +59,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 	PetscScalar yr, Myr, km, cm, cm_yr, MPa, mW;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// set unit scaling
 	scal->unit = 1.0; sprintf(scal->lbl_unit, "[ ]");

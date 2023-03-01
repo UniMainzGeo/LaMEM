@@ -67,7 +67,7 @@
 PetscErrorCode NLSolClear(NLSol *nl)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// clear object
 	ierr = PetscMemzero(nl, sizeof(NLSol)); CHKERRQ(ierr);
@@ -89,7 +89,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	SNESType        type;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
 	// store context
  	nl->pc = pc;
@@ -184,7 +184,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 	PetscBool		found;
 	MatSolverType   solver_type;
 
- 	PetscFunctionBegin;
+ 	PetscFunctionBeginUser;
 
 	/* 	This routine prints the solver options that are specified on the command-line or in the PetscOptions of the LaMEM input script 
 	 	More complete options can be displayed with the command-line options
@@ -343,7 +343,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 PetscErrorCode NLSolDestroy(NLSol *nl)
 {
 	PetscErrorCode ierr;
- 	PetscFunctionBegin;
+ 	PetscFunctionBeginUser;
 
 	ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->P);    CHKERRQ(ierr);
@@ -360,7 +360,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	JacRes *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// clear unused parameters
 	if(snes) snes = NULL;
@@ -394,7 +394,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	if(Pmat) Pmat = NULL;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	nl   = (NLSol*)ctx;
@@ -510,7 +510,7 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y)
 	Mat *FD;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ierr = MatShellGetContext(A, (void**)&FD); CHKERRQ(ierr);
@@ -533,7 +533,7 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 	PetscInt            div_severe;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// set flag for severe divergence
 	div_severe = 0;
@@ -659,7 +659,7 @@ PetscErrorCode SNESCoupledTest(
 	JacRes *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	nl = (NLSol*)cctx;

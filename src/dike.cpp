@@ -68,7 +68,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
         PetscInt jj;
 
         PetscErrorCode ierr;
-        PetscFunctionBegin;
+        PetscFunctionBeginUser;
 
         //===============                                                                                                                                               
         // DIKE PARAMETER                                                                                                               
@@ -124,7 +124,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 	Scaling  *scal;
 	
         PetscErrorCode ierr;
-        PetscFunctionBegin;
+        PetscFunctionBeginUser;
 
 	// access context           
         scal = dbm->scal;
@@ -187,7 +187,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   PetscScalar  v_spread, M, left, right, front, back;
   PetscScalar  y_distance, tempdikeRHS;
   
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
   numDike    = ctx->numDike;
   bc         = ctx->bc;
@@ -293,7 +293,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
   PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
   PetscScalar  y_distance;
   
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
   numDike    = jr->dbdike->numDike; // number of dikes
   numPhtr    = jr->dbm->numPhtr;

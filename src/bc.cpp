@@ -74,7 +74,7 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
     //	-top   - Polygon top coordinate
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     bcb->npath = 2;
     bcb->npoly = 4;
@@ -103,7 +103,7 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
     PetscScalar  *p1, *p2;
     PetscScalar  *path, *theta, *time;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     n     = bcb->npath;
     path  = bcb->path;
@@ -193,7 +193,7 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
     PetscScalar *xa, *xb;
     PetscScalar  Xa[3], theta, costh, sinth;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // get initial polygon position
     Xa[0] = bcb->path[0];
@@ -227,7 +227,7 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	//========================
 	// velocity box parameters
@@ -260,7 +260,7 @@ PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 #define __FUNCT__ "VelBoxPrint"
 PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %i \n", cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Box center                              : %g, %g, %g %s \n", velbox->cenX  *scal->length, velbox->cenY  *scal->length, velbox->cenZ  *scal->length, scal->lbl_length);
@@ -294,7 +294,7 @@ PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
 	char           str_type[_str_len_];
     
     PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	//========================
 	// velocity cylinder parameters
@@ -349,7 +349,7 @@ PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
 #define __FUNCT__ "VelCylinderPrint"
 PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %i \n", cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder base                           : %g, %g, %g %s \n", velcyl->baseX  *scal->length, velcyl->baseY  *scal->length, velcyl->baseZ  *scal->length, scal->lbl_length);
@@ -399,7 +399,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     char         inflow_temp[_str_len_],str_inflow[_str_len_];
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     scal = bc->scal;
@@ -860,7 +860,7 @@ PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp)
     PetscInt nCells;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     nCells = bc->fs->nCells;
 
@@ -882,7 +882,7 @@ PetscErrorCode BCWriteRestart(BCCtx *bc, FILE *fp)
 {
     PetscInt nCells;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     nCells = bc->fs->nCells;
 
@@ -903,7 +903,7 @@ PetscErrorCode BCCreateData(BCCtx *bc)
     DOFIndex *dof;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     fs  =  bc->fs;
     dof = &fs->dof;
@@ -936,7 +936,7 @@ PetscErrorCode BCCreateData(BCCtx *bc)
 PetscErrorCode BCDestroy(BCCtx *bc)
 {
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // destroy boundary conditions vectors (velocity, pressure, temperature)
     ierr = VecDestroy(&bc->bcvx); CHKERRQ(ierr);
@@ -970,7 +970,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
     char           *filename, file[_str_len_];
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check activation
     if(!bc->fixCell) PetscFunctionReturn(0);
@@ -1019,7 +1019,7 @@ PetscErrorCode BCApply(BCCtx *bc)
     FDSTAG *fs;
 
      PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1112,7 +1112,7 @@ PetscErrorCode BCApplySPC(BCCtx *bc)
     PetscInt    i, num, *list;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     ierr = VecGetArray(bc->jr->gsol, &sol); CHKERRQ(ierr);
 
@@ -1150,7 +1150,7 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
     PetscInt i, vShift=0, pShift=0;
     PetscInt vNumSPC, pNumSPC, *vSPCList, *pSPCList;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // error checking
     if(stype == bc->stype)
@@ -1203,7 +1203,7 @@ PetscErrorCode BCApplyPres(BCCtx *bc)
     PetscScalar ***bcp;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1255,7 +1255,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
     PetscScalar ***bcT;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1350,7 +1350,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1508,7 +1508,7 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
     PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1616,7 +1616,7 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
     PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check whether constraint is activated
     if(!bc->nblocks) PetscFunctionReturn(0);
@@ -1746,7 +1746,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
     PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open, bot_open;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check whether constraint is activated
     if(!bc->face) PetscFunctionReturn(0);
@@ -1909,7 +1909,7 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
     PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // skip initial guess
     if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
@@ -2041,7 +2041,7 @@ PetscErrorCode BCApplyVelCylinder(BCCtx *bc)
     PetscScalar velType;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // skip initial guess
     if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
@@ -2250,7 +2250,7 @@ PetscErrorCode BCApplyPhase(BCCtx *bc)
     PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs       = bc->fs;
@@ -2307,7 +2307,7 @@ PetscErrorCode BCApplyCells(BCCtx *bc)
     PetscScalar   ***bcvx,  ***bcvy,  ***bcvz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check activation
     if(!bc->fixCell) PetscFunctionReturn(0);
@@ -2364,7 +2364,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
     PetscScalar ***bcvx,  ***bcvy,  ***bcvz, *SPCVals;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs      = bc->fs;
@@ -2472,7 +2472,7 @@ PetscErrorCode BCGetBGStrainRates(
     PetscInt    jj;
     PetscScalar time, Exx, Eyy, Ezz, Exz, Eyz, Exy;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // initialize
     time = bc->ts->time;
@@ -2612,7 +2612,7 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
     PetscScalar Rxx, Ryy, Rzz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -2640,7 +2640,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
     PetscInt phase_inflow;
     PetscScalar T_inflow;
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
     
     ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
 
@@ -2796,7 +2796,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
     PetscScalar     radius2, R;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     
     if(!bc->Plume_Inflow) 	PetscFunctionReturn(0);
@@ -2984,7 +2984,7 @@ PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
 
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -3120,7 +3120,7 @@ PetscErrorCode GetAverageLithostatic(BCCtx *bc)
         PetscScalar ***lp, ***ibuff, *lbuff,*lbuff2 ,mean_p;
         PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L;
         PetscErrorCode ierr;
-        PetscFunctionBegin;
+        PetscFunctionBeginUser;
 
 
 

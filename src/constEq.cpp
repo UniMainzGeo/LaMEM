@@ -63,7 +63,7 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 {
 	// setup constitutive equation evaluation context parameters
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ctx->bc        =  jr->bc;             // boundary conditions for inflow velocity
 	ctx->numPhases =  jr->dbm->numPhases; // number phases
@@ -109,7 +109,7 @@ PetscErrorCode setUpCtrlVol(
 {
 	// setup control volume parameters
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ctx->phRat  = phRat;  // phase ratios in the control volume
 	ctx->svDev  = svDev;  // deviatoric variables
@@ -154,7 +154,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	mat    = ctx->phases + ID;
@@ -369,7 +369,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	PetscInt     i, numPhases;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ctrl      = ctx->ctrl;
@@ -443,7 +443,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIfk, DIIvs, phRat;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_fk, inv_eta_min;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ctrl   = ctx->ctrl;              // global controls
@@ -658,7 +658,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ctrl      = ctx->ctrl;
@@ -804,7 +804,7 @@ PetscErrorCode cellConstEq(
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	svDev  = ctx->svDev;
@@ -907,7 +907,7 @@ PetscErrorCode edgeConstEq(
 	PetscScalar  t, eta_st;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	svDev = &svEdge->svDev;
@@ -955,7 +955,7 @@ PetscErrorCode checkConvConstEq(ConstEqCtx *ctx)
 	PetscScalar stats[3] = {1.0, 1.0, 1.0};
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// exchange convergence statistics
 	// total number of [starts, successes, iterations]
@@ -991,7 +991,7 @@ PetscErrorCode setDataPhaseDiagram(
     PetscScalar    	fx0,fx1,weight[4];
 	PetscScalar 	minP, dP, minT, dT;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// Get the correct phase diagram
 	for(i=0; i<_max_num_pd_; i++)

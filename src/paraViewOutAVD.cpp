@@ -193,7 +193,7 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 	PetscInt       i, count, claimed;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = actx->fs;
@@ -314,7 +314,7 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 	PetscInt pid,i,j,k,sum;
 	PetscErrorCode ierr;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	A->M = M;
 	A->N = N;
@@ -397,7 +397,7 @@ PetscErrorCode AVD3DLoadPoints(AVD3D A, AdvCtx *actx)
 	AVDPoint3D  points, P;
 	PetscInt    i, npoints;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	npoints = A->npoints;
 	points  = A->points;
@@ -452,7 +452,7 @@ PetscErrorCode AVD3DInit(AVD3D A)
 	PetscInt   p, i, j, k, npoints;
 	PetscInt   mx, my, mz, ind;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	npoints = A->npoints;
 	points  = A->points;
@@ -689,7 +689,7 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 	char filename[_str_len_-6];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check advection type
 	if(pvavd->actx->advect == ADV_NONE) PetscFunctionReturn(0);
@@ -730,7 +730,7 @@ PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar
 	AVD3D A;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(!pvavd->outavd) PetscFunctionReturn(0);
 
@@ -759,7 +759,7 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	PetscMPIInt inproc, irank;
 	PetscInt    r2d, p, pi, pj, pk, nproc, rank;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
@@ -840,7 +840,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	int           offset;
 	uint64_t 	  L;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	chLen = pvavd->actx->jr->scal->length;

@@ -163,7 +163,7 @@ PetscInt FindPointInCellAdjoint(
 #undef __FUNCT__
 #define __FUNCT__ "swapStruct"
 PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B){
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 	struct Material_t temp = *A;
     *A = *B;
     *B = temp;
@@ -212,7 +212,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		PetscInt    *FDgrad,
 		PetscScalar *FDeps)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	PetscErrorCode 	ierr;
 	PetscInt 		i, jj, ID;
 	PetscBool 		ReadAllMatParams=PETSC_FALSE, AddParamToGradient;
@@ -434,7 +434,7 @@ values. Also performs error-checking
 #define __FUNCT__ "LaMEMAdjointReadInputSetDefaults"
 PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs *Adjoint_Vectors)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	PetscErrorCode 	ierr;
 	FB 				*fb;
 	PetscScalar     *gradar, *Ubar, *Lbar, ts, *Par, mean, var;
@@ -977,7 +977,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscScalar    	F, *fcconvar, *Par;
 	PetscInt        i;
@@ -1148,7 +1148,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOparam)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// VECTORS
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Lb);      CHKERRQ(ierr);
@@ -1169,7 +1169,7 @@ PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOp
 PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOparam)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = VecDestroy(&Adjoint_Vectors->Lb);      	CHKERRQ(ierr);
 	ierr = VecDestroy(&Adjoint_Vectors->Ub);      	CHKERRQ(ierr);
@@ -1188,7 +1188,7 @@ PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_Vectors, ModParam *IO
 PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// Create everything
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vx);  CHKERRQ(ierr);
@@ -1210,7 +1210,7 @@ PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam)
 PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	
 	ierr = VecDestroy(&aop->vx);         CHKERRQ(ierr);
@@ -1243,7 +1243,7 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 	PetscScalar 	*Par, *Grad;
 	PetscInt 		i;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// Copy adjoint parameters to command-line	options
 	VecCopy(Parameters,IOparam->P);		// Copy 
@@ -1288,7 +1288,7 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	PetscInt 		i, j, LScount;
@@ -1522,7 +1522,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	PetscInt j;
@@ -1616,7 +1616,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	// This computes the objective function and adjoint gradients (not the 'brute-force' FD gradients)
 
  	PetscErrorCode ierr;
- 	PetscFunctionBegin;
+ 	PetscFunctionBeginUser;
 
 	//========================================
 	// COMPUTE OBJECTIVE FUNCTION & GRADIENT
@@ -1649,7 +1649,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	PetscScalar    		*rbuf1=PETSC_NULL;
 
  	PetscErrorCode ierr;
- 	PetscFunctionBegin;
+ 	PetscFunctionBeginUser;
 
  	scal = jr->scal;
 	fs = jr->fs;
@@ -1948,7 +1948,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 {
 	
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	KSP                 ksp_as;
 	KSPConvergedReason  reason;
@@ -2182,7 +2182,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 */
 PetscErrorCode PrintCostFunction(ModParam *IOparam)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
     PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE COST FUNCTION                    \n");
@@ -2340,7 +2340,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	Discret1D           *dsz;
 	InterpFlags         iflag;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = jr->fs;
 
@@ -2916,7 +2916,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	char 		CurName[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr = nl->pc->pm->jr;
@@ -3562,7 +3562,7 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 	char            *option, *option_value;
     PetscBool       PrintOutput=PETSC_FALSE;
     
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
     if (ID<0){	asprintf(&option, "-%s ", name); }
 	else{ 		asprintf(&option, "-%s[%i]", name, ID); }
 	asprintf(&option_value, "%10.20e", val);
@@ -3591,7 +3591,7 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
 	PetscScalar 	val;
 	char 			CurName[_str_len_];
 	
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
 	CurPhase = 	IOparam->phs[j];			// phase of the parameter
     strcpy(CurName, IOparam->type_name[j]);	// name
@@ -3624,7 +3624,7 @@ PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscIn
 	char            *option;
     PetscBool       PrintOutput=PETSC_FALSE;
     
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
     
     asprintf(&option, "-%s[%i]", name, ID); 
     ierr = PetscOptionsClearValue(NULL, option);    CHKERRQ(ierr);  
@@ -3652,7 +3652,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 	PetscBool       PrintOutput=PETSC_FALSE;
     Scaling         scal;
     FB             *fb;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     fb = IOparam->fb;
 
@@ -3685,7 +3685,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 #define __FUNCT__ "Parameter_SetFDgrad_Option"
 PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 {
- 	PetscFunctionBegin;
+ 	PetscFunctionBeginUser;
 	PetscBool PrintOutput=PETSC_FALSE, found=PETSC_FALSE;
 
 	*FD_grad 	= 1;
@@ -3764,7 +3764,7 @@ PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 #define __FUNCT__ "PrintScalingLaws"
 PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 {
- 	PetscFunctionBegin;
+ 	PetscFunctionBeginUser;
 	PetscErrorCode 	ierr;
 	FILE        	*db;
 	PetscInt 		j, k=0, CurPhase, idx[IOparam->mdN], maxNum=10;
@@ -4018,7 +4018,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	Scaling 	*scal;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs 		= jr->fs;
@@ -4542,7 +4542,7 @@ PetscErrorCode cellConstEqFD(
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	svDev  = ctx->svDev;
@@ -4638,7 +4638,7 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	mat    = ctx->phases + ID;
@@ -4875,7 +4875,7 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 	PetscInt     i, numPhases;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ctrl      = ctx->ctrl;
@@ -4957,7 +4957,7 @@ PetscErrorCode edgeConstEqFD(
 	PetscScalar  t, eta_st;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	svDev = &svEdge->svDev;
@@ -5006,7 +5006,7 @@ PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
 	PetscInt  		i, num, *list;
 	PetscErrorCode ierr;
 	
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	
 	// Apply BC's to dF vector
 	ierr = VecGetArray(dF, &dF_vec); CHKERRQ(ierr);

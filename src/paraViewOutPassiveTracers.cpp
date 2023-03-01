@@ -60,7 +60,7 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 	char filename[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	ierr = getIntParam(fb, _OPTIONAL_, "out_ptr", &pvptr->actx->jr->ctrl.Passive_Tracer, 1, 1); CHKERRQ(ierr);
@@ -104,7 +104,7 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(pvptr->actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);
@@ -138,7 +138,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	size_t      offset = 0;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	ptr = pvptr->actx->Ptr;
@@ -451,7 +451,7 @@ PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
 	FILE     *fp;
 	PetscInt i;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// only processor 0
 	if (!ISRankZero(PETSC_COMM_WORLD)) { PetscFunctionReturn(0); }

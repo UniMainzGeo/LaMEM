@@ -87,7 +87,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscLogDouble cputime_start, cputime_end;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;       
+	PetscFunctionBeginUser;       
 
 	// start code
 	ierr = PetscTime(&cputime_start); CHKERRQ(ierr);
@@ -185,7 +185,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	FB *fb;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(param) param = NULL;
 
@@ -250,7 +250,7 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 	FB *fb;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// load input file
 	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
@@ -287,7 +287,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
     Scaling         scal;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PrintStart(&t, "Loading restart database", NULL);
 
@@ -385,7 +385,7 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	PetscLogDouble t;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(!TSSolIsRestart(&lm->ts)) PetscFunctionReturn(0);
 
@@ -457,7 +457,7 @@ PetscErrorCode LaMEMLibDeleteRestart()
 	char        *fileName;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -491,7 +491,7 @@ PetscErrorCode LaMEMLibDeleteRestart()
 PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = FDSTAGDestroy  (&lm->fs);     CHKERRQ(ierr);
 	ierr = FreeSurfDestroy(&lm->surf);   CHKERRQ(ierr);
@@ -537,7 +537,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 
 	// ... This is the house that Jack built ...
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	// TSSol
 	lm->ts.scal     = &lm->scal;
 	// DBMat
@@ -597,7 +597,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscLogDouble t;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	scal = &lm->scal;
 	ts   = &lm->ts;
@@ -661,7 +661,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PetscLogDouble t;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// create Stokes preconditioner, matrix and nonlinear solver
 	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
@@ -818,7 +818,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize boundary constraint vectors
 	ierr = BCApply(&lm->bc); CHKERRQ(ierr);
@@ -843,7 +843,7 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscLogDouble t;
 
@@ -908,7 +908,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	PetscInt       i, num_steps;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr      = &lm->jr;
@@ -1000,7 +1000,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	KSP            tksp;
 	
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr   = &lm->jr;

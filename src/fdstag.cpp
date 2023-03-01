@@ -66,7 +66,7 @@ PetscErrorCode MeshSeg1DReadParam(
 	char        *nseg, *nel, *coord, *bias, *periodic;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	ierr = PetscMemzero(ms, sizeof(MeshSeg1D)); CHKERRQ(ierr);
@@ -152,7 +152,7 @@ PetscErrorCode MeshSeg1DGenCoord(
 	PetscInt    i, N, M, sum;
 	PetscScalar xstart, xclose, bias, avgSz, begSz, endSz, dx;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// total number of nodes in segment (including both ends)
 	N = ms->istart[iseg+1] - ms->istart[iseg] + 1;
@@ -222,7 +222,7 @@ PetscErrorCode Discret1DCreate(
 {
 	PetscInt       i, cnt;
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	ierr = PetscMemzero(ds, sizeof(Discret1D)); CHKERRQ(ierr);
@@ -296,7 +296,7 @@ PetscErrorCode Discret1DDestroy(Discret1D *ds)
 {
 	PetscErrorCode ierr;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free memory buffers
 	ierr = PetscFree(ds->nbuff);        CHKERRQ(ierr);
@@ -312,7 +312,7 @@ PetscErrorCode Discret1DDestroy(Discret1D *ds)
 PetscErrorCode Discret1DReadRestart(Discret1D *ds, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = makeIntArray (&ds->starts, NULL, ds->nproc + 1); CHKERRQ(ierr);
 	ierr = makeScalArray(&ds->nbuff,  NULL, ds->bufsz    ); CHKERRQ(ierr);
@@ -332,7 +332,7 @@ PetscErrorCode Discret1DReadRestart(Discret1D *ds, FILE *fp)
 #define __FUNCT__ "Discret1DWriteRestart"
 PetscErrorCode Discret1DWriteRestart(Discret1D *ds, FILE *fp)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fwrite(ds->starts, sizeof(PetscInt   )*(size_t)(ds->nproc + 1), 1, fp);
 	fwrite(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->bufsz    ), 1, fp);
@@ -350,7 +350,7 @@ PetscErrorCode Discret1DGetNumCells(Discret1D *ds, PetscInt **ncelProc)
 	PetscInt i, *l;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = makeIntArray(&l, NULL, ds->nproc); CHKERRQ(ierr);
 
@@ -372,7 +372,7 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	PetscScalar *crd, A, B, C;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// compute number of nodes to be generated locally
 	pstart = ds->pstart;
@@ -449,7 +449,7 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, PetscScalar eps, PetscScalar ref)
 
 	PetscInt i;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// recompute (stretch) node coordinates in the buffer
 	for(i = 0; i < ds->bufsz; i++) ds->nbuff[i] += eps*(ds->nbuff[i] - ref);
@@ -473,7 +473,7 @@ PetscErrorCode Discret1DGetColumnComm(Discret1D *ds)
 	// Nothing is done if communicator already exists or in sequential case.
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(ds->nproc != 1 && ds->comm == MPI_COMM_NULL)
 	{
@@ -492,7 +492,7 @@ PetscErrorCode Discret1DFreeColumnComm(Discret1D *ds)
 	// the constructor will be called anyways when necessary.
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(ds->comm != MPI_COMM_NULL)
 	{
@@ -518,7 +518,7 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 	PetscMPIInt *recvdisp;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	pcoord   = NULL;
 	recvcnts = NULL;
@@ -583,7 +583,7 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 {
 	PetscInt sz, ncors;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check whether local grid size is an even number
 	if(ds->ncels % 2)
@@ -624,7 +624,7 @@ PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, idx, ijk[3], jj, ln;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	idtmax = (*_idtmax);
@@ -704,7 +704,7 @@ PetscErrorCode Discret1DFindPoint(Discret1D *ds, PetscScalar x, PetscInt &ID)
 	PetscScalar  *px, dx, tol;
 	PetscInt      n, M, L, R;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	n   =  ds->ncels;
 	px  =  ds->ncoor;
@@ -783,7 +783,7 @@ PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_
 	PetscInt nx, ny, nz, NUM[2], SUM[3];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// clear index mode
 	dof->idxmod = IDXNONE;
@@ -829,7 +829,7 @@ PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_
 PetscErrorCode DOFIndexDestroy(DOFIndex *dof)
 {
 	PetscErrorCode 	 ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// destroy index vectors (ghosted)
 	ierr = VecDestroy(&dof->ivx); CHKERRQ(ierr);
@@ -848,7 +848,7 @@ PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod)
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// set global indices of the local and ghost nodes (including boundary)
 	ierr = VecSet(dof->ivx, -1.0); CHKERRQ(ierr);
@@ -958,7 +958,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	MeshSeg1D        msx,  msy,  msz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	scal = fs->scal;
 
@@ -1079,7 +1079,7 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	PetscInt  Px,   Py,   Pz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = Discret1DReadRestart(&fs->dsx, fp); CHKERRQ(ierr);
 	ierr = Discret1DReadRestart(&fs->dsy, fp); CHKERRQ(ierr);
@@ -1135,7 +1135,7 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = Discret1DWriteRestart(&fs->dsx, fp); CHKERRQ(ierr);
 	ierr = Discret1DWriteRestart(&fs->dsy, fp); CHKERRQ(ierr);
@@ -1149,7 +1149,7 @@ PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
 PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// destroy distributed arrays
 	ierr = DMDestroy(&fs->DA_CEN);     CHKERRQ(ierr);
@@ -1182,7 +1182,7 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
@@ -1241,7 +1241,7 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 	// return an array with the global ranks of adjacent processes (including itself)
 
 	PetscInt i, j, k, rx, ry, rz, Px, Py, Pz, ptx, pty, ptz, cnt;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get ranks
 	rx = fs->dsx.rank;
@@ -1284,7 +1284,7 @@ PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, 
 	PetscScalar ex, ey, ez;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get local coordinate bounds
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
@@ -1311,7 +1311,7 @@ PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
@@ -1364,7 +1364,7 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscInt    px, py, pz, cx, cy, cz, nx, ny, nz, nVelDOF, nCells;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	chLen = fs->scal->length;
 
@@ -1411,7 +1411,7 @@ PetscErrorCode FDSTAGGetLocalBox(
 	PetscScalar *ey,
 	PetscScalar *ez)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(bx) (*bx) = fs->dsx.ncoor[0];
 	if(by) (*by) = fs->dsy.ncoor[0];
@@ -1435,7 +1435,7 @@ PetscErrorCode FDSTAGGetGlobalBox(
 	PetscScalar *ey,
 	PetscScalar *ez)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(bx) (*bx) = fs->dsx.gcrdbeg;
 	if(by) (*by) = fs->dsy.gcrdbeg;
@@ -1459,7 +1459,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	PetscLogDouble t;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PrintStart(&t, "Saving processor partitioning", NULL);
 
@@ -1517,7 +1517,7 @@ PetscErrorCode DMDACreate3dSetUp(MPI_Comm comm,
 	PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = DMDACreate3d(comm, bx, by, bz, stencil_type, M, N, P, m, n, p, dof, s, lx, ly, lz, da); CHKERRQ(ierr);
 

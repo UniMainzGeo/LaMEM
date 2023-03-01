@@ -59,7 +59,7 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	char filename[_str_len_-5];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!pvsurf->surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -107,7 +107,7 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 	PetscInt  rx, ry, sx, sy, nx, ny;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
@@ -133,7 +133,7 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 #define __FUNCT__ "PVSurfDestroy"
 PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
@@ -148,7 +148,7 @@ PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
@@ -176,7 +176,7 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	PetscInt     nproc, rx, ry, rz;
 	PetscMPIInt  iproc;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
@@ -268,7 +268,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	size_t     offset = 0;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs   = pvsurf->surf->jr->fs;
@@ -405,7 +405,7 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	L    = 0;
 	cn   = 0;
@@ -449,7 +449,7 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	L    = 0;
 	cn   = 0;
@@ -497,7 +497,7 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	L    = 0;
 	cn   = 0;
@@ -539,7 +539,7 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	L    = 0;
 	cn   = 0;

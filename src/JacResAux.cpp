@@ -71,7 +71,7 @@ PetscErrorCode getGradientVel(
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar vnrm, vx[10], vy[10], vz[10], vxc, vyc, vzc;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get cell sizes
 	dx = SIZE_CELL(i, sx, fs->dsx);   bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -148,7 +148,7 @@ PetscErrorCode JacResGetSHmax(JacRes *jr)
 	PetscScalar ***dx, ***dy, ***lsxy;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = jr->fs;
@@ -226,7 +226,7 @@ PetscErrorCode JacResGetEHmax(JacRes *jr)
 	PetscScalar ***dx, ***dy, ***ldxy;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = jr->fs;
@@ -302,7 +302,7 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs  =  jr->fs;
@@ -349,7 +349,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, iter, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs  =  jr->fs;
@@ -453,7 +453,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	PetscInt    numPhases, i, j, k, iter, iphase, sx, sy, sz, nx, ny, nz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
@@ -548,7 +548,7 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!jr->ctrl.getPermea || !step) PetscFunctionReturn(0);
