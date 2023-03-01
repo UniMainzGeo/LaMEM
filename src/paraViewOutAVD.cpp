@@ -782,9 +782,9 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 		0LL,(LLD)(A->gmz));
 
 	fprintf(fp, "    <PCoordinates>\n");
-	fprintf(fp, "      <PDataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" />\n");
-	fprintf(fp, "      <PDataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" />\n");
-	fprintf(fp, "      <PDataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" />\n");
+	fprintf(fp, "      <PDataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" />\n");
+	fprintf(fp, "      <PDataArray type=\"Float32\" Name = \"y\" NumberOfComponents=\"1\" format=\"appended\" />\n");
+	fprintf(fp, "      <PDataArray type=\"Float32\" Name = \"z\" NumberOfComponents=\"1\" format=\"appended\" />\n");
 	fprintf(fp, "    </PCoordinates>\n");
 
 	fprintf(fp, "    <PCellData>\n");
@@ -872,13 +872,13 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	fprintf(fp, "    <Coordinates>\n");
 
 	// X
-	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
 	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mx+1));
 	// Y
-	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
 	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->my+1));
 	// Z
-	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
 	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mz+1));
 
 	fprintf(fp, "    </Coordinates>\n");
