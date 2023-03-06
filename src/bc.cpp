@@ -1018,7 +1018,7 @@ PetscErrorCode BCApply(BCCtx *bc)
 {
     FDSTAG *fs;
 
-     PetscErrorCode ierr;
+    PetscErrorCode ierr;
     PetscFunctionBeginUser;
 
     // access context
@@ -2556,7 +2556,7 @@ PetscErrorCode BCGetBGStrainRates(
 
     PetscFunctionReturn(0);
 }
-
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCGetTempBound"
 PetscErrorCode BCGetTempBound(
@@ -2567,6 +2567,8 @@ PetscErrorCode BCGetTempBound(
 
     PetscInt    jj;
     PetscScalar time, Tbot_val;
+
+    PetscFunctionBeginUser;
 
     // initialize
     time  		= bc->ts->time;

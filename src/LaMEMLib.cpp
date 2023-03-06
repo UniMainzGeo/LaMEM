@@ -674,10 +674,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
     
-
 	if (param)
 	{
-		ierr =  AdjointCreate(&aop, &lm->jr, (ModParam *)param);
+		ierr = AdjointCreate(&aop, &lm->jr, (ModParam *)param); CHKERRQ(ierr);
 	}
 
 	//===============
@@ -691,7 +690,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 
 		// apply phase transitions on particles
-		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
+		ierr = Phase_Transition(&lm->actx); CHKERRQ(ierr);
 		
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
@@ -778,7 +777,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
-		
+
 	}
 
 	//======================
