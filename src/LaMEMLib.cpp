@@ -339,32 +339,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// close temporary restart file
 	fclose(fp);
 
-
-	// Read info from file/command-line & overwrite 'restart' data (necessary for adjoint)
-
-	// load input file 
-	ierr = FBLoad(&fb, PETSC_TRUE); 											CHKERRQ(ierr);
-
-	// Create scaling object
-	ierr 				= ScalingCreate(&scal, fb, PETSC_FALSE); 				CHKERRQ(ierr);
-	dbm_modified.scal   = &scal;
-	for (i=0; i < lm->dbm.numPhases; i++){
-		ierr =   PetscMemzero(&dbm_modified.phases[i],  sizeof(Material_t));   	CHKERRQ(ierr);
-	}
-
-    // Store Material DB in intermediate structure (for use with Adjoint)
-	ierr = DBMatCreate(&dbm_modified, fb, PETSC_TRUE); 							CHKERRQ(ierr);
-
-	// swap material structure with the one from file (for adjoint)
-	for (i=0; i < lm->dbm.numPhases; i++)
-	{
-		swapStruct(&lm->dbm.phases[i], &dbm_modified.phases[i]);  
-		//PrintMatProp(&lm->dbm.phases[i]);
-	}
-
-	// update time stepping object
-	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
-
 	// free space
 	free(fileName);
 
