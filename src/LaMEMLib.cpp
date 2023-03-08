@@ -281,10 +281,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	PetscMPIInt     rank;
 	char            *fileName;
 	PetscLogDouble  t;
-	FB              *fb;
-    DBMat           dbm_modified;
-	PetscInt        i;
-    Scaling         scal;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
