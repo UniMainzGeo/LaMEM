@@ -2207,6 +2207,8 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 	PetscScalar 	*Par;
 	Scaling	 		scal;
 
+	PetscFunctionBeginUser;
+
 	// retrieve some of the required data
 	ierr = PetscMemzero (&scal, sizeof(Scaling));          CHKERRQ(ierr);
 	ierr = ScalingCreate(&scal, IOparam->fb, PETSC_FALSE); CHKERRQ(ierr);
@@ -2287,7 +2289,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 					y = IOparam->Ay[j]*scal.length;
 					z = IOparam->Az[j]*scal.length;
 			
-					PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%9.3f; %9.3f; %9.3f]  %s % 8.5e  % 8.5e \n",j+1,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
+					PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%9.3f; %9.3f; %9.3f]  %s % 8.5e  % 8.5e \n", j+1,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
 
 					// PetscScalar misfit;
 					// misfit = 0.5*pow(IOparam->Avel_num[j]-CostFunc, 2);
@@ -2305,21 +2307,20 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 						CostFunc = 	CostFunc*(180/3.14159265359);		// transfer to degrees
 					}
 
-					PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%9.3f; %9.3f; %9.3f] %s  % 8.5e  % 8.5e\n",j+1,x,y,z, IOparam->ObsName[j], CostFunc, IOparam->Avel_num[j]);
+					PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%9.3f; %9.3f; %9.3f] %s  % 8.5e  % 8.5e\n", j+1,x,y,z, IOparam->ObsName[j], CostFunc, IOparam->Avel_num[j]);
 				}
 			}
 
 		}
-	  	PetscPrintf(PETSC_COMM_WORLD,"| \n");
  
 	}
 	
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF above
-	
+
+  	PetscPrintf(PETSC_COMM_WORLD,"| \n");
+
 	PetscFunctionReturn(0);
 }
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AdjointPointInPro"
@@ -3526,7 +3527,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 					llgradfield[kk][jk][ik] = -grdt*aop->CurScal;
 				}
 				
-				ierr = MPI_Barrier(PETSC_COMM_WORLD);
+				ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 			}
 		}
 	}
