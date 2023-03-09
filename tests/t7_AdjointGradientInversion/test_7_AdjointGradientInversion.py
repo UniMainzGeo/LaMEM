@@ -20,16 +20,16 @@ def SubductionInversion_GD():
     key = re.escape("F / FINI =")
     unittest.compareFloatingPoint(key,1e-6)
 
-    key = re.escape("| 1. Diff parameter value =")
+    key = re.escape("| 1 Diff parameter value =")
     unittest.compareFloatingPoint(key,1e-5)
 
-    key = re.escape("| 2. Diff parameter value =")
+    key = re.escape("| 2 Diff parameter value =")
     unittest.compareFloatingPoint(key,1e-5)
 
-    key = re.escape("| 1. Parameter value =")
+    key = re.escape("| 1 Parameter value =")
     unittest.compareFloatingPoint(key,1e-5)
 
-    key = re.escape("| 2. Parameter value =")
+    key = re.escape("| 2 Parameter value =")
     unittest.compareFloatingPoint(key,1e-5)
 
   # Create unit test object
@@ -55,10 +55,10 @@ def SubductionInversion_TAO():
     key = re.escape("| misfit / misfit0 =")
     unittest.compareFloatingPoint(key,1e-5)
 
-    key = re.escape("|   1. eta[0] =")
+    key = re.escape("|   1 eta[0] =")
     unittest.compareFloatingPoint(key,1e-5)
 
-    key = re.escape("|   2. rho[1] =")
+    key = re.escape("|   2 rho[1] =")
     unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|  adjoint     1:   log10  eta[ 0]")
@@ -91,10 +91,10 @@ def SubductionInversion_FD_TAO():
     key = re.escape("| misfit / misfit0 =")
     unittest.compareFloatingPoint(key,1e-3)
 
-    key = re.escape("|   1. eta[0] =")
+    key = re.escape("|   1 eta[0] =")
     unittest.compareFloatingPoint(key,1e-3)
 
-    key = re.escape("|   2. rho[1] =")
+    key = re.escape("|   2 rho[1] =")
     unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|       FD     1:   log10  eta[ 0]")
@@ -128,7 +128,7 @@ def PSD_Paper_GD_Nonlinear():
     key = re.escape("|    F =")
     unittest.compareFloatingPoint(key,1e-3)
 
-    key = re.escape("| 1. Parameter value = ")
+    key = re.escape("| 1 Parameter value = ")
     unittest.compareFloatingPoint(key,1e-5)
 
   # Create unit test object
@@ -155,7 +155,7 @@ def PSD_Paper_GD_Linear():
     key = re.escape("|    F =")
     unittest.compareFloatingPoint(key,1e-3)
 
-    key = re.escape("| 1. Parameter value = ")
+    key = re.escape("| 1 Parameter value = ")
     unittest.compareFloatingPoint(key,5e-5)
 
   # Create unit test object

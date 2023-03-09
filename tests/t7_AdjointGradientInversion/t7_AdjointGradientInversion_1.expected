@@ -56,11 +56,11 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Fold = 1.00000e+100 
 |    F = 3.17823e-02
 | 
-| 1. Diff parameter value = -2.10000e+00
-| 2. Diff parameter value = 3.22000e+02
+| 1 Diff parameter value = -2.10000e+00
+| 2 Diff parameter value = 3.22000e+02
 | 
-| 1. Parameter value = 1.89000e+01
-| 2. Parameter value = 3.54200e+03
+| 1 Parameter value = 1.89000e+01
+| 2 Parameter value = 3.54200e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 5.00000e+00
 | LS factor for 2.Parameter = 5.00000e+00
@@ -70,7 +70,7 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 9.7357846425e+01
+| Current Cost function = 9.7357846421e+01
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -122,11 +122,11 @@ SNES Convergence Reason : ||F|| < atol
 | Fold = 3.17823e-02 
 |    F = 2.58562e-02
 | 
-| 1. Diff parameter value = -1.15535e-01
-| 2. Diff parameter value = 2.28257e-03
+| 1 Diff parameter value = -1.15535e-01
+| 2 Diff parameter value = 2.28257e-03
 | 
-| 1. Parameter value = 2.07780e+01
-| 2. Parameter value = 3.22000e+03
+| 1 Parameter value = 2.07780e+01
+| 2 Parameter value = 3.22000e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 2.20000e+00
 | LS factor for 2.Parameter = 2.20000e+00
@@ -161,11 +161,11 @@ SNES Convergence Reason : ||F|| < atol
 | Fold = 2.58562e-02 
 |    F = 1.90196e-02
 | 
-| 1. Diff parameter value = -1.31769e-01
-| 2. Diff parameter value = 2.68144e-03
+| 1 Diff parameter value = -1.31769e-01
+| 2 Diff parameter value = 2.68144e-03
 | 
-| 1. Parameter value = 2.06462e+01
-| 2. Parameter value = 3.22001e+03
+| 1 Parameter value = 2.06462e+01
+| 2 Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 2.42000e+00
 | LS factor for 2.Parameter = 2.42000e+00
@@ -200,11 +200,11 @@ SNES Convergence Reason : ||F|| < atol
 | Fold = 1.90196e-02 
 |    F = 1.12762e-02
 | 
-| 1. Diff parameter value = -1.36120e-01
-| 2. Diff parameter value = 2.88970e-03
+| 1 Diff parameter value = -1.36120e-01
+| 2 Diff parameter value = 2.88970e-03
 | 
-| 1. Parameter value = 2.05101e+01
-| 2. Parameter value = 3.22001e+03
+| 1 Parameter value = 2.05101e+01
+| 2 Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 2.66200e+00
 | LS factor for 2.Parameter = 2.66200e+00
@@ -214,7 +214,7 @@ SNES Convergence Reason : ||F|| < atol
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 4.4327743947e-03
+| Current Cost function = 4.4327743819e-03
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -239,11 +239,11 @@ SNES Convergence Reason : ||F|| < atol
 | Fold = 1.12762e-02 
 |    F = 4.43277e-03
 | 
-| 1. Diff parameter value = -1.12388e-01
-| 2. Diff parameter value = 2.52483e-03
+| 1 Diff parameter value = -1.12388e-01
+| 2 Diff parameter value = 2.52483e-03
 | 
-| 1. Parameter value = 2.03977e+01
-| 2. Parameter value = 3.22001e+03
+| 1 Parameter value = 2.03977e+01
+| 2 Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 2.92820e+00
 | LS factor for 2.Parameter = 2.92820e+00
@@ -253,7 +253,7 @@ SNES Convergence Reason : ||F|| < atol
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 8.1369135874e-04
+| Current Cost function = 8.1369136279e-04
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -278,11 +278,11 @@ SNES Convergence Reason : ||F|| < atol
 | Fold = 4.43277e-03 
 |    F = 8.13691e-04
 | 
-| 1. Diff parameter value = -6.00353e-02
-| 2. Diff parameter value = 1.43047e-03
+| 1 Diff parameter value = -6.00353e-02
+| 2 Diff parameter value = 1.43047e-03
 | 
-| 1. Parameter value = 2.03377e+01
-| 2. Parameter value = 3.22001e+03
+| 1 Parameter value = 2.03377e+01
+| 2 Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 3.22102e+00
 | LS factor for 2.Parameter = 3.22102e+00
@@ -292,7 +292,7 @@ SNES Convergence Reason : ||F|| < atol
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 3.9639047468e-05
+| Current Cost function = 3.9639049381e-05
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -317,11 +317,11 @@ SNES Convergence Reason : ||F|| < atol
 | Fold = 8.13691e-04 
 |    F = 3.96390e-05
 | 
-| 1. Diff parameter value = -1.54330e-02
-| 2. Diff parameter value = 3.81394e-04
+| 1 Diff parameter value = -1.54330e-02
+| 2 Diff parameter value = 3.81394e-04
 | 
-| 1. Parameter value = 2.03222e+01
-| 2. Parameter value = 3.22001e+03
+| 1 Parameter value = 2.03222e+01
+| 2 Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 3.54312e+00
 | LS factor for 2.Parameter = 3.54312e+00
@@ -331,7 +331,7 @@ SNES Convergence Reason : ||F|| < atol
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.4429058902e-07
+| Current Cost function = 1.4429059928e-07
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -356,11 +356,11 @@ SNES Convergence Reason : ||F|| < atol
 | Fold = 3.96390e-05 
 |    F = 1.44291e-07
 | 
-| 1. Diff parameter value = -1.03818e-03
-| 2. Diff parameter value = 2.59139e-05
+| 1 Diff parameter value = -1.03818e-03
+| 2 Diff parameter value = 2.59139e-05
 | 
-| 1. Parameter value = 2.03212e+01
-| 2. Parameter value = 3.22001e+03
+| 1 Parameter value = 2.03212e+01
+| 2 Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 3.89743e+00
 | LS factor for 2.Parameter = 3.89743e+00
@@ -370,7 +370,7 @@ SNES Convergence Reason : ||F|| < atol
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 4.4036153022e-10
+| Current Cost function = 4.4036163975e-10
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -379,7 +379,7 @@ SNES Convergence Reason : ||F|| < atol
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
 |  adjoint     1:   log10  eta[ 0]           -1.620172e-05 
-|  adjoint     2:          rho[ 1]            4.046842e-07 
+|  adjoint     2:          rho[ 1]            4.046843e-07 
 | 
 | 
 | Observation points: 
@@ -388,18 +388,18 @@ SNES Convergence Reason : ||F|| < atol
 |       --------------------------------- --- ------------- ------------- 
 | 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.60030e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=-1.620172e-05, [1]=4.046842e-07 
+| AdjointOptimisation: Gradients. [0]=-1.620172e-05, [1]=4.046843e-07 
 | ------------------------------------------------------------------------ 
 | 9. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.38555e-08
 | 
 | Fold = 1.44291e-07 
 |    F = 4.40362e-10
 | 
-| 1. Diff parameter value = 6.31451e-05
-| 2. Diff parameter value = -1.57723e-06
+| 1 Diff parameter value = 6.31452e-05
+| 2 Diff parameter value = -1.57723e-06
 | 
-| 1. Parameter value = 2.03212e+01
-| 2. Parameter value = 3.22001e+03
+| 1 Parameter value = 2.03212e+01
+| 2 Parameter value = 3.22001e+03
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 4.28718e+00
 | LS factor for 2.Parameter = 4.28718e+00
@@ -426,5 +426,5 @@ SNES Convergence Reason : ||F|| < atol
 | eta[0] = 2.03212e+01
 | rho[1] = 3.22001e+03
 | ------------------------------------------------------------------------- 
-| Adjoint computation was successful & took 3.07526 s                         	 
+| Adjoint computation was successful & took 2.68658 s                         	 
 | ************************************************************************ 

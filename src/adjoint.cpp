@@ -2013,7 +2013,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		PetscBool 	flag;
 	 	ierr =  SNESKSPGetUseEW(snes, &flag); 			CHKERRQ(ierr);
 		if (flag){
-			SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER,"|     Adjoint: Cannot combine adjoint method with Eisenstatt-Walker! \n");
+			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"|     Adjoint: Cannot combine adjoint method with Eisenstatt-Walker! \n");
 		}
 	} 
 
@@ -2258,16 +2258,14 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 	PetscPrintf(PETSC_COMM_WORLD,"| \n| ");
 
 
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF below
-	
 	if(IOparam->mdI<_MAX_OBS_ && IOparam->Ap == 1)
 	{
 
-        PetscPrintf(PETSC_COMM_WORLD,"\n| Observation points: \n");
+		PetscPrintf(PETSC_COMM_WORLD,"\n| Observation points: \n");
 		if (IOparam->MfitType == 0) {PetscPrintf(PETSC_COMM_WORLD,"|                                                   Velocity %s       \n",scal.lbl_velocity);    }
         else if (IOparam->MfitType == 1) {PetscPrintf(PETSC_COMM_WORLD,"|                                                    Center values         \n");    }
-        PetscPrintf(PETSC_COMM_WORLD,"|                       Location         |      Target         Value     \n");    
-        PetscPrintf(PETSC_COMM_WORLD,"|       --------------------------------- --- ------------- ------------- \n");    
+		PetscPrintf(PETSC_COMM_WORLD,"|                       Location         |      Target         Value     \n");
+		PetscPrintf(PETSC_COMM_WORLD,"|       --------------------------------- --- ------------- ------------- \n");
 
 		// Print the solution variable at the user defined index (if there are sufficiently few)
 		for (j=0; j<IOparam->mdI; j++)
@@ -2289,11 +2287,8 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 					y = IOparam->Ay[j]*scal.length;
 					z = IOparam->Az[j]*scal.length;
 			
-					PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%9.3f; %9.3f; %9.3f]  %s % 8.5e  % 8.5e \n", j+1,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
+					PetscSynchronizedPrintf(PETSC_COMM_WORLD,"| %-4d: [%9.3f; %9.3f; %9.3f]  %s % 8.5e  % 8.5e \n", j+1,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
 
-					// PetscScalar misfit;
-					// misfit = 0.5*pow(IOparam->Avel_num[j]-CostFunc, 2);
-					//PetscPrintf(PETSC_COMM_SELF,"| Debugging: Velocity misfit =  % 15.8e \n",misfit);
 				}
 				else if (IOparam->MfitType == 1)
 				{
@@ -2307,17 +2302,16 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 						CostFunc = 	CostFunc*(180/3.14159265359);		// transfer to degrees
 					}
 
-					PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%9.3f; %9.3f; %9.3f] %s  % 8.5e  % 8.5e\n", j+1,x,y,z, IOparam->ObsName[j], CostFunc, IOparam->Avel_num[j]);
+					PetscSynchronizedPrintf(PETSC_COMM_WORLD,"| %-4d: [%9.3f; %9.3f; %9.3f] %s  % 8.5e  % 8.5e\n", j+1,x,y,z, IOparam->ObsName[j], CostFunc, IOparam->Avel_num[j]);
 				}
 			}
 
 		}
  
 	}
+	PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT);
 	
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF above
-
-  	PetscPrintf(PETSC_COMM_WORLD,"| \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| \n");
 
 	PetscFunctionReturn(0);
 }
@@ -2576,12 +2570,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 						ierr = DMDAVecRestoreArray(fs->DA_Z, lxiniZ, &llxiniZ);      CHKERRQ(ierr);
 					}
 				}
-				/*
-				else
-				{
-					SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Unknown velocity component ");
-				}
-				*/
 
 				ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
 				ierr = DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
@@ -4068,21 +4056,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 			GET_CELL_ID(ID, I, J, K, nx, ny);
 
 			As_Ind[ii] = ID;
-
-			/*
-			// Compute the local finite differences for dF/du (debugging)
-			PetscScalar h;
-			// h = 1e-6;
-			h = 0.0;
-			ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
-			ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
-			ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-			vx[K][J][I] +=h;
-			PetscPrintf(PETSC_COMM_SELF,"%d %d %d\n\n",I,J,K);
-			*/
-
-			// PetscPrintf(PETSC_COMM_WORLD,"DEBUG 1a %.10f %.10f %.10f %d, %d\n\n",I,J,K,As_Ind[ii],ii,ncx[I],ncy[J],ncz[K] );
-
 		}
 	}
 
@@ -4395,11 +4368,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 						sty[ii] = Parameter*(1.0/scal->time_si);
 						
 					}
-
-
-
-
-					// PetscPrintf(PETSC_COMM_SELF,"DEBUGDEBUGDEBUGDEBUG %.10f, %.10f, %.10f, %.10f; %.10f %d %d %d %d\n\n",svBulk->phi,IOparam->Ae[ii],dphidu_local,mfitCenter,xdphidu[k][j  ][i  ],i,j,k,ii);
 				}
 			}
 		}
