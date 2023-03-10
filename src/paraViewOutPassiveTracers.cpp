@@ -185,7 +185,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	fprintf( fp, "\t\t\t<Points>\n");
 
 	// point coordinates
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\" />\n",(LLD)offset);
+	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\" />\n",(LLD)offset);
 	offset += sizeof(uint64_t) + sizeof(float)*(size_t)(ptr->nummark*3);
 
 	fprintf( fp, "\t\t\t</Points>\n");
