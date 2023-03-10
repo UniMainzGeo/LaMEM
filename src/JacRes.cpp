@@ -789,10 +789,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	PetscScalar ***vx_y,***vx_z,***vz_x;
 	PetscScalar ***vy_x,***vy_z,***vz_y;
 
-
-
-
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 

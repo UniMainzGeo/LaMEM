@@ -1702,8 +1702,6 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 #define __FUNCT__ "DBMatOverwriteWithGlobalVariables"
 PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb)
 {
-    PetscFunctionBeginUser;
-
     PetscErrorCode  ierr;
     PetscScalar     eta_min;
     PetscInt        ID;

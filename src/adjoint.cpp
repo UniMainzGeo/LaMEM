@@ -1858,6 +1858,8 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 	char 			CurName[_str_len_];
 	PetscBool 		flg, FD_Adjoint = PETSC_FALSE;
 
+ 	PetscFunctionBeginUser;
+
 
 	// 0) Retrieve (optional) command-line parameters
 	ierr = PetscOptionsGetScalar(NULL, NULL,"-FD_gradients_eps",&FD_gradients_eps,&flg); CHKERRQ(ierr);
