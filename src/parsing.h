@@ -104,7 +104,7 @@ struct FB
 
 //-----------------------------------------------------------------------------
 
-PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput);
+PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName = NULL);
 
 PetscErrorCode FBDestroy(FB **pfb);
 
@@ -180,9 +180,6 @@ PetscErrorCode  PetscOptionsGetCheckString(
 	const char   key[],
 	char         str[],
 	PetscBool   *set);
-
-//-----------------------------------------------------------------------------
-
 
 //-----------------------------------------------------------------------------
 // Set default solver options

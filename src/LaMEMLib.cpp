@@ -277,17 +277,18 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibLoadRestart"
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 {
+	FB              *fb;
 	FILE            *fp;
-	PetscMPIInt     rank;
-	char            *fileName;
 	PetscLogDouble  t;
+	PetscMPIInt     rank;
+	PetscBool       found;
+	char            restartFileName[_str_len_], *fileName;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	PrintStart(&t, "Loading restart database", NULL);
 
-	
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
@@ -337,6 +338,21 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// free space
 	free(fileName);
+
+	// check whether restart input file is specified
+	ierr = PetscOptionsGetCheckString("-RestartParamFile", restartFileName, &found); CHKERRQ(ierr);
+
+	if(found == PETSC_TRUE)
+	{
+		// load restart input file
+		ierr = FBLoad(&fb, PETSC_TRUE, restartFileName); CHKERRQ(ierr);
+
+		// override material database
+		ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
+
+		// destroy file buffer
+		ierr = FBDestroy(&fb); CHKERRQ(ierr);
+	}
 
 	PrintDone(t);
 

@@ -49,13 +49,13 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FBLoad"
-PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
+PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 {
 	FB        *fb;
 	FILE      *fp;
 	size_t    sz;
 	PetscBool found;
-	char      filename[_str_len_], *all_options;
+	char      buffer[_str_len_], *filename, *all_options;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -65,24 +65,35 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
 
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
-		// check whether input file is specified
-		ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
-
-		// read additional PETSc options from input file
-		if(found != PETSC_TRUE)
+		if(!restartFileName)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified. You must add the -ParamFile option to specify a LaMEM input file as in:  ./LaMEM -ParamFile your_input_file.dat \n");
+			// check whether input file is specified
+			ierr = PetscOptionsGetCheckString("-ParamFile", buffer, &found); CHKERRQ(ierr);
+
+			if(found != PETSC_TRUE)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified. You must add the -ParamFile option to specify a LaMEM input file as in:  ./LaMEM -ParamFile your_input_file.dat \n");
+			}
+
+			filename = buffer;
+		}
+		else
+		{
+			// set restart input file
+			filename = restartFileName;
 		}
 
 		// open input file
 		fp = fopen(filename, "rb");
 
+		// read additional PETSc options from input file
 		if(fp == NULL)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
 		}
 
-		if (DisplayOutput){
+		if (DisplayOutput)
+		{
 			PetscPrintf(PETSC_COMM_WORLD, "Parsing input file : %s \n", filename);
 		}
 
@@ -142,9 +153,8 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
 	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
 	
 	// print message
-	ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
-	
-	if (DisplayOutput){
+	if(DisplayOutput)
+	{
 		PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file : %s \n", filename);
 	}
 
