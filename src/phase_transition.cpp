@@ -418,7 +418,7 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	Scaling      *scal;
 	Discret1D	*dsy;
 	char         Parameter[_str_len_];
-	PetscInt 	 j,kk, found;
+	PetscInt 	 j,kk;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -466,34 +466,19 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 
   	for(j = -1; j < dsy->ncels+1; j++)
   	{
-  	   found=0;
+  	   ph->celly_xboundL[j] = 1.0e12;
+	   ph->celly_xboundR[j] = -1.0e12;
+
+  	   //for each y coord, find which segment its in and then set x bounds
 	   for (kk = 0; kk < ph->nsegs; kk++)
 	   {
-  		if (dsy->ccoor[j] < ph->ybounds[0])
-  		{
-  			ph->celly_xboundL[j] = 1.0e12;
-			ph->celly_xboundR[j] = -1.0e12;
-			found=1;
-			break;
-		}
-  		else if(ph->ybounds[2*kk] <= dsy->ccoor[j] && dsy->ccoor[j] <= ph->ybounds[2*kk+1])
+  		if (ph->ybounds[2*kk] <= dsy->ccoor[j] && dsy->ccoor[j] <= ph->ybounds[2*kk+1])
   		{
 			ph->celly_xboundL[j] = ph->xbounds[2*kk];
 			ph->celly_xboundR[j] = ph->xbounds[2*kk+1];
-			found=1;
-			break;
-		}
-		else if (dsy->ccoor[j]>ph->ybounds[(ph->nsegs-1)*2+1])
-		{
-  			ph->celly_xboundL[j] = 1.0e12;
-			ph->celly_xboundR[j] = -1.0e12;
-			found=1;
 			break;
 		}
 	   }
-
-	   if (found==0) SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, " Cannot find NotInAirBox seg j=%i, dsy->ccoor=%g\n", \
-	   		j, dsy->ccoor[j]*scal->length);
 	}
 
 
@@ -1238,7 +1223,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
 	GET_CELL_IJK(cellID, I, J, K, nx, ny) //need to know J for celly_xboundL/R
 
 	
-       //particle backward of the cell center and adjacent cell is within phase trans box
+       //interpolate box boundaries if particle backward of the cell center and adjacent cell is within phase trans box
        if (P->X[1] <= dsy->ccoor[J] && PhaseTrans->celly_xboundL[J-1] < PhaseTrans->celly_xboundR[J-1])  
 	{
  	 	xboundL = PhaseTrans->celly_xboundL[J-1] + 
@@ -1246,7 +1231,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
  	 	xboundR = PhaseTrans->celly_xboundR[J-1] + 
  	 	(PhaseTrans->celly_xboundR[J]-PhaseTrans->celly_xboundR[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[1]-dsy->ccoor[J-1]);
   	}
-  	//particle is forward of the cell center and next cell is within phase trans box
+  	//interpolate boundaries if particle is forward of the cell center and next cell is within phase trans box
   	else if (P->X[1] > dsy->ccoor[J] && PhaseTrans->celly_xboundL[J+1] < PhaseTrans->celly_xboundR[J+1]) 
   	{
   		xboundL = PhaseTrans->celly_xboundL[J] + 
@@ -1254,7 +1239,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
   		xboundR = PhaseTrans->celly_xboundR[J] + 
   		(PhaseTrans->celly_xboundR[J+1]-PhaseTrans->celly_xboundR[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[1]-dsy->ccoor[J]);
   	}
-  	//particle outside of phase transition box
+  	//particle outside of phase transition box or adjacent to y-edge of box
   	else 
   	{
   		xboundL = PhaseTrans->celly_xboundL[J];
