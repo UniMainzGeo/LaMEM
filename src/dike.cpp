@@ -574,16 +574,9 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   {
     dike = jr->dbdike->matDike+nD;
 
-    if (!dike->dyndike_start || jr->ts->istep+1 < dike->dyndike_start)
+    if (dike->dyndike_start && jr->ts->istep+1 >= dike->dyndike_start)
     {
-      PetscFunctionReturn(0);   // only execute this function if dikes is dynamic
-    }
-    else
-    {
-      //printf("ENTERING Compute_sxx_eff \n");
-      // much machinery taken from JacResGetLithoStaticPressure
-
-      // get local grid sizes
+       // get local grid sizes
       ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
       // get integration/communication buffer (Gets a PETSc vector, vsxx, that may be used with the DM global routines)
@@ -795,11 +788,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   {
      // access the parameters of the dike depending on the dike block
      dike = jr->dbdike->matDike+nD;
-     if (!dike->dyndike_start || jr->ts->istep+1 < dike->dyndike_start)
-     {
-        PetscFunctionReturn(0);   // only execute this function if dikes is dynamic
-     }
-     else
+     if (dike->dyndike_start && jr->ts->istep+1 >= dike->dyndike_start)
      {
 //-------------------------------------------------------------------------------------------------------
 // Set up a temporary (1D) array for
@@ -1013,11 +1002,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
   {
      dike = jr->dbdike->matDike+nD;
-     if (!dike->dyndike_start || jr->ts->istep+1 < dike->dyndike_start+dike->istep_nave-1)
-     {
-        PetscFunctionReturn(0);   // only execute this function if dikes is dynamic
-     }
-     else
+     if (dike->dyndike_start && jr->ts->istep+1 >= dike->dyndike_start+dike->istep_nave-1)
      {
        if (Lx>0)
        {
