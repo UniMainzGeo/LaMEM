@@ -108,12 +108,12 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscInt J); 
 
 PetscErrorCode Compute_sxx_eff(JacRes *jr);
-
 PetscErrorCode Smooth_sxx_eff(JacRes *jr);
-
 PetscErrorCode Set_dike_zones(JacRes *jr);
-
 PetscErrorCode Locate_Dike_Zones(JacRes *jr);
+PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp, PetscBool PrintOutput);
+PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp);
+PetscErrorCode DynamicDike_Destroy(JacRes *jr);
 
 //---------------------------------------------------------------------------
 #endif

@@ -1422,6 +1422,7 @@ PetscErrorCode DynamicPhTr_ReadRestart(JacRes *jr, FILE *fp)
           if (PhaseTrans->Type == _NotInAirBox_ )
 	   {
 
+	      //Following code for reading coord vectors in fdstag "Discret1DReadRestart"
   	      ierr = makeScalArray(&PhaseTrans->cbuffL, NULL, dsy->ncels+2); CHKERRQ(ierr);
   	      ierr = makeScalArray(&PhaseTrans->cbuffR, NULL, dsy->ncels+2); CHKERRQ(ierr);
 

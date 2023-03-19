@@ -324,9 +324,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// solution variables
 	ierr = JacResReadRestart(&lm->jr, fp); CHKERRQ(ierr);
 
-	// arrays for dynamic NotInAir phase_trans
-	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
-
 	// markers
 	ierr = ADVReadRestart(&lm->actx, fp); CHKERRQ(ierr);
 
@@ -339,10 +336,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
 
-
-	// close temporary restart file
-	fclose(fp);
-
+	// arrays for dynamic NotInAir phase_trans
+	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
 
 	// Read info from file/command-line & overwrite 'restart' data (necessary for adjoint)
 
@@ -370,11 +365,15 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// update time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
+
+	// read from input file, create arrays for dynamic diking, and read from restart file
+	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, fb, fp, PETSC_TRUE);  CHKERRQ(ierr);
+	
+	// close temporary restart file
+	fclose(fp);
+
 	// free space
 	free(fileName);
-
-
-
 
 	PrintDone(t);
 
@@ -433,15 +432,17 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	// solution variables
 	ierr = JacResWriteRestart(&lm->jr, fp); CHKERRQ(ierr);
 
-	// dynamic phase transition 
-	ierr = DynamicPhTr_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
-
 	// markers
 	ierr = ADVWriteRestart(&lm->actx, fp); CHKERRQ(ierr);
 
 	// passive tracers
 	ierr = Passive_Tracer_WriteRestart(&lm->actx, fp); CHKERRQ(ierr);
 
+	// dynamic phase transition 
+	ierr = DynamicPhTr_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
+
+	// dynamic dike 
+	ierr = DynamicDike_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
 
 	// close temporary restart file
 	fclose(fp);

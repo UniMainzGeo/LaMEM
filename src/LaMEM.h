@@ -143,7 +143,7 @@
 #define _max_NotInAir_segs_ 6
 
 // maximum number of dikes
-#define _max_num_dike_ 6
+#define _max_num_dike_ 12
 
 // maximum number of equation parameter
 #define _max_num_eq_ 2

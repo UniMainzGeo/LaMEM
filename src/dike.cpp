@@ -86,7 +86,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
                 // print overview of dike blocks from file                                                                                                           
             if (PrintOutput)
             {
-		      PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
+		          PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
             }
                 // initialize ID for consistency checks                                                                                                                 
 
@@ -188,7 +188,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     dike->npseg0=fs->dsy.tcels - floor((PetscScalar)fs->dsy.tcels/dike->npseg)*dike->npseg;
     if (dike->npseg0==0) dike->npseg0=dike->npseg;
 
-    // DM for 1D cell center vector
+    // DM for 1D cell center vector  (take this out of this loop because it will be repeated with >1 dynamic dike)
     ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
     fs->dsx.tcels, fs->dsy.nproc, fs->dsz.nproc, 
     fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
@@ -1109,5 +1109,92 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   PetscFunctionReturn(0);  
 }
 
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DynamicDike_ReadRestart"
+PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp, PetscBool PrintOutput)  
+{
+  Dike        *dike;
+  PetscInt   nD, numDike;
 
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
+
+
+  numDike    = dbdike->numDike; // number of dikes
+
+  // create dike database
+  ierr = DBDikeCreate(dbdike, dbm, fb, jr, PETSC_TRUE);   CHKERRQ(ierr);
+
+  for(nD = 0; nD < numDike; nD++)
+  {
+    dike = jr->dbdike->matDike+nD;
+    if (dike->dyndike_start)
+     {
+      // read mean stress history, 2D array (local vector created with DA_CELL_2D_tave in DBReadDike)
+      ierr = VecReadRestart(dike->sxx_eff_ave_hist, fp); CHKERRQ(ierr);
+     }
+  }
+  PetscFunctionReturn(0);
+}
+//------------------------------------------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DynamicDike_WriteRestart"
+PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp)
+{
+
+  Dike        *dike;
+  PetscInt   nD, numDike;
+
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
+
+  numDike    = jr->dbdike->numDike; // number of dikes
+
+  for(nD = 0; nD < numDike; nD++)
+  {
+    dike = jr->dbdike->matDike+nD;
+    if (dike->dyndike_start)
+    {
+      // WRITE mean stress history 2D array (local vector created with DA_CELL_2D_tave in DBReadDike)
+       ierr = VecWriteRestart(dike->sxx_eff_ave_hist, fp); CHKERRQ(ierr);
+    }
+  }
+
+
+  PetscFunctionReturn(0);
+}
   
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DynamicDike_Destroy"
+PetscErrorCode DynamicDike_Destroy(JacRes *jr)
+{
+  
+  Dike        *dike;
+  PetscInt   nD, numDike, dyndike_on;
+
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
+
+  numDike    = jr->dbdike->numDike; // number of dikes
+  dyndike_on = 0;
+
+  for(nD = 0; nD < numDike; nD++)
+  {
+     dike = jr->dbdike->matDike+nD;
+     ierr = VecDestroy(&dike->sxx_eff_ave_hist);    CHKERRQ(ierr);
+     dyndike_on=1;
+
+  }
+
+  if (dyndike_on==1)
+  {
+    ierr = DMDestroy(&jr->DA_CELL_2D_tave); CHKERRQ(ierr);
+    ierr = DMDestroy(&jr->DA_CELL_1D); CHKERRQ(ierr);
+  }
+
+  PetscFunctionReturn(0);
+}
