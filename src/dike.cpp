@@ -67,53 +67,102 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 {
 
         // read all dike parameter blocks from file
-        PetscInt jj;
 
-        PetscErrorCode ierr;
-        PetscFunctionBegin;
+  Dike     *dike;
+  FDSTAG   *fs;
+  PetscScalar ***gsxx_eff_ave_hist;
+  PetscInt jj, nD, numDike, numdyndike, istep_nave;
+  PetscInt i, j, istep_count, sx, sy, sisc, nx, ny;
 
-        if (!jr->ctrl.actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
+  PetscErrorCode ierr;
+  PetscFunctionBegin;
+
+  if (!jr->ctrl.actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
  
-        //===============                                                                                                                                               
-        // DIKE PARAMETER                                                                                                               
-        //===============                                                                                                                                               
+  fs = jr->fs;
+  //===============                                                                                                                                               
+  // DIKE PARAMETER                                                                                                               
+  //===============                                                                                                                                               
 
-        // setup block access mode                                                                                                                                      
-        ierr = FBFindBlocks(fb, _OPTIONAL_, "<DikeStart>", "<DikeEnd>"); CHKERRQ(ierr);
+  // setup block access mode                                                                                                                                      
+  ierr = FBFindBlocks(fb, _OPTIONAL_, "<DikeStart>", "<DikeEnd>"); CHKERRQ(ierr);
 
-        if(fb->nblocks)
-        {
-                // print overview of dike blocks from file                                                                                                           
-            if (PrintOutput)
-            {
-		          PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
-            }
-                // initialize ID for consistency checks                                                                                                                 
+  if(fb->nblocks)
+  {
+      // print overview of dike blocks from file                                                                                                           
+      if (PrintOutput)
+        PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
 
-            for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1;
+      // initialize ID for consistency checks                                                                                                                 
 
-		// error checking
-            if(fb->nblocks >_max_num_dike_)
-            {
-                        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
-            }
+      for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1;
 
-            // store actual number of dike blocks 
-            dbdike->numDike = fb->nblocks;
+      // error checking
+      if(fb->nblocks >_max_num_dike_)
+        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
 
-            if (PrintOutput){
-                        PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-            }
+      // store actual number of dike blocks 
+      dbdike->numDike = fb->nblocks;
+
+      if (PrintOutput)
+        PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 		
-            // read each individual dike block                                                                                                                   
-            for(jj = 0; jj < fb->nblocks; jj++)
-            {
-                ierr = DBReadDike(dbdike, dbm, fb, jr, PrintOutput); CHKERRQ(ierr);
-                fb->blockID++;
-            }
-        }
+      // read each individual dike block                                                                                                                   
+      for(jj = 0; jj < fb->nblocks; jj++)
+      {
+        ierr = DBReadDike(dbdike, dbm, fb, jr, PrintOutput); CHKERRQ(ierr);
+        fb->blockID++;
+      }
+  }
  
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+  numdyndike=0;
+
+  numDike=dbdike->numDike;
+  for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
+  {
+      dike = dbdike->matDike+nD;
+      if (dike->dyndike_start)
+      {
+        numdyndike++;
+        if (numdyndike ==1)
+        {
+            // DM for 1D cell center vector  (take this out of this loop because it will be repeated with >1 dynamic dike)
+            ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
+            fs->dsx.tcels, fs->dsy.nproc, fs->dsz.nproc, 
+            fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
+            0, 0, 0, &jr->DA_CELL_1D); CHKERRQ(ierr);
+
+
+            //DM for 2D cell center vector, with istep_nave planes for time averaging
+            ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
+            fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
+            fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
+            0, 0, 0, &jr->DA_CELL_2D_tave); CHKERRQ(ierr);
+        }
+
+        //creating local vectors and inializing the history vector
+        ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave);  CHKERRQ(ierr);
+        ierr = DMCreateLocalVector( jr->DA_CELL_2D_tave, &dike->sxx_eff_ave_hist);  CHKERRQ(ierr);
+        ierr = DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+        ierr = DMDAGetCorners(jr->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave); CHKERRQ(ierr);    
+
+        for(j = sy; j < sy+ny; j++) 
+        {
+          for(i = sx; i < sx+nx; i++)
+          {
+            for (istep_count=sisc; istep_count<sisc+istep_nave; istep_count++)
+            {
+              gsxx_eff_ave_hist[istep_count][j][i]=0.0;
+            }
+          }
+        }
+
+        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+      }  //End if dyndike->start
+  }  //End loop through dikes
+
 
 	PetscFunctionReturn(0);
 }
@@ -126,9 +175,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   Dike     *dike;
   FDSTAG   *fs;
   PetscInt  ID;
-  PetscScalar ***gsxx_eff_ave_hist;
   Scaling  *scal;
-  PetscInt i, j, istep_count, sx, sy, sisc, nx, ny, istep_nave;
   	
   PetscErrorCode ierr;
   PetscFunctionBegin;
@@ -187,44 +234,6 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 
     dike->npseg0=fs->dsy.tcels - floor((PetscScalar)fs->dsy.tcels/dike->npseg)*dike->npseg;
     if (dike->npseg0==0) dike->npseg0=dike->npseg;
-
-    // DM for 1D cell center vector  (take this out of this loop because it will be repeated with >1 dynamic dike)
-    ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
-    fs->dsx.tcels, fs->dsy.nproc, fs->dsz.nproc, 
-    fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
-    0, 0, 0, &jr->DA_CELL_1D); CHKERRQ(ierr);
-
-
-    //DM for 2D cell center vector, with istep_nave planes for time averaging
-    ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
-    fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
-    fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
-    0, 0, 0, &jr->DA_CELL_2D_tave); CHKERRQ(ierr);
-
-    //creating local vectors and inializing the history vector
-    ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave);  CHKERRQ(ierr);
-
-    ierr = DMCreateLocalVector( jr->DA_CELL_2D_tave, &dike->sxx_eff_ave_hist);  CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
-    ierr = DMDAGetCorners(jr->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave); CHKERRQ(ierr);    
-
-    if(istep_nave!=dike->istep_nave) 
-    {
-       SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems in setting up DA_CELL_2D_tave: istep_nave=%i, dike->istep_nave=%i\n", istep_nave, dike->istep_nave);
-    }
-
-    for(j = sy; j < sy+ny; j++) 
-    {
-      for(i = sx; i < sx+nx; i++)
-      {
-        for (istep_count=sisc; istep_count<sisc+istep_nave; istep_count++)
-        {
-          gsxx_eff_ave_hist[istep_count][j][i]=0.0;
-        }
-      }
-    }
-
-    ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
 
   }
 
