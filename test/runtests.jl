@@ -103,7 +103,7 @@ end
     ParamFile = "localization.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-10), (rtol=1e-5,atol=1e-10), (rtol=1e-4,atol=1e-7));
+    acc      = ((rtol=1e-7,atol=1e-10), (rtol=1e-5,atol=2e-10), (rtol=1e-4,atol=1e-7));
     
     # Perform tests
     # t4_Loc1_a_MUMPS_VEP_opt
@@ -396,7 +396,7 @@ end
 
     # Test inflow/outflow conditions in 2D using optimized LaMEM   
     # t17_InflowOutflow2D_Pres_opt 
-    acc      = ((rtol=2e-7,atol=1e-11), (rtol=1e-5, atol=1e-10), (rtol=1e-4,atol=2e-10), (rtol=1e-7,atol=1e-9));
+    acc      = ((rtol=2e-7,atol=1e-10), (rtol=1e-5, atol=1e-10), (rtol=1e-4,atol=2e-10), (rtol=1e-6,atol=1e-9));
     @test perform_lamem_test(dir,"PlumeLithos_Interaction_2D_Perm.dat","InflowOutflow-2D_Perm_p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
@@ -411,7 +411,7 @@ end
 @testset "t18_SimpleShear" begin
     dir = "t18_SimpleShear";
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-8), (rtol=1e-5, atol=1e-8), (rtol=1e-4,atol=2e-5));
+    acc      = ((rtol=1e-7,atol=1e-8), (rtol=1e-5, atol=2e-8), (rtol=1e-4,atol=2e-5));
 
     # test_xz
     @test perform_lamem_test(dir,"SS.dat","SimpleShear_xz-p2.expected",

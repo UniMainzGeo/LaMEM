@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Nov 26 2021 - Time: 14:19:30 	    
+     Compiled: Date: Apr  7 2023 - Time: 18:59:08 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -38,13 +38,13 @@ Time stepping parameters:
 --------------------------------------------------------------------------
 Material parameters: 
 --------------------------------------------------------------------------
-   Phase ID : 0   
+- Melt factor mfc = 0.000000   Phase ID : 0   
    dislocation creep profile: Wet_Quarzite-Ranalli_1995
    (dens)   : rho = 2700. [kg/m^3]  
    (disl)   : Bn = 1.55371e-17 [1/Pa^n/s]  En = 154000. [J/mol]  n = 2.3 [ ]  
    (temp)   : alpha = 3e-05 [1/K]  Cp = 1000. [J/kg/K]  k = 3. [W/m/k]  
 
-   Phase ID : 1   
+- Melt factor mfc = 0.000000   Phase ID : 1   
    (dens)   : rho = 3000. [kg/m^3]  
    (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
    (temp)   : alpha = 3e-05 [1/K]  Cp = 1000. [J/kg/K]  k = 3. [W/m/k]  T = 1000. [C]  
@@ -80,12 +80,13 @@ Solution parameters & controls:
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
    Universal gas constant                  : 8.31446 [J/mol/K] 
    Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25  
+   Rheology iteration number               : 25    
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
+   Periodic marker advection     : 0 0 0 
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -93,7 +94,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00272226 sec)
+Reading geometric primitives ... done (0.000752 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : FB_Recharge1 
@@ -104,6 +105,7 @@ Output parameters:
    Velocity                                @ 
    Pressure                                @ 
 --------------------------------------------------------------------------
+*** BORIS *** 
 AVD output parameters:
    Write .pvd file       : yes 
    AVD refinement factor : 3 
@@ -126,9 +128,9 @@ Solver parameters specified:
    Coarse level PC               : redundant 
    Number of redundant solvers   : 1 
 --------------------------------------------------------------------------
-Computing steady-state temperature distribution ... done (0.135532 sec)
+Computing steady-state temperature distribution ... done (0.062937 sec)
 --------------------------------------------------------------------------
-Diffusing temperature ... done (3.28434 sec)
+Diffusing temperature ... done (1.12462 sec)
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
@@ -140,25 +142,25 @@ Diffusing temperature ... done (3.28434 sec)
     2 KSP Residual norm 3.988995421949e+00 
     3 KSP Residual norm 1.109670240191e+00 
     4 KSP Residual norm 2.986174746420e-02 
-    5 KSP Residual norm 1.067371156911e-02 
-    6 KSP Residual norm 2.709192222901e-04 
+    5 KSP Residual norm 1.067371156912e-02 
+    6 KSP Residual norm 2.709192222903e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  1 SNES Function norm 2.709192222972e-04 
+  1 SNES Function norm 2.709192222941e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 1.33319 (sec)
+SNES solution time      : 0.572558 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.381625191086e-06 
-      |Div|_2   = 1.241778777639e-04 
+      |Div|_inf = 4.381625191998e-06 
+      |Div|_2   = 1.241778777701e-04 
    Momentum: 
-      |mRes|_2  = 2.407843011580e-04 
+      |mRes|_2  = 2.407843011514e-04 
    Energy: 
-      |eRes|_2  = 2.793064889573e-04 
+      |eRes|_2  = 2.793064889987e-04 
 --------------------------------------------------------------------------
-Saving output ... done (0.311884 sec)
+Saving output ... done (0.24142 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -171,305 +173,305 @@ Tentative time step : 0.00100000 [Myr]
     0 KSP Residual norm 1.105627387366e+02 
     1 KSP Residual norm 1.088703932631e+01 
     2 KSP Residual norm 3.783165441053e-01 
-    3 KSP Residual norm 2.207817695176e-01 
-    4 KSP Residual norm 2.933629811402e-02 
-    5 KSP Residual norm 1.746504581735e-02 
-    6 KSP Residual norm 7.993325982179e-03 
+    3 KSP Residual norm 2.207817695250e-01 
+    4 KSP Residual norm 2.933629811643e-02 
+    5 KSP Residual norm 1.746504582660e-02 
+    6 KSP Residual norm 7.993325932297e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  1 SNES Function norm 1.231924077091e-01 
+  1 SNES Function norm 1.231924077090e-01 
   1 PICARD ||F||/||F0||=1.114231e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.231924077091e-01 
-    1 KSP Residual norm 3.808643058137e-02 
-    2 KSP Residual norm 3.608095098972e-02 
-    3 KSP Residual norm 2.973418276359e-02 
-    4 KSP Residual norm 1.387473850831e-02 
-    5 KSP Residual norm 4.169148273657e-03 
-    6 KSP Residual norm 4.075934137284e-03 
-    7 KSP Residual norm 5.845140599305e-04 
-    8 KSP Residual norm 3.584037326364e-04 
-    9 KSP Residual norm 2.099589522715e-04 
-   10 KSP Residual norm 1.234552121396e-04 
-   11 KSP Residual norm 7.212070550139e-05 
+    0 KSP Residual norm 1.231924077090e-01 
+    1 KSP Residual norm 3.808643030211e-02 
+    2 KSP Residual norm 3.608095057286e-02 
+    3 KSP Residual norm 2.973418235025e-02 
+    4 KSP Residual norm 1.387473850963e-02 
+    5 KSP Residual norm 4.169148275647e-03 
+    6 KSP Residual norm 4.075934140589e-03 
+    7 KSP Residual norm 5.845140604641e-04 
+    8 KSP Residual norm 3.584037334759e-04 
+    9 KSP Residual norm 2.099589524275e-04 
+   10 KSP Residual norm 1.234552120020e-04 
+   11 KSP Residual norm 7.212070526408e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 11
-  2 SNES Function norm 1.259886985408e-01 
+  2 SNES Function norm 1.259886985277e-01 
   2 PICARD ||F||/||F0||=1.139522e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.259886985408e-01 
-    1 KSP Residual norm 1.255406139675e-01 
-    2 KSP Residual norm 1.072946817492e-01 
-    3 KSP Residual norm 5.408013109393e-02 
-    4 KSP Residual norm 2.404217564020e-02 
-    5 KSP Residual norm 4.417582391806e-03 
-    6 KSP Residual norm 2.012005838093e-03 
-    7 KSP Residual norm 8.999887631527e-04 
-    8 KSP Residual norm 7.878812432054e-04 
-    9 KSP Residual norm 6.790948019971e-04 
-   10 KSP Residual norm 4.075224911878e-04 
-   11 KSP Residual norm 1.389493784452e-04 
-   12 KSP Residual norm 1.266856056189e-04 
-   13 KSP Residual norm 8.333640476685e-05 
+    0 KSP Residual norm 1.259886985277e-01 
+    1 KSP Residual norm 1.255406139546e-01 
+    2 KSP Residual norm 1.072946817375e-01 
+    3 KSP Residual norm 5.408013108854e-02 
+    4 KSP Residual norm 2.404217563666e-02 
+    5 KSP Residual norm 4.417582392372e-03 
+    6 KSP Residual norm 2.012005837564e-03 
+    7 KSP Residual norm 8.999887623352e-04 
+    8 KSP Residual norm 7.878812410767e-04 
+    9 KSP Residual norm 6.790947987745e-04 
+   10 KSP Residual norm 4.075224866354e-04 
+   11 KSP Residual norm 1.389493761251e-04 
+   12 KSP Residual norm 1.266856047647e-04 
+   13 KSP Residual norm 8.333640336883e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 13
-  3 SNES Function norm 4.922657063888e-02 
+  3 SNES Function norm 4.922657064271e-02 
   3 PICARD ||F||/||F0||=4.452365e-04 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.922657063888e-02 
-    1 KSP Residual norm 4.921185459833e-02 
-    2 KSP Residual norm 4.322498103608e-02 
-    3 KSP Residual norm 2.453401401197e-02 
-    4 KSP Residual norm 1.003308447839e-02 
-    5 KSP Residual norm 2.855620243784e-03 
-    6 KSP Residual norm 1.049324267106e-03 
-    7 KSP Residual norm 5.263916226947e-04 
-    8 KSP Residual norm 2.995271162866e-04 
-    9 KSP Residual norm 1.998776415265e-04 
-   10 KSP Residual norm 1.531013093109e-04 
-   11 KSP Residual norm 5.744009133031e-05 
+    0 KSP Residual norm 4.922657064271e-02 
+    1 KSP Residual norm 4.921185460206e-02 
+    2 KSP Residual norm 4.322498104324e-02 
+    3 KSP Residual norm 2.453401401380e-02 
+    4 KSP Residual norm 1.003308447113e-02 
+    5 KSP Residual norm 2.855620229557e-03 
+    6 KSP Residual norm 1.049324259432e-03 
+    7 KSP Residual norm 5.263916141267e-04 
+    8 KSP Residual norm 2.995271145880e-04 
+    9 KSP Residual norm 1.998776425237e-04 
+   10 KSP Residual norm 1.531013107806e-04 
+   11 KSP Residual norm 5.744009206944e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 11
-  4 SNES Function norm 2.369739304659e-02 
+  4 SNES Function norm 2.369739305009e-02 
   4 PICARD ||F||/||F0||=2.143344e-04 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.369739304659e-02 
-    1 KSP Residual norm 2.369549987173e-02 
-    2 KSP Residual norm 2.111704689733e-02 
-    3 KSP Residual norm 1.255627468910e-02 
-    4 KSP Residual norm 4.606823719906e-03 
-    5 KSP Residual norm 1.543605171128e-03 
-    6 KSP Residual norm 6.368621766992e-04 
-    7 KSP Residual norm 2.678010910899e-04 
-    8 KSP Residual norm 1.667160882361e-04 
-    9 KSP Residual norm 9.598241414961e-05 
+    0 KSP Residual norm 2.369739305009e-02 
+    1 KSP Residual norm 2.369549987528e-02 
+    2 KSP Residual norm 2.111704689493e-02 
+    3 KSP Residual norm 1.255627468107e-02 
+    4 KSP Residual norm 4.606823713345e-03 
+    5 KSP Residual norm 1.543605171666e-03 
+    6 KSP Residual norm 6.368621780170e-04 
+    7 KSP Residual norm 2.678010924675e-04 
+    8 KSP Residual norm 1.667160886865e-04 
+    9 KSP Residual norm 9.598241403933e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 9
-  5 SNES Function norm 1.219529571910e-02 
+  5 SNES Function norm 1.219529571959e-02 
   5 PICARD ||F||/||F0||=1.103020e-04 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.219529571910e-02 
-    1 KSP Residual norm 1.219436362372e-02 
-    2 KSP Residual norm 1.100294402818e-02 
-    3 KSP Residual norm 6.743542192643e-03 
-    4 KSP Residual norm 2.328577284987e-03 
-    5 KSP Residual norm 8.662248730946e-04 
-    6 KSP Residual norm 3.728341254686e-04 
-    7 KSP Residual norm 1.111541536000e-04 
-    8 KSP Residual norm 7.531117051727e-05 
+    0 KSP Residual norm 1.219529571959e-02 
+    1 KSP Residual norm 1.219436362422e-02 
+    2 KSP Residual norm 1.100294402759e-02 
+    3 KSP Residual norm 6.743542191033e-03 
+    4 KSP Residual norm 2.328577284620e-03 
+    5 KSP Residual norm 8.662248738555e-04 
+    6 KSP Residual norm 3.728341260375e-04 
+    7 KSP Residual norm 1.111541538396e-04 
+    8 KSP Residual norm 7.531117046743e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 8
-  6 SNES Function norm 6.391210848698e-03 
+  6 SNES Function norm 6.391210848097e-03 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 6
-SNES solution time      : 10.4992 (sec)
+SNES solution time      : 4.73157 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.616934723430e-06 
-      |Div|_2   = 1.846108488785e-05 
+      |Div|_inf = 3.616934713982e-06 
+      |Div|_2   = 1.846108485181e-05 
    Momentum: 
-      |mRes|_2  = 6.391184186116e-03 
+      |mRes|_2  = 6.391184185515e-03 
    Energy: 
-      |eRes|_2  = 3.711808192476e-12 
+      |eRes|_2  = 3.697819349775e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.00150 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.306838 sec)
+Saving output ... done (0.248635 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00150000 [Myr] 
 Tentative time step : 0.00150000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 6.388972844538e-03 
+  0 SNES Function norm 6.388972843938e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 6.388972844538e-03 
-    1 KSP Residual norm 6.388054992503e-03 
-    2 KSP Residual norm 5.834754165489e-03 
-    3 KSP Residual norm 3.669527376088e-03 
-    4 KSP Residual norm 1.132478395066e-03 
-    5 KSP Residual norm 4.264527704473e-04 
-    6 KSP Residual norm 2.001750983816e-04 
-    7 KSP Residual norm 5.400278763310e-05 
+    0 KSP Residual norm 6.388972843938e-03 
+    1 KSP Residual norm 6.388054991904e-03 
+    2 KSP Residual norm 5.834754164879e-03 
+    3 KSP Residual norm 3.669527375721e-03 
+    4 KSP Residual norm 1.132478395013e-03 
+    5 KSP Residual norm 4.264527705019e-04 
+    6 KSP Residual norm 2.001750984463e-04 
+    7 KSP Residual norm 5.400278765502e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 7
-  1 SNES Function norm 3.427801913385e-03 
+  1 SNES Function norm 3.427801912918e-03 
   1 PICARD ||F||/||F0||=5.365185e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.427801913385e-03 
-    1 KSP Residual norm 3.427460515444e-03 
-    2 KSP Residual norm 3.153713500506e-03 
-    3 KSP Residual norm 2.032060987860e-03 
-    4 KSP Residual norm 5.676458074486e-04 
-    5 KSP Residual norm 2.198166623550e-04 
-    6 KSP Residual norm 1.052010020215e-04 
-    7 KSP Residual norm 2.734586804014e-05 
+    0 KSP Residual norm 3.427801912918e-03 
+    1 KSP Residual norm 3.427460514977e-03 
+    2 KSP Residual norm 3.153713500114e-03 
+    3 KSP Residual norm 2.032060987694e-03 
+    4 KSP Residual norm 5.676458074016e-04 
+    5 KSP Residual norm 2.198166623483e-04 
+    6 KSP Residual norm 1.052010019792e-04 
+    7 KSP Residual norm 2.734586803166e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 7
-  2 SNES Function norm 5.472181893671e-02 
+  2 SNES Function norm 5.472181893660e-02 
   2 PICARD ||F||/||F0||=8.565042e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 5.472181893671e-02 
-    1 KSP Residual norm 5.459290724704e-02 
-    2 KSP Residual norm 5.329450300371e-02 
-    3 KSP Residual norm 4.315154542678e-02 
-    4 KSP Residual norm 1.503130863146e-02 
-    5 KSP Residual norm 8.573796667430e-03 
-    6 KSP Residual norm 3.266069840801e-03 
-    7 KSP Residual norm 1.293681872351e-03 
-    8 KSP Residual norm 8.584605804868e-04 
-    9 KSP Residual norm 5.275727035132e-04 
-   10 KSP Residual norm 4.068099319268e-04 
-   11 KSP Residual norm 2.565997933794e-04 
-   12 KSP Residual norm 1.438247689589e-04 
-   13 KSP Residual norm 8.769576413621e-05 
+    0 KSP Residual norm 5.472181893660e-02 
+    1 KSP Residual norm 5.459290724693e-02 
+    2 KSP Residual norm 5.329450300360e-02 
+    3 KSP Residual norm 4.315154542674e-02 
+    4 KSP Residual norm 1.503130863161e-02 
+    5 KSP Residual norm 8.573796674059e-03 
+    6 KSP Residual norm 3.266069844833e-03 
+    7 KSP Residual norm 1.293681875604e-03 
+    8 KSP Residual norm 8.584605855130e-04 
+    9 KSP Residual norm 5.275727142180e-04 
+   10 KSP Residual norm 4.068099582826e-04 
+   11 KSP Residual norm 2.565998267563e-04 
+   12 KSP Residual norm 1.438247961374e-04 
+   13 KSP Residual norm 8.769577034037e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 13
-  3 SNES Function norm 2.994731584235e-02 
+  3 SNES Function norm 2.994731583341e-02 
   3 PICARD ||F||/||F0||=4.687344e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.994731584235e-02 
-    1 KSP Residual norm 2.993920604368e-02 
-    2 KSP Residual norm 2.851557711467e-02 
-    3 KSP Residual norm 2.184117632628e-02 
-    4 KSP Residual norm 7.206301372274e-03 
-    5 KSP Residual norm 4.555581705214e-03 
-    6 KSP Residual norm 2.216758960906e-03 
-    7 KSP Residual norm 7.565041158543e-04 
-    8 KSP Residual norm 5.345345833178e-04 
-    9 KSP Residual norm 3.212488374490e-04 
-   10 KSP Residual norm 1.854480666948e-04 
-   11 KSP Residual norm 1.041784430839e-04 
-   12 KSP Residual norm 5.138549632508e-05 
+    0 KSP Residual norm 2.994731583341e-02 
+    1 KSP Residual norm 2.993920603494e-02 
+    2 KSP Residual norm 2.851557710473e-02 
+    3 KSP Residual norm 2.184117633580e-02 
+    4 KSP Residual norm 7.206301391639e-03 
+    5 KSP Residual norm 4.555581784430e-03 
+    6 KSP Residual norm 2.216759025552e-03 
+    7 KSP Residual norm 7.565041804631e-04 
+    8 KSP Residual norm 5.345346256730e-04 
+    9 KSP Residual norm 3.212488507453e-04 
+   10 KSP Residual norm 1.854480699537e-04 
+   11 KSP Residual norm 1.041784427775e-04 
+   12 KSP Residual norm 5.138549397187e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 12
-  4 SNES Function norm 1.593756050953e-02 
+  4 SNES Function norm 1.593756048967e-02 
   4 PICARD ||F||/||F0||=2.494542e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.593756050953e-02 
-    1 KSP Residual norm 1.593417742818e-02 
-    2 KSP Residual norm 1.522560434854e-02 
-    3 KSP Residual norm 1.193423724825e-02 
-    4 KSP Residual norm 3.741528518730e-03 
-    5 KSP Residual norm 2.550410461566e-03 
-    6 KSP Residual norm 1.474998201786e-03 
-    7 KSP Residual norm 4.010303080777e-04 
-    8 KSP Residual norm 2.996658587163e-04 
-    9 KSP Residual norm 1.974757546999e-04 
-   10 KSP Residual norm 1.060468747245e-04 
-   11 KSP Residual norm 5.163213145694e-05 
+    0 KSP Residual norm 1.593756048967e-02 
+    1 KSP Residual norm 1.593417740810e-02 
+    2 KSP Residual norm 1.522560434028e-02 
+    3 KSP Residual norm 1.193423726792e-02 
+    4 KSP Residual norm 3.741528546598e-03 
+    5 KSP Residual norm 2.550410477312e-03 
+    6 KSP Residual norm 1.474998201160e-03 
+    7 KSP Residual norm 4.010303052562e-04 
+    8 KSP Residual norm 2.996658559027e-04 
+    9 KSP Residual norm 1.974757544164e-04 
+   10 KSP Residual norm 1.060468760654e-04 
+   11 KSP Residual norm 5.163213203539e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 11
-  5 SNES Function norm 8.649741656038e-03 
+  5 SNES Function norm 8.649741654439e-03 
   5 PICARD ||F||/||F0||=1.353855e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 8.649741656038e-03 
-    1 KSP Residual norm 8.647847219755e-03 
-    2 KSP Residual norm 8.296702471075e-03 
-    3 KSP Residual norm 6.630786490306e-03 
-    4 KSP Residual norm 2.042612967554e-03 
-    5 KSP Residual norm 1.458268620341e-03 
-    6 KSP Residual norm 9.010369911123e-04 
-    7 KSP Residual norm 2.098486006976e-04 
-    8 KSP Residual norm 1.591171601584e-04 
-    9 KSP Residual norm 1.164470209757e-04 
-   10 KSP Residual norm 6.598554011480e-05 
+    0 KSP Residual norm 8.649741654439e-03 
+    1 KSP Residual norm 8.647847218120e-03 
+    2 KSP Residual norm 8.296702471665e-03 
+    3 KSP Residual norm 6.630786496761e-03 
+    4 KSP Residual norm 2.042612972654e-03 
+    5 KSP Residual norm 1.458268620389e-03 
+    6 KSP Residual norm 9.010369898359e-04 
+    7 KSP Residual norm 2.098486000458e-04 
+    8 KSP Residual norm 1.591171589353e-04 
+    9 KSP Residual norm 1.164470205041e-04 
+   10 KSP Residual norm 6.598554104855e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 10
-  6 SNES Function norm 4.754965367541e-03 
+  6 SNES Function norm 4.754965368730e-03 
   6 PICARD ||F||/||F0||=7.442457e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.754965367541e-03 
-    1 KSP Residual norm 4.753747559954e-03 
-    2 KSP Residual norm 4.572688603403e-03 
-    3 KSP Residual norm 3.685964380125e-03 
-    4 KSP Residual norm 1.114211628125e-03 
-    5 KSP Residual norm 7.934228135459e-04 
-    6 KSP Residual norm 4.830125035045e-04 
-    7 KSP Residual norm 9.955159011968e-05 
+    0 KSP Residual norm 4.754965368730e-03 
+    1 KSP Residual norm 4.753747561138e-03 
+    2 KSP Residual norm 4.572688605124e-03 
+    3 KSP Residual norm 3.685964383525e-03 
+    4 KSP Residual norm 1.114211629141e-03 
+    5 KSP Residual norm 7.934228137678e-04 
+    6 KSP Residual norm 4.830125044230e-04 
+    7 KSP Residual norm 9.955159025380e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 7
-  7 SNES Function norm 2.624469169033e-03 
+  7 SNES Function norm 2.624469170069e-03 
   7 PICARD ||F||/||F0||=4.107811e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.624469169033e-03 
-    1 KSP Residual norm 2.623947478142e-03 
-    2 KSP Residual norm 2.531062105303e-03 
-    3 KSP Residual norm 2.080654687787e-03 
-    4 KSP Residual norm 5.149100148948e-04 
-    5 KSP Residual norm 3.032632238446e-04 
-    6 KSP Residual norm 1.953971111630e-04 
-    7 KSP Residual norm 5.107514698764e-05 
+    0 KSP Residual norm 2.624469170069e-03 
+    1 KSP Residual norm 2.623947479176e-03 
+    2 KSP Residual norm 2.531062106510e-03 
+    3 KSP Residual norm 2.080654689354e-03 
+    4 KSP Residual norm 5.149100151212e-04 
+    5 KSP Residual norm 3.032632240195e-04 
+    6 KSP Residual norm 1.953971114837e-04 
+    7 KSP Residual norm 5.107514703640e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 7
-  8 SNES Function norm 1.481450269627e-03 
+  8 SNES Function norm 1.481450270382e-03 
   8 PICARD ||F||/||F0||=2.318761e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.481450269627e-03 
-    1 KSP Residual norm 1.481078244240e-03 
-    2 KSP Residual norm 1.431434651035e-03 
-    3 KSP Residual norm 1.177428328843e-03 
-    4 KSP Residual norm 2.785937719533e-04 
-    5 KSP Residual norm 1.795839121163e-04 
-    6 KSP Residual norm 1.125970808068e-04 
-    7 KSP Residual norm 1.926105322693e-05 
+    0 KSP Residual norm 1.481450270382e-03 
+    1 KSP Residual norm 1.481078244994e-03 
+    2 KSP Residual norm 1.431434651804e-03 
+    3 KSP Residual norm 1.177428329631e-03 
+    4 KSP Residual norm 2.785937720623e-04 
+    5 KSP Residual norm 1.795839121811e-04 
+    6 KSP Residual norm 1.125970810635e-04 
+    7 KSP Residual norm 1.926105324055e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 7
-  9 SNES Function norm 8.344588533627e-04 
+  9 SNES Function norm 8.344588537463e-04 
   9 PICARD ||F||/||F0||=1.306092e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 8.344588533627e-04 
-    1 KSP Residual norm 8.343051070932e-04 
-    2 KSP Residual norm 8.049670669920e-04 
-    3 KSP Residual norm 6.603746897678e-04 
-    4 KSP Residual norm 1.568201995586e-04 
-    5 KSP Residual norm 1.029560923586e-04 
-    6 KSP Residual norm 6.774600537946e-05 
+    0 KSP Residual norm 8.344588537463e-04 
+    1 KSP Residual norm 8.343051074765e-04 
+    2 KSP Residual norm 8.049670673913e-04 
+    3 KSP Residual norm 6.603746902038e-04 
+    4 KSP Residual norm 1.568201996036e-04 
+    5 KSP Residual norm 1.029560923888e-04 
+    6 KSP Residual norm 6.774600548252e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 6
- 10 SNES Function norm 4.723881113497e-04 
+ 10 SNES Function norm 4.723881115718e-04 
  10 PICARD ||F||/||F0||=7.393804e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.723881113497e-04 
-    1 KSP Residual norm 4.723107067556e-04 
-    2 KSP Residual norm 4.540927686506e-04 
-    3 KSP Residual norm 3.663689411136e-04 
-    4 KSP Residual norm 1.055444249416e-04 
-    5 KSP Residual norm 6.371029245510e-05 
+    0 KSP Residual norm 4.723881115718e-04 
+    1 KSP Residual norm 4.723107069777e-04 
+    2 KSP Residual norm 4.540927688783e-04 
+    3 KSP Residual norm 3.663689413404e-04 
+    4 KSP Residual norm 1.055444250517e-04 
+    5 KSP Residual norm 6.371029251417e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 5
- 11 SNES Function norm 2.720270764777e-04 
+ 11 SNES Function norm 2.720270766286e-04 
  11 PICARD ||F||/||F0||=4.257759e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.720270764777e-04 
-    1 KSP Residual norm 2.719913017813e-04 
-    2 KSP Residual norm 2.591692497344e-04 
-    3 KSP Residual norm 2.003098286061e-04 
-    4 KSP Residual norm 7.246088215859e-05 
+    0 KSP Residual norm 2.720270766286e-04 
+    1 KSP Residual norm 2.719913019323e-04 
+    2 KSP Residual norm 2.591692498789e-04 
+    3 KSP Residual norm 2.003098287185e-04 
+    4 KSP Residual norm 7.246088223050e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 4
- 12 SNES Function norm 1.601206326464e-04 
+ 12 SNES Function norm 1.601206327456e-04 
  12 PICARD ||F||/||F0||=2.506203e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.601206326464e-04 
-    1 KSP Residual norm 1.601018541406e-04 
-    2 KSP Residual norm 1.560768452056e-04 
-    3 KSP Residual norm 1.348641154792e-04 
-    4 KSP Residual norm 6.227811351786e-05 
+    0 KSP Residual norm 1.601206327456e-04 
+    1 KSP Residual norm 1.601018542398e-04 
+    2 KSP Residual norm 1.560768453026e-04 
+    3 KSP Residual norm 1.348641155657e-04 
+    4 KSP Residual norm 6.227811357210e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 4
- 13 SNES Function norm 1.027311311628e-04 
+ 13 SNES Function norm 1.027311312292e-04 
  13 PICARD ||F||/||F0||=1.607944e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.027311311628e-04 
-    1 KSP Residual norm 1.027189645077e-04 
-    2 KSP Residual norm 1.002873488609e-04 
-    3 KSP Residual norm 8.747505418466e-05 
+    0 KSP Residual norm 1.027311312292e-04 
+    1 KSP Residual norm 1.027189645740e-04 
+    2 KSP Residual norm 1.002873489265e-04 
+    3 KSP Residual norm 8.747505424372e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 3
- 14 SNES Function norm 9.958835016766e-05 
+ 14 SNES Function norm 9.958835022988e-05 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 14
-SNES solution time      : 20. (sec)
+SNES solution time      : 8.95856 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.360080477224e-07 
-      |Div|_2   = 1.052412051364e-06 
+      |Div|_inf = 1.360080478772e-07 
+      |Div|_2   = 1.052412051992e-06 
    Momentum: 
-      |mRes|_2  = 9.958278926597e-05 
+      |mRes|_2  = 9.958278932819e-05 
    Energy: 
-      |eRes|_2  = 1.464675300040e-12 
+      |eRes|_2  = 1.477156575420e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.00225 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.295395 sec)
+Saving output ... done (0.237257 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 36.5251 (sec) 
+Total solution time : 16.3139 (sec) 
 --------------------------------------------------------------------------
