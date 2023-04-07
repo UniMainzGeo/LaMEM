@@ -104,27 +104,61 @@ end
 This extracts a numerical value from `line_origin` after the `keyword`. Optionally, there can be a `split_sign` in between and we can transfer it to another `type` than `Float64`.`
 """
 function extract_value_from_string(line_origin::String, keyword::String, split_sign="=", type=Float64)
-    # find keyword
-    ind  = findlast(keyword,line_origin)
-    line = line_origin[ind[end]+1:end]
+    
+    if length(split_sign)==0
+        num = extract_lastvalue_from_string(line_origin, keyword, type)
+    else
+        # find keyword
+        ind  = findlast(keyword,line_origin)
+        line = line_origin[ind[end]+1:end]
 
-    # remove split signs
-    line = replace(line, split_sign=>"") 
-    line = replace(line, ","=>"")           # comma
+        # remove split signs
+        line = replace(line, split_sign=>"") 
+        line = replace(line, ","=>"")           # comma
 
-    # Extract value
-    num=NaN
-    if !isempty(ind)
-        line_vec = split(line)
-        try
-            num = parse(type,line_vec[1])
-        catch
-            println("Problem parsing line: $line_origin")
+        # Extract value
+        num=NaN
+        if !isempty(ind)
+            line_vec = split(line)
+            try
+                num = parse(type,line_vec[1])
+            catch
+                println("Problem parsing line: $line_origin")
+            end
         end
     end
 
     return num
 end
+
+"""
+    extract_lastvalue_from_string(line_origin::String, keyword::String, type=Float64)
+
+This extracts the last numerical value from `line_origin` after the `keyword`.
+"""
+function extract_lastvalue_from_string(line_origin::String, keyword::String, type=Float64)
+    
+    # find keyword
+    ind  = findlast(keyword,line_origin)
+    line = line_origin[ind[end]+1:end]
+
+    # Extract value
+    num=[];
+    line_vec = split(line)
+    for i=1:lastindex(line_vec)
+        val=nothing
+        try
+            val = parse(type,line_vec[i])
+        catch
+        end
+        if !isnothing(val)
+            push!(num,val)
+        end
+    end
+    
+    return num[1]
+end
+
 
 """
     success = compare_logfiles(new::String, expected::String, 
@@ -147,7 +181,7 @@ function compare_logfiles(new::String, expected::String,
 
     new_out = extract_info_logfiles(new, keywords, split_sign)
     exp_out = extract_info_logfiles(expected, keywords, split_sign)
-
+    
     test_status = true
     for i=1:N 
         rtol, atol = 0,0
