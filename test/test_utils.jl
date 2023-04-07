@@ -20,37 +20,41 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
     end
 
     success = true
-    if cores==1
-        perform_run = `$(exec) -ParamFile $(ParamFile) $args`;
-        
-        # Run LaMEM on a single core, which does not require a working MPI
-        try 
-            if !isempty(outfile)
-                run(pipeline(perform_run, stdout=outfile));
-            else
-                run(perform_run);
+    try
+        if cores==1
+            perform_run = `$(exec) -ParamFile $(ParamFile) $args`;
+            
+            # Run LaMEM on a single core, which does not require a working MPI
+            try 
+                if !isempty(outfile)
+                    run(pipeline(perform_run, stdout=outfile));
+                else
+                    run(perform_run);
+                end
+            catch
+                println("An error occured in directory: $(cur_dir) ")
+                println("while running the script:")
+                println(perform_run)
+                success = false
             end
-        catch
-            println("An error occured in directory: $(cur_dir) ")
-            println("while running the script:")
-            println(perform_run)
-            success = false
-        end
-    else
-        perform_run = `$(mpiexec) -n $(cores) $(exec) -ParamFile $(ParamFile) $args`;
-        # set correct environment
-        #mpirun = setenv(mpiexec, LaMEM_jll.JLLWrappers.JLLWrappers.LIBPATH_env=>LaMEM_jll.LIBPATH[]);
-        # Run LaMEM in parallel
-        try 
-            if !isempty(outfile)
-                run(pipeline(perform_run, stdout=outfile));
-            else
-                run(perform_run);
+        else
+            perform_run = `$(mpiexec) -n $(cores) $(exec) -ParamFile $(ParamFile) $args`;
+            # set correct environment
+            #mpirun = setenv(mpiexec, LaMEM_jll.JLLWrappers.JLLWrappers.LIBPATH_env=>LaMEM_jll.LIBPATH[]);
+            # Run LaMEM in parallel
+            try 
+                if !isempty(outfile)
+                    run(pipeline(perform_run, stdout=outfile));
+                else
+                    run(perform_run);
+                end
+            catch
+                println(perform_run)
+                success = false
             end
-        catch
-            println(perform_run)
-            success = false
         end
+    catch
+        success = false
     end
   
     return success
@@ -213,8 +217,8 @@ end
                         deb=false, 
                         mpiexec="mpiexec",
                         split_sign="=", 
-                        debug=false, 
-                        create_expected_file=false)
+                        debug::Bool=false, 
+                        create_expected_file::Bool=false)
 
 This performs a LaMEM simulation and compares certain keywords of the logfile with results of a previous simulation        
 
@@ -240,7 +244,7 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
                 cores::Int64=1, args::String="",
                 bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec",
                 split_sign="=", 
-                debug=false, create_expected_file=false,
+                debug::Bool=false, create_expected_file::Bool=false,
                 )
 
     cur_dir = pwd();
@@ -260,7 +264,7 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     # perform simulation 
     success = run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec);
 
-    if success && debug==false
+    if success==true && debug==false
         # compare logfiles 
         success = compare_logfiles(outfile, expectedFile, keywords, accuracy, split_sign=split_sign)
     end

@@ -1,5 +1,4 @@
-module LaMEM
+module LaMEM_C
+using GeophysicalModelGenerator
 
-greet() = print("Hello World!")
-
-end # module LaMEM
+end # module LaMEM_C
