@@ -69,7 +69,7 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 	PetscInt        *lx,  *ly,  *lz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(!fine)
 	{
@@ -180,7 +180,7 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(lvl->R)
 	{
@@ -215,7 +215,7 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize viscosity
 	ierr = VecSet(lvl->eta, -1.0); CHKERRQ(ierr);
@@ -255,7 +255,7 @@ PetscErrorCode MGLevelAverageEta(MGLevel *lvl)
 	PetscScalar ***eta, ***etax, ***etay, ***etaz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// set viscosity
 	ierr = VecSet(lvl->etax, -1.0); CHKERRQ(ierr);
@@ -339,7 +339,7 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	PetscScalar sum, ***ceta, ***feta;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize viscosities
 	ierr = VecSet(lvl->eta, -1.0); CHKERRQ(ierr);
@@ -402,7 +402,7 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// mark all variables unconstrained
 	ierr = VecSet(lvl->bcvx, DBL_MAX); CHKERRQ(ierr);
@@ -582,7 +582,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	PetscOptionsGetBool(NULL, NULL, "-rest", &scale, NULL);
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	R = lvl->R;
 
@@ -939,7 +939,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	PetscOptionsGetBool(NULL, NULL, "-prol", &scale, NULL);
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	P = lvl->P;
 
@@ -1395,7 +1395,7 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	R = lvl->R;
 
@@ -1560,7 +1560,7 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	P = lvl->P;
 
@@ -1750,7 +1750,7 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 	PetscBool opt_set;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get preconditioner type
 	ierr = PetscOptionsGetString(NULL, NULL, "-gmg_pc_type", pc_type, _str_len_, &opt_set); CHKERRQ(ierr);
@@ -1816,7 +1816,7 @@ PetscErrorCode MGDestroy(MG *mg)
 	PetscBool flg;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// view preconditioner if required
 	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
@@ -1850,7 +1850,7 @@ PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 	DOFIndex  *dof;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// skip already configured solver
 	if(mg->crs_setup == PETSC_TRUE)
@@ -1898,7 +1898,7 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	PetscInt  i;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = MGLevelInitEta(mg->lvls, mg->jr); CHKERRQ(ierr);
 	ierr = MGLevelAverageEta(mg->lvls);      CHKERRQ(ierr);
@@ -1935,7 +1935,7 @@ PetscErrorCode MGApply(PC pc, Vec x, Vec y)
 	MG *mg;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PCShellGetContext(pc, (void**)&mg); CHKERRQ(ierr);
 
@@ -2005,7 +2005,7 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, refine_y;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = mg->jr->fs;
 
@@ -2029,11 +2029,11 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 
 	if(opt_set != PETSC_TRUE)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
 	}
 	else if(nlevels < 2 || nlevels > ncors+1)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
 	}
 
 	// set actual number of coarsening steps

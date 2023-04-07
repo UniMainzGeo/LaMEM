@@ -75,7 +75,7 @@
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter; \
 	InterpFlags iflag; \
 	PetscErrorCode ierr; \
-	PetscFunctionBegin; \
+	PetscFunctionBeginUser; \
 	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \
 	fs     = outbuf->fs; \
@@ -91,7 +91,7 @@
 	PetscScalar  cf; \
 	InterpFlags  iflag; \
 	PetscErrorCode ierr; \
-	PetscFunctionBegin; \
+	PetscFunctionBeginUser; \
 	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \
 	scal   = jr->scal; \
@@ -296,7 +296,7 @@ PetscErrorCode PVOutWriteVelocity(OutVec* outvec)
 PetscErrorCode PVOutWritePressure(OutVec* outvec)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(outvec->jr->ctrl.gwType != _GW_NONE_)
 	{
@@ -654,7 +654,7 @@ PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = 0;  CHKERRQ(ierr);
 	if(outvec) outvec = NULL;
@@ -667,7 +667,7 @@ PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
 PetscErrorCode PVOutWriteVorticity(OutVec* outvec)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = 0;  CHKERRQ(ierr);
 	if(outvec) outvec = NULL;
@@ -680,7 +680,7 @@ PetscErrorCode PVOutWriteVorticity(OutVec* outvec)
 PetscErrorCode PVOutWriteAngVelMag(OutVec* outvec)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = 0;  CHKERRQ(ierr);
 	if(outvec) outvec = NULL;
@@ -700,8 +700,6 @@ PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)
 	cf = scal->unit;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_ATS, 1, 0)
-
-	PetscFunctionReturn(0);
 
 	PetscFunctionReturn(0);
 }

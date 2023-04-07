@@ -97,7 +97,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	vector <Marker>   mark;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
 
@@ -250,7 +250,7 @@ PetscErrorCode ADVMarkClone(
 	PetscInt          I, J, K, j, npx, npy, imark, nmark, *markind;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	bc      = actx->jr->bc;
@@ -325,7 +325,7 @@ PetscErrorCode ADVMarkCheckMerge(
 	PetscInt j, jb, je, k, sz, phase, nmark;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// copy marker phase IDs
 	for(j = ib; j < ie; j++)
@@ -410,7 +410,7 @@ PetscErrorCode ADVMarkMerge(
 	PetscScalar  d, dmin;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize storage size
 	sz = nmark;
@@ -469,7 +469,7 @@ PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vect
 	PetscInt  nummark, nrecv, ndel;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access storage
 	nummark = actx->nummark;
@@ -538,7 +538,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	vector <spair>  dist;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free-surface cases only
 	if(!actx->surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -697,7 +697,7 @@ PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 	PetscScalar  maxMark, ***phase;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs        = actx->fs;
 	jr        = actx->jr;

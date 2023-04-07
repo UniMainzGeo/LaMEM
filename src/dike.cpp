@@ -68,7 +68,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
         PetscInt jj;
 
         PetscErrorCode ierr;
-        PetscFunctionBegin;
+        PetscFunctionBeginUser;
 
         //===============                                                                                                                                               
         // DIKE PARAMETER                                                                                                               
@@ -91,7 +91,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Pr
 		// error checking
                 if(fb->nblocks > _max_num_dike_)
                 {
-                        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_);
+                        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_);
                 }
 
                 // store actual number of dike blocks 
@@ -124,7 +124,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, PetscBool Prin
 	Scaling  *scal;
 	
         PetscErrorCode ierr;
-        PetscFunctionBegin;
+        PetscFunctionBeginUser;
 
 	// access context           
         scal = dbm->scal;
@@ -187,6 +187,8 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   PetscScalar  v_spread, M, left, right, front, back;
   PetscScalar  y_distance, tempdikeRHS;
   
+  PetscFunctionBeginUser;
+
   numDike    = ctx->numDike;
   bc         = ctx->bc;
   numPhtr    = ctx->numPhtr;
@@ -291,6 +293,8 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
   PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
   PetscScalar  y_distance;
   
+  PetscFunctionBeginUser;
+
   numDike    = jr->dbdike->numDike; // number of dikes
   numPhtr    = jr->dbm->numPhtr;
   bc         = jr->bc;

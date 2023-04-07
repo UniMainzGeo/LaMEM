@@ -66,7 +66,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	PetscInt  maxPhaseID;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	surf->phaseCorr   =  1;
@@ -174,7 +174,7 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	const PetscInt *lx, *ly;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = surf->jr->fs;
@@ -210,7 +210,7 @@ PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 	PetscScalar  avg_topo;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	jr = surf->jr;
 	fs = jr->fs;
@@ -230,7 +230,7 @@ PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 PetscErrorCode FreeSurfReadRestart(FreeSurf *surf, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -252,7 +252,7 @@ PetscErrorCode FreeSurfReadRestart(FreeSurf *surf, FILE *fp)
 PetscErrorCode FreeSurfWriteRestart(FreeSurf *surf, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -268,7 +268,7 @@ PetscErrorCode FreeSurfWriteRestart(FreeSurf *surf, FILE *fp)
 PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -294,7 +294,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	JacRes *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -340,7 +340,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	PetscScalar ***topo, ***vsurf, ***vgrid, *vpatch, *vmerge, z, w;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr    = surf->jr;
@@ -462,7 +462,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	};
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr   = surf->jr;
@@ -601,7 +601,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check whether smoothing is activated
 	if(surf->MaxAngle == 0.0) PetscFunctionReturn(0);
@@ -771,7 +771,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	};
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -880,7 +880,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 	Scaling * scal;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -984,7 +984,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	Scaling * scal;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -1032,7 +1032,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 			{
 				// uniformly advect
 				z += dz;
-				PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%e) to internal free surface.\n", surf->SedimentModel);
+				PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%lld) to internal free surface.\n", (LLD)surf->SedimentModel);
 			}
 
 			// check if internal free surface goes outside the model domain
@@ -1266,7 +1266,7 @@ PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf)
 	PetscRandom 	rctx;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	
 	// retrieve parameters
 	wavel 		= 0.0;		//
@@ -1347,7 +1347,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	PetscScalar    xp, yp, xpL, ypL, DX, DY, bx, by, ex, ey, leng, X1, Y1;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "surf_topo_file", filename, NULL); CHKERRQ(ierr);

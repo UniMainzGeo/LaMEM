@@ -66,7 +66,7 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 	PetscInt rx, ry, rz, sx, sy, sz, nx, ny, nz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = jr->fs;
 
@@ -98,7 +98,7 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 PetscErrorCode OutBufDestroy(OutBuf *outbuf)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free output buffer
 	ierr = PetscFree(outbuf->buff); CHKERRQ(ierr);
@@ -119,13 +119,13 @@ void OutBufDump(OutBuf *outbuf)
 {
 	// dump output buffer contents to disk
 
-	int nbytes;
+	uint64_t nbytes;
 
 	// compute number of bytes
-	nbytes = (int)outbuf->cn*(int)sizeof(float);
+	nbytes = (uint64_t)outbuf->cn*(int)sizeof(float);
 
 	// dump number of bytes
-	fwrite(&nbytes, sizeof(int), 1, outbuf->fp);
+	fwrite(&nbytes, sizeof(uint64_t), 1, outbuf->fp);
 
 	// dump buffer contents
 	fwrite(outbuf->buff, sizeof(float), (size_t)outbuf->cn, outbuf->fp);
@@ -178,7 +178,7 @@ PetscErrorCode OutBufPut3DVecComp(
 	PetscInt    i, j, k, rx, ry, rz, sx, sy, sz, nx, ny, nz, cnt;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access grid layout & buffer
 	fs   = outbuf->fs;
@@ -252,7 +252,7 @@ PetscErrorCode OutBufZero3DVecComp(
 	float       *buff;
 	PetscInt    ii, nn, rx, ry, rz, sx, sy, sz, nx, ny, nz, cnt;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access grid layout & buffer
 	fs   = outbuf->fs;
@@ -357,7 +357,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	PetscInt i, j, np, numPhases, maxPhaseID;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	omask      = &pvout->omask;
@@ -418,7 +418,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 
 	if(fb->nblocks > _max_num_phase_agg_)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase aggregates specified! Max allowed: %lld", (LLD)_max_num_phase_agg_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase aggregates specified! Max allowed: %lld", (LLD)_max_num_phase_agg_);
 	}
 
 
@@ -521,7 +521,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	PetscInt  i, iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	jr     =  pvout->jr;
 	outbuf = &pvout->outbuf;
@@ -593,7 +593,7 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 {
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// output vectors
 	PetscFree(pvout->outvecs);
@@ -609,7 +609,7 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// update .pvd file if necessary
 	ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, pvout->outpvd); CHKERRQ(ierr);
@@ -635,7 +635,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	PetscInt     i, rx, ry, rz;
 	PetscMPIInt  nproc, iproc;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
@@ -646,7 +646,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	// open outfile.pvtr file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvtr", dirName, pvout->outfile);
 	fp = fopen(fname,"wb");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// write header
@@ -664,9 +664,9 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 
 	// write coordinate block
 	fprintf(fp, "\t\t<PCoordinates>\n");
-	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"Coordinates_X\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"Coordinates_Y\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"Coordinates_Z\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
+	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"x\" NumberOfComponents=\"1\" format=\"appended\" header_type=\"UInt64\"/>\n");
+	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"y\" NumberOfComponents=\"1\" format=\"appended\" header_type=\"UInt64\"/>\n");
+	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"z\" NumberOfComponents=\"1\" format=\"appended\" header_type=\"UInt64\"/>\n");
 	fprintf(fp, "\t\t</PCoordinates>\n");
 
 	// write description of output vectors (parameterized)
@@ -718,7 +718,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	size_t         offset = 0;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get global sub-domain rank
 	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
@@ -736,7 +736,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
 	asprintf(&fname, "%s/%s_p%1.8lld.vtr", dirName, pvout->outfile, (LLD)rank);
 	fp = fopen(fname,"wb");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// link output buffer to file
@@ -764,14 +764,14 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	// write coordinate block
 	fprintf(fp, "\t\t\t<Coordinates>\n");
 
-	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Coordinates_X\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
-	offset += sizeof(int) + sizeof(float)*(size_t)nx;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)nx;
 
-	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Coordinates_Y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
-	offset += sizeof(int) + sizeof(float)*(size_t)ny;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)ny;
 
-	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Coordinates_Z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
-	offset += sizeof(int) + sizeof(float)*(size_t)nz;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)nz;
 
 	fprintf(fp, "\t\t\t</Coordinates>\n");
 
@@ -782,7 +782,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	{	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%lld\" format=\"appended\" offset=\"%lld\"/>\n",
 			outvecs[i].name, (LLD)outvecs[i].ncomp, (LLD)offset);
 		// update offset
-		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny*nz*outvecs[i].ncomp);
+		offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*nz*outvecs[i].ncomp);
 	}
 	fprintf(fp, "\t\t\t</PointData>\n");
 
@@ -824,9 +824,9 @@ void WriteXMLHeader(FILE *fp, const char *file_type)
 	// write standard header to ParaView XML file
 	fprintf(fp,"<?xml version=\"1.0\"?>\n");
 #ifdef PETSC_WORDS_BIGENDIAN
-	fprintf(fp,"<VTKFile type=\"%s\" version=\"0.1\" byte_order=\"BigEndian\">\n", file_type);
+	fprintf(fp,"<VTKFile type=\"%s\" version=\"1.0\" byte_order=\"BigEndian\" header_type=\"UInt64\">\n", file_type);
 #else
-	fprintf(fp,"<VTKFile type=\"%s\" version=\"0.1\" byte_order=\"LittleEndian\">\n", file_type);
+	fprintf(fp,"<VTKFile type=\"%s\" version=\"1.0\" byte_order=\"LittleEndian\" header_type=\"UInt64\">\n", file_type);
 #endif
 }
 //---------------------------------------------------------------------------
@@ -840,7 +840,7 @@ PetscErrorCode UpdatePVDFile(
 	char        *fname;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check whether pvd is requested
 	if(!outpvd) PetscFunctionReturn(0);
@@ -854,7 +854,7 @@ PetscErrorCode UpdatePVDFile(
 	else       fp = fopen(fname,"r+b");
 	free(fname);
 
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 
 	if(!ttime)
 	{

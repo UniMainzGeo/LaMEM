@@ -69,7 +69,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	scal      =  jr->scal;
@@ -107,7 +107,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "FSSA_allVel",     &ctrl->FSSA_allVel,    1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,        1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_therm_exp",   &ctrl->actExp,         1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1);              CHKERRQ(ierr);
@@ -150,7 +150,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
 	else if(!strcmp(gwtype, "surf"))  ctrl->gwType = _GW_SURF_;
 	else if(!strcmp(gwtype, "level")) ctrl->gwType = _GW_LEVEL_;
-	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect ground water level type: %s", gwtype);
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect ground water level type: %s", gwtype);
 
 	//====================
 	// CROSS-CHECK OPTIONS
@@ -299,12 +299,12 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->tauUlt)         PetscPrintf(PETSC_COMM_WORLD, "   Ultimate yield stress                   : %g %s \n", ctrl->tauUlt,    scal->lbl_stress_si);
 	if(ctrl->rho_fluid)      PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid, scal->lbl_density);
 	if(ctrl->mfmax)          PetscPrintf(PETSC_COMM_WORLD, "   Max. melt fraction (viscosity, density) : %g    \n", ctrl->mfmax);
-	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %lld  \n", ctrl->lmaxit);
+	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %d    \n", ctrl->lmaxit);
 	if(ctrl->lrtol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration tolerance            : %g    \n", ctrl->lrtol);
 	if(ctrl->Adiabatic_gr)   PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic gradient                      : %g    \n", ctrl->Adiabatic_gr);
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");
-	if(ctrl->useTk)          PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature-dependent conductivity  @ \n",       ctrl->useTk);
+	if(ctrl->useTk)          PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature-dependent conductivity  @ \n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
 	else if(ctrl->gwType == _GW_TOP_)   PetscPrintf(PETSC_COMM_WORLD, "top of the domain \n");
@@ -364,7 +364,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	PetscInt        i, n, svBuffSz, numPhases;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs        =  jr->fs;
 	dof       = &fs->dof;
@@ -512,7 +512,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = JacResCreateData(jr); CHKERRQ(ierr);
 
@@ -527,7 +527,7 @@ PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp)
 PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// write solution vectors
 	ierr = VecWriteRestart(jr->gsol, fp); CHKERRQ(ierr);
@@ -543,7 +543,7 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	PetscInt   i;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// solution vectors
 	ierr = VecDestroy(&jr->gsol);    CHKERRQ(ierr);
@@ -629,7 +629,7 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
@@ -668,7 +668,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	PetscScalar dt;
 	PetscInt    i, n, numPhases;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs        = jr->fs;
 	dt        = jr->ts->dt;
@@ -732,7 +732,7 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mcz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check if requested
 	if(!jr->ctrl.pShiftAct) PetscFunctionReturn(0);
@@ -789,12 +789,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	PetscScalar ***vx_y,***vx_z,***vz_x;
 	PetscScalar ***vy_x,***vy_z,***vz_y;
 
-
-
-
-
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = jr->fs;
 
@@ -1044,7 +1040,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	PetscScalar ***gwx, ***gwy, ***gwz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = jr->fs;
 
@@ -1161,7 +1157,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	
 	// access context
 	fs = jr->fs;
@@ -1716,7 +1712,7 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 	// copy solution from global to local vectors, enforce boundary constraints
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = JacResCopyVel (jr, x); CHKERRQ(ierr);
 
@@ -1742,7 +1738,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	const PetscScalar *sol, *iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs  =  jr->fs;
 	bc  =  jr->bc;
@@ -1905,7 +1901,7 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 	const PetscScalar *sol, *iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs  =  jr->fs;
 	bc  =  jr->bc;
@@ -2003,7 +1999,7 @@ PetscErrorCode JacResInitPres(JacRes *jr)
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs       = jr->fs;
@@ -2077,7 +2073,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 	PetscLogDouble    t;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!jr->ctrl.initLithPres) PetscFunctionReturn(0);
@@ -2228,7 +2224,7 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	PetscScalar *fx, *fy, *fz, *c, *res, *iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs  = jr->fs;
 	bc  = jr->bc;
@@ -2286,7 +2282,7 @@ PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f)
 	PetscScalar *fx, *fy, *fz, *res, *iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs  = jr->fs;
 
@@ -2327,7 +2323,7 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f)
 	PetscScalar *c, *res, *iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs  = jr->fs;
 
@@ -2357,7 +2353,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscScalar dinf, d2, e2, fx, fy, fz, f2, div_tol, T2, vx2, vy2, vz2, p2;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get constrained residual vectors
 	ierr = JacResCopyMomentumRes  (jr, jr->gres); CHKERRQ(ierr);

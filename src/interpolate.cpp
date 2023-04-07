@@ -54,7 +54,7 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags 
 	PetscScalar cf, ***lXFace, ***lCorner, A1, A2, A3, A4, B1, B2, E1, E2;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   XFace,  &lXFace);  CHKERRQ(ierr);
@@ -115,7 +115,7 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags 
 	PetscScalar cf, ***lYFace, ***lCorner, A1, A2, A3, A4, B1, B2, E1, E2;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_Y,   YFace,  &lYFace);  CHKERRQ(ierr);
@@ -176,7 +176,7 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags 
 	PetscScalar cf, ***lZFace, ***lCorner, A1, A2, A3, A4, B1, B2, E1, E2;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_Z,   ZFace,  &lZFace);  CHKERRQ(ierr);
@@ -237,7 +237,7 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlag
 	PetscScalar cf, ***lCenter, ***lCorner, A1, A2, A3, A4, A5, A6, A7, A8, B1, B2, B3, E1, E2, E3;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, Center, &lCenter); CHKERRQ(ierr);
@@ -315,7 +315,7 @@ PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, InterpFlag
 	PetscScalar cf, ***lXYEdge, ***lCorner, A1, A2, B1, E1;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_XY,  XYEdge, &lXYEdge); CHKERRQ(ierr);
@@ -368,7 +368,7 @@ PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, InterpFlag
 	PetscScalar cf, ***lXZEdge, ***lCorner, A1, A2, B1, E1;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_XZ,  XZEdge, &lXZEdge); CHKERRQ(ierr);
@@ -421,7 +421,7 @@ PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlag
 	PetscScalar cf, ***lYZEdge, ***lCorner, A1, A2, B1, E1;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_YZ,  YZEdge, &lYZEdge); CHKERRQ(ierr);

@@ -58,7 +58,7 @@ PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 {
 	PetscErrorCode ierr;
 	PetscInt       k;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
 
@@ -104,7 +104,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	const char           *shmax_name="shmax";
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// compute misift?
 	if(IOparam == NULL) PetscFunctionReturn(0);
@@ -288,7 +288,7 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 	PetscBool      found, exists;
 	PetscInt       k;
 	char           otname [_str_len_];
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// read filename of observation file
 	ierr = getStringParam(fb, _OPTIONAL_, "objf_obsfile", otname, "obs.bin"); CHKERRQ(ierr);
@@ -329,7 +329,7 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 	FDSTAG            *fs;
 	PetscInt          L,i,j,sx,sy,nx,ny;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs   = objf->surf->jr->fs;
 	surf = objf->surf;
@@ -389,7 +389,7 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	PetscErrorCode    ierr;
 	PetscInt          k;
 	PetscScalar       velScal;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// surface object
 	surf = objf->surf;

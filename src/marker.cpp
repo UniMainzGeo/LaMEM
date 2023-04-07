@@ -70,7 +70,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	PetscBool LoadPhaseDiagrams;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -165,7 +165,7 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 	PetscScalar  cf_rand;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -255,7 +255,7 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 	PetscScalar  cf_rand;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// return if not set
 	if(!actx->randNoiseGP) PetscFunctionReturn(0);
@@ -318,7 +318,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	PetscScalar    *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
@@ -394,7 +394,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numWrong, refMarkCell;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -509,7 +509,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	PetscScalar  dTdz, zbot, ztop, zp, Tbot;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	bc      = actx->jr->bc;
 	fs      = actx->fs;
@@ -560,7 +560,7 @@ PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx)
 	PetscInt     i, n, phase_set, imark, nummark;
 	PetscScalar  phase_temp[_max_num_phases_];
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	n         = actx->dbm->numPhases;
 	phases    = actx->dbm->phases;
@@ -608,7 +608,7 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	PetscScalar    chTemp, Tshift;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "temp_file", filename, NULL); CHKERRQ(ierr);
@@ -717,7 +717,7 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	PetscScalar    xc, yc, zc, xp, yp, zp, Ttop;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs   =  actx->fs;
@@ -801,7 +801,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscInt       imark, nummark;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_file", file, "./markers/mdb"); CHKERRQ(ierr);
@@ -878,7 +878,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	map<PetscInt, GeomPrim*>::iterator it, ie;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ngeom      = 0;
 	maxPhaseID = actx->dbm->numPhases - 1;
@@ -1258,7 +1258,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscInt       VolID, nCP;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "poly_file", filename, "./input/poly.dat"); CHKERRQ(ierr);
@@ -1464,7 +1464,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				// also check if control polygon is out of bounds
 				if (CtrlPoly.Pos[i] > Poly.num)
 				{
-					SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %d polygons", Poly.num);
+					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %d polygons", Poly.num);
 				}
 				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %d: Pos: %d, Sx: %.6f, Sy: %.6f \n",i+1,CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
 				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;
@@ -1573,7 +1573,7 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	PetscInt       jj;
 	
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// find blocks
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<vG_ControlPolyStart>", "<vG_ControlPolyEnd>"); CHKERRQ(ierr);
@@ -1582,7 +1582,7 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	// check number of control polygons
 	if (nCP > _max_ctrl_poly_)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%d exceeds maximum number of control polygons (%d) \n",nCP,_max_ctrl_poly_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%d exceeds maximum number of control polygons (%d) \n",nCP,_max_ctrl_poly_);
 	}
 
 	// loop over blocks
@@ -1689,7 +1689,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
     PData         *pd;
     Scaling       *scal;
    
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	scal = actx->jr->scal;
 	pd   = actx->jr->Pd;
@@ -1752,7 +1752,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	fp=fopen(phases[i].pdf,"rb");
 	if (fp==NULL)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s\n",name);
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s\n",name);
 	}
 
 	// Read header
