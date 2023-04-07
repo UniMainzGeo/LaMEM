@@ -542,7 +542,6 @@ end
     @test perform_lamem_test(dir,"dike_M075_2D_2cores.dat","dike_M075_2D_2cores.expected",
                             keywords=keywords, accuracy=acc, cores=2, opt=true)
 
-
     # test_variableM
     @test perform_lamem_test(dir,"dike_variableM.dat","dike_variableM.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
