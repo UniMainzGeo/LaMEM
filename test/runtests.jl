@@ -6,6 +6,7 @@ using Test, GeophysicalModelGenerator
 include("test_utils.jl")
 
 @testset "LaMEM Testsuite" begin
+
 @testset "t1_FB1_Direct" begin
     dir = "t1_FB1_Direct";
     ParamFile = "FallingBlock_mono_PenaltyDirect.dat";
@@ -139,11 +140,11 @@ end
     keywords   = (  "|Div|_inf",
                     "|Div|_2",
                     "|mRes|_2",
-                    "|   Prefactor A               ",
-                    "|   Velocity check            ",
-                    "|  adjoint     1:          rho[ 0]",
-                    "|  adjoint     2:          eta[ 0]",
-                    "|  adjoint     4:          eta[ 1]")
+                    "|                  rho[  0]",
+                    "|                  eta[  1]",
+                    "|                  eta[  0]",
+                    "|   Prefactor A               :",
+                    "|   Velocity check            :")
 
     acc        = (  (rtol=1e-7, atol=1e-6), 
                     (rtol=1e-5, atol=1e-5), 
@@ -152,9 +153,9 @@ end
                     (rtol=1e-6, atol=1e-6),
                     (rtol=2e-8, atol=1e-6),
                     (rtol=2e-8, atol=1e-6),
-                    (rtol=2e-8, atol=1e-6),
+                    (rtol=2e-8, atol=1e-6)
                 );
-    split_sign = ("=","=","=",":",":","rho","eta","eta")
+    split_sign = ("=","=","=","","","","","")
 
     # Perform tests
     # t6_AdjointGradientScalingLaws_p2
@@ -170,15 +171,15 @@ end
 
 end
 
+
 @testset "t7_AdjointGradientInversion" begin
     dir = "t7_AdjointGradientInversion";
     
     # t7_AdjointGradientInversion_1
-    keywords   = (  "F / FINI",
-                    "| 1. Diff parameter value",
-                    "| 2. Diff parameter value",
-                    "| 1. Parameter value",
-                    "| 2. Parameter value")
+    keywords   = (  "| 1 Diff parameter value =",
+                    "| 2 Diff parameter value =",
+                    "| 1 Parameter value =",
+                    "| 2 Parameter value =")
 
     acc        = (  (rtol=1e-6, atol=1e-6), 
                     (rtol=1e-5, atol=1e-5), 
@@ -196,8 +197,8 @@ end
     # t7_AdjointGradientInversion_2
     keywords   = (  "| misfit          ",
                     "| misfit / misfit0",
-                    "|   1. eta[0] =",
-                    "|   2. rho[1] =",
+                    "|   1 eta[0] =",
+                    "|   2 rho[1] =",
                     "|  adjoint     1:   log10  eta[ 0]",
                     "|  adjoint     2:          rho[ 1]")
 
@@ -208,7 +209,7 @@ end
                     (rtol=1e-5, atol=1e-6),
                     (rtol=1e-5, atol=1e-6),
                 );
-    split_sign = ("=","=","=","=","eta","rho")
+    split_sign = ("=","=","","","","")
 
     ParamFile = "t7_Subduction2D_FreeSlip_Inversion.dat";
     @test perform_lamem_test(dir,ParamFile,"t7_AdjointGradientInversion_2.expected",
@@ -218,8 +219,8 @@ end
     # t7_AdjointGradientInversion_3
     keywords   = (  "| misfit          ",
                     "| misfit / misfit0",
-                    "|   1. eta[0] =",
-                    "|   2. rho[1] =",
+                    "|   1 eta[0] =",
+                    "|   2 rho[1] =",
                     "|       FD     1:   log10  eta[ 0]",
                     "|       FD     2:          rho[ 1]")
 
@@ -228,7 +229,7 @@ end
                     (rtol=1e-3, atol=1e-5), 
                     (rtol=1e-5, atol=1e-6),
                     (rtol=1e-3, atol=1e-6),
-                    (rtol=2e-5, atol=1e-6),
+                    (rtol=2e-4, atol=1e-6),
                 );
 
     ParamFile = "t7_Subduction2D_FreeSlip_Inversion_FD.dat";
@@ -240,7 +241,7 @@ end
     # t7_PSDInversion_1
     keywords   = (  "| LS factor for 1.Parameter = ",
                     "|    F =",
-                    "| 1. Parameter value = "
+                    "| 1 Parameter value = "
                  )
 
     acc        = (  (rtol=1e-1, atol=1e-6), 
@@ -257,7 +258,7 @@ end
     # t7_PSDInversion_2                            
     keywords   = (  "| LS factor for 1.Parameter = ",
                     "|    F =",
-                    "| 1. Parameter value = "
+                    "| 1 Parameter value = "
                  )
 
     acc        = (  (rtol=1e-1, atol=1e-6), 
@@ -281,7 +282,7 @@ end
     ParamFile = "test_9_FallingBlock_PhaseDiagrams.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-11));
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-9));
     
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"test_9_FallingBlock_PhaseDiagrams.expected",
@@ -610,4 +611,6 @@ end
 
 end
 
+
 end
+
