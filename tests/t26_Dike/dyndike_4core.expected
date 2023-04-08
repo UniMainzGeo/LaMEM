@@ -1,0 +1,4970 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Apr  1 2023 - Time: 22:32:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : dyndike_4core.dat 
+   Adding PETSc option: -snes_rtol 5e-2
+   Adding PETSc option: -snes_atol 1e-4
+   Adding PETSc option: -snes_max_it 2
+   Adding PETSc option: -snes_PicardSwitchToNewton_rtol 1e-5
+   Adding PETSc option: -snes_NewtonSwitchToPicard_it 20
+   Adding PETSc option: -js_ksp_type fgmres
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_max_it 20
+   Adding PETSc option: -js_ksp_atol 1e-8
+   Adding PETSc option: -js_ksp_rtol 1e-4
+   Adding PETSc option: -snes_linesearch_type l2
+   Adding PETSc option: -snes_linesearch_monitor
+   Adding PETSc option: -snes_linesearch_maxstep 10
+   Adding PETSc option: -snes_ksp_ew
+   Adding PETSc option: -snes_ksp_ew_rtolmax 1e-4
+   Adding PETSc option: -pstokes mg
+   Adding PETSc option: -pcmat_type mono
+   Adding PETSc option: -jp_type mg
+   Adding PETSc option: -gmg_pc_type mg
+   Adding PETSc option: -gmg_pc_mg_levels 3
+   Adding PETSc option: -gmg_pc_mg_galerkin
+   Adding PETSc option: -gmg_pc_mg_type multiplicative
+   Adding PETSc option: -gmg_pc_mg_cycle_type v
+   Adding PETSc option: -gmg_mg_levels_ksp_type richardson
+   Adding PETSc option: -gmg_mg_levels_ksp_richardson_scale 0.5
+   Adding PETSc option: -gmg_mg_levels_ksp_max_it 20
+   Adding PETSc option: -gmg_mg_levels_pc_type jacobi
+   Adding PETSc option: -crs_ksp_type preonly
+   Adding PETSc option: -crs_pc_type lu
+   Adding PETSc option: -crs_pc_factor_mat_solver_package mumps
+   Adding PETSc option: -objects_dump
+Finished parsing input file : dyndike_4core.dat 
+--------------------------------------------------------------------------
+Scaling parameters:
+   Temperature : 1000. [C/K] 
+   Length      : 1000. [m] 
+   Viscosity   : 1e+19 [Pa*s] 
+   Stress      : 1e+09 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 10. [Myr] 
+   Maximum number of steps      : 10 
+   Time step                    : 0.001 [Myr] 
+   Minimum time step            : 1e-05 [Myr] 
+   Maximum time step            : 0.1 [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 1. 
+   Output every [n] steps       : 10 
+   Output [n] initial steps     : 1 
+   Save restart every [n] steps : 60 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 4 
+   Processor grid  [nx, ny, nz]         : [1, 2, 2]
+   Fine grid cells [nx, ny, nz]         : [32, 32, 24]
+   Number of cells                      :  24576
+   Number of faces                      :  76288
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [-16., -16., -21.]
+   Upper coordinate bounds [ex, ey, ez] : [16., 16., 3.]
+--------------------------------------------------------------------------
+Softening laws: 
+--------------------------------------------------------------------------
+   SoftLaw [0] : A = 0.95, APS1 = 0.01, APS2 = 0.15, healTau = 0.15
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+- Melt factor mfc = 0.000000   Phase ID : 0   
+   (dens)   : rho = 1000. [kg/m^3]  
+   (elast)  : G = 4e+10 [Pa]  Vs = 6324.56 [m/s]  
+   (diff)   : eta = 5e+18 [Pa*s]  Bd = 1e-19 [1/Pa/s]  
+   (plast)  : ch = 4e+07 [Pa]  fr = 30. [deg]  chSoftID = 0 healID = 0 
+   (temp)   : Cp = 1000. [J/kg/K]  k = 10000. [W/m/k]  
+
+- Melt factor mfc = 0.000000   Phase ID : 1   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 4e+10 [Pa]  Vs = 3481.55 [m/s]  
+   (disl)   : Bn = 1.1e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 4e+07 [Pa]  fr = 30. [deg]  chSoftID = 0 healID = 0 
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1200. [J/kg/K]  k = 3.5 [W/m/k]  
+
+- Melt factor mfc = 0.000000   Phase ID : 2   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 4e+10 [Pa]  Vs = 3481.55 [m/s]  
+   (disl)   : Bn = 1.1e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 4e+07 [Pa]  fr = 30. [deg]  chSoftID = 0 healID = 0 
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1000. [J/kg/K]  k = 3.5 [W/m/k]  nu_k = 5. []  T_Nu = 600. [C]  T_liq = 1300. [C]  T_sol = 1000. [C]  Latent_hx = 500000. [J/kg]  
+
+- Melt factor mfc = 0.000000   Phase ID : 3   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 4e+10 [Pa]  Vs = 3481.55 [m/s]  
+   (disl)   : Bn = 1.1e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 4e+07 [Pa]  fr = 30. [deg]  chSoftID = 0 healID = 0 
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1000. [J/kg/K]  k = 3.5 [W/m/k]  nu_k = 5. []  T_Nu = 600. [C]  T_liq = 1300. [C]  T_sol = 1000. [C]  Latent_hx = 500000. [J/kg]  
+
+- Melt factor mfc = 0.000000   Phase ID : 4   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 4e+10 [Pa]  Vs = 3481.55 [m/s]  
+   (disl)   : Bn = 1.1e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 4e+07 [Pa]  fr = 30. [deg]  chSoftID = 0 healID = 0 
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1000. [J/kg/K]  k = 3.5 [W/m/k]  nu_k = 5. []  T_Nu = 600. [C]  T_liq = 1300. [C]  T_sol = 1000. [C]  Latent_hx = 500000. [J/kg]  
+
+- Melt factor mfc = 0.000000   Phase ID : 5   
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 4e+10 [Pa]  Vs = 3481.55 [m/s]  
+   (disl)   : Bn = 1.1e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 4e+07 [Pa]  fr = 30. [deg]  chSoftID = 0 healID = 0 
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1000. [J/kg/K]  k = 3.5 [W/m/k]  nu_k = 5. []  T_Nu = 600. [C]  T_liq = 1300. [C]  T_sol = 1000. [C]  Latent_hx = 500000. [J/kg]  
+
+--------------------------------------------------------------------------
+Phase Transition laws: 
+--------------------------------------------------------------------------
+Phase Transition, NotInAirbox [0]: seg = 0, xbounds=[8., 10.], ybounds=[-16., -8.], zbounds=[-21., 3.] 
+Phase Transition, NotInAirbox [0]: seg = 1, xbounds=[-10., -8.], ybounds=[0., 8.], zbounds=[-21., 3.] 
+     Box Vicinity       :   Use all particles to check inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    1  
+     Phase Inside       :   2  
+     Direction          :   BothWays 
+Phase Transition, NotInAirbox [1]: seg = 0, xbounds=[-1., 1.], ybounds=[-8., 0.], zbounds=[-21., 3.] 
+     Box Vicinity       :   Use all particles to check inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    1  
+     Phase Inside       :   3  
+     Direction          :   BothWays 
+Phase Transition, NotInAirbox [2]: seg = 0, xbounds=[-1., 1.], ybounds=[8., 16.], zbounds=[-21., 3.] 
+     Box Vicinity       :   Use all particles to check inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    1  
+     Phase Inside       :   4  
+     Direction          :   BothWays 
+Phase Transition, NotInAirbox [3]: seg = 0, xbounds=[4., 8.], ybounds=[-16., -8.], zbounds=[-10., 3.] 
+Phase Transition, NotInAirbox [3]: seg = 1, xbounds=[-14., -10.], ybounds=[0., 8.], zbounds=[-10., 3.] 
+PhaseTransLinkRight = 0
+     Box Vicinity       :   Use all particles to check inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    1  
+     Phase Inside       :   5  
+     Direction          :   BothWays 
+
+   Adjusting density values due to phase transitions: 
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0. [km] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+   Open top boundary                          @ 
+   Top boundary temperature                   : 1. [C] 
+   Bottom boundary temperature                : 1350. [C] 
+   Adding inflow velocity at boundary         @ 
+      Inflow velocity boundary                : CompensatingInflow 
+      Inflow phase from next to boundary      @ 
+      Inflow window [bottom, top]             : [-21.00,3.00] [km] 
+      Inflow velocity                         : -2.00 [cm/yr] 
+      Outflow velocity                        : inf [cm/yr] 
+      Bottom flow velocity                    : 0.00 [cm/yr] 
+      Inflow temperature from closest marker  @ 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
+   Surface stabilization (FSSA)            :  1. 
+   Shear heating efficiency                :  1. 
+   Activate temperature diffusion          @ 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Use lithostatic pressure for plasticity @ 
+   Limit pressure at first iteration       @ 
+   Minimum viscosity                       : 5e+18 [Pa*s] 
+   Maximum viscosity                       : 1e+23 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
+   Universal gas constant                  : 8.31446 [J/mol/K] 
+   Minimum cohesion                        : 1000. [Pa] 
+   Minimum friction                        : 1. [deg] 
+   Ultimate yield stress                   : 1e+09 [Pa] 
+   Max. melt fraction (viscosity, density) : 0.15    
+   Rheology iteration number               : 8  
+   Rheology iteration tolerance            : 1e-06    
+   Use Temperature-dependent conductivity  @ 
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Dike blocks : 
+--------------------------------------------------------------------------
+  Dike parameters ID[0]: PhaseTransID=0 PhaseID=2 Mf=0.7, Mb=0.7, Mc=-1., y_Mc=0. 
+                         dyndike_start=1, Tsol=1000., zmax_magma=-13., filtx=2., drhomagma=500. 
+                         npseg=1., npseg0=1., istep_nave=2, istep_count=2 
+--------------------------------------------------------------------------
+  Dike parameters ID[1]: PhaseTransID=1 PhaseID=3 Mf=0.7, Mb=0.7, Mc=-1., y_Mc=0. 
+--------------------------------------------------------------------------
+  Dike parameters ID[2]: PhaseTransID=2 PhaseID=4 Mf=0.7, Mb=0.7, Mc=-1., y_Mc=0. 
+                         dyndike_start=4, Tsol=1000., zmax_magma=-13., filtx=2., drhomagma=500. 
+                         npseg=1., npseg0=1., istep_nave=2, istep_count=2 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Periodic marker advection     : 0 0 0 
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : MINMOD (correction + MINMOD)
+   Marker control type           : AVD for cells + corner insertion
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+   Background phase ID           : 0 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.0173723 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : output 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Total effective viscosity               @ 
+   Velocity                                @ 
+   Temperature                             @ 
+   Conductivity                            @ 
+   Deviatoric stress tensor                @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate second invariant @ 
+   Accumulated Plastic Strain (APS)        @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Topography      @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : coupled Galerkin geometric multigrid
+   Global coarse grid [nx,ny,nz] : [8, 8, 6]
+   Local coarse grid  [nx,ny,nz] : [8, 4, 3]
+   Number of multigrid levels    :  3
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : fgmres 
+   Solver type                   : multigrid 
+   Multigrid smoother levels KSP : richardson 
+   Multigrid dampening parameter : 0.500000 
+   Multigrid smoother levels PC  : jacobi 
+   Number of smoothening steps   : 20 
+   Coarse level KSP              : preonly 
+   Coarse level PC               : lu 
+   Coarse level solver package   : mumps 
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.676829777673e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+** PETSc DEPRECATION WARNING ** : the option -pc_factor_mat_solver_package is deprecated as of version 3.9 and will be removed in a future release. Please use the option -pc_factor_mat_solver_type instead. (Silence this warning with -options_suppress_deprecated_warnings)
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.676829777673e+00 
+    1 KSP Residual norm 3.558621728240e+00 
+    2 KSP Residual norm 1.554454967577e+00 
+    3 KSP Residual norm 2.943922208675e-01 
+    4 KSP Residual norm 3.401726465807e-02 
+    5 KSP Residual norm 5.120366548231e-03 
+    6 KSP Residual norm 2.328308381645e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000232831, 2.83841, 5.67683]
+      Line search terminated: lambda = 1., fnorms = 0.000232831
+  1 SNES Function norm 2.328308381641e-04 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 0.408393 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.664500153656e-05 
+      |Div|_2   = 2.172899905881e-04 
+   Momentum: 
+      |mRes|_2  = 8.363766609862e-05 
+   Energy: 
+      |eRes|_2  = 3.770065777351e-03 
+--------------------------------------------------------------------------
+Saving output ... done (0.00465346 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.00100000 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+done (0.0466506 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.683176927310e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.683176927310e+00 
+    1 KSP Residual norm 3.738313967421e-01 
+    2 KSP Residual norm 2.015871245203e-01 
+    3 KSP Residual norm 1.096562225483e-01 
+    4 KSP Residual norm 4.049409005909e-02 
+    5 KSP Residual norm 3.160949280241e-02 
+    6 KSP Residual norm 1.802707308266e-02 
+    7 KSP Residual norm 9.895454831011e-03 
+    8 KSP Residual norm 5.285442368490e-03 
+    9 KSP Residual norm 2.832914707858e-03 
+   10 KSP Residual norm 1.237529106405e-03 
+   11 KSP Residual norm 7.174189115047e-04 
+   12 KSP Residual norm 4.380158317142e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [2.45648, 3.37881, 4.68318]
+      Line search terminated: lambda = 1.27419, fnorms = 3.47429
+  1 SNES Function norm 3.474291869940e+00 
+  1 PICARD ||F||/||F0||=7.418665e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.474291869940e+00 
+    1 KSP Residual norm 1.198681996540e-01 
+    2 KSP Residual norm 5.523030376551e-02 
+    3 KSP Residual norm 2.764457369857e-02 
+    4 KSP Residual norm 1.676793225004e-02 
+    5 KSP Residual norm 1.358583354283e-02 
+    6 KSP Residual norm 1.240369194919e-02 
+    7 KSP Residual norm 7.637773445992e-03 
+    8 KSP Residual norm 5.042202522106e-03 
+    9 KSP Residual norm 3.601821161903e-03 
+   10 KSP Residual norm 2.532801208307e-03 
+   11 KSP Residual norm 1.292131321262e-03 
+   12 KSP Residual norm 5.843224146925e-04 
+   13 KSP Residual norm 3.460889034445e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.978325, 2.18594, 3.47429]
+      Line search terminated: lambda = 1.30041, fnorms = 1.48702
+  2 SNES Function norm 1.487023022826e+00 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 1.03575 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 7.296797292720e-04 
+      |Div|_2   = 1.987318575183e-02 
+   Momentum: 
+      |mRes|_2  = 1.486890220192e+00 
+   Energy: 
+      |eRes|_2  = 1.306415318488e-04 
+--------------------------------------------------------------------------
+Actual time step : 0.00100 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 64 markers in 9.9348e-03 s 
+--------------------------------------------------------------------------
+Saving output ... done (0.00359773 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00100000 [Myr] 
+Tentative time step : 0.00110000 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+done (0.036032 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.107199369915e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.107199369915e+00 
+    1 KSP Residual norm 1.263147110521e-01 
+    2 KSP Residual norm 3.631949569526e-02 
+    3 KSP Residual norm 1.828935150536e-02 
+    4 KSP Residual norm 7.680994834493e-03 
+    5 KSP Residual norm 4.930769235847e-03 
+    6 KSP Residual norm 2.337235406061e-03 
+    7 KSP Residual norm 1.342848453805e-03 
+    8 KSP Residual norm 9.868497159619e-04 
+    9 KSP Residual norm 7.753157226917e-04 
+   10 KSP Residual norm 5.878294549504e-04 
+   11 KSP Residual norm 3.023879618583e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.26456, 2.1081, 3.1072]
+      Line search terminated: lambda = 1.35132, fnorms = 1.75232
+  1 SNES Function norm 1.752323139361e+00 
+  1 PICARD ||F||/||F0||=5.639558e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.752323139361e+00 
+    1 KSP Residual norm 6.425821555283e-02 
+    2 KSP Residual norm 1.829223185034e-02 
+    3 KSP Residual norm 9.494591499903e-03 
+    4 KSP Residual norm 4.394696853265e-03 
+    5 KSP Residual norm 2.654738104654e-03 
+    6 KSP Residual norm 1.168056939245e-03 
+    7 KSP Residual norm 7.077617308076e-04 
+    8 KSP Residual norm 4.551358987229e-04 
+    9 KSP Residual norm 3.107860021723e-04 
+   10 KSP Residual norm 2.225727195561e-04 
+   11 KSP Residual norm 1.133978447959e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.693155, 1.17289, 1.75232]
+      Line search terminated: lambda = 1.30969, fnorms = 0.837972
+  2 SNES Function norm 8.379722994756e-01 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 0.90497 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.971564421944e-03 
+      |Div|_2   = 1.340640495759e-02 
+   Momentum: 
+      |mRes|_2  = 8.378650505867e-01 
+   Energy: 
+      |eRes|_2  = 1.007002529677e-02 
+--------------------------------------------------------------------------
+Actual time step : 0.00110 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 79 markers in 1.0564e-02 s 
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00210000 [Myr] 
+Tentative time step : 0.00121000 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+done (0.0360201 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.041789513068e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.041789513068e+00 
+    1 KSP Residual norm 8.321112135905e-02 
+    2 KSP Residual norm 2.349836219995e-02 
+    3 KSP Residual norm 1.290966947860e-02 
+    4 KSP Residual norm 6.201491727424e-03 
+    5 KSP Residual norm 3.999455067837e-03 
+    6 KSP Residual norm 2.461012902435e-03 
+    7 KSP Residual norm 1.767145393066e-03 
+    8 KSP Residual norm 1.358089282470e-03 
+    9 KSP Residual norm 9.598986208434e-04 
+   10 KSP Residual norm 6.452547212374e-04 
+   11 KSP Residual norm 3.691390505820e-04 
+   12 KSP Residual norm 2.267856709318e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.1916, 2.05222, 3.04179]
+      Line search terminated: lambda = 1.3706, fnorms = 1.68455
+  1 SNES Function norm 1.684551466792e+00 
+  1 PICARD ||F||/||F0||=5.538028e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.684551466792e+00 
+    1 KSP Residual norm 4.144894912424e-02 
+    2 KSP Residual norm 1.142203443149e-02 
+    3 KSP Residual norm 5.832334276829e-03 
+    4 KSP Residual norm 3.112099284434e-03 
+    5 KSP Residual norm 1.701069528670e-03 
+    6 KSP Residual norm 9.453979408961e-04 
+    7 KSP Residual norm 6.724928165953e-04 
+    8 KSP Residual norm 5.112305286684e-04 
+    9 KSP Residual norm 3.569357340293e-04 
+   10 KSP Residual norm 2.713305242576e-04 
+   11 KSP Residual norm 1.292110814571e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.721916, 1.20865, 1.68455]
+      Line search terminated: lambda = 1.82464, fnorms = 1.71593
+  2 SNES Function norm 1.715926359127e+00 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 0.935546 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.295879540426e-03 
+      |Div|_2   = 2.267112850009e-02 
+   Momentum: 
+      |mRes|_2  = 1.715776585071e+00 
+   Energy: 
+      |eRes|_2  = 7.900738724920e-03 
+--------------------------------------------------------------------------
+Actual time step : 0.00121 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 74 markers in 1.0763e-02 s 
+--------------------------------------------------------------------------
+================================= STEP 4 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00331000 [Myr] 
+Tentative time step : 0.00133100 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+done (0.0365366 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.174034839180e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.174034839180e+00 
+    1 KSP Residual norm 8.519587139333e-02 
+    2 KSP Residual norm 2.349297271808e-02 
+    3 KSP Residual norm 1.122497122264e-02 
+    4 KSP Residual norm 5.615229986324e-03 
+    5 KSP Residual norm 3.047865778370e-03 
+    6 KSP Residual norm 1.785642295840e-03 
+    7 KSP Residual norm 1.389979890557e-03 
+    8 KSP Residual norm 9.616597919317e-04 
+    9 KSP Residual norm 6.703043632298e-04 
+   10 KSP Residual norm 3.786955066685e-04 
+   11 KSP Residual norm 2.680764826293e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.04451, 2.01349, 3.17403]
+      Line search terminated: lambda = 1.23461, fnorms = 1.35521
+  1 SNES Function norm 1.355210523187e+00 
+  1 PICARD ||F||/||F0||=4.269678e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.355210523187e+00 
+    1 KSP Residual norm 2.778048830288e-02 
+    2 KSP Residual norm 1.037556161071e-02 
+    3 KSP Residual norm 4.024467492527e-03 
+    4 KSP Residual norm 2.402786003342e-03 
+    5 KSP Residual norm 1.312054085393e-03 
+    6 KSP Residual norm 7.149037203173e-04 
+    7 KSP Residual norm 4.481674248786e-04 
+    8 KSP Residual norm 2.464397398135e-04 
+    9 KSP Residual norm 1.580734142755e-04 
+   10 KSP Residual norm 8.593672064534e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.513517, 0.869256, 1.35521]
+      Line search terminated: lambda = 1.16752, fnorms = 0.539835
+  2 SNES Function norm 5.398345592876e-01 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 0.88868 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.424042425098e-03 
+      |Div|_2   = 1.041866205935e-02 
+   Momentum: 
+      |mRes|_2  = 5.397340112334e-01 
+   Energy: 
+      |eRes|_2  = 1.568090894844e-02 
+--------------------------------------------------------------------------
+Actual time step : 0.00133 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 85 markers in 1.1296e-02 s 
+--------------------------------------------------------------------------
+================================= STEP 5 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00464100 [Myr] 
+Tentative time step : 0.00146410 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+done (0.0369465 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.091256688881e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.091256688881e+00 
+    1 KSP Residual norm 4.901483957904e-02 
+    2 KSP Residual norm 1.991821544280e-02 
+    3 KSP Residual norm 1.064269657749e-02 
+    4 KSP Residual norm 5.990269018230e-03 
+    5 KSP Residual norm 2.044699308767e-03 
+    6 KSP Residual norm 1.275649762344e-03 
+    7 KSP Residual norm 9.427990663105e-04 
+    8 KSP Residual norm 7.547688814094e-04 
+    9 KSP Residual norm 4.079590706162e-04 
+   10 KSP Residual norm 2.750569867784e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.19537, 2.08093, 3.09126]
+      Line search terminated: lambda = 1.37413, fnorms = 1.70611
+  1 SNES Function norm 1.706112108332e+00 
+  1 PICARD ||F||/||F0||=5.519154e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.706112108332e+00 
+    1 KSP Residual norm 3.251850768937e-02 
+    2 KSP Residual norm 1.179009064833e-02 
+    3 KSP Residual norm 5.215197566117e-03 
+    4 KSP Residual norm 3.257131220160e-03 
+    5 KSP Residual norm 9.549582302463e-04 
+    6 KSP Residual norm 6.156456200998e-04 
+    7 KSP Residual norm 3.024008667116e-04 
+    8 KSP Residual norm 2.499743717031e-04 
+    9 KSP Residual norm 2.020681428146e-04 
+   10 KSP Residual norm 1.081957645728e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.667316, 1.08743, 1.70611]
+      Line search terminated: lambda = 1.12189, fnorms = 0.68734
+  2 SNES Function norm 6.873402135717e-01 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 0.856409 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.161031724581e-03 
+      |Div|_2   = 8.275321429889e-03 
+   Momentum: 
+      |mRes|_2  = 6.872903958649e-01 
+   Energy: 
+      |eRes|_2  = 2.963885802582e-02 
+--------------------------------------------------------------------------
+Actual time step : 0.00146 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 76 markers in 1.1256e-02 s 
+--------------------------------------------------------------------------
+================================= STEP 6 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00610510 [Myr] 
+Tentative time step : 0.00161051 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+done (0.0366105 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.748277604408e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.748277604408e+00 
+    1 KSP Residual norm 4.180410391716e-02 
+    2 KSP Residual norm 1.907344948295e-02 
+    3 KSP Residual norm 1.098894644782e-02 
+    4 KSP Residual norm 4.658889082217e-03 
+    5 KSP Residual norm 1.769855992574e-03 
+    6 KSP Residual norm 1.006251545911e-03 
+    7 KSP Residual norm 7.609995370906e-04 
+    8 KSP Residual norm 5.473707783563e-04 
+    9 KSP Residual norm 3.357201789254e-04 
+   10 KSP Residual norm 2.156025119126e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.12822, 1.86906, 2.74828]
+      Line search terminated: lambda = 1.35368, fnorms = 1.57047
+  1 SNES Function norm 1.570465231635e+00 
+  1 PICARD ||F||/||F0||=5.714362e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.570465231635e+00 
+    1 KSP Residual norm 3.416778600963e-02 
+    2 KSP Residual norm 1.356350482722e-02 
+    3 KSP Residual norm 6.003749325215e-03 
+    4 KSP Residual norm 3.228728675550e-03 
+    5 KSP Residual norm 1.449152946580e-03 
+    6 KSP Residual norm 6.844482444631e-04 
+    7 KSP Residual norm 4.764128853057e-04 
+    8 KSP Residual norm 3.070315188782e-04 
+    9 KSP Residual norm 2.468352908986e-04 
+   10 KSP Residual norm 1.547158313079e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.607, 0.957, 1.57047]
+      Line search terminated: lambda = 1.02285, fnorms = 0.610252
+  2 SNES Function norm 6.102521981888e-01 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 0.854114 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 9.335699013936e-04 
+      |Div|_2   = 6.327418873682e-03 
+   Momentum: 
+      |mRes|_2  = 6.102193942876e-01 
+   Energy: 
+      |eRes|_2  = 3.555751708795e-02 
+--------------------------------------------------------------------------
+Actual time step : 0.00161 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 77 markers in 1.1551e-02 s 
+--------------------------------------------------------------------------
+================================= STEP 7 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00771561 [Myr] 
+Tentative time step : 0.00177156 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+done (0.0365844 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.153532387607e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.153532387607e+00 
+    1 KSP Residual norm 5.045426786456e-02 
+    2 KSP Residual norm 1.859713774957e-02 
+    3 KSP Residual norm 1.127656196504e-02 
+    4 KSP Residual norm 4.569599824364e-03 
+    5 KSP Residual norm 1.536445227369e-03 
+    6 KSP Residual norm 8.273695856150e-04 
+    7 KSP Residual norm 4.987522965262e-04 
+    8 KSP Residual norm 3.626829404976e-04 
+    9 KSP Residual norm 2.876652096495e-04 
+   10 KSP Residual norm 1.639874252632e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.03508, 1.46581, 2.15353]
+      Line search terminated: lambda = 1.13149, fnorms = 1.09538
+  1 SNES Function norm 1.095381926031e+00 
+  1 PICARD ||F||/||F0||=5.086443e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.095381926031e+00 
+    1 KSP Residual norm 1.336305980983e-02 
+    2 KSP Residual norm 8.277333078003e-03 
+    3 KSP Residual norm 3.231536691726e-03 
+    4 KSP Residual norm 1.596902210984e-03 
+    5 KSP Residual norm 7.130551363656e-04 
+    6 KSP Residual norm 3.390844633295e-04 
+    7 KSP Residual norm 1.879270683323e-04 
+    8 KSP Residual norm 9.674537387167e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.442042, 0.726601, 1.09538]
+      Line search terminated: lambda = 1.23996, fnorms = 0.422672
+  2 SNES Function norm 4.226716585814e-01 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 0.803996 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 7.495484418473e-04 
+      |Div|_2   = 4.925558221323e-03 
+   Momentum: 
+      |mRes|_2  = 4.226429578784e-01 
+   Energy: 
+      |eRes|_2  = 3.242215664798e-02 
+--------------------------------------------------------------------------
+Actual time step : 0.00177 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 96 markers in 1.2116e-02 s 
+--------------------------------------------------------------------------
+================================= STEP 8 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00948717 [Myr] 
+Tentative time step : 0.00194872 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+done (0.0366901 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.278170789350e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.278170789350e+00 
+    1 KSP Residual norm 5.102308740178e-02 
+    2 KSP Residual norm 1.600954123580e-02 
+    3 KSP Residual norm 1.104070944408e-02 
+    4 KSP Residual norm 3.613054928401e-03 
+    5 KSP Residual norm 1.301847512809e-03 
+    6 KSP Residual norm 7.294361373471e-04 
+    7 KSP Residual norm 4.401117165420e-04 
+    8 KSP Residual norm 3.191170287248e-04 
+    9 KSP Residual norm 2.462542775720e-04 
+   10 KSP Residual norm 1.745238249721e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.987209, 1.55323, 2.27817]
+      Line search terminated: lambda = 1.28672, fnorms = 1.24865
+  1 SNES Function norm 1.248653151207e+00 
+  1 PICARD ||F||/||F0||=5.480946e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.248653151207e+00 
+    1 KSP Residual norm 1.899153950188e-02 
+    2 KSP Residual norm 6.899340603425e-03 
+    3 KSP Residual norm 4.271871635708e-03 
+    4 KSP Residual norm 1.674913942384e-03 
+    5 KSP Residual norm 6.643601649561e-04 
+    6 KSP Residual norm 3.493049471577e-04 
+    7 KSP Residual norm 1.856595741849e-04 
+    8 KSP Residual norm 1.225745476234e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.432036, 0.763468, 1.24865]
+      Line search terminated: lambda = 1.09156, fnorms = 0.439148
+  2 SNES Function norm 4.391480964352e-01 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 0.804619 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 7.401900707454e-04 
+      |Div|_2   = 3.639016802499e-03 
+   Momentum: 
+      |mRes|_2  = 4.391330187532e-01 
+   Energy: 
+      |eRes|_2  = 2.692663970560e-02 
+--------------------------------------------------------------------------
+Actual time step : 0.00195 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 130 markers in 1.3106e-02 s 
+--------------------------------------------------------------------------
+================================= STEP 9 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01143589 [Myr] 
+Tentative time step : 0.00214359 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+done (0.0366699 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.401889909822e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.401889909822e+00 
+    1 KSP Residual norm 6.732982861549e-02 
+    2 KSP Residual norm 1.985266101209e-02 
+    3 KSP Residual norm 1.164863413124e-02 
+    4 KSP Residual norm 4.971107894574e-03 
+    5 KSP Residual norm 1.457913280814e-03 
+    6 KSP Residual norm 9.492335760184e-04 
+    7 KSP Residual norm 5.784151163209e-04 
+    8 KSP Residual norm 4.608325184939e-04 
+    9 KSP Residual norm 3.001876648209e-04 
+   10 KSP Residual norm 2.051567438140e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.038, 1.64111, 2.40189]
+      Line search terminated: lambda = 1.30335, fnorms = 1.42613
+  1 SNES Function norm 1.426131724414e+00 
+  1 PICARD ||F||/||F0||=5.937540e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.426131724414e+00 
+    1 KSP Residual norm 2.217801276467e-02 
+    2 KSP Residual norm 9.267338200502e-03 
+    3 KSP Residual norm 4.944385220581e-03 
+    4 KSP Residual norm 2.615732967699e-03 
+    5 KSP Residual norm 8.261358593892e-04 
+    6 KSP Residual norm 5.002448578387e-04 
+    7 KSP Residual norm 2.796144097614e-04 
+    8 KSP Residual norm 1.496033938817e-04 
+    9 KSP Residual norm 8.846686202488e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.511251, 0.866125, 1.42613]
+      Line search terminated: lambda = 1.05746, fnorms = 0.519247
+  2 SNES Function norm 5.192473401952e-01 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 0.831461 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.510295634554e-04 
+      |Div|_2   = 2.919759270121e-03 
+   Momentum: 
+      |mRes|_2  = 5.192391311386e-01 
+   Energy: 
+      |eRes|_2  = 3.305938854277e-02 
+--------------------------------------------------------------------------
+Actual time step : 0.00214 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 159 markers in 1.3680e-02 s 
+--------------------------------------------------------------------------
+================================ STEP 10 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01357948 [Myr] 
+Tentative time step : 0.00235795 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... 
+1010.10 10 -15.5 0.5 0.0360597 -0.00335414
+1010.10 10 -14.5 0.5 0.0382189 -0.00571351
+1010.10 10 -13.5 0.5 0.0444221 -0.00882504
+1010.10 10 -12.5 0.5 0.0506763 -0.012342
+1010.10 10 -11.5 0.5 0.0509398 -0.0158002
+1010.10 10 -10.5 0.5 0.0501329 -0.0194045
+1010.10 10 -9.5 0.5 0.0483307 -0.023047
+1010.10 10 -15.5 -15.5 -0.162115 0.221916
+1010.10 10 -14.5 -15.5 -0.162549 0.221799
+1010.10 10 -13.5 -15.5 -0.16322 0.221934
+1010.10 10 -12.5 -15.5 -0.164456 0.222396
+1010.10 10 -11.5 -15.5 -0.167139 0.224333
+1010.10 10 -10.5 -15.5 -0.161103 0.220501
+1010.10 10 -9.5 -15.5 -0.158072 0.21708
+1010.10 10 -8.5 -15.5 -0.145639 0.204006
+1010.10 10 -7.5 -15.5 -0.126375 0.18364
+1010.10 10 -6.5 -15.5 -0.102421 0.162238
+1010.10 10 -5.5 -15.5 -0.0821307 0.14071
+1010.10 10 -4.5 -15.5 -0.056682 0.116893
+1010.10 10 -3.5 -15.5 -0.0357402 0.0935355
+1010.10 10 -8.5 0.5 0.0227418 -0.0238154
+1010.10 10 -7.5 0.5 -0.0109324 -0.0222518
+1010.10 10 -6.5 0.5 0.0101063 -0.0213931
+1010.10 10 -5.5 0.5 0.0185557 -0.0167403
+1010.10 10 -4.5 0.5 0.0294758 -0.0135718
+1010.10 10 -3.5 0.5 0.0338617 -0.0119469
+1010.10 10 -2.5 0.5 0.0372557 -0.0104405
+1010.10 10 -1.5 0.5 0.0383271 -0.00884014
+1010.10 10 -0.5 0.5 0.0425311 -0.00641718
+1010.10 10 0.5 0.5 0.0533717 -0.00409449
+1010.10 10 1.5 0.5 0.0870232 -0.0024709
+1010.10 10 2.5 0.5 0.0832414 8.49148e-05
+1010.10 10 3.5 0.5 0.0501679 0.028024
+1010.10 10 4.5 0.5 0.0179525 0.0563351
+1010.10 10 5.5 0.5 -0.0136344 0.0804327
+1010.10 10 6.5 0.5 -0.0413728 0.105398
+1010.10 10 -2.5 -15.5 -0.011996 0.0696992
+1010.10 10 -1.5 -15.5 0.0107082 0.043091
+1010.10 10 -0.5 -15.5 0.0388679 0.0145101
+1010.10 10 0.5 -15.5 0.0506885 -0.000977218
+1010.10 10 1.5 -15.5 0.055862 -0.00393394
+1010.10 10 2.5 -15.5 0.0597165 -0.00696219
+1010.10 10 3.5 -15.5 0.0724173 -0.00996268
+1010.10 10 4.5 -15.5 0.0917365 -0.013438
+1010.10 10 5.5 -15.5 0.0991961 -0.0171314
+1010.10 10 6.5 -15.5 0.0981386 -0.0207231
+1010.10 10 7.5 -15.5 0.101674 -0.0269973
+1010.10 10 8.5 -15.5 0.109211 -0.0320847
+1010.10 10 7.5 0.5 -0.0717463 0.130545
+1010.10 10 8.5 0.5 -0.0932694 0.152159
+1010.10 10 9.5 0.5 -0.109548 0.169747
+1010.10 10 10.5 0.5 -0.121416 0.179972
+1010.10 10 11.5 0.5 -0.126092 0.186683
+1010.10 10 12.5 0.5 -0.129405 0.192045
+1010.10 10 13.5 0.5 -0.13493 0.199016
+1010.10 10 14.5 0.5 -0.137966 0.203306
+1010.10 10 15.5 0.5 -0.14054 0.206471
+1010.10 10 -15.5 1.5 0.0311337 -0.00709628
+1010.10 10 -14.5 1.5 0.036143 -0.00953787
+1010.10 10 -13.5 1.5 0.0425741 -0.0128288
+1010.10 10 9.5 -15.5 0.0974367 -0.0309696
+1010.10 10 10.5 -15.5 0.0918272 -0.0252542
+1010.10 10 11.5 -15.5 0.0871721 -0.0212032
+1010.10 10 12.5 -15.5 0.0859249 -0.0173322
+1010.10 10 13.5 -15.5 0.0758891 -0.0136807
+1010.10 10 14.5 -15.5 0.0650598 -0.0103741
+1010.10 10 15.5 -15.5 0.0596765 -0.00794099
+1010.10 10 -15.5 -14.5 -0.162236 0.221671
+1010.10 10 -14.5 -14.5 -0.162036 0.221099
+1010.10 10 -13.5 -14.5 -0.164769 0.223254
+1010.10 10 -12.5 -14.5 -0.164635 0.222314
+1010.10 10 -12.5 1.5 0.0475615 -0.0165694
+1010.10 10 -11.5 1.5 0.0578611 -0.0202237
+1010.10 10 -10.5 1.5 0.0704571 -0.0241544
+1010.10 10 -9.5 1.5 0.0813138 -0.0280553
+1010.10 10 -8.5 1.5 0.0708041 -0.028137
+1010.10 10 -7.5 1.5 0.0578844 -0.0266261
+1010.10 10 -6.5 1.5 0.0641852 -0.0239395
+1010.10 10 -5.5 1.5 0.0697416 -0.0182434
+1010.10 10 -4.5 1.5 0.0624925 -0.013578
+1010.10 10 -3.5 1.5 0.0652713 -0.0105451
+1010.10 10 -2.5 1.5 0.0766881 -0.00787255
+1010.10 10 -1.5 1.5 0.0803041 -0.00498529
+1010.10 10 -0.5 1.5 0.0833821 -0.00209636
+1010.10 10 -11.5 -14.5 -0.164647 0.221664
+1010.10 10 -10.5 -14.5 -0.160747 0.220226
+1010.10 10 -9.5 -14.5 -0.157442 0.216367
+1010.10 10 -8.5 -14.5 -0.14412 0.202393
+1010.10 10 -7.5 -14.5 -0.125365 0.182691
+1010.10 10 -6.5 -14.5 -0.102157 0.162052
+1010.10 10 -5.5 -14.5 -0.0823318 0.141193
+1010.10 10 -4.5 -14.5 -0.0555134 0.116548
+1010.10 10 -3.5 -14.5 -0.035112 0.0937234
+1010.10 10 -2.5 -14.5 -0.00850391 0.0675462
+1010.10 10 -1.5 -14.5 0.0122328 0.0432129
+1010.10 10 -0.5 -14.5 0.0374911 0.0173175
+1010.10 10 0.5 1.5 0.0832545 0.00636434
+1010.10 10 1.5 1.5 0.0638587 0.0295105
+1010.10 10 2.5 1.5 0.0395706 0.0559924
+1010.10 10 3.5 1.5 0.00556997 0.0810149
+1010.10 10 4.5 1.5 -0.0246244 0.105077
+1010.10 10 5.5 1.5 -0.0574555 0.128094
+1010.10 10 6.5 1.5 -0.0853597 0.151985
+1010.10 10 7.5 1.5 -0.113151 0.173566
+1010.10 10 8.5 1.5 -0.133429 0.192724
+1010.10 10 9.5 1.5 -0.149172 0.208815
+1010.10 10 10.5 1.5 -0.153137 0.213313
+1010.10 10 11.5 1.5 -0.153541 0.215041
+1010.10 10 0.5 -14.5 0.0527816 -0.00106265
+1010.10 10 1.5 -14.5 0.0575206 -0.00399703
+1010.10 10 2.5 -14.5 0.0616531 -0.00705804
+1010.10 10 3.5 -14.5 0.0728905 -0.010146
+1010.10 10 4.5 -14.5 0.0885194 -0.0134576
+1010.10 10 5.5 -14.5 0.10467 -0.0171977
+1010.10 10 6.5 -14.5 0.0969521 -0.0205325
+1010.10 10 7.5 -14.5 0.0943551 -0.0274561
+1010.10 10 8.5 -14.5 0.0883614 -0.0322397
+1010.10 10 9.5 -14.5 0.0882989 -0.0305712
+1010.10 10 10.5 -14.5 0.0890034 -0.0253735
+1010.10 10 11.5 -14.5 0.0870834 -0.0212568
+1010.10 10 12.5 -14.5 0.0858957 -0.0173558
+1010.10 10 12.5 1.5 -0.153976 0.216955
+1010.10 10 13.5 1.5 -0.152594 0.216948
+1010.10 10 14.5 1.5 -0.152941 0.217698
+1010.10 10 15.5 1.5 -0.15922 0.220869
+1010.10 10 -15.5 2.5 0.0283707 -0.007785
+1010.10 10 -14.5 2.5 0.0319255 -0.0102187
+1010.10 10 -13.5 2.5 0.0399421 -0.0137049
+1010.10 10 -12.5 2.5 0.0500335 -0.0173458
+1010.10 10 -11.5 2.5 0.0608371 -0.021201
+1010.10 10 -10.5 2.5 0.0766441 -0.025185
+1010.10 10 -9.5 2.5 0.0889254 -0.0287958
+1010.10 10 -8.5 2.5 0.0908498 -0.0289886
+1010.10 10 -7.5 2.5 0.0854951 -0.0270378
+1010.10 10 -6.5 2.5 0.0694399 -0.0249046
+1010.10 10 13.5 -14.5 0.0753861 -0.0136992
+1010.10 10 14.5 -14.5 0.0634551 -0.0101848
+1010.10 10 15.5 -14.5 0.0576846 -0.00790298
+1010.10 10 -15.5 -13.5 -0.163497 0.222345
+1010.10 10 -14.5 -13.5 -0.16387 0.222476
+1010.10 10 -13.5 -13.5 -0.164284 0.22238
+1010.10 10 -12.5 -13.5 -0.164629 0.22183
+1010.10 10 -11.5 -13.5 -0.165212 0.221737
+1010.10 10 -10.5 -13.5 -0.165309 0.220784
+1010.10 10 -9.5 -13.5 -0.159095 0.21699
+1010.10 10 -8.5 -13.5 -0.145586 0.202792
+1010.10 10 -7.5 -13.5 -0.125901 0.182318
+1010.10 10 -5.5 2.5 0.0652757 -0.0181395
+1010.10 10 -4.5 2.5 0.0766571 -0.0134556
+1010.10 10 -3.5 2.5 0.0820702 -0.0102989
+1010.10 10 -2.5 2.5 0.0829831 -0.00723884
+1010.10 10 -1.5 2.5 0.085951 -0.00413849
+1010.10 10 -0.5 2.5 0.0826753 -0.00131103
+1010.10 10 0.5 2.5 0.074835 0.0139452
+1010.10 10 1.5 2.5 0.0518635 0.0403561
+1010.10 10 2.5 2.5 0.0292343 0.0671316
+1010.10 10 3.5 2.5 -0.0022697 0.0914202
+1010.10 10 4.5 2.5 -0.030185 0.114441
+1010.10 10 5.5 2.5 -0.0646939 0.138255
+1010.10 10 6.5 2.5 -0.091018 0.160186
+1010.10 10 -6.5 -13.5 -0.103613 0.162838
+1010.10 10 -5.5 -13.5 -0.0806597 0.139646
+1010.10 10 -4.5 -13.5 -0.0547425 0.116789
+1010.10 10 -3.5 -13.5 -0.0342175 0.0950537
+1010.10 10 -2.5 -13.5 -0.00699527 0.0690457
+1010.10 10 -1.5 -13.5 0.0141028 0.04366
+1010.10 10 -0.5 -13.5 0.041589 0.0158291
+1010.10 10 0.5 -13.5 0.0557599 -0.00101336
+1010.10 10 1.5 -13.5 0.0617649 -0.00396634
+1010.10 10 2.5 -13.5 0.0648764 -0.00685757
+1010.10 10 3.5 -13.5 0.0734684 -0.0101107
+1010.10 10 4.5 -13.5 0.0836598 -0.0135607
+1010.10 10 5.5 -13.5 0.0864269 -0.0170436
+1010.10 10 6.5 -13.5 0.0885933 -0.0211992
+1010.10 10 7.5 -13.5 0.0986546 -0.0278154
+1010.10 10 8.5 -13.5 0.103833 -0.0317897
+1010.10 10 9.5 -13.5 0.104797 -0.0304846
+1010.10 10 10.5 -13.5 0.0954203 -0.0255158
+1010.10 10 11.5 -13.5 0.0890723 -0.0212552
+1010.10 10 12.5 -13.5 0.0844451 -0.0171906
+1010.10 10 13.5 -13.5 0.0726611 -0.0136818
+1010.10 10 14.5 -13.5 0.0614555 -0.0103464
+1010.10 10 15.5 -13.5 0.0557124 -0.00785006
+1010.10 10 -15.5 -12.5 -0.162806 0.221684
+1010.10 10 -14.5 -12.5 -0.164595 0.223024
+1010.10 10 -13.5 -12.5 -0.164694 0.222354
+1010.10 10 -12.5 -12.5 -0.16412 0.220989
+1010.10 10 -11.5 -12.5 -0.166313 0.221908
+1010.10 10 -10.5 -12.5 -0.162024 0.219732
+1010.10 10 -9.5 -12.5 -0.160242 0.21712
+1010.10 10 -8.5 -12.5 -0.146103 0.202255
+1010.10 10 7.5 2.5 -0.119474 0.181502
+1010.10 10 8.5 2.5 -0.139871 0.200362
+1010.10 10 9.5 2.5 -0.155681 0.215406
+1010.10 10 10.5 2.5 -0.159875 0.219748
+1010.10 10 11.5 2.5 -0.163522 0.221218
+1010.10 10 12.5 2.5 -0.162398 0.220844
+1010.10 10 13.5 2.5 -0.162765 0.221876
+1010.10 10 14.5 2.5 -0.161619 0.221767
+1010.10 10 15.5 2.5 -0.162387 0.222812
+1010.10 10 -15.5 3.5 0.0259703 -0.00784791
+1010.10 10 -14.5 3.5 0.0299293 -0.0103537
+1010.10 10 -13.5 3.5 0.0380031 -0.0137316
+1010.10 10 -12.5 3.5 0.0495776 -0.0171908
+1010.10 10 -11.5 3.5 0.0612059 -0.0213836
+1010.10 10 -10.5 3.5 0.0759752 -0.0253662
+1010.10 10 -9.5 3.5 0.0823595 -0.0290576
+1010.10 10 -8.5 3.5 0.0718948 -0.0291935
+1010.10 10 -7.5 3.5 0.0704426 -0.0275234
+1010.10 10 -6.5 3.5 0.0792807 -0.0253423
+1010.10 10 -5.5 3.5 0.0844005 -0.0176587
+1010.10 10 -4.5 3.5 0.103675 -0.0133178
+1010.10 10 -3.5 3.5 0.0932018 -0.0101222
+1010.10 10 -2.5 3.5 0.0828 -0.0069986
+1010.10 10 -1.5 3.5 0.0842433 -0.00403673
+1010.10 10 -0.5 3.5 0.0806627 -0.00115054
+1010.10 10 0.5 3.5 0.0712034 0.0160085
+1010.10 10 1.5 3.5 0.0466267 0.0428549
+1010.10 10 2.5 3.5 0.0271222 0.0675084
+1010.10 10 3.5 3.5 -0.00291427 0.0919287
+1010.10 10 4.5 3.5 -0.0310658 0.116389
+1010.10 10 5.5 3.5 -0.063669 0.13881
+1010.10 10 6.5 3.5 -0.0914921 0.161525
+1010.10 10 7.5 3.5 -0.119634 0.182099
+1010.10 10 8.5 3.5 -0.141025 0.201327
+1010.10 10 -7.5 -12.5 -0.127641 0.183301
+1010.10 10 -6.5 -12.5 -0.103115 0.162198
+1010.10 10 -5.5 -12.5 -0.0798595 0.139094
+1010.10 10 -4.5 -12.5 -0.0529339 0.116408
+1010.10 10 -3.5 -12.5 -0.0303936 0.0937114
+1010.10 10 -2.5 -12.5 -0.00236906 0.0683077
+1010.10 10 -1.5 -12.5 0.0189233 0.0433647
+1010.10 10 -0.5 -12.5 0.0459706 0.0155499
+1010.10 10 0.5 -12.5 0.0601805 -0.00114188
+1010.10 10 1.5 -12.5 0.0665028 -0.00397695
+1010.10 10 2.5 -12.5 0.0692498 -0.00707204
+1010.10 10 3.5 -12.5 0.0760273 -0.0101918
+1010.10 10 4.5 -12.5 0.0832642 -0.0135153
+1010.10 10 9.5 3.5 -0.156438 0.215686
+1010.10 10 10.5 3.5 -0.161784 0.220707
+1010.10 10 11.5 3.5 -0.166225 0.222169
+1010.10 10 12.5 3.5 -0.166685 0.223331
+1010.10 10 13.5 3.5 -0.165496 0.222794
+1010.10 10 14.5 3.5 -0.163376 0.221328
+1010.10 10 15.5 3.5 -0.16315 0.221535
+1010.10 10 -15.5 4.5 0.0254903 -0.00801924
+1010.10 10 -14.5 4.5 0.0291519 -0.0103107
+1010.10 10 -13.5 4.5 0.0368385 -0.0136031
+1010.10 10 -12.5 4.5 0.0482371 -0.0172612
+1010.10 10 -11.5 4.5 0.059876 -0.0211998
+1010.10 10 -10.5 4.5 0.0752425 -0.0252895
+1010.10 10 5.5 -12.5 0.0884482 -0.0171255
+1010.10 10 6.5 -12.5 0.0909017 -0.0210432
+1010.10 10 7.5 -12.5 0.0943789 -0.0287693
+1010.10 10 8.5 -12.5 0.0844717 -0.0318616
+1010.10 10 9.5 -12.5 0.0946418 -0.0301369
+1010.10 10 10.5 -12.5 0.090345 -0.0252645
+1010.10 10 11.5 -12.5 0.0847133 -0.0211863
+1010.10 10 12.5 -12.5 0.0807047 -0.0174165
+1010.10 10 13.5 -12.5 0.0692243 -0.0136152
+1010.10 10 14.5 -12.5 0.0577958 -0.0103742
+1010.10 10 15.5 -12.5 0.0523815 -0.0079019
+1010.10 10 -15.5 -11.5 -0.165686 0.223263
+1010.10 10 -9.5 4.5 0.0857179 -0.0288259
+1010.10 10 -8.5 4.5 0.0839947 -0.0291512
+1010.10 10 -7.5 4.5 0.0913784 -0.0272765
+1010.10 10 -6.5 4.5 0.0927833 -0.0252106
+1010.10 10 -5.5 4.5 0.0923425 -0.0180613
+1010.10 10 -4.5 4.5 0.100729 -0.0135176
+1010.10 10 -3.5 4.5 0.0916685 -0.0102884
+1010.10 10 -2.5 4.5 0.0826874 -0.00705739
+1010.10 10 -1.5 4.5 0.0831507 -0.00409661
+1010.10 10 -0.5 4.5 0.0803376 -0.00132537
+1010.10 10 0.5 4.5 0.0730139 0.0147998
+1010.10 10 1.5 4.5 0.047273 0.0420857
+1010.10 10 2.5 4.5 0.0272465 0.0674441
+1010.10 10 -14.5 -11.5 -0.166051 0.22326
+1010.10 10 -13.5 -11.5 -0.166327 0.222885
+1010.10 10 -12.5 -11.5 -0.168059 0.223636
+1010.10 10 -11.5 -11.5 -0.166527 0.22102
+1010.10 10 -10.5 -11.5 -0.167605 0.221196
+1010.10 10 -9.5 -11.5 -0.160885 0.216749
+1010.10 10 -8.5 -11.5 -0.146727 0.201444
+1010.10 10 -7.5 -11.5 -0.129483 0.183724
+1010.10 10 -6.5 -11.5 -0.10339 0.160935
+1010.10 10 -5.5 -11.5 -0.0791721 0.138149
+1010.10 10 -4.5 -11.5 -0.0507512 0.115283
+1010.10 10 -3.5 -11.5 -0.0268708 0.0936833
+1010.10 10 3.5 4.5 -0.0050018 0.0935991
+1010.10 10 4.5 4.5 -0.0323992 0.116982
+1010.10 10 5.5 4.5 -0.064392 0.139541
+1010.10 10 6.5 4.5 -0.0913231 0.161116
+1010.10 10 7.5 4.5 -0.122017 0.183963
+1010.10 10 8.5 4.5 -0.142178 0.201851
+1010.10 10 9.5 4.5 -0.158742 0.217011
+1010.10 10 10.5 4.5 -0.166493 0.22087
+1010.10 10 11.5 4.5 -0.16764 0.221987
+1010.10 10 12.5 4.5 -0.167037 0.221776
+1010.10 10 13.5 4.5 -0.167733 0.222688
+1010.10 10 14.5 4.5 -0.16647 0.221439
+1010.10 10 15.5 4.5 -0.167365 0.222636
+1010.10 10 -2.5 -11.5 0.00338192 0.0680032
+1010.10 10 -1.5 -11.5 0.0247752 0.042811
+1010.10 10 -0.5 -11.5 0.0499961 0.015498
+1010.10 10 0.5 -11.5 0.0645158 -0.00113689
+1010.10 10 1.5 -11.5 0.071874 -0.00404083
+1010.10 10 2.5 -11.5 0.0739037 -0.00704724
+1010.10 10 3.5 -11.5 0.0785126 -0.0101215
+1010.10 10 4.5 -11.5 0.0832268 -0.0135194
+1010.10 10 5.5 -11.5 0.0848247 -0.0170068
+1010.10 10 6.5 -11.5 0.0899924 -0.0209676
+1010.10 10 7.5 -11.5 0.089918 -0.0282535
+1010.10 10 8.5 -11.5 0.0821462 -0.0319193
+1010.10 10 9.5 -11.5 0.0680731 -0.0302955
+1010.10 10 -15.5 5.5 0.0279578 -0.00771218
+1010.10 10 -14.5 5.5 0.0312732 -0.0102973
+1010.10 10 -13.5 5.5 0.0383525 -0.0135472
+1010.10 10 -12.5 5.5 0.0484994 -0.0173326
+1010.10 10 -11.5 5.5 0.0577713 -0.0210688
+1010.10 10 -10.5 5.5 0.0727817 -0.0249551
+1010.10 10 -9.5 5.5 0.0885993 -0.0287686
+1010.10 10 -8.5 5.5 0.0954595 -0.0288306
+1010.10 10 -7.5 5.5 0.0955896 -0.0270981
+1010.10 10 -6.5 5.5 0.0525435 -0.0249341
+1010.10 10 -5.5 5.5 0.015473 -0.017982
+1010.10 10 -4.5 5.5 0.0461733 -0.013438
+1010.10 10 -3.5 5.5 0.0684524 -0.0103022
+1010.10 10 10.5 -11.5 0.067635 -0.0250635
+1010.10 10 11.5 -11.5 0.0738367 -0.0211197
+1010.10 10 12.5 -11.5 0.0737835 -0.0173328
+1010.10 10 13.5 -11.5 0.0639983 -0.0133903
+1010.10 10 14.5 -11.5 0.0522989 -0.0103414
+1010.10 10 15.5 -11.5 0.0473289 -0.00783066
+1010.10 10 -15.5 -10.5 -0.166183 0.222739
+1010.10 10 -14.5 -10.5 -0.165283 0.221526
+1010.10 10 -13.5 -10.5 -0.166977 0.222789
+1010.10 10 -12.5 -10.5 -0.162246 0.220398
+1010.10 10 -11.5 -10.5 -0.163514 0.220164
+1010.10 10 -2.5 5.5 0.0750877 -0.00720391
+1010.10 10 -1.5 5.5 0.0816256 -0.00416603
+1010.10 10 -0.5 5.5 0.0819575 -0.00135577
+1010.10 10 0.5 5.5 0.0753001 0.014527
+1010.10 10 1.5 5.5 0.0521786 0.0416979
+1010.10 10 2.5 5.5 0.0290787 0.0669193
+1010.10 10 3.5 5.5 -0.00272217 0.0912474
+1010.10 10 4.5 5.5 -0.0310027 0.115056
+1010.10 10 5.5 5.5 -0.0649897 0.138207
+1010.10 10 6.5 5.5 -0.0928769 0.160665
+1010.10 10 7.5 5.5 -0.121809 0.182143
+1010.10 10 8.5 5.5 -0.144276 0.201915
+1010.10 10 -10.5 -10.5 -0.165145 0.220539
+1010.10 10 -9.5 -10.5 -0.160987 0.215176
+1010.10 10 -8.5 -10.5 -0.147177 0.200442
+1010.10 10 -7.5 -10.5 -0.130201 0.182738
+1010.10 10 -6.5 -10.5 -0.104346 0.160015
+1010.10 10 -5.5 -10.5 -0.0801539 0.137923
+1010.10 10 -4.5 -10.5 -0.049902 0.114814
+1010.10 10 -3.5 -10.5 -0.0210314 0.0905629
+1010.10 10 -2.5 -10.5 0.0103183 0.0672877
+1010.10 10 -1.5 -10.5 0.0341651 0.0408639
+1010.10 10 -0.5 -10.5 0.0573859 0.0147731
+1010.10 10 0.5 -10.5 0.0717989 -0.00125163
+1010.10 10 9.5 5.5 -0.159729 0.215876
+1010.10 10 10.5 5.5 -0.164994 0.220238
+1010.10 10 11.5 5.5 -0.169356 0.22119
+1010.10 10 12.5 5.5 -0.170441 0.222298
+1010.10 10 13.5 5.5 -0.169298 0.221143
+1010.10 10 14.5 5.5 -0.16924 0.221379
+1010.10 10 15.5 5.5 -0.169283 0.221732
+1010.10 10 -15.5 6.5 0.0318714 -0.0070628
+1010.10 10 -14.5 6.5 0.0361831 -0.00943863
+1010.10 10 -13.5 6.5 0.041512 -0.0127382
+1010.10 10 -12.5 6.5 0.0462869 -0.0164814
+1010.10 10 -11.5 6.5 0.0534867 -0.0202116
+1010.10 10 -10.5 6.5 0.0610988 -0.0241203
+1010.10 10 1.5 -10.5 0.075882 -0.00416062
+1010.10 10 2.5 -10.5 0.0742979 -0.00711391
+1010.10 10 3.5 -10.5 0.0768174 -0.0103022
+1010.10 10 4.5 -10.5 0.0805823 -0.013628
+1010.10 10 5.5 -10.5 0.079922 -0.0171652
+1010.10 10 6.5 -10.5 0.0889165 -0.0207005
+1010.10 10 7.5 -10.5 0.0918391 -0.0268035
+1010.10 10 8.5 -10.5 0.11059 -0.0322424
+1010.10 10 9.5 -10.5 0.101086 -0.0307264
+1010.10 10 10.5 -10.5 0.0880191 -0.024933
+1010.10 10 11.5 -10.5 0.0760172 -0.0209813
+1010.10 10 12.5 -10.5 0.0686238 -0.0172524
+1010.10 10 -9.5 6.5 0.0517696 -0.0277145
+1010.10 10 -8.5 6.5 0.0108533 -0.0283215
+1010.10 10 -7.5 6.5 0.00384575 -0.0273088
+1010.10 10 -6.5 6.5 0.0431551 -0.0239354
+1010.10 10 -5.5 6.5 0.0726904 -0.0172498
+1010.10 10 -4.5 6.5 0.0861992 -0.0136695
+1010.10 10 -3.5 6.5 0.0768654 -0.0105738
+1010.10 10 -2.5 6.5 0.0801169 -0.00759284
+1010.10 10 -1.5 6.5 0.0769014 -0.00492676
+1010.10 10 -0.5 6.5 0.077565 -0.00211085
+1010.10 10 0.5 6.5 0.0819085 0.00665207
+1010.10 10 1.5 6.5 0.0635208 0.0322055
+1010.10 10 13.5 -10.5 0.0577062 -0.0135614
+1010.10 10 14.5 -10.5 0.0474942 -0.0101917
+1010.10 10 15.5 -10.5 0.0437087 -0.00780343
+1010.10 10 -15.5 -9.5 -0.159734 0.218652
+1010.10 10 -14.5 -9.5 -0.160263 0.218831
+1010.10 10 -13.5 -9.5 -0.160169 0.217945
+1010.10 10 -12.5 -9.5 -0.15997 0.216831
+1010.10 10 -11.5 -9.5 -0.159945 0.215462
+1010.10 10 -10.5 -9.5 -0.16094 0.21515
+1010.10 10 -9.5 -9.5 -0.155487 0.208058
+1010.10 10 -8.5 -9.5 -0.143653 0.19458
+1010.10 10 -7.5 -9.5 -0.12432 0.174295
+1010.10 10 2.5 6.5 0.0400469 0.056674
+1010.10 10 3.5 6.5 0.00548927 0.0806479
+1010.10 10 4.5 6.5 -0.0266134 0.10611
+1010.10 10 5.5 6.5 -0.0604631 0.128986
+1010.10 10 6.5 6.5 -0.0884409 0.1518
+1010.10 10 7.5 6.5 -0.116502 0.173292
+1010.10 10 8.5 6.5 -0.139348 0.194093
+1010.10 10 9.5 6.5 -0.156051 0.209301
+1010.10 10 10.5 6.5 -0.16294 0.214726
+1010.10 10 11.5 6.5 -0.165907 0.217132
+1010.10 10 12.5 6.5 -0.166475 0.217286
+1010.10 10 13.5 6.5 -0.167546 0.218243
+1010.10 10 14.5 6.5 -0.168519 0.219069
+1010.10 10 -6.5 -9.5 -0.0983989 0.15147
+1010.10 10 -5.5 -9.5 -0.0737215 0.128821
+1010.10 10 -4.5 -9.5 -0.0435374 0.106461
+1010.10 10 -3.5 -9.5 -0.012349 0.082074
+1010.10 10 -2.5 -9.5 0.0252103 0.056791
+1010.10 10 -1.5 -9.5 0.0507845 0.0323566
+1010.10 10 -0.5 -9.5 0.0710324 0.00681921
+1010.10 10 0.5 -9.5 0.0736669 -0.00208991
+1010.10 10 1.5 -9.5 0.0727749 -0.00485304
+1010.10 10 2.5 -9.5 0.0752904 -0.00770525
+1010.10 10 3.5 -9.5 0.0697688 -0.0106249
+1010.10 10 4.5 -9.5 0.069118 -0.0136817
+1010.10 10 5.5 -9.5 0.0616194 -0.0168861
+1010.10 10 15.5 6.5 -0.17022 0.220528
+1010.10 10 -15.5 7.5 0.0380079 -0.00335344
+1010.10 10 -14.5 7.5 0.0392792 -0.00548108
+1010.10 10 -13.5 7.5 0.0457469 -0.00879988
+1010.10 10 -12.5 7.5 0.0518242 -0.0122678
+1010.10 10 -11.5 7.5 0.0510763 -0.0156568
+1010.10 10 -10.5 7.5 0.0522386 -0.0193948
+1010.10 10 -9.5 7.5 0.0542818 -0.0230555
+1010.10 10 -8.5 7.5 0.0471764 -0.0235441
+1010.10 10 -7.5 7.5 0.0306664 -0.0227133
+1010.10 10 -6.5 7.5 0.0150937 -0.021251
+1010.10 10 -5.5 7.5 0.0039371 -0.0164096
+1010.10 10 -4.5 7.5 0.0250355 -0.0135438
+1010.10 10 6.5 -9.5 0.0515281 -0.0199809
+1010.10 10 7.5 -9.5 0.0348434 -0.0247423
+1010.10 10 8.5 -9.5 0.0461321 -0.0318894
+1010.10 10 9.5 -9.5 0.0669842 -0.0316833
+1010.10 10 10.5 -9.5 0.083402 -0.0244537
+1010.10 10 11.5 -9.5 0.0661712 -0.0202203
+1010.10 10 12.5 -9.5 0.0493006 -0.016477
+1010.10 10 13.5 -9.5 0.0472226 -0.0128074
+1010.10 10 14.5 -9.5 0.042016 -0.00960316
+1010.10 10 15.5 -9.5 0.0379393 -0.00720574
+1010.10 10 -15.5 -8.5 -0.151168 0.208085
+1010.10 10 -14.5 -8.5 -0.147801 0.203937
+1010.10 10 -13.5 -8.5 -0.142553 0.198626
+1010.10 10 -3.5 7.5 0.0370825 -0.0119608
+1010.10 10 -2.5 7.5 0.0436537 -0.0102765
+1010.10 10 -1.5 7.5 0.0442473 -0.00869399
+1010.10 10 -0.5 7.5 0.0453191 -0.0060825
+1010.10 10 0.5 7.5 0.0623507 -0.00380184
+1010.10 10 1.5 7.5 0.0758231 -0.00165885
+1010.10 10 2.5 7.5 0.0763308 0.00454083
+1010.10 10 3.5 7.5 0.0440844 0.0293962
+1010.10 10 4.5 7.5 0.0134801 0.0555765
+1010.10 10 5.5 7.5 -0.0203429 0.0809742
+1010.10 10 6.5 7.5 -0.0486392 0.106342
+1010.10 10 7.5 7.5 -0.0779032 0.130673
+1010.10 10 8.5 7.5 -0.100867 0.152425
+1010.10 10 9.5 7.5 -0.120154 0.170671
+1010.10 10 -12.5 -8.5 -0.137316 0.192346
+1010.10 10 -11.5 -8.5 -0.133258 0.186659
+1010.10 10 -10.5 -8.5 -0.127919 0.179638
+1010.10 10 -9.5 -8.5 -0.117674 0.170223
+1010.10 10 -8.5 -8.5 -0.102535 0.15256
+1010.10 10 -7.5 -8.5 -0.0817117 0.12985
+1010.10 10 -6.5 -8.5 -0.0555183 0.105811
+1010.10 10 -5.5 -8.5 -0.0288198 0.0804161
+1010.10 10 -4.5 -8.5 0.00251133 0.0560404
+1010.10 10 -3.5 -8.5 0.0345807 0.0290224
+1010.10 10 -2.5 -8.5 0.0724783 0.00190779
+1010.10 10 -1.5 -8.5 0.0763898 -0.00244024
+1010.10 10 -0.5 -8.5 0.0505018 -0.00395614
+1010.10 10 0.5 -8.5 0.0483624 -0.00624482
+1010.10 10 10.5 7.5 -0.134214 0.181053
+1010.10 10 11.5 7.5 -0.141333 0.187141
+1010.10 10 12.5 7.5 -0.147142 0.192773
+1010.10 10 13.5 7.5 -0.152848 0.198215
+1010.10 10 14.5 7.5 -0.158277 0.20361
+1010.10 10 15.5 7.5 -0.161634 0.20707
+1010.10 10 -15.5 8.5 -0.0571277 0.0991877
+1010.10 10 -14.5 8.5 -0.0382035 0.0818923
+1010.10 10 -13.5 8.5 -0.00781716 0.0569779
+1010.10 10 -12.5 8.5 0.0237466 0.0304445
+1010.10 10 -11.5 8.5 0.0621731 0.00130362
+1010.10 10 -10.5 8.5 0.0764755 -0.00280848
+1010.10 10 -9.5 8.5 0.0824793 -0.00506846
+1010.10 10 1.5 -8.5 0.046664 -0.00883384
+1010.10 10 2.5 -8.5 0.0492192 -0.0103751
+1010.10 10 3.5 -8.5 0.0495478 -0.0119648
+1010.10 10 4.5 -8.5 0.0524703 -0.0137482
+1010.10 10 5.5 -8.5 0.0512484 -0.0155753
+1010.10 10 6.5 -8.5 0.047384 -0.0175561
+1010.10 10 7.5 -8.5 0.0343993 -0.0202254
+1010.10 10 8.5 -8.5 0.0200508 -0.0262155
+1010.10 10 9.5 -8.5 -0.0171981 -0.0273022
+1010.10 10 10.5 -8.5 -0.0357731 -0.0215583
+1010.10 10 11.5 -8.5 -0.0205253 -0.0159403
+1010.10 10 12.5 -8.5 0.0177593 -0.0122762
+1010.10 10 -8.5 8.5 0.0810735 -0.0065571
+1010.10 10 -7.5 8.5 0.0838447 -0.00777608
+1010.10 10 -6.5 8.5 0.0668541 -0.00976941
+1010.10 10 -5.5 8.5 0.0623401 -0.0117272
+1010.10 10 -4.5 8.5 0.0573479 -0.0135527
+1010.10 10 -3.5 8.5 0.0571901 -0.0156858
+1010.10 10 -2.5 8.5 0.0547761 -0.0181525
+1010.10 10 -1.5 8.5 0.0428143 -0.0205529
+1010.10 10 -0.5 8.5 0.022793 -0.0258005
+1010.10 10 0.5 8.5 -0.00702188 -0.027167
+1010.10 10 1.5 8.5 -0.0288173 -0.0221787
+1010.10 10 2.5 8.5 -0.00663008 -0.016181
+1010.10 10 3.5 8.5 0.021141 -0.0124319
+1010.10 10 13.5 -8.5 0.0339769 -0.00869746
+1010.10 10 14.5 -8.5 0.036773 -0.00560287
+1010.10 10 15.5 -8.5 0.0383226 -0.00322377
+1010.10 10 -15.5 -7.5 -0.113805 0.170246
+1010.10 10 -14.5 -7.5 -0.102304 0.15815
+1010.10 10 -13.5 -7.5 -0.0849903 0.139507
+1010.10 10 -12.5 -7.5 -0.0635664 0.120234
+1010.10 10 -11.5 -7.5 -0.0459979 0.100347
+1010.10 10 -10.5 -7.5 -0.0297559 0.0810672
+1010.10 10 -9.5 -7.5 -0.00680662 0.0578131
+1010.10 10 -8.5 -7.5 0.013563 0.0327135
+1010.10 10 -7.5 -7.5 0.0393937 0.00546054
+1010.10 10 4.5 8.5 0.039503 -0.00868488
+1010.10 10 5.5 8.5 0.0434975 -0.00544307
+1010.10 10 6.5 8.5 0.0420953 -0.00243544
+1010.10 10 7.5 8.5 0.037018 0.00476892
+1010.10 10 8.5 8.5 0.00913718 0.031306
+1010.10 10 9.5 8.5 -0.0160093 0.0579076
+1010.10 10 10.5 8.5 -0.0400469 0.0804721
+1010.10 10 11.5 8.5 -0.0588919 0.100154
+1010.10 10 12.5 8.5 -0.0774408 0.119176
+1010.10 10 13.5 8.5 -0.0990245 0.139157
+1010.10 10 14.5 8.5 -0.116289 0.15679
+1010.10 10 15.5 8.5 -0.130361 0.171084
+1010.10 10 -6.5 -7.5 0.0469306 -0.00248235
+1010.10 10 -5.5 -7.5 0.0473116 -0.00557224
+1010.10 10 -4.5 -7.5 0.052752 -0.00889783
+1010.10 10 -3.5 -7.5 0.0597678 -0.0122727
+1010.10 10 -2.5 -7.5 0.0582848 -0.0159031
+1010.10 10 -1.5 -7.5 0.0455674 -0.0201813
+1010.10 10 -0.5 -7.5 0.0206319 -0.0271563
+1010.10 10 0.5 -7.5 0.0188304 -0.0269928
+1010.10 10 1.5 -7.5 0.0285266 -0.0208867
+1010.10 10 2.5 -7.5 0.0373483 -0.018221
+1010.10 10 3.5 -7.5 0.0422301 -0.0158619
+1010.10 10 4.5 -7.5 0.0443993 -0.0136307
+1010.10 10 -15.5 9.5 -0.0975102 0.145317
+1010.10 10 -14.5 9.5 -0.0797778 0.129072
+1010.10 10 -13.5 9.5 -0.0522457 0.106945
+1010.10 10 -12.5 9.5 -0.0241544 0.0823651
+1010.10 10 -11.5 9.5 0.00946005 0.0565522
+1010.10 10 -10.5 9.5 0.0405995 0.02955
+1010.10 10 -9.5 9.5 0.0746741 0.00429781
+1010.10 10 -8.5 9.5 0.0789626 -0.00203566
+1010.10 10 -7.5 9.5 0.0766062 -0.00479254
+1010.10 10 -6.5 9.5 0.0724887 -0.00766191
+1010.10 10 -5.5 9.5 0.0709739 -0.0105811
+1010.10 10 -4.5 9.5 0.0695422 -0.0137767
+1010.10 10 5.5 -7.5 0.0432513 -0.0119918
+1010.10 10 6.5 -7.5 0.0406511 -0.0103168
+1010.10 10 7.5 -7.5 0.0317433 -0.00829552
+1010.10 10 8.5 -7.5 0.0303583 -0.00623516
+1010.10 10 9.5 -7.5 0.0491994 -0.00380994
+1010.10 10 10.5 -7.5 0.0608562 -0.00172242
+1010.10 10 11.5 -7.5 0.0652525 0.00268116
+1010.10 10 12.5 -7.5 0.0267326 0.028238
+1010.10 10 13.5 -7.5 -0.0056873 0.0555459
+1010.10 10 14.5 -7.5 -0.0334373 0.0792899
+1010.10 10 15.5 -7.5 -0.0544587 0.100095
+1010.10 10 -15.5 -6.5 -0.103201 0.157982
+1010.10 10 -14.5 -6.5 -0.0886726 0.142876
+1010.10 10 -3.5 9.5 0.0688672 -0.0171776
+1010.10 10 -2.5 9.5 0.0560471 -0.0206151
+1010.10 10 -1.5 9.5 0.0442312 -0.0252749
+1010.10 10 -0.5 9.5 0.0497538 -0.0317405
+1010.10 10 0.5 9.5 0.0739995 -0.0317665
+1010.10 10 1.5 9.5 0.084413 -0.0250642
+1010.10 10 2.5 9.5 0.0758267 -0.0204459
+1010.10 10 3.5 9.5 0.0603235 -0.0164795
+1010.10 10 4.5 9.5 0.0528174 -0.0127558
+1010.10 10 5.5 9.5 0.0457451 -0.00929845
+1010.10 10 6.5 9.5 0.0414037 -0.00639148
+1010.10 10 7.5 9.5 0.0401403 -0.00316418
+1010.10 10 8.5 9.5 0.0364398 -0.000337598
+1010.10 10 9.5 9.5 0.0146329 0.0230205
+1010.10 10 -13.5 -6.5 -0.0642314 0.121115
+1010.10 10 -12.5 -6.5 -0.0429228 0.0983167
+1010.10 10 -11.5 -6.5 -0.0161428 0.0732158
+1010.10 10 -10.5 -6.5 0.00474406 0.0487219
+1010.10 10 -9.5 -6.5 0.029664 0.0230554
+1010.10 10 -8.5 -6.5 0.0478578 -0.000364416
+1010.10 10 -7.5 -6.5 0.0483613 -0.00335824
+1010.10 10 -6.5 -6.5 0.0454033 -0.006268
+1010.10 10 -5.5 -6.5 0.0479682 -0.00946723
+1010.10 10 -4.5 -6.5 0.052786 -0.0128896
+1010.10 10 -3.5 -6.5 0.0561929 -0.0164825
+1010.10 10 -2.5 -6.5 0.0642489 -0.0203343
+1010.10 10 10.5 9.5 -0.013511 0.0500703
+1010.10 10 11.5 9.5 -0.03555 0.0732072
+1010.10 10 12.5 9.5 -0.0614919 0.0977697
+1010.10 10 13.5 9.5 -0.0830012 0.119929
+1010.10 10 14.5 9.5 -0.106912 0.141879
+1010.10 10 15.5 9.5 -0.123316 0.158477
+1010.10 10 -15.5 10.5 -0.100638 0.153433
+1010.10 10 -14.5 10.5 -0.0841844 0.13794
+1010.10 10 -13.5 10.5 -0.0573962 0.115505
+1010.10 10 -12.5 10.5 -0.0324826 0.0924033
+1010.10 10 -11.5 10.5 -6.27038e-05 0.0662671
+1010.10 10 -10.5 10.5 0.0262371 0.0421445
+1010.10 10 -9.5 10.5 0.0579061 0.0158185
+1010.10 10 -1.5 -6.5 0.0668899 -0.0247437
+1010.10 10 -0.5 -6.5 0.0830577 -0.0322826
+1010.10 10 0.5 -6.5 0.0625531 -0.0316448
+1010.10 10 1.5 -6.5 0.0604344 -0.0245278
+1010.10 10 2.5 -6.5 0.062188 -0.02079
+1010.10 10 3.5 -6.5 0.0663036 -0.0172611
+1010.10 10 4.5 -6.5 0.065949 -0.0136344
+1010.10 10 5.5 -6.5 0.0627601 -0.0105469
+1010.10 10 6.5 -6.5 0.0639404 -0.00769072
+1010.10 10 7.5 -6.5 0.0575362 -0.00480677
+1010.10 10 8.5 -6.5 0.0611139 -0.00202696
+1010.10 10 9.5 -6.5 0.07017 0.00648101
+1010.10 10 10.5 -6.5 0.0460832 0.0331238
+1010.10 10 -8.5 10.5 0.0733538 -0.00112595
+1010.10 10 -7.5 10.5 0.0745058 -0.00408855
+1010.10 10 -6.5 10.5 0.0703214 -0.00725405
+1010.10 10 -5.5 10.5 0.0744787 -0.0104174
+1010.10 10 -4.5 10.5 0.0786675 -0.0137802
+1010.10 10 -3.5 10.5 0.0855933 -0.0174375
+1010.10 10 -2.5 10.5 0.0853707 -0.0210324
+1010.10 10 -1.5 10.5 0.0982784 -0.0269981
+1010.10 10 -0.5 10.5 0.103985 -0.0322609
+1010.10 10 0.5 10.5 0.0955997 -0.0321831
+1010.10 10 1.5 10.5 0.0796227 -0.0251902
+1010.10 10 2.5 10.5 0.0753457 -0.0212182
+1010.10 10 3.5 10.5 0.0697164 -0.0172266
+1010.10 10 11.5 -6.5 0.0272009 0.0563952
+1010.10 10 12.5 -6.5 -0.0104214 0.0818435
+1010.10 10 13.5 -6.5 -0.0422664 0.105489
+1010.10 10 14.5 -6.5 -0.0722845 0.127682
+1010.10 10 15.5 -6.5 -0.0920388 0.14582
+1010.10 10 -15.5 -5.5 -0.1008 0.15446
+1010.10 10 -14.5 -5.5 -0.0860645 0.139386
+1010.10 10 -13.5 -5.5 -0.0611117 0.117068
+1010.10 10 -12.5 -5.5 -0.0394143 0.0942774
+1010.10 10 -11.5 -5.5 -0.0119524 0.0683491
+1010.10 10 -10.5 -5.5 0.00947806 0.0442124
+1010.10 10 -9.5 -5.5 0.0350593 0.017989
+1010.10 10 4.5 10.5 0.0581633 -0.0134166
+1010.10 10 5.5 10.5 0.0480315 -0.0101017
+1010.10 10 6.5 10.5 0.0405846 -0.007044
+1010.10 10 7.5 10.5 0.0377379 -0.00392845
+1010.10 10 8.5 10.5 0.033352 -0.00107064
+1010.10 10 9.5 10.5 0.0170693 0.0163282
+1010.10 10 10.5 10.5 -0.0115836 0.0439324
+1010.10 10 11.5 10.5 -0.0352464 0.0682378
+1010.10 10 12.5 10.5 -0.0614243 0.0930572
+1010.10 10 13.5 10.5 -0.0839968 0.116186
+1010.10 10 14.5 10.5 -0.108278 0.138952
+1010.10 10 15.5 10.5 -0.125454 0.156144
+1010.10 10 -8.5 -5.5 0.048913 -0.000928589
+1010.10 10 -7.5 -5.5 0.0488141 -0.00390831
+1010.10 10 -6.5 -5.5 0.0463159 -0.00706135
+1010.10 10 -5.5 -5.5 0.0492518 -0.0102081
+1010.10 10 -4.5 -5.5 0.0561903 -0.0136686
+1010.10 10 -3.5 -5.5 0.0673887 -0.0173929
+1010.10 10 -2.5 -5.5 0.0748117 -0.0212332
+1010.10 10 -1.5 -5.5 0.082703 -0.0252602
+1010.10 10 -0.5 -5.5 0.0973266 -0.0320386
+1010.10 10 0.5 -5.5 0.095593 -0.0320674
+1010.10 10 1.5 -5.5 0.084221 -0.0252175
+1010.10 10 2.5 -5.5 0.0794132 -0.0212962
+1010.10 10 3.5 -5.5 0.077161 -0.0173301
+1010.10 10 -15.5 11.5 -0.101141 0.156775
+1010.10 10 -14.5 11.5 -0.0816323 0.137879
+1010.10 10 -13.5 11.5 -0.0568881 0.117405
+1010.10 10 -12.5 11.5 -0.0316965 0.0926411
+1010.10 10 -11.5 11.5 -0.00215518 0.0674806
+1010.10 10 -10.5 11.5 0.0216452 0.0434946
+1010.10 10 -9.5 11.5 0.0518694 0.0156454
+1010.10 10 -8.5 11.5 0.0649737 -0.000998025
+1010.10 10 -7.5 11.5 0.0676029 -0.00406436
+1010.10 10 -6.5 11.5 0.0650666 -0.00706596
+1010.10 10 -5.5 11.5 0.0693958 -0.0102257
+1010.10 10 -4.5 11.5 0.0772309 -0.0136696
+1010.10 10 4.5 -5.5 0.0729351 -0.0137172
+1010.10 10 5.5 -5.5 0.0689388 -0.0102704
+1010.10 10 6.5 -5.5 0.0659313 -0.00724133
+1010.10 10 7.5 -5.5 0.0669016 -0.00411383
+1010.10 10 8.5 -5.5 0.0647789 -0.00129295
+1010.10 10 9.5 -5.5 0.0574027 0.014086
+1010.10 10 10.5 -5.5 0.0310407 0.0415664
+1010.10 10 11.5 -5.5 0.0125881 0.0664648
+1010.10 10 12.5 -5.5 -0.0180865 0.0914594
+1010.10 10 13.5 -5.5 -0.0451251 0.114358
+1010.10 10 14.5 -5.5 -0.0751592 0.137201
+1010.10 10 15.5 -5.5 -0.0941572 0.154795
+1010.10 10 -3.5 11.5 0.0897192 -0.0172948
+1010.10 10 -2.5 11.5 0.0921279 -0.0212145
+1010.10 10 -1.5 11.5 0.0908408 -0.0269515
+1010.10 10 -0.5 11.5 0.107786 -0.0322341
+1010.10 10 0.5 11.5 0.0919992 -0.03158
+1010.10 10 1.5 11.5 0.0812172 -0.0253855
+1010.10 10 2.5 11.5 0.0779889 -0.0211873
+1010.10 10 3.5 11.5 0.0742836 -0.017351
+1010.10 10 4.5 11.5 0.0620775 -0.0136197
+1010.10 10 5.5 11.5 0.050582 -0.0102083
+1010.10 10 6.5 11.5 0.0412603 -0.00709075
+1010.10 10 7.5 11.5 0.0366243 -0.00402562
+1010.10 10 -15.5 -4.5 -0.103643 0.155952
+1010.10 10 -14.5 -4.5 -0.0852978 0.137739
+1010.10 10 -13.5 -4.5 -0.0611292 0.116944
+1010.10 10 -12.5 -4.5 -0.0371552 0.0922257
+1010.10 10 -11.5 -4.5 -0.0096349 0.0672648
+1010.10 10 -10.5 -4.5 0.0124602 0.0430488
+1010.10 10 -9.5 -4.5 0.0411721 0.0151445
+1010.10 10 -8.5 -4.5 0.0521281 -0.00104836
+1010.10 10 -7.5 -4.5 0.0523088 -0.00406295
+1010.10 10 -6.5 -4.5 0.0493402 -0.007082
+1010.10 10 -5.5 -4.5 0.0536835 -0.0102137
+1010.10 10 -4.5 -4.5 0.0625093 -0.0136695
+1010.10 10 -3.5 -4.5 0.0746258 -0.0173749
+1010.10 10 8.5 11.5 0.0310846 -0.00106629
+1010.10 10 9.5 11.5 0.0149322 0.0155456
+1010.10 10 10.5 11.5 -0.0141067 0.0428906
+1010.10 10 11.5 11.5 -0.0390889 0.0682906
+1010.10 10 12.5 11.5 -0.0644879 0.0925143
+1010.10 10 13.5 11.5 -0.086859 0.115339
+1010.10 10 14.5 11.5 -0.110628 0.137755
+1010.10 10 15.5 11.5 -0.127479 0.154702
+1010.10 10 -15.5 12.5 -0.0974929 0.156039
+1010.10 10 -14.5 12.5 -0.0793906 0.137968
+1010.10 10 -13.5 12.5 -0.0545281 0.116476
+1010.10 10 -12.5 12.5 -0.0327003 0.0939029
+1010.10 10 -11.5 12.5 -0.00430574 0.0680808
+1010.10 10 -2.5 -4.5 0.083653 -0.0215032
+1010.10 10 -1.5 -4.5 0.0896776 -0.0253883
+1010.10 10 -0.5 -4.5 0.101994 -0.031886
+1010.10 10 0.5 -4.5 0.0939784 -0.0317685
+1010.10 10 1.5 -4.5 0.0904044 -0.0254479
+1010.10 10 2.5 -4.5 0.0841361 -0.021108
+1010.10 10 3.5 -4.5 0.0819798 -0.0172868
+1010.10 10 4.5 -4.5 0.0733403 -0.0135436
+1010.10 10 5.5 -4.5 0.0687729 -0.0102334
+1010.10 10 6.5 -4.5 0.0651389 -0.007081
+1010.10 10 7.5 -4.5 0.0638309 -0.00401433
+1010.10 10 8.5 -4.5 0.0593541 -0.00102042
+1010.10 10 9.5 -4.5 0.0486778 0.0157327
+1010.10 10 -10.5 12.5 0.0184032 0.0431703
+1010.10 10 -9.5 12.5 0.0461559 0.0164698
+1010.10 10 -8.5 12.5 0.0589347 -0.00104154
+1010.10 10 -7.5 12.5 0.0612258 -0.00405463
+1010.10 10 -6.5 12.5 0.0603697 -0.0069522
+1010.10 10 -5.5 12.5 0.0673404 -0.0102422
+1010.10 10 -4.5 12.5 0.076813 -0.0136131
+1010.10 10 -3.5 12.5 0.0886525 -0.017404
+1010.10 10 -2.5 12.5 0.0917808 -0.0209761
+1010.10 10 -1.5 12.5 0.0989539 -0.0271594
+1010.10 10 -0.5 12.5 0.111195 -0.0321306
+1010.10 10 0.5 12.5 0.10109 -0.0319129
+1010.10 10 1.5 12.5 0.0883078 -0.0251453
+1010.10 10 10.5 -4.5 0.0235853 0.0427103
+1010.10 10 11.5 -4.5 0.00505315 0.0680923
+1010.10 10 12.5 -4.5 -0.0212336 0.0925011
+1010.10 10 13.5 -4.5 -0.0447307 0.115276
+1010.10 10 14.5 -4.5 -0.0721904 0.137643
+1010.10 10 15.5 -4.5 -0.0899558 0.154869
+1010.10 10 -15.5 -3.5 -0.104534 0.155618
+1010.10 10 -14.5 -3.5 -0.0860525 0.137484
+1010.10 10 -13.5 -3.5 -0.0609251 0.116055
+1010.10 10 -12.5 -3.5 -0.0369371 0.0922221
+1010.10 10 -11.5 -3.5 -0.00851084 0.0672849
+1010.10 10 -10.5 -3.5 0.0157614 0.0423184
+1010.10 10 2.5 12.5 0.0845388 -0.0211636
+1010.10 10 3.5 12.5 0.0794306 -0.0174645
+1010.10 10 4.5 12.5 0.0663957 -0.0137179
+1010.10 10 5.5 12.5 0.0529762 -0.0102625
+1010.10 10 6.5 12.5 0.0426324 -0.00714566
+1010.10 10 7.5 12.5 0.0367263 -0.0041287
+1010.10 10 8.5 12.5 0.0304728 -0.00120841
+1010.10 10 9.5 12.5 0.0123447 0.0164003
+1010.10 10 10.5 12.5 -0.0149924 0.0422052
+1010.10 10 11.5 12.5 -0.0402069 0.0676241
+1010.10 10 12.5 12.5 -0.0667925 0.0926786
+1010.10 10 13.5 12.5 -0.0892214 0.1153
+1010.10 10 -9.5 -3.5 0.0453198 0.01604
+1010.10 10 -8.5 -3.5 0.0585054 -0.00104506
+1010.10 10 -7.5 -3.5 0.0588716 -0.00408984
+1010.10 10 -6.5 -3.5 0.0556754 -0.00719126
+1010.10 10 -5.5 -3.5 0.0622549 -0.0102895
+1010.10 10 -4.5 -3.5 0.0720539 -0.0137701
+1010.10 10 -3.5 -3.5 0.0810907 -0.0175059
+1010.10 10 -2.5 -3.5 0.0858264 -0.0212715
+1010.10 10 -1.5 -3.5 0.0926528 -0.0253816
+1010.10 10 -0.5 -3.5 0.104073 -0.0319717
+1010.10 10 0.5 -3.5 0.10255 -0.0319748
+1010.10 10 1.5 -3.5 0.0922211 -0.0252652
+1010.10 10 2.5 -3.5 0.085623 -0.0211314
+1010.10 10 14.5 12.5 -0.11317 0.137863
+1010.10 10 15.5 12.5 -0.130422 0.1549
+1010.10 10 -15.5 13.5 -0.0956056 0.155253
+1010.10 10 -14.5 13.5 -0.0801623 0.139409
+1010.10 10 -13.5 13.5 -0.0546255 0.117094
+1010.10 10 -12.5 13.5 -0.0331034 0.0941394
+1010.10 10 -11.5 13.5 -0.0065169 0.0689392
+1010.10 10 -10.5 13.5 0.0148333 0.0438934
+1010.10 10 -9.5 13.5 0.0401644 0.017827
+1010.10 10 -8.5 13.5 0.0538239 -0.00100566
+1010.10 10 -7.5 13.5 0.0551613 -0.0039602
+1010.10 10 -6.5 13.5 0.0565616 -0.00694268
+1010.10 10 -5.5 13.5 0.0636825 -0.0100954
+1010.10 10 -4.5 13.5 0.0757215 -0.0136615
+1010.10 10 3.5 -3.5 0.0797564 -0.0174122
+1010.10 10 4.5 -3.5 0.0722448 -0.0136436
+1010.10 10 5.5 -3.5 0.0654854 -0.0102499
+1010.10 10 6.5 -3.5 0.0603534 -0.00712993
+1010.10 10 7.5 -3.5 0.0590339 -0.00411886
+1010.10 10 8.5 -3.5 0.0553782 -0.00119949
+1010.10 10 9.5 -3.5 0.0432113 0.0165028
+1010.10 10 10.5 -3.5 0.0197972 0.0428981
+1010.10 10 11.5 -3.5 0.00146023 0.0679329
+1010.10 10 12.5 -3.5 -0.0238345 0.09292
+1010.10 10 13.5 -3.5 -0.0456583 0.116132
+1010.10 10 14.5 -3.5 -0.0712525 0.138139
+1010.10 10 15.5 -3.5 -0.088445 0.155239
+1010.10 10 -15.5 -2.5 -0.105067 0.153427
+1010.10 10 -3.5 13.5 0.0892801 -0.0172339
+1010.10 10 -2.5 13.5 0.0876971 -0.0210479
+1010.10 10 -1.5 13.5 0.094121 -0.0271266
+1010.10 10 -0.5 13.5 0.106771 -0.0323737
+1010.10 10 0.5 13.5 0.0980506 -0.031748
+1010.10 10 1.5 13.5 0.0941208 -0.0254133
+1010.10 10 2.5 13.5 0.0875366 -0.0213108
+1010.10 10 3.5 13.5 0.0822795 -0.017469
+1010.10 10 4.5 13.5 0.0689194 -0.0136341
+1010.10 10 5.5 13.5 0.0554493 -0.0102499
+1010.10 10 6.5 13.5 0.0439368 -0.00714409
+1010.10 10 7.5 13.5 0.0373341 -0.00406905
+1010.10 10 -14.5 -2.5 -0.0884234 0.137681
+1010.10 10 -13.5 -2.5 -0.0614198 0.11524
+1010.10 10 -12.5 -2.5 -0.0350838 0.0905279
+1010.10 10 -11.5 -2.5 -0.00598592 0.066563
+1010.10 10 -10.5 -2.5 0.01998 0.0416371
+1010.10 10 -9.5 -2.5 0.0521 0.0156371
+1010.10 10 -8.5 -2.5 0.0676184 -0.00119714
+1010.10 10 -7.5 -2.5 0.0675085 -0.00402437
+1010.10 10 -6.5 -2.5 0.0625316 -0.00706051
+1010.10 10 -5.5 -2.5 0.069892 -0.0103435
+1010.10 10 -4.5 -2.5 0.0770193 -0.0139012
+1010.10 10 -3.5 -2.5 0.0844366 -0.0173736
+1010.10 10 8.5 13.5 0.0306308 -0.00120058
+1010.10 10 9.5 13.5 0.0124267 0.0159452
+1010.10 10 10.5 13.5 -0.0169569 0.0428655
+1010.10 10 11.5 13.5 -0.0415039 0.0674412
+1010.10 10 12.5 13.5 -0.068493 0.0925771
+1010.10 10 13.5 13.5 -0.0919812 0.115687
+1010.10 10 14.5 13.5 -0.11603 0.138171
+1010.10 10 15.5 13.5 -0.132461 0.154678
+1010.10 10 -15.5 14.5 -0.0959456 0.156771
+1010.10 10 -14.5 14.5 -0.0788521 0.139057
+1010.10 10 -13.5 14.5 -0.0529592 0.116088
+1010.10 10 -12.5 14.5 -0.0312313 0.0924559
+1010.10 10 -2.5 -2.5 0.0855583 -0.0212396
+1010.10 10 -1.5 -2.5 0.0908604 -0.0254362
+1010.10 10 -0.5 -2.5 0.099848 -0.0321312
+1010.10 10 0.5 -2.5 0.101212 -0.0321448
+1010.10 10 1.5 -2.5 0.0891646 -0.0253922
+1010.10 10 2.5 -2.5 0.0822061 -0.0210739
+1010.10 10 3.5 -2.5 0.0761148 -0.0173075
+1010.10 10 4.5 -2.5 0.0673452 -0.0135542
+1010.10 10 5.5 -2.5 0.0608325 -0.010127
+1010.10 10 6.5 -2.5 0.0560352 -0.00697579
+1010.10 10 7.5 -2.5 0.0556118 -0.00395275
+1010.10 10 8.5 -2.5 0.0531445 -0.00107647
+1010.10 10 -11.5 14.5 -0.00640629 0.0680333
+1010.10 10 -10.5 14.5 0.0130731 0.0437265
+1010.10 10 -9.5 14.5 0.0371465 0.0176684
+1010.10 10 -8.5 14.5 0.0502685 -0.00106897
+1010.10 10 -7.5 14.5 0.0517205 -0.00394385
+1010.10 10 -6.5 14.5 0.0531798 -0.00697167
+1010.10 10 -5.5 14.5 0.0620761 -0.0101768
+1010.10 10 -4.5 14.5 0.0758008 -0.0135678
+1010.10 10 -3.5 14.5 0.0910369 -0.0172843
+1010.10 10 -2.5 14.5 0.0892082 -0.0209777
+1010.10 10 -1.5 14.5 0.08836 -0.0266935
+1010.10 10 -0.5 14.5 0.100817 -0.0325376
+1010.10 10 9.5 -2.5 0.0411464 0.0170381
+1010.10 10 10.5 -2.5 0.0166094 0.0440952
+1010.10 10 11.5 -2.5 -0.00192835 0.0688302
+1010.10 10 12.5 -2.5 -0.0263634 0.093393
+1010.10 10 13.5 -2.5 -0.0482752 0.117613
+1010.10 10 14.5 -2.5 -0.0731682 0.139591
+1010.10 10 15.5 -2.5 -0.0879309 0.155155
+1010.10 10 -15.5 -1.5 -0.101857 0.146263
+1010.10 10 -14.5 -1.5 -0.0816773 0.127331
+1010.10 10 -13.5 -1.5 -0.0540843 0.104992
+1010.10 10 -12.5 -1.5 -0.0263779 0.0805093
+1010.10 10 -11.5 -1.5 0.00506913 0.0560576
+1010.10 10 -10.5 -1.5 0.0339202 0.0302336
+1010.10 10 0.5 14.5 0.0932988 -0.0317291
+1010.10 10 1.5 14.5 0.0893474 -0.0255072
+1010.10 10 2.5 14.5 0.0862913 -0.0212426
+1010.10 10 3.5 14.5 0.0824917 -0.0175322
+1010.10 10 4.5 14.5 0.0693358 -0.0136999
+1010.10 10 5.5 14.5 0.0566567 -0.0102954
+1010.10 10 6.5 14.5 0.0447714 -0.00707954
+1010.10 10 7.5 14.5 0.0379112 -0.00399279
+1010.10 10 8.5 14.5 0.0302057 -0.0010401
+1010.10 10 9.5 14.5 0.0118034 0.0158593
+1010.10 10 10.5 14.5 -0.0183705 0.0438055
+1010.10 10 11.5 14.5 -0.0429496 0.0677517
+1010.10 10 12.5 14.5 -0.0710166 0.0939691
+1010.10 10 13.5 14.5 -0.0948324 0.117489
+1010.10 10 -9.5 -1.5 0.0679932 0.00470962
+1010.10 10 -8.5 -1.5 0.0747842 -0.00213419
+1010.10 10 -7.5 -1.5 0.0741493 -0.0046897
+1010.10 10 -6.5 -1.5 0.068089 -0.0075893
+1010.10 10 -5.5 -1.5 0.0727066 -0.0105628
+1010.10 10 -4.5 -1.5 0.0771578 -0.0138934
+1010.10 10 -3.5 -1.5 0.078705 -0.017198
+1010.10 10 -2.5 -1.5 0.0739541 -0.0207129
+1010.10 10 -1.5 -1.5 0.0750354 -0.024512
+1010.10 10 -0.5 -1.5 0.0754036 -0.0315345
+1010.10 10 0.5 -1.5 0.0824514 -0.031619
+1010.10 10 1.5 -1.5 0.078166 -0.0247479
+1010.10 10 2.5 -1.5 0.0745808 -0.0202506
+1010.10 10 14.5 14.5 -0.115884 0.137136
+1010.10 10 15.5 14.5 -0.134115 0.154604
+1010.10 10 -15.5 15.5 -0.0949966 0.15568
+1010.10 10 -14.5 15.5 -0.0791559 0.139047
+1010.10 10 -13.5 15.5 -0.0529182 0.115968
+1010.10 10 -12.5 15.5 -0.0323717 0.0929355
+1010.10 10 -11.5 15.5 -0.00679741 0.0676486
+1010.10 10 -10.5 15.5 0.011651 0.043847
+1010.10 10 -9.5 15.5 0.0370846 0.0161393
+1010.10 10 -8.5 15.5 0.0486632 -0.00122026
+1010.10 10 -7.5 15.5 0.0496453 -0.00399046
+1010.10 10 -6.5 15.5 0.0518084 -0.00708645
+1010.10 10 3.5 -1.5 0.0660165 -0.0166125
+1010.10 10 4.5 -1.5 0.0628973 -0.0128724
+1010.10 10 5.5 -1.5 0.0580085 -0.00946475
+1010.10 10 6.5 -1.5 0.054022 -0.00622003
+1010.10 10 7.5 -1.5 0.0549201 -0.00322474
+1010.10 10 8.5 -1.5 0.0526556 -0.000282984
+1010.10 10 9.5 -1.5 0.0352597 0.0228832
+1010.10 10 10.5 -1.5 0.00964264 0.0504806
+1010.10 10 11.5 -1.5 -0.00758624 0.0734105
+1010.10 10 12.5 -1.5 -0.0332162 0.0989683
+1010.10 10 13.5 -1.5 -0.0526302 0.12143
+1010.10 10 14.5 -1.5 -0.0742368 0.140609
+1010.10 10 15.5 -1.5 -0.0904494 0.157409
+1010.10 10 -15.5 -0.5 -0.0601128 0.0989292
+1010.10 10 -5.5 15.5 0.0619506 -0.0100344
+1010.10 10 -4.5 15.5 0.0772665 -0.0135412
+1010.10 10 -3.5 15.5 0.0941958 -0.0173728
+1010.10 10 -2.5 15.5 0.0924734 -0.020952
+1010.10 10 -1.5 15.5 0.089472 -0.0268377
+1010.10 10 -0.5 15.5 0.106895 -0.0321131
+1010.10 10 0.5 15.5 0.107605 -0.0321454
+1010.10 10 1.5 15.5 0.0857026 -0.0253817
+1010.10 10 2.5 15.5 0.0839877 -0.02122
+1010.10 10 3.5 15.5 0.0814582 -0.0172986
+1010.10 10 4.5 15.5 0.0701706 -0.0135874
+1010.10 10 5.5 15.5 0.0571027 -0.0102024
+1010.10 10 6.5 15.5 0.0455186 -0.00705366
+1010.10 10 -14.5 -0.5 -0.0389758 0.0794447
+1010.10 10 -13.5 -0.5 -0.00785855 0.0536818
+1010.10 10 -12.5 -0.5 0.0229875 0.0269633
+1010.10 10 -11.5 -0.5 0.0567815 0.00149711
+1010.10 10 -10.5 -0.5 0.0693536 -0.00274103
+1010.10 10 -9.5 -0.5 0.0733862 -0.00530188
+1010.10 10 -8.5 -0.5 0.0686216 -0.00707458
+1010.10 10 -7.5 -0.5 0.0713224 -0.00824607
+1010.10 10 -6.5 -0.5 0.0525599 -0.00965764
+1010.10 10 -5.5 -0.5 0.0528965 -0.0118318
+1010.10 10 -4.5 -0.5 0.0471096 -0.0137604
+1010.10 10 -3.5 -0.5 0.0454018 -0.0159528
+1010.10 10 7.5 15.5 0.0381951 -0.00403406
+1010.10 10 8.5 15.5 0.0302296 -0.00110203
+1010.10 10 9.5 15.5 0.0103264 0.0170466
+1010.10 10 10.5 15.5 -0.0195228 0.0442305
+1010.10 10 11.5 15.5 -0.0442492 0.0680332
+1010.10 10 12.5 15.5 -0.0699672 0.0920937
+1010.10 10 13.5 15.5 -0.0940621 0.115778
+1010.10 10 14.5 15.5 -0.119117 0.139114
+1010.10 10 15.5 15.5 -0.13505 0.155062
+1010.10 10 -2.5 -0.5 0.0408021 -0.0183035
+1010.10 10 -1.5 -0.5 0.0320413 -0.0208218
+1010.10 10 -0.5 -0.5 0.0249923 -0.0264435
+1010.10 10 0.5 -0.5 0.0307554 -0.0271398
+1010.10 10 1.5 -0.5 0.0568854 -0.0202279
+1010.10 10 2.5 -0.5 0.0667732 -0.0158945
+1010.10 10 3.5 -0.5 0.0638113 -0.012097
+1010.10 10 4.5 -0.5 0.063413 -0.00871281
+1010.10 10 5.5 -0.5 0.0572423 -0.00547627
+1010.10 10 6.5 -0.5 0.0527439 -0.00241014
+1010.10 10 7.5 -0.5 0.0479389 0.00503699
+1010.10 10 8.5 -0.5 0.0206733 0.0319854
+1010.10 10 9.5 -0.5 -0.000702237 0.0577658
+1010.10 10 10.5 -0.5 -0.0229135 0.0806917
+1010.10 10 11.5 -0.5 -0.0388025 0.100584
+1010.10 10 12.5 -0.5 -0.0552653 0.120777
+1010.10 10 13.5 -0.5 -0.0753541 0.139458
+1010.10 10 14.5 -0.5 -0.0917255 0.15751
+1010.10 10 15.5 -0.5 -0.102759 0.169836
+1010.10 10 -15.5 -15.5 -0.162115 0.221916
+1010.10 10 -14.5 -15.5 -0.162549 0.221799
+1010.10 10 -13.5 -15.5 -0.16322 0.221934
+1010.10 10 -12.5 -15.5 -0.164456 0.222396
+1010.10 10 -15.5 0.5 0.0360597 -0.00335414
+1010.10 10 -14.5 0.5 0.0382189 -0.00571351
+1010.10 10 -13.5 0.5 0.0444221 -0.00882504
+1010.10 10 -12.5 0.5 0.0506763 -0.012342
+1010.10 10 -11.5 0.5 0.0509398 -0.0158002
+1010.10 10 -10.5 0.5 0.0501329 -0.0194045
+1010.10 10 -9.5 0.5 0.0483307 -0.023047
+1010.10 10 -8.5 0.5 0.0227418 -0.0238154
+1010.10 10 -7.5 0.5 -0.0109324 -0.0222518
+1010.10 10 -6.5 0.5 0.0101063 -0.0213931
+1010.10 10 -5.5 0.5 0.0185557 -0.0167403
+1010.10 10 -4.5 0.5 0.0294758 -0.0135718
+1010.10 10 -3.5 0.5 0.0338617 -0.0119469
+1010.10 10 -2.5 0.5 0.0372557 -0.0104405
+1010.10 10 -11.5 -15.5 -0.167139 0.224333
+1010.10 10 -10.5 -15.5 -0.161103 0.220501
+1010.10 10 -9.5 -15.5 -0.158072 0.21708
+1010.10 10 -8.5 -15.5 -0.145639 0.204006
+1010.10 10 -7.5 -15.5 -0.126375 0.18364
+1010.10 10 -6.5 -15.5 -0.102421 0.162238
+1010.10 10 -5.5 -15.5 -0.0821307 0.14071
+1010.10 10 -4.5 -15.5 -0.056682 0.116893
+1010.10 10 -3.5 -15.5 -0.0357402 0.0935355
+1010.10 10 -2.5 -15.5 -0.011996 0.0696992
+1010.10 10 -1.5 -15.5 0.0107082 0.043091
+1010.10 10 -0.5 -15.5 0.0388679 0.0145101
+1010.10 10 0.5 -15.5 0.0506885 -0.000977218
+1010.10 10 -1.5 0.5 0.0383271 -0.00884014
+1010.10 10 -0.5 0.5 0.0425311 -0.00641718
+1010.10 10 0.5 0.5 0.0533717 -0.00409449
+1010.10 10 1.5 0.5 0.0870232 -0.0024709
+1010.10 10 2.5 0.5 0.0832414 8.49148e-05
+1010.10 10 3.5 0.5 0.0501679 0.028024
+1010.10 10 4.5 0.5 0.0179525 0.0563351
+1010.10 10 5.5 0.5 -0.0136344 0.0804327
+1010.10 10 6.5 0.5 -0.0413728 0.105398
+1010.10 10 7.5 0.5 -0.0717463 0.130545
+1010.10 10 8.5 0.5 -0.0932694 0.152159
+1010.10 10 9.5 0.5 -0.109548 0.169747
+1010.10 10 10.5 0.5 -0.121416 0.179972
+1010.10 10 1.5 -15.5 0.055862 -0.00393394
+1010.10 10 2.5 -15.5 0.0597165 -0.00696219
+1010.10 10 3.5 -15.5 0.0724173 -0.00996268
+1010.10 10 4.5 -15.5 0.0917365 -0.013438
+1010.10 10 5.5 -15.5 0.0991961 -0.0171314
+1010.10 10 6.5 -15.5 0.0981386 -0.0207231
+1010.10 10 7.5 -15.5 0.101674 -0.0269973
+1010.10 10 8.5 -15.5 0.109211 -0.0320847
+1010.10 10 9.5 -15.5 0.0974367 -0.0309696
+1010.10 10 10.5 -15.5 0.0918272 -0.0252542
+1010.10 10 11.5 -15.5 0.0871721 -0.0212032
+1010.10 10 12.5 -15.5 0.0859249 -0.0173322
+1010.10 10 13.5 -15.5 0.0758891 -0.0136807
+1010.10 10 11.5 0.5 -0.126092 0.186683
+1010.10 10 12.5 0.5 -0.129405 0.192045
+1010.10 10 13.5 0.5 -0.13493 0.199016
+1010.10 10 14.5 0.5 -0.137966 0.203306
+1010.10 10 15.5 0.5 -0.14054 0.206471
+1010.10 10 -15.5 1.5 0.0311337 -0.00709628
+1010.10 10 -14.5 1.5 0.036143 -0.00953787
+1010.10 10 -13.5 1.5 0.0425741 -0.0128288
+1010.10 10 -12.5 1.5 0.0475615 -0.0165694
+1010.10 10 -11.5 1.5 0.0578611 -0.0202237
+1010.10 10 -10.5 1.5 0.0704571 -0.0241544
+1010.10 10 -9.5 1.5 0.0813138 -0.0280553
+1010.10 10 -8.5 1.5 0.0708041 -0.028137
+1010.10 10 14.5 -15.5 0.0650598 -0.0103741
+1010.10 10 15.5 -15.5 0.0596765 -0.00794099
+1010.10 10 -15.5 -14.5 -0.162236 0.221671
+1010.10 10 -14.5 -14.5 -0.162036 0.221099
+1010.10 10 -13.5 -14.5 -0.164769 0.223254
+1010.10 10 -12.5 -14.5 -0.164635 0.222314
+1010.10 10 -11.5 -14.5 -0.164647 0.221664
+1010.10 10 -10.5 -14.5 -0.160747 0.220226
+1010.10 10 -9.5 -14.5 -0.157442 0.216367
+1010.10 10 -8.5 -14.5 -0.14412 0.202393
+1010.10 10 -7.5 -14.5 -0.125365 0.182691
+1010.10 10 -7.5 1.5 0.0578844 -0.0266261
+1010.10 10 -6.5 1.5 0.0641852 -0.0239395
+1010.10 10 -5.5 1.5 0.0697416 -0.0182434
+1010.10 10 -4.5 1.5 0.0624925 -0.013578
+1010.10 10 -3.5 1.5 0.0652713 -0.0105451
+1010.10 10 -2.5 1.5 0.0766881 -0.00787255
+1010.10 10 -1.5 1.5 0.0803041 -0.00498529
+1010.10 10 -0.5 1.5 0.0833821 -0.00209636
+1010.10 10 0.5 1.5 0.0832545 0.00636434
+1010.10 10 1.5 1.5 0.0638587 0.0295105
+1010.10 10 2.5 1.5 0.0395706 0.0559924
+1010.10 10 3.5 1.5 0.00556997 0.0810149
+1010.10 10 4.5 1.5 -0.0246244 0.105077
+1010.10 10 -6.5 -14.5 -0.102157 0.162052
+1010.10 10 -5.5 -14.5 -0.0823318 0.141193
+1010.10 10 -4.5 -14.5 -0.0555134 0.116548
+1010.10 10 -3.5 -14.5 -0.035112 0.0937234
+1010.10 10 -2.5 -14.5 -0.00850391 0.0675462
+1010.10 10 -1.5 -14.5 0.0122328 0.0432129
+1010.10 10 -0.5 -14.5 0.0374911 0.0173175
+1010.10 10 0.5 -14.5 0.0527816 -0.00106265
+1010.10 10 1.5 -14.5 0.0575206 -0.00399703
+1010.10 10 2.5 -14.5 0.0616531 -0.00705804
+1010.10 10 3.5 -14.5 0.0728905 -0.010146
+1010.10 10 4.5 -14.5 0.0885194 -0.0134576
+1010.10 10 5.5 -14.5 0.10467 -0.0171977
+1010.10 10 5.5 1.5 -0.0574555 0.128094
+1010.10 10 6.5 1.5 -0.0853597 0.151985
+1010.10 10 7.5 1.5 -0.113151 0.173566
+1010.10 10 8.5 1.5 -0.133429 0.192724
+1010.10 10 9.5 1.5 -0.149172 0.208815
+1010.10 10 10.5 1.5 -0.153137 0.213313
+1010.10 10 11.5 1.5 -0.153541 0.215041
+1010.10 10 12.5 1.5 -0.153976 0.216955
+1010.10 10 13.5 1.5 -0.152594 0.216948
+1010.10 10 14.5 1.5 -0.152941 0.217698
+1010.10 10 15.5 1.5 -0.15922 0.220869
+1010.10 10 -15.5 2.5 0.0283707 -0.007785
+1010.10 10 -14.5 2.5 0.0319255 -0.0102187
+1010.10 10 6.5 -14.5 0.0969521 -0.0205325
+1010.10 10 7.5 -14.5 0.0943551 -0.0274561
+1010.10 10 8.5 -14.5 0.0883614 -0.0322397
+1010.10 10 9.5 -14.5 0.0882989 -0.0305712
+1010.10 10 10.5 -14.5 0.0890034 -0.0253735
+1010.10 10 11.5 -14.5 0.0870834 -0.0212568
+1010.10 10 12.5 -14.5 0.0858957 -0.0173558
+1010.10 10 13.5 -14.5 0.0753861 -0.0136992
+1010.10 10 14.5 -14.5 0.0634551 -0.0101848
+1010.10 10 15.5 -14.5 0.0576846 -0.00790298
+1010.10 10 -15.5 -13.5 -0.163497 0.222345
+1010.10 10 -13.5 2.5 0.0399421 -0.0137049
+1010.10 10 -12.5 2.5 0.0500335 -0.0173458
+1010.10 10 -11.5 2.5 0.0608371 -0.021201
+1010.10 10 -10.5 2.5 0.0766441 -0.025185
+1010.10 10 -9.5 2.5 0.0889254 -0.0287958
+1010.10 10 -8.5 2.5 0.0908498 -0.0289886
+1010.10 10 -7.5 2.5 0.0854951 -0.0270378
+1010.10 10 -6.5 2.5 0.0694399 -0.0249046
+1010.10 10 -5.5 2.5 0.0652757 -0.0181395
+1010.10 10 -4.5 2.5 0.0766571 -0.0134556
+1010.10 10 -3.5 2.5 0.0820702 -0.0102989
+1010.10 10 -2.5 2.5 0.0829831 -0.00723884
+1010.10 10 -1.5 2.5 0.085951 -0.00413849
+1010.10 10 -14.5 -13.5 -0.16387 0.222476
+1010.10 10 -13.5 -13.5 -0.164284 0.22238
+1010.10 10 -12.5 -13.5 -0.164629 0.22183
+1010.10 10 -11.5 -13.5 -0.165212 0.221737
+1010.10 10 -10.5 -13.5 -0.165309 0.220784
+1010.10 10 -9.5 -13.5 -0.159095 0.21699
+1010.10 10 -8.5 -13.5 -0.145586 0.202792
+1010.10 10 -7.5 -13.5 -0.125901 0.182318
+1010.10 10 -6.5 -13.5 -0.103613 0.162838
+1010.10 10 -5.5 -13.5 -0.0806597 0.139646
+1010.10 10 -4.5 -13.5 -0.0547425 0.116789
+1010.10 10 -3.5 -13.5 -0.0342175 0.0950537
+1010.10 10 -0.5 2.5 0.0826753 -0.00131103
+1010.10 10 0.5 2.5 0.074835 0.0139452
+1010.10 10 1.5 2.5 0.0518635 0.0403561
+1010.10 10 2.5 2.5 0.0292343 0.0671316
+1010.10 10 3.5 2.5 -0.0022697 0.0914202
+1010.10 10 4.5 2.5 -0.030185 0.114441
+1010.10 10 5.5 2.5 -0.0646939 0.138255
+1010.10 10 6.5 2.5 -0.091018 0.160186
+1010.10 10 7.5 2.5 -0.119474 0.181502
+1010.10 10 8.5 2.5 -0.139871 0.200362
+1010.10 10 9.5 2.5 -0.155681 0.215406
+1010.10 10 10.5 2.5 -0.159875 0.219748
+1010.10 10 11.5 2.5 -0.163522 0.221218
+1010.10 10 -2.5 -13.5 -0.00699527 0.0690457
+1010.10 10 -1.5 -13.5 0.0141028 0.04366
+1010.10 10 -0.5 -13.5 0.041589 0.0158291
+1010.10 10 0.5 -13.5 0.0557599 -0.00101336
+1010.10 10 1.5 -13.5 0.0617649 -0.00396634
+1010.10 10 2.5 -13.5 0.0648764 -0.00685757
+1010.10 10 3.5 -13.5 0.0734684 -0.0101107
+1010.10 10 4.5 -13.5 0.0836598 -0.0135607
+1010.10 10 5.5 -13.5 0.0864269 -0.0170436
+1010.10 10 6.5 -13.5 0.0885933 -0.0211992
+1010.10 10 7.5 -13.5 0.0986546 -0.0278154
+1010.10 10 8.5 -13.5 0.103833 -0.0317897
+1010.10 10 12.5 2.5 -0.162398 0.220844
+1010.10 10 13.5 2.5 -0.162765 0.221876
+1010.10 10 14.5 2.5 -0.161619 0.221767
+1010.10 10 15.5 2.5 -0.162387 0.222812
+1010.10 10 -15.5 3.5 0.0259703 -0.00784791
+1010.10 10 -14.5 3.5 0.0299293 -0.0103537
+1010.10 10 -13.5 3.5 0.0380031 -0.0137316
+1010.10 10 -12.5 3.5 0.0495776 -0.0171908
+1010.10 10 -11.5 3.5 0.0612059 -0.0213836
+1010.10 10 -10.5 3.5 0.0759752 -0.0253662
+1010.10 10 -9.5 3.5 0.0823595 -0.0290576
+1010.10 10 -8.5 3.5 0.0718948 -0.0291935
+1010.10 10 -7.5 3.5 0.0704426 -0.0275234
+1010.10 10 9.5 -13.5 0.104797 -0.0304846
+1010.10 10 10.5 -13.5 0.0954203 -0.0255158
+1010.10 10 11.5 -13.5 0.0890723 -0.0212552
+1010.10 10 12.5 -13.5 0.0844451 -0.0171906
+1010.10 10 13.5 -13.5 0.0726611 -0.0136818
+1010.10 10 14.5 -13.5 0.0614555 -0.0103464
+1010.10 10 15.5 -13.5 0.0557124 -0.00785006
+1010.10 10 -15.5 -12.5 -0.162806 0.221684
+1010.10 10 -14.5 -12.5 -0.164595 0.223024
+1010.10 10 -13.5 -12.5 -0.164694 0.222354
+1010.10 10 -12.5 -12.5 -0.16412 0.220989
+1010.10 10 -11.5 -12.5 -0.166313 0.221908
+1010.10 10 -10.5 -12.5 -0.162024 0.219732
+1010.10 10 -9.5 -12.5 -0.160242 0.21712
+1010.10 10 -6.5 3.5 0.0792807 -0.0253423
+1010.10 10 -5.5 3.5 0.0844005 -0.0176587
+1010.10 10 -4.5 3.5 0.103675 -0.0133178
+1010.10 10 -3.5 3.5 0.0932018 -0.0101222
+1010.10 10 -2.5 3.5 0.0828 -0.0069986
+1010.10 10 -1.5 3.5 0.0842433 -0.00403673
+1010.10 10 -0.5 3.5 0.0806627 -0.00115054
+1010.10 10 0.5 3.5 0.0712034 0.0160085
+1010.10 10 1.5 3.5 0.0466267 0.0428549
+1010.10 10 2.5 3.5 0.0271222 0.0675084
+1010.10 10 3.5 3.5 -0.00291427 0.0919287
+1010.10 10 4.5 3.5 -0.0310658 0.116389
+1010.10 10 5.5 3.5 -0.063669 0.13881
+1010.10 10 6.5 3.5 -0.0914921 0.161525
+1010.10 10 7.5 3.5 -0.119634 0.182099
+1010.10 10 -8.5 -12.5 -0.146103 0.202255
+1010.10 10 -7.5 -12.5 -0.127641 0.183301
+1010.10 10 -6.5 -12.5 -0.103115 0.162198
+1010.10 10 -5.5 -12.5 -0.0798595 0.139094
+1010.10 10 -4.5 -12.5 -0.0529339 0.116408
+1010.10 10 -3.5 -12.5 -0.0303936 0.0937114
+1010.10 10 -2.5 -12.5 -0.00236906 0.0683077
+1010.10 10 -1.5 -12.5 0.0189233 0.0433647
+1010.10 10 8.5 3.5 -0.141025 0.201327
+1010.10 10 9.5 3.5 -0.156438 0.215686
+1010.10 10 10.5 3.5 -0.161784 0.220707
+1010.10 10 11.5 3.5 -0.166225 0.222169
+1010.10 10 12.5 3.5 -0.166685 0.223331
+1010.10 10 13.5 3.5 -0.165496 0.222794
+1010.10 10 14.5 3.5 -0.163376 0.221328
+1010.10 10 15.5 3.5 -0.16315 0.221535
+1010.10 10 -15.5 4.5 0.0254903 -0.00801924
+1010.10 10 -14.5 4.5 0.0291519 -0.0103107
+1010.10 10 -13.5 4.5 0.0368385 -0.0136031
+1010.10 10 -12.5 4.5 0.0482371 -0.0172612
+1010.10 10 -11.5 4.5 0.059876 -0.0211998
+1010.10 10 -0.5 -12.5 0.0459706 0.0155499
+1010.10 10 0.5 -12.5 0.0601805 -0.00114188
+1010.10 10 1.5 -12.5 0.0665028 -0.00397695
+1010.10 10 2.5 -12.5 0.0692498 -0.00707204
+1010.10 10 3.5 -12.5 0.0760273 -0.0101918
+1010.10 10 4.5 -12.5 0.0832642 -0.0135153
+1010.10 10 5.5 -12.5 0.0884482 -0.0171255
+1010.10 10 6.5 -12.5 0.0909017 -0.0210432
+1010.10 10 7.5 -12.5 0.0943789 -0.0287693
+1010.10 10 8.5 -12.5 0.0844717 -0.0318616
+1010.10 10 9.5 -12.5 0.0946418 -0.0301369
+1010.10 10 10.5 -12.5 0.090345 -0.0252645
+1010.10 10 -10.5 4.5 0.0752425 -0.0252895
+1010.10 10 -9.5 4.5 0.0857179 -0.0288259
+1010.10 10 -8.5 4.5 0.0839947 -0.0291512
+1010.10 10 -7.5 4.5 0.0913784 -0.0272765
+1010.10 10 -6.5 4.5 0.0927833 -0.0252106
+1010.10 10 -5.5 4.5 0.0923425 -0.0180613
+1010.10 10 -4.5 4.5 0.100729 -0.0135176
+1010.10 10 -3.5 4.5 0.0916685 -0.0102884
+1010.10 10 -2.5 4.5 0.0826874 -0.00705739
+1010.10 10 -1.5 4.5 0.0831507 -0.00409661
+1010.10 10 -0.5 4.5 0.0803376 -0.00132537
+1010.10 10 0.5 4.5 0.0730139 0.0147998
+1010.10 10 1.5 4.5 0.047273 0.0420857
+1010.10 10 11.5 -12.5 0.0847133 -0.0211863
+1010.10 10 12.5 -12.5 0.0807047 -0.0174165
+1010.10 10 13.5 -12.5 0.0692243 -0.0136152
+1010.10 10 14.5 -12.5 0.0577958 -0.0103742
+1010.10 10 15.5 -12.5 0.0523815 -0.0079019
+1010.10 10 -15.5 -11.5 -0.165686 0.223263
+1010.10 10 -14.5 -11.5 -0.166051 0.22326
+1010.10 10 -13.5 -11.5 -0.166327 0.222885
+1010.10 10 -12.5 -11.5 -0.168059 0.223636
+1010.10 10 -11.5 -11.5 -0.166527 0.22102
+1010.10 10 -10.5 -11.5 -0.167605 0.221196
+1010.10 10 -9.5 -11.5 -0.160885 0.216749
+1010.10 10 2.5 4.5 0.0272465 0.0674441
+1010.10 10 3.5 4.5 -0.0050018 0.0935991
+1010.10 10 4.5 4.5 -0.0323992 0.116982
+1010.10 10 5.5 4.5 -0.064392 0.139541
+1010.10 10 6.5 4.5 -0.0913231 0.161116
+1010.10 10 7.5 4.5 -0.122017 0.183963
+1010.10 10 8.5 4.5 -0.142178 0.201851
+1010.10 10 9.5 4.5 -0.158742 0.217011
+1010.10 10 10.5 4.5 -0.166493 0.22087
+1010.10 10 11.5 4.5 -0.16764 0.221987
+1010.10 10 12.5 4.5 -0.167037 0.221776
+1010.10 10 13.5 4.5 -0.167733 0.222688
+1010.10 10 14.5 4.5 -0.16647 0.221439
+1010.10 10 -8.5 -11.5 -0.146727 0.201444
+1010.10 10 -7.5 -11.5 -0.129483 0.183724
+1010.10 10 -6.5 -11.5 -0.10339 0.160935
+1010.10 10 -5.5 -11.5 -0.0791721 0.138149
+1010.10 10 -4.5 -11.5 -0.0507512 0.115283
+1010.10 10 -3.5 -11.5 -0.0268708 0.0936833
+1010.10 10 -2.5 -11.5 0.00338192 0.0680032
+1010.10 10 -1.5 -11.5 0.0247752 0.042811
+1010.10 10 -0.5 -11.5 0.0499961 0.015498
+1010.10 10 0.5 -11.5 0.0645158 -0.00113689
+1010.10 10 1.5 -11.5 0.071874 -0.00404083
+1010.10 10 2.5 -11.5 0.0739037 -0.00704724
+1010.10 10 15.5 4.5 -0.167365 0.222636
+1010.10 10 -15.5 5.5 0.0279578 -0.00771218
+1010.10 10 -14.5 5.5 0.0312732 -0.0102973
+1010.10 10 -13.5 5.5 0.0383525 -0.0135472
+1010.10 10 -12.5 5.5 0.0484994 -0.0173326
+1010.10 10 -11.5 5.5 0.0577713 -0.0210688
+1010.10 10 -10.5 5.5 0.0727817 -0.0249551
+1010.10 10 -9.5 5.5 0.0885993 -0.0287686
+1010.10 10 -8.5 5.5 0.0954595 -0.0288306
+1010.10 10 -7.5 5.5 0.0955896 -0.0270981
+1010.10 10 -6.5 5.5 0.0525435 -0.0249341
+1010.10 10 -5.5 5.5 0.015473 -0.017982
+1010.10 10 -4.5 5.5 0.0461733 -0.013438
+1010.10 10 3.5 -11.5 0.0785126 -0.0101215
+1010.10 10 4.5 -11.5 0.0832268 -0.0135194
+1010.10 10 5.5 -11.5 0.0848247 -0.0170068
+1010.10 10 6.5 -11.5 0.0899924 -0.0209676
+1010.10 10 7.5 -11.5 0.089918 -0.0282535
+1010.10 10 8.5 -11.5 0.0821462 -0.0319193
+1010.10 10 9.5 -11.5 0.0680731 -0.0302955
+1010.10 10 10.5 -11.5 0.067635 -0.0250635
+1010.10 10 11.5 -11.5 0.0738367 -0.0211197
+1010.10 10 12.5 -11.5 0.0737835 -0.0173328
+1010.10 10 13.5 -11.5 0.0639983 -0.0133903
+1010.10 10 14.5 -11.5 0.0522989 -0.0103414
+1010.10 10 -3.5 5.5 0.0684524 -0.0103022
+1010.10 10 -2.5 5.5 0.0750877 -0.00720391
+1010.10 10 -1.5 5.5 0.0816256 -0.00416603
+1010.10 10 -0.5 5.5 0.0819575 -0.00135577
+1010.10 10 0.5 5.5 0.0753001 0.014527
+1010.10 10 1.5 5.5 0.0521786 0.0416979
+1010.10 10 2.5 5.5 0.0290787 0.0669193
+1010.10 10 3.5 5.5 -0.00272217 0.0912474
+1010.10 10 4.5 5.5 -0.0310027 0.115056
+1010.10 10 5.5 5.5 -0.0649897 0.138207
+1010.10 10 6.5 5.5 -0.0928769 0.160665
+1010.10 10 7.5 5.5 -0.121809 0.182143
+1010.10 10 15.5 -11.5 0.0473289 -0.00783066
+1010.10 10 -15.5 -10.5 -0.166183 0.222739
+1010.10 10 -14.5 -10.5 -0.165283 0.221526
+1010.10 10 -13.5 -10.5 -0.166977 0.222789
+1010.10 10 -12.5 -10.5 -0.162246 0.220398
+1010.10 10 -11.5 -10.5 -0.163514 0.220164
+1010.10 10 -10.5 -10.5 -0.165145 0.220539
+1010.10 10 -9.5 -10.5 -0.160987 0.215176
+1010.10 10 -8.5 -10.5 -0.147177 0.200442
+1010.10 10 -7.5 -10.5 -0.130201 0.182738
+1010.10 10 -6.5 -10.5 -0.104346 0.160015
+1010.10 10 -5.5 -10.5 -0.0801539 0.137923
+1010.10 10 8.5 5.5 -0.144276 0.201915
+1010.10 10 9.5 5.5 -0.159729 0.215876
+1010.10 10 10.5 5.5 -0.164994 0.220238
+1010.10 10 11.5 5.5 -0.169356 0.22119
+1010.10 10 12.5 5.5 -0.170441 0.222298
+1010.10 10 13.5 5.5 -0.169298 0.221143
+1010.10 10 14.5 5.5 -0.16924 0.221379
+1010.10 10 15.5 5.5 -0.169283 0.221732
+1010.10 10 -15.5 6.5 0.0318714 -0.0070628
+1010.10 10 -14.5 6.5 0.0361831 -0.00943863
+1010.10 10 -13.5 6.5 0.041512 -0.0127382
+1010.10 10 -12.5 6.5 0.0462869 -0.0164814
+1010.10 10 -11.5 6.5 0.0534867 -0.0202116
+1010.10 10 -4.5 -10.5 -0.049902 0.114814
+1010.10 10 -3.5 -10.5 -0.0210314 0.0905629
+1010.10 10 -2.5 -10.5 0.0103183 0.0672877
+1010.10 10 -1.5 -10.5 0.0341651 0.0408639
+1010.10 10 -0.5 -10.5 0.0573859 0.0147731
+1010.10 10 0.5 -10.5 0.0717989 -0.00125163
+1010.10 10 1.5 -10.5 0.075882 -0.00416062
+1010.10 10 2.5 -10.5 0.0742979 -0.00711391
+1010.10 10 3.5 -10.5 0.0768174 -0.0103022
+1010.10 10 4.5 -10.5 0.0805823 -0.013628
+1010.10 10 5.5 -10.5 0.079922 -0.0171652
+1010.10 10 6.5 -10.5 0.0889165 -0.0207005
+1010.10 10 7.5 -10.5 0.0918391 -0.0268035
+1010.10 10 -10.5 6.5 0.0610988 -0.0241203
+1010.10 10 -9.5 6.5 0.0517696 -0.0277145
+1010.10 10 -8.5 6.5 0.0108533 -0.0283215
+1010.10 10 -7.5 6.5 0.00384575 -0.0273088
+1010.10 10 -6.5 6.5 0.0431551 -0.0239354
+1010.10 10 -5.5 6.5 0.0726904 -0.0172498
+1010.10 10 -4.5 6.5 0.0861992 -0.0136695
+1010.10 10 -3.5 6.5 0.0768654 -0.0105738
+1010.10 10 -2.5 6.5 0.0801169 -0.00759284
+1010.10 10 -1.5 6.5 0.0769014 -0.00492676
+1010.10 10 -0.5 6.5 0.077565 -0.00211085
+1010.10 10 0.5 6.5 0.0819085 0.00665207
+1010.10 10 1.5 6.5 0.0635208 0.0322055
+1010.10 10 8.5 -10.5 0.11059 -0.0322424
+1010.10 10 9.5 -10.5 0.101086 -0.0307264
+1010.10 10 10.5 -10.5 0.0880191 -0.024933
+1010.10 10 11.5 -10.5 0.0760172 -0.0209813
+1010.10 10 12.5 -10.5 0.0686238 -0.0172524
+1010.10 10 13.5 -10.5 0.0577062 -0.0135614
+1010.10 10 14.5 -10.5 0.0474942 -0.0101917
+1010.10 10 15.5 -10.5 0.0437087 -0.00780343
+1010.10 10 -15.5 -9.5 -0.159734 0.218652
+1010.10 10 -14.5 -9.5 -0.160263 0.218831
+1010.10 10 -13.5 -9.5 -0.160169 0.217945
+1010.10 10 -12.5 -9.5 -0.15997 0.216831
+1010.10 10 2.5 6.5 0.0400469 0.056674
+1010.10 10 3.5 6.5 0.00548927 0.0806479
+1010.10 10 4.5 6.5 -0.0266134 0.10611
+1010.10 10 5.5 6.5 -0.0604631 0.128986
+1010.10 10 6.5 6.5 -0.0884409 0.1518
+1010.10 10 7.5 6.5 -0.116502 0.173292
+1010.10 10 8.5 6.5 -0.139348 0.194093
+1010.10 10 9.5 6.5 -0.156051 0.209301
+1010.10 10 10.5 6.5 -0.16294 0.214726
+1010.10 10 11.5 6.5 -0.165907 0.217132
+1010.10 10 12.5 6.5 -0.166475 0.217286
+1010.10 10 13.5 6.5 -0.167546 0.218243
+1010.10 10 14.5 6.5 -0.168519 0.219069
+1010.10 10 -11.5 -9.5 -0.159945 0.215462
+1010.10 10 -10.5 -9.5 -0.16094 0.21515
+1010.10 10 -9.5 -9.5 -0.155487 0.208058
+1010.10 10 -8.5 -9.5 -0.143653 0.19458
+1010.10 10 -7.5 -9.5 -0.12432 0.174295
+1010.10 10 -6.5 -9.5 -0.0983989 0.15147
+1010.10 10 -5.5 -9.5 -0.0737215 0.128821
+1010.10 10 -4.5 -9.5 -0.0435374 0.106461
+1010.10 10 -3.5 -9.5 -0.012349 0.082074
+1010.10 10 -2.5 -9.5 0.0252103 0.056791
+1010.10 10 -1.5 -9.5 0.0507845 0.0323566
+1010.10 10 -0.5 -9.5 0.0710324 0.00681921
+1010.10 10 15.5 6.5 -0.17022 0.220528
+1010.10 10 -15.5 7.5 0.0380079 -0.00335344
+1010.10 10 -14.5 7.5 0.0392792 -0.00548108
+1010.10 10 -13.5 7.5 0.0457469 -0.00879988
+1010.10 10 -12.5 7.5 0.0518242 -0.0122678
+1010.10 10 -11.5 7.5 0.0510763 -0.0156568
+1010.10 10 -10.5 7.5 0.0522386 -0.0193948
+1010.10 10 -9.5 7.5 0.0542818 -0.0230555
+1010.10 10 -8.5 7.5 0.0471764 -0.0235441
+1010.10 10 -7.5 7.5 0.0306664 -0.0227133
+1010.10 10 -6.5 7.5 0.0150937 -0.021251
+1010.10 10 -5.5 7.5 0.0039371 -0.0164096
+1010.10 10 -4.5 7.5 0.0250355 -0.0135438
+1010.10 10 0.5 -9.5 0.0736669 -0.00208991
+1010.10 10 1.5 -9.5 0.0727749 -0.00485304
+1010.10 10 2.5 -9.5 0.0752904 -0.00770525
+1010.10 10 3.5 -9.5 0.0697688 -0.0106249
+1010.10 10 4.5 -9.5 0.069118 -0.0136817
+1010.10 10 5.5 -9.5 0.0616194 -0.0168861
+1010.10 10 6.5 -9.5 0.0515281 -0.0199809
+1010.10 10 7.5 -9.5 0.0348434 -0.0247423
+1010.10 10 8.5 -9.5 0.0461321 -0.0318894
+1010.10 10 9.5 -9.5 0.0669842 -0.0316833
+1010.10 10 10.5 -9.5 0.083402 -0.0244537
+1010.10 10 11.5 -9.5 0.0661712 -0.0202203
+1010.10 10 12.5 -9.5 0.0493006 -0.016477
+1010.10 10 -3.5 7.5 0.0370825 -0.0119608
+1010.10 10 -2.5 7.5 0.0436537 -0.0102765
+1010.10 10 -1.5 7.5 0.0442473 -0.00869399
+1010.10 10 -0.5 7.5 0.0453191 -0.0060825
+1010.10 10 0.5 7.5 0.0623507 -0.00380184
+1010.10 10 1.5 7.5 0.0758231 -0.00165885
+1010.10 10 2.5 7.5 0.0763308 0.00454083
+1010.10 10 3.5 7.5 0.0440844 0.0293962
+1010.10 10 4.5 7.5 0.0134801 0.0555765
+1010.10 10 5.5 7.5 -0.0203429 0.0809742
+1010.10 10 6.5 7.5 -0.0486392 0.106342
+1010.10 10 7.5 7.5 -0.0779032 0.130673
+1010.10 10 8.5 7.5 -0.100867 0.152425
+1010.10 10 13.5 -9.5 0.0472226 -0.0128074
+1010.10 10 14.5 -9.5 0.042016 -0.00960316
+1010.10 10 15.5 -9.5 0.0379393 -0.00720574
+1010.10 10 -15.5 -8.5 -0.151168 0.208085
+1010.10 10 -14.5 -8.5 -0.147801 0.203937
+1010.10 10 -13.5 -8.5 -0.142553 0.198626
+1010.10 10 -12.5 -8.5 -0.137316 0.192346
+1010.10 10 -11.5 -8.5 -0.133258 0.186659
+1010.10 10 -10.5 -8.5 -0.127919 0.179638
+1010.10 10 -9.5 -8.5 -0.117674 0.170223
+1010.10 10 -8.5 -8.5 -0.102535 0.15256
+1010.10 10 -7.5 -8.5 -0.0817117 0.12985
+1010.10 10 9.5 7.5 -0.120154 0.170671
+1010.10 10 10.5 7.5 -0.134214 0.181053
+1010.10 10 11.5 7.5 -0.141333 0.187141
+1010.10 10 12.5 7.5 -0.147142 0.192773
+1010.10 10 13.5 7.5 -0.152848 0.198215
+1010.10 10 14.5 7.5 -0.158277 0.20361
+1010.10 10 15.5 7.5 -0.161634 0.20707
+1010.10 10 -15.5 8.5 -0.0571277 0.0991877
+1010.10 10 -14.5 8.5 -0.0382035 0.0818923
+1010.10 10 -13.5 8.5 -0.00781716 0.0569779
+1010.10 10 -12.5 8.5 0.0237466 0.0304445
+1010.10 10 -11.5 8.5 0.0621731 0.00130362
+1010.10 10 -6.5 -8.5 -0.0555183 0.105811
+1010.10 10 -5.5 -8.5 -0.0288198 0.0804161
+1010.10 10 -4.5 -8.5 0.00251133 0.0560404
+1010.10 10 -3.5 -8.5 0.0345807 0.0290224
+1010.10 10 -2.5 -8.5 0.0724783 0.00190779
+1010.10 10 -1.5 -8.5 0.0763898 -0.00244024
+1010.10 10 -0.5 -8.5 0.0505018 -0.00395614
+1010.10 10 0.5 -8.5 0.0483624 -0.00624482
+1010.10 10 1.5 -8.5 0.046664 -0.00883384
+1010.10 10 2.5 -8.5 0.0492192 -0.0103751
+1010.10 10 3.5 -8.5 0.0495478 -0.0119648
+1010.10 10 4.5 -8.5 0.0524703 -0.0137482
+1010.10 10 -10.5 8.5 0.0764755 -0.00280848
+1010.10 10 -9.5 8.5 0.0824793 -0.00506846
+1010.10 10 -8.5 8.5 0.0810735 -0.0065571
+1010.10 10 -7.5 8.5 0.0838447 -0.00777608
+1010.10 10 -6.5 8.5 0.0668541 -0.00976941
+1010.10 10 -5.5 8.5 0.0623401 -0.0117272
+1010.10 10 -4.5 8.5 0.0573479 -0.0135527
+1010.10 10 -3.5 8.5 0.0571901 -0.0156858
+1010.10 10 -2.5 8.5 0.0547761 -0.0181525
+1010.10 10 -1.5 8.5 0.0428143 -0.0205529
+1010.10 10 -0.5 8.5 0.022793 -0.0258005
+1010.10 10 0.5 8.5 -0.00702188 -0.027167
+1010.10 10 1.5 8.5 -0.0288173 -0.0221787
+1010.10 10 5.5 -8.5 0.0512484 -0.0155753
+1010.10 10 6.5 -8.5 0.047384 -0.0175561
+1010.10 10 7.5 -8.5 0.0343993 -0.0202254
+1010.10 10 8.5 -8.5 0.0200508 -0.0262155
+1010.10 10 9.5 -8.5 -0.0171981 -0.0273022
+1010.10 10 10.5 -8.5 -0.0357731 -0.0215583
+1010.10 10 11.5 -8.5 -0.0205253 -0.0159403
+1010.10 10 12.5 -8.5 0.0177593 -0.0122762
+1010.10 10 13.5 -8.5 0.0339769 -0.00869746
+1010.10 10 14.5 -8.5 0.036773 -0.00560287
+1010.10 10 15.5 -8.5 0.0383226 -0.00322377
+1010.10 10 -15.5 -7.5 -0.113805 0.170246
+1010.10 10 2.5 8.5 -0.00663008 -0.016181
+1010.10 10 3.5 8.5 0.021141 -0.0124319
+1010.10 10 4.5 8.5 0.039503 -0.00868488
+1010.10 10 5.5 8.5 0.0434975 -0.00544307
+1010.10 10 6.5 8.5 0.0420953 -0.00243544
+1010.10 10 7.5 8.5 0.037018 0.00476892
+1010.10 10 8.5 8.5 0.00913718 0.031306
+1010.10 10 9.5 8.5 -0.0160093 0.0579076
+1010.10 10 10.5 8.5 -0.0400469 0.0804721
+1010.10 10 11.5 8.5 -0.0588919 0.100154
+1010.10 10 12.5 8.5 -0.0774408 0.119176
+1010.10 10 13.5 8.5 -0.0990245 0.139157
+1010.10 10 -14.5 -7.5 -0.102304 0.15815
+1010.10 10 -13.5 -7.5 -0.0849903 0.139507
+1010.10 10 -12.5 -7.5 -0.0635664 0.120234
+1010.10 10 -11.5 -7.5 -0.0459979 0.100347
+1010.10 10 -10.5 -7.5 -0.0297559 0.0810672
+1010.10 10 -9.5 -7.5 -0.00680662 0.0578131
+1010.10 10 -8.5 -7.5 0.013563 0.0327135
+1010.10 10 -7.5 -7.5 0.0393937 0.00546054
+1010.10 10 -6.5 -7.5 0.0469306 -0.00248235
+1010.10 10 -5.5 -7.5 0.0473116 -0.00557224
+1010.10 10 -4.5 -7.5 0.052752 -0.00889783
+1010.10 10 -3.5 -7.5 0.0597678 -0.0122727
+1010.10 10 14.5 8.5 -0.116289 0.15679
+1010.10 10 15.5 8.5 -0.130361 0.171084
+1010.10 10 -15.5 9.5 -0.0975102 0.145317
+1010.10 10 -14.5 9.5 -0.0797778 0.129072
+1010.10 10 -13.5 9.5 -0.0522457 0.106945
+1010.10 10 -12.5 9.5 -0.0241544 0.0823651
+1010.10 10 -11.5 9.5 0.00946005 0.0565522
+1010.10 10 -10.5 9.5 0.0405995 0.02955
+1010.10 10 -9.5 9.5 0.0746741 0.00429781
+1010.10 10 -8.5 9.5 0.0789626 -0.00203566
+1010.10 10 -7.5 9.5 0.0766062 -0.00479254
+1010.10 10 -6.5 9.5 0.0724887 -0.00766191
+1010.10 10 -5.5 9.5 0.0709739 -0.0105811
+1010.10 10 -2.5 -7.5 0.0582848 -0.0159031
+1010.10 10 -1.5 -7.5 0.0455674 -0.0201813
+1010.10 10 -0.5 -7.5 0.0206319 -0.0271563
+1010.10 10 0.5 -7.5 0.0188304 -0.0269928
+1010.10 10 1.5 -7.5 0.0285266 -0.0208867
+1010.10 10 2.5 -7.5 0.0373483 -0.018221
+1010.10 10 3.5 -7.5 0.0422301 -0.0158619
+1010.10 10 4.5 -7.5 0.0443993 -0.0136307
+1010.10 10 5.5 -7.5 0.0432513 -0.0119918
+1010.10 10 6.5 -7.5 0.0406511 -0.0103168
+1010.10 10 7.5 -7.5 0.0317433 -0.00829552
+1010.10 10 8.5 -7.5 0.0303583 -0.00623516
+1010.10 10 -4.5 9.5 0.0695422 -0.0137767
+1010.10 10 -3.5 9.5 0.0688672 -0.0171776
+1010.10 10 -2.5 9.5 0.0560471 -0.0206151
+1010.10 10 -1.5 9.5 0.0442312 -0.0252749
+1010.10 10 -0.5 9.5 0.0497538 -0.0317405
+1010.10 10 0.5 9.5 0.0739995 -0.0317665
+1010.10 10 1.5 9.5 0.084413 -0.0250642
+1010.10 10 2.5 9.5 0.0758267 -0.0204459
+1010.10 10 3.5 9.5 0.0603235 -0.0164795
+1010.10 10 4.5 9.5 0.0528174 -0.0127558
+1010.10 10 5.5 9.5 0.0457451 -0.00929845
+1010.10 10 6.5 9.5 0.0414037 -0.00639148
+1010.10 10 7.5 9.5 0.0401403 -0.00316418
+1010.10 10 9.5 -7.5 0.0491994 -0.00380994
+1010.10 10 10.5 -7.5 0.0608562 -0.00172242
+1010.10 10 11.5 -7.5 0.0652525 0.00268116
+1010.10 10 12.5 -7.5 0.0267326 0.028238
+1010.10 10 13.5 -7.5 -0.0056873 0.0555459
+1010.10 10 14.5 -7.5 -0.0334373 0.0792899
+1010.10 10 15.5 -7.5 -0.0544587 0.100095
+1010.10 10 -15.5 -6.5 -0.103201 0.157982
+1010.10 10 -14.5 -6.5 -0.0886726 0.142876
+1010.10 10 -13.5 -6.5 -0.0642314 0.121115
+1010.10 10 -12.5 -6.5 -0.0429228 0.0983167
+1010.10 10 -11.5 -6.5 -0.0161428 0.0732158
+1010.10 10 8.5 9.5 0.0364398 -0.000337598
+1010.10 10 9.5 9.5 0.0146329 0.0230205
+1010.10 10 10.5 9.5 -0.013511 0.0500703
+1010.10 10 11.5 9.5 -0.03555 0.0732072
+1010.10 10 12.5 9.5 -0.0614919 0.0977697
+1010.10 10 13.5 9.5 -0.0830012 0.119929
+1010.10 10 14.5 9.5 -0.106912 0.141879
+1010.10 10 15.5 9.5 -0.123316 0.158477
+1010.10 10 -15.5 10.5 -0.100638 0.153433
+1010.10 10 -14.5 10.5 -0.0841844 0.13794
+1010.10 10 -13.5 10.5 -0.0573962 0.115505
+1010.10 10 -12.5 10.5 -0.0324826 0.0924033
+1010.10 10 -10.5 -6.5 0.00474406 0.0487219
+1010.10 10 -9.5 -6.5 0.029664 0.0230554
+1010.10 10 -8.5 -6.5 0.0478578 -0.000364416
+1010.10 10 -7.5 -6.5 0.0483613 -0.00335824
+1010.10 10 -6.5 -6.5 0.0454033 -0.006268
+1010.10 10 -5.5 -6.5 0.0479682 -0.00946723
+1010.10 10 -4.5 -6.5 0.052786 -0.0128896
+1010.10 10 -3.5 -6.5 0.0561929 -0.0164825
+1010.10 10 -2.5 -6.5 0.0642489 -0.0203343
+1010.10 10 -1.5 -6.5 0.0668899 -0.0247437
+1010.10 10 -0.5 -6.5 0.0830577 -0.0322826
+1010.10 10 0.5 -6.5 0.0625531 -0.0316448
+1010.10 10 1.5 -6.5 0.0604344 -0.0245278
+1010.10 10 -11.5 10.5 -6.27038e-05 0.0662671
+1010.10 10 -10.5 10.5 0.0262371 0.0421445
+1010.10 10 -9.5 10.5 0.0579061 0.0158185
+1010.10 10 -8.5 10.5 0.0733538 -0.00112595
+1010.10 10 -7.5 10.5 0.0745058 -0.00408855
+1010.10 10 -6.5 10.5 0.0703214 -0.00725405
+1010.10 10 -5.5 10.5 0.0744787 -0.0104174
+1010.10 10 -4.5 10.5 0.0786675 -0.0137802
+1010.10 10 -3.5 10.5 0.0855933 -0.0174375
+1010.10 10 -2.5 10.5 0.0853707 -0.0210324
+1010.10 10 -1.5 10.5 0.0982784 -0.0269981
+1010.10 10 -0.5 10.5 0.103985 -0.0322609
+1010.10 10 2.5 -6.5 0.062188 -0.02079
+1010.10 10 3.5 -6.5 0.0663036 -0.0172611
+1010.10 10 4.5 -6.5 0.065949 -0.0136344
+1010.10 10 5.5 -6.5 0.0627601 -0.0105469
+1010.10 10 6.5 -6.5 0.0639404 -0.00769072
+1010.10 10 7.5 -6.5 0.0575362 -0.00480677
+1010.10 10 8.5 -6.5 0.0611139 -0.00202696
+1010.10 10 9.5 -6.5 0.07017 0.00648101
+1010.10 10 10.5 -6.5 0.0460832 0.0331238
+1010.10 10 11.5 -6.5 0.0272009 0.0563952
+1010.10 10 12.5 -6.5 -0.0104214 0.0818435
+1010.10 10 13.5 -6.5 -0.0422664 0.105489
+1010.10 10 0.5 10.5 0.0955997 -0.0321831
+1010.10 10 1.5 10.5 0.0796227 -0.0251902
+1010.10 10 2.5 10.5 0.0753457 -0.0212182
+1010.10 10 3.5 10.5 0.0697164 -0.0172266
+1010.10 10 4.5 10.5 0.0581633 -0.0134166
+1010.10 10 5.5 10.5 0.0480315 -0.0101017
+1010.10 10 6.5 10.5 0.0405846 -0.007044
+1010.10 10 7.5 10.5 0.0377379 -0.00392845
+1010.10 10 8.5 10.5 0.033352 -0.00107064
+1010.10 10 9.5 10.5 0.0170693 0.0163282
+1010.10 10 10.5 10.5 -0.0115836 0.0439324
+1010.10 10 11.5 10.5 -0.0352464 0.0682378
+1010.10 10 14.5 -6.5 -0.0722845 0.127682
+1010.10 10 15.5 -6.5 -0.0920388 0.14582
+1010.10 10 -15.5 -5.5 -0.1008 0.15446
+1010.10 10 -14.5 -5.5 -0.0860645 0.139386
+1010.10 10 -13.5 -5.5 -0.0611117 0.117068
+1010.10 10 -12.5 -5.5 -0.0394143 0.0942774
+1010.10 10 -11.5 -5.5 -0.0119524 0.0683491
+1010.10 10 -10.5 -5.5 0.00947806 0.0442124
+1010.10 10 -9.5 -5.5 0.0350593 0.017989
+1010.10 10 -8.5 -5.5 0.048913 -0.000928589
+1010.10 10 -7.5 -5.5 0.0488141 -0.00390831
+1010.10 10 -6.5 -5.5 0.0463159 -0.00706135
+1010.10 10 12.5 10.5 -0.0614243 0.0930572
+1010.10 10 13.5 10.5 -0.0839968 0.116186
+1010.10 10 14.5 10.5 -0.108278 0.138952
+1010.10 10 15.5 10.5 -0.125454 0.156144
+1010.10 10 -15.5 11.5 -0.101141 0.156775
+1010.10 10 -14.5 11.5 -0.0816323 0.137879
+1010.10 10 -13.5 11.5 -0.0568881 0.117405
+1010.10 10 -12.5 11.5 -0.0316965 0.0926411
+1010.10 10 -11.5 11.5 -0.00215518 0.0674806
+1010.10 10 -10.5 11.5 0.0216452 0.0434946
+1010.10 10 -9.5 11.5 0.0518694 0.0156454
+1010.10 10 -8.5 11.5 0.0649737 -0.000998025
+1010.10 10 -5.5 -5.5 0.0492518 -0.0102081
+1010.10 10 -4.5 -5.5 0.0561903 -0.0136686
+1010.10 10 -3.5 -5.5 0.0673887 -0.0173929
+1010.10 10 -2.5 -5.5 0.0748117 -0.0212332
+1010.10 10 -1.5 -5.5 0.082703 -0.0252602
+1010.10 10 -0.5 -5.5 0.0973266 -0.0320386
+1010.10 10 0.5 -5.5 0.095593 -0.0320674
+1010.10 10 1.5 -5.5 0.084221 -0.0252175
+1010.10 10 2.5 -5.5 0.0794132 -0.0212962
+1010.10 10 3.5 -5.5 0.077161 -0.0173301
+1010.10 10 4.5 -5.5 0.0729351 -0.0137172
+1010.10 10 5.5 -5.5 0.0689388 -0.0102704
+1010.10 10 -7.5 11.5 0.0676029 -0.00406436
+1010.10 10 -6.5 11.5 0.0650666 -0.00706596
+1010.10 10 -5.5 11.5 0.0693958 -0.0102257
+1010.10 10 -4.5 11.5 0.0772309 -0.0136696
+1010.10 10 -3.5 11.5 0.0897192 -0.0172948
+1010.10 10 -2.5 11.5 0.0921279 -0.0212145
+1010.10 10 -1.5 11.5 0.0908408 -0.0269515
+1010.10 10 -0.5 11.5 0.107786 -0.0322341
+1010.10 10 0.5 11.5 0.0919992 -0.03158
+1010.10 10 1.5 11.5 0.0812172 -0.0253855
+1010.10 10 2.5 11.5 0.0779889 -0.0211873
+1010.10 10 3.5 11.5 0.0742836 -0.017351
+1010.10 10 6.5 -5.5 0.0659313 -0.00724133
+1010.10 10 7.5 -5.5 0.0669016 -0.00411383
+1010.10 10 8.5 -5.5 0.0647789 -0.00129295
+1010.10 10 9.5 -5.5 0.0574027 0.014086
+1010.10 10 10.5 -5.5 0.0310407 0.0415664
+1010.10 10 11.5 -5.5 0.0125881 0.0664648
+1010.10 10 12.5 -5.5 -0.0180865 0.0914594
+1010.10 10 13.5 -5.5 -0.0451251 0.114358
+1010.10 10 14.5 -5.5 -0.0751592 0.137201
+1010.10 10 15.5 -5.5 -0.0941572 0.154795
+1010.10 10 -15.5 -4.5 -0.103643 0.155952
+1010.10 10 -14.5 -4.5 -0.0852978 0.137739
+1010.10 10 -13.5 -4.5 -0.0611292 0.116944
+1010.10 10 -12.5 -4.5 -0.0371552 0.0922257
+1010.10 10 4.5 11.5 0.0620775 -0.0136197
+1010.10 10 5.5 11.5 0.050582 -0.0102083
+1010.10 10 6.5 11.5 0.0412603 -0.00709075
+1010.10 10 7.5 11.5 0.0366243 -0.00402562
+1010.10 10 8.5 11.5 0.0310846 -0.00106629
+1010.10 10 9.5 11.5 0.0149322 0.0155456
+1010.10 10 10.5 11.5 -0.0141067 0.0428906
+1010.10 10 11.5 11.5 -0.0390889 0.0682906
+1010.10 10 12.5 11.5 -0.0644879 0.0925143
+1010.10 10 13.5 11.5 -0.086859 0.115339
+1010.10 10 14.5 11.5 -0.110628 0.137755
+1010.10 10 15.5 11.5 -0.127479 0.154702
+1010.10 10 -15.5 12.5 -0.0974929 0.156039
+1010.10 10 -14.5 12.5 -0.0793906 0.137968
+1010.10 10 -11.5 -4.5 -0.0096349 0.0672648
+1010.10 10 -10.5 -4.5 0.0124602 0.0430488
+1010.10 10 -9.5 -4.5 0.0411721 0.0151445
+1010.10 10 -8.5 -4.5 0.0521281 -0.00104836
+1010.10 10 -7.5 -4.5 0.0523088 -0.00406295
+1010.10 10 -6.5 -4.5 0.0493402 -0.007082
+1010.10 10 -5.5 -4.5 0.0536835 -0.0102137
+1010.10 10 -4.5 -4.5 0.0625093 -0.0136695
+1010.10 10 -3.5 -4.5 0.0746258 -0.0173749
+1010.10 10 -2.5 -4.5 0.083653 -0.0215032
+1010.10 10 -1.5 -4.5 0.0896776 -0.0253883
+1010.10 10 -0.5 -4.5 0.101994 -0.031886
+1010.10 10 0.5 -4.5 0.0939784 -0.0317685
+1010.10 10 -13.5 12.5 -0.0545281 0.116476
+1010.10 10 -12.5 12.5 -0.0327003 0.0939029
+1010.10 10 -11.5 12.5 -0.00430574 0.0680808
+1010.10 10 -10.5 12.5 0.0184032 0.0431703
+1010.10 10 -9.5 12.5 0.0461559 0.0164698
+1010.10 10 -8.5 12.5 0.0589347 -0.00104154
+1010.10 10 -7.5 12.5 0.0612258 -0.00405463
+1010.10 10 -6.5 12.5 0.0603697 -0.0069522
+1010.10 10 -5.5 12.5 0.0673404 -0.0102422
+1010.10 10 -4.5 12.5 0.076813 -0.0136131
+1010.10 10 -3.5 12.5 0.0886525 -0.017404
+1010.10 10 -2.5 12.5 0.0917808 -0.0209761
+1010.10 10 1.5 -4.5 0.0904044 -0.0254479
+1010.10 10 2.5 -4.5 0.0841361 -0.021108
+1010.10 10 3.5 -4.5 0.0819798 -0.0172868
+1010.10 10 4.5 -4.5 0.0733403 -0.0135436
+1010.10 10 5.5 -4.5 0.0687729 -0.0102334
+1010.10 10 6.5 -4.5 0.0651389 -0.007081
+1010.10 10 7.5 -4.5 0.0638309 -0.00401433
+1010.10 10 8.5 -4.5 0.0593541 -0.00102042
+1010.10 10 9.5 -4.5 0.0486778 0.0157327
+1010.10 10 10.5 -4.5 0.0235853 0.0427103
+1010.10 10 11.5 -4.5 0.00505315 0.0680923
+1010.10 10 12.5 -4.5 -0.0212336 0.0925011
+1010.10 10 -1.5 12.5 0.0989539 -0.0271594
+1010.10 10 -0.5 12.5 0.111195 -0.0321306
+1010.10 10 0.5 12.5 0.10109 -0.0319129
+1010.10 10 1.5 12.5 0.0883078 -0.0251453
+1010.10 10 2.5 12.5 0.0845388 -0.0211636
+1010.10 10 3.5 12.5 0.0794306 -0.0174645
+1010.10 10 4.5 12.5 0.0663957 -0.0137179
+1010.10 10 5.5 12.5 0.0529762 -0.0102625
+1010.10 10 6.5 12.5 0.0426324 -0.00714566
+1010.10 10 7.5 12.5 0.0367263 -0.0041287
+1010.10 10 8.5 12.5 0.0304728 -0.00120841
+1010.10 10 9.5 12.5 0.0123447 0.0164003
+1010.10 10 13.5 -4.5 -0.0447307 0.115276
+1010.10 10 14.5 -4.5 -0.0721904 0.137643
+1010.10 10 15.5 -4.5 -0.0899558 0.154869
+1010.10 10 -15.5 -3.5 -0.104534 0.155618
+1010.10 10 -14.5 -3.5 -0.0860525 0.137484
+1010.10 10 -13.5 -3.5 -0.0609251 0.116055
+1010.10 10 -12.5 -3.5 -0.0369371 0.0922221
+1010.10 10 -11.5 -3.5 -0.00851084 0.0672849
+1010.10 10 -10.5 -3.5 0.0157614 0.0423184
+1010.10 10 -9.5 -3.5 0.0453198 0.01604
+1010.10 10 -8.5 -3.5 0.0585054 -0.00104506
+1010.10 10 -7.5 -3.5 0.0588716 -0.00408984
+1010.10 10 -6.5 -3.5 0.0556754 -0.00719126
+1010.10 10 10.5 12.5 -0.0149924 0.0422052
+1010.10 10 11.5 12.5 -0.0402069 0.0676241
+1010.10 10 12.5 12.5 -0.0667925 0.0926786
+1010.10 10 13.5 12.5 -0.0892214 0.1153
+1010.10 10 14.5 12.5 -0.11317 0.137863
+1010.10 10 15.5 12.5 -0.130422 0.1549
+1010.10 10 -15.5 13.5 -0.0956056 0.155253
+1010.10 10 -14.5 13.5 -0.0801623 0.139409
+1010.10 10 -13.5 13.5 -0.0546255 0.117094
+1010.10 10 -12.5 13.5 -0.0331034 0.0941394
+1010.10 10 -11.5 13.5 -0.0065169 0.0689392
+1010.10 10 -10.5 13.5 0.0148333 0.0438934
+1010.10 10 -9.5 13.5 0.0401644 0.017827
+1010.10 10 -5.5 -3.5 0.0622549 -0.0102895
+1010.10 10 -4.5 -3.5 0.0720539 -0.0137701
+1010.10 10 -3.5 -3.5 0.0810907 -0.0175059
+1010.10 10 -2.5 -3.5 0.0858264 -0.0212715
+1010.10 10 -1.5 -3.5 0.0926528 -0.0253816
+1010.10 10 -0.5 -3.5 0.104073 -0.0319717
+1010.10 10 0.5 -3.5 0.10255 -0.0319748
+1010.10 10 1.5 -3.5 0.0922211 -0.0252652
+1010.10 10 2.5 -3.5 0.085623 -0.0211314
+1010.10 10 3.5 -3.5 0.0797564 -0.0174122
+1010.10 10 4.5 -3.5 0.0722448 -0.0136436
+1010.10 10 5.5 -3.5 0.0654854 -0.0102499
+1010.10 10 6.5 -3.5 0.0603534 -0.00712993
+1010.10 10 -8.5 13.5 0.0538239 -0.00100566
+1010.10 10 -7.5 13.5 0.0551613 -0.0039602
+1010.10 10 -6.5 13.5 0.0565616 -0.00694268
+1010.10 10 -5.5 13.5 0.0636825 -0.0100954
+1010.10 10 -4.5 13.5 0.0757215 -0.0136615
+1010.10 10 -3.5 13.5 0.0892801 -0.0172339
+1010.10 10 -2.5 13.5 0.0876971 -0.0210479
+1010.10 10 -1.5 13.5 0.094121 -0.0271266
+1010.10 10 -0.5 13.5 0.106771 -0.0323737
+1010.10 10 0.5 13.5 0.0980506 -0.031748
+1010.10 10 1.5 13.5 0.0941208 -0.0254133
+1010.10 10 2.5 13.5 0.0875366 -0.0213108
+1010.10 10 7.5 -3.5 0.0590339 -0.00411886
+1010.10 10 8.5 -3.5 0.0553782 -0.00119949
+1010.10 10 9.5 -3.5 0.0432113 0.0165028
+1010.10 10 10.5 -3.5 0.0197972 0.0428981
+1010.10 10 11.5 -3.5 0.00146023 0.0679329
+1010.10 10 12.5 -3.5 -0.0238345 0.09292
+1010.10 10 13.5 -3.5 -0.0456583 0.116132
+1010.10 10 14.5 -3.5 -0.0712525 0.138139
+1010.10 10 15.5 -3.5 -0.088445 0.155239
+1010.10 10 -15.5 -2.5 -0.105067 0.153427
+1010.10 10 -14.5 -2.5 -0.0884234 0.137681
+1010.10 10 -13.5 -2.5 -0.0614198 0.11524
+1010.10 10 3.5 13.5 0.0822795 -0.017469
+1010.10 10 4.5 13.5 0.0689194 -0.0136341
+1010.10 10 5.5 13.5 0.0554493 -0.0102499
+1010.10 10 6.5 13.5 0.0439368 -0.00714409
+1010.10 10 7.5 13.5 0.0373341 -0.00406905
+1010.10 10 8.5 13.5 0.0306308 -0.00120058
+1010.10 10 9.5 13.5 0.0124267 0.0159452
+1010.10 10 10.5 13.5 -0.0169569 0.0428655
+1010.10 10 11.5 13.5 -0.0415039 0.0674412
+1010.10 10 12.5 13.5 -0.068493 0.0925771
+1010.10 10 13.5 13.5 -0.0919812 0.115687
+1010.10 10 14.5 13.5 -0.11603 0.138171
+1010.10 10 -12.5 -2.5 -0.0350838 0.0905279
+1010.10 10 -11.5 -2.5 -0.00598592 0.066563
+1010.10 10 -10.5 -2.5 0.01998 0.0416371
+1010.10 10 -9.5 -2.5 0.0521 0.0156371
+1010.10 10 -8.5 -2.5 0.0676184 -0.00119714
+1010.10 10 -7.5 -2.5 0.0675085 -0.00402437
+1010.10 10 -6.5 -2.5 0.0625316 -0.00706051
+1010.10 10 -5.5 -2.5 0.069892 -0.0103435
+1010.10 10 -4.5 -2.5 0.0770193 -0.0139012
+1010.10 10 -3.5 -2.5 0.0844366 -0.0173736
+1010.10 10 -2.5 -2.5 0.0855583 -0.0212396
+1010.10 10 -1.5 -2.5 0.0908604 -0.0254362
+1010.10 10 -0.5 -2.5 0.099848 -0.0321312
+1010.10 10 15.5 13.5 -0.132461 0.154678
+1010.10 10 -15.5 14.5 -0.0959456 0.156771
+1010.10 10 -14.5 14.5 -0.0788521 0.139057
+1010.10 10 -13.5 14.5 -0.0529592 0.116088
+1010.10 10 -12.5 14.5 -0.0312313 0.0924559
+1010.10 10 -11.5 14.5 -0.00640629 0.0680333
+1010.10 10 -10.5 14.5 0.0130731 0.0437265
+1010.10 10 -9.5 14.5 0.0371465 0.0176684
+1010.10 10 -8.5 14.5 0.0502685 -0.00106897
+1010.10 10 -7.5 14.5 0.0517205 -0.00394385
+1010.10 10 -6.5 14.5 0.0531798 -0.00697167
+1010.10 10 -5.5 14.5 0.0620761 -0.0101768
+1010.10 10 0.5 -2.5 0.101212 -0.0321448
+1010.10 10 1.5 -2.5 0.0891646 -0.0253922
+1010.10 10 2.5 -2.5 0.0822061 -0.0210739
+1010.10 10 3.5 -2.5 0.0761148 -0.0173075
+1010.10 10 4.5 -2.5 0.0673452 -0.0135542
+1010.10 10 5.5 -2.5 0.0608325 -0.010127
+1010.10 10 6.5 -2.5 0.0560352 -0.00697579
+1010.10 10 7.5 -2.5 0.0556118 -0.00395275
+1010.10 10 8.5 -2.5 0.0531445 -0.00107647
+1010.10 10 9.5 -2.5 0.0411464 0.0170381
+1010.10 10 10.5 -2.5 0.0166094 0.0440952
+1010.10 10 11.5 -2.5 -0.00192835 0.0688302
+1010.10 10 12.5 -2.5 -0.0263634 0.093393
+1010.10 10 -4.5 14.5 0.0758008 -0.0135678
+1010.10 10 -3.5 14.5 0.0910369 -0.0172843
+1010.10 10 -2.5 14.5 0.0892082 -0.0209777
+1010.10 10 -1.5 14.5 0.08836 -0.0266935
+1010.10 10 -0.5 14.5 0.100817 -0.0325376
+1010.10 10 0.5 14.5 0.0932988 -0.0317291
+1010.10 10 1.5 14.5 0.0893474 -0.0255072
+1010.10 10 2.5 14.5 0.0862913 -0.0212426
+1010.10 10 3.5 14.5 0.0824917 -0.0175322
+1010.10 10 4.5 14.5 0.0693358 -0.0136999
+1010.10 10 5.5 14.5 0.0566567 -0.0102954
+1010.10 10 6.5 14.5 0.0447714 -0.00707954
+1010.10 10 7.5 14.5 0.0379112 -0.00399279
+1010.10 10 13.5 -2.5 -0.0482752 0.117613
+1010.10 10 14.5 -2.5 -0.0731682 0.139591
+1010.10 10 15.5 -2.5 -0.0879309 0.155155
+1010.10 10 -15.5 -1.5 -0.101857 0.146263
+1010.10 10 -14.5 -1.5 -0.0816773 0.127331
+1010.10 10 -13.5 -1.5 -0.0540843 0.104992
+1010.10 10 -12.5 -1.5 -0.0263779 0.0805093
+1010.10 10 -11.5 -1.5 0.00506913 0.0560576
+1010.10 10 -10.5 -1.5 0.0339202 0.0302336
+1010.10 10 -9.5 -1.5 0.0679932 0.00470962
+1010.10 10 -8.5 -1.5 0.0747842 -0.00213419
+1010.10 10 -7.5 -1.5 0.0741493 -0.0046897
+1010.10 10 8.5 14.5 0.0302057 -0.0010401
+1010.10 10 9.5 14.5 0.0118034 0.0158593
+1010.10 10 10.5 14.5 -0.0183705 0.0438055
+1010.10 10 11.5 14.5 -0.0429496 0.0677517
+1010.10 10 12.5 14.5 -0.0710166 0.0939691
+1010.10 10 13.5 14.5 -0.0948324 0.117489
+1010.10 10 14.5 14.5 -0.115884 0.137136
+1010.10 10 15.5 14.5 -0.134115 0.154604
+1010.10 10 -15.5 15.5 -0.0949966 0.15568
+1010.10 10 -14.5 15.5 -0.0791559 0.139047
+1010.10 10 -13.5 15.5 -0.0529182 0.115968
+1010.10 10 -12.5 15.5 -0.0323717 0.0929355
+1010.10 10 -6.5 -1.5 0.068089 -0.0075893
+1010.10 10 -5.5 -1.5 0.0727066 -0.0105628
+1010.10 10 -4.5 -1.5 0.0771578 -0.0138934
+1010.10 10 -3.5 -1.5 0.078705 -0.017198
+1010.10 10 -2.5 -1.5 0.0739541 -0.0207129
+1010.10 10 -1.5 -1.5 0.0750354 -0.024512
+1010.10 10 -0.5 -1.5 0.0754036 -0.0315345
+1010.10 10 0.5 -1.5 0.0824514 -0.031619
+1010.10 10 1.5 -1.5 0.078166 -0.0247479
+1010.10 10 2.5 -1.5 0.0745808 -0.0202506
+1010.10 10 3.5 -1.5 0.0660165 -0.0166125
+1010.10 10 4.5 -1.5 0.0628973 -0.0128724
+1010.10 10 5.5 -1.5 0.0580085 -0.00946475
+1010.10 10 -11.5 15.5 -0.00679741 0.0676486
+1010.10 10 -10.5 15.5 0.011651 0.043847
+1010.10 10 -9.5 15.5 0.0370846 0.0161393
+1010.10 10 -8.5 15.5 0.0486632 -0.00122026
+1010.10 10 -7.5 15.5 0.0496453 -0.00399046
+1010.10 10 -6.5 15.5 0.0518084 -0.00708645
+1010.10 10 -5.5 15.5 0.0619506 -0.0100344
+1010.10 10 -4.5 15.5 0.0772665 -0.0135412
+1010.10 10 -3.5 15.5 0.0941958 -0.0173728
+1010.10 10 -2.5 15.5 0.0924734 -0.020952
+1010.10 10 -1.5 15.5 0.089472 -0.0268377
+1010.10 10 -0.5 15.5 0.106895 -0.0321131
+1010.10 10 0.5 15.5 0.107605 -0.0321454
+1010.10 10 6.5 -1.5 0.054022 -0.00622003
+1010.10 10 7.5 -1.5 0.0549201 -0.00322474
+1010.10 10 8.5 -1.5 0.0526556 -0.000282984
+1010.10 10 9.5 -1.5 0.0352597 0.0228832
+1010.10 10 10.5 -1.5 0.00964264 0.0504806
+1010.10 10 11.5 -1.5 -0.00758624 0.0734105
+1010.10 10 12.5 -1.5 -0.0332162 0.0989683
+1010.10 10 13.5 -1.5 -0.0526302 0.12143
+1010.10 10 14.5 -1.5 -0.0742368 0.140609
+1010.10 10 15.5 -1.5 -0.0904494 0.157409
+1010.10 10 -15.5 -0.5 -0.0601128 0.0989292
+1010.10 10 -14.5 -0.5 -0.0389758 0.0794447
+1010.10 10 1.5 15.5 0.0857026 -0.0253817
+1010.10 10 2.5 15.5 0.0839877 -0.02122
+1010.10 10 3.5 15.5 0.0814582 -0.0172986
+1010.10 10 4.5 15.5 0.0701706 -0.0135874
+1010.10 10 5.5 15.5 0.0571027 -0.0102024
+1010.10 10 6.5 15.5 0.0455186 -0.00705366
+1010.10 10 7.5 15.5 0.0381951 -0.00403406
+1010.10 10 8.5 15.5 0.0302296 -0.00110203
+1010.10 10 9.5 15.5 0.0103264 0.0170466
+1010.10 10 10.5 15.5 -0.0195228 0.0442305
+1010.10 10 11.5 15.5 -0.0442492 0.0680332
+1010.10 10 12.5 15.5 -0.0699672 0.0920937
+1010.10 10 -13.5 -0.5 -0.00785855 0.0536818
+1010.10 10 -12.5 -0.5 0.0229875 0.0269633
+1010.10 10 -11.5 -0.5 0.0567815 0.00149711
+1010.10 10 -10.5 -0.5 0.0693536 -0.00274103
+1010.10 10 -9.5 -0.5 0.0733862 -0.00530188
+1010.10 10 -8.5 -0.5 0.0686216 -0.00707458
+1010.10 10 -7.5 -0.5 0.0713224 -0.00824607
+1010.10 10 -6.5 -0.5 0.0525599 -0.00965764
+1010.10 10 -5.5 -0.5 0.0528965 -0.0118318
+1010.10 10 -4.5 -0.5 0.0471096 -0.0137604
+1010.10 10 -3.5 -0.5 0.0454018 -0.0159528
+1010.10 10 -2.5 -0.5 0.0408021 -0.0183035
+1010.10 10 13.5 15.5 -0.0940621 0.115778
+1010.10 10 14.5 15.5 -0.119117 0.139114
+1010.10 10 15.5 15.5 -0.13505 0.155062
+1010.10 10 -1.5 -0.5 0.0320413 -0.0208218
+1010.10 10 -0.5 -0.5 0.0249923 -0.0264435
+1010.10 10 0.5 -0.5 0.0307554 -0.0271398
+1010.10 10 1.5 -0.5 0.0568854 -0.0202279
+1010.10 10 2.5 -0.5 0.0667732 -0.0158945
+1010.10 10 3.5 -0.5 0.0638113 -0.012097
+1010.10 10 4.5 -0.5 0.063413 -0.00871281
+1010.10 10 5.5 -0.5 0.0572423 -0.00547627
+1010.10 10 6.5 -0.5 0.0527439 -0.00241014
+1010.10 10 7.5 -0.5 0.0479389 0.00503699
+1010.10 10 8.5 -0.5 0.0206733 0.0319854
+1010.10 10 9.5 -0.5 -0.000702237 0.0577658
+1010.10 10 10.5 -0.5 -0.0229135 0.0806917
+1010.10 10 11.5 -0.5 -0.0388025 0.100584
+1010.10 10 12.5 -0.5 -0.0552653 0.120777
+1010.10 10 13.5 -0.5 -0.0753541 0.139458
+1010.10 10 14.5 -0.5 -0.0917255 0.15751
+1010.10 10 15.5 -0.5 -0.102759 0.169836
+2020.20 10 -14.5 -15.5 -0.162663
+2020.20 10 -13.5 -15.5 -0.16278
+2020.20 10 -12.5 -15.5 -0.162263
+2020.20 10 -11.5 -15.5 -0.160303
+2020.20 10 -10.5 -15.5 -0.155781
+2020.20 10 -9.5 -15.5 -0.147802
+2020.20 10 -8.5 -15.5 -0.135795
+2020.20 10 -7.5 -15.5 -0.119899
+2020.20 10 -14.5 0.5 0.0420394
+2020.20 10 -13.5 0.5 0.043434
+2020.20 10 -12.5 0.5 0.043521
+2020.20 10 -11.5 0.5 0.0410362
+2020.20 10 -10.5 0.5 0.0356508
+2020.20 10 -9.5 0.5 0.0278991
+2020.20 10 -8.5 0.5 0.0201436
+2020.20 10 -7.5 0.5 0.0152432
+2020.20 10 -6.5 0.5 0.0149872
+2020.20 10 -5.5 0.5 0.0188943
+2020.20 10 -4.5 0.5 0.0250598
+2020.20 10 -3.5 0.5 0.0318376
+2020.20 10 -2.5 0.5 0.0387811
+2020.20 10 -1.5 0.5 0.0457044
+2020.20 10 -0.5 0.5 0.0525722
+2020.20 10 0.5 0.5 0.0579268
+2020.20 10 1.5 0.5 0.0587301
+2020.20 10 -6.5 -15.5 -0.100812
+2020.20 10 -5.5 -15.5 -0.0796581
+2020.20 10 -4.5 -15.5 -0.0571923
+2020.20 10 -3.5 -15.5 -0.0343797
+2020.20 10 -2.5 -15.5 -0.0120879
+2020.20 10 -1.5 -15.5 0.00863179
+2020.20 10 -0.5 -15.5 0.0268806
+2020.20 10 0.5 -15.5 0.0421742
+2020.20 10 1.5 -15.5 0.0548278
+2020.20 10 2.5 -15.5 0.0656889
+2020.20 10 3.5 -15.5 0.075487
+2020.20 10 4.5 -15.5 0.0842215
+2020.20 10 5.5 -15.5 0.0910798
+2020.20 10 6.5 -15.5 0.0955096
+2020.20 10 7.5 -15.5 0.0973545
+2020.20 10 8.5 -15.5 0.0968499
+2020.20 10 9.5 -15.5 0.0943893
+2020.20 10 10.5 -15.5 0.0906378
+2020.20 10 2.5 0.5 0.051908
+2020.20 10 3.5 0.5 0.0363349
+2020.20 10 4.5 0.5 0.0136778
+2020.20 10 5.5 0.5 -0.0128879
+2020.20 10 6.5 0.5 -0.0401391
+2020.20 10 7.5 0.5 -0.0651401
+2020.20 10 8.5 0.5 -0.0862027
+2020.20 10 9.5 0.5 -0.102844
+2020.20 10 10.5 0.5 -0.115094
+2020.20 10 11.5 0.5 -0.123682
+2020.20 10 12.5 0.5 -0.12922
+2020.20 10 13.5 0.5 -0.132914
+2020.20 10 14.5 0.5 -0.135372
+3030.30 10 0.5 -5.5 -6.5 -4.5 -3.5 -4 -3.5
+2020.20 10 -14.5 1.5 0.040912
+2020.20 10 11.5 -15.5 0.086028
+2020.20 10 12.5 -15.5 0.0813561
+2020.20 10 13.5 -15.5 0.0766014
+2020.20 10 14.5 -15.5 0.0724216
+3030.30 10 -15.5 7.78521 6.78521 8.78521 7.78521 7 7.5
+2020.20 10 -14.5 -14.5 -0.162002
+2020.20 10 -13.5 -14.5 -0.162061
+2020.20 10 -12.5 -14.5 -0.161458
+2020.20 10 -11.5 -14.5 -0.159426
+2020.20 10 -10.5 -14.5 -0.154902
+2020.20 10 -9.5 -14.5 -0.147044
+2020.20 10 -8.5 -14.5 -0.13509
+2020.20 10 -13.5 1.5 0.0450694
+2020.20 10 -12.5 1.5 0.0499733
+2020.20 10 -11.5 1.5 0.0549195
+2020.20 10 -10.5 1.5 0.0589606
+2020.20 10 -9.5 1.5 0.0607847
+2020.20 10 -8.5 1.5 0.0605753
+2020.20 10 -7.5 1.5 0.0596576
+2020.20 10 -6.5 1.5 0.0597152
+2020.20 10 -5.5 1.5 0.0616221
+2020.20 10 -4.5 1.5 0.0653347
+2020.20 10 -3.5 1.5 0.0701795
+2020.20 10 -2.5 1.5 0.0744376
+2020.20 10 -1.5 1.5 0.0763271
+2020.20 10 -0.5 1.5 0.0738344
+2020.20 10 0.5 1.5 0.0654895
+2020.20 10 1.5 1.5 0.0504795
+2020.20 10 -7.5 -14.5 -0.119275
+2020.20 10 -6.5 -14.5 -0.100212
+2020.20 10 -5.5 -14.5 -0.0789519
+2020.20 10 -4.5 -14.5 -0.0563546
+2020.20 10 -3.5 -14.5 -0.0333717
+2020.20 10 -2.5 -14.5 -0.0109581
+2020.20 10 -1.5 -14.5 0.00984402
+2020.20 10 -0.5 -14.5 0.0281434
+2020.20 10 0.5 -14.5 0.0433657
+2020.20 10 1.5 -14.5 0.055918
+2020.20 10 2.5 -14.5 0.0664084
+2020.20 10 3.5 -14.5 0.0756806
+2020.20 10 4.5 -14.5 0.0836576
+2020.20 10 5.5 -14.5 0.0897879
+2020.20 10 2.5 1.5 0.029215
+2020.20 10 3.5 1.5 0.00331818
+2020.20 10 4.5 1.5 -0.0250713
+2020.20 10 5.5 1.5 -0.0537862
+2020.20 10 6.5 1.5 -0.0806943
+2020.20 10 7.5 1.5 -0.104243
+2020.20 10 8.5 1.5 -0.123168
+2020.20 10 9.5 1.5 -0.136901
+2020.20 10 10.5 1.5 -0.145621
+2020.20 10 11.5 1.5 -0.150421
+2020.20 10 12.5 1.5 -0.152539
+2020.20 10 13.5 1.5 -0.153393
+2020.20 10 14.5 1.5 -0.153773
+3030.30 10 1.5 -5.5 -6.5 -4.5 -3.5 -4 -3.5
+2020.20 10 6.5 -14.5 0.0936594
+2020.20 10 7.5 -14.5 0.0952864
+2020.20 10 8.5 -14.5 0.0950851
+2020.20 10 9.5 -14.5 0.0933563
+2020.20 10 10.5 -14.5 0.0902946
+2020.20 10 11.5 -14.5 0.0860803
+2020.20 10 12.5 -14.5 0.081366
+2020.20 10 13.5 -14.5 0.0763607
+2020.20 10 14.5 -14.5 0.0717179
+3030.30 10 -14.5 7.88987 6.88987 8.88987 7.88987 7 7.5
+2020.20 10 -14.5 -13.5 -0.162843
+2020.20 10 -13.5 -13.5 -0.162876
+2020.20 10 -12.5 -13.5 -0.162421
+2020.20 10 -14.5 2.5 0.0402845
+2020.20 10 -13.5 2.5 0.0461784
+2020.20 10 -12.5 2.5 0.0536197
+2020.20 10 -11.5 2.5 0.0619442
+2020.20 10 -10.5 2.5 0.0700458
+2020.20 10 -9.5 2.5 0.0759762
+2020.20 10 -8.5 2.5 0.0793794
+2020.20 10 -7.5 2.5 0.0807098
+2020.20 10 -6.5 2.5 0.0810763
+2020.20 10 -5.5 2.5 0.081507
+2020.20 10 -4.5 2.5 0.082331
+2020.20 10 -3.5 2.5 0.0831365
+2020.20 10 -2.5 2.5 0.0826873
+2020.20 10 -1.5 2.5 0.0798305
+2020.20 10 -0.5 2.5 0.0730392
+2020.20 10 -11.5 -13.5 -0.160654
+2020.20 10 -10.5 -13.5 -0.156383
+2020.20 10 -9.5 -13.5 -0.148485
+2020.20 10 -8.5 -13.5 -0.136323
+2020.20 10 -7.5 -13.5 -0.12006
+2020.20 10 -6.5 -13.5 -0.100475
+2020.20 10 -5.5 -13.5 -0.0786371
+2020.20 10 -4.5 -13.5 -0.0554923
+2020.20 10 -3.5 -13.5 -0.0319636
+2020.20 10 -2.5 -13.5 -0.00899583
+2020.20 10 -1.5 -13.5 0.0123311
+2020.20 10 -0.5 -13.5 0.0309429
+2020.20 10 0.5 -13.5 0.0461646
+2020.20 10 1.5 -13.5 0.058119
+2020.20 10 0.5 2.5 0.0612424
+2020.20 10 1.5 2.5 0.0440854
+2020.20 10 2.5 2.5 0.0221025
+2020.20 10 3.5 2.5 -0.00363169
+2020.20 10 4.5 2.5 -0.031436
+2020.20 10 5.5 2.5 -0.0595959
+2020.20 10 6.5 2.5 -0.0862259
+2020.20 10 7.5 2.5 -0.109814
+2020.20 10 8.5 2.5 -0.128967
+2020.20 10 9.5 2.5 -0.143103
+2020.20 10 10.5 2.5 -0.152254
+2020.20 10 11.5 2.5 -0.157462
+2020.20 10 12.5 2.5 -0.159916
+2020.20 10 13.5 2.5 -0.160945
+2020.20 10 14.5 2.5 -0.161319
+3030.30 10 2.5 -5.50173 -6.50173 -4.50173 -4.5 -5 -4.5
+2020.20 10 2.5 -13.5 0.0675749
+2020.20 10 3.5 -13.5 0.0757346
+2020.20 10 4.5 -13.5 0.0829687
+2020.20 10 5.5 -13.5 0.0893311
+2020.20 10 6.5 -13.5 0.0943406
+2020.20 10 7.5 -13.5 0.0974289
+2020.20 10 8.5 -13.5 0.0981834
+2020.20 10 9.5 -13.5 0.0964714
+2020.20 10 10.5 -13.5 0.0926537
+2020.20 10 11.5 -13.5 0.0871883
+2020.20 10 12.5 -13.5 0.0812806
+2020.20 10 13.5 -13.5 0.0754474
+2020.20 10 14.5 -13.5 0.0702831
+3030.30 10 -13.5 7.82098 6.82098 8.82098 8.30591 8 8.5
+2020.20 10 -14.5 3.5 0.0397949
+2020.20 10 -13.5 3.5 0.0465434
+2020.20 10 -12.5 3.5 0.0548814
+2020.20 10 -11.5 3.5 0.0638273
+2020.20 10 -10.5 3.5 0.0724461
+2020.20 10 -9.5 3.5 0.078825
+2020.20 10 -8.5 3.5 0.0832262
+2020.20 10 -7.5 3.5 0.0863849
+2020.20 10 -6.5 3.5 0.0889683
+2020.20 10 -5.5 3.5 0.0908314
+2020.20 10 -4.5 3.5 0.0912464
+2020.20 10 -3.5 3.5 0.0898224
+2020.20 10 -2.5 3.5 0.086221
+2020.20 10 -1.5 3.5 0.0803039
+2020.20 10 -0.5 3.5 0.0714397
+2020.20 10 -14.5 -12.5 -0.16354
+2020.20 10 -13.5 -12.5 -0.163597
+2020.20 10 -12.5 -12.5 -0.163036
+2020.20 10 -11.5 -12.5 -0.161141
+2020.20 10 -10.5 -12.5 -0.156773
+2020.20 10 -9.5 -12.5 -0.148866
+2020.20 10 -8.5 -12.5 -0.136677
+2020.20 10 -7.5 -12.5 -0.120241
+2020.20 10 -6.5 -12.5 -0.100143
+2020.20 10 -5.5 -12.5 -0.0775992
+2020.20 10 -4.5 -12.5 -0.0535379
+2020.20 10 -3.5 -12.5 -0.0291686
+2020.20 10 -2.5 -12.5 -0.0055116
+2020.20 10 0.5 3.5 0.0586102
+2020.20 10 1.5 3.5 0.0413556
+2020.20 10 2.5 3.5 0.0198098
+2020.20 10 3.5 3.5 -0.00527989
+2020.20 10 4.5 3.5 -0.0324686
+2020.20 10 5.5 3.5 -0.0601998
+2020.20 10 6.5 3.5 -0.0866534
+2020.20 10 7.5 3.5 -0.110407
+2020.20 10 8.5 3.5 -0.129992
+2020.20 10 9.5 3.5 -0.144746
+2020.20 10 10.5 3.5 -0.154609
+2020.20 10 11.5 3.5 -0.160363
+2020.20 10 12.5 3.5 -0.163051
+2020.20 10 13.5 3.5 -0.163927
+2020.20 10 14.5 3.5 -0.163909
+2020.20 10 -1.5 -12.5 0.0162384
+2020.20 10 -0.5 -12.5 0.0350384
+2020.20 10 0.5 -12.5 0.0501137
+2020.20 10 1.5 -12.5 0.0615399
+2020.20 10 2.5 -12.5 0.0700284
+2020.20 10 3.5 -12.5 0.0767458
+2020.20 10 4.5 -12.5 0.0820884
+2020.20 10 5.5 -12.5 0.0863324
+2020.20 10 6.5 -12.5 0.0893214
+2020.20 10 7.5 -12.5 0.0908248
+2020.20 10 8.5 -12.5 0.090877
+2020.20 10 9.5 -12.5 0.0895411
+2020.20 10 10.5 -12.5 0.0868032
+2020.20 10 11.5 -12.5 0.0825289
+3030.30 10 3.5 -6.13239 -7.13239 -5.13239 -4.77433 -5 -4.5
+2020.20 10 -14.5 4.5 0.0394585
+2020.20 10 -13.5 4.5 0.0463725
+2020.20 10 -12.5 4.5 0.055347
+2020.20 10 -11.5 4.5 0.0655903
+2020.20 10 -10.5 4.5 0.076052
+2020.20 10 -9.5 4.5 0.0841767
+2020.20 10 -8.5 4.5 0.0892648
+2020.20 10 -7.5 4.5 0.0913394
+2020.20 10 -6.5 4.5 0.0912482
+2020.20 10 -5.5 4.5 0.089973
+2020.20 10 -4.5 4.5 0.0881586
+2020.20 10 -3.5 4.5 0.0860637
+2020.20 10 -2.5 4.5 0.0831193
+2020.20 10 -1.5 4.5 0.0784731
+2020.20 10 12.5 -12.5 0.0774685
+2020.20 10 13.5 -12.5 0.0720607
+2020.20 10 14.5 -12.5 0.0669553
+3030.30 10 -12.5 8.03763 7.03763 9.03763 8.03763 8 8.5
+2020.20 10 -14.5 -11.5 -0.165594
+2020.20 10 -13.5 -11.5 -0.165653
+2020.20 10 -12.5 -11.5 -0.165147
+2020.20 10 -11.5 -11.5 -0.163289
+2020.20 10 -10.5 -11.5 -0.158829
+2020.20 10 -9.5 -11.5 -0.150663
+2020.20 10 -8.5 -11.5 -0.13802
+2020.20 10 -7.5 -11.5 -0.120956
+2020.20 10 -6.5 -11.5 -0.100037
+2020.20 10 -5.5 -11.5 -0.0764255
+2020.20 10 -0.5 4.5 0.0707546
+2020.20 10 0.5 4.5 0.0585803
+2020.20 10 1.5 4.5 0.0414456
+2020.20 10 2.5 4.5 0.0197162
+2020.20 10 3.5 4.5 -0.0056626
+2020.20 10 4.5 4.5 -0.0331083
+2020.20 10 5.5 4.5 -0.0610693
+2020.20 10 6.5 4.5 -0.0878129
+2020.20 10 7.5 4.5 -0.111907
+2020.20 10 8.5 4.5 -0.131851
+2020.20 10 9.5 4.5 -0.146899
+2020.20 10 10.5 4.5 -0.156833
+2020.20 10 11.5 4.5 -0.162513
+2020.20 10 12.5 4.5 -0.165046
+2020.20 10 13.5 4.5 -0.165895
+2020.20 10 -4.5 -11.5 -0.0513026
+2020.20 10 -3.5 -11.5 -0.025909
+2020.20 10 -2.5 -11.5 -0.00144942
+2020.20 10 -1.5 -11.5 0.0207665
+2020.20 10 -0.5 -11.5 0.039671
+2020.20 10 0.5 -11.5 0.0544684
+2020.20 10 1.5 -11.5 0.0650555
+2020.20 10 2.5 -11.5 0.0720113
+2020.20 10 3.5 -11.5 0.076449
+2020.20 10 4.5 -11.5 0.0791462
+2020.20 10 5.5 -11.5 0.0808198
+2020.20 10 6.5 -11.5 0.0817668
+2020.20 10 7.5 -11.5 0.0820478
+2020.20 10 8.5 -11.5 0.0815877
+2020.20 10 14.5 4.5 -0.165992
+3030.30 10 4.5 -7.0421 -8.0421 -6.0421 -7.0421 -8 -7.5
+2020.20 10 -14.5 5.5 0.0404187
+2020.20 10 -13.5 5.5 0.0462751
+2020.20 10 -12.5 5.5 0.0537368
+2020.20 10 -11.5 5.5 0.0620119
+2020.20 10 -10.5 5.5 0.0694429
+2020.20 10 -9.5 5.5 0.0733869
+2020.20 10 -8.5 5.5 0.0732064
+2020.20 10 -7.5 5.5 0.0697241
+2020.20 10 -6.5 5.5 0.0654355
+2020.20 10 -5.5 5.5 0.0631877
+2020.20 10 -4.5 5.5 0.0643824
+2020.20 10 -3.5 5.5 0.0682145
+2020.20 10 -2.5 5.5 0.0720558
+2020.20 10 9.5 -11.5 0.0802562
+2020.20 10 10.5 -11.5 0.0778934
+2020.20 10 11.5 -11.5 0.0742305
+2020.20 10 12.5 -11.5 0.0698752
+2020.20 10 13.5 -11.5 0.0650724
+2020.20 10 14.5 -11.5 0.0604577
+3030.30 10 -11.5 7.91014 6.91014 8.91014 7.37912 7 7.5
+2020.20 10 -14.5 -10.5 -0.164559
+2020.20 10 -13.5 -10.5 -0.164165
+2020.20 10 -12.5 -10.5 -0.163318
+2020.20 10 -11.5 -10.5 -0.161428
+2020.20 10 -10.5 -10.5 -0.157294
+2020.20 10 -9.5 -10.5 -0.149751
+2020.20 10 -1.5 5.5 0.073411
+2020.20 10 -0.5 5.5 0.0698186
+2020.20 10 0.5 5.5 0.0598624
+2020.20 10 1.5 5.5 0.0435263
+2020.20 10 2.5 5.5 0.0217557
+2020.20 10 3.5 5.5 -0.00411259
+2020.20 10 4.5 5.5 -0.0322921
+2020.20 10 5.5 5.5 -0.0609939
+2020.20 10 6.5 5.5 -0.0882974
+2020.20 10 7.5 5.5 -0.112669
+2020.20 10 8.5 5.5 -0.132723
+2020.20 10 9.5 5.5 -0.147758
+2020.20 10 10.5 5.5 -0.157829
+2020.20 10 11.5 5.5 -0.163846
+2020.20 10 12.5 5.5 -0.166889
+2020.20 10 -8.5 -10.5 -0.137724
+2020.20 10 -7.5 -10.5 -0.121007
+2020.20 10 -6.5 -10.5 -0.0999137
+2020.20 10 -5.5 -10.5 -0.075496
+2020.20 10 -4.5 -10.5 -0.0490089
+2020.20 10 -3.5 -10.5 -0.0219905
+2020.20 10 -2.5 -10.5 0.00390026
+2020.20 10 -1.5 -10.5 0.0268803
+2020.20 10 -0.5 -10.5 0.0456323
+2020.20 10 0.5 -10.5 0.0593519
+2020.20 10 1.5 -10.5 0.0682425
+2020.20 10 2.5 -10.5 0.0734816
+2020.20 10 3.5 -10.5 0.0766198
+2020.20 10 4.5 -10.5 0.0790699
+2020.20 10 5.5 -10.5 0.0813351
+2020.20 10 13.5 5.5 -0.168216
+2020.20 10 14.5 5.5 -0.168658
+3030.30 10 5.5 -6.5 -7.5 -5.5 -7.5 -8 -7.5
+2020.20 10 -14.5 6.5 0.0416769
+2020.20 10 -13.5 6.5 0.0448967
+2020.20 10 -12.5 6.5 0.047606
+2020.20 10 -11.5 6.5 0.0489628
+2020.20 10 -10.5 6.5 0.0486028
+2020.20 10 -9.5 6.5 0.0468666
+2020.20 10 -8.5 6.5 0.046232
+2020.20 10 -7.5 6.5 0.0489627
+2020.20 10 -6.5 6.5 0.0556592
+2020.20 10 -5.5 6.5 0.064181
+2020.20 10 -4.5 6.5 0.0717542
+2020.20 10 -3.5 6.5 0.0768938
+2020.20 10 6.5 -10.5 0.0832891
+2020.20 10 7.5 -10.5 0.0842813
+2020.20 10 8.5 -10.5 0.083536
+2020.20 10 9.5 -10.5 0.0806674
+2020.20 10 10.5 -10.5 0.0759247
+2020.20 10 11.5 -10.5 0.0698968
+2020.20 10 12.5 -10.5 0.0639527
+2020.20 10 13.5 -10.5 0.0583883
+2020.20 10 14.5 -10.5 0.0538322
+3030.30 10 -10.5 7.70991 6.70991 8.70991 7.57106 7 7.5
+2020.20 10 -14.5 -9.5 -0.159951
+2020.20 10 -13.5 -9.5 -0.15988
+2020.20 10 -2.5 6.5 0.0787175
+2020.20 10 -1.5 6.5 0.0774935
+2020.20 10 -0.5 6.5 0.0729443
+2020.20 10 0.5 6.5 0.0639116
+2020.20 10 1.5 6.5 0.0491794
+2020.20 10 2.5 6.5 0.0282447
+2020.20 10 3.5 6.5 0.0022833
+2020.20 10 4.5 6.5 -0.0266807
+2020.20 10 5.5 6.5 -0.0563373
+2020.20 10 6.5 6.5 -0.0843095
+2020.20 10 7.5 6.5 -0.109117
+2020.20 10 8.5 6.5 -0.12946
+2020.20 10 9.5 6.5 -0.14483
+2020.20 10 10.5 6.5 -0.155274
+2020.20 10 11.5 6.5 -0.161672
+2020.20 10 12.5 6.5 -0.165061
+2020.20 10 13.5 6.5 -0.166761
+2020.20 10 14.5 6.5 -0.16762
+2020.20 10 -12.5 -9.5 -0.159348
+2020.20 10 -11.5 -9.5 -0.15764
+2020.20 10 -10.5 -9.5 -0.153547
+2020.20 10 -9.5 -9.5 -0.145872
+2020.20 10 -8.5 -9.5 -0.133626
+2020.20 10 -7.5 -9.5 -0.116488
+2020.20 10 -6.5 -9.5 -0.0946936
+2020.20 10 -5.5 -9.5 -0.0691522
+2020.20 10 -4.5 -9.5 -0.0411406
+2020.20 10 -3.5 -9.5 -0.0125626
+2020.20 10 -2.5 -9.5 0.014226
+2020.20 10 -1.5 -9.5 0.0369324
+2020.20 10 -0.5 -9.5 0.0538423
+2020.20 10 0.5 -9.5 0.0645482
+3030.30 10 6.5 -6.5 -7.5 -5.5 -4.5 -5 -4.5
+2020.20 10 -14.5 7.5 0.0446909
+2020.20 10 -13.5 7.5 0.0463875
+2020.20 10 -12.5 7.5 0.0473892
+2020.20 10 -11.5 7.5 0.0468565
+2020.20 10 -10.5 7.5 0.0439899
+2020.20 10 -9.5 7.5 0.0384772
+2020.20 10 -8.5 7.5 0.0315939
+2020.20 10 -7.5 7.5 0.0253061
+2020.20 10 -6.5 7.5 0.0219225
+2020.20 10 -5.5 7.5 0.0226584
+2020.20 10 -4.5 7.5 0.0270206
+2020.20 10 -3.5 7.5 0.0336308
+2020.20 10 -2.5 7.5 0.0406959
+2020.20 10 -1.5 7.5 0.0474371
+2020.20 10 1.5 -9.5 0.0698233
+2020.20 10 2.5 -9.5 0.0710637
+2020.20 10 3.5 -9.5 0.0695226
+2020.20 10 4.5 -9.5 0.0662319
+2020.20 10 5.5 -9.5 0.0623965
+2020.20 10 6.5 -9.5 0.0590579
+2020.20 10 7.5 -9.5 0.0570045
+2020.20 10 8.5 -9.5 0.0566612
+2020.20 10 9.5 -9.5 0.0571303
+2020.20 10 10.5 -9.5 0.0568193
+2020.20 10 11.5 -9.5 0.0546659
+2020.20 10 12.5 -9.5 0.0514792
+2020.20 10 13.5 -9.5 0.0479566
+2020.20 10 14.5 -9.5 0.0448122
+3030.30 10 -9.5 7.5 6.5 8.5 6.5 6 6.5
+2020.20 10 -0.5 7.5 0.0530026
+2020.20 10 0.5 7.5 0.0560903
+2020.20 10 1.5 7.5 0.0545488
+2020.20 10 2.5 7.5 0.0460026
+2020.20 10 3.5 7.5 0.0295395
+2020.20 10 4.5 7.5 0.00657157
+2020.20 10 5.5 7.5 -0.0202528
+2020.20 10 6.5 7.5 -0.0477651
+2020.20 10 7.5 7.5 -0.0735198
+2020.20 10 8.5 7.5 -0.0957772
+2020.20 10 9.5 7.5 -0.114022
+2020.20 10 10.5 7.5 -0.12813
+2020.20 10 11.5 7.5 -0.138656
+2020.20 10 12.5 7.5 -0.145877
+2020.20 10 13.5 7.5 -0.150918
+2020.20 10 -14.5 -8.5 -0.144225
+2020.20 10 -13.5 -8.5 -0.141333
+2020.20 10 -12.5 -8.5 -0.1373
+2020.20 10 -11.5 -8.5 -0.131628
+2020.20 10 -10.5 -8.5 -0.123292
+2020.20 10 -9.5 -8.5 -0.111784
+2020.20 10 -8.5 -8.5 -0.0963516
+2020.20 10 -7.5 -8.5 -0.0767449
+2020.20 10 -6.5 -8.5 -0.05311
+2020.20 10 -5.5 -8.5 -0.026735
+2020.20 10 -4.5 -8.5 -0.000217696
+2020.20 10 -3.5 -8.5 0.023547
+2020.20 10 -2.5 -8.5 0.0413422
+2020.20 10 -1.5 -8.5 0.0514392
+2020.20 10 14.5 7.5 -0.154384
+3030.30 10 7.5 -5.5 -6.5 -4.5 -3.5 -4 -3.5
+2020.20 10 -14.5 8.5 -0.0154647
+2020.20 10 -13.5 8.5 0.0018623
+2020.20 10 -12.5 8.5 0.0217859
+2020.20 10 -11.5 8.5 0.041553
+2020.20 10 -10.5 8.5 0.058737
+2020.20 10 -9.5 8.5 0.0692501
+2020.20 10 -8.5 8.5 0.0732104
+2020.20 10 -7.5 8.5 0.0722939
+2020.20 10 -6.5 8.5 0.0686289
+2020.20 10 -5.5 8.5 0.064336
+2020.20 10 -4.5 8.5 0.0598954
+2020.20 10 -3.5 8.5 0.0542729
+2020.20 10 -2.5 8.5 0.0458307
+2020.20 10 -0.5 -8.5 0.0546397
+2020.20 10 0.5 -8.5 0.0537651
+2020.20 10 1.5 -8.5 0.0517211
+2020.20 10 2.5 -8.5 0.0499392
+2020.20 10 3.5 -8.5 0.0484609
+2020.20 10 4.5 -8.5 0.0464126
+2020.20 10 5.5 -8.5 0.0417828
+2020.20 10 6.5 -8.5 0.0338268
+2020.20 10 7.5 -8.5 0.023235
+2020.20 10 8.5 -8.5 0.0123401
+2020.20 10 9.5 -8.5 0.00421694
+2020.20 10 10.5 -8.5 0.00180829
+2020.20 10 11.5 -8.5 0.0059596
+2020.20 10 12.5 -8.5 0.0139534
+2020.20 10 -1.5 8.5 0.034024
+2020.20 10 -0.5 8.5 0.0202388
+2020.20 10 0.5 8.5 0.00819952
+2020.20 10 1.5 8.5 0.00203523
+2020.20 10 2.5 8.5 0.0037914
+2020.20 10 3.5 8.5 0.01184
+2020.20 10 4.5 8.5 0.0214995
+2020.20 10 5.5 8.5 0.0279898
+2020.20 10 6.5 8.5 0.0278295
+2020.20 10 7.5 8.5 0.0198617
+2020.20 10 8.5 8.5 0.00522025
+2020.20 10 9.5 8.5 -0.0137575
+2020.20 10 10.5 8.5 -0.0345495
+2020.20 10 11.5 8.5 -0.0554387
+2020.20 10 12.5 8.5 -0.0735827
+2020.20 10 13.5 -8.5 0.0226267
+2020.20 10 14.5 -8.5 0.0298461
+3030.30 10 -8.5 10.5 9.5 11.5 12.5 12 12.5
+2020.20 10 -14.5 -7.5 -0.0858569
+2020.20 10 -13.5 -7.5 -0.0745609
+2020.20 10 -12.5 -7.5 -0.0602978
+2020.20 10 -11.5 -7.5 -0.0433458
+2020.20 10 -10.5 -7.5 -0.0240337
+2020.20 10 -9.5 -7.5 -0.00495005
+2020.20 10 -8.5 -7.5 0.0127425
+2020.20 10 -7.5 -7.5 0.0277521
+2020.20 10 -6.5 -7.5 0.0392281
+2020.20 10 -5.5 -7.5 0.0468663
+2020.20 10 -4.5 -7.5 0.0504864
+2020.20 10 -3.5 -7.5 0.0503496
+2020.20 10 13.5 8.5 -0.0886792
+2020.20 10 14.5 8.5 -0.100523
+3030.30 10 8.5 4.5 1e+12 -1e+12 5.97589 5 5.5
+2020.20 10 -14.5 9.5 -0.057772
+2020.20 10 -13.5 9.5 -0.04002
+2020.20 10 -12.5 9.5 -0.0179205
+2020.20 10 -11.5 9.5 0.00664528
+2020.20 10 -10.5 9.5 0.0315723
+2020.20 10 -9.5 9.5 0.051357
+2020.20 10 -8.5 9.5 0.0642483
+2020.20 10 -7.5 9.5 0.0704436
+2020.20 10 -6.5 9.5 0.0712569
+2020.20 10 -5.5 9.5 0.0683036
+2020.20 10 -4.5 9.5 0.0631187
+2020.20 10 -2.5 -7.5 0.0467528
+2020.20 10 -1.5 -7.5 0.0411085
+2020.20 10 -0.5 -7.5 0.0355973
+2020.20 10 0.5 -7.5 0.0324088
+2020.20 10 1.5 -7.5 0.0324207
+2020.20 10 2.5 -7.5 0.03482
+2020.20 10 3.5 -7.5 0.03774
+2020.20 10 4.5 -7.5 0.0397945
+2020.20 10 5.5 -7.5 0.0405492
+2020.20 10 6.5 -7.5 0.0410205
+2020.20 10 7.5 -7.5 0.0425021
+2020.20 10 8.5 -7.5 0.0449316
+2020.20 10 9.5 -7.5 0.0466437
+2020.20 10 10.5 -7.5 0.0443011
+2020.20 10 11.5 -7.5 0.0349894
+2020.20 10 -3.5 9.5 0.0577015
+2020.20 10 -2.5 9.5 0.053936
+2020.20 10 -1.5 9.5 0.0534728
+2020.20 10 -0.5 9.5 0.0567083
+2020.20 10 0.5 9.5 0.0617963
+2020.20 10 1.5 9.5 0.0654129
+2020.20 10 2.5 9.5 0.0652364
+2020.20 10 3.5 9.5 0.0612816
+2020.20 10 4.5 9.5 0.0550919
+2020.20 10 5.5 9.5 0.0481598
+2020.20 10 6.5 9.5 0.0409385
+2020.20 10 7.5 9.5 0.0325086
+2020.20 10 8.5 9.5 0.0210549
+2020.20 10 9.5 9.5 0.00547227
+2020.20 10 10.5 9.5 -0.0139256
+2020.20 10 11.5 9.5 -0.0357482
+2020.20 10 12.5 -7.5 0.0208893
+2020.20 10 13.5 -7.5 0.00410975
+2020.20 10 14.5 -7.5 -0.0119776
+3030.30 10 -7.5 4.5 1e+12 -1e+12 6.5 6 6.5
+2020.20 10 -14.5 -6.5 -0.0687521
+2020.20 10 -13.5 -6.5 -0.0546751
+2020.20 10 -12.5 -6.5 -0.0371746
+2020.20 10 -11.5 -6.5 -0.0175929
+2020.20 10 -10.5 -6.5 0.00281669
+2020.20 10 -9.5 -6.5 0.0201972
+2020.20 10 -8.5 -6.5 0.0332637
+2020.20 10 -7.5 -6.5 0.0419466
+2020.20 10 -6.5 -6.5 0.0473513
+2020.20 10 -5.5 -6.5 0.0511344
+2020.20 10 12.5 9.5 -0.0561172
+2020.20 10 13.5 9.5 -0.0740258
+2020.20 10 14.5 9.5 -0.0883143
+3030.30 10 9.5 -4.5 1e+12 -1e+12 -5.5 -6 -5.5
+2020.20 10 -14.5 10.5 -0.0623864
+2020.20 10 -13.5 10.5 -0.0459245
+2020.20 10 -12.5 10.5 -0.025282
+2020.20 10 -11.5 10.5 -0.00203967
+2020.20 10 -10.5 10.5 0.0221089
+2020.20 10 -9.5 10.5 0.0424208
+2020.20 10 -8.5 10.5 0.0573317
+2020.20 10 -7.5 10.5 0.0670676
+2020.20 10 -6.5 10.5 0.0730326
+2020.20 10 -4.5 -6.5 0.0548106
+2020.20 10 -3.5 -6.5 0.0585552
+2020.20 10 -2.5 -6.5 0.0622101
+2020.20 10 -1.5 -6.5 0.0649221
+2020.20 10 -0.5 -6.5 0.0660038
+2020.20 10 0.5 -6.5 0.0656304
+2020.20 10 1.5 -6.5 0.0646007
+2020.20 10 2.5 -6.5 0.0637972
+2020.20 10 3.5 -6.5 0.0634859
+2020.20 10 4.5 -6.5 0.0634189
+2020.20 10 5.5 -6.5 0.0637228
+2020.20 10 6.5 -6.5 0.0634126
+2020.20 10 7.5 -6.5 0.0618942
+2020.20 10 8.5 -6.5 0.0576214
+2020.20 10 -5.5 10.5 0.0773856
+2020.20 10 -4.5 10.5 0.0814117
+2020.20 10 -3.5 10.5 0.0852497
+2020.20 10 -2.5 10.5 0.0881724
+2020.20 10 -1.5 10.5 0.089249
+2020.20 10 -0.5 10.5 0.0877313
+2020.20 10 0.5 10.5 0.0837677
+2020.20 10 1.5 10.5 0.0781329
+2020.20 10 2.5 10.5 0.071654
+2020.20 10 3.5 10.5 0.0646631
+2020.20 10 4.5 10.5 0.0573821
+2020.20 10 5.5 10.5 0.0500021
+2020.20 10 6.5 10.5 0.0420855
+2020.20 10 7.5 10.5 0.0327404
+2020.20 10 8.5 10.5 0.0207667
+2020.20 10 9.5 10.5 0.00519465
+2020.20 10 9.5 -6.5 0.0487526
+2020.20 10 10.5 -6.5 0.0338714
+2020.20 10 11.5 -6.5 0.0130481
+2020.20 10 12.5 -6.5 -0.0090982
+2020.20 10 13.5 -6.5 -0.0304715
+2020.20 10 14.5 -6.5 -0.0486194
+3030.30 10 -6.5 -0.256576 1e+12 -1e+12 -0.256576 -1 -0.5
+2020.20 10 -14.5 -5.5 -0.0663027
+2020.20 10 -13.5 -5.5 -0.0518649
+2020.20 10 -12.5 -5.5 -0.0340171
+2020.20 10 -11.5 -5.5 -0.0142029
+2020.20 10 -10.5 -5.5 0.00617813
+2020.20 10 -9.5 -5.5 0.0231694
+2020.20 10 -8.5 -5.5 0.0356746
+2020.20 10 10.5 10.5 -0.0140869
+2020.20 10 11.5 10.5 -0.0359854
+2020.20 10 12.5 10.5 -0.0566251
+2020.20 10 13.5 10.5 -0.0749024
+2020.20 10 14.5 10.5 -0.0895943
+3030.30 10 10.5 -1.58502 1e+12 -1e+12 -1.58502 -2 -1.5
+2020.20 10 -14.5 11.5 -0.0617702
+2020.20 10 -13.5 11.5 -0.0458423
+2020.20 10 -12.5 11.5 -0.0261882
+2020.20 10 -11.5 11.5 -0.00430169
+2020.20 10 -10.5 11.5 0.0183129
+2020.20 10 -9.5 11.5 0.0373035
+2020.20 10 -8.5 11.5 0.0515332
+2020.20 10 -7.5 -5.5 0.0441062
+2020.20 10 -6.5 -5.5 0.0498502
+2020.20 10 -5.5 -5.5 0.0548977
+2020.20 10 -4.5 -5.5 0.0606954
+2020.20 10 -3.5 -5.5 0.067563
+2020.20 10 -2.5 -5.5 0.0747749
+2020.20 10 -1.5 -5.5 0.0810826
+2020.20 10 -0.5 -5.5 0.0851615
+2020.20 10 0.5 -5.5 0.0862759
+2020.20 10 1.5 -5.5 0.084671
+2020.20 10 2.5 -5.5 0.0814152
+2020.20 10 3.5 -5.5 0.0776785
+2020.20 10 4.5 -5.5 0.0740957
+2020.20 10 5.5 -5.5 0.0709696
+2020.20 10 6.5 -5.5 0.0675764
+2020.20 10 -7.5 11.5 0.0614146
+2020.20 10 -6.5 11.5 0.0683169
+2020.20 10 -5.5 11.5 0.0738692
+2020.20 10 -4.5 11.5 0.0793748
+2020.20 10 -3.5 11.5 0.084703
+2020.20 10 -2.5 11.5 0.0891366
+2020.20 10 -1.5 11.5 0.0919132
+2020.20 10 -0.5 11.5 0.0922737
+2020.20 10 0.5 11.5 0.0898021
+2020.20 10 1.5 11.5 0.0847241
+2020.20 10 2.5 11.5 0.0778391
+2020.20 10 3.5 11.5 0.0699073
+2020.20 10 4.5 11.5 0.0612028
+2020.20 10 5.5 11.5 0.0524122
+2020.20 10 6.5 11.5 0.0431662
+2020.20 10 7.5 -5.5 0.0627681
+2020.20 10 8.5 -5.5 0.0549101
+2020.20 10 9.5 -5.5 0.042785
+2020.20 10 10.5 -5.5 0.0258438
+2020.20 10 11.5 -5.5 0.00478016
+2020.20 10 12.5 -5.5 -0.0163744
+2020.20 10 13.5 -5.5 -0.0360996
+2020.20 10 14.5 -5.5 -0.0526129
+3030.30 10 -5.5 0.40982 1e+12 -1e+12 0.40982 0 0.5
+2020.20 10 -14.5 -4.5 -0.0662758
+2020.20 10 -13.5 -4.5 -0.0510808
+2020.20 10 -12.5 -4.5 -0.0324428
+2020.20 10 -11.5 -4.5 -0.0118482
+2020.20 10 -10.5 -4.5 0.00923616
+2020.20 10 7.5 11.5 0.0326394
+2020.20 10 8.5 11.5 0.0196201
+2020.20 10 9.5 11.5 0.00324859
+2020.20 10 10.5 11.5 -0.0165911
+2020.20 10 11.5 11.5 -0.0388064
+2020.20 10 12.5 11.5 -0.0595608
+2020.20 10 13.5 11.5 -0.0777996
+2020.20 10 14.5 11.5 -0.092382
+3030.30 10 11.5 -0.872692 1e+12 -1e+12 -0.872692 -1 -0.5
+2020.20 10 -14.5 12.5 -0.0603431
+2020.20 10 -13.5 12.5 -0.0453581
+2020.20 10 -12.5 12.5 -0.0269187
+2020.20 10 -11.5 12.5 -0.00640961
+2020.20 10 -10.5 12.5 0.0148419
+2020.20 10 -9.5 -4.5 0.0266653
+2020.20 10 -8.5 -4.5 0.0394444
+2020.20 10 -7.5 -4.5 0.0481053
+2020.20 10 -6.5 -4.5 0.0542873
+2020.20 10 -5.5 -4.5 0.0599976
+2020.20 10 -4.5 -4.5 0.0663898
+2020.20 10 -3.5 -4.5 0.0735129
+2020.20 10 -2.5 -4.5 0.0804893
+2020.20 10 -1.5 -4.5 0.0860559
+2020.20 10 -0.5 -4.5 0.0892209
+2020.20 10 0.5 -4.5 0.0896563
+2020.20 10 1.5 -4.5 0.0876571
+2020.20 10 2.5 -4.5 0.0839789
+2020.20 10 3.5 -4.5 0.0795038
+2020.20 10 4.5 -4.5 0.0748362
+2020.20 10 -9.5 12.5 0.032866
+2020.20 10 -8.5 12.5 0.0467114
+2020.20 10 -7.5 12.5 0.0568553
+2020.20 10 -6.5 12.5 0.0645164
+2020.20 10 -5.5 12.5 0.0712663
+2020.20 10 -4.5 12.5 0.077961
+2020.20 10 -3.5 12.5 0.0845389
+2020.20 10 -2.5 12.5 0.0902003
+2020.20 10 -1.5 12.5 0.094197
+2020.20 10 -0.5 12.5 0.0957589
+2020.20 10 0.5 12.5 0.094378
+2020.20 10 1.5 12.5 0.0900592
+2020.20 10 2.5 12.5 0.083375
+2020.20 10 3.5 12.5 0.0749673
+2020.20 10 5.5 -4.5 0.0702993
+2020.20 10 6.5 -4.5 0.0652731
+2020.20 10 7.5 -4.5 0.058917
+2020.20 10 8.5 -4.5 0.0498468
+2020.20 10 9.5 -4.5 0.0371151
+2020.20 10 10.5 -4.5 0.0203955
+2020.20 10 11.5 -4.5 0.000430522
+2020.20 10 12.5 -4.5 -0.019148
+2020.20 10 13.5 -4.5 -0.0371512
+2020.20 10 14.5 -4.5 -0.0521263
+3030.30 10 -4.5 0.178834 1e+12 -1e+12 0.178834 0 0.5
+2020.20 10 -14.5 -3.5 -0.0664008
+2020.20 10 -13.5 -3.5 -0.0508075
+2020.20 10 4.5 12.5 0.0654487
+2020.20 10 5.5 12.5 0.0554491
+2020.20 10 6.5 12.5 0.045001
+2020.20 10 7.5 12.5 0.0333812
+2020.20 10 8.5 12.5 0.0194615
+2020.20 10 9.5 12.5 0.0024155
+2020.20 10 10.5 12.5 -0.0178828
+2020.20 10 11.5 12.5 -0.04044
+2020.20 10 12.5 12.5 -0.0614497
+2020.20 10 13.5 12.5 -0.0799155
+2020.20 10 14.5 12.5 -0.094685
+3030.30 10 12.5 -0.469251 1e+12 -1e+12 -0.469251 -1 -0.5
+2020.20 10 -14.5 13.5 -0.0604213
+2020.20 10 -12.5 -3.5 -0.0315178
+2020.20 10 -11.5 -3.5 -0.0100151
+2020.20 10 -10.5 -3.5 0.0122014
+2020.20 10 -9.5 -3.5 0.0308395
+2020.20 10 -8.5 -3.5 0.0447619
+2020.20 10 -7.5 -3.5 0.0543673
+2020.20 10 -6.5 -3.5 0.0611284
+2020.20 10 -5.5 -3.5 0.0669621
+2020.20 10 -4.5 -3.5 0.072902
+2020.20 10 -3.5 -3.5 0.0791259
+2020.20 10 -2.5 -3.5 0.0850107
+2020.20 10 -1.5 -3.5 0.089634
+2020.20 10 -0.5 -3.5 0.0921218
+2020.20 10 0.5 -3.5 0.0920113
+2020.20 10 1.5 -3.5 0.089387
+2020.20 10 -13.5 13.5 -0.0460054
+2020.20 10 -12.5 13.5 -0.0283188
+2020.20 10 -11.5 13.5 -0.00875806
+2020.20 10 -10.5 13.5 0.0114827
+2020.20 10 -9.5 13.5 0.0287425
+2020.20 10 -8.5 13.5 0.0422566
+2020.20 10 -7.5 13.5 0.0526362
+2020.20 10 -6.5 13.5 0.0609926
+2020.20 10 -5.5 13.5 0.0687392
+2020.20 10 -4.5 13.5 0.076525
+2020.20 10 -3.5 13.5 0.0837856
+2020.20 10 -2.5 13.5 0.0898451
+2020.20 10 -1.5 13.5 0.0938901
+2020.20 10 -0.5 13.5 0.09544
+2020.20 10 0.5 13.5 0.0942683
+2020.20 10 1.5 13.5 0.0905096
+2020.20 10 2.5 -3.5 0.0848543
+2020.20 10 3.5 -3.5 0.0792407
+2020.20 10 4.5 -3.5 0.0733396
+2020.20 10 5.5 -3.5 0.0675939
+2020.20 10 6.5 -3.5 0.0616852
+2020.20 10 7.5 -3.5 0.0547939
+2020.20 10 8.5 -3.5 0.0455527
+2020.20 10 9.5 -3.5 0.0330052
+2020.20 10 10.5 -3.5 0.0168031
+2020.20 10 11.5 -3.5 -0.00237765
+2020.20 10 12.5 -3.5 -0.0210656
+2020.20 10 13.5 -3.5 -0.0381876
+2020.20 10 14.5 -3.5 -0.0523808
+3030.30 10 -3.5 -0.0425407 1e+12 -1e+12 -0.0425407 -1 -0.5
+2020.20 10 2.5 13.5 0.0846115
+2020.20 10 3.5 13.5 0.0768407
+2020.20 10 4.5 13.5 0.0675919
+2020.20 10 5.5 13.5 0.0575589
+2020.20 10 6.5 13.5 0.0466061
+2020.20 10 7.5 13.5 0.0343634
+2020.20 10 8.5 13.5 0.0197682
+2020.20 10 9.5 13.5 0.00205655
+2020.20 10 10.5 13.5 -0.0188357
+2020.20 10 11.5 13.5 -0.0418782
+2020.20 10 12.5 13.5 -0.0632615
+2020.20 10 13.5 13.5 -0.0819897
+2020.20 10 14.5 13.5 -0.0969114
+2020.20 10 -14.5 -2.5 -0.0669433
+2020.20 10 -13.5 -2.5 -0.0504819
+2020.20 10 -12.5 -2.5 -0.0299489
+2020.20 10 -11.5 -2.5 -0.00692751
+2020.20 10 -10.5 -2.5 0.0169516
+2020.20 10 -9.5 -2.5 0.0370583
+2020.20 10 -8.5 -2.5 0.0519012
+2020.20 10 -7.5 -2.5 0.061725
+2020.20 10 -6.5 -2.5 0.0679666
+2020.20 10 -5.5 -2.5 0.0726199
+2020.20 10 -4.5 -2.5 0.0769766
+2020.20 10 -3.5 -2.5 0.0815868
+2020.20 10 -2.5 -2.5 0.0860775
+2020.20 10 -1.5 -2.5 0.0897331
+3030.30 10 13.5 -0.430521 1e+12 -1e+12 -0.430521 -1 -0.5
+2020.20 10 -14.5 14.5 -0.0598832
+2020.20 10 -13.5 14.5 -0.0456594
+2020.20 10 -12.5 14.5 -0.028417
+2020.20 10 -11.5 14.5 -0.00952905
+2020.20 10 -10.5 14.5 0.0099279
+2020.20 10 -9.5 14.5 0.0265123
+2020.20 10 -8.5 14.5 0.0396877
+2020.20 10 -7.5 14.5 0.0501761
+2020.20 10 -6.5 14.5 0.0590052
+2020.20 10 -5.5 14.5 0.0672625
+2020.20 10 -4.5 14.5 0.0753142
+2020.20 10 -3.5 14.5 0.0824111
+2020.20 10 -2.5 14.5 0.0878819
+2020.20 10 -0.5 -2.5 0.0915759
+2020.20 10 0.5 -2.5 0.0908922
+2020.20 10 1.5 -2.5 0.0875672
+2020.20 10 2.5 -2.5 0.0822719
+2020.20 10 3.5 -2.5 0.0759976
+2020.20 10 4.5 -2.5 0.0696825
+2020.20 10 5.5 -2.5 0.0638512
+2020.20 10 6.5 -2.5 0.05819
+2020.20 10 7.5 -2.5 0.0516486
+2020.20 10 8.5 -2.5 0.0427341
+2020.20 10 9.5 -2.5 0.0303996
+2020.20 10 10.5 -2.5 0.0143108
+2020.20 10 11.5 -2.5 -0.00470897
+2020.20 10 12.5 -2.5 -0.0231773
+2020.20 10 -1.5 14.5 0.0913598
+2020.20 10 -0.5 14.5 0.0927628
+2020.20 10 0.5 14.5 0.0919539
+2020.20 10 1.5 14.5 0.0888924
+2020.20 10 2.5 14.5 0.0837861
+2020.20 10 3.5 14.5 0.0767335
+2020.20 10 4.5 14.5 0.0679366
+2020.20 10 5.5 14.5 0.0580872
+2020.20 10 6.5 14.5 0.0471068
+2020.20 10 7.5 14.5 0.0346001
+2020.20 10 8.5 14.5 0.0195744
+2020.20 10 9.5 14.5 0.00134933
+2020.20 10 10.5 14.5 -0.0200009
+2020.20 10 11.5 14.5 -0.0433934
+2020.20 10 13.5 -2.5 -0.0399825
+2020.20 10 14.5 -2.5 -0.0537975
+3030.30 10 -2.5 -0.270605 1e+12 -1e+12 -0.270605 -1 -0.5
+2020.20 10 -14.5 -1.5 -0.0610177
+2020.20 10 -13.5 -1.5 -0.0434277
+2020.20 10 -12.5 -1.5 -0.0216914
+2020.20 10 -11.5 -1.5 0.00241873
+2020.20 10 -10.5 -1.5 0.0270215
+2020.20 10 -9.5 -1.5 0.0469323
+2020.20 10 -8.5 -1.5 0.0606428
+2020.20 10 -7.5 -1.5 0.0684122
+2020.20 10 -6.5 -1.5 0.0718674
+2020.20 10 -5.5 -1.5 0.0730793
+2020.20 10 -4.5 -1.5 0.0732931
+2020.20 10 12.5 14.5 -0.0649565
+2020.20 10 13.5 14.5 -0.0837005
+2020.20 10 14.5 14.5 -0.0985459
+3030.30 10 14.5 -0.365697 1e+12 -1e+12 -0.365697 -1 -0.5
+2020.20 10 -14.5 15.5 -0.0599627
+2020.20 10 -13.5 15.5 -0.0459857
+2020.20 10 -12.5 15.5 -0.0290082
+2020.20 10 -11.5 15.5 -0.0103693
+2020.20 10 -10.5 15.5 0.0088709
+2020.20 10 -9.5 15.5 0.0253352
+2020.20 10 -8.5 15.5 0.0385225
+2020.20 10 -7.5 15.5 0.0492566
+2020.20 10 -6.5 15.5 0.0585899
+2020.20 10 -5.5 15.5 0.0676266
+2020.20 10 -3.5 -1.5 0.0735781
+2020.20 10 -2.5 -1.5 0.0740738
+2020.20 10 -1.5 -1.5 0.0747839
+2020.20 10 -0.5 -1.5 0.0753621
+2020.20 10 0.5 -1.5 0.0753102
+2020.20 10 1.5 -1.5 0.0740728
+2020.20 10 2.5 -1.5 0.0714468
+2020.20 10 3.5 -1.5 0.0678455
+2020.20 10 4.5 -1.5 0.0639465
+2020.20 10 5.5 -1.5 0.059886
+2020.20 10 6.5 -1.5 0.0552848
+2020.20 10 7.5 -1.5 0.0490703
+2020.20 10 8.5 -1.5 0.0397998
+2020.20 10 9.5 -1.5 0.0266239
+2020.20 10 10.5 -1.5 0.00976969
+2020.20 10 11.5 -1.5 -0.00960362
+2020.20 10 -4.5 15.5 0.0766968
+2020.20 10 -3.5 15.5 0.085119
+2020.20 10 -2.5 15.5 0.0918005
+2020.20 10 -1.5 15.5 0.0962334
+2020.20 10 -0.5 15.5 0.0979523
+2020.20 10 0.5 15.5 0.0965899
+2020.20 10 1.5 15.5 0.0922763
+2020.20 10 2.5 15.5 0.085809
+2020.20 10 3.5 15.5 0.0777842
+2020.20 10 4.5 15.5 0.068491
+2020.20 10 5.5 15.5 0.0584031
+2020.20 10 6.5 15.5 0.0474049
+2020.20 10 7.5 15.5 0.034723
+2020.20 10 8.5 15.5 0.0194627
+2020.20 10 12.5 -1.5 -0.0279658
+2020.20 10 13.5 -1.5 -0.0443074
+2020.20 10 14.5 -1.5 -0.0574816
+3030.30 10 -1.5 -0.0217285 1e+12 -1e+12 -0.082326 -1 -0.5
+2020.20 10 -14.5 -0.5 -0.0179813
+2020.20 10 -13.5 -0.5 -0.000930843
+2020.20 10 -12.5 -0.5 0.0182606
+2020.20 10 -11.5 -0.5 0.0369062
+2020.20 10 -10.5 -0.5 0.0527126
+2020.20 10 -9.5 -0.5 0.0618497
+2020.20 10 -8.5 -0.5 0.0645924
+2020.20 10 -7.5 -0.5 0.0626636
+2020.20 10 -6.5 -0.5 0.058122
+2020.20 10 9.5 15.5 0.00102851
+2020.20 10 10.5 15.5 -0.0204743
+2020.20 10 11.5 15.5 -0.0439309
+2020.20 10 12.5 15.5 -0.0655436
+2020.20 10 13.5 15.5 -0.0843903
+2020.20 10 14.5 15.5 -0.0993862
+3030.30 10 15.5 -0.442156 1e+12 -1e+12 -0.442156 -1 -0.5
+2020.20 10 -14.5 0.5 0.0420394
+2020.20 10 -13.5 0.5 0.043434
+2020.20 10 -12.5 0.5 0.043521
+2020.20 10 -11.5 0.5 0.0410362
+2020.20 10 -10.5 0.5 0.0356508
+2020.20 10 -9.5 0.5 0.0278991
+2020.20 10 -5.5 -0.5 0.0528731
+2020.20 10 -4.5 -0.5 0.0476958
+2020.20 10 -3.5 -0.5 0.0429531
+2020.20 10 -2.5 -0.5 0.039264
+2020.20 10 -1.5 -0.5 0.0375305
+2020.20 10 -0.5 -0.5 0.0386718
+2020.20 10 0.5 -0.5 0.0430809
+2020.20 10 1.5 -0.5 0.0494443
+2020.20 10 2.5 -0.5 0.0555154
+2020.20 10 3.5 -0.5 0.0592938
+2020.20 10 4.5 -0.5 0.0594373
+2020.20 10 5.5 -0.5 0.0556436
+2020.20 10 6.5 -0.5 0.0476723
+2020.20 10 7.5 -0.5 0.035772
+2020.20 10 8.5 -0.5 0.0203245
+2020.20 10 -8.5 0.5 0.0201436
+2020.20 10 -7.5 0.5 0.0152432
+2020.20 10 -6.5 0.5 0.0149872
+2020.20 10 -5.5 0.5 0.0188943
+2020.20 10 -4.5 0.5 0.0250598
+2020.20 10 -3.5 0.5 0.0318376
+2020.20 10 -2.5 0.5 0.0387811
+2020.20 10 -1.5 0.5 0.0457044
+2020.20 10 -0.5 0.5 0.0525722
+2020.20 10 0.5 0.5 0.0579268
+2020.20 10 1.5 0.5 0.0587301
+2020.20 10 2.5 0.5 0.051908
+2020.20 10 3.5 0.5 0.0363349
+2020.20 10 4.5 0.5 0.0136778
+2020.20 10 5.5 0.5 -0.0128879
+2020.20 10 9.5 -0.5 0.00231397
+2020.20 10 10.5 -0.5 -0.0167677
+2020.20 10 11.5 -0.5 -0.0357302
+2020.20 10 12.5 -0.5 -0.0521552
+2020.20 10 13.5 -0.5 -0.0657884
+2020.20 10 14.5 -0.5 -0.0764816
+3030.30 10 -0.5 4.03645 1e+12 -1e+12 4.03645 4 4.5
+2020.20 10 -14.5 -15.5 -0.162663
+2020.20 10 -13.5 -15.5 -0.16278
+2020.20 10 -12.5 -15.5 -0.162263
+2020.20 10 -11.5 -15.5 -0.160303
+2020.20 10 -10.5 -15.5 -0.155781
+2020.20 10 -9.5 -15.5 -0.147802
+2020.20 10 6.5 0.5 -0.0401391
+2020.20 10 7.5 0.5 -0.0651401
+2020.20 10 8.5 0.5 -0.0862027
+2020.20 10 9.5 0.5 -0.102844
+2020.20 10 10.5 0.5 -0.115094
+2020.20 10 11.5 0.5 -0.123682
+2020.20 10 12.5 0.5 -0.12922
+2020.20 10 13.5 0.5 -0.132914
+2020.20 10 14.5 0.5 -0.135372
+3030.30 10 0.5 1.10535 1e+12 -1e+12 1.10535 1 1.5
+2020.20 10 -14.5 1.5 0.040912
+2020.20 10 -13.5 1.5 0.0450694
+2020.20 10 -12.5 1.5 0.0499733
+2020.20 10 -11.5 1.5 0.0549195
+2020.20 10 -8.5 -15.5 -0.135795
+2020.20 10 -7.5 -15.5 -0.119899
+2020.20 10 -6.5 -15.5 -0.100812
+2020.20 10 -5.5 -15.5 -0.0796581
+2020.20 10 -4.5 -15.5 -0.0571923
+2020.20 10 -3.5 -15.5 -0.0343797
+2020.20 10 -2.5 -15.5 -0.0120879
+2020.20 10 -1.5 -15.5 0.00863179
+2020.20 10 -0.5 -15.5 0.0268806
+2020.20 10 0.5 -15.5 0.0421742
+2020.20 10 1.5 -15.5 0.0548278
+2020.20 10 2.5 -15.5 0.0656889
+2020.20 10 3.5 -15.5 0.075487
+2020.20 10 4.5 -15.5 0.0842215
+2020.20 10 -10.5 1.5 0.0589606
+2020.20 10 -9.5 1.5 0.0607847
+2020.20 10 -8.5 1.5 0.0605753
+2020.20 10 -7.5 1.5 0.0596576
+2020.20 10 -6.5 1.5 0.0597152
+2020.20 10 -5.5 1.5 0.0616221
+2020.20 10 -4.5 1.5 0.0653347
+2020.20 10 -3.5 1.5 0.0701795
+2020.20 10 -2.5 1.5 0.0744376
+2020.20 10 -1.5 1.5 0.0763271
+2020.20 10 -0.5 1.5 0.0738344
+2020.20 10 0.5 1.5 0.0654895
+2020.20 10 1.5 1.5 0.0504795
+2020.20 10 2.5 1.5 0.029215
+2020.20 10 3.5 1.5 0.00331818
+2020.20 10 4.5 1.5 -0.0250713
+2020.20 10 5.5 1.5 -0.0537862
+2020.20 10 5.5 -15.5 0.0910798
+2020.20 10 6.5 -15.5 0.0955096
+2020.20 10 7.5 -15.5 0.0973545
+2020.20 10 8.5 -15.5 0.0968499
+2020.20 10 9.5 -15.5 0.0943893
+2020.20 10 10.5 -15.5 0.0906378
+2020.20 10 11.5 -15.5 0.086028
+2020.20 10 12.5 -15.5 0.0813561
+2020.20 10 13.5 -15.5 0.0766014
+2020.20 10 14.5 -15.5 0.0724216
+3030.30 10 -15.5 3 1e+12 -1e+12 4.5 4 4.5
+2020.20 10 -14.5 -14.5 -0.162002
+2020.20 10 -13.5 -14.5 -0.162061
+2020.20 10 6.5 1.5 -0.0806943
+2020.20 10 7.5 1.5 -0.104243
+2020.20 10 8.5 1.5 -0.123168
+2020.20 10 9.5 1.5 -0.136901
+2020.20 10 10.5 1.5 -0.145621
+2020.20 10 11.5 1.5 -0.150421
+2020.20 10 12.5 1.5 -0.152539
+2020.20 10 13.5 1.5 -0.153393
+2020.20 10 14.5 1.5 -0.153773
+3030.30 10 1.5 -1.56882 1e+12 -1e+12 -1.56882 -2 -1.5
+2020.20 10 -14.5 2.5 0.0402845
+2020.20 10 -13.5 2.5 0.0461784
+2020.20 10 -12.5 2.5 0.0536197
+2020.20 10 -12.5 -14.5 -0.161458
+2020.20 10 -11.5 -14.5 -0.159426
+2020.20 10 -10.5 -14.5 -0.154902
+2020.20 10 -9.5 -14.5 -0.147044
+2020.20 10 -8.5 -14.5 -0.13509
+2020.20 10 -7.5 -14.5 -0.119275
+2020.20 10 -6.5 -14.5 -0.100212
+2020.20 10 -5.5 -14.5 -0.0789519
+2020.20 10 -4.5 -14.5 -0.0563546
+2020.20 10 -3.5 -14.5 -0.0333717
+2020.20 10 -2.5 -14.5 -0.0109581
+2020.20 10 -1.5 -14.5 0.00984402
+2020.20 10 -0.5 -14.5 0.0281434
+2020.20 10 -11.5 2.5 0.0619442
+2020.20 10 -10.5 2.5 0.0700458
+2020.20 10 -9.5 2.5 0.0759762
+2020.20 10 -8.5 2.5 0.0793794
+2020.20 10 -7.5 2.5 0.0807098
+2020.20 10 -6.5 2.5 0.0810763
+2020.20 10 -5.5 2.5 0.081507
+2020.20 10 -4.5 2.5 0.082331
+2020.20 10 -3.5 2.5 0.0831365
+2020.20 10 -2.5 2.5 0.0826873
+2020.20 10 -1.5 2.5 0.0798305
+2020.20 10 -0.5 2.5 0.0730392
+2020.20 10 0.5 2.5 0.0612424
+2020.20 10 1.5 2.5 0.0440854
+2020.20 10 2.5 2.5 0.0221025
+2020.20 10 0.5 -14.5 0.0433657
+2020.20 10 1.5 -14.5 0.055918
+2020.20 10 2.5 -14.5 0.0664084
+2020.20 10 3.5 -14.5 0.0756806
+2020.20 10 4.5 -14.5 0.0836576
+2020.20 10 5.5 -14.5 0.0897879
+2020.20 10 6.5 -14.5 0.0936594
+2020.20 10 7.5 -14.5 0.0952864
+2020.20 10 8.5 -14.5 0.0950851
+2020.20 10 9.5 -14.5 0.0933563
+2020.20 10 10.5 -14.5 0.0902946
+2020.20 10 11.5 -14.5 0.0860803
+2020.20 10 12.5 -14.5 0.081366
+2020.20 10 13.5 -14.5 0.0763607
+2020.20 10 3.5 2.5 -0.00363169
+2020.20 10 4.5 2.5 -0.031436
+2020.20 10 5.5 2.5 -0.0595959
+2020.20 10 6.5 2.5 -0.0862259
+2020.20 10 7.5 2.5 -0.109814
+2020.20 10 8.5 2.5 -0.128967
+2020.20 10 9.5 2.5 -0.143103
+2020.20 10 10.5 2.5 -0.152254
+2020.20 10 11.5 2.5 -0.157462
+2020.20 10 12.5 2.5 -0.159916
+2020.20 10 13.5 2.5 -0.160945
+2020.20 10 14.5 2.5 -0.161319
+3030.30 10 2.5 -3 1e+12 -1e+12 -3.35805 -4 -3.5
+2020.20 10 -14.5 3.5 0.0397949
+2020.20 10 14.5 -14.5 0.0717179
+3030.30 10 -14.5 3 1e+12 -1e+12 4.5 4 4.5
+2020.20 10 -14.5 -13.5 -0.162843
+2020.20 10 -13.5 -13.5 -0.162876
+2020.20 10 -12.5 -13.5 -0.162421
+2020.20 10 -11.5 -13.5 -0.160654
+2020.20 10 -10.5 -13.5 -0.156383
+2020.20 10 -9.5 -13.5 -0.148485
+2020.20 10 -8.5 -13.5 -0.136323
+2020.20 10 -7.5 -13.5 -0.12006
+2020.20 10 -6.5 -13.5 -0.100475
+2020.20 10 -5.5 -13.5 -0.0786371
+2020.20 10 -4.5 -13.5 -0.0554923
+2020.20 10 -13.5 3.5 0.0465434
+2020.20 10 -12.5 3.5 0.0548814
+2020.20 10 -11.5 3.5 0.0638273
+2020.20 10 -10.5 3.5 0.0724461
+2020.20 10 -9.5 3.5 0.078825
+2020.20 10 -8.5 3.5 0.0832262
+2020.20 10 -7.5 3.5 0.0863849
+2020.20 10 -6.5 3.5 0.0889683
+2020.20 10 -5.5 3.5 0.0908314
+2020.20 10 -4.5 3.5 0.0912464
+2020.20 10 -3.5 3.5 0.0898224
+2020.20 10 -2.5 3.5 0.086221
+2020.20 10 -1.5 3.5 0.0803039
+2020.20 10 -0.5 3.5 0.0714397
+2020.20 10 0.5 3.5 0.0586102
+2020.20 10 -3.5 -13.5 -0.0319636
+2020.20 10 -2.5 -13.5 -0.00899583
+2020.20 10 -1.5 -13.5 0.0123311
+2020.20 10 -0.5 -13.5 0.0309429
+2020.20 10 0.5 -13.5 0.0461646
+2020.20 10 1.5 -13.5 0.058119
+2020.20 10 2.5 -13.5 0.0675749
+2020.20 10 3.5 -13.5 0.0757346
+2020.20 10 4.5 -13.5 0.0829687
+2020.20 10 5.5 -13.5 0.0893311
+2020.20 10 6.5 -13.5 0.0943406
+2020.20 10 7.5 -13.5 0.0974289
+2020.20 10 8.5 -13.5 0.0981834
+2020.20 10 9.5 -13.5 0.0964714
+2020.20 10 1.5 3.5 0.0413556
+2020.20 10 2.5 3.5 0.0198098
+2020.20 10 3.5 3.5 -0.00527989
+2020.20 10 4.5 3.5 -0.0324686
+2020.20 10 5.5 3.5 -0.0601998
+2020.20 10 6.5 3.5 -0.0866534
+2020.20 10 7.5 3.5 -0.110407
+2020.20 10 8.5 3.5 -0.129992
+2020.20 10 9.5 3.5 -0.144746
+2020.20 10 10.5 3.5 -0.154609
+2020.20 10 11.5 3.5 -0.160363
+2020.20 10 12.5 3.5 -0.163051
+2020.20 10 13.5 3.5 -0.163927
+2020.20 10 14.5 3.5 -0.163909
+3030.30 10 3.5 -3 1e+12 -1e+12 -4.77433 -5 -4.5
+2020.20 10 10.5 -13.5 0.0926537
+2020.20 10 11.5 -13.5 0.0871883
+2020.20 10 12.5 -13.5 0.0812806
+2020.20 10 13.5 -13.5 0.0754474
+2020.20 10 14.5 -13.5 0.0702831
+3030.30 10 -13.5 3 1e+12 -1e+12 4.5 4 4.5
+2020.20 10 -14.5 -12.5 -0.16354
+2020.20 10 -13.5 -12.5 -0.163597
+2020.20 10 -12.5 -12.5 -0.163036
+2020.20 10 -11.5 -12.5 -0.161141
+2020.20 10 -10.5 -12.5 -0.156773
+2020.20 10 -9.5 -12.5 -0.148866
+2020.20 10 -8.5 -12.5 -0.136677
+2020.20 10 -14.5 4.5 0.0394585
+2020.20 10 -13.5 4.5 0.0463725
+2020.20 10 -12.5 4.5 0.055347
+2020.20 10 -11.5 4.5 0.0655903
+2020.20 10 -10.5 4.5 0.076052
+2020.20 10 -9.5 4.5 0.0841767
+2020.20 10 -8.5 4.5 0.0892648
+2020.20 10 -7.5 4.5 0.0913394
+2020.20 10 -6.5 4.5 0.0912482
+2020.20 10 -5.5 4.5 0.089973
+2020.20 10 -4.5 4.5 0.0881586
+2020.20 10 -3.5 4.5 0.0860637
+2020.20 10 -2.5 4.5 0.0831193
+2020.20 10 -1.5 4.5 0.0784731
+2020.20 10 -0.5 4.5 0.0707546
+2020.20 10 0.5 4.5 0.0585803
+2020.20 10 -7.5 -12.5 -0.120241
+2020.20 10 -6.5 -12.5 -0.100143
+2020.20 10 -5.5 -12.5 -0.0775992
+2020.20 10 -4.5 -12.5 -0.0535379
+2020.20 10 -3.5 -12.5 -0.0291686
+2020.20 10 -2.5 -12.5 -0.0055116
+2020.20 10 -1.5 -12.5 0.0162384
+2020.20 10 -0.5 -12.5 0.0350384
+2020.20 10 0.5 -12.5 0.0501137
+2020.20 10 1.5 -12.5 0.0615399
+2020.20 10 2.5 -12.5 0.0700284
+2020.20 10 3.5 -12.5 0.0767458
+2020.20 10 4.5 -12.5 0.0820884
+2020.20 10 5.5 -12.5 0.0863324
+2020.20 10 6.5 -12.5 0.0893214
+2020.20 10 1.5 4.5 0.0414456
+2020.20 10 2.5 4.5 0.0197162
+2020.20 10 3.5 4.5 -0.0056626
+2020.20 10 4.5 4.5 -0.0331083
+2020.20 10 5.5 4.5 -0.0610693
+2020.20 10 6.5 4.5 -0.0878129
+2020.20 10 7.5 4.5 -0.111907
+2020.20 10 8.5 4.5 -0.131851
+2020.20 10 9.5 4.5 -0.146899
+2020.20 10 10.5 4.5 -0.156833
+2020.20 10 11.5 4.5 -0.162513
+2020.20 10 12.5 4.5 -0.165046
+2020.20 10 13.5 4.5 -0.165895
+2020.20 10 14.5 4.5 -0.165992
+2020.20 10 7.5 -12.5 0.0908248
+2020.20 10 8.5 -12.5 0.090877
+2020.20 10 9.5 -12.5 0.0895411
+2020.20 10 10.5 -12.5 0.0868032
+2020.20 10 11.5 -12.5 0.0825289
+2020.20 10 12.5 -12.5 0.0774685
+2020.20 10 13.5 -12.5 0.0720607
+2020.20 10 14.5 -12.5 0.0669553
+3030.30 10 -12.5 3 1e+12 -1e+12 4.5 4 4.5
+2020.20 10 -14.5 -11.5 -0.165594
+2020.20 10 -13.5 -11.5 -0.165653
+2020.20 10 -12.5 -11.5 -0.165147
+3030.30 10 4.5 -3 1e+12 -1e+12 -4.5 -5 -4.5
+2020.20 10 -14.5 5.5 0.0404187
+2020.20 10 -13.5 5.5 0.0462751
+2020.20 10 -12.5 5.5 0.0537368
+2020.20 10 -11.5 5.5 0.0620119
+2020.20 10 -10.5 5.5 0.0694429
+2020.20 10 -9.5 5.5 0.0733869
+2020.20 10 -8.5 5.5 0.0732064
+2020.20 10 -7.5 5.5 0.0697241
+2020.20 10 -6.5 5.5 0.0654355
+2020.20 10 -5.5 5.5 0.0631877
+2020.20 10 -4.5 5.5 0.0643824
+2020.20 10 -3.5 5.5 0.0682145
+2020.20 10 -2.5 5.5 0.0720558
+2020.20 10 -1.5 5.5 0.073411
+2020.20 10 -0.5 5.5 0.0698186
+2020.20 10 -11.5 -11.5 -0.163289
+2020.20 10 -10.5 -11.5 -0.158829
+2020.20 10 -9.5 -11.5 -0.150663
+2020.20 10 -8.5 -11.5 -0.13802
+2020.20 10 -7.5 -11.5 -0.120956
+2020.20 10 -6.5 -11.5 -0.100037
+2020.20 10 -5.5 -11.5 -0.0764255
+2020.20 10 -4.5 -11.5 -0.0513026
+2020.20 10 -3.5 -11.5 -0.025909
+2020.20 10 -2.5 -11.5 -0.00144942
+2020.20 10 -1.5 -11.5 0.0207665
+2020.20 10 -0.5 -11.5 0.039671
+2020.20 10 0.5 -11.5 0.0544684
+2020.20 10 1.5 -11.5 0.0650555
+2020.20 10 2.5 -11.5 0.0720113
+2020.20 10 0.5 5.5 0.0598624
+2020.20 10 1.5 5.5 0.0435263
+2020.20 10 2.5 5.5 0.0217557
+2020.20 10 3.5 5.5 -0.00411259
+2020.20 10 4.5 5.5 -0.0322921
+2020.20 10 5.5 5.5 -0.0609939
+2020.20 10 6.5 5.5 -0.0882974
+2020.20 10 7.5 5.5 -0.112669
+2020.20 10 8.5 5.5 -0.132723
+2020.20 10 9.5 5.5 -0.147758
+2020.20 10 10.5 5.5 -0.157829
+2020.20 10 11.5 5.5 -0.163846
+2020.20 10 12.5 5.5 -0.166889
+2020.20 10 13.5 5.5 -0.168216
+2020.20 10 14.5 5.5 -0.168658
+2020.20 10 3.5 -11.5 0.076449
+2020.20 10 4.5 -11.5 0.0791462
+2020.20 10 5.5 -11.5 0.0808198
+2020.20 10 6.5 -11.5 0.0817668
+2020.20 10 7.5 -11.5 0.0820478
+2020.20 10 8.5 -11.5 0.0815877
+2020.20 10 9.5 -11.5 0.0802562
+2020.20 10 10.5 -11.5 0.0778934
+2020.20 10 11.5 -11.5 0.0742305
+2020.20 10 12.5 -11.5 0.0698752
+2020.20 10 13.5 -11.5 0.0650724
+2020.20 10 14.5 -11.5 0.0604577
+3030.30 10 -11.5 3 1e+12 -1e+12 4.5 4 4.5
+3030.30 10 5.5 -2 1e+12 -1e+12 -1.72609 -2 -1.5
+2020.20 10 -14.5 6.5 0.0416769
+2020.20 10 -13.5 6.5 0.0448967
+2020.20 10 -12.5 6.5 0.047606
+2020.20 10 -11.5 6.5 0.0489628
+2020.20 10 -10.5 6.5 0.0486028
+2020.20 10 -9.5 6.5 0.0468666
+2020.20 10 -8.5 6.5 0.046232
+2020.20 10 -7.5 6.5 0.0489627
+2020.20 10 -6.5 6.5 0.0556592
+2020.20 10 -5.5 6.5 0.064181
+2020.20 10 -4.5 6.5 0.0717542
+2020.20 10 -3.5 6.5 0.0768938
+2020.20 10 -2.5 6.5 0.0787175
+2020.20 10 -14.5 -10.5 -0.164559
+2020.20 10 -13.5 -10.5 -0.164165
+2020.20 10 -12.5 -10.5 -0.163318
+2020.20 10 -11.5 -10.5 -0.161428
+2020.20 10 -10.5 -10.5 -0.157294
+2020.20 10 -9.5 -10.5 -0.149751
+2020.20 10 -8.5 -10.5 -0.137724
+2020.20 10 -7.5 -10.5 -0.121007
+2020.20 10 -6.5 -10.5 -0.0999137
+2020.20 10 -5.5 -10.5 -0.075496
+2020.20 10 -4.5 -10.5 -0.0490089
+2020.20 10 -3.5 -10.5 -0.0219905
+2020.20 10 -2.5 -10.5 0.00390026
+2020.20 10 -1.5 -10.5 0.0268803
+2020.20 10 -1.5 6.5 0.0774935
+2020.20 10 -0.5 6.5 0.0729443
+2020.20 10 0.5 6.5 0.0639116
+2020.20 10 1.5 6.5 0.0491794
+2020.20 10 2.5 6.5 0.0282447
+2020.20 10 3.5 6.5 0.0022833
+2020.20 10 4.5 6.5 -0.0266807
+2020.20 10 5.5 6.5 -0.0563373
+2020.20 10 6.5 6.5 -0.0843095
+2020.20 10 7.5 6.5 -0.109117
+2020.20 10 8.5 6.5 -0.12946
+2020.20 10 9.5 6.5 -0.14483
+2020.20 10 10.5 6.5 -0.155274
+2020.20 10 11.5 6.5 -0.161672
+2020.20 10 12.5 6.5 -0.165061
+2020.20 10 13.5 6.5 -0.166761
+2020.20 10 -0.5 -10.5 0.0456323
+2020.20 10 0.5 -10.5 0.0593519
+2020.20 10 1.5 -10.5 0.0682425
+2020.20 10 2.5 -10.5 0.0734816
+2020.20 10 3.5 -10.5 0.0766198
+2020.20 10 4.5 -10.5 0.0790699
+2020.20 10 5.5 -10.5 0.0813351
+2020.20 10 6.5 -10.5 0.0832891
+2020.20 10 7.5 -10.5 0.0842813
+2020.20 10 8.5 -10.5 0.083536
+2020.20 10 9.5 -10.5 0.0806674
+2020.20 10 10.5 -10.5 0.0759247
+2020.20 10 11.5 -10.5 0.0698968
+2020.20 10 12.5 -10.5 0.0639527
+2020.20 10 14.5 6.5 -0.16762
+3030.30 10 6.5 -2.4016 1e+12 -1e+12 -2.4016 -3 -2.5
+2020.20 10 -14.5 7.5 0.0446909
+2020.20 10 -13.5 7.5 0.0463875
+2020.20 10 -12.5 7.5 0.0473892
+2020.20 10 -11.5 7.5 0.0468565
+2020.20 10 -10.5 7.5 0.0439899
+2020.20 10 -9.5 7.5 0.0384772
+2020.20 10 -8.5 7.5 0.0315939
+2020.20 10 -7.5 7.5 0.0253061
+2020.20 10 -6.5 7.5 0.0219225
+2020.20 10 -5.5 7.5 0.0226584
+2020.20 10 -4.5 7.5 0.0270206
+2020.20 10 -3.5 7.5 0.0336308
+2020.20 10 13.5 -10.5 0.0583883
+2020.20 10 14.5 -10.5 0.0538322
+3030.30 10 -10.5 3 1e+12 -1e+12 4.5 4 4.5
+2020.20 10 -14.5 -9.5 -0.159951
+2020.20 10 -13.5 -9.5 -0.15988
+2020.20 10 -12.5 -9.5 -0.159348
+2020.20 10 -11.5 -9.5 -0.15764
+2020.20 10 -10.5 -9.5 -0.153547
+2020.20 10 -9.5 -9.5 -0.145872
+2020.20 10 -8.5 -9.5 -0.133626
+2020.20 10 -7.5 -9.5 -0.116488
+2020.20 10 -6.5 -9.5 -0.0946936
+2020.20 10 -5.5 -9.5 -0.0691522
+2020.20 10 -2.5 7.5 0.0406959
+2020.20 10 -1.5 7.5 0.0474371
+2020.20 10 -0.5 7.5 0.0530026
+2020.20 10 0.5 7.5 0.0560903
+2020.20 10 1.5 7.5 0.0545488
+2020.20 10 2.5 7.5 0.0460026
+2020.20 10 3.5 7.5 0.0295395
+2020.20 10 4.5 7.5 0.00657157
+2020.20 10 5.5 7.5 -0.0202528
+2020.20 10 6.5 7.5 -0.0477651
+2020.20 10 7.5 7.5 -0.0735198
+2020.20 10 8.5 7.5 -0.0957772
+2020.20 10 9.5 7.5 -0.114022
+2020.20 10 10.5 7.5 -0.12813
+2020.20 10 11.5 7.5 -0.138656
+2020.20 10 -4.5 -9.5 -0.0411406
+2020.20 10 -3.5 -9.5 -0.0125626
+2020.20 10 -2.5 -9.5 0.014226
+2020.20 10 -1.5 -9.5 0.0369324
+2020.20 10 -0.5 -9.5 0.0538423
+2020.20 10 0.5 -9.5 0.0645482
+2020.20 10 1.5 -9.5 0.0698233
+2020.20 10 2.5 -9.5 0.0710637
+2020.20 10 3.5 -9.5 0.0695226
+2020.20 10 4.5 -9.5 0.0662319
+2020.20 10 5.5 -9.5 0.0623965
+2020.20 10 6.5 -9.5 0.0590579
+2020.20 10 7.5 -9.5 0.0570045
+2020.20 10 8.5 -9.5 0.0566612
+2020.20 10 12.5 7.5 -0.145877
+2020.20 10 13.5 7.5 -0.150918
+2020.20 10 14.5 7.5 -0.154384
+3030.30 10 7.5 0.666997 1e+12 -1e+12 0.666997 0 0.5
+2020.20 10 -14.5 8.5 -0.0154647
+2020.20 10 -13.5 8.5 0.0018623
+2020.20 10 -12.5 8.5 0.0217859
+2020.20 10 -11.5 8.5 0.041553
+2020.20 10 -10.5 8.5 0.058737
+2020.20 10 -9.5 8.5 0.0692501
+2020.20 10 -8.5 8.5 0.0732104
+2020.20 10 -7.5 8.5 0.0722939
+2020.20 10 -6.5 8.5 0.0686289
+2020.20 10 -5.5 8.5 0.064336
+2020.20 10 9.5 -9.5 0.0571303
+2020.20 10 10.5 -9.5 0.0568193
+2020.20 10 11.5 -9.5 0.0546659
+2020.20 10 12.5 -9.5 0.0514792
+2020.20 10 13.5 -9.5 0.0479566
+2020.20 10 14.5 -9.5 0.0448122
+3030.30 10 -9.5 2.44594 1e+12 -1e+12 2.44594 2 2.5
+2020.20 10 -14.5 -8.5 -0.144225
+2020.20 10 -13.5 -8.5 -0.141333
+2020.20 10 -12.5 -8.5 -0.1373
+2020.20 10 -11.5 -8.5 -0.131628
+2020.20 10 -10.5 -8.5 -0.123292
+2020.20 10 -9.5 -8.5 -0.111784
+2020.20 10 -8.5 -8.5 -0.0963516
+2020.20 10 -7.5 -8.5 -0.0767449
+2020.20 10 -6.5 -8.5 -0.05311
+2020.20 10 -4.5 8.5 0.0598954
+2020.20 10 -3.5 8.5 0.0542729
+2020.20 10 -2.5 8.5 0.0458307
+2020.20 10 -1.5 8.5 0.034024
+2020.20 10 -0.5 8.5 0.0202388
+2020.20 10 0.5 8.5 0.00819952
+2020.20 10 1.5 8.5 0.00203523
+2020.20 10 2.5 8.5 0.0037914
+2020.20 10 3.5 8.5 0.01184
+2020.20 10 4.5 8.5 0.0214995
+2020.20 10 5.5 8.5 0.0279898
+2020.20 10 6.5 8.5 0.0278295
+2020.20 10 7.5 8.5 0.0198617
+2020.20 10 8.5 8.5 0.00522025
+2020.20 10 9.5 8.5 -0.0137575
+2020.20 10 10.5 8.5 -0.0345495
+2020.20 10 11.5 8.5 -0.0554387
+2020.20 10 -5.5 -8.5 -0.026735
+2020.20 10 -4.5 -8.5 -0.000217696
+2020.20 10 -3.5 -8.5 0.023547
+2020.20 10 -2.5 -8.5 0.0413422
+2020.20 10 -1.5 -8.5 0.0514392
+2020.20 10 -0.5 -8.5 0.0546397
+2020.20 10 0.5 -8.5 0.0537651
+2020.20 10 1.5 -8.5 0.0517211
+2020.20 10 2.5 -8.5 0.0499392
+2020.20 10 3.5 -8.5 0.0484609
+2020.20 10 4.5 -8.5 0.0464126
+2020.20 10 5.5 -8.5 0.0417828
+2020.20 10 6.5 -8.5 0.0338268
+2020.20 10 7.5 -8.5 0.023235
+2020.20 10 8.5 -8.5 0.0123401
+2020.20 10 9.5 -8.5 0.00421694
+2020.20 10 12.5 8.5 -0.0735827
+2020.20 10 13.5 8.5 -0.0886792
+2020.20 10 14.5 8.5 -0.100523
+3030.30 10 8.5 0 -1 1 -1.5 -2 -1.5
+2020.20 10 -14.5 9.5 -0.057772
+2020.20 10 -13.5 9.5 -0.04002
+2020.20 10 -12.5 9.5 -0.0179205
+2020.20 10 -11.5 9.5 0.00664528
+2020.20 10 -10.5 9.5 0.0315723
+2020.20 10 -9.5 9.5 0.051357
+2020.20 10 -8.5 9.5 0.0642483
+2020.20 10 -7.5 9.5 0.0704436
+2020.20 10 -6.5 9.5 0.0712569
+2020.20 10 -5.5 9.5 0.0683036
+2020.20 10 -4.5 9.5 0.0631187
+2020.20 10 10.5 -8.5 0.00180829
+2020.20 10 11.5 -8.5 0.0059596
+2020.20 10 12.5 -8.5 0.0139534
+2020.20 10 13.5 -8.5 0.0226267
+2020.20 10 14.5 -8.5 0.0298461
+3030.30 10 -8.5 -0.214615 1e+12 -1e+12 -0.214615 -1 -0.5
+2020.20 10 -14.5 -7.5 -0.0858569
+2020.20 10 -13.5 -7.5 -0.0745609
+2020.20 10 -12.5 -7.5 -0.0602978
+2020.20 10 -11.5 -7.5 -0.0433458
+2020.20 10 -10.5 -7.5 -0.0240337
+2020.20 10 -9.5 -7.5 -0.00495005
+2020.20 10 -8.5 -7.5 0.0127425
+2020.20 10 -3.5 9.5 0.0577015
+2020.20 10 -2.5 9.5 0.053936
+2020.20 10 -1.5 9.5 0.0534728
+2020.20 10 -0.5 9.5 0.0567083
+2020.20 10 0.5 9.5 0.0617963
+2020.20 10 1.5 9.5 0.0654129
+2020.20 10 2.5 9.5 0.0652364
+2020.20 10 3.5 9.5 0.0612816
+2020.20 10 4.5 9.5 0.0550919
+2020.20 10 5.5 9.5 0.0481598
+2020.20 10 6.5 9.5 0.0409385
+2020.20 10 7.5 9.5 0.0325086
+2020.20 10 8.5 9.5 0.0210549
+2020.20 10 9.5 9.5 0.00547227
+2020.20 10 10.5 9.5 -0.0139256
+2020.20 10 -7.5 -7.5 0.0277521
+2020.20 10 -6.5 -7.5 0.0392281
+2020.20 10 -5.5 -7.5 0.0468663
+2020.20 10 -4.5 -7.5 0.0504864
+2020.20 10 -3.5 -7.5 0.0503496
+2020.20 10 -2.5 -7.5 0.0467528
+2020.20 10 -1.5 -7.5 0.0411085
+2020.20 10 -0.5 -7.5 0.0355973
+2020.20 10 0.5 -7.5 0.0324088
+2020.20 10 1.5 -7.5 0.0324207
+2020.20 10 2.5 -7.5 0.03482
+2020.20 10 3.5 -7.5 0.03774
+2020.20 10 4.5 -7.5 0.0397945
+2020.20 10 5.5 -7.5 0.0405492
+2020.20 10 11.5 9.5 -0.0357482
+2020.20 10 12.5 9.5 -0.0561172
+2020.20 10 13.5 9.5 -0.0740258
+2020.20 10 14.5 9.5 -0.0883143
+3030.30 10 9.5 0 -1 1 1.95347 1 1.5
+2020.20 10 -14.5 10.5 -0.0623864
+2020.20 10 -13.5 10.5 -0.0459245
+2020.20 10 -12.5 10.5 -0.025282
+2020.20 10 -11.5 10.5 -0.00203967
+2020.20 10 -10.5 10.5 0.0221089
+2020.20 10 -9.5 10.5 0.0424208
+2020.20 10 -8.5 10.5 0.0573317
+2020.20 10 -7.5 10.5 0.0670676
+2020.20 10 -6.5 10.5 0.0730326
+2020.20 10 6.5 -7.5 0.0410205
+2020.20 10 7.5 -7.5 0.0425021
+2020.20 10 8.5 -7.5 0.0449316
+2020.20 10 9.5 -7.5 0.0466437
+2020.20 10 10.5 -7.5 0.0443011
+2020.20 10 11.5 -7.5 0.0349894
+2020.20 10 12.5 -7.5 0.0208893
+2020.20 10 13.5 -7.5 0.00410975
+2020.20 10 14.5 -7.5 -0.0119776
+3030.30 10 -7.5 -3 1e+12 -1e+12 -4.03641 -5 -4.5
+2020.20 10 -14.5 -6.5 -0.0687521
+2020.20 10 -13.5 -6.5 -0.0546751
+2020.20 10 -12.5 -6.5 -0.0371746
+2020.20 10 -11.5 -6.5 -0.0175929
+2020.20 10 -5.5 10.5 0.0773856
+2020.20 10 -4.5 10.5 0.0814117
+2020.20 10 -3.5 10.5 0.0852497
+2020.20 10 -2.5 10.5 0.0881724
+2020.20 10 -1.5 10.5 0.089249
+2020.20 10 -0.5 10.5 0.0877313
+2020.20 10 0.5 10.5 0.0837677
+2020.20 10 1.5 10.5 0.0781329
+2020.20 10 2.5 10.5 0.071654
+2020.20 10 3.5 10.5 0.0646631
+2020.20 10 4.5 10.5 0.0573821
+2020.20 10 5.5 10.5 0.0500021
+2020.20 10 6.5 10.5 0.0420855
+2020.20 10 7.5 10.5 0.0327404
+2020.20 10 -10.5 -6.5 0.00281669
+2020.20 10 -9.5 -6.5 0.0201972
+2020.20 10 -8.5 -6.5 0.0332637
+2020.20 10 -7.5 -6.5 0.0419466
+2020.20 10 -6.5 -6.5 0.0473513
+2020.20 10 -5.5 -6.5 0.0511344
+2020.20 10 -4.5 -6.5 0.0548106
+2020.20 10 -3.5 -6.5 0.0585552
+2020.20 10 -2.5 -6.5 0.0622101
+2020.20 10 -1.5 -6.5 0.0649221
+2020.20 10 -0.5 -6.5 0.0660038
+2020.20 10 0.5 -6.5 0.0656304
+2020.20 10 1.5 -6.5 0.0646007
+2020.20 10 2.5 -6.5 0.0637972
+2020.20 10 8.5 10.5 0.0207667
+2020.20 10 9.5 10.5 0.00519465
+2020.20 10 10.5 10.5 -0.0140869
+2020.20 10 11.5 10.5 -0.0359854
+2020.20 10 12.5 10.5 -0.0566251
+2020.20 10 13.5 10.5 -0.0749024
+2020.20 10 14.5 10.5 -0.0895943
+3030.30 10 10.5 -1 -2 0 -1.58502 -2 -1.5
+2020.20 10 -14.5 11.5 -0.0617702
+2020.20 10 -13.5 11.5 -0.0458423
+2020.20 10 -12.5 11.5 -0.0261882
+2020.20 10 -11.5 11.5 -0.00430169
+2020.20 10 -10.5 11.5 0.0183129
+2020.20 10 -9.5 11.5 0.0373035
+2020.20 10 3.5 -6.5 0.0634859
+2020.20 10 4.5 -6.5 0.0634189
+2020.20 10 5.5 -6.5 0.0637228
+2020.20 10 6.5 -6.5 0.0634126
+2020.20 10 7.5 -6.5 0.0618942
+2020.20 10 8.5 -6.5 0.0576214
+2020.20 10 9.5 -6.5 0.0487526
+2020.20 10 10.5 -6.5 0.0338714
+2020.20 10 11.5 -6.5 0.0130481
+2020.20 10 12.5 -6.5 -0.0090982
+2020.20 10 13.5 -6.5 -0.0304715
+2020.20 10 14.5 -6.5 -0.0486194
+3030.30 10 -6.5 -0.256576 1e+12 -1e+12 -0.256576 -1 -0.5
+2020.20 10 -14.5 -5.5 -0.0663027
+2020.20 10 -13.5 -5.5 -0.0518649
+2020.20 10 -8.5 11.5 0.0515332
+2020.20 10 -7.5 11.5 0.0614146
+2020.20 10 -6.5 11.5 0.0683169
+2020.20 10 -5.5 11.5 0.0738692
+2020.20 10 -4.5 11.5 0.0793748
+2020.20 10 -3.5 11.5 0.084703
+2020.20 10 -2.5 11.5 0.0891366
+2020.20 10 -1.5 11.5 0.0919132
+2020.20 10 -0.5 11.5 0.0922737
+2020.20 10 0.5 11.5 0.0898021
+2020.20 10 1.5 11.5 0.0847241
+2020.20 10 2.5 11.5 0.0778391
+2020.20 10 3.5 11.5 0.0699073
+2020.20 10 4.5 11.5 0.0612028
+2020.20 10 5.5 11.5 0.0524122
+2020.20 10 -12.5 -5.5 -0.0340171
+2020.20 10 -11.5 -5.5 -0.0142029
+2020.20 10 -10.5 -5.5 0.00617813
+2020.20 10 -9.5 -5.5 0.0231694
+2020.20 10 -8.5 -5.5 0.0356746
+2020.20 10 -7.5 -5.5 0.0441062
+2020.20 10 -6.5 -5.5 0.0498502
+2020.20 10 -5.5 -5.5 0.0548977
+2020.20 10 -4.5 -5.5 0.0606954
+2020.20 10 -3.5 -5.5 0.067563
+2020.20 10 -2.5 -5.5 0.0747749
+2020.20 10 -1.5 -5.5 0.0810826
+2020.20 10 -0.5 -5.5 0.0851615
+2020.20 10 0.5 -5.5 0.0862759
+2020.20 10 6.5 11.5 0.0431662
+2020.20 10 7.5 11.5 0.0326394
+2020.20 10 8.5 11.5 0.0196201
+2020.20 10 9.5 11.5 0.00324859
+2020.20 10 10.5 11.5 -0.0165911
+2020.20 10 11.5 11.5 -0.0388064
+2020.20 10 12.5 11.5 -0.0595608
+2020.20 10 13.5 11.5 -0.0777996
+2020.20 10 14.5 11.5 -0.092382
+3030.30 10 11.5 -0.872692 -1.87269 0.127308 -0.872692 -1 -0.5
+2020.20 10 -14.5 12.5 -0.0603431
+2020.20 10 -13.5 12.5 -0.0453581
+2020.20 10 -12.5 12.5 -0.0269187
+2020.20 10 -11.5 12.5 -0.00640961
+2020.20 10 1.5 -5.5 0.084671
+2020.20 10 2.5 -5.5 0.0814152
+2020.20 10 3.5 -5.5 0.0776785
+2020.20 10 4.5 -5.5 0.0740957
+2020.20 10 5.5 -5.5 0.0709696
+2020.20 10 6.5 -5.5 0.0675764
+2020.20 10 7.5 -5.5 0.0627681
+2020.20 10 8.5 -5.5 0.0549101
+2020.20 10 9.5 -5.5 0.042785
+2020.20 10 10.5 -5.5 0.0258438
+2020.20 10 11.5 -5.5 0.00478016
+2020.20 10 12.5 -5.5 -0.0163744
+2020.20 10 13.5 -5.5 -0.0360996
+2020.20 10 14.5 -5.5 -0.0526129
+3030.30 10 -5.5 0.40982 1e+12 -1e+12 0.40982 0 0.5
+2020.20 10 -10.5 12.5 0.0148419
+2020.20 10 -9.5 12.5 0.032866
+2020.20 10 -8.5 12.5 0.0467114
+2020.20 10 -7.5 12.5 0.0568553
+2020.20 10 -6.5 12.5 0.0645164
+2020.20 10 -5.5 12.5 0.0712663
+2020.20 10 -4.5 12.5 0.077961
+2020.20 10 -3.5 12.5 0.0845389
+2020.20 10 -2.5 12.5 0.0902003
+2020.20 10 -1.5 12.5 0.094197
+2020.20 10 -0.5 12.5 0.0957589
+2020.20 10 0.5 12.5 0.094378
+2020.20 10 1.5 12.5 0.0900592
+2020.20 10 2.5 12.5 0.083375
+2020.20 10 3.5 12.5 0.0749673
+2020.20 10 -14.5 -4.5 -0.0662758
+2020.20 10 -13.5 -4.5 -0.0510808
+2020.20 10 -12.5 -4.5 -0.0324428
+2020.20 10 -11.5 -4.5 -0.0118482
+2020.20 10 -10.5 -4.5 0.00923616
+2020.20 10 -9.5 -4.5 0.0266653
+2020.20 10 -8.5 -4.5 0.0394444
+2020.20 10 -7.5 -4.5 0.0481053
+2020.20 10 -6.5 -4.5 0.0542873
+2020.20 10 -5.5 -4.5 0.0599976
+2020.20 10 -4.5 -4.5 0.0663898
+2020.20 10 -3.5 -4.5 0.0735129
+2020.20 10 -2.5 -4.5 0.0804893
+2020.20 10 -1.5 -4.5 0.0860559
+2020.20 10 -0.5 -4.5 0.0892209
+2020.20 10 4.5 12.5 0.0654487
+2020.20 10 5.5 12.5 0.0554491
+2020.20 10 6.5 12.5 0.045001
+2020.20 10 7.5 12.5 0.0333812
+2020.20 10 8.5 12.5 0.0194615
+2020.20 10 9.5 12.5 0.0024155
+2020.20 10 10.5 12.5 -0.0178828
+2020.20 10 11.5 12.5 -0.04044
+2020.20 10 12.5 12.5 -0.0614497
+2020.20 10 13.5 12.5 -0.0799155
+2020.20 10 14.5 12.5 -0.094685
+3030.30 10 12.5 -0.469251 -1.46925 0.530749 -0.469251 -1 -0.5
+2020.20 10 -14.5 13.5 -0.0604213
+2020.20 10 0.5 -4.5 0.0896563
+2020.20 10 1.5 -4.5 0.0876571
+2020.20 10 2.5 -4.5 0.0839789
+2020.20 10 3.5 -4.5 0.0795038
+2020.20 10 4.5 -4.5 0.0748362
+2020.20 10 5.5 -4.5 0.0702993
+2020.20 10 6.5 -4.5 0.0652731
+2020.20 10 7.5 -4.5 0.058917
+2020.20 10 8.5 -4.5 0.0498468
+2020.20 10 9.5 -4.5 0.0371151
+2020.20 10 10.5 -4.5 0.0203955
+2020.20 10 11.5 -4.5 0.000430522
+2020.20 10 12.5 -4.5 -0.019148
+2020.20 10 13.5 -4.5 -0.0371512
+2020.20 10 -13.5 13.5 -0.0460054
+2020.20 10 -12.5 13.5 -0.0283188
+2020.20 10 -11.5 13.5 -0.00875806
+2020.20 10 -10.5 13.5 0.0114827
+2020.20 10 -9.5 13.5 0.0287425
+2020.20 10 -8.5 13.5 0.0422566
+2020.20 10 -7.5 13.5 0.0526362
+2020.20 10 -6.5 13.5 0.0609926
+2020.20 10 -5.5 13.5 0.0687392
+2020.20 10 -4.5 13.5 0.076525
+2020.20 10 -3.5 13.5 0.0837856
+2020.20 10 -2.5 13.5 0.0898451
+2020.20 10 -1.5 13.5 0.0938901
+2020.20 10 -0.5 13.5 0.09544
+2020.20 10 14.5 -4.5 -0.0521263
+3030.30 10 -4.5 0.178834 1e+12 -1e+12 0.178834 0 0.5
+2020.20 10 -14.5 -3.5 -0.0664008
+2020.20 10 -13.5 -3.5 -0.0508075
+2020.20 10 -12.5 -3.5 -0.0315178
+2020.20 10 -11.5 -3.5 -0.0100151
+2020.20 10 -10.5 -3.5 0.0122014
+2020.20 10 -9.5 -3.5 0.0308395
+2020.20 10 -8.5 -3.5 0.0447619
+2020.20 10 -7.5 -3.5 0.0543673
+2020.20 10 -6.5 -3.5 0.0611284
+2020.20 10 -5.5 -3.5 0.0669621
+2020.20 10 -4.5 -3.5 0.072902
+2020.20 10 -3.5 -3.5 0.0791259
+2020.20 10 0.5 13.5 0.0942683
+2020.20 10 1.5 13.5 0.0905096
+2020.20 10 2.5 13.5 0.0846115
+2020.20 10 3.5 13.5 0.0768407
+2020.20 10 4.5 13.5 0.0675919
+2020.20 10 5.5 13.5 0.0575589
+2020.20 10 6.5 13.5 0.0466061
+2020.20 10 7.5 13.5 0.0343634
+2020.20 10 8.5 13.5 0.0197682
+2020.20 10 9.5 13.5 0.00205655
+2020.20 10 10.5 13.5 -0.0188357
+2020.20 10 11.5 13.5 -0.0418782
+2020.20 10 12.5 13.5 -0.0632615
+2020.20 10 13.5 13.5 -0.0819897
+2020.20 10 14.5 13.5 -0.0969114
+2020.20 10 -2.5 -3.5 0.0850107
+2020.20 10 -1.5 -3.5 0.089634
+2020.20 10 -0.5 -3.5 0.0921218
+2020.20 10 0.5 -3.5 0.0920113
+2020.20 10 1.5 -3.5 0.089387
+2020.20 10 2.5 -3.5 0.0848543
+2020.20 10 3.5 -3.5 0.0792407
+2020.20 10 4.5 -3.5 0.0733396
+2020.20 10 5.5 -3.5 0.0675939
+2020.20 10 6.5 -3.5 0.0616852
+2020.20 10 7.5 -3.5 0.0547939
+2020.20 10 8.5 -3.5 0.0455527
+2020.20 10 9.5 -3.5 0.0330052
+2020.20 10 10.5 -3.5 0.0168031
+2020.20 10 11.5 -3.5 -0.00237765
+3030.30 10 13.5 -0.430521 -1.43052 0.569479 -0.430521 -1 -0.5
+2020.20 10 -14.5 14.5 -0.0598832
+2020.20 10 -13.5 14.5 -0.0456594
+2020.20 10 -12.5 14.5 -0.028417
+2020.20 10 -11.5 14.5 -0.00952905
+2020.20 10 -10.5 14.5 0.0099279
+2020.20 10 -9.5 14.5 0.0265123
+2020.20 10 -8.5 14.5 0.0396877
+2020.20 10 -7.5 14.5 0.0501761
+2020.20 10 -6.5 14.5 0.0590052
+2020.20 10 -5.5 14.5 0.0672625
+2020.20 10 -4.5 14.5 0.0753142
+2020.20 10 -3.5 14.5 0.0824111
+2020.20 10 -2.5 14.5 0.0878819
+2020.20 10 12.5 -3.5 -0.0210656
+2020.20 10 13.5 -3.5 -0.0381876
+2020.20 10 14.5 -3.5 -0.0523808
+3030.30 10 -3.5 -0.0425407 1e+12 -1e+12 -0.0425407 -1 -0.5
+2020.20 10 -14.5 -2.5 -0.0669433
+2020.20 10 -13.5 -2.5 -0.0504819
+2020.20 10 -12.5 -2.5 -0.0299489
+2020.20 10 -11.5 -2.5 -0.00692751
+2020.20 10 -10.5 -2.5 0.0169516
+2020.20 10 -9.5 -2.5 0.0370583
+2020.20 10 -8.5 -2.5 0.0519012
+2020.20 10 -7.5 -2.5 0.061725
+2020.20 10 -6.5 -2.5 0.0679666
+2020.20 10 -1.5 14.5 0.0913598
+2020.20 10 -0.5 14.5 0.0927628
+2020.20 10 0.5 14.5 0.0919539
+2020.20 10 1.5 14.5 0.0888924
+2020.20 10 2.5 14.5 0.0837861
+2020.20 10 3.5 14.5 0.0767335
+2020.20 10 4.5 14.5 0.0679366
+2020.20 10 5.5 14.5 0.0580872
+2020.20 10 6.5 14.5 0.0471068
+2020.20 10 7.5 14.5 0.0346001
+2020.20 10 8.5 14.5 0.0195744
+2020.20 10 9.5 14.5 0.00134933
+2020.20 10 10.5 14.5 -0.0200009
+2020.20 10 11.5 14.5 -0.0433934
+2020.20 10 -5.5 -2.5 0.0726199
+2020.20 10 -4.5 -2.5 0.0769766
+2020.20 10 -3.5 -2.5 0.0815868
+2020.20 10 -2.5 -2.5 0.0860775
+2020.20 10 -1.5 -2.5 0.0897331
+2020.20 10 -0.5 -2.5 0.0915759
+2020.20 10 0.5 -2.5 0.0908922
+2020.20 10 1.5 -2.5 0.0875672
+2020.20 10 2.5 -2.5 0.0822719
+2020.20 10 3.5 -2.5 0.0759976
+2020.20 10 4.5 -2.5 0.0696825
+2020.20 10 5.5 -2.5 0.0638512
+2020.20 10 6.5 -2.5 0.05819
+2020.20 10 7.5 -2.5 0.0516486
+2020.20 10 8.5 -2.5 0.0427341
+2020.20 10 12.5 14.5 -0.0649565
+2020.20 10 13.5 14.5 -0.0837005
+2020.20 10 14.5 14.5 -0.0985459
+3030.30 10 14.5 -0.365697 -1.3657 0.634303 -0.365697 -1 -0.5
+2020.20 10 -14.5 15.5 -0.0599627
+2020.20 10 -13.5 15.5 -0.0459857
+2020.20 10 -12.5 15.5 -0.0290082
+2020.20 10 -11.5 15.5 -0.0103693
+2020.20 10 -10.5 15.5 0.0088709
+2020.20 10 -9.5 15.5 0.0253352
+2020.20 10 -8.5 15.5 0.0385225
+2020.20 10 -7.5 15.5 0.0492566
+2020.20 10 -6.5 15.5 0.0585899
+2020.20 10 -5.5 15.5 0.0676266
+2020.20 10 9.5 -2.5 0.0303996
+2020.20 10 10.5 -2.5 0.0143108
+2020.20 10 11.5 -2.5 -0.00470897
+2020.20 10 12.5 -2.5 -0.0231773
+2020.20 10 13.5 -2.5 -0.0399825
+2020.20 10 14.5 -2.5 -0.0537975
+3030.30 10 -2.5 -0.270605 1e+12 -1e+12 -0.270605 -1 -0.5
+2020.20 10 -14.5 -1.5 -0.0610177
+2020.20 10 -13.5 -1.5 -0.0434277
+2020.20 10 -12.5 -1.5 -0.0216914
+2020.20 10 -11.5 -1.5 0.00241873
+2020.20 10 -10.5 -1.5 0.0270215
+2020.20 10 -9.5 -1.5 0.0469323
+2020.20 10 -8.5 -1.5 0.0606428
+2020.20 10 -4.5 15.5 0.0766968
+2020.20 10 -3.5 15.5 0.085119
+2020.20 10 -2.5 15.5 0.0918005
+2020.20 10 -1.5 15.5 0.0962334
+2020.20 10 -0.5 15.5 0.0979523
+2020.20 10 0.5 15.5 0.0965899
+2020.20 10 1.5 15.5 0.0922763
+2020.20 10 2.5 15.5 0.085809
+2020.20 10 3.5 15.5 0.0777842
+2020.20 10 4.5 15.5 0.068491
+2020.20 10 5.5 15.5 0.0584031
+2020.20 10 6.5 15.5 0.0474049
+2020.20 10 7.5 15.5 0.034723
+2020.20 10 8.5 15.5 0.0194627
+2020.20 10 9.5 15.5 0.00102851
+2020.20 10 -7.5 -1.5 0.0684122
+2020.20 10 -6.5 -1.5 0.0718674
+2020.20 10 -5.5 -1.5 0.0730793
+2020.20 10 -4.5 -1.5 0.0732931
+2020.20 10 -3.5 -1.5 0.0735781
+2020.20 10 -2.5 -1.5 0.0740738
+2020.20 10 -1.5 -1.5 0.0747839
+2020.20 10 -0.5 -1.5 0.0753621
+2020.20 10 0.5 -1.5 0.0753102
+2020.20 10 1.5 -1.5 0.0740728
+2020.20 10 2.5 -1.5 0.0714468
+2020.20 10 3.5 -1.5 0.0678455
+2020.20 10 4.5 -1.5 0.0639465
+2020.20 10 5.5 -1.5 0.059886
+2020.20 10 6.5 -1.5 0.0552848
+2020.20 10 7.5 -1.5 0.0490703
+2020.20 10 10.5 15.5 -0.0204743
+2020.20 10 11.5 15.5 -0.0439309
+2020.20 10 12.5 15.5 -0.0655436
+2020.20 10 13.5 15.5 -0.0843903
+2020.20 10 14.5 15.5 -0.0993862
+3030.30 10 15.5 -0.442156 -1.44216 0.557844 -0.442156 -1 -0.5
+2020.20 10 8.5 -1.5 0.0397998
+2020.20 10 9.5 -1.5 0.0266239
+2020.20 10 10.5 -1.5 0.00976969
+2020.20 10 11.5 -1.5 -0.00960362
+2020.20 10 12.5 -1.5 -0.0279658
+2020.20 10 13.5 -1.5 -0.0443074
+2020.20 10 14.5 -1.5 -0.0574816
+3030.30 10 -1.5 -0.0283203 1e+12 -1e+12 -0.082326 -1 -0.5
+2020.20 10 -14.5 -0.5 -0.0179813
+2020.20 10 -13.5 -0.5 -0.000930843
+2020.20 10 -12.5 -0.5 0.0182606
+2020.20 10 -11.5 -0.5 0.0369062
+2020.20 10 -10.5 -0.5 0.0527126
+2020.20 10 -9.5 -0.5 0.0618497
+2020.20 10 -8.5 -0.5 0.0645924
+2020.20 10 -7.5 -0.5 0.0626636
+2020.20 10 -6.5 -0.5 0.058122
+2020.20 10 -5.5 -0.5 0.0528731
+2020.20 10 -4.5 -0.5 0.0476958
+2020.20 10 -3.5 -0.5 0.0429531
+2020.20 10 -2.5 -0.5 0.039264
+2020.20 10 -1.5 -0.5 0.0375305
+2020.20 10 -0.5 -0.5 0.0386718
+2020.20 10 0.5 -0.5 0.0430809
+2020.20 10 1.5 -0.5 0.0494443
+2020.20 10 2.5 -0.5 0.0555154
+2020.20 10 3.5 -0.5 0.0592938
+2020.20 10 4.5 -0.5 0.0594373
+2020.20 10 5.5 -0.5 0.0556436
+2020.20 10 6.5 -0.5 0.0476723
+2020.20 10 7.5 -0.5 0.035772
+2020.20 10 8.5 -0.5 0.0203245
+2020.20 10 9.5 -0.5 0.00231397
+2020.20 10 10.5 -0.5 -0.0167677
+2020.20 10 11.5 -0.5 -0.0357302
+2020.20 10 12.5 -0.5 -0.0521552
+2020.20 10 13.5 -0.5 -0.0657884
+2020.20 10 14.5 -0.5 -0.0764816
+3030.30 10 -0.5 3 1e+12 -1e+12 4.03645 4 4.5
+done (0.039838 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.547204150624e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.547204150624e+00 
+    1 KSP Residual norm 7.289105951796e-02 
+    2 KSP Residual norm 2.013478985176e-02 
+    3 KSP Residual norm 1.162067192316e-02 
+    4 KSP Residual norm 6.312597757604e-03 
+    5 KSP Residual norm 1.682115749398e-03 
+    6 KSP Residual norm 8.975287994300e-04 
+    7 KSP Residual norm 6.152332042194e-04 
+    8 KSP Residual norm 4.364096608859e-04 
+    9 KSP Residual norm 3.110203861390e-04 
+   10 KSP Residual norm 2.107206843812e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.994895, 1.6656, 2.5472]
+      Line search terminated: lambda = 1.21237, fnorms = 1.27156
+  1 SNES Function norm 1.271558800589e+00 
+  1 PICARD ||F||/||F0||=4.991978e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.271558800589e+00 
+    1 KSP Residual norm 2.107176039801e-02 
+    2 KSP Residual norm 7.442159566185e-03 
+    3 KSP Residual norm 4.133182327605e-03 
+    4 KSP Residual norm 2.035960941819e-03 
+    5 KSP Residual norm 6.305501054134e-04 
+    6 KSP Residual norm 4.176197513845e-04 
+    7 KSP Residual norm 2.208528367932e-04 
+    8 KSP Residual norm 1.493199133982e-04 
+    9 KSP Residual norm 8.832502040184e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.456227, 0.783168, 1.27156]
+      Line search terminated: lambda = 1.08863, fnorms = 0.459282
+  2 SNES Function norm 4.592817771325e-01 
+--------------------------------------------------------------------------
+**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** 
+--------------------------------------------------------------------------
+SNES Divergence Reason  : maximum iterations reached
+Number of iterations    : 2
+SNES solution time      : 0.829871 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.517444963104e-04 
+      |Div|_2   = 2.504268530142e-03 
+   Momentum: 
+      |mRes|_2  = 4.592749497253e-01 
+   Energy: 
+      |eRes|_2  = 2.146720634553e-02 
+--------------------------------------------------------------------------
+Actual time step : 0.00236 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+Marker control [0]: (Corners ) injected 148 markers in 1.3471e-02 s 
+--------------------------------------------------------------------------
+Saving output ... done (0.00455478 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 11.106 (sec) 
+--------------------------------------------------------------------------
