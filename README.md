@@ -1,4 +1,4 @@
-# LaMEM 1.2.1
+# LaMEM 1.2.4
 ## Lithosphere and Mantle Evolution Model
 
 LaMEM is a parallel 3D numerical code that can be used to model various thermomechanical 
@@ -106,9 +106,10 @@ If you want test some of the LaMEM examples in this repository, either clone the
 
 **Limitations** 
 Whereas the pre-build libraries are quite handy, there are some limitations:
-- On Windows the MUMPS parallel direct solver is not available. SuperLU_dist does work, so we recommend using that instead.
-- On Mac, the current compilation of SuperLU_dist does not seem to work, so use MUMPS instead. Linux has both SuperLU_dist & MUMPS available.
-- The PASTIX parallel direct solver is not available. Use MUMPS, SuperLU_dist or iterative solvers instead.
+
+  * On Windows the MUMPS parallel direct solver is not available. SuperLU_distx does work, so we recommend using that instead.
+  * On Mac, the current compilation of SuperLU_dist does not seem to work, so use MUMPS instead. Linux has both SuperLU_dist & MUMPS available.
+  * The PASTIX parallel direct solver is not available. Use MUMPS, SuperLU_dist or iterative solvers instead.
 
 ### 2.2 Compiling it yourself
 If want, you can ofcourse also compile LaMEM yourself, which will give you the latest version of the code. On large HPC clusters, this is often necessary as you need to link PETSc to the optimized MPI implementation on that system. 

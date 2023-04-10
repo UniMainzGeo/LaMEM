@@ -117,7 +117,8 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	AdvCtx     *actx;
 	char       *fname;
 	FILE       *fp;
-	PetscInt    i, idx, connect, length, phase;
+	PetscInt    i, idx, connect, phase;
+	uint64_t	length;
 	PetscScalar scal_length;
 	float       xp[3];
 	size_t      offset = 0;
@@ -150,14 +151,14 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 
 	// connectivity
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += sizeof(int) + sizeof(int)*(size_t)connect;
+	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
 
 	// offsets
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += sizeof(int) + sizeof(int)*(size_t)connect;
+	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
 	// types
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += sizeof(int) + sizeof(int)*(size_t)connect;
+	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
 
 	fprintf( fp, "\t\t\t</Cells>\n");
 
@@ -170,7 +171,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 
 	// point coordinates
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\" />\n",(LLD)offset);
-	offset += sizeof(int) + sizeof(float)*(size_t)(actx->nummark*3);
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)(actx->nummark*3);
 
 	fprintf( fp, "\t\t\t</Points>\n");
 
@@ -178,7 +179,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	fprintf( fp, "\t\t\t<PointData Scalars=\"\">\n");
 
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
-	offset += sizeof(int) + sizeof(int)*(size_t)actx->nummark;
+	offset += sizeof(uint64_t) + sizeof(int)*(size_t)actx->nummark;
 
 	fprintf( fp, "\t\t\t</PointData>\n");
 
@@ -191,8 +192,8 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	// -------------------
 	// write connectivity
 	// -------------------
-	length = (int)sizeof(int)*connect;
-	fwrite( &length,sizeof(int),1, fp);
+	length = (uint64_t)sizeof(int)*connect;
+	fwrite( &length,sizeof(uint64_t),1, fp);
 
 	for( i = 0; i < connect; i++)
 	{
@@ -202,8 +203,8 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	// -------------------
 	// write offsets
 	// -------------------
-	length = (int)sizeof(int)*connect;
-	fwrite( &length,sizeof(int),1, fp);
+	length = (uint64_t)sizeof(int)*connect;
+	fwrite( &length,sizeof(uint64_t),1, fp);
 
 	for( i = 0; i < connect; i++)
 	{
@@ -213,8 +214,8 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	// -------------------
 	// write types
 	// -------------------
-	length = (int)sizeof(int)*connect;
-	fwrite( &length,sizeof(int),1, fp);
+	length = (uint64_t)sizeof(int)*connect;
+	fwrite( &length,sizeof(uint64_t),1, fp);
 
 	for( i = 0; i < connect; i++)
 	{
@@ -224,8 +225,8 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	// -------------------
 	// write point coordinates
 	// -------------------
-	length = (int)sizeof(float)*(3*actx->nummark);
-	fwrite( &length,sizeof(int),1, fp);
+	length = (uint64_t)sizeof(float)*(3*actx->nummark);
+	fwrite( &length,sizeof(uint64_t),1, fp);
 
 	// scaling length
 	scal_length = actx->jr->scal->length;
@@ -240,8 +241,8 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	// -------------------
 	// write field: phases
 	// -------------------
-	length = (int)sizeof(int)*(actx->nummark);
-	fwrite( &length,sizeof(int),1, fp);
+	length = (uint64_t)sizeof(int)*(actx->nummark);
+	fwrite( &length,sizeof(uint64_t),1, fp);
 
 	for( i = 0; i < actx->nummark; i++)
 	{
