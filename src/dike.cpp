@@ -548,6 +548,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   PetscScalar dz, ***lT, Tc, *grav, Tsol, Peff;
   PetscScalar dbug1, dbug2, dbug3, xcell, ycell;
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
+  PetscInt    iwrite_counter;
   PetscMPIInt    rank;
 
   FDSTAG      *fs;
@@ -575,7 +576,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   //scal = fs->scal; //debugging
   L   =  (PetscInt)dsz->rank;
   AirPhase  = jr->surf->AirPhase;
-
+  iwrite_counter=0;
 
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
@@ -706,19 +707,25 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 
       //now all cores have the same solution so give that to the stress array
       START_PLANE_LOOP
-        {
-          Peff=(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
-          if (Peff>0) Peff=Peff*10.0;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
-          gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff).
-          if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
-          { 
-            xcell=COORD_CELL(i, sx, fs->dsx);
-            ycell=COORD_CELL(j, sy, fs->dsy);
-            printf("1010.10 %i %g %g %g %g\n", jr->ts->istep+1,xcell, ycell, gsxx_eff_ave[L][j][i], Peff);   //debugging    
-          }   
-        }
-      END_PLANE_LOOP     
+      {
+        Peff=(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
+        if (Peff>0) Peff=Peff*10.0;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
+        gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff). 
+      }
+      END_PLANE_LOOP  
 
+      if (L==0 && dbug3 < 0.05/jr->ts->nstep_out && iwrite_counter==0)  //debugging
+      {
+        iwrite_counter++;
+        START_PLANE_LOOP
+          xcell=COORD_CELL(i, sx, fs->dsx);
+          ycell=COORD_CELL(j, sy, fs->dsy);
+          Peff=(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
+          PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g\n", jr->ts->istep+1,xcell, ycell, gsxx_eff_ave[L][j][i], Peff);   //debugging    
+        END_PLANE_LOOP  
+      }
+      PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);   //debugging    
+ 
 
       // restore buffer and mean stress vectors
       ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
@@ -766,10 +773,10 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   PetscScalar x, sum_sxx, sum_dx, dx, xx;
   PetscInt    i, ii, j, sx, sy, sz, nx, ny, nz, nD, numDike;
   PetscInt    L, M, rank, nseg, npseg, npseg0, jback, jj;
-  PetscInt    sisc, istep_count, istep_nave;
+  PetscInt    sisc, istep_count, istep_nave, iwrite_counter;
   Vec         vvec1d;
   PetscScalar ***vec1d, *lvec1d;
-  PetscScalar dbug1, dbug2, dbug3, ydebugging;
+  PetscScalar xcell, ycell, dbug1, dbug2, dbug3;
 
   //Scaling     *scal;  //debugging
 
@@ -792,6 +799,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
   numDike    = jr->dbdike->numDike; // number of dikes
+  iwrite_counter=0;
 
   for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
   {
@@ -878,7 +886,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
            ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
          }
 
-         for (i=sx; i<sx+nx; i++)
+         for (i=sx; i<sx+nx; i++) //for each value of i, over j for jj cells 
          {
            if (jj==1) vec1d[L][M][i]=0;
 
@@ -963,10 +971,21 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
  
        END_PLANE_LOOP
 
+       if (L==0 && dbug3 < 0.05/jr->ts->nstep_out && iwrite_counter==0)  //debugging
+       { 
+          iwrite_counter++;
+          START_PLANE_LOOP
+            xcell=COORD_CELL(i, sx, fs->dsx);
+            ycell=COORD_CELL(j, sy, fs->dsy);
+            PetscSynchronizedPrintf(PETSC_COMM_WORLD,"202020.2020 %i %g %g %g\n", jr->ts->istep+1,xcell, ycell, gsxx_eff_ave[L][j][i]);   //debugging    
+          END_PLANE_LOOP  
+       }            
+       PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);   //debugging    
+
+
        //restore arrays
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
-
      }  //end else dyndike_start
   } //end for loop over numdike
 
@@ -1047,12 +1066,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
                   ixcenter=i;
                   mindist=fabs(xcell-xcenter);
                 }
-                if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
-                { 
-                   printf("2020.20 %i %g %g %g\n", jr->ts->istep+1,xcell, ydebugging, gsxx_eff_ave[L][j][i]);   //debugging    
-                }            
               } //end loop to find ixcenter
-
+ 
               for(i=ixcenter-2; i <= ixcenter+2; i++) //find max gsxx_eff at each value of y
               {
                 if ((gsxx_eff_ave[L][j][i] > sxx_max))
@@ -1101,11 +1116,12 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
               {
                 ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
                 xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-                printf("3030.30 %i %g %g %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, 
-                xcenter+xshift-dike_width/2, xcenter+xshift+dike_width/2, x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx));  //debugging
+                PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, 
+                CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx));  //debugging
               }
 
             }//end loop over j cell row
+            PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
           }
        }  //end loop over nPtr
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);

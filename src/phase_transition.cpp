@@ -479,6 +479,8 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 			break;
 		}
 	   }
+	   PetscPrintf(PETSC_COMM_WORLD,"j=%i,y=%g, xboundL=%g, xboundR=%g \n", j,dsy->ccoor[j], ph->celly_xboundL[j],ph->celly_xboundR[j]);
+
 	}
 
 
@@ -1239,7 +1241,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
   		xboundR = PhaseTrans->celly_xboundR[J] + 
   		(PhaseTrans->celly_xboundR[J+1]-PhaseTrans->celly_xboundR[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[1]-dsy->ccoor[J]);
   	}
-  	//particle outside of phase transition box or adjacent to y-edge of box
+  	//particle outside of phase transition box or adjacent to y-edge of box so boundaries before or after are +/-1e12
   	else 
   	{
   		xboundL = PhaseTrans->celly_xboundL[J];
