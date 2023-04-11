@@ -60,6 +60,8 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
         success = false
     end
   
+
+
     return success
 end
 
@@ -255,7 +257,8 @@ end
                         mpiexec="mpiexec",
                         split_sign="=", 
                         debug::Bool=false, 
-                        create_expected_file::Bool=false)
+                        create_expected_file::Bool=false, 
+                        clean_dir::Bool=true)
 
 This performs a LaMEM simulation and compares certain keywords of the logfile with results of a previous simulation        
 
@@ -274,6 +277,7 @@ Parameters:
 - `split_sign`: split sign (or Tuple of it)
 - `debug`: set to true if you simply want to see the output of the simulation (no test done)
 - `create_expected_file`: create an expected file
+- `clean_dir`: delete all timestep & pvd files at the end?
 
 """
 function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String; 
@@ -281,7 +285,7 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
                 cores::Int64=1, args::String="",
                 bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec",
                 split_sign="=", 
-                debug::Bool=false, create_expected_file::Bool=false,
+                debug::Bool=false, create_expected_file::Bool=false, clean_dir::Bool=true
                 )
 
     cur_dir = pwd();
@@ -325,6 +329,10 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     end
 
     cd(cur_dir)  # return to directory       
+
+    if clean_dir
+        clean_directory(dir)
+    end
     
     return success
 end 

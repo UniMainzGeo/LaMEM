@@ -316,7 +316,7 @@ end
 
     # test_a -------
     @test perform_lamem_test(dir,ParamFile,"test_10_Compressibility_opt-p1.expected",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
     
     # load the data
     data, t = Read_LaMEM_timestep("output", 20, dir, last=true);
@@ -341,7 +341,7 @@ end
     # test_b ------- 
     #
     @test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
-                            keywords=keywords, accuracy=acc, cores=2, deb=true)
+                            keywords=keywords, accuracy=acc, cores=2, deb=true, clean_dir=false)
 
 
     # extract 1D profiles
@@ -376,21 +376,48 @@ end
 end
 
 
-#=
-another more complicated test
+
 @testset "t12_Temperature_diffusion" begin
     dir = "t12_Temperature_diffusion";
+    include(joinpath(dir,"Temp_setup.jl"))
     ParamFile = "t12_Temperature_diffusion.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-11));
-    
-    # Perform tests
-    @test perform_lamem_test(dir,ParamFile,"t11_Subgrid_opt-p1.expected",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=5e-11));
 
+    # ---
+    # Perform tests
+    CreateMarkers_Temperature(dir, "t12_Temperature_diffusion.dat", "./markers_pT1"; NumberCores=1)
+
+    @test perform_lamem_test(dir,ParamFile,"TpD_a.expected",
+                            args="-mark_load_file ./markers_pT1/mdb",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
+    
+    data, t1 = Read_LaMEM_timestep("t13", 1, dir); T1=data.fields.temperature[1,1,:]; 
+    data, t3 = Read_LaMEM_timestep("t13", 3, dir); T3=data.fields.temperature[1,1,:];
+    data, t5 = Read_LaMEM_timestep("t13", 5, dir); T5=data.fields.temperature[1,1,:];
+    z = data.z.val[1,1,:]
+
+    T_a5 = Analytical_1D(z, t5)
+    @test norm(T_a5 - T5)/length(T5) ≈ 0.03356719876721563
+
+    Plot_Analytics_vs_Numerics(z,T_a5, T5, dir, "T_anal3.png")
+    clean_directory(dir)
+    # ---
+   
+    # halfspace cooling test ----
+    ParamFile = "t12_Temperature_diffusion_1Dhalfspace.dat"
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2","|T|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=5e-11),  (rtol=1e-1,atol=5e-11));
+
+    @test perform_lamem_test(dir,ParamFile,"t12_Temperature_diffusion-p1.expected",
+                args="-printNorms 1",
+                keywords=keywords, accuracy=acc, cores=1, opt=true)
+    
+    # ---
+    
 end
-=#
+
 
 # t13_Rheology0D/
 
