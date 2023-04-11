@@ -5,14 +5,16 @@ using LaMEM_C
 using Test
 using GeophysicalModelGenerator
 using LaMEM.IO
+using CairoMakie
 
 
 include("test_utils.jl")
 
-@testset "LaMEM Testsuite" begin
+@testset "LaMEM Testsuite" verbose=true begin
 
-@testset "t1_FB1_Direct" begin
+@testset "t1_FB1_Direct" verbose=true begin
     dir = "t1_FB1_Direct";
+    
     ParamFile = "FallingBlock_mono_PenaltyDirect.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -38,6 +40,7 @@ end
 
 @testset "t2_FB2_MG" begin
     dir = "t2_FB2_MG";
+    
     ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -53,7 +56,7 @@ end
 # t3_SubductionMATLABinput - to be added  & changed to julia.
 @testset "t3_Subduction" begin
     dir = "t3_SubductionMATLABinput";
-
+    
     # input script 
     include(joinpath(dir,"CreateMarkers_Subduction.jl"));      
 
@@ -88,7 +91,7 @@ end
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4)
     @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_c_MUMPS_deb-p4.expected", 
                                 args="-jp_pc_factor_mat_solver_type mumps",
-                                keywords=keywords, accuracy=acc, cores=4, deb=true)
+                                keywords=keywords, accuracy=acc, cores=4, opt=true)
                         
     # t3_Sub1_MATLAB_d_MUMPS_MG_VEP_opt                                 
     # NOTE: This employs 1D grid refinement which does not work yet in julia (should be fixed)
@@ -105,6 +108,7 @@ end
 
 @testset "t4_Localisation" begin
     dir = "t4_Loc";
+    
     ParamFile = "localization.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -129,6 +133,7 @@ end
 
 @testset "t5_Permeability" begin
     dir = "t5_Perm";
+    
     ParamFile = "Permea.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -284,6 +289,7 @@ end
 
 @testset "t9_PhaseDiagrams" begin
     dir = "t9_PhaseDiagrams";
+    
     ParamFile = "test_9_FallingBlock_PhaseDiagrams.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -300,6 +306,7 @@ end
 
 @testset "t10_Compressibility" begin
     dir = "t10_Compressibility";
+    
     ParamFile = "Compressible1D_withSaltandBasement.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -315,7 +322,8 @@ end
     data, t = Read_LaMEM_timestep("output", 20, dir, last=true);
 
     # extract 1D profiles
-    phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data)
+    include(joinpath(dir,"t10_analytics.jl"))
+    phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data, dir)
 
     # 1D analytical solution
     Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
@@ -337,7 +345,7 @@ end
 
 
     # extract 1D profiles
-    phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data)
+    phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data, dir)
      
     # 1D analytical solution
     Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
@@ -352,11 +360,10 @@ end
     clean_directory(dir)
     # --------------
 end
-#=
-=#
 
 @testset "t11_subgrid" begin
     dir = "t11_subgrid";
+    
     ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -373,7 +380,7 @@ end
 another more complicated test
 @testset "t12_Temperature_diffusion" begin
     dir = "t12_Temperature_diffusion";
-    ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
+    ParamFile = "t12_Temperature_diffusion.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-11));
@@ -393,6 +400,7 @@ end
 
 @testset "t16_PhaseTransitions" begin
     dir = "t16_PhaseTransitions";
+    
     ParamFile = "Plume_PhaseTransitions.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -427,6 +435,7 @@ end
 
 @testset "t17_InflowOutflow" begin
     dir = "t17_InflowOutflow";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2","|eRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=1e-7,atol=1e-11));
     
@@ -458,6 +467,7 @@ end
 
 @testset "t18_SimpleShear" begin
     dir = "t18_SimpleShear";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-8), (rtol=1e-5, atol=2e-8), (rtol=1e-4,atol=2e-5));
 
@@ -482,6 +492,7 @@ end
 
 @testset "t19_CompensatedInflow" begin
     dir = "t19_CompensatedInflow";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
 
@@ -500,6 +511,7 @@ end
 
 @testset "t20_FSSA" begin
     dir = "t20_FSSA";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-5,atol=1e-5), (rtol=1e-5, atol=1e-5), (rtol=1e-4,atol=1e-4));
 
@@ -512,6 +524,7 @@ end
 
 @testset "t21_Passive_Tracer" begin
     dir = "t21_Passive_Tracer";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-8), (rtol=1e-4,atol=1e-4));
 
@@ -528,6 +541,7 @@ end
 
 @testset "t22_RidgeGeom" begin
     dir = "t22_RidgeGeom";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
 
@@ -542,6 +556,8 @@ end
 
 @testset "t23_Permeable" begin
     dir = "t23_Permeable";
+    
+
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=2e-9));
 
@@ -567,6 +583,7 @@ end
 
 @testset "t25_APS_Healing" begin
     dir = "t25_APS_Healing";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
 
@@ -579,6 +596,7 @@ end
 
 @testset "t26_Dike" begin
     dir = "t26_Dike";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
 
@@ -627,6 +645,7 @@ end
 
 @testset "t28_HeatRecharge" begin
     dir = "t28_HeatRecharge";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=5e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-5,atol=1e-11));
 
@@ -643,6 +662,7 @@ end
 
 @testset "t29_PermeableSides_VelBoxes" begin
     dir = "t29_PermeableSides_VelBoxes";
+    
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=5e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-5,atol=1e-11));
 
@@ -654,6 +674,7 @@ end
 
 @testset "t30_Timestep_Schedule" begin
     dir = "t30_Timestep_Schedule";
+    
     keywords = ("Actual time step",)
     acc      = ((rtol=1e6,atol=1e-11),);
 

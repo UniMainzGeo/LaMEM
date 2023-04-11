@@ -77,14 +77,14 @@ end
 function Plot_vs_analyticalSolution(data, dir, filename="Analytics_vs_LaMEM.png")
 
     # extract 1D profiles
-    phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data)
+    phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data, dir)
 
     # 1D analytical solution
     Sv_a, Pf_a, P_hydro_a, Sh_anal_a = AnalyticalSolution(ρ, phase_vec, z)
 
     # Open figure 
     f = Figure(resolution = (1500, 800))
-    ax = Axis(f[1, 1],  xlabel = "Pressure & Stress [bar]", ylabel = "Depth [km]", fontsize=20)
+    ax = Axis(f[1, 1],  xlabel = "Pressure & Stress [bar]", ylabel = "Depth [km]")
     lines!(ax, Sv_a*10, z,  label = "Analytical σᵥ") 
     lines!(ax, Pf_a*10, z,  label = "Analytical Pf") 
     lines!(ax, P_hydro_a*10, z,  label = "Analytical Ph") 
@@ -95,10 +95,10 @@ function Plot_vs_analyticalSolution(data, dir, filename="Analytics_vs_LaMEM.png"
     scatter!(ax, Sxx_vec*10, z,  label = "LaMEM σₕ") 
     axislegend()
 
-    ax = Axis(f[1, 2],   xlabel = "Stress [MPa]", ylabel = "Depth [km]", fontsize=20)
+    ax = Axis(f[1, 2],   xlabel = "Stress [MPa]", ylabel = "Depth [km]")
     lines!(ax, τII_vec, z,  label = "LaMEM τII") 
     
-    ax = Axis(f[1, 3],  xlabel = "Density [kg/m3]", ylabel = "Depth [km]", fontsize=20)
+    ax = Axis(f[1, 3],  xlabel = "Density [kg/m3]", ylabel = "Depth [km]")
     lines!(ax, ρ, z,  label = "LaMEM τII") 
 
 
