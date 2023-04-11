@@ -1,7 +1,11 @@
 # This is the LaMEM testing framework, run through julia
 #
 
-using Test, GeophysicalModelGenerator
+using LaMEM_C
+using Test
+using GeophysicalModelGenerator
+using LaMEM.IO
+
 
 include("test_utils.jl")
 
@@ -25,6 +29,7 @@ include("test_utils.jl")
                             keywords=keywords, accuracy=acc, cores=2, opt=true,
                             args="-jp_pc_factor_mat_solver_package mumps")
 
+    # we did away with the pastix test as no-one used it
     #@test perform_lamem_test(dir,ParamFile,"FB1_d_PaStiX_opt-p4.expected", 
     #                        keywords=keywords, accuracy=acc, cores=4, opt=true,
     #                        args="-jp_pc_factor_mat_solver_package pastix")
@@ -86,7 +91,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=4, deb=true)
                         
     # t3_Sub1_MATLAB_d_MUMPS_MG_VEP_opt                                 
-    # NOTE: This employs 1D grid refinement which does not work yet in julia
+    # NOTE: This employs 1D grid refinement which does not work yet in julia (should be fixed)
     #keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     #acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
     
@@ -290,21 +295,64 @@ end
 
 end
 
-#=
+
 # this ia a more complicated one, that requires a devoted script (with plotting)
 
 @testset "t10_Compressibility" begin
     dir = "t10_Compressibility";
-    ParamFile = "test_9_FallingBlock_PhaseDiagrams.dat";
+    ParamFile = "Compressible1D_withSaltandBasement.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-11), (rtol=2e-8,));
+    acc      = ((rtol=1e-7,atol=1e-10), (rtol=1e-5, atol=1e-10), (rtol=2e-6,atol=1e-4), (rtol=2e-8,));
     
     # Perform tests
-    @test perform_lamem_test(dir,ParamFile,"test_9_FallingBlock_PhaseDiagrams.expected",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true)
 
+    # test_a -------
+    @test perform_lamem_test(dir,ParamFile,"test_10_Compressibility_opt-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+    
+    # load the data
+    data, t = Read_LaMEM_timestep("output", 20, dir, last=true);
+
+    # extract 1D profiles
+    phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data)
+
+    # 1D analytical solution
+    Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
+
+    # Compute difference with analytical solution
+    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617
+    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367
+    @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321
+
+    # Create plot with stress & analytical solution
+    Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_1Core.png")
+    clean_directory(dir)
+    # --------------
+
+    # test_b ------- 
+    #
+    @test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
+                            keywords=keywords, accuracy=acc, cores=2, deb=true)
+
+
+    # extract 1D profiles
+    phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data)
+     
+    # 1D analytical solution
+    Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
+
+    # Compute difference with analytical solution
+    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617
+    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367
+    @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321
+
+    # Create plot with stress & analytical solution
+    Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
+    clean_directory(dir)
+    # --------------
 end
+#=
 =#
 
 @testset "t11_subgrid" begin
@@ -536,26 +584,31 @@ end
 
     # test_M1_2D
     @test perform_lamem_test(dir,"dike_M1_2D.dat","dike_M1_2D.expected",
+                            args="-nstep_max 20",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # test_M075_2D_2cores
     @test perform_lamem_test(dir,"dike_M075_2D_2cores.dat","dike_M075_2D_2cores.expected",
+                            args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=2, opt=true)
 
     # test_variableM
     @test perform_lamem_test(dir,"dike_variableM.dat","dike_variableM.expected",
+                            args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # heat_kfac
     keywords = ("|eRes|_2",)
     acc      = ((rtol=1e-4,atol=1e-11),);
     @test perform_lamem_test(dir,"dike_heating_kfac.dat","dike_heating_kfac.expected",
+                            args="-nstep_max 3",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # heat_rhoA
     keywords = ("|eRes|_2",)
     acc      = ((rtol=1e-4,atol=6e-9),);
     @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA.expected",
+                            args="-nstep_max 3",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
 end

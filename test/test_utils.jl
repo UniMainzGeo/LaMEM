@@ -1,5 +1,8 @@
 # These are tools that help perform the LaMEM tests, which run LaMEM locally
 using LinearAlgebra
+
+export run_lamem_local_test, perform_lamem_test
+
 """
     run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
                         outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
@@ -325,4 +328,3 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     
     return success
 end 
-
