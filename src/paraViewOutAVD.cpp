@@ -294,16 +294,16 @@ void AVD3DAllocate(
 	avd3D->mz_mesh = mz+2;
 
 	AVDCell3DCreate(
-		(const PetscInt)avd3D->mx_mesh,
-		(const PetscInt)avd3D->my_mesh,
-		(const PetscInt)avd3D->mz_mesh,
+		 avd3D->mx_mesh,
+		 avd3D->my_mesh,
+		 avd3D->mz_mesh,
 		&avd3D->cells);
 
 	avd3D->npoints = npoints;
 
 	AVDPoint3DCreate(npoints, &avd3D->points);
 
-	AVDChain3DCreate(npoints, (const PetscInt)avd3D->buffer, &avd3D->chains);
+	AVDChain3DCreate(npoints, avd3D->buffer, &avd3D->chains);
 
 	(*A) = avd3D;
 }
@@ -682,7 +682,7 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 #define __FUNCT__ "PVAVDCreate"
 PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 {
-	char filename[_str_len_-6];
+	char filename[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -782,9 +782,9 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 		0LL,(LLD)(A->gmz));
 
 	fprintf(fp, "    <PCoordinates>\n");
-	fprintf(fp, "      <PDataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" />\n");
-	fprintf(fp, "      <PDataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" />\n");
-	fprintf(fp, "      <PDataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" />\n");
+	fprintf(fp, "      <PDataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" />\n");
+	fprintf(fp, "      <PDataArray type=\"Float32\" Name = \"y\" NumberOfComponents=\"1\" format=\"appended\" />\n");
+	fprintf(fp, "      <PDataArray type=\"Float32\" Name = \"z\" NumberOfComponents=\"1\" format=\"appended\" />\n");
 	fprintf(fp, "    </PCoordinates>\n");
 
 	fprintf(fp, "    <PCellData>\n");
@@ -833,7 +833,8 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	PetscScalar   chLen;
 	float         crd;
 	unsigned char phase;
-	int           offset, L;
+	int           offset;
+	uint64_t 	  L;
 
 	PetscFunctionBegin;
 
@@ -871,14 +872,14 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	fprintf(fp, "    <Coordinates>\n");
 
 	// X
-	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += (int)(sizeof(int) + sizeof(float)*(size_t)(A->mx+1));
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mx+1));
 	// Y
-	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += (int)(sizeof(int) + sizeof(float)*(size_t)(A->my+1));
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->my+1));
 	// Z
-	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += (int)(sizeof(int) + sizeof(float)*(size_t)(A->mz+1));
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mz+1));
 
 	fprintf(fp, "    </Coordinates>\n");
 
@@ -899,32 +900,32 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	fprintf(fp,"_");
 
 	// X
-	L = (int)sizeof(float)*(int)(A->mx+1);
-	fwrite(&L, sizeof(int), 1, fp);
+	L = (uint64_t)sizeof(float)*(int)(A->mx+1);
+	fwrite(&L, sizeof(uint64_t), 1, fp);
 	for( i=0; i<A->mx+1; i++ ) {
 		crd = (float)((A->x0 + (PetscScalar)i*A->dx)*chLen);
 		fwrite(&crd,sizeof(float),1,fp);
 	}
 
 	// Y
-	L = (int)sizeof(float)*(int)(A->my+1);
-	fwrite(&L, sizeof(int), 1, fp);
+	L = (uint64_t)sizeof(float)*(int)(A->my+1);
+	fwrite(&L, sizeof(uint64_t), 1, fp);
 	for( i=0; i<A->my+1; i++ ) {
 		crd = (float)((A->y0 + (PetscScalar)i*A->dy)*chLen);
 		fwrite(&crd,sizeof(float),1,fp);
 	}
 
 	// Z
-	L = (int)sizeof(float)*(int)(A->mz+1);
-	fwrite(&L, sizeof(int), 1, fp);
+	L = (uint64_t)sizeof(float)*(int)(A->mz+1);
+	fwrite(&L, sizeof(uint64_t), 1, fp);
 	for( i=0; i<A->mz+1; i++ ) {
 		crd = (float)((A->z0 + (PetscScalar)i*A->dz)*chLen);
 		fwrite(&crd,sizeof(float),1,fp);
 	}
 
 	// phase
-	L = (int)sizeof(unsigned char)*(int)(A->mz*A->my*A->mx);
-	fwrite(&L, sizeof(int), 1, fp);
+	L = (uint64_t)sizeof(unsigned char)*(int)(A->mz*A->my*A->mx);
+	fwrite(&L, sizeof(uint64_t), 1, fp);
 	for (k=1; k<A->mz+1; k++) {
 		for (j=1; j<A->my+1; j++) {
 			for (i=1; i<A->mx+1; i++)

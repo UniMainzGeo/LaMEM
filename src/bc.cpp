@@ -1078,7 +1078,10 @@ PetscErrorCode BCApply(BCCtx *bc)
     ierr = BCApplyCells(bc); CHKERRQ(ierr);
 
     // plume like boundary condition
-    if(bc->Plume_Type == 1) ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
+    if(bc->Plume_Type == 1)
+    {
+    	ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
+    }
 
     // synchronize SPC constraints in the internal ghost points
     // WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE

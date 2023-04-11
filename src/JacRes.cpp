@@ -107,7 +107,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "FSSA_allVel",     &ctrl->FSSA_allVel,    1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,        1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_therm_exp",   &ctrl->actExp,         1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1);              CHKERRQ(ierr);
