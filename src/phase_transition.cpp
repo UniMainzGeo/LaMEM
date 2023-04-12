@@ -479,8 +479,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 			break;
 		}
 	   }
-	   PetscPrintf(PETSC_COMM_WORLD,"j=%i,y=%g, xboundL=%g, xboundR=%g \n", j,dsy->ccoor[j], ph->celly_xboundL[j],ph->celly_xboundR[j]);
-
 	}
 
 
