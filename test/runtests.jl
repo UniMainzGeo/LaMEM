@@ -413,14 +413,120 @@ end
     @test perform_lamem_test(dir,ParamFile,"t12_Temperature_diffusion-p1.expected",
                 args="-printNorms 1",
                 keywords=keywords, accuracy=acc, cores=1, opt=true)
-    
+
+    clean_directory(dir)
     # ---
     
 end
 
 
 # t13_Rheology0D/
+@testset "t13_Rheology0D" begin
+    dir = "t13_Rheology0D";
+    include(joinpath(dir,"Rheology0D.jl"))
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-10));
 
+    # ---
+    # Viscoelastic rheology
+    @test perform_lamem_test(dir,"Rheology_VE_0D.dat","Rheology_VE_0D-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
+
+    # compare with analytics    
+    FileName = "Rheolog0D_VE"                        
+    t_vec, τII_LaMEM = StressTime_0D(FileName, DirName);
+    τII_anal = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_vec);    
+    @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.12480014617816898
+
+    # Create plot
+    t_anal = range(0,t_vec[end],200)
+    τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal)
+    Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastic0D.png")
+    
+    clean_directory(dir)
+    # ---
+
+    # ---
+    # Viscoelastoplastic rheology
+    @test perform_lamem_test(dir,FileName*".dat","Rheology_VEP_0D-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
+
+    # compare with analytics     
+    FileName = "Rheolog0D_VEP"
+    t_vec, τII_LaMEM = StressTime_0D(FileName, DirName);
+    YieldStress = 1e7  
+    τII_anal = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_vec, YieldStress);    
+    @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.05341838341184021
+
+    # Create plot
+    t_anal = range(0,t_vec[end],200)
+    τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal, YieldStress)
+    Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastoplastic0D.png")
+
+    clean_directory(dir)
+    # ---
+
+    # ---
+    # Viscoelastoplastic rheology with nonlinear dislocation creep viscosity
+    @test perform_lamem_test(dir,"Rheology_DislocationCreep_VE_0D.dat","Rheology_DislocationCreep_VE_0D-p1.expected",
+                        keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
+                        
+    FileName = "Rheolog0D_DislocationCreep_VE"
+    t_vec, τII_LaMEM = StressTime_0D(FileName, DirName);
+    YieldStress = 1e10  
+    data,t = Read_LaMEM_timestep(FileName, 0, DirName, fields=("temperature [C]",));
+    T = mean(data.fields.temperature)
+
+    # Create plot
+    t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec))
+    Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
+    clean_directory(dir)
+    # ---
+    
+    # ---
+    # Viscoelastoplastic rheology with nonlinear dislocation creep viscosity
+    @test perform_lamem_test(dir,"Rheology_DislocationCreep_VEP_0D.dat","Rheology_DislocationCreep_VEP_0D-p1.expected",
+                        keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
+                        
+    FileName = "Rheolog0D_DislocationCreep_VEP"
+    t_vec, τII_LaMEM = StressTime_0D(FileName, DirName);
+    YieldStress = 15e6  
+    data,t = Read_LaMEM_timestep(FileName, 0, DirName, fields=("temperature [C]",));
+    T = mean(data.fields.temperature)
+
+    # Create plot
+    t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec), YieldStress)
+    Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastoplastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
+    clean_directory(dir)
+    # ---
+
+    # ---
+    # Stress-strainrate for linear viscous rheologies
+    ε = [-1e-13 -1e-14 -1e-15 -1e-16 -1e-17]
+    FileName = "Rheology_linearViscous_0D.dat"
+    τ = StressStrainrate0D_LaMEM(FileName, DirName, "Rheolog0D_linearViscous", ε)
+    slope = (log10.(-ε[end])-log10.(-ε[1]) )/(log10.(τ[end])-log10.(τ[1]))
+    @test slope ≈ 1.0
+    
+    τ_anal = -2*ε[:]*1e21/1e6
+    Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_linearViscous.png")
+
+    # ---
+
+    # ---
+    # Stress-strainrate for dislocation creep rheologies
+    FileName = "Rheology_PowerlawCreep_DryOlivine_0D.dat"
+    τ = StressStrainrate0D_LaMEM(FileName, DirName, "Rheolog0D_DryOlivine", ε)
+    slope = (log10.(-ε[end])-log10.(-ε[1]) )/(log10.(τ[end])-log10.(τ[1]))
+    @test slope ≈ 3.5 rtol=1e-2
+
+    Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_linearViscous.png")
+    
+    # ---
+
+
+end
 # t14_1DStrengthEnvelope/
 
 # t15_RTI/
