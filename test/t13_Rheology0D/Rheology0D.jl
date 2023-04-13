@@ -83,7 +83,7 @@ function Viscoelastoplastic0D_dislocationcreep(T, ε, tmax,  τ_yield=1e100, G =
         Δt = t_s[i] - t_s[i-1]
 
         # to do this correct, we need to perform local iterations
-        τ_new = LocalIterations_DC(τII[i-1], Δt, G, ε, n, eterm, F2, AD, YieldStress)
+        τ_new = LocalIterations_DC(τII[i-1], Δt, G, ε, n, eterm, F2, AD, τ_yield)
 
         τII[i] = τ_new
     end
@@ -93,8 +93,6 @@ function Viscoelastoplastic0D_dislocationcreep(T, ε, tmax,  τ_yield=1e100, G =
 
     τII_noLocal  = 2*η*(1.0 .- exp.(-t_s/τ_M))*ε; 
     τII_noLocal[τII_noLocal .> τ_yield] .= τ_yield # plasticity
-
-    
 
     return t, τII, τII_noLocal  # in Pa
 end
@@ -150,15 +148,16 @@ function StressStrainrate0D_LaMEM(FileName::String, DirName::String="", OutFile=
 end
 
 
-
+"""
+"""
 function Plot_StressStrainrate(ε, τ, τ_anal, dir, filename="t13_Stress_Strainrate.png")
 
     # Open figure 
     f = Figure(resolution = (1500, 800))
     ax = Axis(f[1, 1],  xlabel = "strainrate [1/s]", ylabel = "τII [MPa]"; yscale=log10, xscale=log10)
-    lines!(ax, -ε[:], τ_anal,  label = "Analytical") 
+    lines!(ax, -ε[:], τ_anal[:],  label = "Analytical") 
 
-    scatter!(ax, -ε[:], τ,  label = "LaMEM", color=:red) 
+    scatter!(ax, -ε[:], τ[:],  label = "LaMEM", color=:red) 
     
 
     axislegend(position=:rb)
@@ -169,28 +168,24 @@ function Plot_StressStrainrate(ε, τ, τ_anal, dir, filename="t13_Stress_Strain
 end 
 
 
-function AnalyticalSolution_DislocationCreep(type="DryOlivine", T)
+function AnalyticalSolution_DislocationCreep(type="DryOlivine", T=1000, ε=[1e-15, 1e-16])
 
-if type=="DryOlivine"
-    AD    = 2.5e-17;   # 1/Pa^n/s, 
-    n     = 3.5;       # dimensionless
-    Ea    = 532000;    # J/mol 
-    R     = 8.3144621;     # J/mol/K
+    if type=="DryOlivine"
+        AD    = 2.5e-17;   # 1/Pa^n/s, 
+        n     = 3.5;       # dimensionless
+        Ea    = 532000;    # J/mol 
+        R     = 8.3144621;     # J/mol/K
 
-    # Define correction coefficient F2 
-    # for a strain rate based viscosity formulation
-    F2    = 1/2**((n-1)/n)/3**((n+1)/2/n);
-else
-    error("not implemented")
-end
+        # Define correction coefficient F2 
+        # for a strain rate based viscosity formulation
+        F2    = 1/2^((n-1)/n)/3^((n+1)/2/n);
+    else
+        error("not implemented")
+    end
 
+    eterm   =  exp(Ea/n/R/(T+273.15));
+    η       =  F2/AD^(1/n)./abs.(ε).^((n-1)/n)*eterm
+    τ       =  2.0.*η.*abs.(ε);
 
-eterm   = exp(Ea/n/R/(T+273.15));
-
-
-E2nd_anal     = 10**np.arange(np.min(np.log10(data.E2nd_bg)), np.max(np.log10(data.E2nd_bg)), .1)
-T2nd_anal     = 10**np.arange(np.min(np.log10(data.E2nd_bg)), np.max(np.log10(data.E2nd_bg)), .1)
-Eta_eff_anal  = 10**np.arange(np.min(np.log10(data.E2nd_bg)), np.max(np.log10(data.E2nd_bg)), .1)
-
-
+    return τ
 end

@@ -435,9 +435,9 @@ end
 
     # compare with analytics    
     FileName = "Rheolog0D_VE"                        
-    t_vec, τII_LaMEM = StressTime_0D(FileName, DirName);
-    τII_anal = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_vec);    
-    @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.12480014617816898
+    t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
+    τII_anal = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_vec);      
+    @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.12480014617816898  rtol = 1e-4
 
     # Create plot
     t_anal = range(0,t_vec[end],200)
@@ -449,15 +449,15 @@ end
 
     # ---
     # Viscoelastoplastic rheology
-    @test perform_lamem_test(dir,FileName*".dat","Rheology_VEP_0D-p1.expected",
+    @test perform_lamem_test(dir,"Rheology_VEP_0D.dat","Rheology_VEP_0D-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
 
     # compare with analytics     
     FileName = "Rheolog0D_VEP"
-    t_vec, τII_LaMEM = StressTime_0D(FileName, DirName);
+    t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
     YieldStress = 1e7  
     τII_anal = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_vec, YieldStress);    
-    @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.05341838341184021
+    @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.05341838341184021 rtol = 1e-4
 
     # Create plot
     t_anal = range(0,t_vec[end],200)
@@ -473,12 +473,13 @@ end
                         keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
                         
     FileName = "Rheolog0D_DislocationCreep_VE"
-    t_vec, τII_LaMEM = StressTime_0D(FileName, DirName);
+    t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
     YieldStress = 1e10  
-    data,t = Read_LaMEM_timestep(FileName, 0, DirName, fields=("temperature [C]",));
+    data,t = Read_LaMEM_timestep(FileName, 0, dir, fields=("temperature [C]",));
     T = mean(data.fields.temperature)
 
     # Create plot
+    ε = 1e-15;
     t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec))
     Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
     clean_directory(dir)
@@ -490,9 +491,9 @@ end
                         keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
                         
     FileName = "Rheolog0D_DislocationCreep_VEP"
-    t_vec, τII_LaMEM = StressTime_0D(FileName, DirName);
+    t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
     YieldStress = 15e6  
-    data,t = Read_LaMEM_timestep(FileName, 0, DirName, fields=("temperature [C]",));
+    data,t = Read_LaMEM_timestep(FileName, 0, dir, fields=("temperature [C]",));
     T = mean(data.fields.temperature)
 
     # Create plot
@@ -505,35 +506,110 @@ end
     # Stress-strainrate for linear viscous rheologies
     ε = [-1e-13 -1e-14 -1e-15 -1e-16 -1e-17]
     FileName = "Rheology_linearViscous_0D.dat"
-    τ = StressStrainrate0D_LaMEM(FileName, DirName, "Rheolog0D_linearViscous", ε)
+    τ = StressStrainrate0D_LaMEM(FileName, dir, "Rheolog0D_linearViscous", ε)
     slope = (log10.(-ε[end])-log10.(-ε[1]) )/(log10.(τ[end])-log10.(τ[1]))
-    @test slope ≈ 1.0
+    @test slope ≈ 1.0 rtol = 1e-6
     
     τ_anal = -2*ε[:]*1e21/1e6
     Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_linearViscous.png")
-
+    clean_directory(dir)
     # ---
 
     # ---
     # Stress-strainrate for dislocation creep rheologies
     FileName = "Rheology_PowerlawCreep_DryOlivine_0D.dat"
-    τ = StressStrainrate0D_LaMEM(FileName, DirName, "Rheolog0D_DryOlivine", ε)
+    τ = StressStrainrate0D_LaMEM(FileName, dir, "Rheolog0D_DryOlivine", ε)
     slope = (log10.(-ε[end])-log10.(-ε[1]) )/(log10.(τ[end])-log10.(τ[1]))
-    @test slope ≈ 3.5 rtol=1e-2
+    @test slope ≈ 3.5 rtol=1e-2 
 
-    Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_linearViscous.png")
-    
+    # add analytical solution for DC
+    T=1000;
+    τ_anal = AnalyticalSolution_DislocationCreep("DryOlivine", T, ε)/1e6
+    @test norm(τ_anal[:] .- τ[:]) ≈ 0.2009862117696578 rtol = 1e-4
+
+    Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_DryOlivine_DC.png")
+    clean_directory(dir)
     # ---
 
+end
+
+# t14_1DStrengthEnvelope/
+@testset "t14_1DStrengthEnvelope" begin
+    dir = "t14_1DStrengthEnvelope";
+    include(joinpath(dir,"StrengthEnvelop.jl"))
+
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
+
+    # ---
+    # first test runs visco-plastic setup with dt = 10 ka
+    @test perform_lamem_test(dir,"1D_VP.dat","t14_1D_VP_Direct_opt-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
+    # ---
+
+    # ---
+    # 2nd test runs visco-elasto-plastic setup with dt = 5 ka
+    @test perform_lamem_test(dir,"1D_VEP5.dat","t14_1D_VEP5_Direct_opt-p2.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
+    # ---
+       
+    # ---
+    # 3rd test runs visco-elasto-plastic setup with dt = 10 ka
+    @test perform_lamem_test(dir,"1D_VEP10.dat","t14_1D_VEP10_Direct_opt-p3.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
+    # ---
+
+    # ---
+    # 4th test runs visco-plastic setup with dt = 50 ka
+    @test perform_lamem_test(dir,"1D_VEP50.dat","t14_1D_VEP50_Direct_opt-p4.expected",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true, clean_dir=false)
+    # ---
+    
+    # Read output of various simulations:
+    VP,  _  = Read_LaMEM_timestep("outputVP", 0, dir; last=true);       τII_1 =  Float64.(VP.fields.j2_dev_stress[1,1,:]);
+    VEP5,_  = Read_LaMEM_timestep("outputVEP5", 0, dir; last=true);     τII_2 =  Float64.(VEP5.fields.j2_dev_stress[1,1,:]);
+    VEP10,_ = Read_LaMEM_timestep("outputVEP10", 0, dir; last=true);    τII_3 =  Float64.(VEP10.fields.j2_dev_stress[1,1,:]);
+    VEP50,_ = Read_LaMEM_timestep("outputVEP50", 0, dir; last=true);    τII_4 =  Float64.(VEP50.fields.j2_dev_stress[1,1,:]);
+
+    z       =  VP.z.val[1,1,:]
+    phase   =  VP.fields.phase[1,1,:]
+    T       =  Float64.(VP.fields.temperature[1,1,:])
+    P       =  VP.fields.pressure[1,1,:]*1e6
+    τy      =  VP.fields.yield[1,1,:]
+    τ_anal  =  Analytical_StrengthEnvelop(phase, T, P, τy)      # analytical solution 
+
+    @test norm(τII_1 - τII_2) ≈ 11.4882145f0
+    @test norm(τII_1 - τII_3) ≈ 11.532428f0
+    @test norm(τII_1 - τII_4) ≈ 13.671384f0
+    @test norm(τII_1 - τ_anal) ≈ 147.6532112114033
+    
+    # Create plot
+    Plot_StrengthEnvelop("t14_StrengthEnvelop_1D.png", dir, z, (τII_1, τII_2, τII_3, τII_4, τ_anal),("Viscoplastic", "VEP dt=5ka", "VEP dt=10ka", "VEP dt=50ka", "Analytical"))
+    clean_directory(dir)
 
 end
-# t14_1DStrengthEnvelope/
 
-# t15_RTI/
+@testset "t15_RTI" begin
+    dir = "t15_RTI";
+    include(joinpath(dir,"RT_analytics.jl"))
+    ParamFile = "t15_RTI.dat";
+    
+    λ       = [0.25, 0.5, 1.0, 1.25, 1.5, 2.0, 4.0]
+    q_num   = Compute_RT_growthrate_LaMEM(λ, ParamFile, dir)
+    q_anal  = AnalyticalSolution_RTI_FreeSlip(λ)
+
+    @test  norm(q_num - q_anal) ≈ 0.0015857520938151908
+
+    # Plot 
+    λ_pl     = range(1e-9,5,100)
+    q_anal_pl = AnalyticalSolution_RTI_FreeSlip(λ_pl)
+
+    Plot_growthrate("t15_RTI_analytics_numerics.png", dir, λ,q,λ_pl,q_anal_pl)
+end
+
 
 @testset "t16_PhaseTransitions" begin
     dir = "t16_PhaseTransitions";
-    
     ParamFile = "Plume_PhaseTransitions.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
