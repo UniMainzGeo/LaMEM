@@ -768,7 +768,6 @@ end
 @testset "t23_Permeable" begin
     dir = "t23_Permeable";
     
-
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=2e-9));
 
@@ -777,20 +776,23 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 end
 
-#=
-MATLAB setup
 @testset "t24_Erosion_Sedimentation" begin
     dir = "t24_Erosion_Sedimentation";
+    include(joinpath(dir,"t24_CreateSetup.jl"));      
+
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5, atol=5e-5), (rtol=2.5e-4,atol=1e-4));
+    
+    ParamFile = "Erosion_Sedimentation_2D.dat"
+    t24_CreateMarkers(dir, ParamFile, NumberCores=8)
 
     # test_a
-    @test perform_lamem_test(dir,"Permeable.dat","Permeable_p1.expected",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true)
-
-  
+    @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_opt-p8.expected",
+                            keywords=keywords, accuracy=acc, cores=8, opt=true)
+    # test_b
+    @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_deb-p8.expected",
+                            keywords=keywords, accuracy=acc, cores=8, deb=true)
 end
-=#
 
 @testset "t25_APS_Healing" begin
     dir = "t25_APS_Healing";
@@ -803,7 +805,6 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
   
 end
-
 
 @testset "t26_Dike" begin
     dir = "t26_Dike";
