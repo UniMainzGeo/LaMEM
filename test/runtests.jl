@@ -604,7 +604,7 @@ end
     λ_pl     = range(1e-9,5,100)
     q_anal_pl = AnalyticalSolution_RTI_FreeSlip(λ_pl)
 
-    Plot_growthrate("t15_RTI_analytics_numerics.png", dir, λ,q,λ_pl,q_anal_pl)
+    Plot_growthrate("t15_RTI_analytics_numerics.png", dir, λ,q_num,λ_pl,q_anal_pl)
 end
 
 
