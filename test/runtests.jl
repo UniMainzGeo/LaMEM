@@ -95,15 +95,17 @@ end
                         
     # t3_Sub1_MATLAB_d_MUMPS_MG_VEP_opt                                 
     # NOTE: This employs 1D grid refinement which does not work yet in julia (should be fixed)
-    #keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    #acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
+    include(joinpath(dir,"CreateMarkers_SubductionVEP_parallel.jl"));      
+
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
     
-    #ParamFile = "Subduction_VEP.dat";
-    #CreateMarkers_Subduction(dir, ParamFile, NumberCores=8)
-    #@test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_d_MUMPS_MG_VEP_opt-p8.expected", 
-    #                           args="",
-    #                            keywords=keywords, accuracy=acc, cores=8, opt=true)
-                        
+    ParamFile = "Subduction_VEP.dat";
+    CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=8)
+    @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_d_MUMPS_MG_VEP_opt-p8.expected", 
+                               args="",
+                                keywords=keywords, accuracy=acc, cores=8, opt=true)
+                    
 end
 
 @testset "t4_Localisation" begin

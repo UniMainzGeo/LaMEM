@@ -143,7 +143,7 @@ unit_stress      = 1e9
 #===============================================================================
 
 # Grid output options (output is always active)
-	out_file_name       = output	# output file name
+	out_file_name       = outputVEP5	# output file name
 	out_pvd             = 1             # activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
