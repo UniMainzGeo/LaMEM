@@ -1,3 +1,4 @@
+
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
  **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
@@ -61,8 +62,6 @@
 #include "surf.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DBDikeCreate"
 PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)   
 {
 
@@ -75,7 +74,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
   PetscInt i, j, istep_count, sx, sy, sisc, nx, ny;
 
   PetscErrorCode ierr;
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
   if (!jr->ctrl.actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
  
@@ -167,8 +166,6 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DBReadDike"
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)
 {
   // read dike parameter from file 
@@ -178,7 +175,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   Scaling  *scal;
   	
   PetscErrorCode ierr;
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
 	// access context           
   scal = dbm->scal;
@@ -268,8 +265,6 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GetDikeContr"
 PetscErrorCode GetDikeContr(ConstEqCtx *ctx,                                                                                                                                
                             PetscScalar *phRat,          // phase ratios in the control volume   
                             PetscInt &AirPhase,                                                                           
@@ -286,7 +281,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
   PetscScalar  v_spread, M, left, right, front, back;
   PetscScalar  y_distance, tempdikeRHS;
 
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
   
   numDike    = ctx->numDike;
   bc         = ctx->bc;
@@ -377,8 +372,6 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 }
 
 //-----------------------------------------------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Dike_k_heatsource"
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                  Material_t *phases,
                                  PetscScalar &Tc,
@@ -397,7 +390,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
   PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
   PetscScalar  y_distance;
   
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
   numDike    = jr->dbdike->numDike; // number of dikes
   numPhtr    = jr->dbm->numPhtr;
@@ -507,16 +500,13 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 
 
 //------------------------------------------------------------------------------------------------------------------
-
-#undef __FUNCT__
-#define __FUNCT__ "Locate_Dike_Zones"
 PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 {
 
   Controls    *ctrl;
   
   PetscErrorCode ierr; 
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
   ctrl = &jr->ctrl;
 
@@ -524,11 +514,11 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
   
   PetscPrintf(PETSC_COMM_WORLD, "\n");
 
-  ierr = Compute_sxx_eff(jr);  //compute mean effective sxx across the lithosphere
+  ierr = Compute_sxx_eff(jr); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 
-  ierr = Smooth_sxx_eff(jr);   //smooth mean effective sxx  //debugging
+  ierr = Smooth_sxx_eff(jr); CHKERRQ(ierr);  //smooth mean effective sxx  //debugging
 
-  ierr = Set_dike_zones(jr);  //centered on peak sxx_eff_ave
+  ierr = Set_dike_zones(jr); CHKERRQ(ierr); //centered on peak sxx_eff_ave
   
   
   PetscFunctionReturn(0);
@@ -536,8 +526,6 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 }
 //------------------------------------------------------------------------------------------------------------------
 
-#undef __FUNCT__
-#define __FUNCT__ "Compute_sxx_eff"
 PetscErrorCode Compute_sxx_eff(JacRes *jr)
 {
   MPI_Request srequest, rrequest;
@@ -558,7 +546,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   Controls    *ctrl;
 
   PetscErrorCode ierr;
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
 
   dbug1=(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out);  //debugging
@@ -761,8 +749,6 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 // **NOTE** There is NO message passing between adjacent procs in x, so this wont work well if the zone of high 
 // stress is spit by a processor boundary. This will work completely if cpu_x = 1
 
-#undef __FUNCT__
-#define __FUNCT__ "Smooth_sxx_eff"
 PetscErrorCode Smooth_sxx_eff(JacRes *jr)
 {
 
@@ -781,7 +767,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   //Scaling     *scal;  //debugging
 
   PetscErrorCode ierr;
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
   MPI_Request srequest, rrequest;
@@ -996,8 +982,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
 // Set bounds of NotInAir box based on peak sxx_eff_ave
 // NOTE that NOW, this only works if cpu_x =1
 //
-#undef __FUNCT__
-#define __FUNCT__ "Set_dike_zones"
+
 PetscErrorCode Set_dike_zones(JacRes *jr)
 {
 
@@ -1013,7 +998,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   PetscInt    ixmax;
  
   PetscErrorCode ierr;
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
   fs  =  jr->fs;
   dsz = &fs->dsz;
@@ -1135,15 +1120,14 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DynamicDike_ReadRestart"
+
 PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp, PetscBool PrintOutput)  
 {
   Dike        *dike;
   PetscInt   nD, numDike;
 
   PetscErrorCode ierr;
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
 
   numDike    = dbdike->numDike; // number of dikes
@@ -1165,8 +1149,7 @@ PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *j
 //------------------------------------------------------------------------------------------------------------//
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DynamicDike_WriteRestart"
+
 PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp)
 {
 
@@ -1174,7 +1157,7 @@ PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp)
   PetscInt   nD, numDike;
 
   PetscErrorCode ierr;
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
   numDike    = jr->dbdike->numDike; // number of dikes
 
@@ -1193,8 +1176,7 @@ PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp)
 }
   
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DynamicDike_Destroy"
+
 PetscErrorCode DynamicDike_Destroy(JacRes *jr)
 {
   
@@ -1202,7 +1184,7 @@ PetscErrorCode DynamicDike_Destroy(JacRes *jr)
   PetscInt   nD, numDike, dyndike_on;
 
   PetscErrorCode ierr;
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
 
   numDike    = jr->dbdike->numDike; // number of dikes
   dyndike_on = 0;
@@ -1210,7 +1192,7 @@ PetscErrorCode DynamicDike_Destroy(JacRes *jr)
   for(nD = 0; nD < numDike; nD++)
   {
      dike = jr->dbdike->matDike+nD;
-     ierr = VecDestroy(&dike->sxx_eff_ave_hist);    CHKERRQ(ierr);
+     ierr = VecDestroy(&dike->sxx_eff_ave_hist); CHKERRQ(ierr);
      dyndike_on=1;
 
   }

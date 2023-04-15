@@ -519,6 +519,7 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
 
 	ierr = DynamicPhTrDestroy (&lm->dbm); CHKERRQ(ierr);
+	ierr = DynamicDike_Destroy(&lm->jr); CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);
