@@ -865,11 +865,13 @@ end
 
     # test_recharge1
     @test perform_lamem_test(dir,"FallingBlockHeatReacharge1.dat","t28_HeatRecharge1.expected",
+                            args="-nel_x 16 -nel_y 16 -nel_z 16",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # test_recharge2
     acc      = ((rtol=3e-6,atol=5e-6), (rtol=1e-5, atol=1e-5), (rtol=3e-5,atol=2e-5));
     @test perform_lamem_test(dir,"FallingBlockHeatReacharge2.dat","t28_HeatRecharge2.expected",
+                            args="-nel_x 16 -nel_y 16 -nel_z 16",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 end
 
