@@ -27,7 +27,7 @@
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 13 2023 - Time: 16:58:34 	    
+     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -108,7 +108,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000299 sec)
+Reading geometric primitives ... done (0.00283324 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointInversion_Fig9 
@@ -141,23 +141,23 @@ Solver parameters specified:
   0 SNES Function norm 3.286335345031e+01 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 3
-  1 SNES Function norm 7.148644999230e-11 
-  1 MMFD   ||F||/||F0||=2.175263e-12 
+  1 SNES Function norm 7.150240791582e-11 
+  1 MMFD   ||F||/||F0||=2.175749e-12 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 3
-  2 SNES Function norm 2.006243349075e-14 
+  2 SNES Function norm 1.968131313295e-14 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.242964 (sec)
+SNES solution time      : 0.643761 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
       |Div|_inf = 8.673617379884e-19 
-      |Div|_2   = 6.093124661865e-18 
+      |Div|_2   = 6.149798992562e-18 
    Momentum: 
-      |mRes|_2  = 2.006243256548e-14 
+      |mRes|_2  = 1.968131217214e-14 
 --------------------------------------------------------------------------
-Saving output ... done (0.030696 sec)
+Saving output ... done (0.22377 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -188,37 +188,37 @@ Tentative time step : 0.01000000 [ ]
   7 SNES Function norm 9.960030477989e-02 
   7 PICARD ||F||/||F0||=1.700721e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 24
-  8 SNES Function norm 4.032469653286e-02 
+  8 SNES Function norm 4.032469653285e-02 
   8 MMFD   ||F||/||F0||=6.885628e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 29
-  9 SNES Function norm 8.737496975420e-05 
-  9 MMFD   ||F||/||F0||=1.491968e-05 
+  9 SNES Function norm 8.737508775374e-05 
+  9 MMFD   ||F||/||F0||=1.491970e-05 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 29
- 10 SNES Function norm 4.051668954412e-10 
- 10 MMFD   ||F||/||F0||=6.918411e-11 
+ 10 SNES Function norm 4.054823696556e-10 
+ 10 MMFD   ||F||/||F0||=6.923798e-11 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 12
- 11 SNES Function norm 1.012664010958e-13 
+ 11 SNES Function norm 1.031379512315e-13 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 11
-SNES solution time      : 6.51642 (sec)
+SNES solution time      : 6.4724 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.105427357601e-15 
-      |Div|_2   = 3.639230533286e-14 
+      |Div|_inf = 7.660538869914e-15 
+      |Div|_2   = 3.902505078785e-14 
    Momentum: 
-      |mRes|_2  = 9.450123863451e-14 
+      |mRes|_2  = 9.546979834081e-14 
 --------------------------------------------------------------------------
 | IOparam->mfit = 1.804856e-02 
-| grad=4.145985e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| grad=4.145454e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.02916 sec)
+Saving output ... done (0.223277 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 7.44097 (sec) 
+Total solution time : 8.36127 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
@@ -231,7 +231,7 @@ Total solution time : 7.44097 (sec)
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -4.145985e-02 
+|  adjoint     1:          rho[ 1]           -4.145454e-02 
 | 
 | 
 | Observation points: 
@@ -240,7 +240,7 @@ Total solution time : 7.44097 (sec)
 |       --------------------------------- --- ------------- ------------- 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.57113e+02   1.67999e+02
 | 
-| AdjointOptimisation: Gradients. [0]=-4.145985e-02, [1]=0.000000e+00 
+| AdjointOptimisation: Gradients. [0]=-4.145454e-02, [1]=0.000000e+00 
 
 | ------------------------------------------------------------------------ 
 | 1. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.00000e+00
@@ -253,7 +253,7 @@ Total solution time : 7.44097 (sec)
 | 1 Parameter value = 1.00000e+00
 | -------------------------------------------------------------------------
 
-| LS factor for 1.Parameter = 4.82394e+00
+| LS factor for 1.Parameter = 4.82456e+00
 | 
 | ------------------------------------------------------------------------- 
 | *                         INVERSION RESULT SUMMARY                      * 
@@ -269,5 +269,5 @@ Total solution time : 7.44097 (sec)
 | rho[1] = 1.00000e+00
 | ------------------------------------------------------------------------- 
 
-| Adjoint computation was successful & took 7.44136 s                         	 
+| Adjoint computation was successful & took 8.36478 s                         	 
 | ************************************************************************ 
