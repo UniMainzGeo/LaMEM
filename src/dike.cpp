@@ -502,14 +502,14 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 //------------------------------------------------------------------------------------------------------------------
 PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 {
+//Ugh:  history arrays are from before the last timestep and so stresses used here are a step behind
 
   Controls    *ctrl;
-  
   PetscErrorCode ierr; 
+
   PetscFunctionBeginUser;
 
   ctrl = &jr->ctrl;
-
   if (!ctrl->actDike || jr->ts->istep+1 == 0) PetscFunctionReturn(0);   // only execute this function if dikes are active
   
   PetscPrintf(PETSC_COMM_WORLD, "\n");
@@ -520,7 +520,6 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 
   ierr = Set_dike_zones(jr); CHKERRQ(ierr); //centered on peak sxx_eff_ave
   
-  
   PetscFunctionReturn(0);
 
 }
@@ -530,10 +529,10 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 {
   MPI_Request srequest, rrequest;
   Vec         vsxx, vliththick, vzsol;
-  PetscScalar ***gsxx_eff_ave;
+  PetscScalar ***gsxx_eff_ave, ***p_lith;
   PetscScalar ***sxx,***liththick, ***zsol;
   PetscScalar  *lsxx, *lliththick, *lzsol;
-  PetscScalar dz, ***lT, Tc, *grav, Tsol, Peff;
+  PetscScalar dz, ***lT, Tc, *grav, Tsol, dPmag;
   PetscScalar dbug1, dbug2, dbug3, xcell, ycell;
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
   PetscInt    iwrite_counter;
@@ -567,6 +566,10 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   iwrite_counter=0;
 
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+  // compute and access lithostatic pressure
+  ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+  ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 
   for(nD = 0; nD < numDike; nD++)
   {
@@ -631,11 +634,9 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
           {
             dz  = SIZE_CELL(k, sz, (*dsz));
 
-            sxx[L][j][i]+=svCell->hxx*dz;  //integrating weighted stresses
-            liththick[L][j][i]+=dz;             //integrating thickeness
-            //if (j==1  && i == 16 ) printf("i=%i %i %g %g %g\n", i, k, dsx->ccoor[i-sx],dsz->ccoor[k-sz],sxx[L][j][i]);  //debugging
-            //if (j==1  && i == 32 ) PetscPrintf(PETSC_COMM_WORLD, "%i %i %g %g %g\n", i, k, dsz->ccoor[k-sz],sxx[L][j][i],liththick[L][j][i]);  //debugging
+            sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn + p_lith[k][j][i])*dz;  //integrating dz-weighted non-lithostatic stress
 
+            liththick[L][j][i]+=dz;             //integrating thickeness
           }
           
           //interpolate depth to the solidus
@@ -695,11 +696,11 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 
       //now all cores have the same solution so give that to the stress array
       START_PLANE_LOOP
-      {
-        Peff=(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
-        if (Peff>0) Peff=Peff*10.0;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
-        gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]-Peff;  //Depth weighted mean effective stress (sxx+excess magma press, or sxx-Peff). 
-      }
+
+        dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //excess magmastatic pressure at solidus, note z AND grav[2] <0
+        if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
+        gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]+dPmag;  //Depth weighted mean effective stress: (total stress)+(magma press)
+                                                                      // (magma press)=lp_lith+dPmagma
       END_PLANE_LOOP  
 
       if (L==0 && dbug3 < 0.05/jr->ts->nstep_out && iwrite_counter==0)  //debugging
@@ -708,8 +709,9 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
         START_PLANE_LOOP
           xcell=COORD_CELL(i, sx, fs->dsx);
           ycell=COORD_CELL(j, sy, fs->dsy);
-          Peff=(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
-          PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g\n", jr->ts->istep+1,xcell, ycell, gsxx_eff_ave[L][j][i], Peff);   //debugging    
+          dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
+          if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
+          PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g\n", jr->ts->istep+1,xcell, ycell, gsxx_eff_ave[L][j][i], dPmag);   //debugging    
         END_PLANE_LOOP  
       }
       PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);   //debugging    
@@ -735,12 +737,10 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
       
       LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
 
-    //Compute excess magma pressure
-
-    //Locate xbounds
     } //end if dike->dyndike_start
   } //End loop over dikes
 
+  ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
