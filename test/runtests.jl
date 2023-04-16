@@ -7,7 +7,6 @@ using GeophysicalModelGenerator
 using LaMEM.IO
 using CairoMakie
 
-
 include("test_utils.jl")
 
 @testset "LaMEM Testsuite" verbose=true begin
@@ -49,7 +48,6 @@ end
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1.expected", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
-
 end
 
 
@@ -105,8 +103,7 @@ end
     CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=8)
     @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_d_MUMPS_MG_VEP_opt-p8.expected", 
                                 args="-nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=8, opt=true)
-                    
+                                keywords=keywords, accuracy=acc, cores=8, opt=true)       
 end
 
 @testset "t4_Localisation" begin
@@ -181,7 +178,6 @@ end
     @test perform_lamem_test(dir,ParamFile,"t6_AdjointGradientScaling_SoftFilm_p1.expected",
                             args = "-surf_level 0.1 -eta[0] 10 -eta[1] 1 -coord_x -0.4,0.4 -FreeSurf_Wavelength 0.8", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, split_sign=split_sign)
-
 end
 
 
@@ -283,7 +279,6 @@ end
     @test perform_lamem_test(dir,ParamFile,"t7_PSDInversionPaper_2.expected",
                             args="-nel_x 8 -nel_y 8 -nel_z 8  -n[0] 1 -n[1] 1 -n[2] 1  -Value[0] 135",
                             keywords=keywords, accuracy=acc, cores=2, opt=true) 
-
 end
 
 @testset "t8_AdjointGradients" begin
@@ -301,7 +296,6 @@ end
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"test_9_FallingBlock_PhaseDiagrams.expected",
                             keywords=keywords, accuracy=acc, cores=2, opt=true)
-
 end
 
 
@@ -375,7 +369,6 @@ end
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"t11_Subgrid_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
-
 end
 
 
@@ -419,7 +412,6 @@ end
 
     clean_directory(dir)
     # ---
-    
 end
 
 
@@ -532,8 +524,6 @@ end
 
     Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_DryOlivine_DC.png")
     clean_directory(dir)
-    # ---
-
 end
 
 # t14_1DStrengthEnvelope/
@@ -589,7 +579,6 @@ end
     # Create plot
     Plot_StrengthEnvelop("t14_StrengthEnvelop_1D.png", dir, z, (τII_1, τII_2, τII_3, τII_4, τ_anal),("Viscoplastic", "VEP dt=5ka", "VEP dt=10ka", "VEP dt=50ka", "Analytical"))
     clean_directory(dir)
-
 end
 
 @testset "t15_RTI" begin
@@ -642,7 +631,6 @@ end
     # Test dike feature using optimized LaMEM
     @test perform_lamem_test(dir,"PhaseTransitionBox_move.dat","PhaseTransitionBox_move.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
-
 end
 
 
@@ -674,8 +662,7 @@ end
     # t17_InflowOutflow3D_Pres_opt
     acc      = ((rtol=1e-7,atol=1e-7), (rtol=1e-5, atol=1e-7), (rtol=1e-4,atol=1e-8), (rtol=1e-7,atol=1e-9));
     @test perform_lamem_test(dir,"PlumeLithos_Interaction_3D_Perm.dat","InflowOutflow-3D_Perm_p4.expected",
-                            keywords=keywords, accuracy=acc, cores=4, opt=true)
-                              
+                            keywords=keywords, accuracy=acc, cores=4, opt=true)                         
 end
 
 @testset "t18_SimpleShear" begin
@@ -807,7 +794,6 @@ end
     # test_2D
     @test perform_lamem_test(dir,"APS_Healing2D.dat","APS_Healing2D.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
-  
 end
 
 @testset "t26_Dike" begin
@@ -844,7 +830,6 @@ end
     @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA.expected",
                             args="-nstep_max 2 -nel_y 1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
-
 end
 
 
@@ -856,7 +841,6 @@ end
     # test_2fields_dike():
     @test perform_lamem_test(dir,"t27_TDep_NuK_Conductivity.dat","t27_TDep_NuK_Conductivity.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
-
 end
 
 @testset "t28_HeatRecharge" begin
@@ -877,7 +861,6 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 end
 
-
 @testset "t29_PermeableSides_VelBoxes" begin
     dir = "t29_PermeableSides_VelBoxes";
     
@@ -887,7 +870,6 @@ end
     # test_permeableSides_VelBoxes
     @test perform_lamem_test(dir,"VelBoxes_Permeable_sides.dat","t29_PermeableSides_VelBoxes.expected",
                             keywords=keywords, accuracy=acc, cores=2, opt=true)
-
 end
 
 @testset "t30_Timestep_Schedule" begin
@@ -900,7 +882,6 @@ end
     @test perform_lamem_test(dir,"TS_Schedule.dat","t30_TS_Schedule.expected",
                             args="-nel_x 16 -nel_y 16 -nel_z 16",
                             keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":")
-
 end
 
 
