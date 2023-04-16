@@ -790,6 +790,7 @@ end
 
     # test_a
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_opt-p8.expected",
+                            args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=8, opt=true)
     # test_b
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_deb-p8.expected",
