@@ -505,27 +505,50 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
 //Ugh:  history arrays are from before the last timestep and so stresses used here are a step behind
 
   Controls    *ctrl;
+  Dike        *dike;
+  PetscInt   nD, numDike, iwrite_counter1, iwrite_counter2, icounter;
   PetscErrorCode ierr; 
 
   PetscFunctionBeginUser;
 
   ctrl = &jr->ctrl;
-  if (!ctrl->actDike || jr->ts->istep+1 == 0) PetscFunctionReturn(0);   // only execute this function if dikes are active
-  
   PetscPrintf(PETSC_COMM_WORLD, "\n");
 
-  ierr = Compute_sxx_eff(jr); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
+  if (!ctrl->actDike || jr->ts->istep+1 == 0) PetscFunctionReturn(0);   // only execute this function if dikes are active
 
-  ierr = Smooth_sxx_eff(jr); CHKERRQ(ierr);  //smooth mean effective sxx  //debugging
+  numDike    = jr->dbdike->numDike; // number of dikes
+  iwrite_counter1=0;
+  iwrite_counter2=0;
+  icounter=0;
 
-  ierr = Set_dike_zones(jr); CHKERRQ(ierr); //centered on peak sxx_eff_ave
-  
+  for(nD = 0; nD < numDike; nD++)
+  {
+    dike = jr->dbdike->matDike+nD;
+
+    if (dike->dyndike_start && jr->ts->istep+1 >= dike->dyndike_start)
+    {
+       // compute lithostatic pressure
+       if (icounter==0) ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+       icounter++;
+       
+       ierr = Compute_sxx_eff(jr,nD, iwrite_counter1); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
+
+       ierr = Smooth_sxx_eff(jr,nD, iwrite_counter2); CHKERRQ(ierr);  //smooth mean effective sxx  //debugging
+
+       ierr = Set_dike_zones(jr,nD); CHKERRQ(ierr); //centered on peak sxx_eff_ave
+    }
+    else
+    {
+       PetscFunctionReturn(0); 
+    }
+
+  }
   PetscFunctionReturn(0);
 
 }
 //------------------------------------------------------------------------------------------------------------------
 
-PetscErrorCode Compute_sxx_eff(JacRes *jr)
+PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
 {
   MPI_Request srequest, rrequest;
   Vec         vsxx, vliththick, vzsol;
@@ -534,14 +557,13 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   PetscScalar  *lsxx, *lliththick, *lzsol;
   PetscScalar dz, ***lT, Tc, *grav, Tsol, dPmag;
   PetscScalar dbug1, dbug2, dbug3, xcell, ycell;
-  PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, nD, L, ID, AirPhase, numDike;
-  PetscInt    iwrite_counter;
+  PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L, ID, AirPhase;
   PetscMPIInt    rank;
 
   FDSTAG      *fs;
+  Dike        *dike;
   Discret1D   *dsz;
   SolVarCell  *svCell;
-  Dike        *dike;
   Controls    *ctrl;
 
   PetscErrorCode ierr;
@@ -556,27 +578,19 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
   grav = ctrl->grav;
 
 
-  numDike    = jr->dbdike->numDike; // number of dikes
   fs  =  jr->fs;
   dsz = &fs->dsz;
   //dsx = &fs->dsx;  //debugging
   //scal = fs->scal; //debugging
   L   =  (PetscInt)dsz->rank;
   AirPhase  = jr->surf->AirPhase;
-  iwrite_counter=0;
 
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-  // compute and access lithostatic pressure
-  ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
   ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 
-  for(nD = 0; nD < numDike; nD++)
-  {
-    dike = jr->dbdike->matDike+nD;
 
-    if (dike->dyndike_start && jr->ts->istep+1 >= dike->dyndike_start)
-    {
+  dike = jr->dbdike->matDike+nD;
+
        // get local grid sizes
       ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -624,7 +638,6 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
       {
         dz  = SIZE_CELL(k, sz, (*dsz));
         START_PLANE_LOOP
-        {
           GET_CELL_ID(ID, i-sx, j-sy, k-sz, nx, ny);  //GET_CELL_ID needs local indices
           svCell = &jr->svCell[ID]; 
           Tc=lT[k][j][i];
@@ -646,7 +659,6 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
                //zsol[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz]);
           }
           //if (j==1 && i==61) printf("k=%i, Tc=%g, Tsol=%g, lT=%g, zsol=%g \n",k,Tc,Tsol,lT[k-1][j][i],zsol[L][j][i]);
-        }
         END_PLANE_LOOP
       }
       
@@ -737,9 +749,6 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
       
       LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
 
-    } //end if dike->dyndike_start
-  } //End loop over dikes
-
   ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -749,7 +758,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr)
 // **NOTE** There is NO message passing between adjacent procs in x, so this wont work well if the zone of high 
 // stress is spit by a processor boundary. This will work completely if cpu_x = 1
 
-PetscErrorCode Smooth_sxx_eff(JacRes *jr)
+PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
 {
 
   FDSTAG      *fs;
@@ -757,9 +766,9 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
   Discret1D   *dsz, *dsy;
   PetscScalar ***gsxx_eff_ave, ***gsxx_eff_ave_hist;
   PetscScalar x, sum_sxx, sum_dx, dx, xx;
-  PetscInt    i, ii, j, sx, sy, sz, nx, ny, nz, nD, numDike;
+  PetscInt    i, ii, j, sx, sy, sz, nx, ny, nz;
   PetscInt    L, M, rank, nseg, npseg, npseg0, jback, jj;
-  PetscInt    sisc, istep_count, istep_nave, iwrite_counter;
+  PetscInt    sisc, istep_count, istep_nave;
   Vec         vvec1d;
   PetscScalar ***vec1d, *lvec1d;
   PetscScalar xcell, ycell, dbug1, dbug2, dbug3;
@@ -784,15 +793,8 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
 
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-  numDike    = jr->dbdike->numDike; // number of dikes
-  iwrite_counter=0;
+  dike = jr->dbdike->matDike+nD;
 
-  for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
-  {
-     // access the parameters of the dike depending on the dike block
-     dike = jr->dbdike->matDike+nD;
-     if (dike->dyndike_start && jr->ts->istep+1 >= dike->dyndike_start)
-     {
 //-------------------------------------------------------------------------------------------------------
 // Set up a temporary (1D) array for
 // (1) 1st: storing data while smoothing across x and..
@@ -972,8 +974,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
        //restore arrays
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
-     }  //end else dyndike_start
-  } //end for loop over numdike
 
   PetscFunctionReturn(0);  
 }  
@@ -983,7 +983,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr)
 // NOTE that NOW, this only works if cpu_x =1
 //
 
-PetscErrorCode Set_dike_zones(JacRes *jr)
+PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD)
 {
 
   FDSTAG      *fs;
@@ -992,7 +992,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   Ph_trans_t  *CurrPhTr;
   PetscScalar ***gsxx_eff_ave;
   PetscScalar xcenter, sxx_max, dike_width, mindist, xshift, xcell, dx;
-  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nD, nPtr, numPhtr, L, Lx, numDike, ixcenter;
+  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, nPtr, numPhtr, L, Lx, numDike, ixcenter;
   PetscScalar dbug1, dbug2, dbug3, ydebugging;
   PetscScalar sxxm, sxxp, dx12, dsdx1, dsdx2, x_maxsxx;   
   PetscInt    ixmax;
@@ -1012,11 +1012,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
   dbug2=floor(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out); //debugging
   dbug3=dbug1-dbug2; //debugging
 
-  for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
-  {
-     dike = jr->dbdike->matDike+nD;
-     if (dike->dyndike_start && jr->ts->istep+1 >= dike->dyndike_start+dike->istep_nave-1)
-     {
+  dike = jr->dbdike->matDike+nD;
+
        if (Lx>0)
        {
          PetscPrintf(PETSC_COMM_WORLD,"Set_dike_zones requires cpu_x = 1 Lx = %i \n", Lx);
@@ -1110,11 +1107,6 @@ PetscErrorCode Set_dike_zones(JacRes *jr)
           }
        }  //end loop over nPtr
        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-
-     } //end if !dike->dyn
-
-
-  }  //end loop over nD dikes
      
   PetscFunctionReturn(0);  
 }
