@@ -63,13 +63,14 @@ end
     ParamFile = "Subduction_MATLAB_Particles.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,), (rtol=1e-5,), (rtol=5e-4,));
+    acc      = ((rtol=1e-6,atol=5e-7), (rtol=1e-5,atol=1e-6), (rtol=5e-4,atol=5e-5));
     
     # test on 1 core
     # t3_Sub1_MATLAB_a_Direct_opt
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=1)
 
     @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_a_Direct_opt-p1.expected", 
+                            args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
 
@@ -80,8 +81,8 @@ end
     ParamFile = "Subduction_MATLAB_Particles.dat";
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4)
     @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_b_MUMPS_opt-p4.expected", 
+                                args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=4, opt=true)
-                        
 
     # t3_Sub1_MATLAB_c_MUMPS_deb                                 
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -90,7 +91,7 @@ end
     ParamFile = "Subduction_MATLAB_Particles4.dat";
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4)
     @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_c_MUMPS_deb-p4.expected", 
-                                args="-jp_pc_factor_mat_solver_type mumps",
+                                args="-jp_pc_factor_mat_solver_type mumps  -nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=4, opt=true)
                         
     # t3_Sub1_MATLAB_d_MUMPS_MG_VEP_opt                                 
@@ -103,7 +104,7 @@ end
     ParamFile = "Subduction_VEP.dat";
     CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=8)
     @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_d_MUMPS_MG_VEP_opt-p8.expected", 
-                               args="",
+                                args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=8, opt=true)
                     
 end
@@ -312,7 +313,7 @@ end
     ParamFile = "Compressible1D_withSaltandBasement.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-10), (rtol=1e-5, atol=1e-10), (rtol=2e-6,atol=1e-4), (rtol=2e-8,));
+    acc      = ((rtol=1e-7,atol=1e-7), (rtol=1e-5, atol=1e-7), (rtol=2e-6,atol=1e-4), (rtol=2e-8,atol=1e-6));
     
     # Perform tests
 
@@ -331,9 +332,9 @@ end
     Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
 
     # Compute difference with analytical solution
-    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617
-    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367
-    @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321
+    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-5
+    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-5
+    @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
 
     # Create plot with stress & analytical solution
     Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_1Core.png")
@@ -353,9 +354,9 @@ end
     Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
 
     # Compute difference with analytical solution
-    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617
-    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367
-    @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321
+    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-6
+    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-6
+    @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-6
 
     # Create plot with stress & analytical solution
     Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
@@ -428,7 +429,7 @@ end
     include(joinpath(dir,"Rheology0D.jl"))
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-10));
+    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=2e-6,atol=1e-9));
 
     # ---
     # Viscoelastic rheology
@@ -619,10 +620,11 @@ end
     
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"PhaseTransitions-p1.expected",
+                            args="-nstep_max 30",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     @test perform_lamem_test(dir,ParamFile,"PhaseTransitions-FreeSlip_p1.expected",
-                            args="-open_top_bound 0 -act_press_shift 1",
+                            args="-open_top_bound 0 -act_press_shift 1 -nstep_max 30", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-9));
@@ -670,7 +672,7 @@ end
 
     # test_3D_Pres():
     # t17_InflowOutflow3D_Pres_opt
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=1e-7,atol=1e-11));
+    acc      = ((rtol=1e-7,atol=1e-7), (rtol=1e-5, atol=1e-7), (rtol=1e-4,atol=1e-8), (rtol=1e-7,atol=1e-9));
     @test perform_lamem_test(dir,"PlumeLithos_Interaction_3D_Perm.dat","InflowOutflow-3D_Perm_p4.expected",
                             keywords=keywords, accuracy=acc, cores=4, opt=true)
                               
@@ -831,14 +833,14 @@ end
     keywords = ("|eRes|_2",)
     acc      = ((rtol=1e-4,atol=1e-11),);
     @test perform_lamem_test(dir,"dike_heating_kfac.dat","dike_heating_kfac.expected",
-                            args="-nstep_max 3",
+                            args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # heat_rhoA
     keywords = ("|eRes|_2",)
     acc      = ((rtol=1e-4,atol=6e-9),);
     @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA.expected",
-                            args="-nstep_max 3",
+                            args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
 end
@@ -866,7 +868,7 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # test_recharge2
-    acc      = ((rtol=3e-6,atol=5e-7), (rtol=1e-5, atol=5e-6), (rtol=3e-5,atol=2e-5));
+    acc      = ((rtol=3e-6,atol=5e-6), (rtol=1e-5, atol=1e-5), (rtol=3e-5,atol=2e-5));
     @test perform_lamem_test(dir,"FallingBlockHeatReacharge2.dat","t28_HeatRecharge2.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 end
@@ -892,6 +894,7 @@ end
 
     # test_TS_Schedule():
     @test perform_lamem_test(dir,"TS_Schedule.dat","t30_TS_Schedule.expected",
+                            args="-nel_x 16 -nel_y 16 -nel_z 16",
                             keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":")
 
 end

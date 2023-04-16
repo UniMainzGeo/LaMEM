@@ -57,16 +57,16 @@ function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1)
 
     # Save julia setup 
     Model3D     =   CartData(Grid, (Phases=Phases,Temp=Temp))   # Create LaMEM model:
-    Write_Paraview(Model3D,"LaMEM_ModelSetup")                  # Save model to paraview   (load with opening LaMEM_ModelSetup.vts in paraview)  
+    Write_Paraview(Model3D,"LaMEM_ModelSetup", verbose=false)   # Save model to paraview   (load with opening LaMEM_ModelSetup.vts in paraview)  
 
     # Save LaMEM markers
     if NumberCores==1
         # 1 core
-        Save_LaMEMMarkersParallel(Model3D, directory="./markers")                      # Create LaMEM marker input on 1 core
+        Save_LaMEMMarkersParallel(Model3D, directory="./markers", verbose=false)                      # Create LaMEM marker input on 1 core
     else
         #> 1 cores; create partitioning file first
-        PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/");
-        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers")     
+        PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/", verbose=false);
+        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false)     
     end
 
     cd(cur_dir)
