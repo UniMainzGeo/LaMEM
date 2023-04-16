@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr  7 2023 - Time: 18:59:08 	    
+     Compiled: Date: Apr 13 2023 - Time: 16:58:34 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -28,7 +28,7 @@ Scaling parameters:
 --------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 15. [Myr] 
-   Maximum number of steps      : 20 
+   Maximum number of steps      : 5 
    Time step                    : 0.001 [Myr] 
    Minimum time step            : 1e-05 [Myr] 
    Maximum time step            : 0.1 [Myr] 
@@ -77,10 +77,10 @@ Dike blocks :
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
-   Fine grid cells [nx, ny, nz]         : [60, 2, 30]
-   Number of cells                      :  3600
-   Number of faces                      :  12780
-   Maximum cell aspect ratio            :  1.00000
+   Fine grid cells [nx, ny, nz]         : [60, 1, 30]
+   Number of cells                      :  1800
+   Number of faces                      :  7290
+   Maximum cell aspect ratio            :  2.00000
    Lower coordinate bounds [bx, by, bz] : [-30., -1., -20.]
    Upper coordinate bounds [ex, ey, ez] : [30., 1., 10.]
 --------------------------------------------------------------------------
@@ -131,7 +131,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000808 sec)
+Reading geometric primitives ... done (0.000363 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : dike_M1_2D 
@@ -148,7 +148,6 @@ Output parameters:
    Deviatoric strain rate tensor           @ 
    Deviatoric strain rate second invariant @ 
 --------------------------------------------------------------------------
-*** BORIS *** 
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+03
@@ -161,709 +160,208 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.598320489022e+00 
+  0 SNES Function norm 1.130183256297e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.598320489022e+00 
-    1 KSP Residual norm 1.826936914805e-03 
-    2 KSP Residual norm 1.566805515111e-07 
+    0 KSP Residual norm 1.130183256297e+00 
+    1 KSP Residual norm 1.291839481259e-03 
+    2 KSP Residual norm 1.107898804042e-07 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.56681e-07, 0.79916, 1.59832]
-      Line search terminated: lambda = 1., fnorms = 1.56681e-07
-  1 SNES Function norm 1.566805515122e-07 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.1079e-07, 0.565092, 1.13018]
+      Line search terminated: lambda = 1., fnorms = 1.1079e-07
+  1 SNES Function norm 1.107898804042e-07 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.09684 (sec)
+SNES solution time      : 0.022756 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.156437078853e-09 
-      |Div|_2   = 1.566803333934e-07 
+      |Div|_inf = 6.156437074381e-09 
+      |Div|_2   = 1.107897261704e-07 
    Momentum: 
-      |mRes|_2  = 2.614381680303e-10 
+      |mRes|_2  = 1.848650327295e-10 
 --------------------------------------------------------------------------
-Saving output ... done (0.001493 sec)
+Saving output ... done (0.001397 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.00221 sec)
+Phase_Transition ... done (0.001258 sec)
 --------------------------------------------------------------------------
-  0 SNES Function norm 6.403319059423e-01 
+  0 SNES Function norm 4.527830329019e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 6.403319059423e-01 
-    1 KSP Residual norm 3.600683439577e-04 
+    0 KSP Residual norm 4.527830329019e-01 
+    1 KSP Residual norm 2.546015367347e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000360068, 0.320166, 0.640332]
-      Line search terminated: lambda = 1., fnorms = 0.000360068
-  1 SNES Function norm 3.600683439577e-04 
-  1 MMFD   ||F||/||F0||=5.623152e-04 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.000254602, 0.226392, 0.452783]
+      Line search terminated: lambda = 1., fnorms = 0.000254602
+  1 SNES Function norm 2.546015367347e-04 
+  1 MMFD   ||F||/||F0||=5.623036e-04 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.600683439577e-04 
-    1 KSP Residual norm 7.903816622788e-08 
+    0 KSP Residual norm 2.546015367347e-04 
+    1 KSP Residual norm 5.522936552464e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [7.90378e-08, 0.000180034, 0.000360068]
-      Line search terminated: lambda = 1., fnorms = 7.90378e-08
-  2 SNES Function norm 7.903783580816e-08 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [5.52292e-08, 0.000127301, 0.000254602]
+      Line search terminated: lambda = 1., fnorms = 5.52292e-08
+  2 SNES Function norm 5.522922861477e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.143756 (sec)
+SNES solution time      : 0.029985 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.920523865932e-08 
-      |Div|_2   = 7.903774969834e-08 
+      |Div|_inf = 2.859960207113e-08 
+      |Div|_2   = 5.522916697767e-08 
    Momentum: 
-      |mRes|_2  = 1.166698779007e-10 
+      |mRes|_2  = 8.251263420674e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.00100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 16 markers in 2.0280e-03 s 
+Marker control [0]: (Corners ) injected 8 markers in 9.9500e-04 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.001613 sec)
+Saving output ... done (0.001337 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00100000 [Myr] 
 Tentative time step : 0.00110000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.002429 sec)
+Phase_Transition ... done (0.001019 sec)
 --------------------------------------------------------------------------
-  0 SNES Function norm 9.263984802389e-03 
+  0 SNES Function norm 6.094002219317e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 9.263984802389e-03 
-    1 KSP Residual norm 4.428049021641e-07 
+    0 KSP Residual norm 6.094002219317e-03 
+    1 KSP Residual norm 2.407691933521e-07 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [4.42805e-07, 0.00463199, 0.00926398]
-      Line search terminated: lambda = 1., fnorms = 4.42805e-07
-  1 SNES Function norm 4.428049021642e-07 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [2.40769e-07, 0.003047, 0.006094]
+      Line search terminated: lambda = 1., fnorms = 2.40769e-07
+  1 SNES Function norm 2.407691933522e-07 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.076818 (sec)
+SNES solution time      : 0.014728 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.555847356154e-07 
-      |Div|_2   = 4.428049017924e-07 
+      |Div|_inf = 1.380124502794e-07 
+      |Div|_2   = 2.407691932307e-07 
    Momentum: 
-      |mRes|_2  = 1.814573182503e-11 
+      |mRes|_2  = 7.647778751766e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 24 markers in 2.0710e-03 s 
+Marker control [0]: (Corners ) injected 15 markers in 1.0250e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00210000 [Myr] 
 Tentative time step : 0.00121000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.002315 sec)
+Phase_Transition ... done (0.001258 sec)
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.400314522345e-03 
+  0 SNES Function norm 1.051030650508e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.400314522345e-03 
-    1 KSP Residual norm 2.244262683267e-07 
+    0 KSP Residual norm 1.051030650508e-03 
+    1 KSP Residual norm 9.087562008440e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [2.24426e-07, 0.00170016, 0.00340031]
-      Line search terminated: lambda = 1., fnorms = 2.24426e-07
-  1 SNES Function norm 2.244262683263e-07 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [9.08756e-08, 0.000525515, 0.00105103]
+      Line search terminated: lambda = 1., fnorms = 9.08756e-08
+  1 SNES Function norm 9.087562008440e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.077259 (sec)
+SNES solution time      : 0.015138 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.566758590513e-07 
-      |Div|_2   = 2.244262683263e-07 
+      |Div|_inf = 3.846579748494e-08 
+      |Div|_2   = 9.087561944291e-08 
    Momentum: 
-      |mRes|_2  = 1.562469080636e-14 
+      |mRes|_2  = 1.079781029661e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.00121 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 26 markers in 2.0960e-03 s 
+Marker control [0]: (Corners ) injected 12 markers in 1.0260e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00331000 [Myr] 
 Tentative time step : 0.00133100 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.002305 sec)
+Phase_Transition ... done (0.001147 sec)
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.071577406902e-03 
+  0 SNES Function norm 5.687667720469e-04 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.071577406902e-03 
-    1 KSP Residual norm 9.942286897957e-08 
+    0 KSP Residual norm 5.687667720469e-04 
+    1 KSP Residual norm 6.220935179868e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [9.94229e-08, 0.000535789, 0.00107158]
-      Line search terminated: lambda = 1., fnorms = 9.94229e-08
-  1 SNES Function norm 9.942286897953e-08 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [6.22094e-08, 0.000284383, 0.000568767]
+      Line search terminated: lambda = 1., fnorms = 6.22094e-08
+  1 SNES Function norm 6.220935179845e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.075605 (sec)
+SNES solution time      : 0.014847 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.669396662053e-08 
-      |Div|_2   = 9.942286894856e-08 
+      |Div|_inf = 1.303001010040e-08 
+      |Div|_2   = 6.220935178120e-08 
    Momentum: 
-      |mRes|_2  = 2.481632303599e-12 
+      |mRes|_2  = 1.465032928294e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.00133 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 25 markers in 2.1830e-03 s 
+Marker control [0]: (Corners ) injected 14 markers in 1.0250e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00464100 [Myr] 
 Tentative time step : 0.00146410 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.002306 sec)
+Phase_Transition ... done (0.001145 sec)
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.039819994939e-03 
+  0 SNES Function norm 9.311430878344e-04 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.039819994939e-03 
-    1 KSP Residual norm 1.570463297570e-07 
+    0 KSP Residual norm 9.311430878344e-04 
+    1 KSP Residual norm 9.200088759684e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.57046e-07, 0.00101991, 0.00203982]
-      Line search terminated: lambda = 1., fnorms = 1.57046e-07
-  1 SNES Function norm 1.570463297569e-07 
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [9.20009e-08, 0.000465572, 0.000931143]
+      Line search terminated: lambda = 1., fnorms = 9.20009e-08
+  1 SNES Function norm 9.200088759694e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.074997 (sec)
+SNES solution time      : 0.014626 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 9.466545476553e-08 
-      |Div|_2   = 1.570463294493e-07 
+      |Div|_inf = 5.507820514108e-08 
+      |Div|_2   = 9.200088740446e-08 
    Momentum: 
-      |mRes|_2  = 9.828815716434e-12 
+      |mRes|_2  = 5.951213755178e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.00146 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 28 markers in 2.1240e-03 s 
+Marker control [0]: (Corners ) injected 17 markers in 1.0660e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.001575 sec)
---------------------------------------------------------------------------
-================================= STEP 6 =================================
---------------------------------------------------------------------------
-Current time        : 0.00610510 [Myr] 
-Tentative time step : 0.00161051 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002302 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 1.557420539801e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.557420539801e-03 
-    1 KSP Residual norm 1.286730025413e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.28673e-07, 0.00077871, 0.00155742]
-      Line search terminated: lambda = 1., fnorms = 1.28673e-07
-  1 SNES Function norm 1.286730025412e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.071957 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 6.792071787060e-08 
-      |Div|_2   = 1.286730024895e-07 
-   Momentum: 
-      |mRes|_2  = 3.648028329276e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00161 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 31 markers in 2.1030e-03 s 
---------------------------------------------------------------------------
-================================= STEP 7 =================================
---------------------------------------------------------------------------
-Current time        : 0.00771561 [Myr] 
-Tentative time step : 0.00177156 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002226 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 1.910750326541e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.910750326541e-03 
-    1 KSP Residual norm 1.392180096035e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.39218e-07, 0.000955375, 0.00191075]
-      Line search terminated: lambda = 1., fnorms = 1.39218e-07
-  1 SNES Function norm 1.392180096035e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.070602 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 5.997754735719e-08 
-      |Div|_2   = 1.392180095088e-07 
-   Momentum: 
-      |mRes|_2  = 5.133995720158e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00177 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 30 markers in 2.0730e-03 s 
---------------------------------------------------------------------------
-================================= STEP 8 =================================
---------------------------------------------------------------------------
-Current time        : 0.00948717 [Myr] 
-Tentative time step : 0.00194872 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002242 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 6.990764975320e-04 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 6.990764975320e-04 
-    1 KSP Residual norm 1.159998329888e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.16e-07, 0.000349538, 0.000699076]
-      Line search terminated: lambda = 1., fnorms = 1.16e-07
-  1 SNES Function norm 1.159998329887e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.071686 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 1.488787119757e-08 
-      |Div|_2   = 1.159998329886e-07 
-   Momentum: 
-      |mRes|_2  = 1.544806151094e-13 
---------------------------------------------------------------------------
-Actual time step : 0.00195 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 19 markers in 2.0740e-03 s 
---------------------------------------------------------------------------
-================================= STEP 9 =================================
---------------------------------------------------------------------------
-Current time        : 0.01143589 [Myr] 
-Tentative time step : 0.00214359 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002219 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 1.061280710296e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.061280710296e-03 
-    1 KSP Residual norm 1.332635059330e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.33264e-07, 0.00053064, 0.00106128]
-      Line search terminated: lambda = 1., fnorms = 1.33264e-07
-  1 SNES Function norm 1.332635059330e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.070175 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 3.926374634540e-08 
-      |Div|_2   = 1.332635058824e-07 
-   Momentum: 
-      |mRes|_2  = 3.672936402046e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00214 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 17 markers in 1.9970e-03 s 
---------------------------------------------------------------------------
-================================ STEP 10 =================================
---------------------------------------------------------------------------
-Current time        : 0.01357948 [Myr] 
-Tentative time step : 0.00235795 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002222 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 8.779136522046e-04 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 8.779136522046e-04 
-    1 KSP Residual norm 1.372531629590e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.37253e-07, 0.000438957, 0.000877914]
-      Line search terminated: lambda = 1., fnorms = 1.37253e-07
-  1 SNES Function norm 1.372531629591e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.069949 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 1.419706176752e-08 
-      |Div|_2   = 1.372531629242e-07 
-   Momentum: 
-      |mRes|_2  = 3.096631336354e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00236 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 13 markers in 2.0560e-03 s 
---------------------------------------------------------------------------
-Saving output ... done (0.002183 sec)
---------------------------------------------------------------------------
-================================ STEP 11 =================================
---------------------------------------------------------------------------
-Current time        : 0.01593742 [Myr] 
-Tentative time step : 0.00259374 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002223 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 1.038084335919e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.038084335919e-03 
-    1 KSP Residual norm 1.523831137038e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.52383e-07, 0.000519042, 0.00103808]
-      Line search terminated: lambda = 1., fnorms = 1.52383e-07
-  1 SNES Function norm 1.523831137038e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.072083 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 3.488606106574e-08 
-      |Div|_2   = 1.523831136624e-07 
-   Momentum: 
-      |mRes|_2  = 3.550191140579e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00259 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 32 markers in 2.0340e-03 s 
---------------------------------------------------------------------------
-================================ STEP 12 =================================
---------------------------------------------------------------------------
-Current time        : 0.01853117 [Myr] 
-Tentative time step : 0.00285312 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002306 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 2.844719258390e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 2.844719258390e-03 
-    1 KSP Residual norm 1.821848135840e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.82185e-07, 0.00142236, 0.00284472]
-      Line search terminated: lambda = 1., fnorms = 1.82185e-07
-  1 SNES Function norm 1.821848135843e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.070297 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 5.545654205610e-08 
-      |Div|_2   = 1.821848135516e-07 
-   Momentum: 
-      |mRes|_2  = 3.451254478211e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00285 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 54 markers in 2.2430e-03 s 
---------------------------------------------------------------------------
-================================ STEP 13 =================================
---------------------------------------------------------------------------
-Current time        : 0.02138428 [Myr] 
-Tentative time step : 0.00313843 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002199 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 7.178175541646e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 7.178175541646e-03 
-    1 KSP Residual norm 2.755526181763e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [2.75553e-07, 0.00358909, 0.00717818]
-      Line search terminated: lambda = 1., fnorms = 2.75553e-07
-  1 SNES Function norm 2.755526181764e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.070197 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 1.479439526525e-07 
-      |Div|_2   = 2.755526181126e-07 
-   Momentum: 
-      |mRes|_2  = 5.929057187828e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00314 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 58 markers in 2.2010e-03 s 
---------------------------------------------------------------------------
-================================ STEP 14 =================================
---------------------------------------------------------------------------
-Current time        : 0.02452271 [Myr] 
-Tentative time step : 0.00345227 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002164 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 2.535949246827e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 2.535949246827e-03 
-    1 KSP Residual norm 2.180082864450e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [2.18008e-07, 0.00126797, 0.00253595]
-      Line search terminated: lambda = 1., fnorms = 2.18008e-07
-  1 SNES Function norm 2.180082864452e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.072678 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 6.639685142863e-08 
-      |Div|_2   = 2.180082863405e-07 
-   Momentum: 
-      |mRes|_2  = 6.755664197573e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00345 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 38 markers in 2.1480e-03 s 
---------------------------------------------------------------------------
-================================ STEP 15 =================================
---------------------------------------------------------------------------
-Current time        : 0.02797498 [Myr] 
-Tentative time step : 0.00379750 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002216 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 1.408342234282e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.408342234282e-03 
-    1 KSP Residual norm 2.179281778007e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [2.17928e-07, 0.000704171, 0.00140834]
-      Line search terminated: lambda = 1., fnorms = 2.17928e-07
-  1 SNES Function norm 2.179281778008e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.070777 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 3.817569743836e-08 
-      |Div|_2   = 2.179281777251e-07 
-   Momentum: 
-      |mRes|_2  = 5.741871448853e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00380 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 32 markers in 1.9820e-03 s 
---------------------------------------------------------------------------
-Saving output ... done (0.001461 sec)
---------------------------------------------------------------------------
-================================ STEP 16 =================================
---------------------------------------------------------------------------
-Current time        : 0.03177248 [Myr] 
-Tentative time step : 0.00417725 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002218 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 2.536072809494e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 2.536072809494e-03 
-    1 KSP Residual norm 2.511517793496e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [2.51152e-07, 0.00126804, 0.00253607]
-      Line search terminated: lambda = 1., fnorms = 2.51152e-07
-  1 SNES Function norm 2.511517793497e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.070238 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 6.952845406350e-08 
-      |Div|_2   = 2.511517793090e-07 
-   Momentum: 
-      |mRes|_2  = 4.520198613032e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00418 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 57 markers in 2.0000e-03 s 
---------------------------------------------------------------------------
-================================ STEP 17 =================================
---------------------------------------------------------------------------
-Current time        : 0.03594973 [Myr] 
-Tentative time step : 0.00459497 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002199 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 4.026882400942e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 4.026882400942e-03 
-    1 KSP Residual norm 2.791891495356e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [2.79189e-07, 0.00201344, 0.00402688]
-      Line search terminated: lambda = 1., fnorms = 2.79189e-07
-  1 SNES Function norm 2.791891495356e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.070122 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 5.955621713068e-08 
-      |Div|_2   = 2.791891494929e-07 
-   Momentum: 
-      |mRes|_2  = 4.884851243556e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00459 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 73 markers in 2.0970e-03 s 
---------------------------------------------------------------------------
-================================ STEP 18 =================================
---------------------------------------------------------------------------
-Current time        : 0.04054470 [Myr] 
-Tentative time step : 0.00505447 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002123 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 6.043853848453e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 6.043853848453e-03 
-    1 KSP Residual norm 3.383304813215e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [3.3833e-07, 0.00302193, 0.00604385]
-      Line search terminated: lambda = 1., fnorms = 3.3833e-07
-  1 SNES Function norm 3.383304813212e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.070307 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 9.639532298378e-08 
-      |Div|_2   = 3.383304812615e-07 
-   Momentum: 
-      |mRes|_2  = 6.357297375701e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00505 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 64 markers in 2.0120e-03 s 
---------------------------------------------------------------------------
-================================ STEP 19 =================================
---------------------------------------------------------------------------
-Current time        : 0.04559917 [Myr] 
-Tentative time step : 0.00555992 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002127 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 4.892356037840e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 4.892356037840e-03 
-    1 KSP Residual norm 3.366114847812e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [3.36611e-07, 0.00244618, 0.00489236]
-      Line search terminated: lambda = 1., fnorms = 3.36611e-07
-  1 SNES Function norm 3.366114847814e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.073079 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 7.297963805540e-08 
-      |Div|_2   = 3.366114847798e-07 
-   Momentum: 
-      |mRes|_2  = 1.050404331941e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00556 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 36 markers in 1.9430e-03 s 
---------------------------------------------------------------------------
-================================ STEP 20 =================================
---------------------------------------------------------------------------
-Current time        : 0.05115909 [Myr] 
-Tentative time step : 0.00611591 [Myr] 
---------------------------------------------------------------------------
-Phase_Transition ... done (0.002252 sec)
---------------------------------------------------------------------------
-  0 SNES Function norm 2.935055098304e-03 
-  0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 2.935055098304e-03 
-    1 KSP Residual norm 3.457447702088e-07 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-      Line search: lambdas = [1., 0.5, 0.], fnorms = [3.45745e-07, 0.00146753, 0.00293506]
-      Line search terminated: lambda = 1., fnorms = 3.45745e-07
-  1 SNES Function norm 3.457447702088e-07 
---------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.077449 (sec)
---------------------------------------------------------------------------
-Residual summary: 
-   Continuity: 
-      |Div|_inf = 4.506823585682e-08 
-      |Div|_2   = 3.457447701448e-07 
-   Momentum: 
-      |mRes|_2  = 6.654186522133e-12 
---------------------------------------------------------------------------
-Actual time step : 0.00612 [Myr] 
---------------------------------------------------------------------------
-Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 42 markers in 2.0730e-03 s 
---------------------------------------------------------------------------
-Saving output ... done (0.001601 sec)
+Saving output ... done (0.00142 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 2.09328 (sec) 
+Total solution time : 0.185535 (sec) 
 --------------------------------------------------------------------------

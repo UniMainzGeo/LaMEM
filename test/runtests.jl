@@ -264,7 +264,7 @@ end
     
     ParamFile = "t7_PSDInversionPaper.dat";
     @test perform_lamem_test(dir,ParamFile,"t7_PSDInversionPaper_1.expected",
-                            args="-Inversion_rtol 4.6e-2",
+                            args="-Inversion_rtol 4.6e-2 -nel_x -nel_y 8 -nel_z 8",
                             keywords=keywords, accuracy=acc, cores=2, opt=true)
 
     # PSD paper inversion for linear materials:   
@@ -794,6 +794,7 @@ end
                             keywords=keywords, accuracy=acc, cores=8, opt=true)
     # test_b
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_deb-p8.expected",
+                            args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=8, deb=true)
 end
 
@@ -817,31 +818,31 @@ end
 
     # test_M1_2D
     @test perform_lamem_test(dir,"dike_M1_2D.dat","dike_M1_2D.expected",
-                            args="-nstep_max 20",
+                            args="-nstep_max 5  -nel_y 1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # test_M075_2D_2cores
     @test perform_lamem_test(dir,"dike_M075_2D_2cores.dat","dike_M075_2D_2cores.expected",
-                            args="-nstep_max 2",
+                            args="-nstep_max 2 -nel_y 1",
                             keywords=keywords, accuracy=acc, cores=2, opt=true)
 
     # test_variableM
     @test perform_lamem_test(dir,"dike_variableM.dat","dike_variableM.expected",
-                            args="-nstep_max 2",
+                            args="-nstep_max 2 -nel_y 1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # heat_kfac
     keywords = ("|eRes|_2",)
     acc      = ((rtol=1e-4,atol=1e-11),);
     @test perform_lamem_test(dir,"dike_heating_kfac.dat","dike_heating_kfac.expected",
-                            args="-nstep_max 2",
+                            args="-nstep_max 2 -nel_y 1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # heat_rhoA
     keywords = ("|eRes|_2",)
     acc      = ((rtol=1e-4,atol=6e-9),);
     @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA.expected",
-                            args="-nstep_max 2",
+                            args="-nstep_max 2 -nel_y 1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
 end
