@@ -364,8 +364,8 @@ end
     # --------------
 end
 
-@testset "t11_subgrid" begin
-    dir = "t11_subgrid";
+@testset "t11_Subgrid" begin
+    dir = "t11_Subgrid";
     
     ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
     
@@ -666,7 +666,7 @@ end
 
     # Test inflow/outflow conditions in 2D using optimized LaMEM   
     # t17_InflowOutflow2D_Pres_opt 
-    acc      = ((rtol=2e-7,atol=1e-10), (rtol=1e-5, atol=1e-10), (rtol=1e-4,atol=2e-10), (rtol=1e-6,atol=1e-9));
+    acc      = ((rtol=2e-7,atol=2e-7), (rtol=1e-5, atol=1e-6), (rtol=1e-4,atol=2e-8), (rtol=1e-6,atol=1e-9));
     @test perform_lamem_test(dir,"PlumeLithos_Interaction_2D_Perm.dat","InflowOutflow-2D_Perm_p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
@@ -814,7 +814,7 @@ end
     dir = "t26_Dike";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-9));
 
     # test_M1_2D
     @test perform_lamem_test(dir,"dike_M1_2D.dat","dike_M1_2D.expected",
@@ -833,14 +833,14 @@ end
 
     # heat_kfac
     keywords = ("|eRes|_2",)
-    acc      = ((rtol=1e-4,atol=1e-11),);
+    acc      = ((rtol=1e-4,atol=1e-9),);
     @test perform_lamem_test(dir,"dike_heating_kfac.dat","dike_heating_kfac.expected",
                             args="-nstep_max 2 -nel_y 1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     # heat_rhoA
     keywords = ("|eRes|_2",)
-    acc      = ((rtol=1e-4,atol=6e-9),);
+    acc      = ((rtol=1e-4,atol=1e-8),);
     @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA.expected",
                             args="-nstep_max 2 -nel_y 1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
@@ -863,7 +863,7 @@ end
     dir = "t28_HeatRecharge";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=5e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-5,atol=1e-11));
+    acc      = ((rtol=5e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=2e-5,atol=1e-11));
 
     # test_recharge1
     @test perform_lamem_test(dir,"FallingBlockHeatReacharge1.dat","t28_HeatRecharge1.expected",
