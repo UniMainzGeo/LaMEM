@@ -60,6 +60,7 @@
 #include "fdstag.h"
 #include "tools.h"
 #include "surf.h"
+#include "advect.h"
 
 //---------------------------------------------------------------------------
 PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)   
@@ -500,17 +501,19 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 
 
 //------------------------------------------------------------------------------------------------------------------
-PetscErrorCode Locate_Dike_Zones(JacRes *jr)
+PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 {
 //Ugh:  history arrays are from before the last timestep and so stresses used here are a step behind
 
   Controls    *ctrl;
+  JacRes      *jr;
   Dike        *dike;
   PetscInt   nD, numDike, iwrite_counter1, iwrite_counter2, icounter;
   PetscErrorCode ierr; 
 
   PetscFunctionBeginUser;
 
+  jr = actx->jr;
   ctrl = &jr->ctrl;
   PetscPrintf(PETSC_COMM_WORLD, "\n");
 
@@ -528,7 +531,11 @@ PetscErrorCode Locate_Dike_Zones(JacRes *jr)
     if (dike->dyndike_start && jr->ts->istep+1 >= dike->dyndike_start)
     {
        // compute lithostatic pressure
-       if (icounter==0) ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+       if (icounter==0) 
+       {
+         ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+         ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
+       }
        icounter++;
        
        ierr = Compute_sxx_eff(jr,nD, iwrite_counter1); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere

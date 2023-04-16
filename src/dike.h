@@ -53,6 +53,7 @@ struct FDSTAG;
 struct TSSol;
 struct JacRes;
 struct Controls;
+struct AdvCtx; 
 
 //---------------------------------------------------------------------------       
 //.......................   Dike Parameters  .......................                                                                                                      
@@ -110,7 +111,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter1);
 PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter2);
 PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD);
-PetscErrorCode Locate_Dike_Zones(JacRes *jr);
+PetscErrorCode Locate_Dike_Zones(AdvCtx *actx);
 PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp, PetscBool PrintOutput);
 PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp);
 PetscErrorCode DynamicDike_Destroy(JacRes *jr);
