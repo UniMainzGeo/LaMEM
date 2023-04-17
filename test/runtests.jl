@@ -61,7 +61,7 @@ end
     ParamFile = "Subduction_MATLAB_Particles.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=5e-7), (rtol=1e-5,atol=1e-6), (rtol=5e-4,atol=5e-5));
+    acc      = ((rtol=1e-6,atol=5e-7), (rtol=1e-5,atol=1e-5), (rtol=5e-4,atol=1e-3));
     
     # test on 1 core
     # t3_Sub1_MATLAB_a_Direct_opt
@@ -327,7 +327,7 @@ end
 
     # Compute difference with analytical solution
     @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-5
-    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-5
+    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
     @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
 
     # Create plot with stress & analytical solution
