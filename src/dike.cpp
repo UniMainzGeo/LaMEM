@@ -611,13 +611,14 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
       ierr = VecZeroEntries(vzsol); CHKERRQ(ierr);
 
       // open index buffer for computation (sxx the array that shares data with vector vsxx and is indexed with global dimensions<<G.Ito)
+      // DMDAVecGetArray(DM da,Vec vec,void *array) Returns a multiple dimension array that shares data with the underlying vector 
+      // and is indexed using the global dimension
       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vliththick, &liththick); CHKERRQ(ierr);
       ierr = DMDAVecGetArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr);
 
-
-
       // open linear buffer for send/receive  (returns the point, lsxx, that contains this processor portion of vector data, vsxx<<G.Ito)
+      //Returns a pointer to a contiguous array that contains this processors portion of the vector data.
       ierr = VecGetArray(vsxx, &lsxx); CHKERRQ(ierr);
       ierr = VecGetArray(vliththick, &lliththick); CHKERRQ(ierr);
       ierr = VecGetArray(vzsol, &lzsol); CHKERRQ(ierr);
@@ -877,7 +878,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
          //if starting within segmented from previous proc, get array from previous proc
          if (j==sy && jj>1 && dsy->nproc > 1 && dsy->grprev != -1)  
          {
-           ierr = MPI_Irecv(lvec1d, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+           ierr = MPI_Irecv(lvec1d, (PetscMPIInt)(nx), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
            ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
          }
 
@@ -907,17 +908,17 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
              }
            }
 
-           ierr = MPI_Isend(lvec1d, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+           ierr = MPI_Isend(lvec1d, (PetscMPIInt)(nx), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
            ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
          }
 
          //if at end of y domain and not end of segment send to next and receive from next
          if ((j-sy==ny-1) && (jj<npseg) && (dsy->nproc != 1) &&  (dsy->grnext != -1))  
          {
-           ierr = MPI_Isend(lvec1d, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+           ierr = MPI_Isend(lvec1d, (PetscMPIInt)(nx), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
            ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
  
-           ierr = MPI_Irecv(lvec1d, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+           ierr = MPI_Irecv(lvec1d, (PetscMPIInt)(nx), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
            ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
            for (jback=0; jback<jj; jback++) //fill in mean values in segment received from next core
            {
