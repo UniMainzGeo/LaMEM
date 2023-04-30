@@ -220,12 +220,14 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     dike->zmax_magma = -15.0;
     dike->drhomagma = 500;
     dike->npseg = 4.0; 
-    dike->filtx = 2.0;
+    dike->filtx = 1.0;
+    dike->filty = 4.0;
     dike->istep_nave = 2;
 
     ierr = getScalarParam(fb, _OPTIONAL_, "Tsol",         &dike->Tsol,         1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",   &dike->zmax_magma,   1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "filtx",        &dike->filtx,        1, 1.0); CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _OPTIONAL_, "filty",        &dike->filty,        1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "drhomagma",    &dike->drhomagma,    1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "npseg",        &dike->npseg,        1, 1.0); CHKERRQ(ierr);
     ierr = getIntParam(fb, _OPTIONAL_, "istep_nave",     &dike->istep_nave,        1, 50); CHKERRQ(ierr);
@@ -544,7 +546,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 
        ierr = Smooth_sxx_eff(jr,nD, iwrite_counter2); CHKERRQ(ierr);  //smooth mean effective sxx  
 
-       //ierr = Set_dike_zones(jr,nD); CHKERRQ(ierr); //centered on peak sxx_eff_ave  //commented out for debugging
+       ierr = Set_dike_zones(jr,nD); CHKERRQ(ierr); //centered on peak sxx_eff_ave  //commented out for debugging
     }
     else
     {
@@ -596,7 +598,6 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
 
   MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
   ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
-
 
   dike = jr->dbdike->matDike+nD;
 
@@ -733,7 +734,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
           ycell=COORD_CELL(j, sy, fs->dsy);
           dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
           if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
-          PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g\n", jr->ts->istep+1,xcell, ycell, gsxx_eff_ave[L][j][i], dPmag);   //debugging    
+          PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g %i\n", jr->ts->istep+1, xcell, ycell, gsxx_eff_ave[L][j][i], dPmag, nD);   //debugging    
         END_PLANE_LOOP  
       }
       PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);   //debugging    
@@ -776,9 +777,11 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
   Discret1D   *dsx, *dsz, *dsy;
   Ph_trans_t  *CurrPhTr;
   PetscScalar ***gsxx_eff_ave, ***gsxx_eff_ave_hist;
-  PetscScalar x, sum_sxx, sum_dx, dx, xx;
-  PetscInt    i,ii, j, sx, sy, sz, nx, ny, nz, nPtr, numPhtr;
-  PetscInt    L, M, N, rank, jj;
+  PetscScalar xc, yc, xx, yy, dx, dy, sum_sxx, sum_w;
+  PetscInt    j, jj, j1, j2, j1prev, j2prev, j1next, j2next, jj1, jj2; 
+  PetscInt    i,ii, ii1, ii2;
+  PetscInt    sx, sy, sz, nx, ny, nz, nPtr, numPhtr;
+  PetscInt    L, M, N, rank;
   PetscInt    sisc, istep_count, istep_nave;
   Vec         vycoors, vycoors_prev, vycoors_next;
   Vec         vybound, vybound_prev, vybound_next;
@@ -787,8 +790,9 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
   PetscScalar ***ybound, *lybound, ***ybound_prev, *lybound_prev, ***ybound_next, *lybound_next;
   PetscScalar ***sxx,***sxx_prev, ***sxx_next;
   PetscScalar  *lsxx, *lsxx_prev, *lsxx_next;
+  PetscScalar filtx, filty, w, dfac;
 
-  PetscScalar xcell, ycell, dbug1, dbug2, dbug3;
+  PetscScalar dbug1, dbug2, dbug3;
 
   //Scaling     *scal;  //debugging
 
@@ -814,6 +818,9 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
 
   dike = jr->dbdike->matDike+nD;
   numPhtr    = jr->dbm->numPhtr;
+  filtx=dike->filtx;
+  filty=dike->filty;
+  dfac=1;  //maximum distance for Gaussian weights is dfac*filtx and dfac*filty
 //-------------------------------------------------------------------------------------------------------
 // get communication buffer (Gets a PETSc vector, vycoors, that may be used with the DM global routines)
 //y node coords
@@ -881,28 +888,33 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
   { for(i = sx; i < sx+nx; i++) 
     {
       sxx[L][j][i]=gsxx_eff_ave[L][j][i];
-      //sxx[L][j][i]=L*10000+j*100+i;
     }
   }
   
 //---------------------------------------------------------------------------------------------
 //  Find y-bounds of current dynamic dike
 //---------------------------------------------------------------------------------------------
-  for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks                        
+  for(nPtr=0; nPtr<numPhtr; nPtr++)                          
   {                                               
     CurrPhTr = jr->dbm->matPhtr+nPtr;
     if(CurrPhTr->ID == dike->PhaseTransID)  
     {
-      for(j = 0; j <= ny; j++)
-      {
-        if (CurrPhTr->celly_xboundR[j] > CurrPhTr->celly_xboundL[j])
-           ybound[L][M][j] = j;
-      }
+       j1=sy+ny-1;
+       j2=sy;
+       for(j = 0; j < ny; j++)
+       {
+          if (CurrPhTr->celly_xboundR[j] > CurrPhTr->celly_xboundL[j])
+          {
+             ybound[L][M][j] = j+10;
+             j1=min(j1,j+sy);
+             j2=max(j2,j+sy);
+          }
+       }
     }//end If CurrPhTr->ID == dike->PhaseTransID
   }//end loop over Phtr
 
 //---------------------------------------------------------------------------------------------
-//  averaging in y-increments (i.e., "segments") along axis
+// passing arrays between previous and next y proc
 //---------------------------------------------------------------------------------------------
 
   for(j = 0; j <= ny; j++)
@@ -925,18 +937,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
       ierr = MPI_Wait(&srequest2, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
       ierr = MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest3); CHKERRQ(ierr);
       ierr = MPI_Wait(&srequest3, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-
-      if (L==0)
-      { 
-        for(j = 0; j < ny; j++)
-        {
-          printf("DIKE=%i, M=%i, RECEIVING from grprev=%i, ycoors_prev=%g, sxx=%g, %g; SENDING ycoors=%g, sxx=%g, %g\n", 
-          nD, M, dsy->grprev, j, ycoors_prev[L][M][j], sxx_prev[L][j+sy][0], sxx_prev[L][j+sy][3], ycoors[L][M][j], sxx[L][j+sy][0], sxx[L][j+sy][3]);
-        } 
-      }
-
   }
-
 
   if ((dsy->nproc != 1) &&  (dsy->grnext != -1))  //the first proc in y
   {
@@ -953,26 +954,209 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter)
       ierr = MPI_Wait(&rrequest2, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
       ierr = MPI_Irecv(lsxx_next, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest3); CHKERRQ(ierr);
       ierr = MPI_Wait(&rrequest3, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+  }
 
-      if (L==0)
+  //---------------------------------------------------------------------------------
+  // Gaussian filter
+  //---------------------------------------------------------------------------------
+
+  for(j = j1; j <= j2; j++) //loop over ybounds of current dike
+  {
+    yc = COORD_CELL(j, sy, fs->dsy);
+
+    
+    //identify global y index of cells within dfac*filty of yc
+    j1prev=ny+sy-1; j2prev=sy;
+    j1next=ny+sy-1; j2next=sy;
+    jj1=sy+ny-1; jj2=sy;
+    for(jj = sy; jj < sy+ny; jj++)
+    {
+      
+      yy=(ycoors_prev[L][M][jj-sy+1]+ycoors_prev[L][M][jj-sy])/2;
+      if ( dsy->grprev != -1 && fabs(yc-yy) <= dfac*filty && ybound_prev[L][M][jj-sy]==jj-sy+10) 
       {
-        for(j = 0; j < ny; j++)
-        {
-          printf("DIKE=%i, M=%i SENDING to grnext=%i, ycoors=%g, sxx=%g, %g, ; RECEVING ycoors_next=%g, sxx=%g, %g\n", 
-          nD, M, dsy->grnext, ycoors[L][M][j], sxx[L][j+sy][0], sxx[L][j+sy][3], ycoors_next[L][M][j], sxx_next[L][j+sy][0], sxx_next[L][j+sy][3]);
-        } //end 1st loop over j for smoothing in x 
+        j1prev=min(j1prev,jj);   
+        j2prev=max(j2prev,jj);
       }
 
-  }
+      yy=(ycoors_next[L][M][jj-sy+1]+ycoors_next[L][M][jj-sy])/2;
+      if (dsy->grnext != -1 && fabs(yy-yc) <= dfac*filty && ybound_next[L][M][jj-sy]==jj-sy+10)
+      {
+        j1next=min(j1next,jj);   
+        j2next=max(j2next,jj);
+      }
+      
+      yy=COORD_CELL(jj, sy, fs->dsy);
+      if (fabs(yy-yc) <= dfac*filty && ybound[L][M][jj-sy]==jj-sy+10)
+      {
+        jj1=min(jj1,jj);
+        jj2=max(jj2,jj);
+      }
+    }
+
+
+    for (i = sx; i < sx+nx; i++)  //loop to assign filtered value in cell j,i
+    {
+      sum_sxx=0.0;
+      sum_w=0.0;
+
+      xc =  COORD_CELL(i, sx, fs->dsx);
+      
+      //identify x cells within dfac*filtx of xc
+      ii1=sx+nx-1; ii2=sx;
+      for (ii = sx; ii < sx+nx; ii++)
+      {
+        xx = COORD_CELL(ii, sx, fs->dsx);
+        if (fabs(xx-xc) <= dfac*filtx)
+        {
+          ii1=min(ii1,ii);
+          ii2=max(ii2,ii);
+        }
+      }
+      //weighted mean of values from previous node
+      for (jj = j1prev; jj <= j2prev; jj++) 
+      {
+         dy=ycoors_prev[L][M][jj+1-sy]-ycoors_prev[L][M][jj-sy];
+         yy = (ycoors_prev[L][M][jj+1-sy] + ycoors_prev[L][M][jj-sy])/2;
+         for (ii = ii1; ii <= ii2; ii++)
+         {
+           dx = SIZE_CELL(ii, sx, fs->dsx);
+           xx = COORD_CELL(ii, sx, fs->dsx);
+           w=exp(-0.5*(pow(((xx-xc)/filtx),2) + pow(((yy-yc)/filty),2)))*dx*dy;
+           sum_sxx+=sxx_prev[L][jj][ii]*w;
+           sum_w+=w;
+         }
+      }
+
+      //weighted mean of values on current node
+      for (jj = jj1; jj <= jj2; jj++)
+      {
+         dy=SIZE_CELL(jj,sy,fs->dsy);
+         yy = COORD_CELL(jj,sy,fs->dsy);
+ 
+         for (ii = ii1; ii <= ii2; ii++)
+         {
+           dx = SIZE_CELL(ii,sx,fs->dsx);
+           xx = COORD_CELL(ii, sx, fs->dsx);
+           w=exp(-0.5*(pow(((xx-xc)/filtx),2) + pow(((yy-yc)/filty),2)) )*dx*dy;
+           sum_sxx+=sxx[L][jj][ii]*w;
+           sum_w+=w;
+         }
+      }
+
+      //weighted mean of values from next node
+      for (jj = j1next; jj <= j2next; jj++)
+      {
+         dy=ycoors_next[L][M][jj+1-sy]-ycoors_next[L][M][jj-sy];
+         yy = (ycoors_next[L][M][jj+1-sy]-ycoors_next[L][M][jj-sy])/2;
+
+         for (ii = ii1; ii <= ii2; ii++)
+         {
+           dx = SIZE_CELL(ii,sx,fs->dsx);
+           xx = COORD_CELL(ii, sx, fs->dsx);
+           w=exp(-0.5*(pow(((xx-xc)/filtx),2) + pow(((yy-yc)/filty),2)))*dx*dy;
+           sum_sxx+=sxx_next[L][jj][ii]*w;
+           sum_w+=w;
+         }
+      }
+
+      sum_w=max(sum_w,0.0);
+      gsxx_eff_ave[L][j][i]=sum_sxx/sum_w;
+
+    }//End loop over i
+  }// End loop over j
+  
+
+  //restore ycoors arrays
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vycoors_prev, &ycoors_prev); CHKERRQ(ierr);
+  ierr = VecRestoreArray(vycoors_prev, &lycoors_prev); CHKERRQ(ierr);
+  ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vycoors_prev); CHKERRQ(ierr);
 
   ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vycoors, &ycoors); CHKERRQ(ierr);
   ierr = VecRestoreArray(vycoors, &lycoors); CHKERRQ(ierr);
   ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vycoors); CHKERRQ(ierr);
 
-  ierr = DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
-  //restore arrays
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vycoors_next, &ycoors_next); CHKERRQ(ierr);
+  ierr = VecRestoreArray(vycoors_next, &lycoors_next); CHKERRQ(ierr);
+  ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vycoors_next); CHKERRQ(ierr);
+
+  //restore ybound arrays
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vybound_prev, &ybound_prev); CHKERRQ(ierr);
+  ierr = VecRestoreArray(vybound_prev, &lybound_prev); CHKERRQ(ierr);
+  ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vybound_prev); CHKERRQ(ierr);
+
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vybound, &ybound); CHKERRQ(ierr);
+  ierr = VecRestoreArray(vybound, &lybound); CHKERRQ(ierr);
+  ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vybound); CHKERRQ(ierr);
+
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vybound_next, &ybound_next); CHKERRQ(ierr);
+  ierr = VecRestoreArray(vybound_next, &lybound_next); CHKERRQ(ierr);
+  ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vybound_next); CHKERRQ(ierr);
+
+  //restore sxx arrays
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx_prev, &sxx_prev); CHKERRQ(ierr);
+  ierr = VecRestoreArray(vsxx_prev, &lsxx_prev); CHKERRQ(ierr);
+  ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx_prev); CHKERRQ(ierr);
+
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
+  ierr = VecRestoreArray(vsxx, &lsxx); CHKERRQ(ierr);
+  ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx); CHKERRQ(ierr);
+
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx_next, &sxx_next); CHKERRQ(ierr);
+  ierr = VecRestoreArray(vsxx_next, &lsxx_next); CHKERRQ(ierr);
+  ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx_next); CHKERRQ(ierr);
+
+//---------------------------------------------------------------------------------------------
+//  averaging over time
+//---------------------------------------------------------------------------------------------
+  if (dike->istep_nave>1)
+  {
+   ierr = DMDAGetCorners(jr->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave); CHKERRQ(ierr);
+
+   if(istep_nave!=dike->istep_nave) 
+   {
+      SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems: istep_nave=%i, dike->istep_nave=%i\n", istep_nave, dike->istep_nave);
+   }
+
+   ierr = DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+
+   dike->istep_count++;
+
+   if (dike->istep_count+1 > istep_nave) 
+   {
+      dike->istep_count=0;
+   }  
+    
+   START_PLANE_LOOP
+      sum_sxx=0;
+      gsxx_eff_ave_hist[sisc+dike->istep_count][j][i]=gsxx_eff_ave[L][j][i];  //array for current step
+
+      for (istep_count=sisc; istep_count<sisc+istep_nave; istep_count++)
+      {
+         sum_sxx+=gsxx_eff_ave_hist[istep_count][j][i];
+      }
+
+      gsxx_eff_ave[L][j][i]=sum_sxx/((PetscScalar)istep_nave);
+ 
+   END_PLANE_LOOP
+
+   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+ }// end if nstep_ave>1
+
+   if (L==0 && dbug3 < 0.05/jr->ts->nstep_out && iwrite_counter==0)  //debugging
+   { 
+      iwrite_counter++;
+      START_PLANE_LOOP
+         xc=COORD_CELL(i, sx, fs->dsx);
+         yc=COORD_CELL(j, sy, fs->dsy);
+         PetscSynchronizedPrintf(PETSC_COMM_WORLD,"202020.2020 %i %g %g %g %i\n", jr->ts->istep+1,xc, yc, gsxx_eff_ave[L][j][i], nD);   //debugging    
+      END_PLANE_LOOP  
+   }            
+   PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);   //debugging    
+
+
+   //restore arrays
+   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 
 
   PetscFunctionReturn(0);  
@@ -1091,15 +1275,15 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD)
                 xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
               }
 
-              CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2;  
+              CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2; 
               CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;  
 
               if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)   //debugging
               {
                 ydebugging = COORD_CELL(j, sy, fs->dsy);  //debugging
                 xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-                PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g\n", jr->ts->istep+1, ydebugging, xcenter+xshift, 
-                CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx));  //debugging
+                PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g %i\n", jr->ts->istep+1, ydebugging, xcenter+xshift, 
+                CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx),nD);  //debugging
               }
 
             }//end loop over j cell row

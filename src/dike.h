@@ -75,6 +75,7 @@ public:
   PetscScalar z_Mc;
   PetscScalar Tsol;
   PetscScalar filtx; 
+  PetscScalar filty;
   PetscScalar drhomagma;
   PetscScalar zmax_magma;
   PetscScalar npseg;
