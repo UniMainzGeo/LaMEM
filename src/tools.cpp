@@ -105,7 +105,7 @@ PetscErrorCode VecReadRestart(Vec x, FILE *fp)
 	PetscScalar *xarr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
 
@@ -129,7 +129,7 @@ PetscErrorCode VecWriteRestart(Vec x, FILE *fp)
 	PetscScalar *xarr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
 
@@ -180,7 +180,7 @@ PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const
 	PetscMPIInt    *tmp;
 	size_t          sz;
 	PetscErrorCode 	ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscMPIInt);
 	// allocate space
@@ -201,7 +201,7 @@ PetscErrorCode clearIntArray(PetscInt *arr, const PetscInt n)
 	size_t          sz;
 	PetscErrorCode 	ierr;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscInt);
@@ -219,7 +219,7 @@ PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt
 	PetscInt       *tmp;
 	size_t          sz;
 	PetscErrorCode 	ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscInt);
 	// allocate space
@@ -240,7 +240,7 @@ PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const P
 	PetscScalar    *tmp;
 	size_t          sz;
 	PetscErrorCode 	ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscScalar);
 	// allocate space
@@ -313,7 +313,7 @@ PetscErrorCode DirMake(const char *name)
 	int status;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// create a new directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
@@ -329,7 +329,7 @@ PetscErrorCode DirMake(const char *name)
 
 		if(status && errno != EEXIST)
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to create directory %s", name);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to create directory %s", name);
 		}
 	}
 
@@ -346,7 +346,7 @@ PetscErrorCode DirRemove(const char *name)
 	int status;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// synchronize
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
@@ -358,7 +358,7 @@ PetscErrorCode DirRemove(const char *name)
 
 		if(status)
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to remove directory %s", name);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to remove directory %s", name);
 		}
 	}
 
@@ -372,7 +372,7 @@ PetscErrorCode DirRename(const char *old_name, const char *new_name)
 	int status;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// synchronize
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
@@ -384,7 +384,7 @@ PetscErrorCode DirRename(const char *old_name, const char *new_name)
 
 		if(status)
 		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to rename directory %s into %s", old_name, new_name);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to rename directory %s into %s", old_name, new_name);
 		}
 	}
 
@@ -400,7 +400,7 @@ PetscErrorCode DirCheck(const char *name, PetscInt *exists)
 	PetscInt    check;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
@@ -839,7 +839,7 @@ PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
 	PetscInt    i;
 	PetscScalar sum = 0.0;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	for(i = 0; i < n; i++) sum  += v[i];
 

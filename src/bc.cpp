@@ -74,7 +74,7 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
     //	-top   - Polygon top coordinate
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     bcb->npath = 2;
     bcb->npoly = 4;
@@ -103,7 +103,7 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
     PetscScalar  *p1, *p2;
     PetscScalar  *path, *theta, *time;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     n     = bcb->npath;
     path  = bcb->path;
@@ -193,7 +193,7 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
     PetscScalar *xa, *xb;
     PetscScalar  Xa[3], theta, costh, sinth;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // get initial polygon position
     Xa[0] = bcb->path[0];
@@ -227,7 +227,7 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	//========================
 	// velocity box parameters
@@ -260,7 +260,7 @@ PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 #define __FUNCT__ "VelBoxPrint"
 PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %i \n", cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Box center                              : %g, %g, %g %s \n", velbox->cenX  *scal->length, velbox->cenY  *scal->length, velbox->cenZ  *scal->length, scal->lbl_length);
@@ -294,7 +294,7 @@ PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
 	char           str_type[_str_len_];
     
     PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	//========================
 	// velocity cylinder parameters
@@ -349,7 +349,7 @@ PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
 #define __FUNCT__ "VelCylinderPrint"
 PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %i \n", cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder base                           : %g, %g, %g %s \n", velcyl->baseX  *scal->length, velcyl->baseY  *scal->length, velcyl->baseZ  *scal->length, scal->lbl_length);
@@ -399,7 +399,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     char         inflow_temp[_str_len_],str_inflow[_str_len_];
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     scal = bc->scal;
@@ -449,7 +449,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         // error checking
         if(fb->nblocks > _max_boxes_)
         {
-            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many Bezier blocks! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many Bezier blocks! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
         }
 
         // store actual number of Bezier blocks
@@ -474,7 +474,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         // error checking
         if(fb->nblocks > _max_boxes_)
         {
-            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity boxes! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity boxes! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
         }
 
         // store actual number of velocity blocks
@@ -499,7 +499,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         // error checking
         if(fb->nblocks > _max_boxes_)
         {
-            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity cylinders! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity cylinders! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
         }
 
         // store actual number of velocity blocks
@@ -611,7 +611,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         }
         else
         {	
-            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);
         }
 
         if(bc->Plume_Type == 1)
@@ -630,7 +630,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
             }      
             else
             {	
-                SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);
+                SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);
             }
         }
         if(bc->Plume_Type == 2)
@@ -654,7 +654,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         }
         else
         {	
-            SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);
         }
        
         if(bc->Plume_Dimension == 1)
@@ -757,7 +757,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     }
     else{
         // We have a Tbot that changes with time
-        PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", bc->TbotNumPeriods);
+        PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", (LLD)bc->TbotNumPeriods);
         PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperatures               : ");
         for (jj=0; jj<bc->TbotNumPeriods; jj++){
             PetscPrintf(PETSC_COMM_WORLD, "%g ", bc->Tbot[jj]);
@@ -790,7 +790,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %s \n", str_inflow);
      if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }
-     if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
+     if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %lld \n", (LLD)bc->phase);      }
      else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }     
 
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow window [bottom, top]             : [%3.2f,%3.2f] %s \n", bc->bot*scal->length, bc->top*scal->length, scal->lbl_length); 
@@ -860,7 +860,7 @@ PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp)
     PetscInt nCells;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     nCells = bc->fs->nCells;
 
@@ -882,7 +882,7 @@ PetscErrorCode BCWriteRestart(BCCtx *bc, FILE *fp)
 {
     PetscInt nCells;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     nCells = bc->fs->nCells;
 
@@ -903,7 +903,7 @@ PetscErrorCode BCCreateData(BCCtx *bc)
     DOFIndex *dof;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     fs  =  bc->fs;
     dof = &fs->dof;
@@ -936,7 +936,7 @@ PetscErrorCode BCCreateData(BCCtx *bc)
 PetscErrorCode BCDestroy(BCCtx *bc)
 {
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // destroy boundary conditions vectors (velocity, pressure, temperature)
     ierr = VecDestroy(&bc->bcvx); CHKERRQ(ierr);
@@ -970,7 +970,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
     char           *filename, file[_str_len_];
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check activation
     if(!bc->fixCell) PetscFunctionReturn(0);
@@ -990,7 +990,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 
     if(fp == NULL)
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
     }
 
     // check file size
@@ -998,7 +998,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 
     if((PetscInt)sb.st_size != bc->fs->nCells)
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Wrong fixed cell file size %s\n", filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Wrong fixed cell file size %s\n", filename);
     }
 
     // read flags
@@ -1018,8 +1018,8 @@ PetscErrorCode BCApply(BCCtx *bc)
 {
     FDSTAG *fs;
 
-     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscErrorCode ierr;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1112,7 +1112,7 @@ PetscErrorCode BCApplySPC(BCCtx *bc)
     PetscInt    i, num, *list;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     ierr = VecGetArray(bc->jr->gsol, &sol); CHKERRQ(ierr);
 
@@ -1148,8 +1148,9 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
     FDSTAG   *fs;
     DOFIndex *dof;
     PetscInt i, vShift=0, pShift=0;
-
     PetscInt vNumSPC, pNumSPC, *vSPCList, *pSPCList;
+
+    PetscFunctionBeginUser;
 
     // error checking
     if(stype == bc->stype)
@@ -1202,7 +1203,7 @@ PetscErrorCode BCApplyPres(BCCtx *bc)
     PetscScalar ***bcp;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1254,7 +1255,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
     PetscScalar ***bcT;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1349,7 +1350,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1507,7 +1508,7 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
     PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1615,7 +1616,7 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
     PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check whether constraint is activated
     if(!bc->nblocks) PetscFunctionReturn(0);
@@ -1745,7 +1746,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
     PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open, bot_open;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check whether constraint is activated
     if(!bc->face) PetscFunctionReturn(0);
@@ -1908,7 +1909,7 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
     PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // skip initial guess
     if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
@@ -2040,7 +2041,7 @@ PetscErrorCode BCApplyVelCylinder(BCCtx *bc)
     PetscScalar velType;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // skip initial guess
     if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
@@ -2249,7 +2250,7 @@ PetscErrorCode BCApplyPhase(BCCtx *bc)
     PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs       = bc->fs;
@@ -2306,7 +2307,7 @@ PetscErrorCode BCApplyCells(BCCtx *bc)
     PetscScalar   ***bcvx,  ***bcvy,  ***bcvz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check activation
     if(!bc->fixCell) PetscFunctionReturn(0);
@@ -2363,7 +2364,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
     PetscScalar ***bcvx,  ***bcvy,  ***bcvz, *SPCVals;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs      = bc->fs;
@@ -2471,6 +2472,8 @@ PetscErrorCode BCGetBGStrainRates(
     PetscInt    jj;
     PetscScalar time, Exx, Eyy, Ezz, Exz, Eyz, Exy;
 
+    PetscFunctionBeginUser;
+
     // initialize
     time = bc->ts->time;
     Exx  = 0.0;
@@ -2553,7 +2556,7 @@ PetscErrorCode BCGetBGStrainRates(
 
     PetscFunctionReturn(0);
 }
-
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCGetTempBound"
 PetscErrorCode BCGetTempBound(
@@ -2564,6 +2567,8 @@ PetscErrorCode BCGetTempBound(
 
     PetscInt    jj;
     PetscScalar time, Tbot_val;
+
+    PetscFunctionBeginUser;
 
     // initialize
     time  		= bc->ts->time;
@@ -2609,7 +2614,7 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
     PetscScalar Rxx, Ryy, Rzz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -2637,7 +2642,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
     PetscInt phase_inflow;
     PetscScalar T_inflow;
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
     
     ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
 
@@ -2793,7 +2798,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
     PetscScalar     radius2, R;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     
     if(!bc->Plume_Inflow) 	PetscFunctionReturn(0);
@@ -2964,287 +2969,4 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
     PetscFunctionReturn(0);
 }
-/*
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApply_Permeable_Pressure"
-PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
-{
-    // apply pressure constraints
-
-    FDSTAG      *fs;
-    SolVarBulk  *svBulk;
-    PetscScalar g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,p_bot,radius2, rhog,Tbot;
-    PetscInt    phase_mantle,phase_plume;
-    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz,iter;
-    PetscScalar ***bcp,***lp;
-
-
-    PetscErrorCode ierr;
-    PetscFunctionBegin;
-
-    // access context
-    fs = bc->fs;
-
-    ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
-
-    if(bc->Plume_Type == 2)
-    {
-        phase_mantle = bc->Plume_Phase_Mantle;
-    }
-    else
-    {
-        phase_mantle = bc->phase_inflow_bot;
-    }
-    if(bc->Plume_Type==2)
-    {
-        phase_plume  = bc->Plume_Phase;
-
-        g     =  PetscAbsScalar(bc->jr->ctrl.grav[2]);
-        H     = bc->Plume_Depth;
-
-        // compute the average lithostatic pressure at the bototm
-    
-
-        if(bc->Plume_Pressure>0.0)
-        {
-            p = bc->Plume_Pressure;
-        }
-        else if (bc->Plume_Pressure <0.0)
-        {
-            ierr = GetAverageLithostatic(bc); CHKERRQ(ierr);
-            p = bc->jr->mean_p;
-        }
-    }
-    else
-    {
-        ierr = GetAverageLithostatic(bc); CHKERRQ(ierr);
-        p = bc->jr->mean_p;
-    }
-
-    // initialize index bounds
-
-    ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
-
-
-    //-----------------------------------------------------
-    // P points (TPC only, hence looping over ghost points)
-    //-----------------------------------------------------
-
-        GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-        GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-        GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-        iter = 0;
-        radius2 = PetscPowScalar(bc->Plume_Radius,2.0 );
-        START_STD_LOOP
-        {
-            dz      = SIZE_CELL(k,sz,fs->dsz);
-            x       = COORD_CELL(i, sx, fs->dsx);
-            y       = COORD_CELL(j, sy, fs->dsy);
-            p_bot   = 0.0;
-
-            if( k==0)
-            {
-                // compute the pressure at the bottom of the numerical box.
-                // Lithostatic pressure is stored in the central node, to obtain the pressure at the bottom a factor rho*g*dz/2 must be applied
-                svBulk = &bc->jr->svCell[iter++].svBulk;
-
-                if(bc->Plume_Pressure==0.0)
-                {
-                    p_bot = lp[k][j][i] + (dz/2)*g*svBulk->rho;
-
-                }
-                else
-                {
-                    p_bot = p + (dz/2)*g*svBulk->rho;
-                }
-                rho_mantle =  GetDensity(bc,phase_mantle,Tbot, p_bot);
-                // To compute the pressure outside the domain, a factor of dz/2*rho_ext*g must applied. It is assumed that the density is constant outside
-                // the domain and equal to the density of the bottom of the numerical box
-                rhog = (dz/2)*g*rho_mantle;
-                // If the plume pressure boundary condition is applied, it is necessary to compute the density of the plume outside the domain
-                if(bc->Plume_Type == 2)
-                {
-                    rho_plume  =  GetDensity(bc,phase_plume,bc->Plume_Temperature, p_bot);
-                    dP         =  (rho_mantle-rho_plume)*g*H;
-                    if(bc->Plume_Dimension ==1)
-                    {
-                        xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
-                        xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
-                        if(x>=xmin && x<=xmax)rhog = (dz/2)*g*rho_plume;
-                        // Gaussian perturbation of dP
-
-                        bcp[k-1][j][i] = p_bot+rhog+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
-                    }
-                    else
-                    {
-                        if(PetscPowScalar((x - bc->Plume_Center[0]),2.0) + PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0))
-                        {
-                            rhog = (dz/2)*g*rho_plume+dP*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/radius2);
-                        }
-                        // Gaussian perturbation of dP
-                        bcp[k-1][j][i] = p_bot+rhog;
-                    }
-                }
-                else
-                {
-                    bcp[k-1][j][i] = p_bot + rhog;
-
-                }
-            }
-        }
-        END_STD_LOOP
-
-    // restore access
-    ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
-
-
-    PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------------------------
-// Compute the average lithostatic pressure at the bottom of the numerical simulation
-#undef __FUNCT__
-#define __FUNCT__ "GetAverageLithostatic"
-PetscErrorCode GetAverageLithostatic(BCCtx *bc)
-{
-        Vec         send,recv;
-        JacRes      *jr;
-        FDSTAG      *fs;
-        Discret1D   *dsz;
-        PetscScalar ***lp, ***ibuff, *lbuff,*lbuff2 ,mean_p;
-        PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L;
-        PetscErrorCode ierr;
-        PetscFunctionBegin;
-
-
-
-        jr  = bc->jr;
-        fs  =  jr->fs;
-        dsz = &fs->dsz;
-        L   =  (PetscInt)dsz->rank;
-
-
-        GET_CELL_RANGE(nx, sx, fs->dsx)
-        GET_CELL_RANGE(ny, sy, fs->dsy)
-        GET_CELL_RANGE(nz, sz, fs->dsz)
-
-        // Create the vector to save the lithostatic pressure
-        ierr = DMGetGlobalVector(jr->DA_CELL_2D, &send); CHKERRQ(ierr);
-
-        ierr = VecZeroEntries(send); CHKERRQ(ierr);
-
-        ierr = DMGetGlobalVector(jr->DA_CELL_2D, &recv); CHKERRQ(ierr);
-
-        ierr = VecZeroEntries(recv); CHKERRQ(ierr);
-
-        // retrieve the lithostatic pressure at the bottom of the domain (i.e. the largest value of the array along z direction)
-
-        ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
-
-        ierr = DMDAVecGetArray(jr->DA_CELL_2D, send, &ibuff); CHKERRQ(ierr);
-
-
-        ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
-
-
-        START_STD_LOOP
-        {
-            if(ibuff[L][j][i]< lp[k][j][i])
-            {
-                ibuff[L][j][i]= lp[k][j][i];
-
-            }
-
-
-        }
-        END_STD_LOOP
-
-        ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
-
-        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, send, &ibuff); CHKERRQ(ierr);
-
-
-        if(dsz->nproc != 1 )
-        {
-            ierr = VecGetArray(send, &lbuff); CHKERRQ(ierr);
-            ierr = VecGetArray(recv, &lbuff2); CHKERRQ(ierr);
-            ierr = MPI_Allreduce(lbuff, lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_MAX, dsz->comm); CHKERRQ(ierr);
-
-            ierr = VecRestoreArray(send, &lbuff); CHKERRQ(ierr);
-            ierr = VecRestoreArray(recv, &lbuff2); CHKERRQ(ierr);
-
-
-        }
-        else
-        {
-            ierr = VecCopy(send,recv);  CHKERRQ(ierr);
-        }
-
-        ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &send); CHKERRQ(ierr);
-
-        // Compute the average lithostatic pressure
-
-        ierr = VecSum(recv, &mean_p); CHKERRQ(ierr);
-
-
-
-        bc->jr->mean_p =mean_p/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels*fs->dsz.nproc);
-
-        ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &recv); CHKERRQ(ierr);
-
-        PetscFunctionReturn(0);
-
-
-
-}
-// Get the density of the material below the numerical mode
-//---------------------------------------------------------------------------------------------
-// Compute the average lithostatic pressure at the bottom of the numerical simulation
-PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p )
-{
-    Material_t *mat;
-    PData      *Pd;
-    PetscScalar cf_therm,cf_comp;
-    PetscScalar rho;
-    PetscErrorCode ierr;
-
-    mat = bc->dbm->phases;
-    rho = mat[Phase].rho;
-    Pd  = bc->jr->Pd;
-
-
-    cf_comp  = 1.0;
-    cf_therm = 1.0;
-
-    if(mat[Phase].beta)
-    {
-        // negative sign as compressive pressures (increasing depth) is negative in LaMEM
-        cf_comp = 1.0 + p*mat->beta;
-    }
-
-    if(mat[Phase].alpha)
-    {
-        cf_therm  = 1.0 - mat->alpha*(T - bc->jr->ctrl.TRef);
-    }
-
-    if(mat[Phase].pdAct == 1)
-    {
-        ierr = setDataPhaseDiagram(Pd, p, T, mat[Phase].pdn); CHKERRQ(ierr);
-
-        rho = Pd->rho;
-    }
-    else
-    {
-        rho = rho*cf_comp*cf_therm;
-    }
-
-
-
-    return rho;
-}
-*/
-
-

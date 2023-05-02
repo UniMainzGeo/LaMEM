@@ -43,7 +43,7 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 	char             Condition_adv[_str_len_];
 	PetscInt        nummark;
 	PetscErrorCode  ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(!actx->jr->ctrl.Passive_Tracer)	PetscFunctionReturn(0);
 	passive_tr = actx->Ptr;
@@ -89,7 +89,7 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 	passive_tr->nummark = nummark;
 	if (passive_tr->nummark>_max_passive_tracer)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "The total number of passive tracers must be lower than %d",_max_passive_tracer);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The total number of passive tracers must be lower than %d",_max_passive_tracer);
 	}
 
 
@@ -132,7 +132,7 @@ PetscErrorCode ADVPtrReCreateStorage(AdvCtx *actx)
 {
 
 	PetscErrorCode  ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 		if(!actx->jr->ctrl.Passive_Tracer)	PetscFunctionReturn(0);
 	// check whether current storage is insufficient
@@ -181,7 +181,7 @@ PetscErrorCode ADVPtrReCreateStorage(AdvCtx *actx)
 PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(actx->jr->ctrl.Passive_Tracer == 0 ) PetscFunctionReturn(0);
 
@@ -208,7 +208,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	PetscScalar  *Xp,*Yp,*Zp,*ID,*active;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	nx = actx->Ptr->passive_tracer_resolution[0];
 	ny = actx->Ptr->passive_tracer_resolution[1];
@@ -317,7 +317,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 
 	fs = actx->fs;
@@ -464,7 +464,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	vector <spair>    dist;
 	spair d;
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	AirPhase = -1;
 	Ttop     =  0.0;
@@ -839,7 +839,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free-surface cases only
 	if(!actx->surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -1013,7 +1013,7 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 	spair 				d;
 	PetscErrorCode 		ierr;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = VecGetArray(actx->Ptr->C_advection, &Active); CHKERRQ(ierr);
 
@@ -1099,7 +1099,7 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 {
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 
 	// check whether current storage is insufficient
@@ -1139,7 +1139,7 @@ PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(actx->jr->ctrl.Passive_Tracer)
 	{
@@ -1167,7 +1167,7 @@ PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
 PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// read solution vectors
 	if(actx->jr->ctrl.Passive_Tracer)
@@ -1198,7 +1198,7 @@ PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark)
 	PetscScalar *recv,*send;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = VecZeroEntries(actx->Ptr->Recv); CHKERRQ(ierr);
 
@@ -1229,7 +1229,7 @@ PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 	PetscInt       ii;
 	PetscScalar    *xp,*yp,*zp,*P,*T,*phase,*ID,*mf_ptr,*Active;
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 
 	if(actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);

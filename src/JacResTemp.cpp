@@ -98,7 +98,7 @@ PetscErrorCode JacResGetTempParam(
 
 	PetscErrorCode ierr;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	k         = 0.0;
@@ -174,7 +174,7 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
     Material_t  *phases, *M;
 	PetscInt    i, numPhases, AirPhase;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// temperature diffusion cases only
 	if(!jr->ctrl.actTemp) PetscFunctionReturn(0);
@@ -192,10 +192,10 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
 		// check density of the rock phases
 		if((AirPhase != -1 && i != AirPhase) || AirPhase == -1)
 		{
-			if(M->rho == 0.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define density of phase %lld\n", (LLD)i);
+			if(M->rho == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define density of phase %lld\n", (LLD)i);
 		}
-			if(M->k   == 0.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define conductivity of phase %lld\n", (LLD)i);
-			if(M->Cp  == 0.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define heat capacity of phase %lld\n", (LLD)i);
+			if(M->k   == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define conductivity of phase %lld\n", (LLD)i);
+			if(M->Cp  == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define heat capacity of phase %lld\n", (LLD)i);
 	}
 
 	PetscFunctionReturn(0);
@@ -211,7 +211,7 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	const PetscInt *lx, *ly, *lz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = jr->fs;
 
@@ -262,7 +262,7 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	// destroy temperature parameters
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = VecDestroy(&jr->lT);   CHKERRQ(ierr);
 
@@ -294,7 +294,7 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = jr->fs;
@@ -341,7 +341,7 @@ PetscErrorCode JacResUpdateTemp(JacRes *jr)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = jr->fs;
 
@@ -380,7 +380,7 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs  =  jr->fs;
 	bc  =  jr->bc;
@@ -469,7 +469,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar y_c;
 	
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access residual context variables
 	fs    = jr->fs;
@@ -648,7 +648,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar y_c;
 	
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access residual context variables
 	fs   = jr->fs;

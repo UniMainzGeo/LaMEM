@@ -99,7 +99,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 
       // error checking
       if(fb->nblocks >_max_num_dike_)
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
 
       // store actual number of dike blocks 
       dbdike->numDike = fb->nblocks;
@@ -171,18 +171,16 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 //---------------------------------------------------------------------------
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)
 {
-  // read dike parameter from file 
-  Dike     *dike;
-  FDSTAG   *fs;
-  PetscInt  ID;
-  Scaling  *scal;
-  	
-  PetscErrorCode ierr;
-  PetscFunctionBeginUser;
+	// read dike parameter from file
+	Dike     *dike;
+	PetscInt  ID;
+	Scaling  *scal;
+	
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
 
 	// access context           
-  scal = dbm->scal;
-  fs = jr->fs;
+	scal = dbm->scal;
 
   // Dike ID                                                                                                                                                         
   ierr    = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbdike->numDike-1); CHKERRQ(ierr);
@@ -282,6 +280,8 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 
   PetscFunctionBeginUser;
   
+  PetscFunctionBeginUser;
+
   numDike    = ctx->numDike;
   bc         = ctx->bc;
   numPhtr    = ctx->numPhtr;
@@ -554,7 +554,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
           }
        }//end loop over Phtr
        if (nPtr==-1) 
-       SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %i, nPtr=%i\n", nD, nPtr);
+       SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %i, nPtr=%i\n", nD, nPtr);
        CurrPhTr = jr->dbm->matPhtr+nPtr;
        //---------------------------------------------------------------------------------------------
        //  Find y-bounds of current dynamic dike
@@ -572,7 +572,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 
       ierr = Compute_sxx_eff(jr,nD, j1, j2); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 
-      ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx  
+//      ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
+        ierr = Smooth_sxx_eff(jr,nD, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
 
       ierr = Set_dike_zones(jr, nD, nPtr,j1, j2); CHKERRQ(ierr); //centered on peak sxx_eff_ave  //commented out for debugging
     }
@@ -592,13 +593,15 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2
   PetscScalar  *lsxx, *lliththick, *lzsol;
   PetscScalar dz, ***lT, Tc, *grav, Tsol, dPmag;
   PetscScalar dbug1, dbug2, dbug3, xcell, ycell;
-  PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L, ID, AirPhase, M;
+  PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L, ID, AirPhase;
+//  PetscInt    M;
   PetscMPIInt    rank;
 
 
   FDSTAG      *fs;
   Dike        *dike;
-  Discret1D   *dsz,  *dsy;
+  Discret1D   *dsz;
+  //Discret1D   *dsy;
   SolVarCell  *svCell;
   Controls    *ctrl;
 
@@ -615,8 +618,8 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2
 
   fs  =  jr->fs;
   dsz = &fs->dsz;
-  dsy = &fs->dsy;
-  M   =  (PetscInt)dsy->rank;
+  //dsy = &fs->dsy;
+  //M   =  (PetscInt)dsy->rank;
   //dsx = &fs->dsx;  //debugging
   //scal = fs->scal; //debugging
   L   =  (PetscInt)dsz->rank;
@@ -797,22 +800,26 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2
 // Apply a box filter to the depth-averaged effective stress.  
 // **NOTE** There is NO message passing between adjacent procs in x, so this wont work well if the zone of high 
 // stress is spit by a processor boundary. This will work completely if cpu_x = 1
-
-PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1, PetscInt j2)
+PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt  j1, PetscInt j2)
+//PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1, PetscInt j2)
 {
 
   FDSTAG      *fs;
   Dike        *dike;
-  Discret1D   *dsx, *dsz, *dsy;
-  Ph_trans_t  *CurrPhTr;
+  Discret1D   *dsz, *dsy;
+  //Discret1D   *dsx;
+
+  //Ph_trans_t  *CurrPhTr;
 
   PetscScalar ***gsxx_eff_ave, ***gsxx_eff_ave_hist;
   PetscScalar xc, yc, xx, yy, dx, dy, sum_sxx, sum_w;
   PetscInt    j, jj, j1prev, j2prev, j1next, j2next, jj1, jj2; 
   PetscInt    i,ii, ii1, ii2;
   PetscInt    sx, sy, sz, nx, ny, nz;
-  PetscInt    L, M, N, rank;
-  PetscInt    sisc, istep_count, istep_nave, nPtrfound;
+  PetscInt    L, M, rank;
+  //PetscInt    N;
+  PetscInt    sisc, istep_count, istep_nave;
+  //PetscInt    nPtrfound;
   Vec         vycoors, vycoors_prev, vycoors_next;
   Vec         vybound, vybound_prev, vybound_next;
   Vec         vsxx, vsxx_prev, vsxx_next;
@@ -835,10 +842,10 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
   fs  =  jr->fs;
   dsz = &fs->dsz;
   dsy = &fs->dsy;
-  dsx = &fs->dsx;
+  //dsx = &fs->dsx;
   L   =  (PetscInt)dsz->rank;
   M   =  (PetscInt)dsy->rank;
-  N   =  (PetscInt)dsx->rank;
+  //N   =  (PetscInt)dsx->rank;
   //scal = fs->scal;  //debugging
   dbug1=(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out);  //debugging
   dbug2=floor(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out); //debugging
@@ -846,7 +853,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-  CurrPhTr = jr->dbm->matPhtr+nPtr;
+  //CurrPhTr = jr->dbm->matPhtr+nPtr;
   dike = jr->dbdike->matDike+nD;
   filtx=dike->filtx;
   filty=dike->filty;
@@ -1130,7 +1137,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
    if(istep_nave!=dike->istep_nave) 
    {
-      SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems: istep_nave=%i, dike->istep_nave=%i\n", istep_nave, dike->istep_nave);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems: istep_nave=%i, dike->istep_nave=%i\n", istep_nave, dike->istep_nave);
    }
 
    ierr = DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
@@ -1190,7 +1197,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
   Discret1D   *dsx, *dsz;
   Ph_trans_t  *CurrPhTr;
   PetscScalar ***gsxx_eff_ave;
-  PetscScalar xcenter, sxx_max, dike_width, mindist, xshift, xcell, dx;
+  PetscScalar xcenter, sxx_max, dike_width, mindist, xshift, xcell;
+  //PetscScalar dx;
   PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, L, Lx, ixcenter;
   PetscScalar dbug1, dbug2, dbug3, ycell;
   PetscScalar sxxm, sxxp, dx12, dsdx1, dsdx2, x_maxsxx;   
@@ -1215,7 +1223,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
   if (Lx>0)
   {
      PetscPrintf(PETSC_COMM_WORLD,"Set_dike_zones requires cpu_x = 1 Lx = %i \n", Lx);
-     SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Set_dike_zones requires cpu_x = 1 Lx = %i \n", Lx);
+     SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Set_dike_zones requires cpu_x = 1 Lx = %i \n", Lx);
   }
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -1272,7 +1280,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
      xshift=x_maxsxx-xcenter;
 
 
-     dx=SIZE_CELL(ixcenter,sx, fs->dsx);  
+     //dx=SIZE_CELL(ixcenter,sx, fs->dsx);
      if (xshift>0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
      {
         xshift=0.5*SIZE_CELL(ixcenter, sx, fs->dsx);
@@ -1302,8 +1310,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 }
 
 //---------------------------------------------------------------------------
-
-PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp, PetscBool PrintOutput)  
+PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp)
+//PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp, PetscBool PrintOutput)
 {
   Controls    *ctrl;
   Dike        *dike;

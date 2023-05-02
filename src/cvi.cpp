@@ -69,7 +69,7 @@ PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 	AdvVelCtx vi;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// interpolate P,T - needs update
 	ierr = ADVelInterpPT(actx); CHKERRQ(ierr);
@@ -95,7 +95,7 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	PetscScalar ***lp, ***lT, Ttop;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = actx->fs;
@@ -158,7 +158,7 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	PetscScalar  dt;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	//=======================================================================
 	// VELOCITY ADVECTION ROUTINE
@@ -236,7 +236,7 @@ PetscErrorCode ADVelRungeKuttaStep(AdvVelCtx *vi, PetscScalar dt, PetscScalar a,
 	// routines to perform one runge-kutta step
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// 1. New position
 	ierr = ADVelAdvectCoord(vi->interp, vi->nmark, dt, type); CHKERRQ(ierr);
@@ -263,7 +263,7 @@ PetscErrorCode ADVelCreate(AdvCtx *actx, AdvVelCtx *vi)
 	// create advection velocity context
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	vi->fs   = actx->fs;
 	vi->jr   = actx->jr;
@@ -321,7 +321,7 @@ PetscErrorCode ADVelDestroy(AdvVelCtx *vi)
 	// destroy advection velocity context
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscFree(vi->interp);    CHKERRQ(ierr);
 	ierr = PetscFree(vi->cellnum);   CHKERRQ(ierr);
@@ -341,7 +341,7 @@ PetscErrorCode ADVelExchange(AdvVelCtx *vi)
 	// exchange interpolated marker positions between the processors
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// count number of markers to be sent to each neighbor domain
 	ierr = ADVelMapToDomains(vi); CHKERRQ(ierr);
@@ -369,6 +369,8 @@ PetscErrorCode ADVelExchange(AdvVelCtx *vi)
 PetscErrorCode ADVelInitCoord(AdvCtx *actx, VelInterp *interp, PetscInt n)
 {
 	PetscInt     jj;
+
+	PetscFunctionBeginUser;
 
 	// scan all markers
 	for(jj = 0; jj < n; jj++)
@@ -401,6 +403,8 @@ PetscErrorCode ADVelCalcEffVel(VelInterp *interp, PetscInt n, PetscScalar a)
 {
 	PetscInt     jj;
 
+	PetscFunctionBeginUser;
+
 	// scan all markers
 	for(jj = 0; jj < n; jj++)
 	{
@@ -417,6 +421,8 @@ PetscErrorCode ADVelCalcEffVel(VelInterp *interp, PetscInt n, PetscScalar a)
 PetscErrorCode ADVelAdvectCoord(VelInterp *interp, PetscInt n, PetscScalar dt, PetscInt type)
 {
 	PetscInt     jj;
+
+	PetscFunctionBeginUser;
 
 	// scan all markers
 	for(jj = 0; jj < n; jj++)
@@ -446,6 +452,8 @@ PetscErrorCode ADVelResetCoord(VelInterp *interp, PetscInt n)
 {
 	PetscInt     jj;
 
+	PetscFunctionBeginUser;
+
 	// scan all markers
 	for(jj = 0; jj < n; jj++)
 	{
@@ -463,7 +471,7 @@ PetscErrorCode ADVelResetCoord(VelInterp *interp, PetscInt n)
 PetscErrorCode ADVelRetrieveCoord(AdvCtx *actx, VelInterp *interp, PetscInt n)
 {
 	PetscInt     jj, p;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// scan all markers
 	for(jj = 0; jj < n; jj++)
@@ -492,7 +500,7 @@ PetscErrorCode ADVelCollectIndices(AdvCtx *actx, AdvVelCtx *vi)
 	PetscInt     jj, ind, ndel, *p;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// number to delete
 	actx->ndel  = actx->nummark-vi->nmark;
@@ -539,7 +547,7 @@ PetscErrorCode ADVelDeleteOutflow(AdvVelCtx *vi)
 	FDSTAG       *fs;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = vi->fs;
 
@@ -595,7 +603,7 @@ PetscErrorCode ADVelMapToDomains(AdvVelCtx *vi)
 	FDSTAG      *fs;
 
 	PetscErrorCode  ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = vi->fs;
 
@@ -635,7 +643,7 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 	MPI_Request rrequest[_num_neighb_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = vi->fs;
 
@@ -682,7 +690,7 @@ PetscErrorCode ADVelCreateMPIBuff(AdvVelCtx *vi)
 	PetscMPIInt grank;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = vi->fs;
 
@@ -734,7 +742,7 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 	MPI_Request rrequest[_num_neighb_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = vi->fs;
 
@@ -779,7 +787,7 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 PetscErrorCode ADVelDestroyMPIBuff(AdvVelCtx *vi)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// destroy buffers
 	ierr = PetscFree(vi->sendbuf); CHKERRQ(ierr);
@@ -803,7 +811,7 @@ PetscErrorCode ADVelCollectGarbage(AdvVelCtx *vi)
 	PetscInt    *idel, nmark, nrecv, ndel;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access storage
 	nmark   = vi->nmark;
@@ -869,7 +877,7 @@ PetscErrorCode ADVelReAllocStorage(AdvVelCtx *vi, PetscInt nmark)
 	VelInterp   *interp;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check whether current storage is insufficient
 	if(nmark > vi->nbuff)
@@ -921,7 +929,7 @@ PetscErrorCode ADVelMapMarkToCells(AdvVelCtx *vi)
 	PetscInt    *numMarkCell, *m, p;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = vi->fs;
 
@@ -982,7 +990,7 @@ PetscErrorCode ADVelInterpMain(AdvVelCtx *vi)
 	// VELOCITY INTERPOLATION ROUTINE
 	//=======================================================================
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if     (vi->actx->interp == STAG   )  { ierr = ADVelInterpSTAG   (vi); CHKERRQ(ierr); }
 	else if(vi->actx->interp == MINMOD )  { ierr = ADVelInterpMINMOD (vi); CHKERRQ(ierr); }
@@ -1008,7 +1016,7 @@ PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 	PetscScalar xc, yc, zc, xp, yp, zp;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// compute host cells for all markers
 	ierr = ADVelMapMarkToCells(vi); CHKERRQ(ierr);
@@ -1095,7 +1103,7 @@ PetscErrorCode ADVelInterpMINMOD(AdvVelCtx *vi)
 	PetscScalar xpl, ypl, zpl;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// compute host cells for all markers
 	ierr = ADVelMapMarkToCells(vi); CHKERRQ(ierr);
@@ -1310,7 +1318,7 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	PetscScalar A, B;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// compute host cells for all markers
 	ierr = ADVelMapMarkToCells(vi); CHKERRQ(ierr);

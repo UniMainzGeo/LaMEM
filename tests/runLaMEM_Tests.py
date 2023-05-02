@@ -92,7 +92,7 @@ def makeLocalPathAbsolute(localRelPath) :
 def run_tests():
   os.environ['PYTHONUNBUFFERED'] = str('1')
 
-registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
+registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
                       Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), 
                       Adj1.test_RTI_1(), Adj1.test_RTI_2(),

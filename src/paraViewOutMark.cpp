@@ -56,10 +56,10 @@
 #define __FUNCT__ "PVMarkCreate"
 PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 {
-	char filename[_str_len_-5];
+	char filename[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check advection type
 	if(pvmark->actx->advect == ADV_NONE) PetscFunctionReturn(0);
@@ -92,7 +92,7 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvmark->outmark) PetscFunctionReturn(0);
@@ -123,7 +123,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	float       xp[3];
 	size_t      offset = 0;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	actx = pvmark->actx;
@@ -133,7 +133,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 
 	// open file
 	fp = fopen( fname, "wb" );
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// write header
@@ -272,7 +272,7 @@ PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName)
 	FILE     *fp;
 	PetscInt i;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// only processor 0
 	if (!ISRankZero(PETSC_COMM_WORLD)) { PetscFunctionReturn(0); }
@@ -285,7 +285,7 @@ PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName)
 
 	// open file
 	fp = fopen( fname, "wb" );
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// write header

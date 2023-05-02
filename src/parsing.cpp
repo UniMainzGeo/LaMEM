@@ -49,40 +49,51 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FBLoad"
-PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
+PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 {
 	FB        *fb;
 	FILE      *fp;
 	size_t    sz;
 	PetscBool found;
-	char      filename[_str_len_], *all_options;
+	char      buffer[_str_len_], *filename, *all_options;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscMalloc(sizeof(FB), &fb); CHKERRQ(ierr);
 	ierr = PetscMemzero(fb, sizeof(FB)); CHKERRQ(ierr);
 
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
-		// check whether input file is specified
-		ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
-
-		// read additional PETSc options from input file
-		if(found != PETSC_TRUE)
+		if(!restartFileName)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified. You must add the -ParamFile option to specify a LaMEM input file as in:  ./LaMEM -ParamFile your_input_file.dat \n");
+			// check whether input file is specified
+			ierr = PetscOptionsGetCheckString("-ParamFile", buffer, &found); CHKERRQ(ierr);
+
+			if(found != PETSC_TRUE)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified. You must add the -ParamFile option to specify a LaMEM input file as in:  ./LaMEM -ParamFile your_input_file.dat \n");
+			}
+
+			filename = buffer;
+		}
+		else
+		{
+			// set restart input file
+			filename = restartFileName;
 		}
 
 		// open input file
 		fp = fopen(filename, "rb");
 
+		// read additional PETSc options from input file
 		if(fp == NULL)
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
 		}
 
-		if (DisplayOutput){
+		if (DisplayOutput)
+		{
 			PetscPrintf(PETSC_COMM_WORLD, "Parsing input file : %s \n", filename);
 		}
 
@@ -142,9 +153,8 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
 	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
 	
 	// print message
-	ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
-	
-	if (DisplayOutput){
+	if(DisplayOutput)
+	{
 		PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file : %s \n", filename);
 	}
 
@@ -168,7 +178,7 @@ PetscErrorCode FBDestroy(FB **pfb)
 	FB *fb;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get pointer
 	fb = (*pfb);
@@ -197,7 +207,7 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	PetscInt  i, nchar, nlines, comment, cnt, block, *fblock;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// process buffer
 	b     = fb->fbuf;
@@ -305,7 +315,7 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 	PetscInt i, nbeg, nend;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	nbeg = 0;
 	nend = 0;
@@ -319,7 +329,7 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 
 	if(nbeg != nend)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%s - %s identifiers don't match\n", keybeg, keyend);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%s - %s identifiers don't match\n", keybeg, keyend);
 	}
 
 	fb->nblocks = nbeg;
@@ -327,7 +337,7 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 	// check whether blocks are specified
 	if(!fb->nblocks)
 	{
-		if     (ptype == _REQUIRED_) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%s - %s blocks must be defined\n", keybeg, keyend);
+		if     (ptype == _REQUIRED_) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%s - %s blocks must be defined\n", keybeg, keyend);
 		else if(ptype == _OPTIONAL_) PetscFunctionReturn(0);
 	}
 
@@ -349,7 +359,7 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 	{
 		if(fb->blBeg[i] >= fb->blEnd[i])
 		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect order of %s - %s identifiers\n", keybeg, keyend);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect order of %s - %s identifiers\n", keybeg, keyend);
 		}
 	}
 
@@ -361,7 +371,7 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 PetscErrorCode FBFreeBlocks(FB *fb)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fb->nblocks = 0;
 	fb->blockID = 0;
@@ -404,7 +414,7 @@ PetscErrorCode FBGetIntArray(
 		PetscInt    num,
 		PetscBool  *found)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	char     *ptr, *line, **lines;
 	PetscInt  i, lnbeg, lnend, count;
@@ -432,7 +442,7 @@ PetscErrorCode FBGetIntArray(
 
 		if(!ptr || strcmp(ptr, "="))
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No equal sign specified for parameter \"%s\"\n", key);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No equal sign specified for parameter \"%s\"\n", key);
 		}
 
 		// retrieve values after equal sign
@@ -446,7 +456,7 @@ PetscErrorCode FBGetIntArray(
 			ptr = strtok(NULL, " ");
 		}
 
-		if(!count) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
+		if(!count) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 
 		(*nvalues) = count;
 		(*found)   = PETSC_TRUE;
@@ -467,7 +477,7 @@ PetscErrorCode FBGetScalarArray(
 		PetscInt     num,
 		PetscBool   *found)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	char     *ptr, *line, **lines;
 	PetscInt  i, lnbeg, lnend, count;
@@ -495,7 +505,7 @@ PetscErrorCode FBGetScalarArray(
 
 		if(!ptr || strcmp(ptr, "="))
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No equal sign specified for parameter \"%s\"\n", key);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No equal sign specified for parameter \"%s\"\n", key);
 		}
 
 		// retrieve values after equal sign
@@ -509,7 +519,7 @@ PetscErrorCode FBGetScalarArray(
 			ptr = strtok(NULL, " ");
 		}
 
-		if(!count) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
+		if(!count) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 
 		(*nvalues) = count;
 		(*found)   = PETSC_TRUE;
@@ -528,7 +538,7 @@ PetscErrorCode FBGetString(
 		char       *str,    // output string
 		PetscBool  *found)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	char     *ptr, *line, **lines;
 	PetscInt  i, lnbeg, lnend;
@@ -555,18 +565,18 @@ PetscErrorCode FBGetString(
 
 		if(!ptr || strcmp(ptr, "="))
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No equal sign specified for parameter \"%s\"\n", key);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No equal sign specified for parameter \"%s\"\n", key);
 		}
 
 		// retrieve values after equal sign
 		ptr = strtok(NULL, " ");
 
-		if(!ptr) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
+		if(!ptr) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 
 		// make sure string fits & is null terminated (two null characters are reserved in the end)
 		if(strlen(ptr) > _str_len_-2)
 		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \"%s\" \n", key, _str_len_-2);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \n", key, (LLD)(_str_len_-2));
 		}
 
 		// copy & pad the rest of the string with zeros
@@ -597,7 +607,7 @@ PetscErrorCode getIntParam(
 	char     *dbkey;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(num < 1) PetscFunctionReturn(0);
 
@@ -628,12 +638,12 @@ PetscErrorCode getIntParam(
 	// check whether parameter is set
 	if(found != PETSC_TRUE)
 	{
-		if     (ptype == _REQUIRED_) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
+		if     (ptype == _REQUIRED_) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
 		else if(ptype == _OPTIONAL_) PetscFunctionReturn(0);
 	}
 
 	// check number of entries
-	if(nval < num) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld entry(ies) are missing in parameter \"[-]%s\" \n",
+	if(nval < num) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld entry(ies) are missing in parameter \"[-]%s\" \n",
 		(LLD)(num-nval), key);
 
 	// check for out-of-bound entries
@@ -643,7 +653,7 @@ PetscErrorCode getIntParam(
 		{
 			if(val[i] > maxval)
 			{
-				SETERRQ4(PETSC_COMM_WORLD, PETSC_ERR_USER, "Entry %lld in parameter \"[-]%s\" is larger than allowed : val=%lld, max=%lld\n",
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Entry %lld in parameter \"[-]%s\" is larger than allowed : val=%lld, max=%lld\n",
 					(LLD)(i+1), key, (LLD)val[i], (LLD)maxval);
 			}
 		}
@@ -667,7 +677,7 @@ PetscErrorCode getScalarParam(
 	char     *dbkey;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(num < 1) PetscFunctionReturn(0);
 
@@ -696,12 +706,12 @@ PetscErrorCode getScalarParam(
 	// check data item exists
 	if(found != PETSC_TRUE)
 	{
-		if     (ptype == _REQUIRED_) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
+		if     (ptype == _REQUIRED_) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
 		else if(ptype == _OPTIONAL_) PetscFunctionReturn(0);
 	}
 
 	// check number of entries
-	if(nval < num) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld entry(ies) are missing in parameter \"[-]%s\" \n", (LLD)(num-nval), key);
+	if(nval < num) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld entry(ies) are missing in parameter \"[-]%s\" \n", (LLD)(num-nval), key);
 
 	// nondimensionalize
 	for(i = 0; i < num; i++) val[i] /= scal;
@@ -722,7 +732,7 @@ PetscErrorCode getStringParam(
 	char     *dbkey;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	found = PETSC_FALSE;
 
@@ -753,7 +763,7 @@ PetscErrorCode getStringParam(
 	// check data item exists
 	if(!strlen(str))
 	{
-		if     (ptype == _REQUIRED_) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
+		if     (ptype == _REQUIRED_) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
 		else if(ptype == _OPTIONAL_) PetscFunctionReturn(0);
 	}
 
@@ -774,7 +784,7 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
 	char     *line, **lines, *key, *val, *option;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(!fb) PetscFunctionReturn(0);
 
@@ -832,7 +842,7 @@ PetscErrorCode PetscOptionsReadRestart(FILE *fp)
 	char   *all_options;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
 
@@ -860,7 +870,7 @@ PetscErrorCode PetscOptionsWriteRestart(FILE *fp)
 	char   *all_options;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscOptionsGetAll(NULL, &all_options);  CHKERRQ(ierr);
 
@@ -886,18 +896,18 @@ PetscErrorCode  PetscOptionsGetCheckString(
 	// prohibit empty parameters & check for overruns (two null characters are reserved in the end)
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscOptionsGetString(NULL, NULL, key, str, _str_len_, set); CHKERRQ(ierr);
 
 	if(*set && !strlen(str))
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 	}
 
 	if(*set && strlen(str) > _str_len_-2)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \"%s\" \n", key, _str_len_-2);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \n", key, (LLD)(_str_len_-2));
 	}
 
 	PetscFunctionReturn(0);
@@ -914,7 +924,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	PetscScalar 	scalar;
 	PetscInt 		integer, nel_y;
 	
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	
 	// Set some 'best-guess' default solver paramaters to help the average user
 	// All options can be overridden by the usual PETSC options

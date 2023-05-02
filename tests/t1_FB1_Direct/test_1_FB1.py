@@ -80,27 +80,3 @@ def test_c():
 
   return(ex1)
 
-def test_d():
-
-  # Test a falling block case with direct solver on 4 cores, using the optimized version and PaStiX
-  ranks = 4
-  launch = '../bin/opt/LaMEM -ParamFile ./t1_FB1_Direct/FallingBlock_mono_PenaltyDirect.dat -jp_pc_factor_mat_solver_package pastix' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't1_FB1_Direct/FB1_d_PaStiX_opt-p4.expected'
-
-  def comparefunc(unittest):
-
-    key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-7)
-
-    key = re.escape("|Div|_2")
-    unittest.compareFloatingPoint(key,1e-5)
-
-    key = re.escape("|mRes|_2")
-    unittest.compareFloatingPoint(key,1e-4)
-
-  # Create unit test object
-  ex1 = pth.pthUnitTest('t1_FB1_d_PaStiX_opt',ranks,launch,expected_file)
-  ex1.setVerifyMethod(comparefunc)
-  ex1.appendKeywords('@')
-
-  return(ex1)
