@@ -57,7 +57,7 @@ struct FreeSurf;
 struct PVSurf
 {
 	FreeSurf  *surf;               // free surface object
-	char       outfile[_str_len_]; // output file name
+	char       outfile[_str_len_+20]; // output file name
 	float     *buff;               // direct output buffer
 	long int   offset;             // pvd file offset
 	PetscInt   outsurf;            // free surface output flag
