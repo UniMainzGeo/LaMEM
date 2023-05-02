@@ -1299,7 +1299,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
 PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, 
 		Controls ctrl, PetscInt *ph_out, PetscInt *InAbove)
 {
-	PetscInt 		ph,ip,neq, InAb;
+	PetscInt 	ph,ip,neq, InAb;
 	PetscScalar 	Pres[2], pShift;
 
 	PetscFunctionBeginUser;
@@ -1359,7 +1359,6 @@ PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_p
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
 PetscErrorCode DynamicPhTr_WriteRestart(JacRes *jr, FILE *fp)
 {
 
@@ -1368,7 +1367,6 @@ PetscErrorCode DynamicPhTr_WriteRestart(JacRes *jr, FILE *fp)
 	Ph_trans_t *PhaseTrans;
 	PetscInt   nPtr, numPhTrn;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 

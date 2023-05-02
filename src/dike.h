@@ -64,8 +64,8 @@ struct Dike
 public:
   PetscInt ID;        // dike ID
   PetscInt dyndike_start;  //starting timestep for dynamic diking if 0 then no dynamic diking
-  PetscInt PhaseID,  PhaseTransID;;      // associated material phase and phase transition IDs
-  PetscInt istep_count, nD, iwrite_counter1, iwrite_counter2;
+  PetscInt PhaseID, PhaseTransID, nPtr;      // associated material phase and phase transition IDs
+  PetscInt istep_count, nD, j1, j2;
   PetscInt istep_nave;       //number of timesteps for time averaging
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
@@ -75,10 +75,9 @@ public:
   PetscScalar z_Mc;
   PetscScalar Tsol;
   PetscScalar filtx; 
+  PetscScalar filty;
   PetscScalar drhomagma;
   PetscScalar zmax_magma;
-  PetscScalar npseg;
-  PetscScalar npseg0;
   Vec sxx_eff_ave;
   Vec sxx_eff_ave_hist;
 };
@@ -108,9 +107,9 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar &y_c,
                                 PetscInt J); 
 
-PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter1);
-PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt iwrite_counter2);
-PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD);
+PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2);
+PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
+PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
 PetscErrorCode Locate_Dike_Zones(AdvCtx *actx);
 PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp, PetscBool PrintOutput);
 PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp);
