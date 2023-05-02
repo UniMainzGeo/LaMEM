@@ -78,8 +78,6 @@ public:
   PetscScalar filty;
   PetscScalar drhomagma;
   PetscScalar zmax_magma;
-  PetscScalar npseg;
-  PetscScalar npseg0;
   Vec sxx_eff_ave;
   Vec sxx_eff_ave_hist;
 };

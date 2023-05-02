@@ -219,7 +219,6 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     dike->Tsol = 1000;
     dike->zmax_magma = -15.0;
     dike->drhomagma = 500;
-    dike->npseg = 4.0; 
     dike->filtx = 1.0;
     dike->filty = 4.0;
     dike->istep_nave = 2;
@@ -229,14 +228,9 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     ierr = getScalarParam(fb, _OPTIONAL_, "filtx",        &dike->filtx,        1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "filty",        &dike->filty,        1, 1.0); CHKERRQ(ierr);
     ierr = getScalarParam(fb, _OPTIONAL_, "drhomagma",    &dike->drhomagma,    1, 1.0); CHKERRQ(ierr);
-    ierr = getScalarParam(fb, _OPTIONAL_, "npseg",        &dike->npseg,        1, 1.0); CHKERRQ(ierr);
     ierr = getIntParam(fb, _OPTIONAL_, "istep_nave",     &dike->istep_nave,        1, 50); CHKERRQ(ierr);
 
     dike->istep_count=dike->istep_nave;   //initialize so that when istep=dike_start, it is set to 0
-
-    dike->npseg0=fs->dsy.tcels - floor((PetscScalar)fs->dsy.tcels/dike->npseg)*dike->npseg;
-    if (dike->npseg0==0) dike->npseg0=dike->npseg;
-
   }
 
 
@@ -250,10 +244,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
       (LLD)(dike->ID), dike->PhaseTransID, dike->PhaseID, dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
     if (dike->dyndike_start)
     {
-      PetscPrintf(PETSC_COMM_WORLD,"                         dyndike_start=%i, Tsol=%g, zmax_magma=%g, filtx=%g, drhomagma=%g \n", 
-        dike->dyndike_start, dike->Tsol, dike->zmax_magma, dike->filtx, dike->drhomagma);
-      PetscPrintf(PETSC_COMM_WORLD,"                         npseg=%g, npseg0=%g, istep_nave=%i, istep_count=%i \n",
-        dike->npseg, dike->npseg0, dike->istep_nave, dike->istep_count);
+      PetscPrintf(PETSC_COMM_WORLD,"                         dyndike_start=%i, Tsol=%g, zmax_magma=%g, drhomagma=%g \n", 
+        dike->dyndike_start, dike->Tsol, dike->zmax_magma, dike->drhomagma);
+      PetscPrintf(PETSC_COMM_WORLD,"                         filtx=%g, filty=%g, istep_nave=%i, istep_count=%i \n",
+        dike->filtx, dike->filty, dike->istep_nave, dike->istep_count);
 
     }
     PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");    
@@ -856,7 +850,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
   dike = jr->dbdike->matDike+nD;
   filtx=dike->filtx;
   filty=dike->filty;
-  dfac=1;  //maximum distance for Gaussian weights is dfac*filtx and dfac*filty
+  dfac=2.0; //maximum distance for Gaussian weights is dfac*filtx and dfac*filty
 //-------------------------------------------------------------------------------------------------------
 // get communication buffer (Gets a PETSc vector, vycoors, that may be used with the DM global routines)
 //y node coords
@@ -1311,12 +1305,15 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
 PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp, PetscBool PrintOutput)  
 {
+  Controls    *ctrl;
   Dike        *dike;
   PetscInt   nD, numDike;
 
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
 
+  ctrl = &jr->ctrl;
+  if (!ctrl->actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
 
   numDike    = dbdike->numDike; // number of dikes
 
@@ -1341,11 +1338,15 @@ PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *j
 PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp)
 {
 
+  Controls    *ctrl;
   Dike        *dike;
   PetscInt   nD, numDike;
 
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
+
+  ctrl = &jr->ctrl;
+  if (!ctrl->actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
 
   numDike    = jr->dbdike->numDike; // number of dikes
 
@@ -1369,26 +1370,33 @@ PetscErrorCode DynamicDike_Destroy(JacRes *jr)
 {
   
   Dike        *dike;
+  Controls    *ctrl;
   PetscInt   nD, numDike, dyndike_on;
 
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
 
-  numDike    = jr->dbdike->numDike; // number of dikes
-  dyndike_on = 0;
+  ctrl = &jr->ctrl;
 
+  if (!ctrl->actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
+
+
+  numDike    = jr->dbdike->numDike; // number of dikes
+  dyndike_on=0;
   for(nD = 0; nD < numDike; nD++)
   {
      dike = jr->dbdike->matDike+nD;
-     ierr = VecDestroy(&dike->sxx_eff_ave_hist); CHKERRQ(ierr);
-     dyndike_on=1;
-
+     if (dike->dyndike_start)
+     {
+       ierr = VecDestroy(&dike->sxx_eff_ave_hist); CHKERRQ(ierr);
+       dyndike_on=1;
+     }
   }
 
   if (dyndike_on==1)
   {
     ierr = DMDestroy(&jr->DA_CELL_2D_tave); CHKERRQ(ierr);
-    ierr = DMDestroy(&jr->DA_CELL_1D); CHKERRQ(ierr);
+    ierr = DMDestroy(&jr->DA_CELL_1D); CHKERRQ(ierr);    
   }
 
   PetscFunctionReturn(0);
