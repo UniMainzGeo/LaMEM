@@ -143,9 +143,9 @@ def test_e():
 def test_2phTr():
 
 # Test dike feature using optimized LaMEM
-  ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t16_PhaseTransitions/PhaseTransitionBox_move.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't16_PhaseTransitions/PhaseTransitionBox_move.expected'
+  ranks = 2
+  launch = '../bin/opt/LaMEM -ParamFile ./t16_PhaseTransitions/PhaseTransNotInAirBox_move.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't16_PhaseTransitions/PhaseTransNotInAirBox_move.expected'
 
   def comparefunc(unittest):
 

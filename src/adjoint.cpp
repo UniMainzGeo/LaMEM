@@ -3639,11 +3639,12 @@ PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscIn
 #define __FUNCT__ "CreateModifiedMaterialDatabase"
 PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 {
-    PetscErrorCode  ierr;
 	PetscBool       PrintOutput=PETSC_FALSE;
     Scaling         scal;
     FB             *fb;
-    PetscFunctionBeginUser;
+
+    PetscErrorCode  ierr;
+	PetscFunctionBeginUser;
 
     fb = IOparam->fb;
 
@@ -3656,7 +3657,17 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 
 	IOparam->dbm_modified.scal = &scal;
 
-	ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); CHKERRQ(ierr);
+	// WARNING! AD HOC!
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"); CHKERRQ(ierr);
+
+	if(fb->nblocks)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No phase transitions with Adjoint!");
+
+	}
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	ierr = DBMatCreate(&IOparam->dbm_modified, fb, NULL, PETSC_FALSE); CHKERRQ(ierr);
 
     //PrintOutput = PETSC_TRUE;
     if (PrintOutput){
@@ -3666,8 +3677,6 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
     PetscFunctionReturn(0);
 }
 
- 
- 
 /*---------------------------------------------------------------------------
 	This computes the scaling and sets a default FD method (adjoi nt or not) 
 	for a material parameter

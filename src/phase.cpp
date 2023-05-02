@@ -54,9 +54,7 @@
 #include "JacRes.h"
 #include "phase_transition.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DBMatCreate"
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput)
 {
 	// read all material phases and softening laws from file
 
@@ -172,16 +170,17 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
-		// read each individual softening law
+		// read each individual phase transition
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadPhaseTr(dbm, fb); CHKERRQ(ierr);
+			ierr = DBMatReadPhaseTr(dbm, fs, fb); CHKERRQ(ierr);
 
 			fb->blockID++;
 		}
 
 		// adjust density if needed
 		ierr = Overwrite_density(dbm);CHKERRQ(ierr);
+
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -198,8 +197,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DBMatReadSoft"
+
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read softening law from file
@@ -268,8 +266,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DBMatReadPhase"
+
 PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read material properties from file with error checking
@@ -847,8 +844,7 @@ void MatPrintScalParam(
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GetProfileName"
+
 PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key[])
 {
 	// read profile name from file
@@ -866,8 +862,6 @@ PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SetDiffProfile"
 PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 {
 	// set diffusion creep profiles from literature
@@ -986,8 +980,6 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SetDislProfile"
 PetscErrorCode SetDislProfile(Material_t *m, char name[])
 {
 	// set dislocation creep profiles from literature
@@ -1387,8 +1379,6 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SetPeirProfile"
 PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 {
 	// set Peierls creep profiles from literature
@@ -1440,8 +1430,6 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "CorrExpPreFactor"
 PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar n, ExpType type, PetscInt MPa)
 {
 	// correct experimental creep prefactor to tensor units
@@ -1466,8 +1454,6 @@ PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar n, ExpType type, Pet
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "CorrExpStressStrainRate"
 PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa)
 {
 	// correct experimental stress and strain rate parameters to tensor units
@@ -1699,15 +1685,15 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DBMatOverwriteWithGlobalVariables"
 PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb)
 {
-    PetscErrorCode  ierr;
+
     PetscScalar     eta_min;
     PetscInt        ID;
     Material_t      *m;
     Scaling         *scal;
+
+    PetscErrorCode  ierr;
 	PetscFunctionBeginUser;
 
 	// access context

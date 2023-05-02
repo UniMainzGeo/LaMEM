@@ -1216,6 +1216,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
+
 	START_STD_LOOP
 	{
 		// access solution variables
@@ -1224,14 +1225,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//=================
 		// SECOND INVARIANT
 		//=================
-
 		if (jr->ctrl.actDike)
 		{
+
 		  y_c = COORD_CELL(j,sy,fs->dsy);
 		  
 		  dikeRHS = 0.0;
 		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-		  ierr = GetDikeContr(&ctx, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c);  CHKERRQ(ierr);
+		  ierr = GetDikeContr(&ctx, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy);  CHKERRQ(ierr);
 		  
 		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
 		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;

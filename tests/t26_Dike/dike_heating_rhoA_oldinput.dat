@@ -30,7 +30,7 @@
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 4    # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 5    # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1       # save output every n steps
 #	nstep_rdb = 100     # save restart database every n steps
 
@@ -71,7 +71,7 @@
 	bvel_bot     =  -30   # bottom coordinate of inflow window
 	bvel_top     =  6     # top coordinate of inflow window
 	bvel_velin   =  -2.0  # 0utflow velocity (halfspreading velocity)
-	bvel_velbot  =  2.0   # bottom inflow velocity
+#	bvel_velbot  =  2.0   # bottom inflow velocity
 #	bvel_veltop  =  -1.0  # top inflow velocity
 
 # temperature on the top & bottom boundaries
@@ -82,7 +82,7 @@
 # Solution parameters & controls
 #===============================================================================
 
-	gravity        = 0.0 0.0 -9.81  # gravity vector
+	gravity        = 0.0 0.0 0  # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	init_guess     = 1              # initial guess flag
 	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
@@ -99,8 +99,8 @@
 	act_temp_diff   = 1              # temperature diffusion activation flag
 	lmaxit          = 8             # maximum number of local rheology iterations
 #       lrtol           = 1e-6           # local rheology iterations relative tolerance
-        useTk           = 0    
-	dikeHeat	= 1
+        useTk           = 0             # activate temperature-dependent conductivity
+	dikeHeat        = 1             # activate Behn & Ito heat source for dike
 	
 #===============================================================================
 # Solver options
@@ -134,7 +134,7 @@
 		Temperature = constant
 		cstTemp = 1
 	<BoxEnd>
-	
+
         # lithosphere
         <BoxStart>
                 phase  = 1
@@ -166,7 +166,7 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = testHeatM0  # output file name
+	out_file_name       = testrhoA_Heat_M1  # output file name
 	out_pvd             = 1       	# activate writing .pvd file
 	out_phase           = 1
 #	out_density         = 1
@@ -211,53 +211,13 @@
   <PhaseTransitionStart>
         ID                      =   0                                 # Phase_transition law ID
         Type                    =   NotInAirBox                       # A box-like region
- #       PTBox_Bounds            =   -15.0 15.0  -1.0 1.0 -30.0 5.0      # box bound coordinates: [left, right, front, back, bottom, top]
- 	nsegs			=   1
- 	xbounds                 =   [-15.0 15.0]
- 	ybounds                 =   [-1.0 1.0]
- 	zbounds                 =   [-30.0 5.0]
+        PTBox_Bounds            =   -2.0 2.0  -1.0 1.0 -30.0 5.0      # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   2
         PhaseInside             =   2 2                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
         PhaseOutside            =   1 0                               # Phase outside the box
         PhaseDirection          =   BothWays                          # [BothWays=default; OutsideToInside; InsideToOutside]
         PTBox_TempType          =   none                              # Temperature condition witin the box [none, constant, linear, halfspace]
   <PhaseTransitionEnd>
-
-#  <PhaseTransitionStart>
-#        ID                      =   1                                 # Phase_transition law ID
-#        Type                    =   NotInAirBox                       # A box-like region
-#        PTBox_Bounds            =   10.0 30.0  -1.0 1.0 -30.0 5.0      # box bound coordinates: [left, right, front, back, bottom, top]
-#        number_phases           =   2
-#        PhaseInside             =   3 3                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
-#        PhaseOutside            =   1 0                               # Phase outside the box
-#        PhaseDirection          =   BothWays                          # [BothWays=default; OutsideToInside; InsideToOutside]
-#        PTBox_TempType          =   none                              # Temperature condition witin the box [none, constant, linear, halfspace]
-#  <PhaseTransitionEnd>
-
-
-# boxes with higher conductivity
-#<PhaseTransitionStart>
-#        ID                      =   1                               # Phase_transition law ID
-#        Type                    =   NotInAirBox                     # A box-like region
-#        PTBox_Bounds 		=   1.0 10.0 -1 1 -11.0 3.0  # (left, right, front, back, bottom, top)
-#        number_phases           =   3
-#        PhaseInside             =   3 3 3                           # Phase within the box [use -1 if you don't want to change the phase inside the box]
-#        PhaseOutside            =   1 0 2                           # Phase outside the box
-#        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
-#        PTBox_TempType          =   none                            # Temperature condition witin the box [none, constant, linear, halfspace]
-#  <PhaseTransitionEnd>
-
-#<PhaseTransitionStart>
-#        ID                      =   2                               # Phase_transition law ID
-#        Type                    =   NotInAirBox                     # A box-like region
-#        PTBox_Bounds 		=   -10 -1.0 -1 1 -11.0 3.0  # (left, right, front, back, bottom, top)
-#        number_phases           =   3
-#        PhaseInside             =   4 4 4                           # Phase within the box [use -1 if you don't want to change the phase inside the box]
-#       PhaseOutside            =   1 0 2                            # Phase outside the box
-#        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
-#        PTBox_TempType          =   none                            # Temperature condition witin the box [none, constant, linear, halfspace]
-#  <PhaseTransitionEnd>
-
 
 # Strain softening parameters
 
@@ -275,11 +235,10 @@
 	<SofteningEnd>
 
 # DIKES
-
         <DikeStart>
                 ID = 0
-                Mf = 0           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
-                Mb = 0           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
+                Mf = 1           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
+                Mb = 1           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
                 PhaseID = 2
 		PhaseTransID = 0
         <DikeEnd>
@@ -292,37 +251,36 @@
 		rho   		= 100 	  # density
 		eta		= 1e18 	  # viscosity
 		 Cp             = 1.0e3   # specific heat (capacity)  [J/kg/K]
-		 k              = 1    # thermal conductivity   [W/m/K]
-                 G              = 4.0e10
-                 fr             = 30
-                 ch             = 30e6
+		 k              = 1e-7    # thermal conductivity   [W/m/K]
+	         G               = 4.0e10
+                 fr              = 30
+                 ch              = 30e6
 		 healID         = 1
 		 chSoftID	= 0
 	<MaterialEnd>
 
-
     # Dike
     <MaterialStart>
         ID              = 2      # phase id
-        rho             = 3300   # density
+        rho             = 1000   # density
         G               = 4e10
 # disl Rheology
 	n		= 3.5     # power law exponent
        	Bn  		= 1.1e-16 # DISLOCATION creep pre-exponential constant
        	En  		= 530e3   # activation energy
        	Vn  		= 15e-6   # activation volume
-	Cp              = 100     # specific heat (capacity)
-	k               = 5.0     # thermal conductivity
-	Latent_hx       = 90000   # J/kg 
+	Cp              = 1000   # specific heat (capacity)
+	k               = 1e-6     # thermal conductivity
+	Latent_hx       = 0.00001     # J/kg 
 	T_liq           = 1300    # celsius
 	T_sol           = 1000    # celsius
         ch              = 30e6
-	chSoftID	= 0
         healID 	        = 0
+	chSoftID	= 0
         fr  		= 30      # initial friction angle
      <MaterialEnd>
 
-	# Upper Lithosphere 1
+     	# Upper Lithosphere 1
 	<MaterialStart>
 		ID  		= 	1      # phase id
 		rho 		= 	3300   # density
@@ -331,17 +289,17 @@
        	     	 En  = 530e3    # activation energy
        	      	 Vn  = 15e-6   # activation volume
       	      	 n  = 3.5      
- 		Cp              =       1.2e3  # specific heat (capacity)
-		k               =       2.0    # thermal conductivity
+#      		 alpha           =       3e-5  # thermal expansivity # Sam: 3.5e-5
+		Cp              =       1.2e3  # specific heat (capacity)
+		k               =       1e-6    # thermal conductivity
 		G   		= 	4e10
+#		A		= 	1e-7
 		chSoftID	= 	0      # Cohesion softening ID
 		ch  		=  	30e6   # Cohesion
 		fr  		=	30     # initial friction angle
 		healID		=	0      # healing timescale in Myr
-#		frSoftID   	=  	0     # softening ID
 	<MaterialEnd>
 
-		
 #===============================================================================
 # PETSc options
 #===============================================================================
