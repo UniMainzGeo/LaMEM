@@ -52,8 +52,6 @@
 // * implement preconditioners in PETSc
 // * add default solver options
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesSetFromOptions"
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 {
 	PetscBool found;
@@ -92,8 +90,6 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesCreate"
 PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 {
 	//========================================================================
@@ -158,8 +154,6 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesSetup"
 PetscErrorCode PCStokesSetup(PCStokes pc)
 {
 	PetscErrorCode ierr;
@@ -170,8 +164,6 @@ PetscErrorCode PCStokesSetup(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesDestroy"
 PetscErrorCode PCStokesDestroy(PCStokes pc)
 {
 	PetscErrorCode ierr;
@@ -185,8 +177,6 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 //---------------------------------------------------------------------------
 //........................... BLOCK FACTORIZATION ...........................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFCreate"
 PetscErrorCode PCStokesBFCreate(PCStokes pc)
 {
 	PC          vpc;
@@ -229,8 +219,6 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFSetFromOptions"
 PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 {
 	PCStokesBF *bf;
@@ -299,8 +287,6 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFDestroy"
 PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 {
 	PCStokesBF *bf;
@@ -323,8 +309,6 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFSetup"
 PetscErrorCode PCStokesBFSetup(PCStokes pc)
 {
 	PCStokesBF *bf;
@@ -349,8 +333,6 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFApply"
 PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 {
 	//======================================================================
@@ -413,8 +395,6 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 //---------------------------------------------------------------------------
 //....................... COUPLED GALERKIN MULTIGRID ........................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesMGCreate"
 PetscErrorCode PCStokesMGCreate(PCStokes pc)
 {
 	PCStokesMG *mg;
@@ -438,8 +418,6 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesMGDestroy"
 PetscErrorCode PCStokesMGDestroy(PCStokes pc)
 {
 	PCStokesMG *mg;
@@ -456,8 +434,6 @@ PetscErrorCode PCStokesMGDestroy(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesMGSetup"
 PetscErrorCode PCStokesMGSetup(PCStokes pc)
 {
 	PCStokesMG *mg;
@@ -475,8 +451,6 @@ PetscErrorCode PCStokesMGSetup(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesMGApply"
 PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y)
 {
 	PCStokes    pc;
@@ -497,8 +471,6 @@ PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y)
 //---------------------------------------------------------------------------
 //............................. USER-DEFINED ................................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserCreate"
 PetscErrorCode PCStokesUserCreate(PCStokes pc)
 {
 	PCStokesUser *user;
@@ -523,8 +495,6 @@ PetscErrorCode PCStokesUserCreate(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserAttachIS"
 PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
 {
 	PCStokesUser *user;
@@ -557,8 +527,6 @@ PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserDestroy"
 PetscErrorCode PCStokesUserDestroy(PCStokes pc)
 {
 	PCStokesUser *user;
@@ -578,8 +546,6 @@ PetscErrorCode PCStokesUserDestroy(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserSetup"
 PetscErrorCode PCStokesUserSetup(PCStokes pc)
 {
 	PetscBool    flg;
@@ -608,8 +574,6 @@ PetscErrorCode PCStokesUserSetup(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserApply"
 PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y)
 {
 	PCStokes      pc;

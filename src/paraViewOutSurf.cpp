@@ -52,8 +52,6 @@
 #include "JacRes.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfCreate"
 PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 {
 	char filename[_str_len_];
@@ -99,8 +97,6 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfCreateData"
 PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 {
 	FDSTAG   *fs;
@@ -129,8 +125,6 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfDestroy"
 PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 {
 	PetscFunctionBeginUser;
@@ -143,8 +137,6 @@ PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteTimeStep"
 PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
@@ -165,8 +157,6 @@ PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscSca
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWritePVTS"
 PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 {
 	FILE        *fp;
@@ -256,8 +246,6 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteVTS"
 PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 {
 	FILE      *fp;
@@ -394,8 +382,6 @@ void OutputBufferWrite(
 	fwrite(buff, sizeof(float), (size_t)cn, fp);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteCoord"
 PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 {
 	FreeSurf    *surf;
@@ -438,8 +424,6 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteVel"
 PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 {
 	FreeSurf    *surf;
@@ -486,8 +470,6 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteTopo"
 PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 {
 	FreeSurf    *surf;
@@ -528,8 +510,6 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteAmplitude"
 PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 {
 	FreeSurf    *surf;

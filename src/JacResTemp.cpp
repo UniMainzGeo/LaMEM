@@ -76,8 +76,6 @@
 //---------------------------------------------------------------------------
 // Temperature parameters functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetTempParam"
 PetscErrorCode JacResGetTempParam(
 		JacRes      *jr,
 		PetscScalar *phRat,
@@ -165,8 +163,6 @@ PetscErrorCode JacResGetTempParam(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCheckTempParam"
 PetscErrorCode JacResCheckTempParam(JacRes *jr)
 {
 	// check whether thermal material parameters are properly defined
@@ -201,8 +197,6 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCreateTempParam"
 PetscErrorCode JacResCreateTempParam(JacRes *jr)
 {
 	// setup temperature parameters
@@ -255,8 +249,6 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResDestroyTempParam"
 PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 {
 	// destroy temperature parameters
@@ -282,8 +274,6 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResInitTemp"
 PetscErrorCode JacResInitTemp(JacRes *jr)
 {
 	// initialize temperature from markers
@@ -330,8 +320,6 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResUpdateTemp"
 PetscErrorCode JacResUpdateTemp(JacRes *jr)
 {
 	// correct temperature for diffusion (Newton update)
@@ -365,8 +353,6 @@ PetscErrorCode JacResUpdateTemp(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResApplyTempBC"
 PetscErrorCode JacResApplyTempBC(JacRes *jr)
 {
 	// apply temperature two-point constraints
@@ -442,8 +428,6 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetTempRes"
 PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 {
 	// compute temperature residual vector
@@ -624,8 +608,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetTempMat"
 PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 {
 	// assemble temperature preconditioner matrix

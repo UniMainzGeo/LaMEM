@@ -52,8 +52,6 @@
 #include "JacRes.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVMarkCreate"
 PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 {
 	char filename[_str_len_];
@@ -87,8 +85,6 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVMarkWriteTimeStep"
 PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
@@ -109,8 +105,6 @@ PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscSca
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVMarkWriteVTU"
 PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 {
 	// output markers in .vtu files
@@ -261,8 +255,6 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVMarkWritePVTU"
 PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName)
 {
 	// create .pvtu file for marker output

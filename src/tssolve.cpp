@@ -50,8 +50,6 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolCreate"
 PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 {
 	Scaling     *scal;
@@ -197,8 +195,6 @@ PetscInt TSSolIsDone(TSSol *ts)
 	return done;
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolStepForward"
 PetscErrorCode TSSolStepForward(TSSol *ts)
 {
 	// function is called in the end of time step before output and restart
@@ -256,8 +252,6 @@ PetscInt TSSolIsOutput(TSSol *ts)
 	return 0;
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolGetCFLStep"
 PetscErrorCode TSSolGetCFLStep(
 	TSSol       *ts,
 	PetscScalar  gidtmax, // maximum global inverse time step
@@ -350,8 +344,6 @@ PetscErrorCode TSSolGetCFLStep(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolGetPeriodSteps"
 PetscErrorCode TSSolGetPeriodSteps(
 	PetscScalar  dt_start, // timestep at the start of the period
 	PetscScalar  dt_end,   // timestep at the end of the period
@@ -402,8 +394,6 @@ PetscErrorCode TSSolGetPeriodSteps(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolMakeSchedule"
 PetscErrorCode TSSolMakeSchedule(TSSol *ts)
 {
 	PetscScalar *schedule, *steps, *t, *dt_fix;
@@ -471,8 +461,6 @@ PetscErrorCode TSSolMakeSchedule(TSSol *ts)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolAdjustSchedule"
 PetscErrorCode TSSolAdjustSchedule(TSSol *ts, PetscScalar dt_cfl, PetscInt istep, PetscScalar *schedule)
 {
 	PetscScalar diff;

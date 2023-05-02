@@ -61,8 +61,6 @@
 #END_DOC#
 */
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInit"
 PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 {
 	FDSTAG    *fs;
@@ -151,8 +149,6 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitCoord"
 PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 {
 	// initializes coordinates and adds random noise if required for hard-coded setups
@@ -243,8 +239,6 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkPerturb"
 PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 {
 	FDSTAG      *fs;
@@ -305,8 +299,6 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSave"
 PetscErrorCode ADVMarkSave(AdvCtx *actx)
 {
 	int            fd;
@@ -380,8 +372,6 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkCheckMarkers"
 PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 {
 	// check initial marker distribution
@@ -497,8 +487,6 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTempGrad"
 PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 {
 	// initialize temperature on markers based on linear gradient
@@ -550,8 +538,6 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTempPhase"
 PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx)
 {
 	// initialize temperature on markers based on phase temperature
@@ -589,8 +575,6 @@ PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTempFile"
 PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 {
 	FDSTAG         *fs;
@@ -705,8 +689,6 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTempVector"
 PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 {
 	FDSTAG         *fs;
@@ -788,8 +770,6 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 //---------------------------------------------------------------------------
 // Specific initialization routines
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitFiles"
 PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 {
 	int            fd;
@@ -862,8 +842,6 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitGeom"
 PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
 	Marker         *P;
@@ -1227,8 +1205,6 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitPolygons"
 PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 {
 	// REDUNDANTLY loads a file with 2D-polygons that coincide with the marker planes
@@ -1566,8 +1542,6 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkReadCtrlPoly"
 PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, PetscInt &nCP)
 {
 	PetscInt       jj;
@@ -1619,8 +1593,6 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSecIdx"
 void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 {
 	FDSTAG   *fs;
@@ -1678,8 +1650,6 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 }
 //---------------------------------------------------------------------------
 // get the density from a phase diagram
-#undef __FUNCT__
-#define __FUNCT__ "LoadPhaseDiagram"
 PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 {
 	FILE          *fp;

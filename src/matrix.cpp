@@ -59,8 +59,6 @@
 // * figure out why block factorization with penalty
 //   doesn't work with non-homogeneous Dirichlet BC
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatAIJCreate"
 PetscErrorCode MatAIJCreate(
 	PetscInt m, PetscInt n,
 	PetscInt d_nz, const PetscInt d_nnz[],
@@ -89,8 +87,6 @@ PetscErrorCode MatAIJCreate(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatAIJCreateDiag"
 PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 {
 	PetscInt i, ii;
@@ -118,8 +114,6 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatAIJAssemble"
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag)
 {
 //	PetscInt    m, n;
@@ -142,8 +136,6 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatAIJSetNullSpace"
 PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 {
 	MatNullSpace nullsp;                       // near null space
@@ -208,8 +200,6 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatCreate"
 PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 {
 	PetscErrorCode ierr;
@@ -259,8 +249,6 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatSetFromOptions"
 PetscErrorCode PMatSetFromOptions(PMat pm)
 {
 	PetscBool   flg;
@@ -331,8 +319,6 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatAssemble"
 PetscErrorCode PMatAssemble(PMat pm)
 {
 	BCCtx  *bc;
@@ -357,8 +343,6 @@ PetscErrorCode PMatAssemble(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatDestroy"
 PetscErrorCode PMatDestroy(PMat pm)
 {
 	PetscErrorCode ierr;
@@ -372,8 +356,6 @@ PetscErrorCode PMatDestroy(PMat pm)
 //---------------------------------------------------------------------------
 //.........................   MONOLITHIC MATRIX   ...........................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatMonoCreate"
 PetscErrorCode PMatMonoCreate(PMat pm)
 {
 	//=========================================================================
@@ -600,8 +582,6 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatMonoAssemble"
 PetscErrorCode PMatMonoAssemble(PMat pm)
 {
 	//======================================================================
@@ -958,8 +938,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatMonoPicard"
 PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 {
 	// actual operation is: r = J*x = A*x - M*x
@@ -983,8 +961,6 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatMonoDestroy"
 PetscErrorCode PMatMonoDestroy(PMat pm)
 {
 	PMatMono *P;
@@ -1005,8 +981,6 @@ PetscErrorCode PMatMonoDestroy(PMat pm)
 //---------------------------------------------------------------------------
 //...........................   BLOCK MATRIX   ..............................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockCreate"
 PetscErrorCode PMatBlockCreate(PMat pm)
 {
 	JacRes      *jr;
@@ -1258,8 +1232,6 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockAssemble"
 PetscErrorCode PMatBlockAssemble(PMat pm)
 {
 	//======================================================================
@@ -1586,8 +1558,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockPicardClean"
 PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec r)
 {
 	//=======================================================================
@@ -1626,8 +1596,6 @@ PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec r)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockPicardSchur"
 PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec r)
 {
 	//=======================================================================
@@ -1670,8 +1638,6 @@ PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec r)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockDestroy"
 PetscErrorCode PMatBlockDestroy(PMat pm)
 {
 	PMatBlock *P;
@@ -1889,8 +1855,6 @@ void constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScala
 	}
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VecScatterBlockToMonolithic"
 PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode)
 {
 	// scatter block vectors to monolithic format forward & reverse

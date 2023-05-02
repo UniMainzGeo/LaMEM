@@ -75,8 +75,6 @@
 #include "passive_tracer.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibMain"
 PetscErrorCode LaMEMLibMain(void *param)
 {
 	LaMEMLib       lm;
@@ -179,8 +177,6 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibCreate"
 PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 {
 	FB *fb;
@@ -244,8 +240,6 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSaveGrid"
 PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 {
 	FB *fb;
@@ -274,8 +268,6 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibLoadRestart"
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 {
 	FB              *fb;
@@ -368,8 +360,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSaveRestart"
 PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 {
 	// save new restart database, then delete the original
@@ -447,8 +437,6 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDeleteRestart"
 PetscErrorCode LaMEMLibDeleteRestart()
 {
 	// delete existing restart database
@@ -487,8 +475,6 @@ PetscErrorCode LaMEMLibDeleteRestart()
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDestroy"
 PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
@@ -510,8 +496,6 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSetLinks"
 PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 {
 	//======================================================================
@@ -586,8 +570,6 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSaveOutput"
 PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 {
 	//==================
@@ -653,8 +635,6 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSolve"
 PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
 	PMat           pm;     // preconditioner matrix    (to be removed!)
@@ -817,8 +797,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDryRun"
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
@@ -842,8 +820,6 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibInitGuess"
 PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 {
 	PetscErrorCode ierr;
@@ -900,8 +876,6 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDiffuseTemp"
 PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 {
 	JacRes         *jr;
@@ -995,8 +969,6 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSolveTemp"
 PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 {
 	JacRes         *jr;

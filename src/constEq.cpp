@@ -57,8 +57,6 @@
 #include "bc.h"
 #include "dike.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "setUpConstEq"
 PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 {
 	// setup constitutive equation evaluation context parameters
@@ -92,8 +90,6 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "setUpCtrlVol"
 PetscErrorCode setUpCtrlVol(
 		ConstEqCtx  *ctx,    // context
 		PetscScalar *phRat,  // phase ratios in the control volume
@@ -139,8 +135,6 @@ PetscErrorCode setUpCtrlVol(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "setUpPhase"
 PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 {
 	// setup phase parameters for deviatoric constitutive equation
@@ -356,8 +350,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "devConstEq"
 PetscErrorCode devConstEq(ConstEqCtx *ctx)
 {
 	// evaluate deviatoric constitutive equations in control volume
@@ -431,8 +423,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getPhaseVisc"
 PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 {
 	// compute phase viscosities and strain rate partitioning
@@ -645,8 +635,6 @@ PetscScalar getI2Gdt(
 	return I2Gdt;
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "volConstEq"
 PetscErrorCode volConstEq(ConstEqCtx *ctx)
 {
 	// evaluate volumetric constitutive equations in control volume
@@ -781,8 +769,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "cellConstEq"
 PetscErrorCode cellConstEq(
 		ConstEqCtx  *ctx,    // evaluation context
 		SolVarCell  *svCell, // solution variables
@@ -893,8 +879,6 @@ PetscErrorCode cellConstEq(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "edgeConstEq"
 PetscErrorCode edgeConstEq(
 		ConstEqCtx  *ctx,    // evaluation context
 		SolVarEdge  *svEdge, // solution variables
@@ -946,8 +930,6 @@ PetscErrorCode edgeConstEq(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "checkConvConstEq"
 PetscErrorCode checkConvConstEq(ConstEqCtx *ctx)
 {
 	// check convergence of constitutive equations
@@ -979,8 +961,6 @@ PetscErrorCode checkConvConstEq(ConstEqCtx *ctx)
 //.............................. PHASE DIAGRAM  .............................
 //---------------------------------------------------------------------------
 // get the density from a phase diagram
-#undef __FUNCT__
-#define __FUNCT__ "setDataPhaseDiagram"
 PetscErrorCode setDataPhaseDiagram(
 		PData       *pd,
 		PetscScalar  p,

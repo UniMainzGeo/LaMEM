@@ -1485,8 +1485,6 @@ PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType t
 //---------------------------------------------------------------------------
 // This needs to be updated for the use in the inversion routines
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatPropSetFromLibCall"
 PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 {
 	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
@@ -1575,8 +1573,6 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatPropSetFromCL"
 PetscErrorCode MatPropSetFromCL(JacRes *jr)
 {
 	// overwrite MATERIAL PARAMETERS with command line options
@@ -1657,8 +1653,6 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 //---------------------------------------------------------------------------
 */
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PrintMatProp"
 PetscErrorCode PrintMatProp(Material_t *MatProp)
 {
 	// Prints an overview of the material properties specified for a certain phase (for debugging)

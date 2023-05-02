@@ -160,8 +160,6 @@ PetscInt FindPointInCellAdjoint(
 	return(L);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "swapStruct"
 PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B){
     PetscFunctionBeginUser;
 	struct Material_t temp = *A;
@@ -203,8 +201,6 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 	This (optionally) reads in all material parameters of the ParamFile for 
 	which we will compute gradients
 */
-#undef __FUNCT__
-#define __FUNCT__ "Adjoint_ScanForMaterialParameters"
 PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt *iP, 
 		char type_name[][_str_len_],
 		PetscInt 	*phsar,
@@ -430,8 +426,6 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 /* This reads the input parameters from the file/command-line & sets default 
 values. Also performs error-checking
 */
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMAdjointReadInputSetDefaults"
 PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs *Adjoint_Vectors)
 {
 	PetscFunctionBeginUser;
@@ -972,8 +966,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMAdjointMain"
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 {
 	PetscErrorCode ierr;
@@ -1143,8 +1135,6 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointVectorsCreate"
 PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOparam)
 {
 	PetscErrorCode ierr;
@@ -1164,8 +1154,6 @@ PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOp
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointVectorsDestroy"
 PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOparam)
 {
 	PetscErrorCode ierr;
@@ -1183,8 +1171,6 @@ PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_Vectors, ModParam *IO
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointCreate"
 PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam)
 {
 	PetscErrorCode ierr;
@@ -1205,8 +1191,6 @@ PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointDestroy"
 PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam)
 {
 	PetscErrorCode ierr;
@@ -1231,8 +1215,6 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ComputeGradientsAndObjectiveFunction"
 PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar *ObjectiveValue, Vec Gradient, ModParam *IOparam)
 {
 	/* 
@@ -1283,8 +1265,6 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointOptimisation"
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 {
 	PetscErrorCode ierr;
@@ -1517,8 +1497,6 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointOptimisationTAO"
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx)
 {
 	PetscErrorCode ierr;
@@ -1609,8 +1587,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	PetscFunctionReturn(0);
 }
  //---------------------------------------------------------------------------
- #undef __FUNCT__
- #define __FUNCT__ "AdjointObjectiveAndGradientFunction"
  PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf)
  {
 	// This computes the objective function and adjoint gradients (not the 'brute-force' FD gradients)
@@ -1633,8 +1609,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  	PetscFunctionReturn(0);
  }
  //---------------------------------------------------------------------------
- #undef __FUNCT__
- #define __FUNCT__ "AdjointObjectiveFunction"
  PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOparam, FreeSurf *surf)
  {
 	// This computes the objective function
@@ -1848,8 +1822,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 /* 
 	Brute Force finite difference computation of the gradient, by calling LaMEM twice & perturbing the parameter 
 */
-#undef __FUNCT__
-#define __FUNCT__ "AdjointFiniteDifferenceGradients"
 PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 {
 	PetscErrorCode 	ierr;
@@ -1944,8 +1916,6 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
  }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointComputeGradients"
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam)
 {
 	
@@ -2177,8 +2147,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PrintCostFunction"
 /*
     This prints the current value of the objective function
 */
@@ -2196,8 +2164,6 @@ PetscErrorCode PrintCostFunction(ModParam *IOparam)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PrintGradientsAndObservationPoints"
 /*
     This prints an overview of the gradients (adjoint & fd) and the velocity values
 */
@@ -2318,8 +2284,6 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointPointInPro"
 /*
     AdjointPointInPro creates a projection vector which projects the requested velocity component(s) 
         from the global solution vector to the observation point(s), assuming linear interpolation
@@ -2869,8 +2833,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointFormResidualFieldFD"
 PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop, ModParam *IOparam  )
 {
     // "geodynamic sensitivity kernels" 
@@ -3545,8 +3507,6 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AddMaterialParameterToCommandLineOptions"
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val)
 {
     PetscErrorCode  ierr;
@@ -3572,8 +3532,6 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 
 //---------------------------------------------------------------------------
 // Copies a parameter to the LaMEM command-line database
-#undef __FUNCT__
-#define __FUNCT__ "CopyParameterToLaMEMCommandLine"
 PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j)
 {
     PetscErrorCode  ierr;
@@ -3607,8 +3565,6 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
 
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DeleteMaterialParameterFromCommandLineOptions"
 PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscInt ID)
 {
     PetscErrorCode  ierr;
@@ -3635,8 +3591,6 @@ PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscIn
 	parameters and store the result in IOparam->dbm_modified, which is passed to 
 	LaMEM @ can be used there 
 */
-#undef __FUNCT__
-#define __FUNCT__ "CreateModifiedMaterialDatabase"
 PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 {
 	PetscBool       PrintOutput=PETSC_FALSE;
@@ -3681,8 +3635,6 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 	This computes the scaling and sets a default FD method (adjoi nt or not) 
 	for a material parameter
 */
-#undef __FUNCT__
-#define __FUNCT__ "Parameter_SetFDgrad_Option"
 PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 {
  	PetscFunctionBeginUser;
@@ -3760,8 +3712,6 @@ PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 /*---------------------------------------------------------------------------
 	This prints scaling laws
 */
-#undef __FUNCT__
-#define __FUNCT__ "PrintScalingLaws"
 PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 {
  	PetscFunctionBeginUser;
@@ -3989,8 +3939,6 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AdjointGet_F_dFdu_Center"
 PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOparam)
 {
 	// Compute derivative of stress objective function with respect to the solution (dF/du) (dF/dst = (P*st-P*st_ini) * dphi/de * de/du)       
@@ -4492,8 +4440,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "cellConstEqFD"
 PetscErrorCode cellConstEqFD(
 		ConstEqCtx  *ctx,    // evaluation context
 		SolVarCell  *svCell, // solution variables
@@ -4601,8 +4547,6 @@ PetscErrorCode cellConstEqFD(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "setUpPhaseFD"
 PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk)
 {
 	// setup phase parameters for deviatoric constitutive equation
@@ -4842,8 +4786,6 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "devConstEqFD"
 PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk)
 {
 	// evaluate deviatoric constitutive equations in control volume
@@ -4915,8 +4857,6 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "edgeConstEqFD"
 PetscErrorCode edgeConstEqFD(
 		ConstEqCtx  *ctx,    // evaluation context
 		SolVarEdge  *svEdge, // solution variables
@@ -4977,8 +4917,6 @@ PetscErrorCode edgeConstEqFD(
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Adjoint_ApplyBCs"
 PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
 
 {

@@ -46,8 +46,6 @@
 #include "interpolate.h"
 #include "fdstag.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "InterpXFaceCorner"
 PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags iflag)
 {
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, my, mz;
@@ -107,8 +105,6 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "InterpYFaceCorner"
 PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags iflag)
 {
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, mz;
@@ -168,8 +164,6 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "InterpZFaceCorner"
 PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags iflag)
 {
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my;
@@ -229,8 +223,6 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "InterpCenterCorner"
 PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlags iflag)
 {
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, I1, I2, J1, J2, K1, K2;
@@ -307,8 +299,6 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlag
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "InterpXYEdgeCorner"
 PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, InterpFlags iflag)
 {
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mz, K1, K2;
@@ -360,8 +350,6 @@ PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, InterpFlag
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "InterpXZEdgeCorner"
 PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, InterpFlags iflag)
 {
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, my, J1, J2;
@@ -413,8 +401,6 @@ PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, InterpFlag
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "InterpYZEdgeCorner"
 PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlags iflag)
 {
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, I1, I2;

@@ -52,8 +52,6 @@
 #include "JacRes.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ObjFunctDestroy"
 PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 {
 	PetscErrorCode ierr;
@@ -78,8 +76,6 @@ PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ObjFunctCreate"
 PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf, FB *fb)
 {
 	FDSTAG        *fs;
@@ -280,8 +276,6 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ObjFunctReadFromOptions"
 PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 {
 	PetscErrorCode ierr;
@@ -318,8 +312,6 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VecErrSurf"
 PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar scal)
 {
 	PetscErrorCode    ierr;
@@ -380,8 +372,6 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ObjFunctCompErr"
 PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 {
 

@@ -628,8 +628,6 @@ PetscInt Tensor2RSSpectral(
 	return code;
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Tensor2RS2DSpectral"
 PetscErrorCode Tensor2RS2DSpectral(
 	PetscScalar  axx,
 	PetscScalar  ayy,

@@ -60,8 +60,6 @@
 //---------------------------------------------------------------------------
 // Bezier block functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCBlockCreate"
 PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 {
     //	-npath - Number of path points of Bezier curve (end-points only!)
@@ -92,8 +90,6 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCBlockGetPosition"
 PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar X[])
 {
     // compute position along the path and rotation angle as a function of time
@@ -183,8 +179,6 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCBlockGetPolygon"
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly)
 {
     // compute current polygon coordinates
@@ -222,8 +216,6 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 //---------------------------------------------------------------------------
 // Velocity box functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VelBoxCreate"
 PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 {
 	PetscErrorCode ierr;
@@ -256,8 +248,6 @@ PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VelBoxPrint"
 PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
 	PetscFunctionBeginUser;
@@ -287,8 +277,6 @@ PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 //---------------------------------------------------------------------------
 // Velocity cylinder functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VelCylinderCreate"
 PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
 {
 	char           str_type[_str_len_];
@@ -345,8 +333,6 @@ PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VelCylinderPrint"
 PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt)
 {
 	PetscFunctionBeginUser;
@@ -389,8 +375,6 @@ PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt
 //---------------------------------------------------------------------------
 // BCCtx functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCCreate"
 PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 {
     Scaling     *scal;
@@ -853,8 +837,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCReadRestart"
 PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp)
 {
     PetscInt nCells;
@@ -876,8 +858,6 @@ PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCWriteRestart"
 PetscErrorCode BCWriteRestart(BCCtx *bc, FILE *fp)
 {
     PetscInt nCells;
@@ -895,8 +875,6 @@ PetscErrorCode BCWriteRestart(BCCtx *bc, FILE *fp)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCCreateData"
 PetscErrorCode BCCreateData(BCCtx *bc)
 {
     FDSTAG   *fs;
@@ -931,8 +909,6 @@ PetscErrorCode BCCreateData(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCDestroy"
 PetscErrorCode BCDestroy(BCCtx *bc)
 {
     PetscErrorCode ierr;
@@ -959,8 +935,6 @@ PetscErrorCode BCDestroy(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCReadFixCell"
 PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 {
     FILE           *fp;
@@ -1012,8 +986,6 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApply"
 PetscErrorCode BCApply(BCCtx *bc)
 {
     FDSTAG *fs;
@@ -1102,8 +1074,6 @@ PetscErrorCode BCApply(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplySPC"
 PetscErrorCode BCApplySPC(BCCtx *bc)
 {
     // apply SPC to global solution vector
@@ -1141,8 +1111,6 @@ PetscErrorCode BCApplySPC(BCCtx *bc)
      PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCShiftIndices"
 PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 {
     FDSTAG   *fs;
@@ -1190,8 +1158,6 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 //---------------------------------------------------------------------------
 // Specific constraints
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyPres"
 PetscErrorCode BCApplyPres(BCCtx *bc)
 {
     // apply pressure constraints
@@ -1242,8 +1208,6 @@ PetscErrorCode BCApplyPres(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyTemp"
 PetscErrorCode BCApplyTemp(BCCtx *bc)
 {
     // apply temperature constraints
@@ -1328,8 +1292,6 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyVelDefault"
 PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 {
     // apply default velocity constraints on the boundaries
@@ -1495,8 +1457,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyVelTPC"
 PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 {
     // apply two-point constraints on the boundaries
@@ -1603,8 +1563,6 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyBezier"
 PetscErrorCode BCApplyBezier(BCCtx *bc)
 {
     FDSTAG      *fs;
@@ -1735,8 +1693,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyBoundVel"
 PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 {
     FDSTAG      *fs;
@@ -1897,8 +1853,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyVelBox"
 PetscErrorCode BCApplyVelBox(BCCtx *bc)
 {
     FDSTAG      *fs;
@@ -2028,8 +1982,6 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyVelCylinder"
 PetscErrorCode BCApplyVelCylinder(BCCtx *bc)
 {
     FDSTAG      *fs;
@@ -2238,8 +2190,6 @@ PetscErrorCode BCApplyVelCylinder(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyPhase"
 PetscErrorCode BCApplyPhase(BCCtx *bc)
 {
     // apply default velocity constraints on the boundaries
@@ -2295,8 +2245,6 @@ PetscErrorCode BCApplyPhase(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyCells"
 PetscErrorCode BCApplyCells(BCCtx *bc)
 {
     // apply default velocity constraints on the boundaries
@@ -2351,8 +2299,6 @@ PetscErrorCode BCApplyCells(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCListSPC"
 PetscErrorCode BCListSPC(BCCtx *bc)
 {
     // create SPC constraint lists
@@ -2453,8 +2399,6 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 //---------------------------------------------------------------------------
 // Service functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCGetBGStrainRates"
 PetscErrorCode BCGetBGStrainRates(
         BCCtx       *bc,
         PetscScalar *Exx_,
@@ -2557,8 +2501,6 @@ PetscErrorCode BCGetBGStrainRates(
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCGetTempBound"
 PetscErrorCode BCGetTempBound(
         BCCtx       *bc,
         PetscScalar *Tbot)
@@ -2592,8 +2534,6 @@ PetscErrorCode BCGetTempBound(
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCStretchGrid"
 PetscErrorCode BCStretchGrid(BCCtx *bc)
 {
     // apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
@@ -2631,8 +2571,6 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCOverridePhase"
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 {
     FDSTAG     *fs;
@@ -2786,8 +2724,6 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BC_Plume_inflow"
 PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 {
     FDSTAG          *fs;

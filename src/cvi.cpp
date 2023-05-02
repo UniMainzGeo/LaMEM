@@ -59,8 +59,6 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelAdvectMain"
 PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 {
 	//=======================================================================
@@ -80,8 +78,6 @@ PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelInterpPT"
 PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 {
 	// update p, T at marker positions
@@ -151,8 +147,6 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelAdvectScheme"
 PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 {
 	PetscScalar  dt;
@@ -229,8 +223,6 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelRungeKuttaStep"
 PetscErrorCode ADVelRungeKuttaStep(AdvVelCtx *vi, PetscScalar dt, PetscScalar a, PetscInt type)
 {
 	// routines to perform one runge-kutta step
@@ -256,8 +248,6 @@ PetscErrorCode ADVelRungeKuttaStep(AdvVelCtx *vi, PetscScalar dt, PetscScalar a,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelCreate"
 PetscErrorCode ADVelCreate(AdvCtx *actx, AdvVelCtx *vi)
 {
 	// create advection velocity context
@@ -314,8 +304,6 @@ PetscErrorCode ADVelCreate(AdvCtx *actx, AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelDestroy"
 PetscErrorCode ADVelDestroy(AdvVelCtx *vi)
 {
 	// destroy advection velocity context
@@ -334,8 +322,6 @@ PetscErrorCode ADVelDestroy(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelExchange"
 PetscErrorCode ADVelExchange(AdvVelCtx *vi)
 {
 	// exchange interpolated marker positions between the processors
@@ -364,8 +350,6 @@ PetscErrorCode ADVelExchange(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelInitCoord"
 PetscErrorCode ADVelInitCoord(AdvCtx *actx, VelInterp *interp, PetscInt n)
 {
 	PetscInt     jj;
@@ -397,8 +381,6 @@ PetscErrorCode ADVelInitCoord(AdvCtx *actx, VelInterp *interp, PetscInt n)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelCalcEffVel"
 PetscErrorCode ADVelCalcEffVel(VelInterp *interp, PetscInt n, PetscScalar a)
 {
 	PetscInt     jj;
@@ -416,8 +398,6 @@ PetscErrorCode ADVelCalcEffVel(VelInterp *interp, PetscInt n, PetscScalar a)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelAdvectCoord"
 PetscErrorCode ADVelAdvectCoord(VelInterp *interp, PetscInt n, PetscScalar dt, PetscInt type)
 {
 	PetscInt     jj;
@@ -446,8 +426,6 @@ PetscErrorCode ADVelAdvectCoord(VelInterp *interp, PetscInt n, PetscScalar dt, P
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelResetCoord"
 PetscErrorCode ADVelResetCoord(VelInterp *interp, PetscInt n)
 {
 	PetscInt     jj;
@@ -466,8 +444,6 @@ PetscErrorCode ADVelResetCoord(VelInterp *interp, PetscInt n)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelRetrieveCoord"
 PetscErrorCode ADVelRetrieveCoord(AdvCtx *actx, VelInterp *interp, PetscInt n)
 {
 	PetscInt     jj, p;
@@ -491,8 +467,6 @@ PetscErrorCode ADVelRetrieveCoord(AdvCtx *actx, VelInterp *interp, PetscInt n)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelCollectIndices"
 PetscErrorCode ADVelCollectIndices(AdvCtx *actx, AdvVelCtx *vi)
 {
 	// collect indices to delete markers that went outside the domain during the runge-kutta steps
@@ -536,8 +510,6 @@ PetscErrorCode ADVelCollectIndices(AdvCtx *actx, AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelDeleteOutflow"
 PetscErrorCode ADVelDeleteOutflow(AdvVelCtx *vi)
 {
 	// check if advected positions are within the box bounds
@@ -592,8 +564,6 @@ PetscErrorCode ADVelDeleteOutflow(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelMapToDomains"
 PetscErrorCode ADVelMapToDomains(AdvVelCtx *vi)
 {
 	// count number of positions to be sent to each neighbor domain
@@ -630,8 +600,6 @@ PetscErrorCode ADVelMapToDomains(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelExchangeNMark"
 PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 {
 	// communicate number of markers with neighbor processes
@@ -679,8 +647,6 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelCreateMPIBuff"
 PetscErrorCode ADVelCreateMPIBuff(AdvVelCtx *vi)
 {
 	// create send and receive buffers for asynchronous MPI communication
@@ -729,8 +695,6 @@ PetscErrorCode ADVelCreateMPIBuff(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelExchangeMark"
 PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 {
 	// communicate markers with neighbor processes
@@ -782,8 +746,6 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelDestroyMPIBuff"
 PetscErrorCode ADVelDestroyMPIBuff(AdvVelCtx *vi)
 {
 	PetscErrorCode ierr;
@@ -801,8 +763,6 @@ PetscErrorCode ADVelDestroyMPIBuff(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelCollectGarbage"
 PetscErrorCode ADVelCollectGarbage(AdvVelCtx *vi)
 {
 	// store received markers, collect garbage
@@ -867,8 +827,6 @@ PetscErrorCode ADVelCollectGarbage(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelReAllocStorage"
 PetscErrorCode ADVelReAllocStorage(AdvVelCtx *vi, PetscInt nmark)
 {
 	// re-allocate memory to dynamic storage
@@ -917,8 +875,6 @@ PetscErrorCode ADVelReAllocStorage(AdvVelCtx *vi, PetscInt nmark)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelMapMarkToCells"
 PetscErrorCode ADVelMapMarkToCells(AdvVelCtx *vi)
 {
 	// maps markers to cells (local)
@@ -982,8 +938,6 @@ PetscErrorCode ADVelMapMarkToCells(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelInterpMain"
 PetscErrorCode ADVelInterpMain(AdvVelCtx *vi)
 {
 	//=======================================================================
@@ -1000,8 +954,6 @@ PetscErrorCode ADVelInterpMain(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelInterpSTAG"
 PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 {
 	// interpolate velocities from STAG points to markers
@@ -1080,8 +1032,6 @@ PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelInterpMINMOD"
 PetscErrorCode ADVelInterpMINMOD(AdvVelCtx *vi)
 {
 	// interpolation to nodes from fdstag points using a MINMOD limiter
@@ -1297,8 +1247,6 @@ PetscErrorCode ADVelInterpMINMOD(AdvVelCtx *vi)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelInterpSTAGP"
 PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 {
 	// interpolate velocities from STAG points to markers + pressure points

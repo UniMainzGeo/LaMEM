@@ -47,8 +47,6 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FBLoad"
 PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 {
 	FB        *fb;
@@ -171,8 +169,6 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FBDestroy"
 PetscErrorCode FBDestroy(FB **pfb)
 {
 	FB *fb;
@@ -198,8 +194,6 @@ PetscErrorCode FBDestroy(FB **pfb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FBParseBuffer"
 PetscErrorCode FBParseBuffer(FB *fb)
 {
 	char      *line, *b, p;
@@ -306,8 +300,6 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FBFindBlocks"
 PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const char *keyend)
 {
 	// find line ranges of data blocks
@@ -366,8 +358,6 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FBFreeBlocks"
 PetscErrorCode FBFreeBlocks(FB *fb)
 {
 	PetscErrorCode ierr;
@@ -404,8 +394,6 @@ char ** FBGetLineRanges(FB *fb, PetscInt *lnbeg, PetscInt *lnend)
 	}
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FBGetIntArray"
 PetscErrorCode FBGetIntArray(
 		FB         *fb,
 		const char *key,
@@ -467,8 +455,6 @@ PetscErrorCode FBGetIntArray(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FBGetScalarArray"
 PetscErrorCode FBGetScalarArray(
 		FB          *fb,
 		const char  *key,
@@ -530,8 +516,6 @@ PetscErrorCode FBGetScalarArray(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FBGetString"
 PetscErrorCode FBGetString(
 		FB         *fb,
 		const char *key,
@@ -592,8 +576,6 @@ PetscErrorCode FBGetString(
 //-----------------------------------------------------------------------------
 // Wrappers
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getIntParam"
 PetscErrorCode getIntParam(
 		FB         *fb,
 		ParamType   ptype,
@@ -662,8 +644,6 @@ PetscErrorCode getIntParam(
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getScalarParam"
 PetscErrorCode getScalarParam(
 		FB          *fb,
 		ParamType    ptype,
@@ -719,8 +699,6 @@ PetscErrorCode getScalarParam(
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getStringParam"
 PetscErrorCode getStringParam(
 		FB          *fb,
 		ParamType    ptype,
@@ -772,8 +750,6 @@ PetscErrorCode getStringParam(
 //-----------------------------------------------------------------------------
 // PETSc options parsing functions
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PetscOptionsReadFromFile"
 PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
 {
 	// * load additional options from input file
@@ -832,8 +808,6 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PetscOptionsReadRestart"
 PetscErrorCode PetscOptionsReadRestart(FILE *fp)
 {
 	// load options from restart file, replace existing
@@ -860,8 +834,6 @@ PetscErrorCode PetscOptionsReadRestart(FILE *fp)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PetscOptionsWriteRestart"
 PetscErrorCode PetscOptionsWriteRestart(FILE *fp)
 {
 	// save all existing options to restart file
@@ -886,8 +858,6 @@ PetscErrorCode PetscOptionsWriteRestart(FILE *fp)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PetscOptionsGetCheckString"
 PetscErrorCode  PetscOptionsGetCheckString(
 	const char   key[],
 	char         str[],
@@ -915,8 +885,6 @@ PetscErrorCode  PetscOptionsGetCheckString(
 //-----------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "StokesSetDefaultSolverOptions"
 PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 {
 	PetscErrorCode ierr;
