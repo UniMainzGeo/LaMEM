@@ -199,14 +199,11 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// create time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
-	// create material database
-	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
-
-    // create dike database
-	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, PETSC_TRUE);   CHKERRQ(ierr);
-
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
+
+	// create material database
+	ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
 
 	// create free surface grid
 	ierr = FreeSurfCreate(&lm->surf, fb); 			CHKERRQ(ierr);
@@ -216,6 +213,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create residual & Jacobian evaluation context
 	ierr = JacResCreate(&lm->jr, fb); 				CHKERRQ(ierr);
+
+	// create dike database
+	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, &lm->jr, PETSC_TRUE);   CHKERRQ(ierr);
 
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); 				CHKERRQ(ierr);
@@ -337,9 +337,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
 
-	// close temporary restart file
-	fclose(fp);
-
+	// arrays for dynamic NotInAir phase_trans
+	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
 
 	// Read info from file/command-line & overwrite 'restart' data (necessary for adjoint)
 
@@ -354,7 +353,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	}
 
     // Store Material DB in intermediate structure (for use with Adjoint)
-	ierr = DBMatCreate(&dbm_modified, fb, PETSC_TRUE); 							CHKERRQ(ierr);
+	ierr = DBMatCreate(&dbm_modified, fb, &lm->fs, PETSC_TRUE); 							CHKERRQ(ierr);
+
 
 	// swap material structure with the one from file (for adjoint)
 	for (i=0; i < lm->dbm.numPhases; i++)
@@ -366,6 +366,13 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// update time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
+
+	// read from input file, create arrays for dynamic diking, and read from restart file
+	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, fb, fp, PETSC_TRUE);  CHKERRQ(ierr);
+	
+	// close temporary restart file
+	fclose(fp);
+
 	// free space
 	free(fileName);
 
@@ -373,6 +380,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	PetscFunctionReturn(0);
 }
+
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibSaveRestart"
@@ -429,6 +438,12 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 
 	// passive tracers
 	ierr = Passive_Tracer_WriteRestart(&lm->actx, fp); CHKERRQ(ierr);
+
+	// dynamic phase transition 
+	ierr = DynamicPhTr_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
+
+	// dynamic dike 
+	ierr = DynamicDike_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
 
 	// close temporary restart file
 	fclose(fp);
@@ -502,6 +517,10 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = ADVDestroy     (&lm->actx);   CHKERRQ(ierr);
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
+
+	ierr = DynamicPhTrDestroy (&lm->dbm); CHKERRQ(ierr);
+	ierr = DynamicDike_Destroy(&lm->jr); CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 }

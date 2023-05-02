@@ -48,6 +48,7 @@
 
 struct Scaling;
 struct FB;
+struct FDSTAG;
 struct JacRes;
 struct ModParam;
 
@@ -76,7 +77,7 @@ public:
 	PetscScalar APS2; // end of softening APS
 	PetscScalar A;    // reduction ratio
 	PetscScalar Lm;   // material length scale
-    PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
+  PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
 
 };
 
@@ -141,11 +142,26 @@ public:
   PetscScalar     botTemp;
   PetscScalar     cstTemp;
   PetscScalar     thermalAge;
+
+  //Segmented NotInAirBox
+	PetscInt			nsegs;                    // number of segments
+	PetscScalar		xbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in x
+	PetscScalar		ybounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in y
+	PetscScalar		zbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in z
+	PetscScalar  	*celly_xboundL;  //left boundary of segment evaluated at ycoord of cell
+	PetscScalar  	*celly_xboundR;  //right boundary of segment evaluated at ycoord of cell
+	PetscScalar   *cbuffL;    // memory buffer for celly_xboundL
+	PetscScalar   *cbuffR;    // memory buffer for celly_xboundR
+
   
   // for moving NotInAirBox
   PetscScalar     t0_box;
   PetscScalar     t1_box;
   PetscScalar     v_box;
+
+  //for linking NotInAirBoxes
+  PetscInt      phtr_link_left;  
+  PetscInt      phtr_link_right;  
   
 };
 
@@ -277,7 +293,7 @@ struct DBMat
 };
 
 // read material database
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput);
 
 // read single softening law
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);

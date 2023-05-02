@@ -211,11 +211,7 @@
   <PhaseTransitionStart>
         ID                      =   0                                 # Phase_transition law ID
         Type                    =   NotInAirBox                       # A box-like region
- #       PTBox_Bounds            =   -15.0 15.0  -1.0 1.0 -30.0 5.0      # box bound coordinates: [left, right, front, back, bottom, top]
- 	nsegs			=   1
- 	xbounds                 =   [-15.0 15.0]
- 	ybounds                 =   [-1.0 1.0]
- 	zbounds                 =   [-30.0 5.0]
+        PTBox_Bounds            =   -15.0 15.0  -1.0 1.0 -30.0 5.0      # box bound coordinates: [left, right, front, back, bottom, top]
         number_phases           =   2
         PhaseInside             =   2 2                               # Phase within the box [use -1 if you don't want to change the phase inside the box]
         PhaseOutside            =   1 0                               # Phase outside the box
