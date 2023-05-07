@@ -135,8 +135,6 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
             fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
             0, 0, 0, &jr->DA_CELL_1D); CHKERRQ(ierr);
 
-        PetscPrintf(PETSC_COMM_WORLD,">>>>>>>! x.nproc=%i, y.nproc=%i, z.nproc=%i, y.tnodes=%i \n", 
-        fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,fs->dsy.tnods); //debugging
             //DM for 2D cell center vector, with istep_nave planes for time averaging
             ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
             fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
