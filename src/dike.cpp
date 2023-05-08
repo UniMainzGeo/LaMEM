@@ -671,15 +671,11 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2
   for(k = sz + nz - 1; k >= sz; k--)
   {
      dz  = SIZE_CELL(k, sz, (*dsz));
-     for (j = j1+sy; j <= j2+sy; j++ )  //Global coordinates
-     { 
-       for (i=sx; i < sx+ny; i++)
-       {
+     START_PLANE_LOOP
           GET_CELL_ID(ID, i-sx, j-sy, k-sz, nx, ny);  //GET_CELL_ID needs local indices
           svCell = &jr->svCell[ID]; 
           Tc=lT[k][j][i];
  
-          
           if ((Tc<=Tsol) & (svCell->phRat[AirPhase] < 1.0))
           {
             dz  = SIZE_CELL(k, sz, (*dsz));
@@ -695,8 +691,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2
             zsol[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz])/(lT[k-1][j][i]-Tc)*(Tsol-Tc); 
                //zsol[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz]);
           }
-        }
-     } //End Plane loop
+      END_PLANE_LOOP
   } 
 
       //After integrating and averaging, send it down to the next proc. 
@@ -743,25 +738,20 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 
   //now all cores have the same solution so give that to the stress array
-  for (j = j1+sy; j <= j2+sy; j++ )
-  { 
-     for (i=sx; i < sx+ny; i++)
-     {
-        dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //excess magmastatic pressure at solidus, note z AND grav[2] <0
-        if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
-        gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]+dPmag;  //Depth weighted mean effective stress: (total stress)+(magma press)
-                                                                      // (magma press)=lp_lith+dPmagma
-     }
-  } 
+  START_PLANE_LOOP
+    dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //excess magmastatic pressure at solidus, note z AND grav[2] <0
+    //if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
+    gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]+dPmag;  //Depth weighted mean effective stress: (total stress)+(magma press)                                                                      // (magma press)=lp_lith+dPmagma
+  END_PLANE_LOOP
 
   if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
   {
      START_PLANE_LOOP
-          xcell=COORD_CELL(i, sx, fs->dsx);
-          ycell=COORD_CELL(j, sy, fs->dsy);
-          dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
-          if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
-          PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g %i\n", jr->ts->istep+1, xcell, ycell, gsxx_eff_ave[L][j][i], dPmag, nD);   //debugging    
+        xcell=COORD_CELL(i, sx, fs->dsx);
+        ycell=COORD_CELL(j, sy, fs->dsy);
+        dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
+        //if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
+        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g %i\n", jr->ts->istep+1, xcell, ycell, gsxx_eff_ave[L][j][i], dPmag, nD);   //debugging    
      END_PLANE_LOOP  
   }
   PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);   //debugging    
@@ -1280,14 +1270,14 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
         xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
      }
 
-     CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2; 
-     CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;  
+     //CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2; 
+     //CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;  
 
      if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)   //debugging
      {
         ycell = COORD_CELL(j, sy, fs->dsy);  //debugging
         xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g %i\n", jr->ts->istep+1, ycell, xcenter+xshift, 
+        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g %i %i %i\n", jr->ts->istep+1, ycell, xcenter+xshift, 
         CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx),nD);  //debugging
      }
 
