@@ -1,4 +1,4 @@
-# LaMEM 1.2.5
+# LaMEM 1.3.0
 ## Lithosphere and Mantle Evolution Model
 
 LaMEM is a parallel 3D numerical code that can be used to model various thermomechanical 
