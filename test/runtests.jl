@@ -101,6 +101,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=8, opt=true)       
 end
 
+
 @testset "t4_Localisation" begin
     dir = "t4_Loc";
     
@@ -276,9 +277,12 @@ end
                             keywords=keywords, accuracy=acc, cores=2, opt=true) 
 end
 
+
 @testset "t8_AdjointGradients" begin
   include("AdjointGradients.jl")
 end
+
+
 
 @testset "t9_PhaseDiagrams" begin
     dir = "t9_PhaseDiagrams";
@@ -295,7 +299,6 @@ end
 
 
 # this ia a more complicated one, that requires a devoted script (with plotting)
-
 @testset "t10_Compressibility" begin
     dir = "t10_Compressibility";
     
@@ -352,6 +355,7 @@ end
     clean_directory(dir)
     # --------------
 end
+
 
 @testset "t11_Subgrid" begin
     dir = "t11_Subgrid";
@@ -518,8 +522,11 @@ end
     @test norm(τ_anal[:] .- τ[:]) ≈ 0.2009862117696578 rtol = 1e-4
 
     Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_DryOlivine_DC.png")
-    clean_directory(dir)
+    clean_test_directory(dir)
+
 end
+
+
 
 # t14_1DStrengthEnvelope/
 @testset "t14_1DStrengthEnvelope" begin
@@ -575,6 +582,7 @@ end
     Plot_StrengthEnvelop("t14_StrengthEnvelop_1D.png", dir, z, (τII_1, τII_2, τII_3, τII_4, τ_anal),("Viscoplastic", "VEP dt=5ka", "VEP dt=10ka", "VEP dt=50ka", "Analytical"))
     clean_directory(dir)
 end
+
 
 @testset "t15_RTI" begin
     dir = "t15_RTI";
@@ -887,7 +895,6 @@ end
                             args="-nel_x 16 -nel_y 16 -nel_z 16",
                             keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":")
 end
-
 
 end
 

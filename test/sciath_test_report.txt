@@ -1,6 +1,0 @@
-11/25/2020, 14:13:19
-[SciATH] Batch queueing system configuration [SciATHBatchQueuingSystem.conf]
-  Version:           0.6.0
-  Queue system:      none
-  MPI launcher:      mpiexec -np <ranks>
-No tests

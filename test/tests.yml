@@ -1,9 +1,0 @@
-tests:
-  -
-    name: my_first_test
-    command: printf "Hello, World!\n"
-    type: exit_code
-  -
-    name: failing_test
-    command: false
-    type: exit_code

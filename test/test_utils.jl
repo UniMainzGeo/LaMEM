@@ -1,12 +1,12 @@
 # These are tools that help perform the LaMEM tests, which run LaMEM locally
-using LinearAlgebra
+using LinearAlgebra, Glob
 
-export run_lamem_local_test, perform_lamem_test
+export run_lamem_local_test, perform_lamem_test, clean_test_directory
 
 """
     run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
                         outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
-                        mpiexec="mpiexec")
+                        mpi exec="mpiexec")
 
 This runs a LaMEM simulation with given `ParamFile` on 1 or more cores, while writing the output to a local log file.
 
@@ -243,6 +243,37 @@ function print_differences(new, expected, accuracy)
 end
 
 
+
+"""
+    clean_test_directory(dir)
+
+This cleans a certain (test) directory of all that LaMEM and the tests may have generated.
+"""
+function clean_test_directory(dir)
+    
+    cur_dir = pwd();
+
+    clean_directory(dir)
+        
+    cd(dir)
+    for f in glob("*.out")
+        rm(f)
+    end
+    for f in glob("ProcessorPartitioning*")
+        rm(f)
+    end
+    for f in glob("*.vts")
+        rm(f)
+    end
+    
+    for f in glob("Out*")
+        rm(f, force=true, recursive=true)
+    end
+    
+    cd(cur_dir)  # return to directory       
+
+end
+
 """
     perform_lamem_test( dir::String, 
                         ParamFile::String, 
@@ -331,8 +362,8 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     cd(cur_dir)  # return to directory       
 
     if clean_dir
-        clean_directory(dir)
-    end
+       clean_test_directory(dir)
+    end 
     
     return success
 end 
