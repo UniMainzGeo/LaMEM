@@ -265,9 +265,17 @@ function clean_test_directory(dir)
     for f in glob("*.vts")
         rm(f)
     end
-    
     for f in glob("Out*")
         rm(f, force=true, recursive=true)
+    end
+    for f in glob("markers*")
+        rm(f, force=true, recursive=true)
+    end
+    for f in glob("markers")
+        rm(f, force=true, recursive=true)
+    end
+    for f in glob("ScalingLaw*.dat")
+        rm(f)
     end
     
     cd(cur_dir)  # return to directory       

@@ -45,49 +45,47 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 end
 
-
-# t3_SubductionMATLABinput - to be added  & changed to julia.
 @testset "t3_Subduction" begin
-    dir = "t3_SubductionMATLABinput";
+    dir = "t3_SubductionGMGinput";
     
     # input script 
     include(joinpath(dir,"CreateMarkers_Subduction.jl"));      
 
-    ParamFile = "Subduction_MATLAB_Particles.dat";
+    ParamFile = "Subduction_GMG_Particles.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-6,atol=5e-7), (rtol=1e-5,atol=1e-5), (rtol=5e-4,atol=1e-3));
     
     # test on 1 core
-    # t3_Sub1_MATLAB_a_Direct_opt
+    # t3_Sub1_a_Direct_opt
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=1)
 
-    @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_a_Direct_opt-p1.expected", 
+    @test perform_lamem_test(dir,ParamFile,"Sub1_a_Direct_opt-p1.expected", 
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
 
-    # t3_Sub1_MATLAB_b_MUMPS_opt                            
+    # t3_Sub1_b_MUMPS_opt                            
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
     
-    ParamFile = "Subduction_MATLAB_Particles.dat";
+    ParamFile = "Subduction_GMG_Particles.dat";
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4)
-    @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_b_MUMPS_opt-p4.expected", 
+    @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt-p4.expected", 
                                 args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=4, opt=true)
 
-    # t3_Sub1_MATLAB_c_MUMPS_deb                                 
+    # t3_Sub1_c_MUMPS_deb                                 
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-6,atol=2e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=3e-4));
     
-    ParamFile = "Subduction_MATLAB_Particles4.dat";
+    ParamFile = "Subduction_GMG_Particles4.dat";
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4)
-    @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_c_MUMPS_deb-p4.expected", 
+    @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb-p4.expected", 
                                 args="-jp_pc_factor_mat_solver_type mumps  -nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=4, opt=true)
                         
-    # t3_Sub1_MATLAB_d_MUMPS_MG_VEP_opt                                 
+    # t3_Sub1_d_MUMPS_MG_VEP_opt                                 
     # NOTE: This employs 1D grid refinement which does not work yet in julia (should be fixed)
     include(joinpath(dir,"CreateMarkers_SubductionVEP_parallel.jl"));      
 
@@ -96,7 +94,7 @@ end
     
     ParamFile = "Subduction_VEP.dat";
     CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=8)
-    @test perform_lamem_test(dir,ParamFile,"Sub1_MATLAB_d_MUMPS_MG_VEP_opt-p8.expected", 
+    @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
                                 args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=8, opt=true)       
 end
@@ -352,7 +350,7 @@ end
 
     # Create plot with stress & analytical solution
     Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
-    clean_directory(dir)
+    clean_test_directory(dir)
     # --------------
 end
 
@@ -409,7 +407,7 @@ end
                 args="-printNorms 1",
                 keywords=keywords, accuracy=acc, cores=1, opt=true)
 
-    clean_directory(dir)
+    clean_test_directory(dir)
     # ---
 end
 
@@ -582,7 +580,7 @@ end
     
     # Create plot
     Plot_StrengthEnvelop("t14_StrengthEnvelop_1D.png", dir, z, (τII_1, τII_2, τII_3, τII_4, τ_anal),("Viscoplastic", "VEP dt=5ka", "VEP dt=10ka", "VEP dt=50ka", "Analytical"))
-    clean_directory(dir)
+    clean_test_directory(dir)
 end
 
 
@@ -724,7 +722,6 @@ end
     @test perform_lamem_test(dir,"RTI_FSSA.dat","RTI_FSSA_1-p1.expected",
                             args="-nstep_max 20 -nel_x 50 -nel_z 100",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
-
 end
 
 @testset "t21_Passive_Tracer" begin
@@ -778,13 +775,15 @@ end
     acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5, atol=5e-5), (rtol=2.5e-4,atol=1e-4));
     
     ParamFile = "Erosion_Sedimentation_2D.dat"
-    t24_CreateMarkers(dir, ParamFile, NumberCores=8)
 
     # test_a
+    t24_CreateMarkers(dir, ParamFile, NumberCores=8)
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_opt-p8.expected",
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=8, opt=true)
+
     # test_b
+    t24_CreateMarkers(dir, ParamFile, NumberCores=8)
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_deb-p8.expected",
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=8, deb=true)
