@@ -568,7 +568,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
          }
        }
 
-      ierr = Compute_sxx_eff(jr,nD, j1, j2); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
+      ierr = Compute_sxx_eff(jr,nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 
       ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx  
 
@@ -581,7 +581,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 }
 //------------------------------------------------------------------------------------------------------------------
 
-PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2)
+PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD)
 {
   MPI_Request srequest, rrequest;
   Vec         vsxx, vliththick, vzsol;
@@ -1270,8 +1270,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
         xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
      }
 
-     //CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2; 
-     //CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;  
+     CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2; 
+     CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2;  
 
      if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)   //debugging
      {
