@@ -86,7 +86,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=4, opt=true)
                         
     # t3_Sub1_d_MUMPS_MG_VEP_opt                                 
-    # NOTE: This employs 1D grid refinement which does not work yet in julia (should be fixed)
+    # NOTE: This employs 1D grid refinement
     include(joinpath(dir,"CreateMarkers_SubductionVEP_parallel.jl"));      
 
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
