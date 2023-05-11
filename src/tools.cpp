@@ -97,8 +97,6 @@ void PrintStep(PetscInt step)
 	PetscPrintf(PETSC_COMM_WORLD,"%s\n", line);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VecReadRestart"
 PetscErrorCode VecReadRestart(Vec x, FILE *fp)
 {
 	PetscInt     size;
@@ -121,8 +119,6 @@ PetscErrorCode VecReadRestart(Vec x, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VecWriteRestart"
 PetscErrorCode VecWriteRestart(Vec x, FILE *fp)
 {
 	PetscInt     size;
@@ -173,8 +169,6 @@ PetscScalar getStdv(PetscScalar *data, PetscInt n)
     return sqrt(getVar(data,n));
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "makeMPIIntArray"
 PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const PetscInt n)
 {
 	PetscMPIInt    *tmp;
@@ -194,8 +188,6 @@ PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "clearIntArray"
 PetscErrorCode clearIntArray(PetscInt *arr, const PetscInt n)
 {
 	size_t          sz;
@@ -212,8 +204,6 @@ PetscErrorCode clearIntArray(PetscInt *arr, const PetscInt n)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "makeIntArray"
 PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt n)
 {
 	PetscInt       *tmp;
@@ -233,8 +223,6 @@ PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "makeScalArray"
 PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const PetscInt n)
 {
 	PetscScalar    *tmp;
@@ -306,8 +294,6 @@ void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, Petsc
 
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DirMake"
 PetscErrorCode DirMake(const char *name)
 {
 	int status;
@@ -339,8 +325,6 @@ PetscErrorCode DirMake(const char *name)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DirRemove"
 PetscErrorCode DirRemove(const char *name)
 {
 	int status;
@@ -365,8 +349,6 @@ PetscErrorCode DirRemove(const char *name)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DirRename"
 PetscErrorCode DirRename(const char *old_name, const char *new_name)
 {
 	int status;
@@ -391,8 +373,6 @@ PetscErrorCode DirRename(const char *old_name, const char *new_name)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DirCheck"
 PetscErrorCode DirCheck(const char *name, PetscInt *exists)
 {
 	struct stat s;
@@ -830,8 +810,6 @@ void rewindPtr(PetscInt n, PetscInt ptr[])
 //---------------------------------------------------------------------------
 // service functions
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getPhaseRatio"
 PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
 {
 	// compute phase ratio array

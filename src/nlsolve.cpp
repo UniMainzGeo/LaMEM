@@ -62,8 +62,6 @@
 //   (also for linear solves)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "NLSolClear"
 PetscErrorCode NLSolClear(NLSol *nl)
 {
 	PetscErrorCode ierr;
@@ -75,8 +73,6 @@ PetscErrorCode NLSolClear(NLSol *nl)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "NLSolCreate"
 PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 {
 	SNES            snes;
@@ -166,8 +162,6 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DisplaySpecifiedSolverOptions"
 PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 {
 	PetscErrorCode 	ierr;
@@ -338,8 +332,6 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "NLSolDestroy"
 PetscErrorCode NLSolDestroy(NLSol *nl)
 {
 	PetscErrorCode ierr;
@@ -352,8 +344,6 @@ PetscErrorCode NLSolDestroy(NLSol *nl)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FormResidual"
 PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 {
 	NLSol  *nl;
@@ -374,8 +364,6 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FormJacobian"
 PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 {
 	// Compute FDSTAG Jacobian matrix and preconditioner
@@ -503,8 +491,6 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacApplyMFFD"
 PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y)
 {
 	Mat *FD;
@@ -521,8 +507,6 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SNESPrintConvergedReason"
 PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 {
 	PetscLogDouble      t_end;
@@ -636,8 +620,6 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SNESCoupledTest"
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,
 	PetscInt            it,

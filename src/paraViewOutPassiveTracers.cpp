@@ -53,8 +53,6 @@
 #include "passive_tracer.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVPtrCreate"
 PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 {
 	char filename[_str_len_];
@@ -99,8 +97,6 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVPtrWriteTimeStep"
 PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
@@ -121,8 +117,6 @@ PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVPtrWriteVTU"
 PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 {
 	// output markers in .vtu files
@@ -441,8 +435,6 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVPtrWritePVTU"
 PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
 {
 	// create .pvtu file for marker output

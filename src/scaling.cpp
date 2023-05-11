@@ -46,8 +46,6 @@
 #include "scaling.h"
 #include "parsing.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ScalingCreate"
 PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 {
 	// characteristic values must ALWAYS be given in SI units

@@ -74,8 +74,6 @@ Main advection routine
 #END_DOC#
 */
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MarkerMerge"
 PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 {
 	PetscFunctionBeginUser;
@@ -106,8 +104,6 @@ PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVCreate"
 PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 {
 	// create advection context
@@ -288,8 +284,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVSetType"
 PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 {
 	FDSTAG   *fs;
@@ -353,8 +347,6 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
  	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVReadRestart"
 PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 {
 	// read advection object from restart database
@@ -390,8 +382,6 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVWriteRestart"
 PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp)
 {
 	PetscFunctionBeginUser;
@@ -405,8 +395,6 @@ PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVCreateData"
 PetscErrorCode ADVCreateData(AdvCtx *actx)
 {
 	// create communicator and separator
@@ -435,8 +423,6 @@ PetscErrorCode ADVCreateData(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVDestroy"
 PetscErrorCode ADVDestroy(AdvCtx *actx)
 {
 	// destroy advection context
@@ -459,8 +445,6 @@ PetscErrorCode ADVDestroy(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVSetBGPhase"
 PetscErrorCode ADVSetBGPhase(AdvCtx *actx)
 {
 	// set background phase in all control volumes
@@ -493,8 +477,6 @@ PetscErrorCode ADVSetBGPhase(AdvCtx *actx)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVReAllocStorage"
 PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 {
 	// WARNING! This is a very crappy approach. Make sure the overhead is
@@ -539,8 +521,6 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVAdvect"
 PetscErrorCode ADVAdvect(AdvCtx *actx)
 {
 	//=======================================================================
@@ -569,8 +549,6 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVRemap"
 PetscErrorCode ADVRemap(AdvCtx *actx)
 {
 	//=======================================================================
@@ -643,8 +621,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVExchange"
 PetscErrorCode ADVExchange(AdvCtx *actx)
 {
 	//=======================================================================
@@ -682,8 +658,6 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVProjHistGridToMark"
 PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx)
 {
 
@@ -703,8 +677,6 @@ PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVInterpFieldToMark"
 PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 {
 	//=======================================================================
@@ -887,8 +859,6 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVAdvectMark"
 PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 {
 	// update marker positions from current velocities & time step
@@ -1005,8 +975,6 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMapMarkToDomains"
 PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 {
 	// count number of markers to be sent to each neighbor domain
@@ -1048,8 +1016,6 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVExchangeNumMark"
 PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 {
 	// communicate number of markers with neighbor processes
@@ -1096,8 +1062,6 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVCreateMPIBuff"
 PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 {
 	// create send and receive buffers for asynchronous MPI communication
@@ -1153,8 +1117,6 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVApplyPeriodic"
 PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
 {
 	// apply periodic marker advection
@@ -1220,8 +1182,6 @@ PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVExchangeMark"
 PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 {
 	// communicate markers with neighbor processes
@@ -1272,8 +1232,6 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVDestroyMPIBuff"
 PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx)
 {
 	PetscErrorCode ierr;
@@ -1287,8 +1245,6 @@ PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVCollectGarbage"
 PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 {
 	// store received markers, collect garbage
@@ -1353,8 +1309,6 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMapMarkToCells"
 PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
 {
 	// store host cell ID for every marker & list of marker IDs in every cell
@@ -1429,8 +1383,6 @@ PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkControl"
 PetscErrorCode ADVMarkControl(AdvCtx *actx)
 {
 	// check marker distribution and delete or inject markers if necessary
@@ -1519,8 +1471,6 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVCheckCorners"
 PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 {
 	// check corner marker distribution
@@ -1789,8 +1739,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVProjHistMarkToGrid"
 PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 {
 	// Project the following history fields from markers to grid:
@@ -1858,8 +1806,6 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVInterpMarkToCell"
 PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 {
 	// marker-to-grid projection (cell nodes)
@@ -1976,8 +1922,6 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVInterpMarkToEdge"
 PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase)
 {
 	// marker-to-grid projection (edge nodes)
@@ -2107,8 +2051,6 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVCheckMarkPhases"
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 {
 	// check phases of markers
@@ -2136,8 +2078,6 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVUpdateHistADVNone"
 PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 {
 	//===============================================
@@ -2194,8 +2134,6 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVSelectTimeStep"
 PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart)
 {
 	//-------------------------------------
@@ -2243,8 +2181,6 @@ PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkerAdiabatic"
 PetscErrorCode ADVMarkerAdiabatic(AdvCtx *actx)
 {
 	Marker      *P;

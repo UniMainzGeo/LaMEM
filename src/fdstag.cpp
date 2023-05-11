@@ -51,8 +51,6 @@
 //---------------------------------------------------------------------------
 // MeshSeg1D functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MeshSeg1DReadParam"
 PetscErrorCode MeshSeg1DReadParam(
 	MeshSeg1D  *ms,
 	PetscScalar leng,
@@ -138,8 +136,6 @@ PetscErrorCode MeshSeg1DReadParam(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MeshSeg1DGenCoord"
 PetscErrorCode MeshSeg1DGenCoord(
 	MeshSeg1D   *ms,     // segments description
 	PetscInt     iseg,   // segment index
@@ -208,8 +204,6 @@ PetscErrorCode MeshSeg1DGenCoord(
 //---------------------------------------------------------------------------
 // Discret1D functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DCreate"
 PetscErrorCode Discret1DCreate(
 		Discret1D  *ds,
 		PetscInt    nproc,     // number of processors
@@ -290,8 +284,6 @@ PetscErrorCode Discret1DCreate(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DDestroy"
 PetscErrorCode Discret1DDestroy(Discret1D *ds)
 {
 	PetscErrorCode ierr;
@@ -307,8 +299,6 @@ PetscErrorCode Discret1DDestroy(Discret1D *ds)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DReadRestart"
 PetscErrorCode Discret1DReadRestart(Discret1D *ds, FILE *fp)
 {
 	PetscErrorCode ierr;
@@ -328,8 +318,6 @@ PetscErrorCode Discret1DReadRestart(Discret1D *ds, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DWriteRestart"
 PetscErrorCode Discret1DWriteRestart(Discret1D *ds, FILE *fp)
 {
 	PetscFunctionBeginUser;
@@ -341,8 +329,6 @@ PetscErrorCode Discret1DWriteRestart(Discret1D *ds, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DGetNumCells"
 PetscErrorCode Discret1DGetNumCells(Discret1D *ds, PetscInt **ncelProc)
 {
 	// get number of cells per processor
@@ -364,8 +350,6 @@ PetscErrorCode Discret1DGetNumCells(Discret1D *ds, PetscInt **ncelProc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DGenCoord"
 PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 {
 	PetscInt     i, n, nl, pstart, istart;
@@ -440,8 +424,6 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DStretch"
 PetscErrorCode Discret1DStretch(Discret1D *ds, PetscScalar eps, PetscScalar ref)
 {
 	// stretch grid with constant stretch factor about reference point
@@ -465,8 +447,6 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, PetscScalar eps, PetscScalar ref)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DGetColumnComm"
 PetscErrorCode Discret1DGetColumnComm(Discret1D *ds)
 {
 	// This function is called every time the column communicator is needed.
@@ -483,8 +463,6 @@ PetscErrorCode Discret1DGetColumnComm(Discret1D *ds)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DFreeColumnComm"
 PetscErrorCode Discret1DFreeColumnComm(Discret1D *ds)
 {
 	// This function is called either in the destructor or when it's likely
@@ -504,8 +482,6 @@ PetscErrorCode Discret1DFreeColumnComm(Discret1D *ds)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DGatherCoord"
 PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 {
 	// gather coordinate array on rank zero of PETSC_COMM_WORLD
@@ -577,8 +553,6 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DCheckMG"
 PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors)
 {
 	PetscInt sz, ncors;
@@ -614,8 +588,6 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DgetMaxInvStep"
 PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax)
 {
 	// get maximum inverse time step on local domain
@@ -695,8 +667,6 @@ PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir
 
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DFindPoint"
 PetscErrorCode Discret1DFindPoint(Discret1D *ds, PetscScalar x, PetscInt &ID)
 {
 	// find index of a cell containing point (local points only)
@@ -768,8 +738,6 @@ PetscErrorCode Discret1DFindPoint(Discret1D *ds, PetscScalar x, PetscInt &ID)
 //---------------------------------------------------------------------------
 // DOFIndex functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DOFIndexCreate"
 PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z)
 {
 	// compute & set global indices of local & ghost nodes
@@ -824,8 +792,6 @@ PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DOFIndexDestroy"
 PetscErrorCode DOFIndexDestroy(DOFIndex *dof)
 {
 	PetscErrorCode 	 ierr;
@@ -840,8 +806,6 @@ PetscErrorCode DOFIndexDestroy(DOFIndex *dof)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DOFIndexCompute"
 PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod)
 {
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, stv=0, stp=0;
@@ -935,8 +899,6 @@ PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod)
 //---------------------------------------------------------------------------
 // FDSTAG functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGCreate"
 PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 {
 	// Create object with all necessary arrays to handle FDSTAG discretization.
@@ -1070,8 +1032,6 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGReadRestart"
 PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 {
 	PetscInt *lx,  *ly,  *lz;
@@ -1130,8 +1090,6 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGWriteRestart"
 PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
 {
 	PetscErrorCode ierr;
@@ -1144,8 +1102,6 @@ PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGDestroy"
 PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 {
 	PetscErrorCode ierr;
@@ -1174,8 +1130,6 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGCreateDMDA"
 PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
@@ -1234,8 +1188,6 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGGetNeighbProc"
 PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 {
 	// return an array with the global ranks of adjacent processes (including itself)
@@ -1273,8 +1225,6 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGGetPointRanks"
 PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, PetscMPIInt *grank)
 {
 	// get local & global ranks of a domain containing a point (only neighbors are checked)
@@ -1301,8 +1251,6 @@ PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGGetAspectRatio"
 PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
 {
 	// compute maximum aspect ratio in the grid
@@ -1351,8 +1299,6 @@ PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGView"
 PetscErrorCode FDSTAGView(FDSTAG *fs)
 {
 	// print & check essential grid details
@@ -1400,8 +1346,6 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGGetLocalBox"
 PetscErrorCode FDSTAGGetLocalBox(
 	FDSTAG      *fs,
 	PetscScalar *bx,
@@ -1424,8 +1368,6 @@ PetscErrorCode FDSTAGGetLocalBox(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGGetGlobalBox"
 PetscErrorCode FDSTAGGetGlobalBox(
 	FDSTAG      *fs,
 	PetscScalar *bx,
@@ -1448,8 +1390,6 @@ PetscErrorCode FDSTAGGetGlobalBox(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGSaveGrid"
 PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 {
 	int            fid;
@@ -1509,8 +1449,6 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DMDACreate3dSetUp"
 PetscErrorCode DMDACreate3dSetUp(MPI_Comm comm,
 	DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,
 	PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,

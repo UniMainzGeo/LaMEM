@@ -58,8 +58,6 @@
 //---------------------------------------------------------------------------
 //............................. Output buffer ...............................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "OutBufCreate"
 PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 {
 	FDSTAG   *fs;
@@ -93,8 +91,6 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "OutBufDestroy"
 PetscErrorCode OutBufDestroy(OutBuf *outbuf)
 {
 	PetscErrorCode ierr;
@@ -160,8 +156,6 @@ void OutBufPutCoordVec(
 
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "OutBufPut3DVecComp"
 PetscErrorCode OutBufPut3DVecComp(
 	OutBuf      *outbuf,
 	PetscInt     ncomp,  // number of components
@@ -239,8 +233,6 @@ PetscErrorCode OutBufPut3DVecComp(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "OutBufZero3DVecComp"
 PetscErrorCode OutBufZero3DVecComp(
 	OutBuf      *outbuf,
 	PetscInt     ncomp,  // number of components
@@ -349,8 +341,6 @@ PetscInt OutMaskCountActive(OutMask *omask)
 //---------------------------------------------------------------------------
 //...................... ParaView output driver object ......................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutCreate"
 PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 {
 	OutMask *omask;
@@ -510,8 +500,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutCreateData"
 PetscErrorCode PVOutCreateData(PVOut *pvout)
 {
 	JacRes   *jr;
@@ -587,8 +575,6 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutDestroy"
 PetscErrorCode PVOutDestroy(PVOut *pvout)
 {
 
@@ -604,8 +590,6 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteTimeStep"
 PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
@@ -624,8 +608,6 @@ PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritePVTR"
 PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 {
 	FILE        *fp;
@@ -703,8 +685,6 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteVTR"
 PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 {
 	FILE          *fp;
@@ -830,8 +810,6 @@ void WriteXMLHeader(FILE *fp, const char *file_type)
 #endif
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "UpdatePVDFile"
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
 		long int *offset, PetscScalar ttime, PetscInt outpvd)

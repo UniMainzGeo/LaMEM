@@ -30,8 +30,6 @@
 
 //---------------------------------------------------------------------------
 
-#undef __FUNCT__
-#define __FUNCT__ "ADVPtrPassive_Tracer_create"
 PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 {
 /*
@@ -126,8 +124,6 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 	 PetscFunctionReturn(0);
 	}
 // ---------------------------------------------------------------------------------------------------------------------------//
-#undef __FUNCT__
-#define __FUNCT__ "ADVPtrReCreateStorage"
 PetscErrorCode ADVPtrReCreateStorage(AdvCtx *actx)
 {
 
@@ -176,8 +172,6 @@ PetscErrorCode ADVPtrReCreateStorage(AdvCtx *actx)
 
 //------------------------------------------------------------------------------------------//
 
-#undef __FUNCT__
-#define __FUNCT__ "ADVPassiveTracerInit"
 PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx)
 {
 	PetscErrorCode ierr;
@@ -194,8 +188,6 @@ PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVPtrInitCoord"
 PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 {
 	//Initialize the passive tracer lagrangian grid. The initial passive tracer distribution is a rectangular grid, with a
@@ -300,8 +292,6 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADV_Assign_Phase"
 PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 {
 	// Initially the marker are phase-less. This routine assign both phase and
@@ -427,8 +417,6 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVAdvectPassiveTracer"
 PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 {
 /*
@@ -820,8 +808,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 //----------------------------------------------------------------------------//
 
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkCrossFreeSurfPassive_Tracers"
 PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 {
 	// change marker passive tracers when crossing free surface
@@ -1002,8 +988,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 }
 
 //----------------------------------------------------------------------------//
-#undef __FUNCT__
-#define __FUNCT__ "Check_advection_condition"
 PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf)
 {
 
@@ -1094,8 +1078,6 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 
 
 //----------------------------------------------------------------------------//
-#undef __FUNCT__
-#define __FUNCT__ "ADVPtrDestroy"
 PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 {
 
@@ -1134,8 +1116,6 @@ PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 
 //-------------------------------------------------------------------------//
 
-#undef __FUNCT__
-#define __FUNCT__ "Passive_Tracer_WriteRestart"
 PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
 {
 	PetscErrorCode ierr;
@@ -1162,8 +1142,6 @@ PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
 
 // --------------------------------------------------------------------------------------- //
 
-#undef __FUNCT__
-#define __FUNCT__ "ReadPassive_Tracers"
 PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
 {
 	PetscErrorCode ierr;
@@ -1191,8 +1169,6 @@ PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Sync_Vector"
 PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark)
 {
 	PetscScalar *recv,*send;
@@ -1216,8 +1192,6 @@ PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark)
 
 //=========================================================
 /*
-#undef __FUNCT__
-#define __FUNCT__ "Passive_tracers_save"
 PetscErrorCode Passive_tracers_save(AdvCtx *actx)
 {	// save new restart database, then delete the original
 

@@ -59,8 +59,6 @@
 	dvdx2 = ((v[4] - v[2] + v[9] - v[7])/bdx2 + (v[3] - v[4] + v[8] - v[9])/fdx2)/4.0; \
 	vc    = ( v[9] + v[4])/2.0;
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getGradientVel"
 PetscErrorCode getGradientVel(
 	FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
 	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz,
@@ -135,8 +133,6 @@ PetscErrorCode getGradientVel(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetSHmax"
 PetscErrorCode JacResGetSHmax(JacRes *jr)
 {
 	// compute maximum horizontal compressive stress (SHmax) orientation
@@ -213,8 +209,6 @@ PetscErrorCode JacResGetSHmax(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetEHmax"
 PetscErrorCode JacResGetEHmax(JacRes *jr)
 {
 	// compute maximum horizontal extension rate (EHmax) orientation
@@ -291,8 +285,6 @@ PetscErrorCode JacResGetEHmax(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetOverPressure"
 PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 {
 	// compute overpressure
@@ -335,8 +327,6 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetLithoStaticPressure"
 PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 {
 	// compute lithostatic pressure
@@ -440,8 +430,6 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetPorePressure"
 PetscErrorCode JacResGetPorePressure(JacRes *jr)
 {
 	// compute pore pressure
@@ -533,8 +521,6 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetPermea"
 PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char *outfile)
 {
 	FILE        *db;

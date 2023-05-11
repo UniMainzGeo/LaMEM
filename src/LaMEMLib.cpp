@@ -75,8 +75,6 @@
 #include "passive_tracer.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibMain"
 PetscErrorCode LaMEMLibMain(void *param)
 {
 	LaMEMLib       lm;
@@ -95,6 +93,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
+	PetscPrintf(PETSC_COMM_WORLD,"     Version : 1.2.4 \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
@@ -178,8 +177,6 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibCreate"
 PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 {
 	FB *fb;
@@ -198,14 +195,11 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// create time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
-	// create material database
-	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
-
-    // create dike database
-	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, PETSC_TRUE);   CHKERRQ(ierr);
-
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
+
+	// create material database
+	ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
 
 	// create free surface grid
 	ierr = FreeSurfCreate(&lm->surf, fb); 			CHKERRQ(ierr);
@@ -215,6 +209,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create residual & Jacobian evaluation context
 	ierr = JacResCreate(&lm->jr, fb); 				CHKERRQ(ierr);
+
+	// create dike database
+	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, &lm->jr, PETSC_TRUE);   CHKERRQ(ierr);
 
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); 				CHKERRQ(ierr);
@@ -243,8 +240,6 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSaveGrid"
 PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 {
 	FB *fb;
@@ -273,8 +268,6 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibLoadRestart"
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 {
 	FB              *fb;
@@ -333,6 +326,13 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
 
+	// arrays for dynamic NotInAir phase_trans
+	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
+
+	// read from input file, create arrays for dynamic diking, and read from restart file
+	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, fb, fp);  CHKERRQ(ierr);
+//	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, fb, fp, PETSC_TRUE);  CHKERRQ(ierr);
+
 	// close temporary restart file
 	fclose(fp);
 
@@ -348,7 +348,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 		ierr = FBLoad(&fb, PETSC_TRUE, restartFileName); CHKERRQ(ierr);
 
 		// override material database
-		ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
+		ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
 
 		// destroy file buffer
 		ierr = FBDestroy(&fb); CHKERRQ(ierr);
@@ -357,10 +357,9 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	PrintDone(t);
 
 	PetscFunctionReturn(0);
+
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSaveRestart"
 PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 {
 	// save new restart database, then delete the original
@@ -415,6 +414,12 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	// passive tracers
 	ierr = Passive_Tracer_WriteRestart(&lm->actx, fp); CHKERRQ(ierr);
 
+	// dynamic phase transition 
+	ierr = DynamicPhTr_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
+
+	// dynamic dike 
+	ierr = DynamicDike_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
+
 	// close temporary restart file
 	fclose(fp);
 
@@ -432,8 +437,6 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDeleteRestart"
 PetscErrorCode LaMEMLibDeleteRestart()
 {
 	// delete existing restart database
@@ -472,8 +475,6 @@ PetscErrorCode LaMEMLibDeleteRestart()
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDestroy"
 PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
@@ -488,11 +489,13 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
 
+	ierr = DynamicPhTrDestroy (&lm->dbm); CHKERRQ(ierr);
+	ierr = DynamicDike_Destroy(&lm->jr); CHKERRQ(ierr);
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSetLinks"
 PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 {
 	//======================================================================
@@ -567,8 +570,6 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSaveOutput"
 PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 {
 	//==================
@@ -634,8 +635,6 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSolve"
 PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
 	PMat           pm;     // preconditioner matrix    (to be removed!)
@@ -798,8 +797,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDryRun"
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
@@ -823,8 +820,6 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibInitGuess"
 PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 {
 	PetscErrorCode ierr;
@@ -881,8 +876,6 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDiffuseTemp"
 PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 {
 	JacRes         *jr;
@@ -976,8 +969,6 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSolveTemp"
 PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 {
 	JacRes         *jr;

@@ -182,8 +182,6 @@ void AVDChain3DDestroy(const PetscInt npoints, AVDChain3D *CH)
 //---------------------------------------------------------------------------
 // ............................... AVD3D ....................................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDViewCreate"
 PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 {
 	AVD3D          avd3D;
@@ -385,8 +383,6 @@ void AVD3DSetDomainSize(AVD3D A,
 	A->dz = (z1-z0)/(PetscScalar)A->mz;
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVD3DLoadPoints"
 PetscErrorCode AVD3DLoadPoints(AVD3D A, AdvCtx *actx)
 {
 	// load viewer points from markers
@@ -442,8 +438,6 @@ void AVD3DResetCells(AVD3D A)
 	}
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVD3DInit"
 PetscErrorCode AVD3DInit(AVD3D A)
 {
 	// i = (xp - (x0-dx) )/mx_mesh
@@ -682,8 +676,6 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 //---------------------------------------------------------------------------
 // .......................... AVD ParaView Output ...........................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVAVDCreate"
 PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 {
 	char filename[_str_len_];
@@ -720,8 +712,6 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVAVDWriteTimeStep"
 PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar ttime)
 {
 	// Create a 3D Voronoi diagram from particles with phase information
@@ -750,8 +740,6 @@ PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVAVDWritePVTR"
 PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 {
 	FILE        *fp;
@@ -823,8 +811,6 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVAVDWriteVTR"
 PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 {
 	// WARNING! writing single entry at a time is too slow. Use buffers instead!

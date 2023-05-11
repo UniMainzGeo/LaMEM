@@ -145,3 +145,27 @@ def heat_rhoA():
 
   return(ex1)
 
+def dyndike():
+
+  ranks = 4
+  launch = '../bin/opt/LaMEM -ParamFile ./t26_Dike/dyndike_4core.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't26_Dike/dyndike_4core.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+  # Create unit test object
+    
+  ex1 = pth.pthUnitTest('t26_dyndike',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
+

@@ -353,8 +353,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCreateData"
 PetscErrorCode JacResCreateData(JacRes *jr)
 {
 	FDSTAG         *fs;
@@ -507,8 +505,6 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResReadRestart"
 PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp)
 {
 	PetscErrorCode ierr;
@@ -522,8 +518,6 @@ PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResWriteRestart"
 PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp)
 {
 	PetscErrorCode ierr;
@@ -535,8 +529,6 @@ PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResDestroy"
 PetscErrorCode JacResDestroy(JacRes *jr)
 {
 
@@ -624,8 +616,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResFormResidual"
 PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 {
 	PetscErrorCode ierr;
@@ -655,8 +645,6 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetI2Gdt"
 PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 {
 	// compute average inverse elastic parameter in the integration points
@@ -719,8 +707,6 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetPressShift"
 PetscErrorCode JacResGetPressShift(JacRes *jr)
 {
 	// get average pressure near the top surface, such that we can shift that
@@ -769,8 +755,6 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetEffStrainRate"
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 {
 
@@ -1024,8 +1008,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetVorticity"
 PetscErrorCode JacResGetVorticity(JacRes *jr)
 {
 	// Compute components of the vorticity pseudo-vector
@@ -1122,8 +1104,6 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetResidual"
 PetscErrorCode JacResGetResidual(JacRes *jr)
 {
 	// Compute residual of nonlinear momentum and mass conservation
@@ -1216,6 +1196,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
+
 	START_STD_LOOP
 	{
 		// access solution variables
@@ -1224,14 +1205,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//=================
 		// SECOND INVARIANT
 		//=================
-
 		if (jr->ctrl.actDike)
 		{
+
 		  y_c = COORD_CELL(j,sy,fs->dsy);
 		  
 		  dikeRHS = 0.0;
 		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-		  ierr = GetDikeContr(&ctx, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c);  CHKERRQ(ierr);
+		  ierr = GetDikeContr(&ctx, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy);  CHKERRQ(ierr);
 		  
 		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
 		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
@@ -1705,8 +1686,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCopySol"
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 {
 	// copy solution from global to local vectors, enforce boundary constraints
@@ -1721,8 +1700,6 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCopyVel"
 PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 {
 	// copy velocity from global to local vectors, enforce boundary constraints
@@ -1884,8 +1861,6 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCopyPres"
 PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 {
 	// copy pressure from global to local vectors, enforce boundary constraints
@@ -1987,8 +1962,6 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResInitPres"
 PetscErrorCode JacResInitPres(JacRes *jr)
 {
 	FDSTAG            *fs;
@@ -2058,8 +2031,6 @@ PetscErrorCode JacResInitPres(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResInitLithPres"
 PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 {
 	FDSTAG            *fs;
@@ -2212,8 +2183,6 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCopyRes"
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 {
 	// copy residuals from local to global vectors, enforce boundary constraints
@@ -2272,8 +2241,6 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCopyMomentumRes"
 PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f)
 {
 	// copy momentum residuals from global to local vectors for output
@@ -2313,8 +2280,6 @@ PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCopyContinuityRes"
 PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f)
 {
 	// copy continuity residuals from global to local vectors for output
@@ -2343,8 +2308,6 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResViewRes"
 PetscErrorCode JacResViewRes(JacRes *jr)
 {
 	// show assembled residual with boundary constraints

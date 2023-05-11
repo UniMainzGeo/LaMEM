@@ -76,8 +76,6 @@ Main advection routine
 */
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSubGrid"
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 {
 	// check marker distribution and merge or clone markers based on subgrid
@@ -228,8 +226,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkClone"
 PetscErrorCode ADVMarkClone(
 	AdvCtx          *actx,
 	PetscInt         icell,
@@ -303,8 +299,6 @@ PetscErrorCode ADVMarkClone(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkCheckMerge"
 PetscErrorCode ADVMarkCheckMerge(
 	AdvCtx            *actx,
 	PetscInt           ib,
@@ -394,8 +388,6 @@ PetscErrorCode ADVMarkCheckMerge(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkMerge"
 PetscErrorCode ADVMarkMerge(
 	vector <Marker> &mark,
 	PetscInt         nmark,
@@ -459,8 +451,6 @@ PetscErrorCode ADVMarkMerge(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVCollectGarbageVec"
 PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vector <PetscInt> &idel)
 {
 	// rearrange storage after marker resampling
@@ -521,8 +511,6 @@ PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vect
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkCrossFreeSurf"
 PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 {
 	// change marker phase when crossing free surface
@@ -682,8 +670,6 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVGetSedPhase"
 PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 {
 	// compute reference sedimentation phases

@@ -1,4 +1,4 @@
-# LaMEM 1.2.3
+# LaMEM 1.3.0
 ## Lithosphere and Mantle Evolution Model
 
 LaMEM is a parallel 3D numerical code that can be used to model various thermomechanical 
@@ -116,7 +116,7 @@ If want, you can ofcourse also compile LaMEM yourself, which will give you the l
 #### 2.2.1 Main dependencies
 LaMEM crucially relies on:
 
-  * PETSc 3.16.x, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX.
+  * PETSc 3.18.x, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX.
 
 and to a minor extend on:
 

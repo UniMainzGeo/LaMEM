@@ -1,0 +1,440 @@
+# The model has a viscoelastoplastic rheology and the geometry is created with the build-in 
+# geometry objects. We use a multigrid solver
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units            = geo		# geological units 
+	unit_temperature = 1000
+	unit_length      = 1e3
+	unit_viscosity   = 1e19
+	unit_stress      = 1e9
+	
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 10     # simulation end time
+	dt        = 0.001   # initial time step
+	dt_min    = 1e-5    # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1     # maximum time step
+#	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
+	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 1.0     # CFL criterion for elasticity
+	nstep_max = 20      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 10      # save output every n steps
+	nstep_rdb = 60    # save restart database every n steps
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+        cpu_x = 1
+
+# Segments for variable grid spacing
+        nseg_x = 1
+        nseg_y = 1
+        nseg_z = 1      
+# Number of cells for all segments
+
+        nel_x = 16
+        nel_y = 16  
+        nel_z = 24
+# Coordinates of all segments (including start and end points)
+        coord_x = -8.0 8.0               # coord_x  
+        coord_y =  -8.0 8.0      
+        coord_z = -21.0 3
+
+# Bias ratios for all segments (default is 1.0 - uniform grid)
+# Bias ratio is the size in the END divided by the size in the BEGINNING, 
+# It is LESS than unit for DECREASING cell size  e.g. 0.333/0.9 = 0.37 (bias ratio, decrease) -> 0.9 is cell size in beginning (left side)
+# It is MORE than unit for INCREASING cell size  e.g. 0.9/0.333 = 2.7 (bias ratio, increase)  -> 0.9 is cell size in the end (right side)
+        bias_x = 1.0 
+	bias_y = 1.0 
+        bias_z = 1.0
+#===============================================================================
+# Free surface
+#===============================================================================
+	surf_use           = 1                # free surface activation flag
+	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+	surf_level         = 0                # initial level
+	surf_air_phase     = 0                # phase ID of sticky air layer
+	surf_max_angle     = 0.0             # maximum angle with horizon (smoothed if larger)
+	
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+	
+	open_top_bound = 1
+
+# Velocity boundary condition
+	bvel_face    =  CompensatingInflow     # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
+#	bvel_phase   =  1      # phase number of inflow material
+	bvel_bot     =  -21.0  # bottom coordinate of inflow window
+	bvel_top     =  3.0    # top coordinate of inflow window
+	bvel_velin   =  -2.0   # 0utflow velocity (halfspreading velocity)
+	bvel_velbot  =   0.0   # bottom inflow velocity 
+#	bvel_veltop  =  -1.0   # top inflow velocity
+
+# temperature on the top & bottom boundaries
+	temp_top  = 1.0
+	temp_bot  = 1350.0
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -9.81  # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 1              # initial guess flag
+	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
+	p_litho_visc   = 1              # use lithostatic pressure for creep laws
+	p_litho_plast  = 1              # use lithostatic pressure for plasticity
+	eta_min        = 5e18           # viscosity lower limit
+	eta_max        = 1e23           # viscosity upper limit
+	eta_ref        = 1e20           # reference viscosity (initial guess)
+	min_cohes      = 1e3            # cohesion lower bound
+	min_fric       = 1.0            # friction lower bound
+	tau_ult        = 1e9            # ultimate yield stress
+	act_dike       = 1 		# activate dike flag
+	act_therm_exp  = 1              # thermal expansion activation flag
+	act_temp_diff   = 1              # temperature diffusion activation flag
+	lmaxit          = 8             # maximum number of local rheology iterations
+        useTk           = 1              # switch to use T-dependent conductivity
+        dikeHeat	= 1             #dike thermal effects flag
+#       lrtol           = 1e-6           # local rheology iterations relative tolerance
+  
+#===============================================================================
+# Solver options
+#===============================================================================
+        #SolverType      =      direct   # solver [direct or multigrid]
+        #DirectSolver   =       mumps       # mumps/superlu_dist/pastix
+        #DirectPenalty  =       1e3
+        MGLevels        =       3           #number of MG levels [default=3]
+        MGCourseSolver  =   redundant       #coarse grid solver [direct/mumps/superlu_dist or redundant - more options through command-line options -crs_ksp_type & -crs_pc_type]
+        MGRedundantNum = 4
+        MGRedundant Solver = mumps
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	advect         = rk2               # advection scheme
+	interp         = minmod             # velocity interpolation scheme
+	mark_ctrl      = basic             # marker control type
+	nmark_lim      = 10 50            # min/max number per cell
+	
+
+# Geometric primitives:
+	
+	# sticky air
+	<BoxStart>
+		phase  = 0
+		bounds = -8.0 8.0 -8.0 8.0 0.0 3.0  # (left, right, front, back, bottom, top)
+		Temperature = constant
+		cstTemp = 1
+	<BoxEnd>
+
+  	<RidgeSegStart>
+	    	phase = 1
+	    	bounds      =   -8.0 8.0 -8.0 0.0 -21.0 0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+    		ridgeseg_x  =   0.0  0.0            # coordinate order: left, right [can be different for oblique ridge]
+    		ridgeseg_y  =  -8.0 0.0          # coordinate order: front, back [needs to be the same as the front and back of bounds]
+    		topTemp     = 1                # required: temperature @ top [in Celcius in case of GEO units]
+    		botTemp     = 1350             # required: temperature @ bottom [in Celcius in case of GEO units]
+    		Temperature = halfspace_age    # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
+    		age0        = 0.3             # minimum age of seafloor at ridge [in Myr in case of GEO units]
+		v_spread    = 1.0        # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above
+	<RidgeSegEnd>
+
+  	<RidgeSegStart>
+	    	phase = 1
+	    	bounds      =  -8.0 8.0 0.0 8.0 -21.0 0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+    		ridgeseg_x  =  0.0  0.0            # coordinate order: left, right [can be different for oblique ridge]
+    		ridgeseg_y  =  0.0 8.0          # coordinate order: front, back [needs to be the same as the front and back of bounds]
+    		topTemp     = 1                # required: temperature @ top [in Celcius in case of GEO units]
+    		botTemp     = 1350             # required: temperature @ bottom [in Celcius in case of GEO units]
+    		Temperature = halfspace_age    # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
+    		age0        = 0.3             # minimum age of seafloor at ridge [in Myr in case of GEO units]
+		v_spread    = 1.0        # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above
+	<RidgeSegEnd>
+
+
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = output # output file name
+	out_pvd             = 1       	# activate writing .pvd file
+	out_phase           = 1
+	out_density         = 0 
+	out_visc_total      = 1
+	out_visc_creep      = 0
+	out_velocity        = 1
+	out_pressure        = 0
+	out_eff_press       = 0
+	out_temperature     = 1
+	out_dev_stress      = 0
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 0
+	out_j2_strain_rate  = 1
+#	out_yield           = 0
+	out_plast_strain    = 0
+#	out_plast_dissip    = 1
+#	out_tot_displ       = 1
+#	out_moment_res      = 1
+#	out_cont_res        = 1
+	out_conductivity    = 1
+
+# AVD phase viewer output options (requires activation)
+
+#	out_avd     		= 1 # activate AVD phase output
+#	out_avd_pvd 		= 1 # activate writing .pvd file
+#	out_avd_ref 		= 3 # AVD grid refinement factor
+	
+# Free surface output options (can be activated only if surface tracking is enabled)
+
+	out_surf            = 1  # activate surface output
+	out_surf_pvd        = 1 # activate writing .pvd file
+#	out_surf_velocity   = 1
+	out_surf_topography = 1
+#	out_surf_amplitude  = 1
+	
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+# DIKE 0:  
+  <PhaseTransitionStart>
+        ID                      =   0                               # Phase_transition law ID
+        Type                    =   NotInAirBox                     # A box-like region
+        PTBox_Bounds            =   -2.0 0.0 -8.0 0.0 -21.0 3.0      # box bound coordinates: [left, right, front, back, bottom, top]
+        number_phases           =   1
+        PhaseInside             =   2                        # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   1                        # Any phase other than 0 
+        PhaseDirection          =   BothWays                 # [BothWays=default; OutsideToInside; InsideToOutside]
+        PTBox_TempType          =   none          # Temperature condition witin the box [none, constant, linear, halfspace]
+  <PhaseTransitionEnd>
+
+# DIKE 1:  
+  <PhaseTransitionStart>
+        ID                      =   1                               # Phase_transition law ID
+        Type                    =   NotInAirBox                     # A box-like region
+        PTBox_Bounds            =   0.0 2.0 0.0 8.0 -21.0 3.0      # box bound coordinates: [left, right, front, back, bottom, top]
+        number_phases           =   1
+        PhaseInside             =   3                        # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   1                        # Any phase other than 0 
+        PhaseDirection          =   BothWays                 # [BothWays=default; OutsideToInside; InsideToOutside]
+        PTBox_TempType          =   none          # Temperature condition witin the box [none, constant, linear, halfspace]
+ 	t0_box = 0.002     # optional, in Myr, start time for moving dike, cannot be smaller than minimum time step
+        t1_box = 0.3      # optional, in Myr, end time
+        v_box  = -1.0     # optional, in cm/yr, velocity with which dike moves (10cm/yr = 100km/Myr), positive: moves right, negative: left
+ <PhaseTransitionEnd>
+
+ # High Conductivity box left of moving dike
+  <PhaseTransitionStart>
+        ID                      =   2                              # Phase_transition law ID
+        Type                    =   NotInAirBox                     # A box-like region
+        PTBox_Bounds            =   -5.0 0.0 0.0 8.0 -10.0 3.0      # box bound coordinates: [left, right, front, back, bottom, top]
+        number_phases           =   1
+        PhaseInside             =   4                        # Phase within the box [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   1                        # Any phase other than 0 
+        PhaseDirection          =   BothWays                 # [BothWays=default; OutsideToInside; InsideToOutside]
+        PhaseTransLinkRight	=   1
+        PTBox_TempType          =   none          # Temperature condition witin the box [none, constant, linear, halfspace]
+  <PhaseTransitionEnd>
+
+#==========================================================================
+
+# Softening parameterization
+         <SofteningStart>
+                ID   = 0
+                A    = 0.95       	  # reduction ratio = 1-FinalParameter/InitialParameter
+                APS1 = 0.01               # make really small so weakenening makes it directly weak
+                APS2 = 0.15        	  # after this is reached it weakens cohesion to (1-A)*cohesion -> 0.1*30=3
+                healTau = 0.15
+        <SofteningEnd>
+
+# Material parameters
+
+# Dike 0: Stationary
+ 	<DikeStart>
+		ID = 0
+		Mf = 1.0 
+		Mb = 1.0 
+		PhaseID = 2
+		PhaseTransID = 0
+	<DikeEnd>
+
+# Dike 1: Moving
+ 	<DikeStart>
+		ID = 1
+		Mf = 1.0 
+		Mb = 1.0 
+		PhaseID = 3
+		PhaseTransID = 1
+	<DikeEnd>
+
+# Sticky Air
+        <MaterialStart>
+                ID              = 0       # phase id
+                rho             = 1000    # density
+                eta             = 5e18    # viscosity
+                Cp             = 1.0e3   # specific heat (capacity)  [J/kg/K]
+                k              = 1.0e4   # thermal conductivity   [W/m/K]
+                G               = 4.0e10
+                fr              = 30
+                ch              = 40e6
+                chSoftID   	= 0
+                healID          = 0
+        <MaterialEnd>
+
+# Upper Lithosphere 1
+	<MaterialStart>
+		ID  		= 	1      # phase id
+		rho 		= 	3300   # density
+		Bn		=	1.1e-16  # DISLOCATION creep pre-exponential constant
+	       	En  		= 	530e3    # activation energy
+       		Vn  		= 	15e-6   # activation volume
+     	      	n  		= 	3.5      
+		alpha		=	3.0e-5
+		Cp              =       1.2e3  # specific heat (capacity)
+		k               =       3.5    # thermal conductivity
+		G   		= 	4e10
+		ch  		=  	40e6   # Cohesion
+		fr  		=	30     # initial friction angle
+        	healID          = 	0
+		chSoftID   	=       0
+	<MaterialEnd>
+
+# Dike 0
+	<MaterialStart>
+		ID              = 2      # phase id
+		rho             = 3300   # density
+		G               = 4e10
+       	 	n		= 3.5     # power law exponent
+	       	Bn  		= 1.1e-16 # DISLOCATION creep pre-exponential constant
+       		En  		= 530e3   # activation energy
+       		Vn  		= 15e-6   # activation volume
+		alpha		= 3.0e-5  
+		Cp              = 1000  # specific heat (capacity)
+		k               = 3.5   # thermal conductivity
+		T_Nu            = 600.0    # Temp value for Nu enhancement to conductivity
+		T_liq		= 1300.0
+		T_sol		= 1000.0
+		Latent_hx	= 5e5 	  #j/kg
+        	ch              = 40e6
+        	fr  		= 30     # initial friction angle
+		healID 		= 0
+		chSoftID   	= 0	
+     <MaterialEnd>
+
+# Dike 1 
+	<MaterialStart>
+		ID              = 3      # phase id
+		rho             = 3300   # density
+		G               = 4e10
+       	 	n		= 3.5     # power law exponent
+	       	Bn  		= 1.1e-16 # DISLOCATION creep pre-exponential constant
+       		En  		= 530e3   # activation energy
+       		Vn  		= 15e-6   # activation volume
+		alpha		= 3.0e-5  
+		Cp              = 1000  # specific heat (capacity)
+		k               = 3.5   # thermal conductivity
+		T_Nu            = 600.0    # Temp value for Nu enhancement to conductivity
+		T_liq		= 1300.0
+		T_sol		= 1000.0
+		Latent_hx	= 5e5 	  #j/kg
+        	ch              = 40e6
+        	fr  		= 30     # initial friction angle
+		healID 		= 0
+		chSoftID   	= 0	
+     <MaterialEnd>
+
+# High Conductivity Box on segmented dynamic die
+	<MaterialStart>
+		ID              = 4      # phase id
+		rho             = 3300   # density
+		G               = 4e10
+       	 	n		= 3.5     # power law exponent
+	       	Bn  		= 1.1e-16 # DISLOCATION creep pre-exponential constant
+       		En  		= 530e3   # activation energy
+       		Vn  		= 15e-6   # activation volume
+		alpha		= 3.0e-5  
+		Cp              = 1000  # specific heat (capacity)
+		k               = 3.5   # thermal conductivity
+		nu_k		= 5.0
+		T_Nu            = 600.0    # Temp value for Nu enhancement to conductivity
+		T_liq		= 1300.0
+		T_sol		= 1000.0
+		Latent_hx	= 5e5 	  #j/kg
+        	ch              = 40e6
+        	fr  		= 30     # initial friction angle
+		healID 		= 0
+		chSoftID   	= 0	
+     <MaterialEnd>
+
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_rtol 5e-2					
+	-snes_atol 1e-4					
+	-snes_max_it 2				
+	
+	-snes_PicardSwitchToNewton_rtol 1e-5   # relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
+	
+	-js_ksp_type fgmres
+	-js_ksp_monitor 				# display how the inner iterations converge
+	-js_ksp_max_it 20				# inner
+	-js_ksp_atol 1e-8
+	-js_ksp_rtol 1e-4
+
+	-snes_linesearch_type l2
+	-snes_linesearch_monitor
+	-snes_linesearch_maxstep 10
+
+#For MULTIGRID
+	-snes_ksp_ew
+	-snes_ksp_ew_rtolmax 1e-4
+
+	#Stokes Preconditioner
+        -pstokes mg                                     # multigrid
+
+        # Matrix type
+        -pcmat_type mono                        # monolithic matrix [coupled MG solver]
+        -jp_type mg                                     # multigrid
+
+        -gmg_pc_type mg
+        -gmg_pc_mg_levels 3
+        -gmg_pc_mg_galerkin
+        -gmg_pc_mg_type multiplicative
+        -gmg_pc_mg_cycle_type v
+
+        -gmg_mg_levels_ksp_type richardson
+        -gmg_mg_levels_ksp_richardson_scale 0.5
+        -gmg_mg_levels_ksp_max_it 20
+        -gmg_mg_levels_pc_type jacobi
+
+        -crs_ksp_type preonly
+        -crs_pc_type lu
+        -crs_pc_factor_mat_solver_package mumps
+
+        -objects_dump
+<PetscOptionsEnd>
+
+#===============================================================================

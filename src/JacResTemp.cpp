@@ -66,7 +66,7 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i], COORD_CELL(j,sy,fs->dsy)); CHKERRQ(ierr); \
+  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i], COORD_CELL(j,sy,fs->dsy),j-sy); CHKERRQ(ierr); \
   buff[k][j][i] = kc;   // added one NULL because of the new variables that are passed
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
@@ -76,8 +76,6 @@
 //---------------------------------------------------------------------------
 // Temperature parameters functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetTempParam"
 PetscErrorCode JacResGetTempParam(
 		JacRes      *jr,
 		PetscScalar *phRat,
@@ -85,7 +83,8 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *rho_Cp_, // volumetric heat capacity
 		PetscScalar *rho_A_,  // volumetric radiogenic heat
 		PetscScalar Tc,
-		PetscScalar y_c)
+		PetscScalar y_c,
+		PetscInt J) 
 
 {
 	// compute effective energy parameters in the cell
@@ -153,7 +152,7 @@ PetscErrorCode JacResGetTempParam(
 
 	if (ctrl.actDike && ctrl.dikeHeat)
 	{
-	  ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c);  CHKERRQ(ierr);
+	  ierr = Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c, J);  CHKERRQ(ierr);
 	}
 
 	// store
@@ -164,8 +163,6 @@ PetscErrorCode JacResGetTempParam(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCheckTempParam"
 PetscErrorCode JacResCheckTempParam(JacRes *jr)
 {
 	// check whether thermal material parameters are properly defined
@@ -200,8 +197,6 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCreateTempParam"
 PetscErrorCode JacResCreateTempParam(JacRes *jr)
 {
 	// setup temperature parameters
@@ -254,8 +249,6 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResDestroyTempParam"
 PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 {
 	// destroy temperature parameters
@@ -281,8 +274,6 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResInitTemp"
 PetscErrorCode JacResInitTemp(JacRes *jr)
 {
 	// initialize temperature from markers
@@ -329,8 +320,6 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResUpdateTemp"
 PetscErrorCode JacResUpdateTemp(JacRes *jr)
 {
 	// correct temperature for diffusion (Newton update)
@@ -364,8 +353,6 @@ PetscErrorCode JacResUpdateTemp(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResApplyTempBC"
 PetscErrorCode JacResApplyTempBC(JacRes *jr)
 {
 	// apply temperature two-point constraints
@@ -441,8 +428,6 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetTempRes"
 PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 {
 	// compute temperature residual vector
@@ -528,7 +513,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		y_c = COORD_CELL(j,sy,fs->dsy);
 
 		// conductivity, heat capacity, radiogenic heat production
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c); CHKERRQ(ierr);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, j-sy); CHKERRQ(ierr);
 
 		// shear heating term (effective)
 		Hr = svDev->Hr +
@@ -623,8 +608,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetTempMat"
 PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 {
 	// assemble temperature preconditioner matrix
@@ -693,7 +676,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		Tc  = lT[k][j][i]; // current temperature
 		
 		// conductivity, heat capacity
-		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, y_c); CHKERRQ(ierr);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, y_c, j-sy); CHKERRQ(ierr);
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }
