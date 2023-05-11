@@ -1,5 +1,6 @@
 # This is the LaMEM testing framework, run through julia
 #
+# Start it from 
 
 using LaMEM_C
 using Test
@@ -29,12 +30,6 @@ include("test_utils.jl")
     @test perform_lamem_test(dir,ParamFile,"FB1_c_MUMPS_opt-p2.expected", 
                             keywords=keywords, accuracy=acc, cores=2, opt=true,
                             args="-jp_pc_factor_mat_solver_package mumps")
-
-    # we did away with the pastix test as no-one used it
-    #@test perform_lamem_test(dir,ParamFile,"FB1_d_PaStiX_opt-p4.expected", 
-    #                        keywords=keywords, accuracy=acc, cores=4, opt=true,
-    #                        args="-jp_pc_factor_mat_solver_package pastix")
-
 end
 
 @testset "t2_FB2_MG" begin
@@ -629,8 +624,8 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
                             
     # Test dike feature using optimized LaMEM
-    @test perform_lamem_test(dir,"PhaseTransitionBox_move.dat","PhaseTransitionBox_move.expected",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+    @test perform_lamem_test(dir,"PhaseTransNotInAirBox_move.dat","PhaseTransNotInAirBox_move.expected",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true)
 end
 
 
@@ -830,6 +825,15 @@ end
     @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA.expected",
                             args="-nstep_max 2 -nel_y 1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # dyndike_4core.dat
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-9));
+    @test perform_lamem_test(dir,"dyndike_4core.dat","dyndike_4core.expected",
+                            args="",
+                            keywords=keywords, accuracy=acc, cores=4, opt=true)
+    
+
 end
 
 
