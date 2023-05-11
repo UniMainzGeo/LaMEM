@@ -1,12 +1,7 @@
 # Targets:
-#  1) call python script that runs the tests using the pyTestHarness framework by Dave May & Patrick Sanan
-#  2) delete basic output (make clean)
-#  3) delete all output (make purge)
-
-# Set environmental variables
-export PYTHONUNBUFFERED
-
-# Check whether pythonharness has been downloaded properly
+#  1) Call julia test harness
+#  2) Delete basic output (make clean)
+#  3) Delete all output (make purge)
 
 .PHONY : test clean purge
 
@@ -17,7 +12,6 @@ test:
 
 # compile LaMEM & run test suite:			
 	@julia --project=../. start_tests.jl 
-
 
 clean :
 	@echo "............................................."

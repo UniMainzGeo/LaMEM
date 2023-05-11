@@ -522,7 +522,9 @@ end
     @test norm(τ_anal[:] .- τ[:]) ≈ 0.2009862117696578 rtol = 1e-4
 
     Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_DryOlivine_DC.png")
-    clean_test_directory(dir)
+    
+    # clear all files in the test directory
+    clean_test_directory(dir) 
 
 end
 
