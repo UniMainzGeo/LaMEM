@@ -70,6 +70,9 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	// initialize
 	pvsurf->outpvd     = 1;
 	pvsurf->topography = 1;
+	pvsurf->amplitude  = 1;
+	pvsurf->velocity   = 1;
+	
 
 	// read
 	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       filename,        "output"); CHKERRQ(ierr);

@@ -483,9 +483,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 	// check energy parameters
-	if((m->Latent_hx && (!m->T_liq || !m->T_sol))
-	||	 (m->T_liq && (!m->Latent_hx || !m->T_sol)) 
-	||   (m->T_sol && (!m->Latent_hx || !m->T_liq)))
+	if( (m->Latent_hx && (!m->T_liq || !m->T_sol))
+	||	(m->T_liq && (!m->Latent_hx || !m->T_sol)) 
+	||  (m->T_sol && (!m->Latent_hx || !m->T_liq)))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %lld (T_sol, T_liq, Latent_hx) \n", (LLD)ID);
 	}
@@ -536,8 +536,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// DIFFUSION
 
 	if(!(( eta && !m->Bd)   // eta
-	||   (!eta &&  m->Bd)   // Bd
-	||   (!eta && !m->Bd))) // nothing
+	||   ( !eta && m->Bd)   // Bd
+	||   ( !eta && !m->Bd))) // nothing
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %lld (eta, Bd)\n", (LLD)ID);
 	}
@@ -547,9 +547,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// DISLOCATION
 
-	if(!(( eta0 &&  e0 &&  m->n && !m->Bn)   // eta0, e0, n
-	||   (!eta0 && !e0 &&  m->n &&  m->Bn)   // Bn, n
-	||   (!eta0 && !e0 && !m->n && !m->Bn))) // nothing
+	if(!(( eta0 &&  e0 &&  m->n &&  !m->Bn)   // eta0, e0, n
+	||   (!eta0 && !e0 &&  m->n &&   m->Bn)   // Bn, n
+	||   (!eta0 && !e0 &&  !m->n && !m->Bn))) // nothing
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %lld (eta0 + e0 + n, Bn + n)\n", (LLD)ID);
 	}
@@ -644,7 +644,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// store elastic moduli
 	m->G  = G;
 	m->Kb = Kb;
-
 
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G && !m->Bdc && !m->eta_fk)

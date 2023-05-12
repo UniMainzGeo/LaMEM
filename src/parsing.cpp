@@ -558,9 +558,9 @@ PetscErrorCode FBGetString(
 		if(!ptr) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 
 		// make sure string fits & is null terminated (two null characters are reserved in the end)
-		if(strlen(ptr) > _str_len_-2)
+		if(strlen(ptr) > (_str_len_ - 2) )
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \n", key, (LLD)(_str_len_-2));
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \n", key, (LLD)(_str_len_ - 2));
 		}
 
 		// copy & pad the rest of the string with zeros
@@ -875,9 +875,9 @@ PetscErrorCode  PetscOptionsGetCheckString(
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 	}
 
-	if(*set && strlen(str) > _str_len_-2)
+	if(*set && strlen(str) > (_str_len_ - 2))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \n", key, (LLD)(_str_len_-2));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \n", key, (LLD)(_str_len_ - 2));
 	}
 
 	PetscFunctionReturn(0);
