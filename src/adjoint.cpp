@@ -3520,7 +3520,7 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 
 	ierr = PetscOptionsSetValue(NULL, option, option_value);    CHKERRQ(ierr);   // this
     
-    //PrintOutput = PETSC_TRUE;
+    PrintOutput = PETSC_FALSE;
     if (PrintOutput){
         PetscPrintf(PETSC_COMM_WORLD,"| **** Added option %s=%s to the database. **** \n",option,option_value);
         PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
