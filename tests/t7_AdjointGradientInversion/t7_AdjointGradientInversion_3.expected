@@ -38,17 +38,17 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 |  Perturbed Misfit value     :  3.134850e-01 
-|  Brute force FD gradient   eta[ 0] = 2.536503e-01, with eps=1.0000e-06 
+|  Brute force FD gradient   eta[ 0] = 2.536444e-01, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 |  Perturbed Misfit value     :  3.134583e-01 
-|  Brute force FD gradient   rho[ 1] = -6.628242e-03, with eps=1.0000e-06 
+|  Brute force FD gradient   rho[ 1] = -6.628227e-03, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 3.1347963654e-01
+| Current Cost function = 3.1347963634e-01
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -56,8 +56,8 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|       FD     1:   log10  eta[ 0]            2.536503e-01 
-|       FD     2:          rho[ 1]           -6.628242e-03 
+|       FD     1:   log10  eta[ 0]            2.536444e-01 
+|       FD     2:          rho[ 1]           -6.628227e-03 
 | 
 | 
 | Observation points: 
@@ -70,17 +70,17 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | TAO results of iteration 1: 
 | 
 | Parameter values: 
-|   1. eta[0] =  2.10000e+01, gradient= 2.53650e-01
-|   2. rho[1] =  3.22000e+03, gradient=-6.62824e-03
+|   1 eta[0] =  2.10000e+01, gradient= 2.53644e-01
+|   2 rho[1] =  3.22000e+03, gradient=-6.62823e-03
 | 
-| misfit           = 3.13479637e-01 
+| misfit           = 3.13479636e-01 
 | misfit / misfit0 = 1.00000000e+00
 | ------------------------------------------
 | 
 | *************************************************************************
 | TAO start iteration 2: 
 | Currently employed parameters: 
-|  eta[0]=2.0746349743e+01 
+|  eta[0]=2.0746355560e+01 
 |  rho[1]=3.2200066282e+03 
 | 
 SNES Convergence Reason : ||F|| < atol 
@@ -88,21 +88,21 @@ SNES Convergence Reason : ||F|| < atol
 | ************************************************************************ 
 |                       FINITE DIFFERENCE GRADIENTS                        
 | ************************************************************************ 
-| Reference objective function:  2.413449e-01 
+| Reference objective function:  2.413467e-01 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  2.413514e-01 
-|  Brute force FD gradient   eta[ 0] = 3.135162e-01, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  2.413532e-01 
+|  Brute force FD gradient   eta[ 0] = 3.135150e-01, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  2.413172e-01 
-|  Brute force FD gradient   rho[ 1] = -8.602802e-03, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  2.413190e-01 
+|  Brute force FD gradient   rho[ 1] = -8.602759e-03, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.4134490819e-01
+| Current Cost function = 2.4134673213e-01
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -110,53 +110,53 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|       FD     1:   log10  eta[ 0]            3.135162e-01 
-|       FD     2:          rho[ 1]           -8.602802e-03 
+|       FD     1:   log10  eta[ 0]            3.135150e-01 
+|       FD     2:          rho[ 1]           -8.602759e-03 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [ -200.000;     0.000;  -200.000]  Vz -1.00000e+00  -3.13505e-01 
+| 1   : [ -200.000;     0.000;  -200.000]  Vz -1.00000e+00  -3.13503e-01 
 | 
 | *************************************************************************
 | TAO results of iteration 2: 
 | 
 | Parameter values: 
-|   1. eta[0] =  2.07463e+01, gradient= 3.13516e-01
-|   2. rho[1] =  3.22001e+03, gradient=-8.60280e-03
+|   1 eta[0] =  2.07464e+01, gradient= 3.13515e-01
+|   2 rho[1] =  3.22001e+03, gradient=-8.60276e-03
 | 
-| misfit           = 2.41344908e-01 
-| misfit / misfit0 = 7.69890226e-01
+| misfit           = 2.41346732e-01 
+| misfit / misfit0 = 7.69896045e-01
 | ------------------------------------------
 | 
 | *************************************************************************
 | TAO start iteration 3: 
 | Currently employed parameters: 
-|  eta[0]=1.9731748715e+01 
-|  rho[1]=3.2200331412e+03 
+|  eta[0]=1.9731777801e+01 
+|  rho[1]=3.2200331411e+03 
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************ 
 |                       FINITE DIFFERENCE GRADIENTS                        
 | ************************************************************************ 
-| Reference objective function:  1.686857e-02 
+| Reference objective function:  1.686188e-02 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  1.686403e-02 
-|  Brute force FD gradient   eta[ 0] = -2.297968e-01, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  1.685735e-02 
+|  Brute force FD gradient   eta[ 0] = -2.297499e-01, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  1.689676e-02 
-|  Brute force FD gradient   rho[ 1] = 8.755265e-03, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  1.689007e-02 
+|  Brute force FD gradient   rho[ 1] = 8.753266e-03, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.6868567993e-02
+| Current Cost function = 1.6861883613e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -164,53 +164,53 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|       FD     1:   log10  eta[ 0]           -2.297968e-01 
-|       FD     2:          rho[ 1]            8.755265e-03 
+|       FD     1:   log10  eta[ 0]           -2.297499e-01 
+|       FD     2:          rho[ 1]            8.753266e-03 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [ -200.000;     0.000;  -200.000]  Vz -1.00000e+00  -1.17672e+00 
+| 1   : [ -200.000;     0.000;  -200.000]  Vz -1.00000e+00  -1.17668e+00 
 | 
 | *************************************************************************
 | TAO results of iteration 3: 
 | 
 | Parameter values: 
-|   1. eta[0] =  1.97317e+01, gradient=-2.29797e-01
-|   2. rho[1] =  3.22003e+03, gradient= 8.75526e-03
+|   1 eta[0] =  1.97318e+01, gradient=-2.29750e-01
+|   2 rho[1] =  3.22003e+03, gradient= 8.75327e-03
 | 
-| misfit           = 1.68685680e-02 
-| misfit / misfit0 = 5.38107297e-02
+| misfit           = 1.68618836e-02 
+| misfit / misfit0 = 5.37894066e-02
 | ------------------------------------------
 | 
 | *************************************************************************
 | TAO start iteration 4: 
 | Currently employed parameters: 
-|  eta[0]=2.0160947907e+01 
-|  rho[1]=3.2200219256e+03 
+|  eta[0]=2.0160917637e+01 
+|  rho[1]=3.2200219269e+03 
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************ 
 |                       FINITE DIFFERENCE GRADIENTS                        
 | ************************************************************************ 
-| Reference objective function:  4.462382e-02 
+| Reference objective function:  4.461529e-02 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  4.462949e-02 
-|  Brute force FD gradient   eta[ 0] = 2.814048e-01, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  4.462096e-02 
+|  Brute force FD gradient   eta[ 0] = 2.813868e-01, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  4.459644e-02 
-|  Brute force FD gradient   rho[ 1] = -8.501914e-03, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  4.458791e-02 
+|  Brute force FD gradient   rho[ 1] = -8.501443e-03, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 4.4623816789e-02
+| Current Cost function = 4.4615288544e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -218,53 +218,53 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|       FD     1:   log10  eta[ 0]            2.814048e-01 
-|       FD     2:          rho[ 1]           -8.501914e-03 
+|       FD     1:   log10  eta[ 0]            2.813868e-01 
+|       FD     2:          rho[ 1]           -8.501443e-03 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [ -200.000;     0.000;  -200.000]  Vz -1.00000e+00  -7.09655e-01 
+| 1   : [ -200.000;     0.000;  -200.000]  Vz -1.00000e+00  -7.09683e-01 
 | 
 | *************************************************************************
 | TAO results of iteration 4: 
 | 
 | Parameter values: 
-|   1. eta[0] =  2.01609e+01, gradient= 2.81405e-01
-|   2. rho[1] =  3.22002e+03, gradient=-8.50191e-03
+|   1 eta[0] =  2.01609e+01, gradient= 2.81387e-01
+|   2 rho[1] =  3.22002e+03, gradient=-8.50144e-03
 | 
-| misfit           = 4.46238168e-02 
-| misfit / misfit0 = 1.42349970e-01
+| misfit           = 4.46152885e-02 
+| misfit / misfit0 = 1.42322765e-01
 | ------------------------------------------
 | 
 | *************************************************************************
 | TAO start iteration 5: 
 | Currently employed parameters: 
-|  eta[0]=1.9880416544e+01 
-|  rho[1]=3.2200292563e+03 
+|  eta[0]=1.9880416897e+01 
+|  rho[1]=3.2200292569e+03 
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************ 
 |                       FINITE DIFFERENCE GRADIENTS                        
 | ************************************************************************ 
-| Reference objective function:  1.660660e-06 
+| Reference objective function:  1.659942e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  1.618067e-06 
-|  Brute force FD gradient   eta[ 0] = -2.142487e-03, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  1.617357e-06 
+|  Brute force FD gradient   eta[ 0] = -2.142020e-03, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  1.906498e-06 
-|  Brute force FD gradient   rho[ 1] = 7.634646e-05, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  1.905728e-06 
+|  Brute force FD gradient   rho[ 1] = 7.633048e-05, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.6606601257e-06
+| Current Cost function = 1.6599417349e-06
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -272,8 +272,8 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|       FD     1:   log10  eta[ 0]           -2.142487e-03 
-|       FD     2:          rho[ 1]            7.634646e-05 
+|       FD     1:   log10  eta[ 0]           -2.142020e-03 
+|       FD     2:          rho[ 1]            7.633048e-05 
 | 
 | 
 | Observation points: 
@@ -286,39 +286,39 @@ SNES Convergence Reason : ||F|| < atol
 | TAO results of iteration 5: 
 | 
 | Parameter values: 
-|   1. eta[0] =  1.98804e+01, gradient=-2.14249e-03
-|   2. rho[1] =  3.22003e+03, gradient= 7.63465e-05
+|   1 eta[0] =  1.98804e+01, gradient=-2.14202e-03
+|   2 rho[1] =  3.22003e+03, gradient= 7.63305e-05
 | 
-| misfit           = 1.66066013e-06 
-| misfit / misfit0 = 5.29750559e-06
+| misfit           = 1.65994173e-06 
+| misfit / misfit0 = 5.29521392e-06
 | ------------------------------------------
 | 
 | *************************************************************************
 | TAO start iteration 6: 
 | Currently employed parameters: 
-|  eta[0]=1.9889795805e+01 
-|  rho[1]=3.2200289909e+03 
+|  eta[0]=1.9889794341e+01 
+|  rho[1]=3.2200289916e+03 
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************ 
 |                       FINITE DIFFERENCE GRADIENTS                        
 | ************************************************************************ 
-| Reference objective function:  4.285211e-05 
+| Reference objective function:  4.283593e-05 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  4.306913e-05 
-|  Brute force FD gradient   eta[ 0] = 1.091111e-02, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  4.305291e-05 
+|  Brute force FD gradient   eta[ 0] = 1.090907e-02, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  4.166779e-05 
-|  Brute force FD gradient   rho[ 1] = -3.677971e-04, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  4.165183e-05 
+|  Brute force FD gradient   rho[ 1] = -3.677278e-04, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 4.2852111126e-05
+| Current Cost function = 4.2835928821e-05
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -326,53 +326,53 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|       FD     1:   log10  eta[ 0]            1.091111e-02 
-|       FD     2:          rho[ 1]           -3.677971e-04 
+|       FD     1:   log10  eta[ 0]            1.090907e-02 
+|       FD     2:          rho[ 1]           -3.677278e-04 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [cm/yr]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [ -200.000;     0.000;  -200.000]  Vz -1.00000e+00  -9.91064e-01 
+| 1   : [ -200.000;     0.000;  -200.000]  Vz -1.00000e+00  -9.91066e-01 
 | 
 | *************************************************************************
 | TAO results of iteration 6: 
 | 
 | Parameter values: 
-|   1. eta[0] =  1.98898e+01, gradient= 1.09111e-02
-|   2. rho[1] =  3.22003e+03, gradient=-3.67797e-04
+|   1 eta[0] =  1.98898e+01, gradient= 1.09091e-02
+|   2 rho[1] =  3.22003e+03, gradient=-3.67728e-04
 | 
-| misfit           = 4.28521111e-05 
-| misfit / misfit0 = 1.36698229e-04
+| misfit           = 4.28359288e-05 
+| misfit / misfit0 = 1.36646607e-04
 | ------------------------------------------
 | 
 | *************************************************************************
 | TAO start iteration 7: 
 | Currently employed parameters: 
-|  eta[0]=1.9881954071e+01 
-|  rho[1]=3.2200292128e+03 
+|  eta[0]=1.9881954091e+01 
+|  rho[1]=3.2200292134e+03 
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************ 
 |                       FINITE DIFFERENCE GRADIENTS                        
 | ************************************************************************ 
-| Reference objective function:  2.357870e-12 
+| Reference objective function:  2.358375e-12 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  2.275684e-10 
-|  Brute force FD gradient   eta[ 0] = 1.132738e-05, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  2.275634e-10 
+|  Brute force FD gradient   eta[ 0] = 1.132711e-05, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-|  Perturbed Misfit value     :  8.735706e-09 
-|  Brute force FD gradient   rho[ 1] = 2.712195e-06, with eps=1.0000e-06 
+|  Perturbed Misfit value     :  8.735736e-09 
+|  Brute force FD gradient   rho[ 1] = 2.712205e-06, with eps=1.0000e-06 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.3578695094e-12
+| Current Cost function = 2.3583745225e-12
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -380,8 +380,8 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|       FD     1:   log10  eta[ 0]            1.132738e-05 
-|       FD     2:          rho[ 1]            2.712195e-06 
+|       FD     1:   log10  eta[ 0]            1.132711e-05 
+|       FD     2:          rho[ 1]            2.712205e-06 
 | 
 | 
 | Observation points: 
@@ -394,11 +394,11 @@ SNES Convergence Reason : ||F|| < atol
 | TAO results of iteration 7: 
 | 
 | Parameter values: 
-|   1. eta[0] =  1.98820e+01, gradient= 1.13274e-05
-|   2. rho[1] =  3.22003e+03, gradient= 2.71220e-06
+|   1 eta[0] =  1.98820e+01, gradient= 1.13271e-05
+|   2 rho[1] =  3.22003e+03, gradient= 2.71220e-06
 | 
-| misfit           = 2.35786951e-12 
-| misfit / misfit0 = 7.52160343e-12
+| misfit           = 2.35837452e-12 
+| misfit / misfit0 = 7.52321443e-12
 | ------------------------------------------
 | ------------------------------------------------------------------------- 
 | ------------------------------------------------------------------------- 
@@ -408,19 +408,19 @@ SNES Convergence Reason : ||F|| < atol
 | Number of inversion iterations: 8
 | F/Fini:
 | 1.00000e+00
-| 7.69890e-01
-| 5.38107e-02
-| 1.42350e-01
-| 5.29751e-06
-| 1.36698e-04
-| 7.52160e-12
+| 7.69896e-01
+| 5.37894e-02
+| 1.42323e-01
+| 5.29521e-06
+| 1.36647e-04
+| 7.52321e-12
 | 
 | Final cost function:
-| 2.35787e-12
+| 2.35837e-12
 | 
 | Final Parameters: 
 | eta[0] = 1.98820e+01
 | rho[1] = 3.22003e+03
 | ------------------------------------------------------------------------- 
-| Adjoint computation was successful & took 4.03448 s                         	 
+| Adjoint computation was successful & took 3.50253 s                         	 
 | ************************************************************************ 

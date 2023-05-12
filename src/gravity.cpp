@@ -46,10 +46,10 @@
 #include "gravity.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GRVSurveyCreate"
 PetscErrorCode GRVSurveyCreate(GravitySurvey *survey)
 {
+	PetscFunctionBeginUser;
+
 	if(survey) survey = NULL;
 
 /*
@@ -57,7 +57,7 @@ PetscErrorCode GRVSurveyCreate(GravitySurvey *survey)
 	PetscInt            i,n;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 
 	// create survey coordinates
@@ -116,12 +116,10 @@ PetscErrorCode GRVSurveyCreate(GravitySurvey *survey)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GRVSurveyDestroy"
 PetscErrorCode GRVSurveyDestroy( GravitySurvey survey)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// destroy vector objects
 	ierr = VecDestroy(&survey.gvec_dg);	CHKERRQ(ierr);
@@ -133,10 +131,9 @@ PetscErrorCode GRVSurveyDestroy( GravitySurvey survey)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GRVCompute"
 PetscErrorCode GRVCompute(FDSTAG *fs, JacRes *jr)
 {
+	PetscFunctionBeginUser;
 
 	if(fs)   fs = NULL;
 	if(jr)   jr = NULL;
@@ -148,7 +145,7 @@ PetscErrorCode GRVCompute(FDSTAG *fs, JacRes *jr)
 	GravitySurvey survey;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// create survey context
 	ierr = GRVSurveyCreate( &user, &survey);

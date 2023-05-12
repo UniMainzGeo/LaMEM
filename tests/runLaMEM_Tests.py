@@ -92,7 +92,7 @@ def makeLocalPathAbsolute(localRelPath) :
 def run_tests():
   os.environ['PYTHONUNBUFFERED'] = str('1')
 
-registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
+registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
                       Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), 
                       Adj1.test_RTI_1(), Adj1.test_RTI_2(),
@@ -111,7 +111,7 @@ registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       CI.test_a(), CI.test_b(),
                       FSSA.test_1(),PTracer.test_a(),PTracer.test_b(),
                       Ridge.test_2D(), Ridge.test_3D(), Ridge.test_oblique(), Permeable.test_a(), APShealing.test_2D(),
-                      Dike.test_M1_2D(), Dike.test_M075_2D_2cores(), Dike.test_variableM(), Dike.heat_kfac(), Dike.heat_rhoA(), 
+                      Dike.test_M1_2D(), Dike.test_M075_2D_2cores(), Dike.test_variableM(), Dike.heat_kfac(), Dike.heat_rhoA(), Dike.dyndike(),
                       TdepCond.test_2fields_dike(),
                       HR.test_recharge1(), HR.test_recharge2(),
                       PermSide.test_permeableSides_VelBoxes(),

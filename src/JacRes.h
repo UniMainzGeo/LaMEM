@@ -53,6 +53,7 @@ struct FreeSurf;
 struct BCCtx;
 struct DBMat;
 struct DBPropDike;
+struct Dike;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
@@ -214,7 +215,7 @@ struct JacRes
 	FDSTAG   *fs;    // staggered-grid layout
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
-        DBPropDike *dbdike; // dike database
+    DBPropDike *dbdike; // dike database
 	DBMat    *dbm;   // material database
   
 	// parameters and controls
@@ -290,6 +291,17 @@ struct JacRes
 	// 2D integration primitives
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
+
+
+	//===========================================
+	// 2D planview plus levels for time averaging
+	//===========================================
+	DM DA_CELL_2D_tave; // 2D cell center grid
+
+	//==================================
+	// For 1D arrays
+	//==================================
+	DM DA_CELL_1D; // 1D cell center grid
 };
 //---------------------------------------------------------------------------
 
@@ -382,7 +394,8 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *rho_Cp_, // volumetric heat capacity
 	PetscScalar *rho_A_,  // volumetric radiogenic heat   
 	PetscScalar Tc,       // temperature of cell
-        PetscScalar y_c);     // coordinate of cell
+    PetscScalar y_c,
+    PetscInt J);     // coordinate of cell
 
 // check whether thermal material parameters are properly defined
 PetscErrorCode JacResCheckTempParam(JacRes *jr);

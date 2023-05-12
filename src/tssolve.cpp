@@ -50,15 +50,13 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolCreate"
 PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 {
 	Scaling     *scal;
 	PetscScalar  time;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	scal = ts->scal;
 	time = scal->time;
@@ -197,13 +195,11 @@ PetscInt TSSolIsDone(TSSol *ts)
 	return done;
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolStepForward"
 PetscErrorCode TSSolStepForward(TSSol *ts)
 {
 	// function is called in the end of time step before output and restart
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// update time
 	ts->time += ts->dt;
@@ -256,8 +252,6 @@ PetscInt TSSolIsOutput(TSSol *ts)
 	return 0;
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolGetCFLStep"
 PetscErrorCode TSSolGetCFLStep(
 	TSSol       *ts,
 	PetscScalar  gidtmax, // maximum global inverse time step
@@ -269,7 +263,7 @@ PetscErrorCode TSSolGetCFLStep(
 	PetscInt     istep;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	scal     = ts->scal;
@@ -285,7 +279,7 @@ PetscErrorCode TSSolGetCFLStep(
 	// declare divergence if too small time step is required
 	if(dt_cfl < ts->dt_min)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Time step is smaller than dt_min: %7.5f %s\n", ts->dt_min*scal->time, scal->lbl_time);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Time step is smaller than dt_min: %7.5f %s\n", ts->dt_min*scal->time, scal->lbl_time);
 	}
 
 	// check fixed time step restrictions
@@ -350,8 +344,6 @@ PetscErrorCode TSSolGetCFLStep(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolGetPeriodSteps"
 PetscErrorCode TSSolGetPeriodSteps(
 	PetscScalar  dt_start, // timestep at the start of the period
 	PetscScalar  dt_end,   // timestep at the end of the period
@@ -362,7 +354,7 @@ PetscErrorCode TSSolGetPeriodSteps(
 	PetscScalar  dt_avg, n_try, sum, err, corr;
 	PetscInt     i;
 	
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// average timestep
 	dt_avg = (dt_start + dt_end) / 2.0;
@@ -402,8 +394,6 @@ PetscErrorCode TSSolGetPeriodSteps(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolMakeSchedule"
 PetscErrorCode TSSolMakeSchedule(TSSol *ts)
 {
 	PetscScalar *schedule, *steps, *t, *dt_fix;
@@ -411,7 +401,7 @@ PetscErrorCode TSSolMakeSchedule(TSSol *ts)
 	PetscInt     num_seg, iSeg, iter, n, i, maxSteps;
 	
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access content
 	num_seg   = ts->num_dtper;
@@ -471,14 +461,12 @@ PetscErrorCode TSSolMakeSchedule(TSSol *ts)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolAdjustSchedule"
 PetscErrorCode TSSolAdjustSchedule(TSSol *ts, PetscScalar dt_cfl, PetscInt istep, PetscScalar *schedule)
 {
 	PetscScalar diff;
 	PetscInt    maxSteps, i;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access content
 	maxSteps = ts->nstep_max;

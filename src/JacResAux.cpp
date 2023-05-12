@@ -59,8 +59,6 @@
 	dvdx2 = ((v[4] - v[2] + v[9] - v[7])/bdx2 + (v[3] - v[4] + v[8] - v[9])/fdx2)/4.0; \
 	vc    = ( v[9] + v[4])/2.0;
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getGradientVel"
 PetscErrorCode getGradientVel(
 	FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
 	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz,
@@ -70,6 +68,8 @@ PetscErrorCode getGradientVel(
 
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar vnrm, vx[10], vy[10], vz[10], vxc, vyc, vzc;
+
+	PetscFunctionBeginUser;
 
 	// get cell sizes
 	dx = SIZE_CELL(i, sx, fs->dsx);   bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -133,8 +133,6 @@ PetscErrorCode getGradientVel(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetSHmax"
 PetscErrorCode JacResGetSHmax(JacRes *jr)
 {
 	// compute maximum horizontal compressive stress (SHmax) orientation
@@ -146,7 +144,7 @@ PetscErrorCode JacResGetSHmax(JacRes *jr)
 	PetscScalar ***dx, ***dy, ***lsxy;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = jr->fs;
@@ -211,8 +209,6 @@ PetscErrorCode JacResGetSHmax(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetEHmax"
 PetscErrorCode JacResGetEHmax(JacRes *jr)
 {
 	// compute maximum horizontal extension rate (EHmax) orientation
@@ -224,7 +220,7 @@ PetscErrorCode JacResGetEHmax(JacRes *jr)
 	PetscScalar ***dx, ***dy, ***ldxy;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = jr->fs;
@@ -289,8 +285,6 @@ PetscErrorCode JacResGetEHmax(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetOverPressure"
 PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 {
 	// compute overpressure
@@ -300,7 +294,7 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs  =  jr->fs;
@@ -333,8 +327,6 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetLithoStaticPressure"
 PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 {
 	// compute lithostatic pressure
@@ -347,7 +339,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, iter, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs  =  jr->fs;
@@ -438,8 +430,6 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetPorePressure"
 PetscErrorCode JacResGetPorePressure(JacRes *jr)
 {
 	// compute pore pressure
@@ -451,7 +441,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	PetscInt    numPhases, i, j, k, iter, iphase, sx, sy, sz, nx, ny, nz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
@@ -531,8 +521,6 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetPermea"
 PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char *outfile)
 {
 	FILE        *db;
@@ -546,7 +534,7 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!jr->ctrl.getPermea || !step) PetscFunctionReturn(0);

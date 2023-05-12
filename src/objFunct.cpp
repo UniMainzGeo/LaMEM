@@ -52,13 +52,11 @@
 #include "JacRes.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ObjFunctDestroy"
 PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 {
 	PetscErrorCode ierr;
 	PetscInt       k;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
 
@@ -78,8 +76,6 @@ PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ObjFunctCreate"
 PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf, FB *fb)
 {
 	FDSTAG        *fs;
@@ -104,7 +100,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	const char           *shmax_name="shmax";
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// compute misift?
 	if(IOparam == NULL) PetscFunctionReturn(0);
@@ -280,15 +276,13 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ObjFunctReadFromOptions"
 PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 {
 	PetscErrorCode ierr;
 	PetscBool      found, exists;
 	PetscInt       k;
 	char           otname [_str_len_];
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// read filename of observation file
 	ierr = getStringParam(fb, _OPTIONAL_, "objf_obsfile", otname, "obs.bin"); CHKERRQ(ierr);
@@ -318,8 +312,6 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VecErrSurf"
 PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar scal)
 {
 	PetscErrorCode    ierr;
@@ -329,7 +321,7 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 	FDSTAG            *fs;
 	PetscInt          L,i,j,sx,sy,nx,ny;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs   = objf->surf->jr->fs;
 	surf = objf->surf;
@@ -380,8 +372,6 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ObjFunctCompErr"
 PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 {
 
@@ -389,7 +379,7 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	PetscErrorCode    ierr;
 	PetscInt          k;
 	PetscScalar       velScal;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// surface object
 	surf = objf->surf;

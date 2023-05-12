@@ -76,8 +76,6 @@ Main advection routine
 */
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSubGrid"
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 {
 	// check marker distribution and merge or clone markers based on subgrid
@@ -97,7 +95,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	vector <Marker>   mark;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
 
@@ -228,8 +226,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkClone"
 PetscErrorCode ADVMarkClone(
 	AdvCtx          *actx,
 	PetscInt         icell,
@@ -250,7 +246,7 @@ PetscErrorCode ADVMarkClone(
 	PetscInt          I, J, K, j, npx, npy, imark, nmark, *markind;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	bc      = actx->jr->bc;
@@ -303,8 +299,6 @@ PetscErrorCode ADVMarkClone(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkCheckMerge"
 PetscErrorCode ADVMarkCheckMerge(
 	AdvCtx            *actx,
 	PetscInt           ib,
@@ -325,7 +319,7 @@ PetscErrorCode ADVMarkCheckMerge(
 	PetscInt j, jb, je, k, sz, phase, nmark;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// copy marker phase IDs
 	for(j = ib; j < ie; j++)
@@ -394,8 +388,6 @@ PetscErrorCode ADVMarkCheckMerge(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkMerge"
 PetscErrorCode ADVMarkMerge(
 	vector <Marker> &mark,
 	PetscInt         nmark,
@@ -410,7 +402,7 @@ PetscErrorCode ADVMarkMerge(
 	PetscScalar  d, dmin;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize storage size
 	sz = nmark;
@@ -459,8 +451,6 @@ PetscErrorCode ADVMarkMerge(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVCollectGarbageVec"
 PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vector <PetscInt> &idel)
 {
 	// rearrange storage after marker resampling
@@ -469,7 +459,7 @@ PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vect
 	PetscInt  nummark, nrecv, ndel;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access storage
 	nummark = actx->nummark;
@@ -521,8 +511,6 @@ PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vect
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkCrossFreeSurf"
 PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 {
 	// change marker phase when crossing free surface
@@ -538,7 +526,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	vector <spair>  dist;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free-surface cases only
 	if(!actx->surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -682,8 +670,6 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVGetSedPhase"
 PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 {
 	// compute reference sedimentation phases
@@ -697,7 +683,7 @@ PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 	PetscScalar  maxMark, ***phase;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs        = actx->fs;
 	jr        = actx->jr;

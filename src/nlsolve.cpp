@@ -62,12 +62,10 @@
 //   (also for linear solves)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "NLSolClear"
 PetscErrorCode NLSolClear(NLSol *nl)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// clear object
 	ierr = PetscMemzero(nl, sizeof(NLSol)); CHKERRQ(ierr);
@@ -75,8 +73,6 @@ PetscErrorCode NLSolClear(NLSol *nl)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "NLSolCreate"
 PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 {
 	SNES            snes;
@@ -89,7 +85,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	SNESType        type;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
 	// store context
  	nl->pc = pc;
@@ -166,8 +162,6 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DisplaySpecifiedSolverOptions"
 PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 {
 	PetscErrorCode 	ierr;
@@ -184,7 +178,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 	PetscBool		found;
 	MatSolverType   solver_type;
 
- 	PetscFunctionBegin;
+ 	PetscFunctionBeginUser;
 
 	/* 	This routine prints the solver options that are specified on the command-line or in the PetscOptions of the LaMEM input script 
 	 	More complete options can be displayed with the command-line options
@@ -338,12 +332,10 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "NLSolDestroy"
 PetscErrorCode NLSolDestroy(NLSol *nl)
 {
 	PetscErrorCode ierr;
- 	PetscFunctionBegin;
+ 	PetscFunctionBeginUser;
 
 	ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->P);    CHKERRQ(ierr);
@@ -352,15 +344,13 @@ PetscErrorCode NLSolDestroy(NLSol *nl)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FormResidual"
 PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 {
 	NLSol  *nl;
 	JacRes *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// clear unused parameters
 	if(snes) snes = NULL;
@@ -374,8 +364,6 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FormJacobian"
 PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 {
 	// Compute FDSTAG Jacobian matrix and preconditioner
@@ -394,7 +382,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	if(Pmat) Pmat = NULL;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	nl   = (NLSol*)ctx;
@@ -503,14 +491,12 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacApplyMFFD"
 PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y)
 {
 	Mat *FD;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ierr = MatShellGetContext(A, (void**)&FD); CHKERRQ(ierr);
@@ -521,8 +507,6 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SNESPrintConvergedReason"
 PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 {
 	PetscLogDouble      t_end;
@@ -533,7 +517,7 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 	PetscInt            div_severe;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// set flag for severe divergence
 	div_severe = 0;
@@ -636,8 +620,6 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SNESCoupledTest"
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,
 	PetscInt            it,
@@ -659,7 +641,7 @@ PetscErrorCode SNESCoupledTest(
 	JacRes *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	nl = (NLSol*)cctx;

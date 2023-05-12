@@ -24,7 +24,7 @@ PetscErrorCode LoadPartitioning(Partition &part,const char *filename)
 	PetscErrorCode		ierr;
 	PetscInt            fileID;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
     ierr = PetscBinaryOpen(filename,FILE_MODE_READ,&fileID);      CHKERRQ(ierr);
 
@@ -59,7 +59,7 @@ PetscErrorCode DestroyPartitioning(Partition &part)
  */
 	PetscErrorCode		ierr;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscFree(part.px);                                    CHKERRQ(ierr);
 	ierr = PetscFree(part.py);                                    CHKERRQ(ierr);
@@ -87,7 +87,7 @@ PetscErrorCode LoadParticles(PetscInt size,PetscInt itime,Particles &particles)
 	PetscScalar        *larray_info,*larray_prtcls;
 	PetscInt            rank,Nprops=0,Nprocs=0,Nprtcls=0,Ntot_prtcls=0,n=0,k;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// Read info vectors only
 	for(rank=0;rank<size;rank++){
@@ -169,7 +169,7 @@ PetscErrorCode SaveParticles(Partition target,Particles *particles)
 	PetscScalar        *larray_prtcls;
 	PetscInt            rank,Nprops=28,k,n=0,num;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscPrintf(PETSC_COMM_WORLD,"Write %d InitialParticles files \n",target.Ntot);
 	for(rank=0;rank<target.Ntot;rank++){

@@ -53,14 +53,12 @@
 #include "passive_tracer.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVPtrCreate"
 PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 {
 	char filename[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	ierr = getIntParam(fb, _OPTIONAL_, "out_ptr", &pvptr->actx->jr->ctrl.Passive_Tracer, 1, 1); CHKERRQ(ierr);
@@ -99,12 +97,10 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVPtrWriteTimeStep"
 PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(pvptr->actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);
@@ -121,8 +117,6 @@ PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVPtrWriteVTU"
 PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 {
 	// output markers in .vtu files
@@ -138,7 +132,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	size_t      offset = 0;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	ptr = pvptr->actx->Ptr;
@@ -148,7 +142,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 	// open file
 	fp = fopen( fname, "wb" );
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// write header
@@ -441,8 +435,6 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVPtrWritePVTU"
 PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
 {
 	// create .pvtu file for marker output
@@ -451,7 +443,7 @@ PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
 	FILE     *fp;
 	PetscInt i;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// only processor 0
 	if (!ISRankZero(PETSC_COMM_WORLD)) { PetscFunctionReturn(0); }
@@ -463,7 +455,7 @@ PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
 
 	// open file
 	fp = fopen( fname, "wb" );
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// write header

@@ -628,8 +628,6 @@ PetscInt Tensor2RSSpectral(
 	return code;
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Tensor2RS2DSpectral"
 PetscErrorCode Tensor2RS2DSpectral(
 	PetscScalar  axx,
 	PetscScalar  ayy,
@@ -641,6 +639,8 @@ PetscErrorCode Tensor2RS2DSpectral(
 	PetscScalar  tol)
 {
 	PetscScalar theta, t, c, s, tau, nrm, sum, a1, a2, a, v[2];
+
+	PetscFunctionBeginUser;
 
 	// get stress norm
 	sum = fabs(axx) + fabs(axy);               nrm = sum;
