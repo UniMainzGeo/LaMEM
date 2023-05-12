@@ -135,8 +135,6 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
             fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
             0, 0, 0, &jr->DA_CELL_1D); CHKERRQ(ierr);
 
-        PetscPrintf(PETSC_COMM_WORLD,">>>>>>>! x.nproc=%i, y.nproc=%i, z.nproc=%i, y.tnodes=%i \n", 
-        fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,fs->dsy.tnods); //debugging
             //DM for 2D cell center vector, with istep_nave planes for time averaging
             ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
             fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
@@ -570,7 +568,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
          }
        }
 
-      ierr = Compute_sxx_eff(jr,nD, j1, j2); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
+      ierr = Compute_sxx_eff(jr,nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 
 //      ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
         ierr = Smooth_sxx_eff(jr,nD, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
@@ -584,7 +582,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 }
 //------------------------------------------------------------------------------------------------------------------
 
-PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2)
+PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD)
 {
   MPI_Request srequest, rrequest;
   Vec         vsxx, vliththick, vzsol;
@@ -676,15 +674,11 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2
   for(k = sz + nz - 1; k >= sz; k--)
   {
      dz  = SIZE_CELL(k, sz, (*dsz));
-     for (j = j1+sy; j <= j2+sy; j++ )  //Global coordinates
-     { 
-       for (i=sx; i < sx+ny; i++)
-       {
+     START_PLANE_LOOP
           GET_CELL_ID(ID, i-sx, j-sy, k-sz, nx, ny);  //GET_CELL_ID needs local indices
           svCell = &jr->svCell[ID]; 
           Tc=lT[k][j][i];
  
-          
           if ((Tc<=Tsol) & (svCell->phRat[AirPhase] < 1.0))
           {
             dz  = SIZE_CELL(k, sz, (*dsz));
@@ -700,8 +694,7 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2
             zsol[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz])/(lT[k-1][j][i]-Tc)*(Tsol-Tc); 
                //zsol[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz]);
           }
-        }
-     } //End Plane loop
+      END_PLANE_LOOP
   } 
 
       //After integrating and averaging, send it down to the next proc. 
@@ -748,25 +741,20 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD, PetscInt j1, PetscInt j2
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 
   //now all cores have the same solution so give that to the stress array
-  for (j = j1+sy; j <= j2+sy; j++ )
-  { 
-     for (i=sx; i < sx+ny; i++)
-     {
-        dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //excess magmastatic pressure at solidus, note z AND grav[2] <0
-        if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
-        gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]+dPmag;  //Depth weighted mean effective stress: (total stress)+(magma press)
-                                                                      // (magma press)=lp_lith+dPmagma
-     }
-  } 
+  START_PLANE_LOOP
+    dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //excess magmastatic pressure at solidus, note z AND grav[2] <0
+    //if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
+    gsxx_eff_ave[L][j][i]=sxx[L][j][i]/liththick[L][j][i]+dPmag;  //Depth weighted mean effective stress: (total stress)+(magma press)                                                                      // (magma press)=lp_lith+dPmagma
+  END_PLANE_LOOP
 
   if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)  //debugging
   {
      START_PLANE_LOOP
-          xcell=COORD_CELL(i, sx, fs->dsx);
-          ycell=COORD_CELL(j, sy, fs->dsy);
-          dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
-          if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
-          PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g %i\n", jr->ts->istep+1, xcell, ycell, gsxx_eff_ave[L][j][i], dPmag, nD);   //debugging    
+        xcell=COORD_CELL(i, sx, fs->dsx);
+        ycell=COORD_CELL(j, sy, fs->dsy);
+        dPmag=-(zsol[L][j][i]-dike->zmax_magma)*(dike->drhomagma)*grav[2];  //effective pressure is P-Pmagma= negative of magmastatic pressure at solidus, note z AND grav[2] <0
+        //if (dPmag<0) dPmag=dPmag*1e3;                                  //Keep dike over the magma. But caution with Smooth_sxx_eff    
+        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g %i\n", jr->ts->istep+1, xcell, ycell, gsxx_eff_ave[L][j][i], dPmag, nD);   //debugging    
      END_PLANE_LOOP  
   }
   PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);   //debugging    
@@ -1297,7 +1285,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
      {
         ycell = COORD_CELL(j, sy, fs->dsy);  //debugging
         xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g %i\n", jr->ts->istep+1, ycell, xcenter+xshift, 
+        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g %i %i %i\n", jr->ts->istep+1, ycell, xcenter+xshift, 
         CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx),nD);  //debugging
      }
 
