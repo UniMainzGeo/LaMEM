@@ -95,11 +95,11 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 
       // initialize ID for consistency checks                                                                                                                 
 
-      for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1;
+      for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1; 
 
       // error checking
       if(fb->nblocks >_max_num_dike_)
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
 
       // store actual number of dike blocks 
       dbdike->numDike = fb->nblocks;
