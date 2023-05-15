@@ -604,9 +604,11 @@
         ID          =   0       # softening law ID
         APS1        =   0.1     # begin of softening APS
         APS2        =   1.0     # end of softening APS
+        APSheal2    =   1.0     # APS when healTau2 activates
         A           =   0.7     # reduction ratio
         Lm          =   0.2     # material length scale (in selected units, e.g. km in geo)
-        healTau     =   1e-3    # healing parameter [Myr]  
+        healTau     =   1e-3    # healing timescale parameter [Myr]  
+        healTau2     =   1e-3    # healing timescale parameter [Myr]  starting at APS=APSheal2
     <SofteningEnd>
     
 # Define Phase Transition laws (maximum 10)

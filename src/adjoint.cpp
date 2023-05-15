@@ -3621,7 +3621,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 	}
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-	ierr = DBMatCreate(&IOparam->dbm_modified, fb, NULL, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); CHKERRQ(ierr);
 
     //PrintOutput = PETSC_TRUE;
     if (PrintOutput){

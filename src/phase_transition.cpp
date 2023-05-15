@@ -97,7 +97,7 @@
 #include "dike.h"
 //-----------------------------------------------------------------//
 
-PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FDSTAG *fs, FB *fb)
+PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 {
 	// read phase transitions from file
 
@@ -143,7 +143,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FDSTAG *fs, FB *fb)
 	else if(!strcmp(Type_,"NotInAirBox"))
 	{
 		ph->Type = _NotInAirBox_;
-		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fs, fb);		CHKERRQ(ierr);
+		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
 	}
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_tr_);      CHKERRQ(ierr);
@@ -399,7 +399,6 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 		
 		ph->topTemp = (ph->topTemp + scal->Tshift)/scal->temperature;
 		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
-
 	}
 	else{
 		SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType %s [none; constant; linear; halfspace]", Parameter);
@@ -410,17 +409,16 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 }
 //------------------------------------------------------------------------------------------------------------//
 
-PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDSTAG *fs, FB *fb)
+PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB *fb)
 {
 	Scaling      *scal;
-	Discret1D	*dsy;
+	PetscInt     kk;
 	char         Parameter[_str_len_];
-	PetscInt 	 j,kk;
+
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	scal = dbm -> scal;
-	dsy = &fs->dsy;
 
 	ph->nsegs=0;
 
@@ -452,33 +450,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 		ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
 	}
 
-
-
-  	//create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
-  	ierr = makeScalArray(&ph->cbuffL, 0, dsy->ncels+2); CHKERRQ(ierr);
-  	ph->celly_xboundL = ph->cbuffL + 1;
-  	ierr = makeScalArray(&ph->cbuffR, 0, dsy->ncels+2); CHKERRQ(ierr);
-  	ph->celly_xboundR = ph->cbuffR + 1;
-
-
-  	for(j = -1; j < dsy->ncels+1; j++)
-  	{
-  	   ph->celly_xboundL[j] = 1.0e12;
-	   ph->celly_xboundR[j] = -1.0e12;
-
-  	   //for each y coord, find which segment its in and then set x bounds
-	   for (kk = 0; kk < ph->nsegs; kk++)
-	   {
-  		if (ph->ybounds[2*kk] <= dsy->ccoor[j] && dsy->ccoor[j] <= ph->ybounds[2*kk+1])
-  		{
-			ph->celly_xboundL[j] = ph->xbounds[2*kk];
-			ph->celly_xboundR[j] = ph->xbounds[2*kk+1];
-			break;
-		}
-	   }
-	}
-
-
        ph->phtr_link_left = -1; 
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1); CHKERRQ(ierr);
 	if (ph->phtr_link_left>=0) {
@@ -490,7 +461,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	if (ph->phtr_link_right>=0) {
 	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %i\n", ph->phtr_link_right); CHKERRQ(ierr);
 	}
-
 
 	
 	ierr = getIntParam(fb, _OPTIONAL_, "BoxVicinity",   &ph->BoxVicinity,  1, 1);  CHKERRQ(ierr);
@@ -551,6 +521,55 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 	PetscFunctionReturn(0);
 
 }
+//----------------------------------------------------------------------------------------
+PetscErrorCode  DynamicPhTr_Init(JacRes *jr)
+{
+	FDSTAG		*fs;
+	Discret1D	*dsy;
+	PetscInt	j, kk, n, numPhtr;
+	Ph_trans_t	*PhTr;
+
+	PetscErrorCode ierr;
+
+	PetscFunctionBeginUser;
+
+	numPhtr    = jr->dbm->numPhtr;
+	fs  =  jr->fs;
+	dsy = &fs->dsy;
+
+	for(n=0; n<numPhtr; n++)                          
+	{                                               
+	   PhTr = jr->dbm->matPhtr+n;
+	   if (PhTr->Type == _NotInAirBox_)
+	   {
+
+		//create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
+		ierr = makeScalArray(&PhTr->cbuffL, 0, dsy->ncels+2); CHKERRQ(ierr);
+		PhTr->celly_xboundL = PhTr->cbuffL + 1;
+		ierr = makeScalArray(&PhTr->cbuffR, 0, dsy->ncels+2); CHKERRQ(ierr);
+		PhTr->celly_xboundR = PhTr->cbuffR + 1;
+
+		for(j = -1; j < dsy->ncels+1; j++)
+		{
+			PhTr->celly_xboundL[j] = 1.0e12;
+			PhTr->celly_xboundR[j] = -1.0e12;
+
+			//for each y coord, find which segment its in and then set x bounds
+			for (kk = 0; kk < PhTr->nsegs; kk++)
+			{
+				if (PhTr->ybounds[2*kk] <= dsy->ccoor[j] && dsy->ccoor[j] <= PhTr->ybounds[2*kk+1])
+				{
+					PhTr->celly_xboundL[j] = PhTr->xbounds[2*kk];
+					PhTr->celly_xboundR[j] = PhTr->xbounds[2*kk+1];
+					break;
+				}
+			}
+		}
+	   }   
+	}
+	PetscFunctionReturn(0);
+}
+
 //------------------------------------------------------------------------------------------------------------//
 
 PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
@@ -754,6 +773,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	
 	// loop over all phase transition laws		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
 	nPtr        =   0;
+
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	  {
 	    PhaseTrans = jr->dbm->matPhtr+nPtr;
@@ -1230,9 +1250,9 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
 	//GET_CELL_IJK(cellID, I, J, K, nx, ny) //need to know J for celly_xboundL/R
 	(K) = (cellID)/((nx)*(ny));
 	(J) = (cellID - (K)*(nx)*(ny))/nx;
-	
-    //interpolate box boundaries if particle backward of the cell center and adjacent cell is within phase trans box
-    if (P->X[1] <= dsy->ccoor[J] && PhaseTrans->celly_xboundL[J-1] < PhaseTrans->celly_xboundR[J-1])
+
+	//interpolate box boundaries if particle backward of the cell center and adjacent cell is within phase trans box
+	if (P->X[1] <= dsy->ccoor[J] && PhaseTrans->celly_xboundL[J-1] < PhaseTrans->celly_xboundR[J-1])
 	{
  	 	xboundL = PhaseTrans->celly_xboundL[J-1] + 
  	 	(PhaseTrans->celly_xboundL[J]-PhaseTrans->celly_xboundL[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[1]-dsy->ccoor[J-1]);
