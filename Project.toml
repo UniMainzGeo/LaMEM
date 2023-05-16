@@ -1,7 +1,7 @@
 name = "LaMEM_C"
 uuid = "29b6043d-3311-4c16-b469-b02bf85cb680"
 authors = ["Anton Popov <popov@uni-mainz.de>", "Boris Kaus <kaus@uni-mainz.de>"]
-version = "2.0.0"
+version = "2.1.0"
 
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
