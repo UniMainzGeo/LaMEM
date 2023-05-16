@@ -48,6 +48,7 @@
 
 struct Scaling;
 struct FB;
+struct FDSTAG;
 struct JacRes;
 struct ModParam;
 
@@ -76,7 +77,7 @@ public:
 	PetscScalar APS2; // end of softening APS
 	PetscScalar A;    // reduction ratio
 	PetscScalar Lm;   // material length scale
-    PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
+  PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
 
 };
 
@@ -104,48 +105,62 @@ enum Parameter
 	_Time_
 };
 
-// Structure that contains infor for phase transitions
+// Structure that contains info for phase transitions
 struct Ph_trans_t
 {
 public:
 
-  PetscInt    ID ;				                // Phase Transition ID
-  type        Type ; 					            // Type Constant or Clapeyron
-  Parameter   Parameter_transition; 	            // Parameter in Constant
-  char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
-  PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
-  PetscScalar ConstantValue ;                     // Value (if Constant) 
-  PetscInt    Reset;								// Rset parameters 
-  
-  // Clapeyron slope
-  PetscInt    neq ;                               // number of equation
-  PetscScalar P0_clapeyron[_max_num_eq_] ;        // for clapeyron
-  PetscScalar T0_clapeyron[_max_num_eq_] ;
-  PetscScalar clapeyron_slope[_max_num_eq_] ;
-  
-  // Box-like condition
-  PetscScalar     bounds[6];                      //  left, right etc. of box
-  PetscInt        TempType;                       //  Temp condition [0=none, 1=constant; 2=linear; 3=halfspace]   
-  PetscInt 		  BoxVicinity;					  //  0-check all particles; 1-only apply PT to particles in the vicinity of the box (*2 of bounds) 
-  
-  PetscInt        number_phases;
-  PetscInt        PhaseBelow[_max_tr_];
-  PetscInt        PhaseAbove[_max_tr_];
-  PetscInt        PhaseInside[_max_tr_];
-  PetscInt        PhaseOutside[_max_tr_];
-  PetscScalar     dT_within;
-  PetscScalar     DensityAbove[_max_tr_];
-  PetscScalar     DensityBelow[_max_tr_];
-  
-  PetscScalar     topTemp;
-  PetscScalar     botTemp;
-  PetscScalar     cstTemp;
-  PetscScalar     thermalAge;
-  
-  // for moving NotInAirBox
-  PetscScalar     t0_box;
-  PetscScalar     t1_box;
-  PetscScalar     v_box;
+	PetscInt    ID ;				                // Phase Transition ID
+	type        Type ; 					            // Type Constant or Clapeyron
+	Parameter   Parameter_transition; 	            // Parameter in Constant
+	char        Name_clapeyron[_str_len_] ;         // Type [Constant or Clapeyron]
+	PetscInt    PhaseDirection;                     // Direction in which PT goes [0-both; 1-below2above; 2-above2below]
+	PetscScalar ConstantValue ;                     // Value (if Constant)
+	PetscInt    Reset;								// Rset parameters
+
+	// Clapeyron slope
+	PetscInt    neq ;                               // number of equation
+	PetscScalar P0_clapeyron[_max_num_eq_] ;        // for clapeyron
+	PetscScalar T0_clapeyron[_max_num_eq_] ;
+	PetscScalar clapeyron_slope[_max_num_eq_] ;
+
+	// Box-like condition
+	PetscScalar     bounds[6];                      //  left, right etc. of box
+	PetscInt        TempType;                       //  Temp condition [0=none, 1=constant; 2=linear; 3=halfspace]
+	PetscInt 		  BoxVicinity;					  //  0-check all particles; 1-only apply PT to particles in the vicinity of the box (*2 of bounds)
+
+	PetscInt        number_phases;
+	PetscInt        PhaseBelow[_max_tr_];
+	PetscInt        PhaseAbove[_max_tr_];
+	PetscInt        PhaseInside[_max_tr_];
+	PetscInt        PhaseOutside[_max_tr_];
+	PetscScalar     dT_within;
+	PetscScalar     DensityAbove[_max_tr_];
+	PetscScalar     DensityBelow[_max_tr_];
+
+	PetscScalar     topTemp;
+	PetscScalar     botTemp;
+	PetscScalar     cstTemp;
+	PetscScalar     thermalAge;
+
+	//Segmented NotInAirBox
+	PetscInt        nsegs;                    // number of segments
+	PetscScalar     xbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in x
+	PetscScalar     ybounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in y
+	PetscScalar     zbounds[2*( _max_NotInAir_segs_ +1)]; // number of bounds in z
+	PetscScalar    *celly_xboundL;  //left boundary of segment evaluated at ycoord of cell
+	PetscScalar    *celly_xboundR;  //right boundary of segment evaluated at ycoord of cell
+	PetscScalar    *cbuffL;    // memory buffer for celly_xboundL
+	PetscScalar    *cbuffR;    // memory buffer for celly_xboundR
+
+	// for moving NotInAirBox
+	PetscScalar     t0_box;
+	PetscScalar     t1_box;
+	PetscScalar     v_box;
+
+	// for linking NotInAirBoxes
+	PetscInt      phtr_link_left;
+	PetscInt      phtr_link_right;
   
 };
 
@@ -186,6 +201,11 @@ public:
 	PetscScalar  taup;              // scaling stress                             [Pa]
 	PetscScalar  gamma;             // approximation parameter                    [ ]
 	PetscScalar  q;                 // stress-dependence parameter                [ ]
+	// Frank-Kamenetzky parameters
+    PetscScalar  gamma_fk;          // parameter in Frank-Kamenetzky approximation [1/K]
+	PetscScalar  TRef_fk;           // Frank-Kamenetzky reference Temperature [K]
+	PetscScalar  eta_fk;            // reference viscosity for Frank-Kamenetzky [Pas]
+	
 	// dc-creep
 	PetscScalar  Bdc;               // pre-exponential constant                   [1/s]
 	PetscScalar  Edc;               // activation energy                          [J/mol]
@@ -267,12 +287,12 @@ struct DBMat
 	Material_t   phases[_max_num_phases_]; // phase parameters
 	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
-	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
-	PetscInt     numPhtr;                // number phase transitions
+	Ph_trans_t   matPhtr[_max_num_tr_];    // phase transition properties
+	PetscInt     numPhtr;                  // number phase transitions
 };
 
 // read material database
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput);
 
 // read single softening law
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
@@ -309,8 +329,6 @@ PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar  n, ExpType type, Pe
 
 // correct experimental stress and strain rate parameters to tensor units
 PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa);
-
-
 
 //---------------------------------------------------------------------------
 

@@ -59,8 +59,6 @@
 // * figure out why block factorization with penalty
 //   doesn't work with non-homogeneous Dirichlet BC
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatAIJCreate"
 PetscErrorCode MatAIJCreate(
 	PetscInt m, PetscInt n,
 	PetscInt d_nz, const PetscInt d_nnz[],
@@ -68,7 +66,7 @@ PetscErrorCode MatAIJCreate(
 	Mat *P)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// create matrix
 	ierr = MatCreate(PETSC_COMM_WORLD, P); CHKERRQ(ierr);
@@ -89,14 +87,12 @@ PetscErrorCode MatAIJCreate(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatAIJCreateDiag"
 PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 {
 	PetscInt i, ii;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// preallocate
 	ierr = MatAIJCreate(m, m, 1, NULL, 0, NULL, P); CHKERRQ(ierr);
@@ -118,13 +114,11 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatAIJAssemble"
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag)
 {
 //	PetscInt    m, n;
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = MatSetOption(P, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_FALSE); CHKERRQ(ierr);
 	ierr = MatAssemblyBegin(P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
@@ -142,8 +136,6 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatAIJSetNullSpace"
 PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 {
 	MatNullSpace nullsp;                       // near null space
@@ -153,7 +145,7 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	PetscInt     i, j, sz, ln=0, iter, nullsp_sz=0, lbsz[_max_nullsp_sz_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscOptionsHasName(NULL, NULL, "-pcmat_set_null_space", &set_nullsp); CHKERRQ(ierr);
 
@@ -208,12 +200,10 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatCreate"
 PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	//========================================================================
 	// create preconditioner matrix context
@@ -259,8 +249,6 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatSetFromOptions"
 PetscErrorCode PMatSetFromOptions(PMat pm)
 {
 	PetscBool   flg;
@@ -268,7 +256,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	char        pname[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
 
@@ -287,7 +275,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
 			pm->type = _BLOCK_;
 		}
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
 	}
 	else
 	{
@@ -331,14 +319,12 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatAssemble"
 PetscErrorCode PMatAssemble(PMat pm)
 {
 	BCCtx  *bc;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 //	PetscPrintf(PETSC_COMM_WORLD, " Starting preconditioner assembly\n");
 
@@ -357,12 +343,10 @@ PetscErrorCode PMatAssemble(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatDestroy"
 PetscErrorCode PMatDestroy(PMat pm)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = pm->Destroy(pm); CHKERRQ(ierr);
 	ierr = PetscFree(pm);   CHKERRQ(ierr);
@@ -372,8 +356,6 @@ PetscErrorCode PMatDestroy(PMat pm)
 //---------------------------------------------------------------------------
 //.........................   MONOLITHIC MATRIX   ...........................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatMonoCreate"
 PetscErrorCode PMatMonoCreate(PMat pm)
 {
 	//=========================================================================
@@ -402,7 +384,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access contexts
 	fs  = pm->jr->fs;
@@ -600,8 +582,6 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatMonoAssemble"
 PetscErrorCode PMatMonoAssemble(PMat pm)
 {
 	//======================================================================
@@ -635,7 +615,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PetscScalar cf[7];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access contexts
 	jr     = pm->jr;
@@ -958,8 +938,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatMonoPicard"
 PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 {
 	// actual operation is: r = J*x = A*x - M*x
@@ -967,7 +945,7 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 	PMatMono *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
 
@@ -983,14 +961,12 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatMonoDestroy"
 PetscErrorCode PMatMonoDestroy(PMat pm)
 {
 	PMatMono *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	P = (PMatMono*)pm->data;
@@ -1005,8 +981,6 @@ PetscErrorCode PMatMonoDestroy(PMat pm)
 //---------------------------------------------------------------------------
 //...........................   BLOCK MATRIX   ..............................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockCreate"
 PetscErrorCode PMatBlockCreate(PMat pm)
 {
 	JacRes      *jr;
@@ -1021,7 +995,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	jr  = pm->jr;
 	fs  = jr->fs;
@@ -1258,8 +1232,6 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockAssemble"
 PetscErrorCode PMatBlockAssemble(PMat pm)
 {
 	//======================================================================
@@ -1291,7 +1263,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	PetscScalar cf[7];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	jr  = pm->jr;
 	fs  = jr->fs;
@@ -1586,8 +1558,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockPicardClean"
 PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec r)
 {
 	//=======================================================================
@@ -1600,7 +1570,7 @@ PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec r)
 	PMatBlock *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
@@ -1626,8 +1596,6 @@ PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec r)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockPicardSchur"
 PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec r)
 {
 	//=======================================================================
@@ -1640,7 +1608,7 @@ PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec r)
 	PMatBlock *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
@@ -1670,14 +1638,12 @@ PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec r)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBlockDestroy"
 PetscErrorCode PMatBlockDestroy(PMat pm)
 {
 	PMatBlock *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	P = (PMatBlock*)pm->data;
@@ -1889,8 +1855,6 @@ void constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScala
 	}
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VecScatterBlockToMonolithic"
 PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode)
 {
 	// scatter block vectors to monolithic format forward & reverse
@@ -1899,7 +1863,7 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 	PetscScalar *fp, *gp, *bp;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get sizes of the blocks
 	ierr = VecGetLocalSize(f, &fs); CHKERRQ(ierr);

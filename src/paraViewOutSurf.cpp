@@ -52,14 +52,12 @@
 #include "JacRes.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfCreate"
 PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 {
-	char filename[_str_len_-5];
+	char filename[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!pvsurf->surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -72,6 +70,9 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	// initialize
 	pvsurf->outpvd     = 1;
 	pvsurf->topography = 1;
+	pvsurf->amplitude  = 1;
+	pvsurf->velocity   = 1;
+	
 
 	// read
 	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       filename,        "output"); CHKERRQ(ierr);
@@ -99,15 +100,13 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfCreateData"
 PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 {
 	FDSTAG   *fs;
 	PetscInt  rx, ry, sx, sy, nx, ny;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
@@ -129,11 +128,9 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfDestroy"
 PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
@@ -143,12 +140,10 @@ PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteTimeStep"
 PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
@@ -165,8 +160,6 @@ PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscSca
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWritePVTS"
 PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 {
 	FILE        *fp;
@@ -176,7 +169,7 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	PetscInt     nproc, rx, ry, rz;
 	PetscMPIInt  iproc;
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
@@ -187,8 +180,8 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 
 	// open outfile.pvts file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvts", dirName, pvsurf->outfile);
-	fp = fopen(fname,"w");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	fp = fopen(fname,"wb");
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// write header
@@ -256,8 +249,6 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteVTS"
 PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 {
 	FILE      *fp;
@@ -268,7 +259,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	size_t     offset = 0;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs   = pvsurf->surf->jr->fs;
@@ -280,8 +271,8 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	{
 		// open outfile_p_XXXXXX.vts file in the output directory (write mode)
 		asprintf(&fname, "%s/%s_p%1.8lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
-		fp = fopen(fname,"w");
-		if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+		fp = fopen(fname,"wb");
+		if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 		free(fname);
 
 		// get sizes of output grid
@@ -311,7 +302,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\"/>\n",
 			(LLD)offset);
 
-		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny*3);
+		offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*3);
 
 		fprintf(fp, "\t\t</Points>\n");
 
@@ -323,7 +314,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"velocity %s\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\"/>\n",
 				scal->lbl_velocity, (LLD)offset);
 
-			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny*3);
+			offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*3);
 		}
 
 		if(pvsurf->topography)
@@ -331,7 +322,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
 				scal->lbl_length, (LLD)offset);
 
-			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+			offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny);
 		}
 
 		if(pvsurf->amplitude)
@@ -339,7 +330,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
 				scal->lbl_length, (LLD)offset);
 
-			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+			offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny);
 		}
 
 		fprintf(fp, "\t\t</PointData>\n");
@@ -382,20 +373,18 @@ void OutputBufferWrite(
 	if(!cn) return;
 
 	// dump output buffer contents to disk
-	int nbytes;
+	uint64_t nbytes;
 
 	// compute number of bytes
-	nbytes = (int)cn*(int)sizeof(float);
+	nbytes = (uint64_t)cn*(int)sizeof(float);
 
 	// dump number of bytes
-	fwrite(&nbytes, sizeof(int), 1, fp);
+	fwrite(&nbytes, sizeof(uint64_t), 1, fp);
 
 	// dump buffer contents
 	fwrite(buff, sizeof(float), (size_t)cn, fp);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteCoord"
 PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 {
 	FreeSurf    *surf;
@@ -405,7 +394,7 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	L    = 0;
 	cn   = 0;
@@ -438,8 +427,6 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteVel"
 PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 {
 	FreeSurf    *surf;
@@ -449,7 +436,7 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	L    = 0;
 	cn   = 0;
@@ -486,8 +473,6 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteTopo"
 PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 {
 	FreeSurf    *surf;
@@ -497,7 +482,7 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	L    = 0;
 	cn   = 0;
@@ -528,8 +513,6 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfWriteAmplitude"
 PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 {
 	FreeSurf    *surf;
@@ -539,7 +522,7 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	L    = 0;
 	cn   = 0;

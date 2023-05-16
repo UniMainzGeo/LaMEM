@@ -75,8 +75,6 @@
 #include "passive_tracer.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibMain"
 PetscErrorCode LaMEMLibMain(void *param)
 {
 	LaMEMLib       lm;
@@ -87,7 +85,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscLogDouble cputime_start, cputime_end;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;       
+	PetscFunctionBeginUser;       
 
 	// start code
 	ierr = PetscTime(&cputime_start); CHKERRQ(ierr);
@@ -95,6 +93,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
+	PetscPrintf(PETSC_COMM_WORLD,"     Version : 2.0.0 \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
@@ -110,7 +109,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 		else if(!strcmp(str, "restart"))   mode = _RESTART_;
 		else if(!strcmp(str, "dry_run"))   mode = _DRY_RUN_;
 		else if(!strcmp(str, "save_grid")) mode = _SAVE_GRID_;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect run mode type: %s", str);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect run mode type: %s", str);
 	}
 
 	// cancel restart if no database is available
@@ -178,14 +177,12 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibCreate"
 PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 {
 	FB *fb;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(param) param = NULL;
 
@@ -198,14 +195,11 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// create time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
-	// create material database
-	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
-
-    // create dike database
-	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, PETSC_TRUE);   CHKERRQ(ierr);
-
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
+
+	// create material database
+	ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
 
 	// create free surface grid
 	ierr = FreeSurfCreate(&lm->surf, fb); 			CHKERRQ(ierr);
@@ -215,6 +209,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create residual & Jacobian evaluation context
 	ierr = JacResCreate(&lm->jr, fb); 				CHKERRQ(ierr);
+
+	// create dike database
+	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, &lm->jr, PETSC_TRUE);   CHKERRQ(ierr);
 
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); 				CHKERRQ(ierr);
@@ -243,14 +240,12 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSaveGrid"
 PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 {
 	FB *fb;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// load input file
 	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
@@ -273,25 +268,20 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibLoadRestart"
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 {
-	FILE            *fp;
-	PetscMPIInt     rank;
-	char            *fileName;
-	PetscLogDouble  t;
 	FB              *fb;
-    DBMat           dbm_modified;
-	PetscInt        i;
-    Scaling         scal;
+	FILE            *fp;
+	PetscLogDouble  t;
+	PetscMPIInt     rank;
+	PetscBool       found;
+	char            restartFileName[_str_len_], *fileName;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PrintStart(&t, "Loading restart database", NULL);
 
-	
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
@@ -303,7 +293,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	if(fp == NULL)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileName);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileName);
 	}
 
 	// read LaMEM library database
@@ -336,45 +326,40 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
 
+	// arrays for dynamic NotInAir phase_trans
+	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
+
+	// read from input file, create arrays for dynamic diking, and read from restart file
+	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, fb, fp);  CHKERRQ(ierr);
+//	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, fb, fp, PETSC_TRUE);  CHKERRQ(ierr);
+
 	// close temporary restart file
 	fclose(fp);
-
-
-	// Read info from file/command-line & overwrite 'restart' data (necessary for adjoint)
-
-	// load input file 
-	ierr = FBLoad(&fb, PETSC_TRUE); 											CHKERRQ(ierr);
-
-	// Create scaling object
-	ierr 				= ScalingCreate(&scal, fb, PETSC_FALSE); 				CHKERRQ(ierr);
-	dbm_modified.scal   = &scal;
-	for (i=0; i < lm->dbm.numPhases; i++){
-		ierr =   PetscMemzero(&dbm_modified.phases[i],  sizeof(Material_t));   	CHKERRQ(ierr);
-	}
-
-    // Store Material DB in intermediate structure (for use with Adjoint)
-	ierr = DBMatCreate(&dbm_modified, fb, PETSC_TRUE); 							CHKERRQ(ierr);
-
-	// swap material structure with the one from file (for adjoint)
-	for (i=0; i < lm->dbm.numPhases; i++)
-	{
-		swapStruct(&lm->dbm.phases[i], &dbm_modified.phases[i]);  
-		//PrintMatProp(&lm->dbm.phases[i]);
-	}
-
-	// update time stepping object
-	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
 	// free space
 	free(fileName);
 
+	// check whether restart input file is specified
+	ierr = PetscOptionsGetCheckString("-RestartParamFile", restartFileName, &found); CHKERRQ(ierr);
+
+	if(found == PETSC_TRUE)
+	{
+		// load restart input file
+		ierr = FBLoad(&fb, PETSC_TRUE, restartFileName); CHKERRQ(ierr);
+
+		// override material database
+		ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
+
+		// destroy file buffer
+		ierr = FBDestroy(&fb); CHKERRQ(ierr);
+	}
+
 	PrintDone(t);
 
 	PetscFunctionReturn(0);
+
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSaveRestart"
 PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 {
 	// save new restart database, then delete the original
@@ -385,7 +370,7 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	PetscLogDouble t;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(!TSSolIsRestart(&lm->ts)) PetscFunctionReturn(0);
 
@@ -405,7 +390,7 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 
 	if(fp == NULL)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileNameTmp);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileNameTmp);
 	}
 
 	// write LaMEM library database
@@ -429,6 +414,12 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	// passive tracers
 	ierr = Passive_Tracer_WriteRestart(&lm->actx, fp); CHKERRQ(ierr);
 
+	// dynamic phase transition 
+	ierr = DynamicPhTr_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
+
+	// dynamic dike 
+	ierr = DynamicDike_WriteRestart(&lm->jr, fp); CHKERRQ(ierr);
+
 	// close temporary restart file
 	fclose(fp);
 
@@ -446,8 +437,6 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDeleteRestart"
 PetscErrorCode LaMEMLibDeleteRestart()
 {
 	// delete existing restart database
@@ -457,7 +446,7 @@ PetscErrorCode LaMEMLibDeleteRestart()
 	char        *fileName;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -474,7 +463,7 @@ PetscErrorCode LaMEMLibDeleteRestart()
 
 		if(status && errno != ENOENT)
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to delete file %s", fileName);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to delete file %s", fileName);
 		}
 
 		ierr = DirRemove("./restart"); CHKERRQ(ierr);
@@ -486,12 +475,10 @@ PetscErrorCode LaMEMLibDeleteRestart()
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDestroy"
 PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = FDSTAGDestroy  (&lm->fs);     CHKERRQ(ierr);
 	ierr = FreeSurfDestroy(&lm->surf);   CHKERRQ(ierr);
@@ -502,11 +489,13 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
 
+	ierr = DynamicPhTrDestroy (&lm->dbm); CHKERRQ(ierr);
+	ierr = DynamicDike_Destroy(&lm->jr); CHKERRQ(ierr);
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSetLinks"
 PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 {
 	//======================================================================
@@ -537,7 +526,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 
 	// ... This is the house that Jack built ...
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	// TSSol
 	lm->ts.scal     = &lm->scal;
 	// DBMat
@@ -581,8 +570,6 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSaveOutput"
 PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 {
 	//==================
@@ -597,7 +584,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscLogDouble t;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	scal = &lm->scal;
 	ts   = &lm->ts;
@@ -648,8 +635,6 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSolve"
 PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
 	PMat           pm;     // preconditioner matrix    (to be removed!)
@@ -661,7 +646,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PetscLogDouble t;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// create Stokes preconditioner, matrix and nonlinear solver
 	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
@@ -674,10 +659,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
     
-
 	if (param)
 	{
-		ierr =  AdjointCreate(&aop, &lm->jr, (ModParam *)param);
+		ierr = AdjointCreate(&aop, &lm->jr, (ModParam *)param); CHKERRQ(ierr);
 	}
 
 	//===============
@@ -691,7 +675,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 
 		// apply phase transitions on particles
-		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
+		ierr = Phase_Transition(&lm->actx); CHKERRQ(ierr);
 		
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
@@ -778,7 +762,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
-		
+
 	}
 
 	//======================
@@ -813,12 +797,10 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDryRun"
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize boundary constraint vectors
 	ierr = BCApply(&lm->bc); CHKERRQ(ierr);
@@ -838,12 +820,10 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibInitGuess"
 PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscLogDouble t;
 
@@ -896,8 +876,6 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibDiffuseTemp"
 PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 {
 	JacRes         *jr;
@@ -908,7 +886,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	PetscInt       i, num_steps;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr      = &lm->jr;
@@ -991,8 +969,6 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibSolveTemp"
 PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 {
 	JacRes         *jr;
@@ -1000,7 +976,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	KSP            tksp;
 	
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr   = &lm->jr;

@@ -61,8 +61,6 @@
 #END_DOC#
 */
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInit"
 PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 {
 	FDSTAG    *fs;
@@ -70,7 +68,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	PetscBool LoadPhaseDiagrams;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -151,8 +149,6 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitCoord"
 PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 {
 	// initializes coordinates and adds random noise if required for hard-coded setups
@@ -165,7 +161,7 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 	PetscScalar  cf_rand;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -243,8 +239,6 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkPerturb"
 PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 {
 	FDSTAG      *fs;
@@ -255,7 +249,7 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 	PetscScalar  cf_rand;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// return if not set
 	if(!actx->randNoiseGP) PetscFunctionReturn(0);
@@ -305,8 +299,6 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSave"
 PetscErrorCode ADVMarkSave(AdvCtx *actx)
 {
 	int            fd;
@@ -318,7 +310,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	PetscScalar    *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
@@ -380,8 +372,6 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkCheckMarkers"
 PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 {
 	// check initial marker distribution
@@ -394,7 +384,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numWrong, refMarkCell;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -497,8 +487,6 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTempGrad"
 PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 {
 	// initialize temperature on markers based on linear gradient
@@ -509,7 +497,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	PetscScalar  dTdz, zbot, ztop, zp, Tbot;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	bc      = actx->jr->bc;
 	fs      = actx->fs;
@@ -550,8 +538,6 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTempPhase"
 PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx)
 {
 	// initialize temperature on markers based on phase temperature
@@ -560,7 +546,7 @@ PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx)
 	PetscInt     i, n, phase_set, imark, nummark;
 	PetscScalar  phase_temp[_max_num_phases_];
 
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	n         = actx->dbm->numPhases;
 	phases    = actx->dbm->phases;
@@ -589,8 +575,6 @@ PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTempFile"
 PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 {
 	FDSTAG         *fs;
@@ -608,7 +592,7 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	PetscScalar    chTemp, Tshift;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "temp_file", filename, NULL); CHKERRQ(ierr);
@@ -705,8 +689,6 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTempVector"
 PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 {
 	FDSTAG         *fs;
@@ -717,7 +699,7 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	PetscScalar    xc, yc, zc, xp, yp, zp, Ttop;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs   =  actx->fs;
@@ -788,8 +770,6 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 //---------------------------------------------------------------------------
 // Specific initialization routines
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitFiles"
 PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 {
 	int            fd;
@@ -801,7 +781,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscInt       imark, nummark;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_file", file, "./markers/mdb"); CHKERRQ(ierr);
@@ -862,8 +842,6 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitGeom"
 PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
 	Marker         *P;
@@ -878,7 +856,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	map<PetscInt, GeomPrim*>::iterator it, ie;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ngeom      = 0;
 	maxPhaseID = actx->dbm->numPhases - 1;
@@ -1227,8 +1205,6 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitPolygons"
 PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 {
 	// REDUNDANTLY loads a file with 2D-polygons that coincide with the marker planes
@@ -1259,7 +1235,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscInt       VolID, nCP;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "poly_file", filename, "./input/poly.dat"); CHKERRQ(ierr);
@@ -1466,7 +1442,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				// also check if control polygon is out of bounds
 				if (CtrlPoly.Pos[i] > Vol.num)
 				{
-					SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %d polygons", Vol.num);
+					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %d polygons", Poly.num);
 				}
 				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %d: Pos: %d, Sx: %.6f, Sy: %.6f \n",i+1,CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
 				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;
@@ -1609,14 +1585,12 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkReadCtrlPoly"
 PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, PetscInt &nCP)
 {
 	PetscInt       jj;
 	
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// find blocks
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<vG_ControlPolyStart>", "<vG_ControlPolyEnd>"); CHKERRQ(ierr);
@@ -1625,7 +1599,7 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	// check number of control polygons
 	if (nCP > _max_ctrl_poly_)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%d exceeds maximum number of control polygons (%d) \n",nCP,_max_ctrl_poly_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%d exceeds maximum number of control polygons (%d) \n",nCP,_max_ctrl_poly_);
 	}
 
 	// loop over blocks
@@ -1662,8 +1636,6 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkSecIdx"
 void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 {
 	FDSTAG   *fs;
@@ -1721,8 +1693,6 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 }
 //---------------------------------------------------------------------------
 // get the density from a phase diagram
-#undef __FUNCT__
-#define __FUNCT__ "LoadPhaseDiagram"
 PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 {
 	FILE          *fp;
@@ -1732,7 +1702,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
     PData         *pd;
     Scaling       *scal;
    
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	scal = actx->jr->scal;
 	pd   = actx->jr->Pd;
@@ -1763,7 +1733,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 			{
 				// We already loaded that diagram so no need to do anything here except setting the flags for the melt
 				sprintf(name,"%s.in",phases[i].pdn);  // is this ever used?
-				fp=fopen(phases[i].pdf,"r");
+				fp=fopen(phases[i].pdf,"rb");
 				for(j=0;j<1;j++)
 				{
 					if(j==0)
@@ -1792,10 +1762,10 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 
 	lineStart = 50;    // 50 lines are reserved for the header in the phase diagram
 
-	fp=fopen(phases[i].pdf,"r");
+	fp=fopen(phases[i].pdf,"rb");
 	if (fp==NULL)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s\n",name);
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s\n",name);
 	}
 
 	// Read header
@@ -2141,15 +2111,15 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
         
         if (x_ridgeLeft == x_ridgeRight)
         {
-            thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread;
-            thermalAgeRidge = max(thermalAgeRidge,age0);
+            thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread + age0;
+            //thermalAgeRidge = max(thermalAgeRidge,age0);
             
         }
         else
         {
             x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
-            thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread;
-            thermalAgeRidge = max(thermalAgeRidge,age0);
+            thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread + age0;
+            //thermalAgeRidge = max(thermalAgeRidge,age0);
         }
         
         thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff

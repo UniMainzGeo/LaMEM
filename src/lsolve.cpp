@@ -52,15 +52,13 @@
 // * implement preconditioners in PETSc
 // * add default solver options
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesSetFromOptions"
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 {
 	PetscBool found;
 	char      pname[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscOptionsGetString(NULL, NULL,"-jp_type", pname, _str_len_, &found); CHKERRQ(ierr);
 
@@ -81,7 +79,7 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
 			pc->type = _STOKES_USER_;
 		}
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Jacobian preconditioner type: %s", pname);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Jacobian preconditioner type: %s", pname);
 	}
 	else
 	{
@@ -92,8 +90,6 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesCreate"
 PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 {
 	//========================================================================
@@ -104,7 +100,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 	PMatType pm_type;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(p_PCStokes), &pc); CHKERRQ(ierr);
@@ -158,24 +154,20 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesSetup"
 PetscErrorCode PCStokesSetup(PCStokes pc)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = pc->Setup(pc); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesDestroy"
 PetscErrorCode PCStokesDestroy(PCStokes pc)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = pc->Destroy(pc); CHKERRQ(ierr);
 	ierr = PetscFree(pc);   CHKERRQ(ierr);
@@ -185,8 +177,6 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 //---------------------------------------------------------------------------
 //........................... BLOCK FACTORIZATION ...........................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFCreate"
 PetscErrorCode PCStokesBFCreate(PCStokes pc)
 {
 	PC          vpc;
@@ -194,7 +184,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	JacRes     *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(PCStokesBF), (void**)&bf); CHKERRQ(ierr);
@@ -229,8 +219,6 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFSetFromOptions"
 PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 {
 	PCStokesBF *bf;
@@ -239,7 +227,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	char        pname[_str_len_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	bf = (PCStokesBF*)pc->data;
@@ -261,7 +249,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 			bf->type = _LOWER_;
 		}
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect block factorization type: %s", pname);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect block factorization type: %s", pname);
 	}
 	else
 	{
@@ -287,7 +275,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 			bf->vtype = _VEL_USER_;
 		}
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type: %s", pname);
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type: %s", pname);
 	}
 	else
 	{
@@ -299,14 +287,12 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFDestroy"
 PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 {
 	PCStokesBF *bf;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	bf = (PCStokesBF*)pc->data;
@@ -323,15 +309,13 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFSetup"
 PetscErrorCode PCStokesBFSetup(PCStokes pc)
 {
 	PCStokesBF *bf;
 	PMatBlock  *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	bf = (PCStokesBF*)pc->data;
@@ -349,8 +333,6 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFApply"
 PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 {
 	//======================================================================
@@ -363,7 +345,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	PMatBlock  *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
@@ -413,15 +395,13 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 //---------------------------------------------------------------------------
 //....................... COUPLED GALERKIN MULTIGRID ........................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesMGCreate"
 PetscErrorCode PCStokesMGCreate(PCStokes pc)
 {
 	PCStokesMG *mg;
 	JacRes     *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(PCStokesMG), (void**)&mg); CHKERRQ(ierr);
@@ -438,14 +418,12 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesMGDestroy"
 PetscErrorCode PCStokesMGDestroy(PCStokes pc)
 {
 	PCStokesMG *mg;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	mg = (PCStokesMG*)pc->data;
@@ -456,15 +434,13 @@ PetscErrorCode PCStokesMGDestroy(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesMGSetup"
 PetscErrorCode PCStokesMGSetup(PCStokes pc)
 {
 	PCStokesMG *mg;
 	PMatMono   *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// acces context
 	mg = (PCStokesMG*)pc->data;
@@ -475,15 +451,13 @@ PetscErrorCode PCStokesMGSetup(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesMGApply"
 PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y)
 {
 	PCStokes    pc;
 	PCStokesMG *mg;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
 
@@ -497,14 +471,12 @@ PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y)
 //---------------------------------------------------------------------------
 //............................. USER-DEFINED ................................
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserCreate"
 PetscErrorCode PCStokesUserCreate(PCStokes pc)
 {
 	PCStokesUser *user;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(PCStokesUser), (void**)&user); CHKERRQ(ierr);
@@ -523,8 +495,6 @@ PetscErrorCode PCStokesUserCreate(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserAttachIS"
 PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
 {
 	PCStokesUser *user;
@@ -533,7 +503,7 @@ PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
 	PetscInt      st, lnv, lnp;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	user = (PCStokesUser*)pc->data;
@@ -557,14 +527,12 @@ PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserDestroy"
 PetscErrorCode PCStokesUserDestroy(PCStokes pc)
 {
 	PCStokesUser *user;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get context
 	user = (PCStokesUser*)pc->data;
@@ -578,8 +546,6 @@ PetscErrorCode PCStokesUserDestroy(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserSetup"
 PetscErrorCode PCStokesUserSetup(PCStokes pc)
 {
 	PetscBool    flg;
@@ -587,7 +553,7 @@ PetscErrorCode PCStokesUserSetup(PCStokes pc)
 	PMatMono     *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	user = (PCStokesUser*)pc->data;
@@ -608,15 +574,13 @@ PetscErrorCode PCStokesUserSetup(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesUserApply"
 PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y)
 {
 	PCStokes      pc;
 	PCStokesUser *user;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
 

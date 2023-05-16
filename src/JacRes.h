@@ -53,6 +53,7 @@ struct FreeSurf;
 struct BCCtx;
 struct DBMat;
 struct DBPropDike;
+struct Dike;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
@@ -112,6 +113,7 @@ struct SolVarCell
 	PetscScalar  DIIdif;        // relative diffusion creep strain rate
 	PetscScalar  DIIdis;        // relative dislocation creep strain rate
 	PetscScalar  DIIprl;        // relative Peierls creep strain rate
+	PetscScalar  DIIfk;         // relative Frank-Kamenetzky creep strain rate
 	PetscScalar  DIIpl;         // relative plastic strain rate
 	PetscScalar  yield;         // average yield stress in control volume
 
@@ -154,7 +156,7 @@ struct Controls
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
-	PetscInt    AdiabHeat;		// Adiabatic Heating flag
+	PetscScalar AdiabHeat;		// Adiabatic Heating efficiency
 	PetscInt    actTemp;        // temperature diffusion activation flag
 	PetscInt    actExp;         // thermal expansion activation flag
 	PetscInt    actSteadyTemp;  // steady-state temperature initial guess flag
@@ -213,9 +215,8 @@ struct JacRes
 	FDSTAG   *fs;    // staggered-grid layout
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
-  DBPropDike *dbdike; // dike database
+    DBPropDike *dbdike; // dike database
 	DBMat    *dbm;   // material database
-  //  ConstEqCtx *ctx;
   
 	// parameters and controls
 	Controls ctrl;
@@ -290,6 +291,17 @@ struct JacRes
 	// 2D integration primitives
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
+
+
+	//===========================================
+	// 2D planview plus levels for time averaging
+	//===========================================
+	DM DA_CELL_2D_tave; // 2D cell center grid
+
+	//==================================
+	// For 1D arrays
+	//==================================
+	DM DA_CELL_1D; // 1D cell center grid
 };
 //---------------------------------------------------------------------------
 
@@ -381,7 +393,9 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *k_,      // conductivity
 	PetscScalar *rho_Cp_, // volumetric heat capacity
 	PetscScalar *rho_A_,  // volumetric radiogenic heat   
-	PetscScalar Tc);      // temperature of cell 
+	PetscScalar Tc,       // temperature of cell
+    PetscScalar y_c,
+    PetscInt J);     // coordinate of cell
 
 // check whether thermal material parameters are properly defined
 PetscErrorCode JacResCheckTempParam(JacRes *jr);

@@ -75,7 +75,7 @@
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter; \
 	InterpFlags iflag; \
 	PetscErrorCode ierr; \
-	PetscFunctionBegin; \
+	PetscFunctionBeginUser; \
 	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \
 	fs     = outbuf->fs; \
@@ -91,7 +91,7 @@
 	PetscScalar  cf; \
 	InterpFlags  iflag; \
 	PetscErrorCode ierr; \
-	PetscFunctionBegin; \
+	PetscFunctionBeginUser; \
 	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \
 	scal   = jr->scal; \
@@ -160,8 +160,6 @@ void OutVecCreate(
 	outvec->OutVecWrite = OutVecWrite;
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritePhase"
 PetscErrorCode PVOutWritePhase(OutVec* outvec)
 {
 	Material_t  *phases;
@@ -190,8 +188,6 @@ PetscErrorCode PVOutWritePhase(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritePhaseAgg"
 PetscErrorCode PVOutWritePhaseAgg(OutVec* outvec)
 {
 	PetscScalar *phRat, agg;
@@ -219,8 +215,6 @@ PetscErrorCode PVOutWritePhaseAgg(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteDensity"
 PetscErrorCode PVOutWriteDensity(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -235,8 +229,6 @@ PetscErrorCode PVOutWriteDensity(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteViscTotal"
 PetscErrorCode PVOutWriteViscTotal(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -254,8 +246,6 @@ PetscErrorCode PVOutWriteViscTotal(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteViscCreep"
 PetscErrorCode PVOutWriteViscCreep(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -273,8 +263,6 @@ PetscErrorCode PVOutWriteViscCreep(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteVelocity"
 PetscErrorCode PVOutWriteVelocity(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
@@ -291,12 +279,10 @@ PetscErrorCode PVOutWriteVelocity(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritePressure"
 PetscErrorCode PVOutWritePressure(OutVec* outvec)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(outvec->jr->ctrl.gwType != _GW_NONE_)
 	{
@@ -310,8 +296,6 @@ PetscErrorCode PVOutWritePressure(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteGradient"
 PetscErrorCode PVOutWriteGradient(OutVec* outvec)
 {
 
@@ -324,8 +308,6 @@ PetscErrorCode PVOutWriteGradient(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteStAngle"
 PetscErrorCode PVOutWriteStAngle(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -340,8 +322,6 @@ PetscErrorCode PVOutWriteStAngle(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteTotalPress"
 PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 {
 	PetscScalar pShift, biot;
@@ -365,8 +345,6 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteEffPress"
 PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 {
 	PetscScalar pShift;
@@ -384,8 +362,6 @@ PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteOverPress"
 PetscErrorCode PVOutWriteOverPress(OutVec* outvec)
 {
 	PetscScalar pShift;
@@ -402,8 +378,6 @@ PetscErrorCode PVOutWriteOverPress(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteLithoPress"
 PetscErrorCode PVOutWriteLithoPress(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
@@ -415,8 +389,6 @@ PetscErrorCode PVOutWriteLithoPress(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritePorePress"
 PetscErrorCode PVOutWritePorePress(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
@@ -428,8 +400,6 @@ PetscErrorCode PVOutWritePorePress(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteTemperature"
 PetscErrorCode PVOutWriteTemperature(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
@@ -442,8 +412,6 @@ PetscErrorCode PVOutWriteTemperature(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteConductivity"    // NEW
 PetscErrorCode PVOutWriteConductivity(OutVec* outvec)
 {
 
@@ -459,8 +427,6 @@ PetscErrorCode PVOutWriteConductivity(OutVec* outvec)
         PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteDevStress"
 PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
@@ -499,8 +465,6 @@ PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteJ2DevStress"
 PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 {
 	SolVarCell  *svCell;
@@ -544,8 +508,6 @@ PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteStrainRate"
 PetscErrorCode PVOutWriteStrainRate(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
@@ -575,8 +537,6 @@ PetscErrorCode PVOutWriteStrainRate(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteJ2StrainRate"
 PetscErrorCode PVOutWriteJ2StrainRate(OutVec* outvec)
 {
 	SolVarCell *svCell;
@@ -615,8 +575,6 @@ PetscErrorCode PVOutWriteJ2StrainRate(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteFluidDensity"
 PetscErrorCode PVOutWriteFluidDensity(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -631,8 +589,6 @@ PetscErrorCode PVOutWriteFluidDensity(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteMeltFraction"
 PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -649,12 +605,10 @@ PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteVolRate"
 PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = 0;  CHKERRQ(ierr);
 	if(outvec) outvec = NULL;
@@ -662,12 +616,10 @@ PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteVorticity"
 PetscErrorCode PVOutWriteVorticity(OutVec* outvec)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = 0;  CHKERRQ(ierr);
 	if(outvec) outvec = NULL;
@@ -675,12 +627,10 @@ PetscErrorCode PVOutWriteVorticity(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteAngVelMag"
 PetscErrorCode PVOutWriteAngVelMag(OutVec* outvec)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = 0;  CHKERRQ(ierr);
 	if(outvec) outvec = NULL;
@@ -688,8 +638,6 @@ PetscErrorCode PVOutWriteAngVelMag(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteTotStrain"
 PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -702,12 +650,8 @@ PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_ATS, 1, 0)
 
 	PetscFunctionReturn(0);
-
-	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritePlastStrain"
 PetscErrorCode PVOutWritePlastStrain(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -722,8 +666,6 @@ PetscErrorCode PVOutWritePlastStrain(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritePlastDissip"
 PetscErrorCode PVOutWritePlastDissip(OutVec* outvec)
 {
 	SolVarCell *svCell;
@@ -758,8 +700,6 @@ PetscErrorCode PVOutWritePlastDissip(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteTotDispl"
 PetscErrorCode PVOutWriteTotDispl(OutVec* outvec)
 {
 
@@ -779,8 +719,6 @@ PetscErrorCode PVOutWriteTotDispl(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteSHmax"
 PetscErrorCode PVOutWriteSHmax(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
@@ -798,8 +736,6 @@ PetscErrorCode PVOutWriteSHmax(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteEHmax"
 PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
@@ -817,8 +753,6 @@ PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteYield"
 PetscErrorCode PVOutWriteYield(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -834,8 +768,6 @@ PetscErrorCode PVOutWriteYield(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteRelDIIdif"
 PetscErrorCode PVOutWriteRelDIIdif(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -851,8 +783,6 @@ PetscErrorCode PVOutWriteRelDIIdif(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteRelDIIdis"
 PetscErrorCode PVOutWriteRelDIIdis(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -868,8 +798,6 @@ PetscErrorCode PVOutWriteRelDIIdis(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteRelDIIprl"
 PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -885,8 +813,6 @@ PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteRelDIIpl"
 PetscErrorCode PVOutWriteRelDIIpl(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
@@ -904,8 +830,6 @@ PetscErrorCode PVOutWriteRelDIIpl(OutVec* outvec)
 //---------------------------------------------------------------------------
 // DEBUG VECTORS
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteMomentRes"
 PetscErrorCode PVOutWriteMomentRes(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
@@ -925,8 +849,6 @@ PetscErrorCode PVOutWriteMomentRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteContRes"
 PetscErrorCode PVOutWriteContRes(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
@@ -942,8 +864,6 @@ PetscErrorCode PVOutWriteContRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritEnergRes"
 PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 {
 	FDSTAG      *fs;
@@ -977,8 +897,6 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "&PVOutWriteVelocityGr"
 PetscErrorCode PVOutWriteVelocityGr(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above

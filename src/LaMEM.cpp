@@ -52,8 +52,6 @@
 static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 //---------------------------------------------------------------------------
 
-#undef __FUNCT__
-#define __FUNCT__ "main"
 int main(int argc, char **argv)
 {
 	PetscErrorCode 	ierr;
@@ -65,7 +63,8 @@ int main(int argc, char **argv)
 	char      str[_str_len_];
 
 	// set default to be a forward run and overwrite it with input file options
-	ierr = PetscMalloc(sizeof(ModParam), &IOparam); CHKERRQ(ierr);
+	ierr = PetscMalloc(sizeof(ModParam), &IOparam);  CHKERRQ(ierr);
+	ierr = PetscMemzero(&IOparam, sizeof(ModParam)); CHKERRQ(ierr);
 
 	IOparam.use = _none_;
 	ierr = FBLoad(&IOparam.fb, PETSC_FALSE); CHKERRQ(ierr);
@@ -93,12 +92,9 @@ int main(int argc, char **argv)
 	// destroy file buffer
 	ierr = FBDestroy(&IOparam.fb); CHKERRQ(ierr);
 
-	ierr = PetscMemzero(&IOparam, sizeof(ModParam)); CHKERRQ(ierr);
-
 	// cleanup PETSC
 	ierr = PetscFinalize(); CHKERRQ(ierr);
 
 	return 0;
 }
-
 //--------------------------------------------------------------------------

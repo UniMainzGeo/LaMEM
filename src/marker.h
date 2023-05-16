@@ -215,7 +215,7 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Nslice, PetscInt *idx);
 #endif
 
 #define GET_GEOM(p, s, i, n) if(i < n) { p = &s[i++]; } \
-	else { SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)n); }
+	else { SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)n); }
 
 //---------------------------------------------------------------------------
 #endif

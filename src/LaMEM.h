@@ -142,14 +142,17 @@
 // maximum number of phase transition law
 #define _max_num_tr_ 20
 
-// maximum number of phase-like dikes
-#define _max_num_dike_ 6
+// maximum number of segments of NotInAirBoxes
+#define _max_NotInAir_segs_ 6
+
+// maximum number of dikes
+#define _max_num_dike_ 12
 
 // maximum number of equation parameter
 #define _max_num_eq_ 2
 
 // maximum number of phase transition per each phase
-#define _max_tr_ 5
+#define _max_tr_ 8
 
 // maximum number of phase diagrams
 #define _max_num_pd_ 8
@@ -193,9 +196,7 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
-#include <ctype.h>
 #include <sys/stat.h>
-#include <errno.h>
 #include <petsc.h>
 #include <map>
 #include <vector>

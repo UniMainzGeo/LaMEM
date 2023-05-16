@@ -60,8 +60,6 @@
 //---------------------------------------------------------------------------
 // Bezier block functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCBlockCreate"
 PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 {
     //	-npath - Number of path points of Bezier curve (end-points only!)
@@ -74,7 +72,7 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
     //	-top   - Polygon top coordinate
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     bcb->npath = 2;
     bcb->npoly = 4;
@@ -92,8 +90,6 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCBlockGetPosition"
 PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar X[])
 {
     // compute position along the path and rotation angle as a function of time
@@ -103,7 +99,7 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
     PetscScalar  *p1, *p2;
     PetscScalar  *path, *theta, *time;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     n     = bcb->npath;
     path  = bcb->path;
@@ -183,8 +179,6 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCBlockGetPolygon"
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly)
 {
     // compute current polygon coordinates
@@ -193,7 +187,7 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
     PetscScalar *xa, *xb;
     PetscScalar  Xa[3], theta, costh, sinth;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // get initial polygon position
     Xa[0] = bcb->path[0];
@@ -222,12 +216,10 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 //---------------------------------------------------------------------------
 // Velocity box functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VelBoxCreate"
 PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	//========================
 	// velocity box parameters
@@ -256,11 +248,9 @@ PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VelBoxPrint"
 PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %i \n", cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Box center                              : %g, %g, %g %s \n", velbox->cenX  *scal->length, velbox->cenY  *scal->length, velbox->cenZ  *scal->length, scal->lbl_length);
@@ -285,10 +275,106 @@ PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// Velocity cylinder functions
+//---------------------------------------------------------------------------
+PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
+{
+	char           str_type[_str_len_];
+    
+    PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	//========================
+	// velocity cylinder parameters
+	//========================
+
+	velcyl->vx   = DBL_MAX;
+	velcyl->vy   = DBL_MAX;
+	velcyl->vz   = DBL_MAX;
+    velcyl->vmag = DBL_MAX;
+
+	ierr = getScalarParam(fb, _REQUIRED_, "baseX",  &velcyl->baseX,  1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "baseY",  &velcyl->baseY,  1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "baseZ",  &velcyl->baseZ,  1,  scal->length);   CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _REQUIRED_, "capX",   &velcyl->capX,   1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "capY",   &velcyl->capY,   1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "capZ",   &velcyl->capZ,   1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "radius", &velcyl->rad,    1,  scal->length);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "vx",     &velcyl->vx,     1,  scal->velocity); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "vy",     &velcyl->vy,     1,  scal->velocity); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "vz",     &velcyl->vz,     1,  scal->velocity); CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _OPTIONAL_, "vmag",   &velcyl->vmag,   1,  scal->velocity); CHKERRQ(ierr);
+    ierr = getStringParam(fb, _OPTIONAL_, "type",    str_type,       "uniform");          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, "advect", &velcyl->advect, 1,  1);              CHKERRQ(ierr);
+
+    if(!strcmp(str_type, "uniform"))
+    {
+        velcyl->type = 0;
+    }
+    else if(!strcmp(str_type, "parabolic"))
+    {
+        velcyl->type = 1;
+    }
+    else
+    {
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity cylinder type must be uniform or parabolic");
+    }
+
+    if((velcyl->vx != DBL_MAX || velcyl->vy != DBL_MAX || velcyl->vz != DBL_MAX) && velcyl->vmag != DBL_MAX)
+    {
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "For velocity cylinder, specify vmag or vx/vy/vz");
+    }
+
+    if(velcyl->vx == DBL_MAX && velcyl->vy == DBL_MAX && velcyl->vz == DBL_MAX && velcyl->vmag == DBL_MAX)
+    {
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity cylinder should specify at least one velocity component");
+    }
+
+    PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt)
+{
+	PetscFunctionBeginUser;
+
+	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %i \n", cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder base                           : %g, %g, %g %s \n", velcyl->baseX  *scal->length, velcyl->baseY  *scal->length, velcyl->baseZ  *scal->length, scal->lbl_length);
+	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder cap                            : %g, %g, %g %s \n", velcyl->capX*scal->length, velcyl->capY*scal->length, velcyl->capZ*scal->length, scal->lbl_length);
+	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder radius                         : %g %s \n", velcyl->rad*scal->length, scal->lbl_length);
+	if(velcyl->vx != DBL_MAX)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      X-velocity                              : %g %s \n", velcyl->vx*scal->velocity, scal->lbl_velocity);
+	}
+	if(velcyl->vy != DBL_MAX)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      Y-velocity                              : %g %s \n", velcyl->vy*scal->velocity, scal->lbl_velocity);
+	}
+	if(velcyl->vz != DBL_MAX)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      Z-velocity                              : %g %s \n", velcyl->vz*scal->velocity, scal->lbl_velocity);
+	}
+    if(velcyl->vmag != DBL_MAX)
+    {
+        PetscPrintf(PETSC_COMM_WORLD, "      velocity magnitude                      : %g %s \n", velcyl->vmag*scal->velocity, scal->lbl_velocity);
+    }
+    if(velcyl->type == 0)
+    {
+        PetscPrintf(PETSC_COMM_WORLD, "      velocity profile                        : uniform \n");
+    }
+    else
+    {
+        PetscPrintf(PETSC_COMM_WORLD, "      velocity profile                        : parabolic \n");
+    }
+	if(velcyl->advect)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      Advect velocity with flow               @  \n");
+	}
+
+    PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // BCCtx functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCCreate"
 PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 {
     Scaling     *scal;
@@ -297,7 +383,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     char         inflow_temp[_str_len_],str_inflow[_str_len_];
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     scal = bc->scal;
@@ -347,7 +433,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         // error checking
         if(fb->nblocks > _max_boxes_)
         {
-            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many Bezier blocks! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many Bezier blocks! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
         }
 
         // store actual number of Bezier blocks
@@ -372,7 +458,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         // error checking
         if(fb->nblocks > _max_boxes_)
         {
-            SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity boxes! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity boxes! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
         }
 
         // store actual number of velocity blocks
@@ -382,6 +468,31 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         for(jj = 0; jj < fb->nblocks; jj++)
         {
             ierr = VelBoxCreate(bc->vboxes + jj, scal, fb); CHKERRQ(ierr);
+
+            fb->blockID++;
+        }
+    }
+
+    ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+    // velocity cylinders
+    ierr = FBFindBlocks(fb, _OPTIONAL_, "<VelCylinderStart>", "<VelCylinderEnd>"); CHKERRQ(ierr);
+
+    if(fb->nblocks)
+    {
+        // error checking
+        if(fb->nblocks > _max_boxes_)
+        {
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity cylinders! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+        }
+
+        // store actual number of velocity blocks
+        bc->ncylinders = fb->nblocks;
+
+        // read velocity boxes
+        for(jj = 0; jj < fb->nblocks; jj++)
+        {
+            ierr = VelCylinderCreate(bc->vcylinders + jj, scal, fb); CHKERRQ(ierr);
 
             fb->blockID++;
         }
@@ -470,44 +581,43 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         char             str[_str_len_];
         
         // Type of plume (2D or 3D)
+        ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL);                     CHKERRQ(ierr);  // must have component
 
-        ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL);          CHKERRQ(ierr);  // must have component
-        if(!strcmp(str, "Inflow_Type"))             bc->Plume_Type=1;                                // velocity flux
-        else if (!strcmp(str, "Permeable_Type"))
+        // Type of boundary conditions
+        if(!strcmp(str, "Inflow_Type"))
+        {
+            bc->Plume_Type = 1;                                  // velocity flux
+        }             
+        else if(!strcmp(str, "Permeable_Type"))
         {
             bc->Plume_Type = 2;                                // activate open_bot boundary condition
             bc->bot_open   = 1;                                // open the bottom boundary
         }
-        else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);}
-        ierr = getStringParam(fb, _REQUIRED_, "Plume_Dimension", 	str, NULL); 					CHKERRQ(ierr);  // must have component
-        if     	(!strcmp(str, "2D"))      bc->Plume_Dimension=1;		// 2D setup
-        else if (!strcmp(str, "3D"))      bc->Plume_Dimension=2;		// 3D (circular)
-        else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);} 
-        ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"    		, 	&bc->Plume_Phase, 			1, mID); 			CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature"	, 	&bc->Plume_Temperature, 	1, 1); 				CHKERRQ(ierr);
-        
-        if(bc->Plume_Dimension == 1)
+        else
         {	
-            // 2D perturbation in x-direction
-            ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",		bc->Plume_Center,		1,		scal->length);		CHKERRQ(ierr);
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Influx_type; Permeable_Type] as parameter for Plume_Type, not %s",str);
         }
-        else if(bc->Plume_Dimension == 2)
-        {
-            // 3D circular inflow a given [X,Y] coordinates
-            ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",		bc->Plume_Center,		2,		scal->length);		CHKERRQ(ierr);
-        }
-        ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Radius",			&bc->Plume_Radius,			1,	scal->length);		CHKERRQ(ierr);
 
-        if(bc->Plume_Type ==1)
+        if(bc->Plume_Type == 1)
         {
-            ierr = getScalarParam(fb,_REQUIRED_,"Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
-            ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType", 	str, "Gaussian"); 					CHKERRQ(ierr);  // must have component
-            if     	(!strcmp(str, "Poiseuille"))    bc->Plume_VelocityType = 0;		// Poiseuille
-            else if (!strcmp(str, "Gaussian"))      bc->Plume_VelocityType = 1;		// Gaussian perturbation (smoother)
-            else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);}
-
+            bc->Plume_areaFrac = 1.0;
+            ierr = getScalarParam(fb,_REQUIRED_,  "Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
+            ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType", 	 str, "Gaussian"); 				                    CHKERRQ(ierr);  // must have component
+            ierr = getScalarParam(fb, _OPTIONAL_, "Plume_areaFrac",         &bc->Plume_areaFrac,        1,  1.0);               CHKERRQ(ierr);
+            if(!strcmp(str, "Poiseuille"))
+            {
+                bc->Plume_VelocityType = 0; // Poiseuille
+            }
+            else if(!strcmp(str, "Gaussian"))
+            {
+                bc->Plume_VelocityType = 1;	// Gaussian perturbation (smoother)
+            }      
+            else
+            {	
+                SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Poiseuille; Gaussian] as parameter for Plume_VelocityType, not %s",str);
+            }
         }
-        if(bc->Plume_Type ==2)
+        if(bc->Plume_Type == 2)
         {
             //bc->Plume_Pressure = -1;
             //ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
@@ -515,6 +625,37 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
             ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , &bc->phase_inflow_bot,        1, mID);            CHKERRQ(ierr);
 
         }
+
+        // 2D or 3D
+        ierr = getStringParam(fb, _REQUIRED_, "Plume_Dimension", str, NULL);                 CHKERRQ(ierr);  // must have component
+        if(!strcmp(str, "2D"))
+        {
+            bc->Plume_Dimension = 1; // 2D setup
+        }      
+        else if(!strcmp(str, "3D"))
+        {
+            bc->Plume_Dimension = 2; // 3D (circular)
+        }
+        else
+        {	
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [2D; 3D] as parameter for Plume_Type, not %s",str);
+        }
+       
+        if(bc->Plume_Dimension == 1)
+        {	
+            // 2D perturbation in x-direction
+            ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",  bc->Plume_Center,      1,		scal->length); CHKERRQ(ierr);
+        }
+        else if(bc->Plume_Dimension == 2)
+        {
+            // 3D circular inflow a given [X,Y] coordinates
+            ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",	 bc->Plume_Center,      2,		scal->length); CHKERRQ(ierr);
+        }
+
+        // other options
+        ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"    	  , &bc->Plume_Phase, 		1, mID);           CHKERRQ(ierr);
+        ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature" , &bc->Plume_Temperature, 1, 1);             CHKERRQ(ierr);
+        ierr = getScalarParam(fb, _REQUIRED_, "Plume_Radius",       &bc->Plume_Radius,		1,	scal->length); CHKERRQ(ierr);
 
     }
 
@@ -582,6 +723,11 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         ierr = VelBoxPrint(bc->vboxes + jj, scal, jj); CHKERRQ(ierr);
     }
 
+    for(jj = 0; jj < bc->ncylinders; jj++)
+    {
+        ierr = VelCylinderPrint(bc->vcylinders + jj, scal, jj); CHKERRQ(ierr);
+    }
+
     if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
     if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                       @ \n");
     if(bc->bot_open && bc->Plume_Type == 2)
@@ -595,7 +741,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     }
     else{
         // We have a Tbot that changes with time
-        PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", bc->TbotNumPeriods);
+        PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", (LLD)bc->TbotNumPeriods);
         PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperatures               : ");
         for (jj=0; jj<bc->TbotNumPeriods; jj++){
             PetscPrintf(PETSC_COMM_WORLD, "%g ", bc->Tbot[jj]);
@@ -618,6 +764,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, 	 				scal->lbl_temperature);
                             PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %i \n", bc->Plume_Phase);
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %g %s \n", bc->Plume_Inflow_Velocity*scal->velocity, scal->lbl_velocity);
+                            PetscPrintf(PETSC_COMM_WORLD, "      Area fraction of plume                  : %g \n", bc->Plume_areaFrac);
     if(bc->Plume_Dimension == 1){PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g] %s \n", bc->Plume_Center[0]*scal->length,       scal->lbl_length);}
     else{                   PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g, %g] %s \n", bc->Plume_Center[0]*scal->length, bc->Plume_Center[1]*scal->length, scal->lbl_length);}
                             PetscPrintf(PETSC_COMM_WORLD, "      Radius of plume                         : %g %s \n", bc->Plume_Radius*scal->length, scal->lbl_length);
@@ -627,7 +774,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %s \n", str_inflow);
      if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }
-     if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %i \n", bc->phase);      }
+     if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %lld \n", (LLD)bc->phase);      }
      else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }     
 
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow window [bottom, top]             : [%3.2f,%3.2f] %s \n", bc->bot*scal->length, bc->top*scal->length, scal->lbl_length); 
@@ -690,14 +837,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCReadRestart"
 PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp)
 {
     PetscInt nCells;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     nCells = bc->fs->nCells;
 
@@ -713,13 +858,11 @@ PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCWriteRestart"
 PetscErrorCode BCWriteRestart(BCCtx *bc, FILE *fp)
 {
     PetscInt nCells;
 
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     nCells = bc->fs->nCells;
 
@@ -732,15 +875,13 @@ PetscErrorCode BCWriteRestart(BCCtx *bc, FILE *fp)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCCreateData"
 PetscErrorCode BCCreateData(BCCtx *bc)
 {
     FDSTAG   *fs;
     DOFIndex *dof;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     fs  =  bc->fs;
     dof = &fs->dof;
@@ -768,12 +909,10 @@ PetscErrorCode BCCreateData(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCDestroy"
 PetscErrorCode BCDestroy(BCCtx *bc)
 {
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // destroy boundary conditions vectors (velocity, pressure, temperature)
     ierr = VecDestroy(&bc->bcvx); CHKERRQ(ierr);
@@ -796,8 +935,6 @@ PetscErrorCode BCDestroy(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCReadFixCell"
 PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 {
     FILE           *fp;
@@ -807,7 +944,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
     char           *filename, file[_str_len_];
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check activation
     if(!bc->fixCell) PetscFunctionReturn(0);
@@ -827,7 +964,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 
     if(fp == NULL)
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
     }
 
     // check file size
@@ -835,7 +972,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 
     if((PetscInt)sb.st_size != bc->fs->nCells)
     {
-        SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Wrong fixed cell file size %s\n", filename);
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Wrong fixed cell file size %s\n", filename);
     }
 
     // read flags
@@ -849,14 +986,12 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApply"
 PetscErrorCode BCApply(BCCtx *bc)
 {
     FDSTAG *fs;
 
-     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscErrorCode ierr;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -905,6 +1040,9 @@ PetscErrorCode BCApply(BCCtx *bc)
     // apply velocity boxes
     ierr = BCApplyVelBox(bc); CHKERRQ(ierr);
 
+    // apply velocity cylinders
+    ierr = BCApplyVelCylinder(bc); CHKERRQ(ierr);
+
     // fix all cells occupied by phase
     ierr = BCApplyPhase(bc); CHKERRQ(ierr);
 
@@ -912,7 +1050,10 @@ PetscErrorCode BCApply(BCCtx *bc)
     ierr = BCApplyCells(bc); CHKERRQ(ierr);
 
     // plume like boundary condition
-    if(bc->Plume_Type == 1) ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
+    if(bc->Plume_Type == 1)
+    {
+    	ierr = BC_Plume_inflow(bc); CHKERRQ(ierr);
+    }
 
     // synchronize SPC constraints in the internal ghost points
     // WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
@@ -933,8 +1074,6 @@ PetscErrorCode BCApply(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplySPC"
 PetscErrorCode BCApplySPC(BCCtx *bc)
 {
     // apply SPC to global solution vector
@@ -943,7 +1082,7 @@ PetscErrorCode BCApplySPC(BCCtx *bc)
     PetscInt    i, num, *list;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     ierr = VecGetArray(bc->jr->gsol, &sol); CHKERRQ(ierr);
 
@@ -972,15 +1111,14 @@ PetscErrorCode BCApplySPC(BCCtx *bc)
      PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCShiftIndices"
 PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 {
     FDSTAG   *fs;
     DOFIndex *dof;
     PetscInt i, vShift=0, pShift=0;
-
     PetscInt vNumSPC, pNumSPC, *vSPCList, *pSPCList;
+
+    PetscFunctionBeginUser;
 
     // error checking
     if(stype == bc->stype)
@@ -1020,8 +1158,6 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 //---------------------------------------------------------------------------
 // Specific constraints
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyPres"
 PetscErrorCode BCApplyPres(BCCtx *bc)
 {
     // apply pressure constraints
@@ -1033,7 +1169,7 @@ PetscErrorCode BCApplyPres(BCCtx *bc)
     PetscScalar ***bcp;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1072,8 +1208,6 @@ PetscErrorCode BCApplyPres(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyTemp"
 PetscErrorCode BCApplyTemp(BCCtx *bc)
 {
     // apply temperature constraints
@@ -1085,7 +1219,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
     PetscScalar ***bcT;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1124,6 +1258,8 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 
                 x       = COORD_CELL(i, sx, fs->dsx);
                 y       = COORD_CELL(j, sy, fs->dsy);
+                x       = COORD_CELL_GHOST(i, fs->dsx);
+                y       = COORD_CELL_GHOST(j, fs->dsy);
 
                 if(bc->Plume_Dimension==1)	// 2D plume
                 {	
@@ -1156,8 +1292,6 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyVelDefault"
 PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 {
     // apply default velocity constraints on the boundaries
@@ -1178,7 +1312,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1323,8 +1457,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyVelTPC"
 PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 {
     // apply two-point constraints on the boundaries
@@ -1336,7 +1468,7 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
     PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -1431,8 +1563,6 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyBezier"
 PetscErrorCode BCApplyBezier(BCCtx *bc)
 {
     FDSTAG      *fs;
@@ -1444,7 +1574,7 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
     PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check whether constraint is activated
     if(!bc->nblocks) PetscFunctionReturn(0);
@@ -1563,8 +1693,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyBoundVel"
 PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 {
     FDSTAG      *fs;
@@ -1574,7 +1702,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
     PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open, bot_open;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check whether constraint is activated
     if(!bc->face) PetscFunctionReturn(0);
@@ -1725,8 +1853,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyVelBox"
 PetscErrorCode BCApplyVelBox(BCCtx *bc)
 {
     FDSTAG      *fs;
@@ -1737,7 +1863,7 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
     PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // skip initial guess
     if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
@@ -1856,8 +1982,214 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyPhase"
+PetscErrorCode BCApplyVelCylinder(BCCtx *bc)
+{
+    FDSTAG      *fs;
+    VelCylinder *velcyl;
+    PetscScalar ***bcvx, ***bcvy, ***bcvz;
+    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, ic;
+    PetscScalar x, y, z, cx, cy, cz, bx, by, bz, t, r, vx, vy, vz, vmag;
+    PetscScalar a, ax, ay, az, px, py, pz, npc, dx, dy, dz, dr, rr;
+    PetscScalar velType;
+
+    PetscErrorCode ierr;
+    PetscFunctionBeginUser;
+
+    // skip initial guess
+    if(bc->jr->ctrl.initGuess) PetscFunctionReturn(0);
+
+    // check whether internal velocity cylinder condition is activated
+    if(!bc->ncylinders) PetscFunctionReturn(0);
+
+    // access context
+    fs    =  bc->fs;
+    t     =  bc->ts->time;
+
+    // access velocity constraint vectors
+    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+    // loop over all cylinders
+    for(ic = 0; ic < bc->ncylinders; ic++)
+    {
+    	// get current cylinder
+    	velcyl = bc->vcylinders + ic;
+
+        // get coordinates
+        by = velcyl->baseY; cy = velcyl->capY;
+    	bx = velcyl->baseX; cx = velcyl->capX;
+        bz = velcyl->baseZ; cz = velcyl->capZ;
+        r  = velcyl->rad;
+
+        // get type of velocity profile
+        velType = (PetscScalar)velcyl->type;
+
+        // get velocity components
+        vmag = velcyl->vmag;
+        if(vmag != DBL_MAX)
+        {
+            // get cylinder axis vector
+            ax = cx - bx;
+            ay = cy - by;
+            az = cz - bz;
+            a  = sqrt(ax*ax + ay*ay + az*az);
+
+            // partition velocities
+            vx = vmag * ax / a;
+            vy = vmag * ay / a;
+            vz = vmag * az / a;
+            
+        }
+        else
+        {
+            vy = velcyl->vy;
+            vx = velcyl->vx;
+            vz = velcyl->vz;
+        }
+
+        // advect cylinder (if requested)
+        if(velcyl->advect)
+        {
+            if(vx != DBL_MAX) {bx += vx*t; cx += vx*t;} 
+            if(vy != DBL_MAX) {by += vy*t; cy += vy*t;}
+            if(vz != DBL_MAX) {bz += vz*t; cz += vz*t;}
+        }
+
+        // get cylinder axis vector
+        ax = cx - bx;
+        ay = cy - by;
+        az = cz - bz;
+
+        //---------
+        // X points
+        //----------
+        if(vx != DBL_MAX)
+        {
+        	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+				// get coordinates
+				x = COORD_NODE(i, sx, fs->dsx);
+				y = COORD_CELL(j, sy, fs->dsy);
+				z = COORD_CELL(k, sz, fs->dsz);
+
+                // get vector between a test point and cylinder base
+	            px = x - bx;
+                py = y - by;
+                pz = z - bz;
+
+                // find normalized parametric coordinate of a point-axis projection
+	            npc = (ax*px + ay*py + az*pz)/(ax*ax + ay*ay + az*az);
+
+                // find distance vector between point and axis
+                dx = px - npc*ax;
+                dy = py - npc*ay;
+                dz = pz - npc*az;
+
+                // compare position to radius
+                dr = sqrt(dx*dx + dy*dy + dz*dz);
+                rr = dr / r;
+
+                // check cylinder
+	            if(npc >= 0.0 && npc <= 1.0 && rr <= 1.0)
+	            {
+	            	bcvx[k][j][i] = vx * (1 - rr*rr*velType);
+	            }
+			}
+			END_STD_LOOP
+        }
+
+        //---------
+        // Y points
+        //----------
+        if(vy != DBL_MAX)
+        {
+        	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+				// get coordinates
+				x = COORD_CELL(i, sx, fs->dsx);
+				y = COORD_NODE(j, sy, fs->dsy);
+				z = COORD_CELL(k, sz, fs->dsz);
+
+                // get vector between a test point and cylinder base
+	            px = x - bx;
+                py = y - by;
+                pz = z - bz;
+
+                // find normalized parametric coordinate of a point-axis projection
+	            npc = (ax*px + ay*py + az*pz)/(ax*ax + ay*ay + az*az);
+
+                // find distance vector between point and axis
+                dx = px - npc*ax;
+                dy = py - npc*ay;
+                dz = pz - npc*az;
+
+                // compare position to radius
+                dr = sqrt(dx*dx + dy*dy + dz*dz);
+                rr = dr / r;
+
+                // check cylinder
+	            if(npc >= 0.0 && npc <= 1.0 && rr <= 1.0)
+	            {
+	            	bcvy[k][j][i] = vy * (1 - rr*rr*velType);
+	            }
+			}
+			END_STD_LOOP
+        }
+
+        //---------
+        // Z points
+        //----------
+        if(vz != DBL_MAX)
+        {
+        	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+				// get coordinates
+				x = COORD_CELL(i, sx, fs->dsx);
+				y = COORD_CELL(j, sy, fs->dsy);
+				z = COORD_NODE(k, sz, fs->dsz);
+
+                // get vector between a test point and cylinder base
+	            px = x - bx;
+                py = y - by;
+                pz = z - bz;
+
+                // find normalized parametric coordinate of a point-axis projection
+	            npc = (ax*px + ay*py + az*pz)/(ax*ax + ay*ay + az*az);
+
+                // find distance vector between point and axis
+                dx = px - npc*ax;
+                dy = py - npc*ay;
+                dz = pz - npc*az;
+
+                // compare position to radius
+                dr = sqrt(dx*dx + dy*dy + dz*dz);
+                rr = dr / r;
+
+                // check cylinder
+	            if(npc >= 0.0 && npc <= 1.0 && rr <= 1)
+	            {
+	            	bcvz[k][j][i] = vz * (1 - rr*rr*velType);
+	            }
+			}
+			END_STD_LOOP
+        }
+    }
+
+    // restore access
+    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode BCApplyPhase(BCCtx *bc)
 {
     // apply default velocity constraints on the boundaries
@@ -1868,7 +2200,7 @@ PetscErrorCode BCApplyPhase(BCCtx *bc)
     PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs       = bc->fs;
@@ -1913,8 +2245,6 @@ PetscErrorCode BCApplyPhase(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyCells"
 PetscErrorCode BCApplyCells(BCCtx *bc)
 {
     // apply default velocity constraints on the boundaries
@@ -1925,7 +2255,7 @@ PetscErrorCode BCApplyCells(BCCtx *bc)
     PetscScalar   ***bcvx,  ***bcvy,  ***bcvz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // check activation
     if(!bc->fixCell) PetscFunctionReturn(0);
@@ -1969,8 +2299,6 @@ PetscErrorCode BCApplyCells(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCListSPC"
 PetscErrorCode BCListSPC(BCCtx *bc)
 {
     // create SPC constraint lists
@@ -1982,7 +2310,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
     PetscScalar ***bcvx,  ***bcvy,  ***bcvz, *SPCVals;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs      = bc->fs;
@@ -2071,8 +2399,6 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 //---------------------------------------------------------------------------
 // Service functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCGetBGStrainRates"
 PetscErrorCode BCGetBGStrainRates(
         BCCtx       *bc,
         PetscScalar *Exx_,
@@ -2089,6 +2415,8 @@ PetscErrorCode BCGetBGStrainRates(
 
     PetscInt    jj;
     PetscScalar time, Exx, Eyy, Ezz, Exz, Eyz, Exy;
+
+    PetscFunctionBeginUser;
 
     // initialize
     time = bc->ts->time;
@@ -2172,9 +2500,7 @@ PetscErrorCode BCGetBGStrainRates(
 
     PetscFunctionReturn(0);
 }
-
-#undef __FUNCT__
-#define __FUNCT__ "BCGetTempBound"
+//---------------------------------------------------------------------------
 PetscErrorCode BCGetTempBound(
         BCCtx       *bc,
         PetscScalar *Tbot)
@@ -2183,6 +2509,8 @@ PetscErrorCode BCGetTempBound(
 
     PetscInt    jj;
     PetscScalar time, Tbot_val;
+
+    PetscFunctionBeginUser;
 
     // initialize
     time  		= bc->ts->time;
@@ -2206,8 +2534,6 @@ PetscErrorCode BCGetTempBound(
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCStretchGrid"
 PetscErrorCode BCStretchGrid(BCCtx *bc)
 {
     // apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
@@ -2228,7 +2554,7 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
     PetscScalar Rxx, Ryy, Rzz;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     // access context
     fs = bc->fs;
@@ -2245,8 +2571,6 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCOverridePhase"
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 {
     FDSTAG     *fs;
@@ -2256,7 +2580,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
     PetscInt phase_inflow;
     PetscScalar T_inflow;
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
     
     ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
 
@@ -2400,29 +2724,29 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BC_Plume_inflow"
 PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 {
     FDSTAG          *fs;
     PetscInt        i, j, k, nx, ny, nz, sx, sy, sz, iter;
     PetscScalar     ***bcvz;
     PetscScalar     vel, x_min,x_max,y_min,y_max,x,y;
-    PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin;
+    PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin, areaFrac;
     PetscScalar     radius2, R;
 
     PetscErrorCode ierr;
-    PetscFunctionBegin;
+    PetscFunctionBeginUser;
 
     
     if(!bc->Plume_Inflow) 	PetscFunctionReturn(0);
 
 
-    fs              =   bc->fs;
+    fs                  =   bc->fs;
 
-    ierr 			= 	FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
+    ierr 			    = 	FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
     
-    V_in            = 	bc->Plume_Inflow_Velocity;                      // max. inflow velocity
+    V_in                = 	bc->Plume_Inflow_Velocity;                      // max. inflow velocity
+    areaFrac            =   bc->Plume_areaFrac;
+
     if(bc->Plume_Dimension == 1){   // 2D
         Area_Bottom 	=	(x_max-x_min);
         Area_Inflow 	= 	2.0*bc->Plume_Radius;		    // inflow length
@@ -2443,8 +2767,8 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
         else						{	V_avg = V_in*1.0/2.0; 	}	// 3D	
 
         // outflow velocity is based on mass conservation (i.e.: Qin+Qout=0)
-        Qin 	=	V_avg*Area_Inflow; 
-        V_out 	= 	-Qin/Area_Outflow;                              // outflow velocity 
+        Qin 	=  V_avg * Area_Inflow * areaFrac; // volume influx
+        V_out 	= -Qin / Area_Outflow;             // outflow velocity 
     }
     else{
         
@@ -2466,7 +2790,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
             a       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_max)/c)/2.0/(x_max-x_min);     //dV
             b       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_min)/c)/2.0/(x_max-x_min);     //dV
             
-            V_out   =   -V_in*(a-b)/(1-(a-b));                     // average velocity should be zero
+            V_out   =   -V_in*(a-b)/(1-(a-b))*areaFrac;                     // average velocity should be zero
             
 
         }
@@ -2493,7 +2817,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
             //      so V_avg = V_out + (V_in-V_out)*((a-b)/Area + (d-e)/Area)    
             // since we want V_avg = 0, we can compute V_out as:
 
-            V_out   =   -V_in*(a-b + d-e)/(1-(a-b + d-e));                     // average velocity should be zero    
+            V_out   =   -V_in*(a-b + d-e)/(1-(a-b + d-e))*areaFrac;                     // average velocity should be zero    
 
             
            
@@ -2581,287 +2905,4 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
     PetscFunctionReturn(0);
 }
-/*
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApply_Permeable_Pressure"
-PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc)
-{
-    // apply pressure constraints
-
-    FDSTAG      *fs;
-    SolVarBulk  *svBulk;
-    PetscScalar g,H,dP,rho_plume,rho_mantle,dz,x,y,xmin,xmax,p,p_bot,radius2, rhog,Tbot;
-    PetscInt    phase_mantle,phase_plume;
-    PetscInt    i, j, k, nx, ny, nz, sx, sy, sz,iter;
-    PetscScalar ***bcp,***lp;
-
-
-    PetscErrorCode ierr;
-    PetscFunctionBegin;
-
-    // access context
-    fs = bc->fs;
-
-    ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
-
-    if(bc->Plume_Type == 2)
-    {
-        phase_mantle = bc->Plume_Phase_Mantle;
-    }
-    else
-    {
-        phase_mantle = bc->phase_inflow_bot;
-    }
-    if(bc->Plume_Type==2)
-    {
-        phase_plume  = bc->Plume_Phase;
-
-        g     =  PetscAbsScalar(bc->jr->ctrl.grav[2]);
-        H     = bc->Plume_Depth;
-
-        // compute the average lithostatic pressure at the bototm
-    
-
-        if(bc->Plume_Pressure>0.0)
-        {
-            p = bc->Plume_Pressure;
-        }
-        else if (bc->Plume_Pressure <0.0)
-        {
-            ierr = GetAverageLithostatic(bc); CHKERRQ(ierr);
-            p = bc->jr->mean_p;
-        }
-    }
-    else
-    {
-        ierr = GetAverageLithostatic(bc); CHKERRQ(ierr);
-        p = bc->jr->mean_p;
-    }
-
-    // initialize index bounds
-
-    ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-    ierr = DMDAVecGetArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
-
-
-    //-----------------------------------------------------
-    // P points (TPC only, hence looping over ghost points)
-    //-----------------------------------------------------
-
-        GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-        GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-        GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-        iter = 0;
-        radius2 = PetscPowScalar(bc->Plume_Radius,2.0 );
-        START_STD_LOOP
-        {
-            dz      = SIZE_CELL(k,sz,fs->dsz);
-            x       = COORD_CELL(i, sx, fs->dsx);
-            y       = COORD_CELL(j, sy, fs->dsy);
-            p_bot   = 0.0;
-
-            if( k==0)
-            {
-                // compute the pressure at the bottom of the numerical box.
-                // Lithostatic pressure is stored in the central node, to obtain the pressure at the bottom a factor rho*g*dz/2 must be applied
-                svBulk = &bc->jr->svCell[iter++].svBulk;
-
-                if(bc->Plume_Pressure==0.0)
-                {
-                    p_bot = lp[k][j][i] + (dz/2)*g*svBulk->rho;
-
-                }
-                else
-                {
-                    p_bot = p + (dz/2)*g*svBulk->rho;
-                }
-                rho_mantle =  GetDensity(bc,phase_mantle,Tbot, p_bot);
-                // To compute the pressure outside the domain, a factor of dz/2*rho_ext*g must applied. It is assumed that the density is constant outside
-                // the domain and equal to the density of the bottom of the numerical box
-                rhog = (dz/2)*g*rho_mantle;
-                // If the plume pressure boundary condition is applied, it is necessary to compute the density of the plume outside the domain
-                if(bc->Plume_Type == 2)
-                {
-                    rho_plume  =  GetDensity(bc,phase_plume,bc->Plume_Temperature, p_bot);
-                    dP         =  (rho_mantle-rho_plume)*g*H;
-                    if(bc->Plume_Dimension ==1)
-                    {
-                        xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
-                        xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
-                        if(x>=xmin && x<=xmax)rhog = (dz/2)*g*rho_plume;
-                        // Gaussian perturbation of dP
-
-                        bcp[k-1][j][i] = p_bot+rhog+dP*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /radius2 );
-                    }
-                    else
-                    {
-                        if(PetscPowScalar((x - bc->Plume_Center[0]),2.0) + PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0))
-                        {
-                            rhog = (dz/2)*g*rho_plume+dP*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/radius2);
-                        }
-                        // Gaussian perturbation of dP
-                        bcp[k-1][j][i] = p_bot+rhog;
-                    }
-                }
-                else
-                {
-                    bcp[k-1][j][i] = p_bot + rhog;
-
-                }
-            }
-        }
-        END_STD_LOOP
-
-    // restore access
-    ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
-    ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->jr->lp_lith, &lp);  CHKERRQ(ierr);
-
-
-    PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------------------------
-// Compute the average lithostatic pressure at the bottom of the numerical simulation
-#undef __FUNCT__
-#define __FUNCT__ "GetAverageLithostatic"
-PetscErrorCode GetAverageLithostatic(BCCtx *bc)
-{
-        Vec         send,recv;
-        JacRes      *jr;
-        FDSTAG      *fs;
-        Discret1D   *dsz;
-        PetscScalar ***lp, ***ibuff, *lbuff,*lbuff2 ,mean_p;
-        PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L;
-        PetscErrorCode ierr;
-        PetscFunctionBegin;
-
-
-
-        jr  = bc->jr;
-        fs  =  jr->fs;
-        dsz = &fs->dsz;
-        L   =  (PetscInt)dsz->rank;
-
-
-        GET_CELL_RANGE(nx, sx, fs->dsx)
-        GET_CELL_RANGE(ny, sy, fs->dsy)
-        GET_CELL_RANGE(nz, sz, fs->dsz)
-
-        // Create the vector to save the lithostatic pressure
-        ierr = DMGetGlobalVector(jr->DA_CELL_2D, &send); CHKERRQ(ierr);
-
-        ierr = VecZeroEntries(send); CHKERRQ(ierr);
-
-        ierr = DMGetGlobalVector(jr->DA_CELL_2D, &recv); CHKERRQ(ierr);
-
-        ierr = VecZeroEntries(recv); CHKERRQ(ierr);
-
-        // retrieve the lithostatic pressure at the bottom of the domain (i.e. the largest value of the array along z direction)
-
-        ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
-
-        ierr = DMDAVecGetArray(jr->DA_CELL_2D, send, &ibuff); CHKERRQ(ierr);
-
-
-        ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
-
-
-        START_STD_LOOP
-        {
-            if(ibuff[L][j][i]< lp[k][j][i])
-            {
-                ibuff[L][j][i]= lp[k][j][i];
-
-            }
-
-
-        }
-        END_STD_LOOP
-
-        ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
-
-        ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, send, &ibuff); CHKERRQ(ierr);
-
-
-        if(dsz->nproc != 1 )
-        {
-            ierr = VecGetArray(send, &lbuff); CHKERRQ(ierr);
-            ierr = VecGetArray(recv, &lbuff2); CHKERRQ(ierr);
-            ierr = MPI_Allreduce(lbuff, lbuff2, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_MAX, dsz->comm); CHKERRQ(ierr);
-
-            ierr = VecRestoreArray(send, &lbuff); CHKERRQ(ierr);
-            ierr = VecRestoreArray(recv, &lbuff2); CHKERRQ(ierr);
-
-
-        }
-        else
-        {
-            ierr = VecCopy(send,recv);  CHKERRQ(ierr);
-        }
-
-        ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &send); CHKERRQ(ierr);
-
-        // Compute the average lithostatic pressure
-
-        ierr = VecSum(recv, &mean_p); CHKERRQ(ierr);
-
-
-
-        bc->jr->mean_p =mean_p/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels*fs->dsz.nproc);
-
-        ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &recv); CHKERRQ(ierr);
-
-        PetscFunctionReturn(0);
-
-
-
-}
-// Get the density of the material below the numerical mode
-//---------------------------------------------------------------------------------------------
-// Compute the average lithostatic pressure at the bottom of the numerical simulation
-PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p )
-{
-    Material_t *mat;
-    PData      *Pd;
-    PetscScalar cf_therm,cf_comp;
-    PetscScalar rho;
-    PetscErrorCode ierr;
-
-    mat = bc->dbm->phases;
-    rho = mat[Phase].rho;
-    Pd  = bc->jr->Pd;
-
-
-    cf_comp  = 1.0;
-    cf_therm = 1.0;
-
-    if(mat[Phase].beta)
-    {
-        // negative sign as compressive pressures (increasing depth) is negative in LaMEM
-        cf_comp = 1.0 + p*mat->beta;
-    }
-
-    if(mat[Phase].alpha)
-    {
-        cf_therm  = 1.0 - mat->alpha*(T - bc->jr->ctrl.TRef);
-    }
-
-    if(mat[Phase].pdAct == 1)
-    {
-        ierr = setDataPhaseDiagram(Pd, p, T, mat[Phase].pdn); CHKERRQ(ierr);
-
-        rho = Pd->rho;
-    }
-    else
-    {
-        rho = rho*cf_comp*cf_therm;
-    }
-
-
-
-    return rho;
-}
-*/
-
-

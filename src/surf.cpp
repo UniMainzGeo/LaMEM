@@ -58,15 +58,13 @@
 // * stair-case type of free surface
 // ...
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfCreate"
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 {
 	Scaling  *scal;
 	PetscInt  maxPhaseID;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize
 	surf->phaseCorr   =  1;
@@ -166,15 +164,13 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfCreateData"
 PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 {
 	FDSTAG         *fs;
 	const PetscInt *lx, *ly;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	fs = surf->jr->fs;
@@ -201,8 +197,6 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfGetAvgTopo"
 PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 {
 	JacRes      *jr;
@@ -210,7 +204,7 @@ PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 	PetscScalar  avg_topo;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	jr = surf->jr;
 	fs = jr->fs;
@@ -225,12 +219,10 @@ PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfReadRestart"
 PetscErrorCode FreeSurfReadRestart(FreeSurf *surf, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -247,12 +239,10 @@ PetscErrorCode FreeSurfReadRestart(FreeSurf *surf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfWriteRestart"
 PetscErrorCode FreeSurfWriteRestart(FreeSurf *surf, FILE *fp)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -263,12 +253,10 @@ PetscErrorCode FreeSurfWriteRestart(FreeSurf *surf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfDestroy"
 PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -285,8 +273,6 @@ PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfAdvect"
 PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 {
 	// advect topography of the free surface mesh
@@ -294,7 +280,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	JacRes *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -319,8 +305,6 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfGetVelComp"
 PetscErrorCode FreeSurfGetVelComp(
 	FreeSurf *surf,
 	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, InterpFlags),
@@ -340,7 +324,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	PetscScalar ***topo, ***vsurf, ***vgrid, *vpatch, *vmerge, z, w;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr    = surf->jr;
@@ -423,8 +407,6 @@ PetscErrorCode FreeSurfGetVelComp(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfAdvectTopo"
 PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 {
 	// advect topography on the free surface mesh
@@ -462,7 +444,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	};
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	jr   = surf->jr;
@@ -587,8 +569,6 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfSmoothMaxAngle"
 PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 {
 	// smooth topography if maximum angle with horizon is exceeded
@@ -601,7 +581,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// check whether smoothing is activated
 	if(surf->MaxAngle == 0.0) PetscFunctionReturn(0);
@@ -747,8 +727,6 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfGetAirPhaseRatio"
 PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 {
 	// compute proper phase ratio of air phase
@@ -771,7 +749,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	};
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -866,8 +844,6 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfAppErosion"
 PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 {
 	// Apply erosion to the internal free surface of the model
@@ -880,7 +856,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 	Scaling * scal;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -964,8 +940,6 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfAppSedimentation"
 PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 {
 	// Apply sedimentation to the internal free surface.
@@ -984,7 +958,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	Scaling * scal;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
@@ -1032,7 +1006,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 			{
 				// uniformly advect
 				z += dz;
-				PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%e) to internal free surface.\n", surf->SedimentModel);
+				PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%lld) to internal free surface.\n", (LLD)surf->SedimentModel);
 			}
 
 			// check if internal free surface goes outside the model domain
@@ -1254,8 +1228,6 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfSetInitialPerturbation"
 PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf)
 {
 	FDSTAG         	*fs;
@@ -1266,7 +1238,7 @@ PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf)
 	PetscRandom 	rctx;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 	
 	// retrieve parameters
 	wavel 		= 0.0;		//
@@ -1332,8 +1304,6 @@ PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfSetTopoFromFile"
 PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 {
 	FDSTAG         *fs;
@@ -1347,7 +1317,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	PetscScalar    xp, yp, xpL, ypL, DX, DY, bx, by, ex, ey, leng, X1, Y1;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "surf_topo_file", filename, NULL); CHKERRQ(ierr);

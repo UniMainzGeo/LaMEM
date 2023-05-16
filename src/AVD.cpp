@@ -58,8 +58,6 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDCreate"
 PetscErrorCode AVDCreate(AVD *A)
 {
 	PetscInt    p, npoints;
@@ -70,7 +68,7 @@ PetscErrorCode AVDCreate(AVD *A)
 	PetscScalar s[3];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize variables
 	mx  = A->nx+2;
@@ -165,14 +163,12 @@ PetscErrorCode AVDCreate(AVD *A)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDDestroy"
 PetscErrorCode AVDDestroy(AVD *A)
 {
 	PetscInt p;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// --------------
 	//   AVD CELLS
@@ -197,8 +193,6 @@ PetscErrorCode AVDDestroy(AVD *A)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDCellInit"
 PetscErrorCode AVDCellInit(AVD *A)
 {
 	Marker     *points;
@@ -207,7 +201,7 @@ PetscErrorCode AVDCellInit(AVD *A)
 	PetscInt    mx,my,mz,ind;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize variables
 	points  = A->points;
@@ -250,8 +244,6 @@ PetscErrorCode AVDCellInit(AVD *A)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDClaimCells"
 PetscErrorCode AVDClaimCells(AVD *A, const PetscInt ip)
 {
 	PetscInt    i,count;
@@ -263,7 +255,7 @@ PetscErrorCode AVDClaimCells(AVD *A, const PetscInt ip)
 	PetscInt    buffer;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	buffer = A->buffer;
 	bchain = &A->chain[ip];
@@ -330,8 +322,6 @@ PetscErrorCode AVDClaimCells(AVD *A, const PetscInt ip)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDUpdateChain"
 PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 {
 	PetscInt i,k;
@@ -342,7 +332,7 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 	PetscInt mx,my,buffer;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	buffer = A->buffer;
 	mx     = A->nx+2;
@@ -406,14 +396,12 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDReAlloc"
 PetscErrorCode AVDReAlloc(AVDChain *chain, PetscInt buffer)
 {
 	PetscInt *temp;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// 1. allocate memory for claimed cells
 	ierr = makeIntArray(&temp, NULL, chain->iclaim + buffer); CHKERRQ(ierr);
@@ -444,12 +432,10 @@ PetscErrorCode AVDReAlloc(AVDChain *chain, PetscInt buffer)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDLoadPoints"
 PetscErrorCode AVDLoadPoints(AdvCtx *actx, AVD *A, PetscInt ind)
 {
 	PetscInt    i, ii;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// load particles only within the Voronoi cell
 	for (i = 0; i < A->npoints; i++)
@@ -467,8 +453,6 @@ PetscErrorCode AVDLoadPoints(AdvCtx *actx, AVD *A, PetscInt ind)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDInjectDeletePoints"
 PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 {
 	BCCtx      *bc;
@@ -481,7 +465,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 	PetscInt    *area, *sind, axis;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	bc = actx->jr->bc;
 
@@ -652,8 +636,6 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDExecuteMarkerInjection"
 PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind)
 {
 
@@ -661,7 +643,7 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 	PetscInt       i,claimed;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize some parameters
 	A.nx = actx->avdx;
@@ -718,14 +700,12 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 //---------------------------------------------------------------------------
 // NEW MARKER CONTROL
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDMarkerControl"
 PetscErrorCode AVDMarkerControl(AdvCtx *actx)
 {
 	// check marker distribution and delete or inject markers if necessary
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// AVD routine for every control volume
 	ierr = AVDMarkerControlMV(actx, _CELL_); CHKERRQ(ierr); // CELLS
@@ -739,15 +719,13 @@ PetscErrorCode AVDMarkerControl(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDMarkerControlMV"
 PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype)
 {
 	MarkerVolume  mv;
 	PetscInt      dir = -1;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if      (vtype == _CELL_) dir = -1;
 	else if (vtype == _XYED_) dir =  2;
@@ -769,8 +747,6 @@ PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDCheckCellsMV"
 PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 {
 	// check marker distribution and delete or inject markers if necessary
@@ -781,7 +757,7 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	char           lbl[_lbl_sz_];
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// record time
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
@@ -910,8 +886,6 @@ PetscInt FindPointInCell(
 	return(L);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDMapMarkersMV"
 PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 {
 	// creates arrays to optimize marker-cell interaction
@@ -921,7 +895,7 @@ PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	PetscInt    *numMarkCell, *m, p;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -993,15 +967,13 @@ PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDCreateMV"
 PetscErrorCode AVDCreateMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 {
 	// allocate memory and info to marker volume control structure
 	FDSTAG      *fs;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
@@ -1032,13 +1004,11 @@ PetscErrorCode AVDCreateMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDDestroyMV"
 PetscErrorCode AVDDestroyMV(MarkerVolume *mv)
 {
 	// free memory
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PetscFree(mv->cellnum);    CHKERRQ(ierr);
 	ierr = PetscFree(mv->markind);    CHKERRQ(ierr);
@@ -1051,12 +1021,10 @@ PetscErrorCode AVDDestroyMV(MarkerVolume *mv)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDLoadPointsMV"
 PetscErrorCode AVDLoadPointsMV(AdvCtx *actx, MarkerVolume *mv, AVD *A, PetscInt ind)
 {
 	PetscInt    i, ii;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// load particles only within the Voronoi cell
 	for (i = 0; i < A->npoints; i++)
@@ -1074,8 +1042,6 @@ PetscErrorCode AVDLoadPointsMV(AdvCtx *actx, MarkerVolume *mv, AVD *A, PetscInt 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDInjectPointsMV"
 PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 {
 	FDSTAG     *fs;
@@ -1089,7 +1055,7 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 	PetscInt    *area, *sind, axis;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	bc = actx->jr->bc;
 	fs = actx->fs;
@@ -1247,8 +1213,6 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDDeletePointsMV"
 PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 {
 	PetscInt    i, ind;
@@ -1257,7 +1221,7 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 	PetscInt    *area, *sind;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	npoints = A->npoints;
 	new_nmark = npoints - A->mmax;
@@ -1294,8 +1258,6 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDAlgorithmMV"
 PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind, PetscInt nmin)
 {
 
@@ -1303,7 +1265,7 @@ PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, 
 	PetscInt     i,claimed;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize some parameters
 	A.nx = actx->avdx;

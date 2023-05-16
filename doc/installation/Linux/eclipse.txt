@@ -74,7 +74,7 @@ CONFIGURE PROJECT
       /opt/petsc/petsc-X.Y.Z-deb/include
 
     Each path can be added as follows:
-    In the project properties select Path and Symbols -> Includes -> Add
+    In the project properties select C/C++ General->Path and Symbols -> Includes -> Add
     Place directory path here, also check boxes:
        Add to all configurations
        Add to all languages
@@ -82,7 +82,14 @@ CONFIGURE PROJECT
 	To make sure Eclipse recognizes paths correctly, rebuild the index:
 	Right click on your project, select Index -> Rebuild
 
-8. Build your application by clicking Hammer icon
+8. Set PETSC_DEB variable if it is not set globally, or if current project needs different PETSc version:
+
+	In the project properties select C/C++ Build -> Environment -> Add
+	As name set PETSC_DEB
+	As value set actual path
+	Select "Add to all configurations"
+
+9. Build your application by clicking Hammer icon
 
 You may also find these settings helpful:
    Window->Preferences->General->Editors->Text Editors, check box Show line numbers

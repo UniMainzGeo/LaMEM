@@ -58,8 +58,6 @@
 //---------------------------------------------------------------------------
 // MG -functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelCreate"
 PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 {
 	PetscInt         i, ln=0, lnfine=0, refine_y;
@@ -69,7 +67,7 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 	PetscInt        *lx,  *ly,  *lz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(!fine)
 	{
@@ -175,12 +173,10 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelDestroy"
 PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	if(lvl->R)
 	{
@@ -205,8 +201,6 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelInitEta"
 PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 {
 	// initialize viscosity on fine grid
@@ -215,7 +209,7 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize viscosity
 	ierr = VecSet(lvl->eta, -1.0); CHKERRQ(ierr);
@@ -244,8 +238,6 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelAverageEta"
 PetscErrorCode MGLevelAverageEta(MGLevel *lvl)
 {
 	// average viscosity from cell centers to velocity nodes
@@ -255,7 +247,7 @@ PetscErrorCode MGLevelAverageEta(MGLevel *lvl)
 	PetscScalar ***eta, ***etax, ***etay, ***etaz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// set viscosity
 	ierr = VecSet(lvl->etax, -1.0); CHKERRQ(ierr);
@@ -328,8 +320,6 @@ PetscErrorCode MGLevelAverageEta(MGLevel *lvl)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelRestrictEta"
 PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 {
 	// restrict inverse viscosity from fine to coarse level
@@ -339,7 +329,7 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	PetscScalar sum, ***ceta, ***feta;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// initialize viscosities
 	ierr = VecSet(lvl->eta, -1.0); CHKERRQ(ierr);
@@ -389,8 +379,6 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelRestrictBC"
 PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restric_bc)
 {
 	// restrict boundary condition vectors from fine to coarse level
@@ -402,7 +390,7 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// mark all variables unconstrained
 	ierr = VecSet(lvl->bcvx, DBL_MAX); CHKERRQ(ierr);
@@ -563,8 +551,6 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelSetupRestrict"
 PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 {
 	Mat         R;
@@ -582,7 +568,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	PetscOptionsGetBool(NULL, NULL, "-rest", &scale, NULL);
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	R = lvl->R;
 
@@ -920,8 +906,6 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelSetupProlong"
 PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 {
 	Mat P;
@@ -939,7 +923,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	PetscOptionsGetBool(NULL, NULL, "-prol", &scale, NULL);
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	P = lvl->P;
 
@@ -1383,8 +1367,6 @@ void getRowProlong(PetscBool scale,
 		o_nnz[iter] = no;
 		iter++;
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelAllocRestrict"
 PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 {
 	Mat         R;
@@ -1395,7 +1377,7 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	R = lvl->R;
 
@@ -1549,8 +1531,6 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGLevelAllocProlong"
 PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 {
 	Mat P;
@@ -1560,7 +1540,7 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	P = lvl->P;
 
@@ -1740,8 +1720,6 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 //---------------------------------------------------------------------------
 // MG -functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGCreate"
 PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 {
 	PetscInt  i, l;
@@ -1750,7 +1728,7 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 	PetscBool opt_set;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// get preconditioner type
 	ierr = PetscOptionsGetString(NULL, NULL, "-gmg_pc_type", pc_type, _str_len_, &opt_set); CHKERRQ(ierr);
@@ -1808,15 +1786,13 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGDestroy"
 PetscErrorCode MGDestroy(MG *mg)
 {
 	PetscInt  i;
 	PetscBool flg;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// view preconditioner if required
 	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
@@ -1839,8 +1815,6 @@ PetscErrorCode MGDestroy(MG *mg)
 }
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGSetupCoarse"
 PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 {
 	KSP        ksp;
@@ -1850,7 +1824,7 @@ PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 	DOFIndex  *dof;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// skip already configured solver
 	if(mg->crs_setup == PETSC_TRUE)
@@ -1886,8 +1860,6 @@ PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGSetup"
 PetscErrorCode MGSetup(MG *mg, Mat A)
 {
 	// Matrices are re-assembled here, just in case
@@ -1898,7 +1870,7 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	PetscInt  i;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = MGLevelInitEta(mg->lvls, mg->jr); CHKERRQ(ierr);
 	ierr = MGLevelAverageEta(mg->lvls);      CHKERRQ(ierr);
@@ -1928,14 +1900,12 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGApply"
 PetscErrorCode MGApply(PC pc, Vec x, Vec y)
 {
 	MG *mg;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	ierr = PCShellGetContext(pc, (void**)&mg); CHKERRQ(ierr);
 
@@ -1945,8 +1915,6 @@ PetscErrorCode MGApply(PC pc, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGDumpMat"
 PetscErrorCode MGDumpMat(MG *mg)
 {
 	Mat         A;
@@ -1994,8 +1962,6 @@ PetscErrorCode MGDumpMat(MG *mg)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGGetNumLevels"
 PetscErrorCode MGGetNumLevels(MG *mg)
 {
 	// check multigrid mesh restrictions, get actual number of coarsening steps
@@ -2005,7 +1971,7 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, refine_y;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = mg->jr->fs;
 
@@ -2029,11 +1995,11 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 
 	if(opt_set != PETSC_TRUE)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
 	}
 	else if(nlevels < 2 || nlevels > ncors+1)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
 	}
 
 	// set actual number of coarsening steps
