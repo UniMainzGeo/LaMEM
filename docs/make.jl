@@ -21,10 +21,10 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/JuliaGeodynamics/GeophysicalModelGenerator.jl.git",
+    repo="github.com/UniMainzGeo/LaMEM.git",
     branch = "gh-pages",
     target = "build",
-    devbranch = "main",
+    devbranch = "master",
     devurl = "dev",
     forcepush=true,
     push_preview = true
