@@ -578,12 +578,27 @@ PetscErrorCode PVOutWriteAngVelMag(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWriteTotStrain"
 PetscErrorCode PVOutWriteTotStrain(JacRes *jr, OutBuf *outbuf)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	COPY_FUNCTION_HEADER
+	
+	// macro to copy 
+	#define GET_UXX buff[k][j][i] = jr->svCell[iter++].uxx;
+	#define GET_UYY buff[k][j][i] = jr->svCell[iter++].uyy;
+	#define GET_UZZ buff[k][j][i] = jr->svCell[iter++].uzz;
+	#define GET_UXY buff[k][j][i] = jr->svXYEdge[iter++].u;
+	#define GET_UYZ buff[k][j][i] = jr->svYZEdge[iter++].u;
+	#define GET_UXZ buff[k][j][i] = jr->svXZEdge[iter++].u;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_UXX, 9, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_UXY, 9, 1)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_UXZ, 9, 2)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_UXY, 9, 3)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_UYY, 9, 4)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_UYZ, 9, 5)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_UXZ, 9, 6)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_UYZ, 9, 7)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_UZZ, 9, 8)
 
 	PetscFunctionReturn(0);
 }
@@ -719,6 +734,62 @@ PetscErrorCode PVOutWriteISA(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteFSA"
+PetscErrorCode PVOutWriteFSA(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	cf = scal->unit;
+
+	// macros to copy displacement in cell to buffer
+	#define GET_FSAX buff[k][j][i] = jr->svCell[iter++].FSA[0];
+	#define GET_FSAY buff[k][j][i] = jr->svCell[iter++].FSA[1];
+	#define GET_FSAZ buff[k][j][i] = jr->svCell[iter++].FSA[2];
+
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FSAX, 3, 0);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FSAY, 3, 1);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FSAZ, 3, 2);
+	// compute Infinite Strain Axis (ISA)
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteFSAtrend"
+PetscErrorCode PVOutWriteFSAtrend(JacRes *jr, OutBuf *outbuf)
+{
+
+	COPY_FUNCTION_HEADER
+
+	cf = scal->length;
+
+	// macros to copy displacement in cell to buffer
+	#define GET_FSA_TREND buff[k][j][i] = jr->svCell[iter++].tr;
+
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FSA_TREND , 1, 0);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteFSAdip"
+PetscErrorCode PVOutWriteFSAdip(JacRes *jr, OutBuf *outbuf)
+{
+
+	COPY_FUNCTION_HEADER
+
+	cf = scal->length;
+
+	// macros to copy displacement in cell to buffer
+	#define GET_FSA_DIP buff[k][j][i] = jr->svCell[iter++].dp;
+
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FSA_DIP , 1, 0);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteGOL"
 PetscErrorCode PVOutWriteGOL(JacRes *jr, OutBuf *outbuf)
 {
@@ -747,6 +818,39 @@ PetscErrorCode PVOutWriteYield(JacRes *jr, OutBuf *outbuf)
 	cf = scal->stress;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_YIELD, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteNadaiStrain"
+PetscErrorCode PVOutWriteNadaiStrain(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy viscosity to buffer
+	#define GET_NADAI_STRAIN buff[k][j][i] = jr->svCell[iter++].es;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_NADAI_STRAIN , 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteLodesRatio"
+PetscErrorCode PVOutWriteLodesRatio(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy viscosity to buffer
+	#define GET_LODES_RATIO buff[k][j][i] = jr->svCell[iter++].nu;
+
+
+    cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_LODES_RATIO, 1, 0)
 
 	PetscFunctionReturn(0);
 }

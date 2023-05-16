@@ -107,6 +107,12 @@ struct SolVarCell
 	PetscScalar  eta_creep;     // effective creep viscosity (output)
 	PetscScalar  eta_vp;        // viscoplastic viscosity (output)
 	PetscScalar  U[3];          // displacement
+	PetscScalar  es;            // nadai strain (octahedral shear strain)
+	PetscScalar  nu;            // lodes ratio
+	PetscScalar  uxx, uyy, uzz; // stretch tensor
+    PetscScalar  FSA[3];        // major strain axis
+    PetscScalar  tr;			// FSA trend
+    PetscScalar  dp;			// FSA trend
 
 };
 
@@ -122,6 +128,7 @@ struct SolVarEdge
 	PetscScalar  d;     // xy, xz, yz total deviatoric strain rate components
 	PetscScalar  ws;    // normalization for distance-dependent interpolation
 	PetscScalar *phRat; // phase ratios in the control volume
+    PetscScalar  u;     // xy, xz, yz stretch tensor components
 
 };
 

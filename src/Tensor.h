@@ -148,6 +148,19 @@ PetscErrorCode Tensor2RS2DSpectral(
 	PetscScalar  v1[],
 	PetscScalar  v2[],
 	PetscScalar  tol);
+void Tensor1RNProduct(PetscScalar A[], Tensor2RN *B);
 
+PetscInt PolarDecomp(
+	Tensor2RN *Dtot, 
+	Tensor2RN *DT, 
+	Tensor2RN *R, 
+	Tensor2RS *U, 
+	PetscScalar eval[], 
+	PetscScalar *es, 
+	PetscScalar *nu, 
+	PetscScalar FSA[]);
+
+
+PetscInt getFSATrend(PetscScalar FSA[], PetscScalar *trend, PetscScalar *dip);
 //---------------------------------------------------------------------------
 #endif

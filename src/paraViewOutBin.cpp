@@ -353,6 +353,11 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->ISA)            cnt++; // Infinite Strain Axis
 	if(omask->GOL)            cnt++; // Grain Orientation Lag
 	if(omask->yield)          cnt++; // yield stress
+	if(omask->nadai_strain)   cnt++; // nadai strain
+	if(omask->lodes_ratio)    cnt++; // lode's ratio
+	if(omask->FSA)            cnt++; // finite strain major axis
+	if(omask->FSA_trend)      cnt++; // finite strain major axis trend
+	if(omask->FSA_dip)        cnt++; // finite strain major axis dip
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     cnt++; // momentum residual
 	if(omask->cont_res)       cnt++; // continuity residual
@@ -401,7 +406,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 //	ierr = getIntParam   (fb, _OPTIONAL_, "out_vol_rate",       &omask->vol_rate,          1, 1); CHKERRQ(ierr);
 //	ierr = getIntParam   (fb, _OPTIONAL_, "out_vorticity",      &omask->vorticity,         1, 1); CHKERRQ(ierr);
 //	ierr = getIntParam   (fb, _OPTIONAL_, "out_ang_vel_mag",    &omask->ang_vel_mag,       1, 1); CHKERRQ(ierr);
-//	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_strain",     &omask->tot_strain,        1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_strain",     &omask->tot_strain,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_shmax",          &omask->SHmax,             1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ehmax",          &omask->EHmax,             1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_isa",            &omask->ISA,               1, 1); CHKERRQ(ierr);
@@ -415,6 +420,11 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_lodes_ratio",    &omask->lodes_ratio,       1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_nadai_strain",   &omask->nadai_strain,      1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_fsa",            &omask->FSA,               1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_fsa_trend",      &omask->FSA_trend,         1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_fsa_dip",        &omask->FSA_dip,           1, 1); CHKERRQ(ierr);
 
 	// check
 	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0; // heat diffusion is deactivated
@@ -454,6 +464,12 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->energ_res)      PetscPrintf(PETSC_COMM_WORLD, "   energy residual                         @ \n");
 	if(omask->melt_fraction)  PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction                           @ \n");
 	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
+	if(omask->tot_strain)     PetscPrintf(PETSC_COMM_WORLD, "   Finite strain tensor                    @ \n");
+	if(omask->nadai_strain)   PetscPrintf(PETSC_COMM_WORLD, "   Nadai strain                   	        @ \n");
+	if(omask->lodes_ratio)    PetscPrintf(PETSC_COMM_WORLD, "   Lodes's ratio                    	    @ \n");
+	if(omask->FSA)            PetscPrintf(PETSC_COMM_WORLD, "   Finite Strain Axis (FSA)                @ \n");
+	if(omask->FSA_trend)      PetscPrintf(PETSC_COMM_WORLD, "   Finite Strain Axis (FSA) trend          @ \n");
+	if(omask->FSA_dip)        PetscPrintf(PETSC_COMM_WORLD, "   Finite Strain Axis (FSA) dip            @ \n");
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
@@ -505,7 +521,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->vol_rate)       OutVecCreate(&pvout->outvecs[iter++], "vol_rate",       scal->lbl_strain_rate,      &PVOutWriteVolRate,      1);
 	if(omask->vorticity)      OutVecCreate(&pvout->outvecs[iter++], "vorticity",      scal->lbl_strain_rate,      &PVOutWriteVorticity,    3);
 	if(omask->ang_vel_mag)    OutVecCreate(&pvout->outvecs[iter++], "ang_vel_mag",    scal->lbl_angular_velocity, &PVOutWriteAngVelMag,    1);
-	if(omask->tot_strain)     OutVecCreate(&pvout->outvecs[iter++], "tot_strain",     scal->lbl_unit,             &PVOutWriteTotStrain,    1);
+	if(omask->tot_strain)     OutVecCreate(&pvout->outvecs[iter++], "tot_strain",     scal->lbl_unit,             &PVOutWriteTotStrain,    9);
 	if(omask->plast_strain)   OutVecCreate(&pvout->outvecs[iter++], "plast_strain",   scal->lbl_unit,             &PVOutWritePlastStrain,  1);
 	if(omask->plast_dissip)   OutVecCreate(&pvout->outvecs[iter++], "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
 	if(omask->tot_displ)      OutVecCreate(&pvout->outvecs[iter++], "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
@@ -514,6 +530,11 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->ISA)            OutVecCreate(&pvout->outvecs[iter++], "ISA",            scal->lbl_unit,             &PVOutWriteISA,          3);
 	if(omask->GOL)            OutVecCreate(&pvout->outvecs[iter++], "GOL",            scal->lbl_unit,             &PVOutWriteGOL,          1);
 	if(omask->yield)          OutVecCreate(&pvout->outvecs[iter++], "yield",          scal->lbl_stress,           &PVOutWriteYield,        1);
+	if(omask->nadai_strain)   OutVecCreate(&pvout->outvecs[iter++], "nadai_strain",   scal->lbl_unit,             &PVOutWriteNadaiStrain,  1);
+	if(omask->lodes_ratio)    OutVecCreate(&pvout->outvecs[iter++], "lodes_ratio",    scal->lbl_unit,             &PVOutWriteLodesRatio,   1);
+	if(omask->FSA)            OutVecCreate(&pvout->outvecs[iter++], "FSA",            scal->lbl_unit,             &PVOutWriteFSA,          3);
+	if(omask->FSA_trend)      OutVecCreate(&pvout->outvecs[iter++], "FSA_tr",         scal->lbl_unit,             &PVOutWriteFSAtrend,     1);
+	if(omask->FSA_dip)        OutVecCreate(&pvout->outvecs[iter++], "FSA_dp",         scal->lbl_unit,             &PVOutWriteFSAdip,      1);
 	// === debugging vectors ===============================================
 	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1);
 	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1);

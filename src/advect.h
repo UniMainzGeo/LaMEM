@@ -74,6 +74,13 @@ struct Marker
 	PetscScalar APS;   // accumulated plastic strain
 	Tensor2RS   S;     // deviatoric stress
 	PetscScalar U[3];  // displacement
+	PetscScalar es;    // nadai strain
+	PetscScalar nu;    // lode's ratio
+	Tensor2RS   RU;    // rotated stretch tensor
+	Tensor2RN   D;     // deformation gradient tensor
+	PetscScalar FSA[3]; // major principal strain axis vector
+	PetscScalar tr;     // major principal strain axis trend
+	PetscScalar dp;     // major principal strain axis dip angle
 };
 
 //---------------------------------------------------------------------------
@@ -96,7 +103,8 @@ enum InterpCase
 	_STRESS_,    // deviatoric stress
 	_APS_,       // accumulated plastic strain
 	_VORTICITY_, // vorticity pseudo-vector components
-	_DISP_       // displacement
+	_DISP_,      // displacement
+	_STRAIN_     // finite strain
 
 };
 
@@ -317,6 +325,10 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx);
 
 // get maximum inverse time step (CFL)
 PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart);
+
+// get deformation gradient matrix
+PetscErrorCode getGradientDeform(FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
+	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz, PetscScalar dt, Tensor2RN *D);
 
 //---------------------------------------------------------------------------
 #endif
