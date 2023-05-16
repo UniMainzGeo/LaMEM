@@ -821,7 +821,14 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 				soft = actx->dbm->matSoft + healID;
 				if(soft->healTau)
 				{
-				  P->APS /= (dt/soft->healTau + 1.0);
+					if (soft->APSheal2 && P->APS>=soft->APSheal2)
+					{
+						P->APS /= (dt/soft->healTau2 + 1.0);
+					}
+					else
+					{
+						P->APS /= (dt/soft->healTau + 1.0);
+					}
 				}
 			}
 		}

@@ -54,7 +54,7 @@
 #include "JacRes.h"
 #include "phase_transition.h"
 //---------------------------------------------------------------------------
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput)
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read all material phases and softening laws from file
 
@@ -173,7 +173,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput
 		// read each individual phase transition
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadPhaseTr(dbm, fs, fb); CHKERRQ(ierr);
+			ierr = DBMatReadPhaseTr(dbm, fb); CHKERRQ(ierr);
 
 			fb->blockID++;
 		}
@@ -233,12 +233,23 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Lm",   &s->Lm,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "healTau", &s->healTau,   1, 1.0); CHKERRQ(ierr);   
+    ierr = getScalarParam(fb, _OPTIONAL_, "healTau2", &s->healTau2,   1, 1.0); CHKERRQ(ierr);   
 
 	
     if(!s->healTau &&(!s->A || !s->APS1 || !s->APS2)) 
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %lld", (LLD)ID);
 	}
+
+    if (s->healTau && !s->healTau2)
+    {
+	    s->healTau2=s->healTau;
+    }
+
+    if (s->APS2 && !s->APSheal2)
+    {
+    	s->APSheal2=s->APS2;
+    }
 
 	if (PrintOutput){
 		if(s->Lm)
@@ -247,7 +258,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		}
 		if(s->healTau)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, healTau = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->healTau);
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, APSheal2 = %g, healTau = %g, healTau2= %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->APSheal2,s->healTau, s->healTau2);
         }
 		else
 		{
@@ -261,6 +272,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	if(s->healTau) 
 	{
 		s->healTau /= scal->time; 
+		s->healTau2 /= scal->time; 
 	}
 
 	PetscFunctionReturn(0);

@@ -15,11 +15,11 @@ struct Material_t;
 struct Freesurf;
 
 // read phase transition law
-PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FDSTAG *fs, FB *fb);
+PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb);
 PetscErrorCode Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb);
 PetscErrorCode Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb);
 PetscErrorCode Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb);
-PetscErrorCode Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDSTAG *fs, FB *fb);
+PetscErrorCode Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB *fb);
 PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph);
 PetscErrorCode Overwrite_density(DBMat *dbm);
 PetscErrorCode Phase_Transition(AdvCtx *actx);
@@ -33,6 +33,9 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, JacRes *jr, PetscInt cellID);
 PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr);
 PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr);
+
+PetscErrorCode DynamicPhTr_Init(JacRes *jr);
+PetscErrorCode DynamicPhTr_WriteRestart2(JacRes *jr, FILE *fp);
 PetscErrorCode DynamicPhTr_WriteRestart(JacRes *jr, FILE *fp);
 PetscErrorCode DynamicPhTr_ReadRestart(JacRes *jr, FILE *fp);
 PetscErrorCode DynamicPhTrDestroy(DBMat *dbm);

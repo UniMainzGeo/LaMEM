@@ -75,10 +75,11 @@ public:
 	PetscInt    ID;   // softening law ID
 	PetscScalar APS1; // begin of softening APS
 	PetscScalar APS2; // end of softening APS
+	PetscScalar APSheal2; //APS when healTau2 is activated
 	PetscScalar A;    // reduction ratio
 	PetscScalar Lm;   // material length scale
-  PetscScalar healTau;   // material healing parameter [Myr]  NEW FOR HEALING IN SOFTENING
-
+  	PetscScalar healTau;   // material healing timescale parameter [Myr]  NEW FOR HEALING IN SOFTENING
+	PetscScalar healTau2; // timescale parameter after APS2
 };
 
 //---------------------------------------------------------------------------
@@ -292,7 +293,7 @@ struct DBMat
 };
 
 // read material database
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput);
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // read single softening law
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
