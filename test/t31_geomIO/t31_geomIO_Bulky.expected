@@ -1,0 +1,176 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May  5 2022 - Time: 14:36:00 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : Test.dat 
+   Adding PETSc option: -snes_rtol 1e-8
+   Adding PETSc option: -js_ksp_rtol 1e-3
+   Adding PETSc option: -js_ksp_atol 1e-5
+   Adding PETSc option: -js_ksp_max_it 20
+Finished parsing input file : Test.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 2 
+   Time step                    : 0.01 [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 0.1 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 0.2 [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0   
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 1   
+   (dens)   : rho = 5. [ ]  
+   (diff)   : eta = 100. [ ]  Bd = 0.005 [ ]  
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 4 
+   Processor grid  [nx, ny, nz]         : [1, 2, 2]
+   Fine grid cells [nx, ny, nz]         : [32, 32, 32]
+   Number of cells                      :  32768
+   Number of faces                      :  101376
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [-100., -100., -100.]
+   Upper coordinate bounds [ex, ey, ez] : [100., 100., 100.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+12 [ ] 
+   Max. melt fraction (viscosity, density) : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Periodic marker advection     : 0 0 0 
+   Marker setup scheme           : volumes from polygons (geomIO)
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : uniform
+--------------------------------------------------------------------------
+Loading polygons redundantly from file(s) <Polygons_Bulky.bin> ... done (0.122493 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : Bulky 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : coupled Galerkin geometric multigrid
+   Global coarse grid [nx,ny,nz] : [8, 8, 8]
+   Local coarse grid  [nx,ny,nz] : [8, 4, 4]
+   Number of multigrid levels    :  3
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : multigrid 
+   Multigrid smoother levels KSP : richardson 
+   Multigrid dampening parameter : 0.500000 
+   Multigrid smoother levels PC  : jacobi 
+   Number of smoothening steps   : 20 
+   Coarse level KSP              : preonly 
+   Coarse level PC               : redundant 
+   Number of redundant solvers   : 1 
+--------------------------------------------------------------------------
+Saving output ... done (0.116953 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [ ] 
+Tentative time step : 0.01000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.334424388981e+02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  1 SNES Function norm 3.380684098793e+01 
+  1 PICARD ||F||/||F0||=1.013873e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+  2 SNES Function norm 5.820122560346e-02 
+  2 MMFD   ||F||/||F0||=1.745465e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+  3 SNES Function norm 1.894757488011e-05 
+  3 MMFD   ||F||/||F0||=5.682413e-08 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 4
+  4 SNES Function norm 1.859619133355e-06 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 4
+SNES solution time      : 2.07641 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.394301548194e-07 
+      |Div|_2   = 1.826209770762e-06 
+   Momentum: 
+      |mRes|_2  = 3.509147963721e-07 
+--------------------------------------------------------------------------
+Actual time step : 0.00510 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.123463 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00510019 [ ] 
+Tentative time step : 0.00510019 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.976603855719e+02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+  1 SNES Function norm 2.746403490361e-01 
+  1 MMFD   ||F||/||F0||=5.518630e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+  2 SNES Function norm 2.792695525885e-04 
+  2 MMFD   ||F||/||F0||=5.611649e-07 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 8
+  3 SNES Function norm 1.523484367019e-06 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 3
+SNES solution time      : 1.59007 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.769303364403e-07 
+      |Div|_2   = 1.518978011247e-06 
+   Momentum: 
+      |mRes|_2  = 1.170914937075e-07 
+--------------------------------------------------------------------------
+Actual time step : 0.00511 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.125431 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 4.4561 (sec) 
+--------------------------------------------------------------------------
