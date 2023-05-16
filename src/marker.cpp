@@ -1442,7 +1442,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				// also check if control polygon is out of bounds
 				if (CtrlPoly.Pos[i] > Vol.num)
 				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %d polygons", Poly.num);
+					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %d polygons", Vol.num);
 				}
 				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %d: Pos: %d, Sx: %.6f, Sy: %.6f \n",i+1,CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
 				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;
