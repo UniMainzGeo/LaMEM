@@ -327,6 +327,9 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
                 debug::Bool=false, create_expected_file::Bool=false, clean_dir::Bool=true
                 )
 
+    # print info abouy running tests                
+    @info "Performing test $ParamFile in directory $dir on $cores cores"
+    
     cur_dir = pwd();
     cd(dir)
 
