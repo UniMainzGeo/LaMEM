@@ -3611,16 +3611,6 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 
 	IOparam->dbm_modified.scal = &scal;
 
-	// WARNING! AD HOC!
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"); CHKERRQ(ierr);
-
-	if(fb->nblocks)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No phase transitions with Adjoint!");
-
-	}
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
-
 	ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); CHKERRQ(ierr);
 
     //PrintOutput = PETSC_TRUE;

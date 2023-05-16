@@ -69,11 +69,9 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
         // read all dike parameter blocks from file
 	Dike     *dike;
 	FDSTAG   *fs;
-	Discret1D	*dsy;
-	Ph_trans_t  *CurrPhTr;
 	PetscScalar ***gsxx_eff_ave_hist;
-	PetscInt jj, nD, numDike, numdyndike, numPhtr, nPtr, n, istep_nave;
-	PetscInt i, j, kk, istep_count, sx, sy, sisc, nx, ny;
+	PetscInt jj, nD, numDike, numdyndike, istep_nave;
+	PetscInt i, j, istep_count, sx, sy, sisc, nx, ny;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -81,8 +79,6 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 	if (!jr->ctrl.actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
  
 	fs = jr->fs;
-	dsy = &fs->dsy;
-	numPhtr    = jr->dbm->numPhtr;
  	//===============                                                                                                                                               
 	// DIKE PARAMETER                                                                                                               
 	//===============                                                                                                                                               
@@ -1289,7 +1285,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
      {
         ycell = COORD_CELL(j, sy, fs->dsy);  //debugging
         xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g %i %i %i\n", jr->ts->istep+1, ycell, xcenter+xshift, 
+        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g\n", jr->ts->istep+1, ycell, xcenter+xshift, 
         CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx),nD);  //debugging
      }
 
