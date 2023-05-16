@@ -26,7 +26,7 @@ The main developed of the current version are:
 * Beatriz Montesinos  (JGU Mainz), 2015-
 * Maximilian Kottwitz (JGU Mainz), 2019-
 * Arne Spang          (JGU Mainz), 2019-
-* Garret Ito          (University Hawaii), 2021-
+* Garrett Ito          (University Hawaii), 2021-
 * Jana Schierjott     (University Hawaii), 2020-
 
 Older versions of LaMEM included a finite element solver as well, 
