@@ -15,7 +15,6 @@
 *.out
 /Timestep_*
 *.mat
-*.png
 /models_not_under_git
 /input_models/**
 /src/.settings

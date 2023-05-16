@@ -170,7 +170,7 @@ which should give you the dirtectory `/opt/local/bin/mpiexec`. If it gives you a
 Both methods discussed above will install the parallel direct solvers MUMPS and SUPERLU_DIST. LaMEM will also work without these parallel solvers, but we find them particularly useful for 2D simulations and as coarse grid solvers.
 
 After the configuration step has finished succesfully (which will take some time), it should look something like
-![Configure PETSc](./Pictures/PETSc_configure.png)
+![Configure PETSc](../assets/Pictures/PETSc_configure.png)
 
 Next, make PETSc with:
 ```
@@ -239,7 +239,7 @@ Next you can install an optimized version of LaMEM by going to the ```/src``` di
 make mode=opt all
 ```
 At the end of the installation, it should look like:
-![Installation_LaMEM](./Pictures/Installation_CompileLaMEM.png)
+![Installation_LaMEM](../assets/Pictures/Installation_CompileLaMEM.png)
 
 Similarly, you can install a debug version of LaMEM with
 ```
@@ -271,7 +271,7 @@ $mpiexec -n 1 ../../bin/opt/LaMEM -ParamFile FallingSpheres_Multigrid.dat
 ```
 
 which should looke like:
-![Installation_FirstRun](./Pictures/Installation_FirstRun.png)
+![Installation_FirstRun](../assets/Pictures/Installation_FirstRun.png)
 
 
 
@@ -281,7 +281,7 @@ The output of LaMEM is in VTK format, which can be read and visualized with any 
 
 After opening, paraview looks like this:
 
- ![Paraview 5.4](./Pictures/Paraview_opening.png)
+ ![Paraview 5.4](../assets/Pictures/Paraview_opening.png)
 
 You can open a LaMEM simulation by opening the *.pvd files in the directory from where you started the simulation. Hitting the "play" button will show you an animation of all available timesteps.
 

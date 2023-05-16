@@ -1,7 +1,6 @@
 using Documenter
 
 makedocs(;
-    modules=[LaMEM_C],
     authors="Anton Popov, Boris Kaus",
     sitename="LaMEM",
     format=Documenter.HTML(;

@@ -90,4 +90,4 @@ init_temp       = 0
 act_steady_temp = 0
 ```
 
-![TempFromFile](./Pictures/TempFromFile.png)
+![TempFromFile](../assets/Pictures/TempFromFile.png)

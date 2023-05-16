@@ -16,9 +16,9 @@ $ mpiexec -n 1 ../../bin/opt/LaMEM -ParamFile FallingSpheres_Multigrid.dat
 ```
 
 The model output should look like this:
- ![FallingSpheres_start](./Pictures/FallingSpheres_start.png)
+ ![FallingSpheres_start](../assets/Pictures/FallingSpheres_start.png)
 and finish with:
- ![FallingSpheres_start](./Pictures/FallingSpheres_end.png)
+ ![FallingSpheres_start](../assets/Pictures/FallingSpheres_end.png)
 
 After the simulation, you will two new ```*.pvd``` files in the directory, and two additional directories that contain info about the timesteps:
 
@@ -40,7 +40,7 @@ $ mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingSpheres_Multigrid.dat
 The LaMEM output produces VTK-files. We usually use [Paraview](https://www.paraview.org) to visualize those. Open the file in paraview and open the file ```Spheres_multigrid.pvd```.
 
 The result looks like this
- ![FallingSpheres_paraview](./Pictures/FallingSpheres_Paraview.png)
+ ![FallingSpheres_paraview](../assets/Pictures/FallingSpheres_Paraview.png)
 In order to produce this picture, we used the "Slice", "Glyph" and "Contour" tools (everything you need is circled in red).
 
 
@@ -65,7 +65,7 @@ Note that simulations run either until the number of requires timesteps are reac
  
 After the simulation finishes, you can copy the timesteps and the ```*.pvd``` files to your local computer and reload the ```Spheres_multigrid.pvd``` files within Paraview (File -> Reload Files). Animate all timesteps with the green play button. At the end of the simulation, it'll look like:
 
- ![FallingSpheres_paraview_end](./Pictures/FallingSpheres_Paraview_end.png)
+ ![FallingSpheres_paraview_end](../assets/Pictures/FallingSpheres_Paraview_end.png)
 
 
 *Hint on using Paraview:* If you create a visualization in Paraview, you can safe it as a "Statefile", using File->Save State. For the next simulation, you can load this with File->Load State and choose the directory where the input files are. That save quite a bit of work and allows you to make reproducable figures.
@@ -119,7 +119,7 @@ Change the input file (and save it under a new name, to not confuse GIT later) t
 
 Try to reproduce this; the result should look like this:
 
-![GettingStarted_Exercise2_FallingBlocks](./Pictures/GettingStarted_Exercise2_FallingBlocks.png)
+![GettingStarted_Exercise2_FallingBlocks](../assets/Pictures/GettingStarted_Exercise2_FallingBlocks.png)
 
 Note that in this visualiation, the blocks look a bit rounded as the resolution of the simulation was quite low.
 
@@ -163,14 +163,14 @@ Let's do a subduction simulation to have a look at this, using a 2D example. As 
 
 For this, run the dimensional subduction test setup that uses build-in geometries which is called ```/BuildInSetups/Subduction2D_FreeSlip_Direct.dat```. This simulation is a simple viscous subduction setup, with a free slip upper boundary and a plastic crust (such that the plate detaches from the top boundary). The simulation will take a bit longer than some of the previous simulations, but look approximately like this:
 
-![GettingStarted_2D_Subduction_FreeSlip](./Pictures/GettingStarted_2D_Subduction_FreeSlip.png)
+![GettingStarted_2D_Subduction_FreeSlip](../assets/Pictures/GettingStarted_2D_Subduction_FreeSlip.png)
 
 
 ### 2.4.5 Exercise E: 2D subduction with a free surface
 The file ```Subduction2D_FreeSurface_DirectSolver.dat``` is an example of a 2D subduction model with a free surface. Note that in that case, also a paraview file is created that shows the internal free surface (open the file ```Subduction2D_FreeSurface_direct_surf.pvd``` to see that).
 The result should look like:
 
-![GettingStarted_2D_Subduction_FreeSurface](./Pictures/GettingStarted_2D_Subduction_FreeSurface.png)
+![GettingStarted_2D_Subduction_FreeSurface](../assets/Pictures/GettingStarted_2D_Subduction_FreeSurface.png)
 
 Note that we used "threshold" in paraview to remove the air layer from the simulation.
 
@@ -187,7 +187,7 @@ New compared to previous cases is that we:
 
 Depending on the viscosity of the lower crust, you can either get a symmetric or an asymmetric rift. The default simulation will look like this after 25 timesteps:
 
-![GettingStarted_2D_Rifting](./Pictures/GettingStarted_2D_Rifting.png)
+![GettingStarted_2D_Rifting](../assets/Pictures/GettingStarted_2D_Rifting.png)
 
 
 ### 2.4.5 Exercise G: 3D subduction 
