@@ -897,5 +897,20 @@ end
                             keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":")
 end
 
+@testset "t31_geomIO" begin
+    dir = "t31_geomIO";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=2e-3,atol=2e-7), (rtol=5e-3,atol=5e-7), (rtol=5e-3,atol=5e-7));
+
+   # Test if geomIO polygons are read in correctly:
+    @test perform_lamem_test(dir,"geomIO_Bulky.dat","t31_geomIO_Bulky.expected",
+                            keywords=keywords, accuracy=acc, cores=4, opt=true)
+
+    # Test if geomIO polygons are read in correctly:
+    @test perform_lamem_test(dir,"geomIO_Hollow.dat","t31_geomIO_Hollow.expected",
+                            keywords=keywords, accuracy=acc, cores=4, opt=true)
+end
+
 end
 
