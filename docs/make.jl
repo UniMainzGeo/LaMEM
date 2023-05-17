@@ -3,6 +3,7 @@ using Documenter
 makedocs(;
     authors="Anton Popov, Boris Kaus",
     sitename="LaMEM",
+    root="docs",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
     ),
@@ -20,11 +21,12 @@ makedocs(;
 )
 
 deploydocs(;
+    root = "docs",
     repo="github.com/UniMainzGeo/LaMEM.git",
     branch = "gh-pages",
     target = "build",
     devbranch = "master",
     devurl = "dev",
     forcepush=true,
-    push_preview = true
+    push_preview = false
 )
