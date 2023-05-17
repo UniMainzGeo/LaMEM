@@ -27,6 +27,7 @@ deploydocs(;
     target = "build",
     devbranch = "master",
     devurl = "dev",
+    versions="v#",
     forcepush=true,
     push_preview = false
 )
