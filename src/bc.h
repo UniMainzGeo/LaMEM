@@ -265,6 +265,9 @@ struct BCCtx
 	PetscInt     bvel_temperature_inflow;
 	PetscScalar  bvel_thermal_age,bvel_potential_temperature, bvel_temperature_top;
 	PetscScalar  bvel_constant_temperature;
+	PetscInt     VelNumPeriods; 			// number of periods when boundary inflow velocity will change , must be less than _max_periods_
+    PetscScalar  VelTimeDelims [_max_periods_-1];
+    PetscScalar  velin_array [_max_periods_];
 
 	// Plume inflow bottom boundary condition
 	PetscInt        Plume_Inflow;
@@ -418,6 +421,9 @@ PetscErrorCode BCGetBGStrainRates(
 		PetscScalar *Rxx_,
 		PetscScalar *Ryy_,
 		PetscScalar *Rzz_);
+//change velin in accordance with given time intervals
+PetscErrorCode BCGetVelins(
+		BCCtx       *bc);
 
 // Get current bottom temperature
 PetscErrorCode BCGetTempBound(
