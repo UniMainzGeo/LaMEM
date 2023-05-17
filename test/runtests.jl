@@ -912,5 +912,20 @@ end
                             keywords=keywords, accuracy=acc, cores=4, opt=true)
 end
 
+@testset "t32_BC_velocity" begin
+    dir = "t32_BC_velocity";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
+
+   # Test if boundaries are pushed from front and back inside the model:
+    @test perform_lamem_test(dir,"BC_velocity_2D_FB.dat","BC_velocity_2D_FB_opt-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+    # Test if boundaries are pushed from left to right and then from right to left:
+    @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+end
+
 end
 
