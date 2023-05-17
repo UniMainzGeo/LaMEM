@@ -23,4 +23,5 @@
 /test/*/ProcessorPartitioning*.*
 /test/t8_AdjointGradients/ScalingLaw_Test.dat
 Manifest.toml  
+docs/build/
 
