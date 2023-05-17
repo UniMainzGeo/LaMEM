@@ -28,4 +28,3 @@ deploydocs(;
     forcepush=true,
     push_preview = true
 )
-

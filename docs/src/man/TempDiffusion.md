@@ -8,7 +8,7 @@ temp_bot    = 1250
 init_temp   = 1
 ```
 
-![LinTemp](../assets/Pictures/LinearTemp.png)
+![LinTemp](../assets/img/LinearTemp.png)
 
 To get a steady-state temperature distribution depending on the thermal properties of your materials, you need
 to specify the thermal parameters `k` and `Cp` for **all** materials and activate the `act_steady_temp` and `act_temp_diff` flag.
@@ -27,7 +27,7 @@ act_temp_diff	= 1
 <MaterialEnd>
 ```
 
-![SteadTemp](../assets/Pictures/SteadyTemp.png)
+![SteadTemp](../assets/img/SteadyTemp.png)
 
 To assign an independent temperature to a material (like an intruding magma body), set the thermal parameter `T` for **this** material.
 
@@ -44,7 +44,7 @@ act_temp_diff	= 1
 <MaterialEnd>
 ```
 
-![SteadMagTemp](../assets/Pictures/SteadyMagmaTemp.png)
+![SteadMagTemp](../assets/img/SteadyMagmaTemp.png)
 
 It is possible to allow for a certain amount of temperature diffusion between the anomalous material and its environment before the start of the forward model by using the `steady_temp_dt` parameter.
 
@@ -62,6 +62,6 @@ steady_temp_dt  = 0.1
 <MaterialEnd>
 ```
 
-![SteadMagDifTemp](../assets/Pictures/SteadyMagmaDiffTemp.png)
+![SteadMagDifTemp](../assets/img/SteadyMagmaDiffTemp.png)
 
 The right slice shows the temperature distribution with additional diffusion, whereas the left slice shows it without.
