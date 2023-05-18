@@ -21,4 +21,4 @@ Have a look at the [documentation](https://unimainzgeo.github.io/LaMEM/dev) on h
 You can also install and run a parallel version of LaMEM with the julia package [LaMEM.jl](https://github.com/JuliaGeodynamics/LaMEM.jl). 
 
 ## Development and funding
-LaMEM is an open source code that was initially developed at the Johannes-Gutenberg University in Mainz (Germany) as part of the European Research Council Grants ERC StG 258830 (MODEL), ERC PoC 713397 (SALTED) and ERC CoG 771143 (MAGMA), as well as by BMBF projects SECURE and PERMEA. Many other colleagues have contributed since (see documentation).
+LaMEM is an open source code that was initially developed at the Johannes-Gutenberg University in Mainz (Germany) as part of the European Research Council Grants ERC StG 258830 (MODEL), ERC PoC 713397 (SALTED) and ERC CoG 771143 (MAGMA), as well as by BMBF projects SECURE and PERMEA, and DFG projects that are part of the 4DMB and Habitable Earth priority programs of the DFG. Many other colleagues have contributed to its development as well (see the documentation).
