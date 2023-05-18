@@ -3,7 +3,7 @@
 Now that PETSc is installed and LaMEM compiled, it is time to do your first simulation. 
 We will look at the sinking of a few high-density spheres in a lower density fluid, followed by a few examples of more complicated setups.
 
-### 2.1 Running the first simulation
+## 2.1 Running the first simulation
 
 First, switch to the correct directory:
 ```
@@ -36,7 +36,7 @@ Running the simulation in parallel is done with:
 $ mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingSpheres_Multigrid.dat
 ```
 
-### 2.2 Visualizing the results
+## 2.2 Visualizing results
 The LaMEM output produces VTK-files. We usually use [Paraview](https://www.paraview.org) to visualize those. Open the file in paraview and open the file ```Spheres_multigrid.pvd```.
 
 The result looks like this
@@ -44,10 +44,10 @@ The result looks like this
 In order to produce this picture, we used the "Slice", "Glyph" and "Contour" tools (everything you need is circled in red).
 
 
-### 2.3 Changing input parameters
+## 2.3 Changing input parameters
 Let's change a few input parameters and have a look at the LaMEM input file. Open it ```FallingSpheres_Multigrid.dat``` with a text editor and have a look at it. 
 
-#### 2.3.1 Running the simulation for longer
+### 2.3.1 Running the simulation for longer
 Changing the number of timesteps is done with the parameter ```nstep_out```. There are two ways to run the simulation for longer
 
 1) Change the parameter in the input file, save it and rerun the simulation
@@ -72,7 +72,7 @@ After the simulation finishes, you can copy the timesteps and the ```*.pvd``` fi
 
 *Hint on visualizating LaMEM simulations:* You don't have to wait until a LaMEM simulation is finished. The ```*.pvd``` files are continuously updated, so make sure to copy over these files as well as all timestep directories and hit "Reload".
 
-#### 2.3.2 Changing the material properties of the spheres
+### 2.3.2 Changing the material properties of the spheres
 
 Next, let's change the viscosity of the spheres. For this, scroll towards the end of the input file until the following section:
 ```
@@ -103,14 +103,14 @@ You can change the viscosity of the spheres by changing the according numbers in
 ## 2.4 Exercises
 If you are a new user of LaMEM, the best way for you to get familiar with the code is to do a few exercises. The ones below will also give you a bit of info about LaMEM along the way. All exercises employ the build-in geometry options of LaMEM (implying that the input model geometry is constructed with geometrical objects that are specified in the input file). All input files we will discuss are in the directory ```/input_files/BuildInSetups```.
 
-### 2.4.1 Exercise A: Falling Block setup
+## 2.4.1 Exercise A: Falling Block
 Run the Falling Block direct test from the build in setups (```/BuildInSetups/FallingBlock_DirectSolver.dat```) and inspect the input file with a text editor to get a feeling for the parameters that are specified there. 
 
 This example uses a socalled **direct** solver, which the recommended method for 2D setups as it is more robust in cases with large viscosity contrasts. Yet, it is too slow for large 3D simulations, which will require "multigrid" solvers (that unfortunately don't work always very well with large viscosity contrasts and require somewhat more tuning and expertise). PETSc itself does not have build-in parallel direct solvers, but you can install PETSc with SUPERLU_DIST and MUMPS which are two packages that. LaMEM automatically uses those if they are available.
 
 Once the simulation is finished, it should give a setup that is fairly similar to the falling spheres discussed above, but with a square block.
 
-### 2.4.2 Exercise B: Falling Block test setup with different blocks
+## 2.4.2 Exercise B: Falling Block + different blocks
 Change the input file (and save it under a new name, to not confuse GIT later) to include the following features:
 * Use a smaller block (0.2 in size in each of the directions). 
 * Include a total of 3 blocks, centered around (0.8,0.8,0.8), (0.3,0.3,0.3), and (0.1, 0.3, 0.8) which refer to the (x,y,z) coordinates, respectively.
@@ -123,7 +123,7 @@ Try to reproduce this; the result should look like this:
 
 Note that in this visualiation, the blocks look a bit rounded as the resolution of the simulation was quite low.
 
-### 2.4.3 Exercise C: Falling Block test using a multigrid solver
+## 2.4.3 Exercise C: Falling Block + multigrid 
 The direct solver, we used sofar, is fine for low resolutions but not for higher ones. For those, you will want to use a **multigrid** solver instead. In LaMEM, this can be done by specifying ```solver = multigrid``` in the input file.
 Run the Falling block multigrid test by running ```/BuildInSetups/FallingBlock_Multigrid.dat```. 
 
@@ -157,7 +157,7 @@ What is important in typical geodynamic simulations is that the coarse grid shou
 
 *Hint:* You can add the command-line option `-log_view` to get a detailed overview of your simulation, and the time spend on each of the levels. This will be shown at the end of the simulatiom. If you wish, you can only run the simulation for a few timesteps by adding the command-line option `-nstep_max 5`.
 
-### 2.4.4 Exercise D: 2D subduction simulation      
+## 2.4.4 Exercise D: 2D subduction       
 The previous exercises were all performed for a non-dimensional setup. Yet, in most geoscience applications it is useful to have your input in units of kilometers, degrees Celcius, stresses in MPa, etc. For this reason, LaMEM has the ```geo``` input units. 
 Let's do a subduction simulation to have a look at this, using a 2D example. As the current version of LaMEM 3D-only, we simulate 2D cases by having 2 elements in the y-direction.  
 
@@ -166,7 +166,7 @@ For this, run the dimensional subduction test setup that uses build-in geometrie
 ![GettingStarted_2D_Subduction_FreeSlip](../assets/img/GettingStarted_2D_Subduction_FreeSlip.png)
 
 
-### 2.4.5 Exercise E: 2D subduction with a free surface
+## 2.4.5 Exercise E: 2D subduction + free surface
 The file ```Subduction2D_FreeSurface_DirectSolver.dat``` is an example of a 2D subduction model with a free surface. Note that in that case, also a paraview file is created that shows the internal free surface (open the file ```Subduction2D_FreeSurface_direct_surf.pvd``` to see that).
 The result should look like:
 
@@ -174,7 +174,7 @@ The result should look like:
 
 Note that we used "threshold" in paraview to remove the air layer from the simulation.
 
-### 2.4.6 Exercise F: 2D simulation of asymmetric rifting    	
+## 2.4.6 Exercise F: 2D rifting    	
 As a next step, we perform a simulation of a 2D rift that forms an asymmetric fault zone/core complex. The setup consists of a lower crust, an upper crust and a sticky air layer to simulate the free surface (represented by an internal free surface).
 
 In this case we have a slightly more complicated setup and use a multigrid solver in a 2D setting. In order to run this example use the file ```/BuildInSetups/Rifting2D_MultigridSolver.dat```.
@@ -190,6 +190,6 @@ Depending on the viscosity of the lower crust, you can either get a symmetric or
 ![GettingStarted_2D_Rifting](../assets/img/GettingStarted_2D_Rifting.png)
 
 
-### 2.4.5 Exercise G: 3D subduction 
+## 2.4.5 Exercise G: 3D subduction 
 For this simulation, it is handy to have a somewhat larger computer that you can use. The input script is called
 ```Subduction3D_DoubleSubduction_FreeSlip_Multigrid.dat```

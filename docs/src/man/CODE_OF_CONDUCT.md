@@ -1,4 +1,4 @@
-# PETSc Code of Conduct
+# LaMEM Code of Conduct
 
 ## Our Pledge
 
@@ -55,12 +55,9 @@ further defined and clarified by project maintainers.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported by contacting the project team as a group
-[petsc-maint](mailto:petsc-maint@mcs.anl.gov)
-or confidentially by contacting
-[Jed Brown](mailto:jed@jedbrown.org),
-[Karl Rupp](mailto:me@karlrupp.net),
-and/or [Hong Zhang](mailto:hzhang@mcs.anl.gov).
+reported by contacting the project team: 
+[LaMEM](mailto:kaus@uni-mainz.de)
+
 All complaints will be reviewed and investigated and will result in a
 response that is deemed necessary and appropriate to the
 circumstances. The project team is obligated to maintain

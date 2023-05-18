@@ -13,8 +13,6 @@ makedocs(;
             "Installation" =>  "man/Installation.md",
             "Getting Started" =>  "man/GettingStarted.md",
             "Initial Model setup" =>  "man/InitialModelSetup.md",
-            "Examples" =>  "man/Examples.md",
-            "Features" =>  "man/Features.md",
         ],
         "Development" => Any[
             "LaMEM Development" => "man/LaMEM_Development.md",
