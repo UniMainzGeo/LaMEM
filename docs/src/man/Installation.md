@@ -1,4 +1,4 @@
-[TOC]
+# Installation
 
 # 1.0 Precompiled binaries
 The absolute simplest way to get LaMEM working on your system is to download pre-compiled libraries which are available for over 100 architectures and systems, including essentially all systems in use at the moment. You can install it through the julia package manager, and you can run it either through julia or through the terminal (after setting the correct path):

@@ -9,6 +9,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "man/Home.md",
+        "Quick start" => "man/Quickstart.md",
         "User Guide" => Any[
             "Installation" =>  "man/Installation.md",
             "Getting Started" =>  "man/GettingStarted.md",
