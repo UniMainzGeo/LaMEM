@@ -1,8 +1,6 @@
 # LaMEM Userguide
   
  ![Getting Started](../assets/img/LaMEM_overview.png)
- ![Getting Started1](../assets/files/LaMEM_overview.png)
- ![Getting Started2](./img/LaMEM_overview.png)
 
   LaMEM (Lithosphere and Mantle Evolution Model) is a software package to simulate 2D/3D geological and geomechanical processes, which runs on anything from your laptop to a massively parallel machine. It takes (poro)-visco-elasto-plastic rheologies into account, and can be used to simulate anything from the collision of tectonic plates to the flow of fluids through porous rocks. 
 
@@ -64,14 +62,10 @@ We recommend that your start with reading the [installation](Installation.md) in
 
 ## Extending this userguide
 
-This wiki uses the [Markdown](http://daringfireball.net/projects/markdown/) syntax.
-
-The wiki itself is actually a git repository, which means you can clone it, edit it locally/offline, add images or any other file type, and push it back to us. It will be live immediately.
-
-Go ahead and try:
-
+The userguide consists of [Markdown](http://daringfireball.net/projects/markdown/) pages which is compiled into webpages using the julia [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) package.  
+The pages are listed in the 
 ```
-$ git clone https://bkaus@bitbucket.org/bkaus/lamem.git/wiki
+/docs
 ```
-
-Wiki pages are normal files, with the .md extension. You can edit them locally, as well as creating new ones. 
+directory of this repository. You can extend it by adding new pages to the repository, which can be added to the side menu by modifying `make.jl`. 
+It will be automatically compiled when you push
