@@ -10,14 +10,17 @@ makedocs(;
     pages=[
         "Home" => "man/Home.md",
         "User Guide" => Any[
-            "1. Installation" =>  "man/Installation.md",
-            "2. Getting Started" =>  "man/GettingStarted.md",
-            "3. Initial Model setup" =>  "man/InitialModelSetup.md",
-            "4. Examples" =>  "man/Examples.md",
-            "5. Features" =>  "man/Features.md",
-            "6. LaMEM Development" => "man/LaMEM_Development.md",
-            "7. LaMEM Debugging" => "man/Debugging.md",
+            "Installation" =>  "man/Installation.md",
+            "Getting Started" =>  "man/GettingStarted.md",
+            "Initial Model setup" =>  "man/InitialModelSetup.md",
+            "Examples" =>  "man/Examples.md",
+            "Features" =>  "man/Features.md",
         ],
+        "Development" => Any[
+            "LaMEM Development" => "man/LaMEM_Development.md",
+            "LaMEM Debugging" => "man/Debugging.md"
+        ],
+        "Code of conduct" => "man/CODE_OF_CONDUCT.md"
     ],  
 )
 
