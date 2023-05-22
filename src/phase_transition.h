@@ -1,12 +1,25 @@
+/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ **
+ **   Project      : LaMEM
+ **   License      : MIT, see LICENSE file for details
+ **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
+ **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
+ **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **
+ ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 /*
- * phase_transition.h
- *
  *  Created on: Apr 20, 2020
  *      Author: piccolo
  */
 
+//-----------------------------------------------------------------------------
+
 #ifndef phase_transition_h_
 #define phase_transition_h_
+
+//-----------------------------------------------------------------------------
+
 struct Ph_trans_t;
 struct JacRes;
 struct ConstEqCtx;
@@ -40,4 +53,5 @@ PetscErrorCode DynamicPhTr_WriteRestart(JacRes *jr, FILE *fp);
 PetscErrorCode DynamicPhTr_ReadRestart(JacRes *jr, FILE *fp);
 PetscErrorCode DynamicPhTrDestroy(DBMat *dbm);
 
-#endif /* PHASE_TRANSITION_H_ */
+//-----------------------------------------------------------------------------
+#endif

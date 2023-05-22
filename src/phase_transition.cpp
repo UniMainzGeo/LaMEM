@@ -1,48 +1,18 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **    Copyright (c) 2011-2020, JGU Mainz, Anton Popov, Boris Kaus
- **    All rights reserved.
- **
- **    This software was developed at:
- **
- **         Institute of Geosciences
- **         Johannes-Gutenberg University, Mainz
- **         Johann-Joachim-Becherweg 21
- **         55128 Mainz, Germany
- **
- **    project:    LaMEM
- **    filename:   AVD.c
- **
- **    LaMEM is free software: you can redistribute it and/or modify
- **    it under the terms of the GNU General Public License as published
- **    by the Free Software Foundation, version 3 of the License.
- **
- **    LaMEM is distributed in the hope that it will be useful,
- **    but WITHOUT ANY WARRANTY; without even the implied warranty of
- **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- **    See the GNU General Public License for more details.
- **
- **    You should have received a copy of the GNU General Public License
- **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
- **
- **
- **    Contact:
- **        Boris Kaus       [kaus@uni-mainz.de]
- **        Anton Popov      [popov@uni-mainz.de]
- **
- **
- **    Main development team:
- **         Anton Popov      [popov@uni-mainz.de]
- **         Boris Kaus       [kaus@uni-mainz.de]
- **			Andrea Piccolo 
- ** 		Jianfeng Yang
- **		
- **		Main responsible persons for this routine:
- **			Andrea Piccolo
- **			Jianfeng Yang
- **			Boris Kaus
+ **   Project      : LaMEM
+ **   License      : MIT, see LICENSE file for details
+ **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
+ **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
+ **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
+/*
+ *  Created on: Apr 20, 2020
+ *      Author: piccolo
+ */
+
 /*	Bibliography reference for the phase transition
  * All the phase transition listed are coming from [1] (Tab.1).
  * [1] Manuele Faccenda, Luca Dal Zilio, The role of solid–solid phase transitions in mantle convection, Lithos,
@@ -95,7 +65,8 @@
 #include "surf.h"
 #include "tssolve.h"
 #include "dike.h"
-//-----------------------------------------------------------------//
+
+//-----------------------------------------------------------------------------
 
 PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 {

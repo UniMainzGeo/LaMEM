@@ -1,3 +1,19 @@
+/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ **
+ **   Project      : LaMEM
+ **   License      : MIT, see LICENSE file for details
+ **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
+ **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
+ **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **
+ ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
+/*
+ *  Created on: Jul 28, 2020
+ *      Author: piccolo
+ */
+
+//---------------------------------------------------------------------------
 
 #include "LaMEM.h"
 #include "AVD.h"
@@ -25,8 +41,6 @@
 	// b. Select the marker that are effectively within the processor and put to zero all the quantity for the others and interpolate them
 	// c. Sum all the quantity in all the processors
 // 2. Communicate to the master processors all the data, and print the output
-
-
 
 //---------------------------------------------------------------------------
 
