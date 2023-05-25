@@ -9,6 +9,8 @@ using PETSc_jll
 
 mpi_dir   = PETSc_jll.PATH_list[1][1:end-3]
 petsc_dir = PETSc_jll.PATH_list[2][1:end-3]
+@show mpi_dir
+@show petsc_dir
 
 # copy mpi directories
 run(`sudo -E cp -r $mpi_dir /workspace/destdir/`)
