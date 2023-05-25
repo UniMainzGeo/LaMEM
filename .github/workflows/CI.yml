@@ -12,7 +12,7 @@ jobs:
   linux: 
   strategy:
       matrix:
-        ci:
+      ci:
         - cxx_compiler: g++-10
           c_compiler: gcc-10
           build_type: Release
@@ -21,14 +21,6 @@ jobs:
           packages: 'g++-10-multilib gcc-10-multilib'
           cmake: 3.13.*
           os: ubuntu-20.04
-          
-        - cxx_compiler: g++
-          c_compiler: gcc
-          build_type: Coverage
-          cxxstd: 14
-          arch: 64
-          packages: g++
-          os: ubuntu-latest
                   
   runs-on: ${{ matrix.ci.os }}
   steps:
