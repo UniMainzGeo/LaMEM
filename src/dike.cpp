@@ -562,15 +562,13 @@ PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD)
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L, ID, AirPhase;
 //  PetscInt    M;
   PetscMPIInt    rank;
-
-
   FDSTAG      *fs;
   Dike        *dike;
   Discret1D   *dsz;
   //Discret1D   *dsy;
   SolVarCell  *svCell;
   Controls    *ctrl;
-
+ 
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
 
@@ -772,10 +770,9 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt  j1, PetscInt j2
   PetscInt    j, jj, j1prev, j2prev, j1next, j2next, jj1, jj2; 
   PetscInt    i,ii, ii1, ii2;
   PetscInt    sx, sy, sz, nx, ny, nz;
-  PetscInt    L, M, rank;
-  //PetscInt    N;
+  PetscInt    L, M;
+  PetscMPIInt rank;
   PetscInt    sisc, istep_count, istep_nave;
-  //PetscInt    nPtrfound;
   Vec         vycoors, vycoors_prev, vycoors_next;
   Vec         vybound, vybound_prev, vybound_next;
   Vec         vsxx, vsxx_prev, vsxx_next;
@@ -784,10 +781,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt  j1, PetscInt j2
   PetscScalar ***sxx,***sxx_prev, ***sxx_next;
   PetscScalar  *lsxx, *lsxx_prev, *lsxx_next;
   PetscScalar filtx, filty, w, dfac;
-
   PetscScalar dbug1, dbug2, dbug3;
-
-  //Scaling     *scal;  //debugging
 
   PetscErrorCode ierr;
   PetscFunctionBeginUser;
@@ -798,18 +792,14 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt  j1, PetscInt j2
   fs  =  jr->fs;
   dsz = &fs->dsz;
   dsy = &fs->dsy;
-  //dsx = &fs->dsx;
   L   =  (PetscInt)dsz->rank;
   M   =  (PetscInt)dsy->rank;
-  //N   =  (PetscInt)dsx->rank;
-  //scal = fs->scal;  //debugging
   dbug1=(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out);  //debugging
   dbug2=floor(((PetscScalar)jr->ts->istep+1)/jr->ts->nstep_out); //debugging
   dbug3=dbug1-dbug2; //debugging
 
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-  //CurrPhTr = jr->dbm->matPhtr+nPtr;
   dike = jr->dbdike->matDike+nD;
   filtx=dike->filtx;
   filty=dike->filty;
