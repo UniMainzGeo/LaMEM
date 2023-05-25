@@ -32,7 +32,7 @@ for d in PETSc_jll.LIBPATH_list
 end
 
 # copy PETSc directories
-run(`sudo -E cp -rf $petsc_dir/lib /workspace/destdir/lib`)
+run(`sudo -E cp -rf $petsc_dir/lib /workspace/destdir`)
 
 
 # print
