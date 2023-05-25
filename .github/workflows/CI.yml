@@ -46,9 +46,6 @@ jobs:
 
     - name: 'Install PETSc'
       run: |
-        ls
-        pwd
-        cd LaMEM
-        ls
-        julia --project=. /test/setup_packages.jl
+        cd test
+        julia --project=. setup_packages.jl
         
