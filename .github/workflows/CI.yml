@@ -26,7 +26,7 @@ jobs:
     runs-on: ${{ matrix.ci.os }}
     steps:
 
-    - name: 'Install'
+    - name: 'Install packages'
       run: |
         set -e
         uname -a
@@ -35,10 +35,11 @@ jobs:
         # Now create workspace directories, to later copy the pre-compiled PETSC libraries there
         sudo -E mkdir /workspace
 
-    - uses: actions/checkout@v3
-    - uses: julia-actions/setup-julia@v1
-      with:
-        version: '1.9'
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.9'
 
     - name: 'Check Out'
       uses: actions/checkout@v3
+
+    - name: 'Install petsc_jll'
