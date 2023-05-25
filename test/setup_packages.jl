@@ -27,7 +27,8 @@ end
 # And all required dynamic libraries (except petsc)
 for d in PETSc_jll.LIBPATH_list
     if !contains(d, "/julia") && !contains(d,"petsc")
-        run(`sudo -E cp -r $d /workspace/destdir/lib`)
+        #run(`sudo -E cp -r $d /workspace/destdir/lib`)
+        run(`sudo -E cp -r $d/"*".so /Users/kausb/Downloads/workspace/destdir/lib`)
     end
 end
 
@@ -42,6 +43,7 @@ println("Compiling LaMEM")
 cd("../src")
 @show pwd()
 
+# Take the environment (dynamic libraries etc.) from the PETSc
 cmd = addenv(PETSc_jll.ex42(), "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int64")
 compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
 run(compile_lamem)
