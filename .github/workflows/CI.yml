@@ -50,10 +50,10 @@ jobs:
         julia --project=. setup_packages.jl
         cd ..
 
-    - name: 'Compile LaMEM'
-      env:
-        PETSC_OPT: "/workspace/destdir/lib/petsc/double_real_Int64"
-      run: |
-        cd src
-        make mode=opt all
-        
+    #- name: 'Compile LaMEM'
+    #  env:
+    #    PETSC_OPT: "/workspace/destdir/lib/petsc/double_real_Int64"
+    #  run: |
+    #    cd src
+    #    make mode=opt all
+
