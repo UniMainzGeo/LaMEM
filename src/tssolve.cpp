@@ -453,7 +453,7 @@ PetscErrorCode TSSolAdjustSchedule(TSSol *ts, PetscScalar dt_cfl, PetscInt istep
 	else
 	{
 		// squeeze in new time step to close the gap
-		for(i = min(maxSteps, _max_num_steps_-1); i > istep; i--)
+		for(i = min(maxSteps, (PetscInt)(_max_num_steps_)-1); i > istep; i--)
 		{
 			schedule[i+1] = schedule[i];
 		}
