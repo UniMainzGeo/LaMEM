@@ -330,7 +330,7 @@ PetscErrorCode TSSolGetPeriodSteps(
 	n_try  = span / dt_avg;
 
 	// actual number of steps
-	n     = (PetscInt)max(1, (PetscInt)round(n_try));
+	n     = (PetscInt)max(1, (int)round(n_try));
 
 	// make proposal for steps
 	linSpace(dt_start,dt_end,n+1,dt);
