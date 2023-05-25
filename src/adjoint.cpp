@@ -1585,9 +1585,11 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	Vec                  xini, sqrtpro;
 	PetscScalar          Ad; 
 	FDSTAG              *fs;
-	PetscInt            i, lrank, grank;
+	PetscInt            i, lrank;
 	PetscScalar         dt, coord_local[3], *vx, *vy, *vz, *sty;
 	PetscMPIInt    		rank;
+	PetscMPIInt  		grank;
+
 	PetscScalar    		*rbuf1=PETSC_NULL;
 
  	PetscErrorCode ierr;
@@ -3906,7 +3908,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
-	PetscInt    ii, i, j, k, nx, ny, nz, sx, sy, sz, iterat, lrank, grank;
+	PetscInt    ii, i, j, k, nx, ny, nz, sx, sy, sz, iterat, lrank;
 	PetscInt    I, J, K, ID;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar XX, YY, ZZ, XY, XZ, YZ, XY2, XZ2, YZ2, E2;
@@ -3921,6 +3923,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscScalar dPardu_local;
 	PetscScalar coord_local[3],  Cons;
 	PetscInt    As_Ind[IOparam->mdI+1];
+	PetscMPIInt grank;
 	Scaling 	*scal;
 
 	PetscErrorCode ierr;
