@@ -31,9 +31,14 @@ jobs:
         set -e
         uname -a
         sudo -E apt-get update
-        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make julia ${{ matrix.ci.packages }}
+        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make ${{ matrix.ci.packages }}
         # Now create workspace directories, to later copy the pre-compiled PETSC libraries there
         sudo -E mkdir /workspace
-        
+
+    - uses: actions/checkout@v3
+    - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.9'
+
     - name: 'Check Out'
       uses: actions/checkout@v3
