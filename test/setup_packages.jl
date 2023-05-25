@@ -26,11 +26,10 @@ end
 
 # And all required dynamic libraries (except petsc)
 for d in PETSc_jll.LIBPATH_list
-    if !contains(d, "julia") && !contains(d,"petsc")
+    if !contains(d, "/julia") && !contains(d,"petsc")
         run(`sudo -E cp -r $d /workspace/destdir/lib`)
     end
 end
-
 
 # print
 run(`ls /workspace/destdir/lib`);
