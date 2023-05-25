@@ -12,15 +12,15 @@ petsc_dir = PETSc_jll.PATH_list[2][1:end-3]
 @show mpi_dir
 @show petsc_dir
 
-# copy mpi directories
-run(`sudo -E cp -r $(mpi_dir)/* /Users/kausb/Downloads/workspace/destdir/`)
-
-
 # print content of directories
 run(`ls $(mpi_dir)`);
 
-run(`ls /workspace/destdir/`);
+# copy mpi directories
+#run(`cp -r $mpi_dir /Users/kausb/Downloads/workspace/destdir/`)
+run(`cp -r $mpi_dir /workspace/destdir/`)
 
+
+run(`ls /workspace/destdir/`);
 
 # print
 run(`ls /workspace/destdir/lib`);
