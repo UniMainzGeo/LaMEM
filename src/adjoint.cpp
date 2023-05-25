@@ -152,7 +152,7 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 	phsar[iP] 		=  	ID;
 	
 	// Check if there is a command-line option & use that instead
-	asprintf(&dbkey, "-%s[%i]", par_str,ID);
+	asprintf(&dbkey, "-%s[%i]", par_str, (LLD)ID);
 	PetscOptionsGetScalar(NULL, NULL, dbkey, &val, &found);
 	if (found){
 		value = val;	// found a command-line option
@@ -374,10 +374,10 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 			
 		// Print overview & indicate which parameters are not specified
 		if (FDgrad[jj]){
-			PetscPrintf(PETSC_COMM_WORLD, "|   %-2i: %5s       %6s[%-2i] = %-9.4g   \n",jj+1,adjointstr, par_str,phsar[jj],Par[jj]);
+			PetscPrintf(PETSC_COMM_WORLD, "|   %-2i: %5s       %6s[%-2i] = %-9.4g   \n",(LLD)(jj+1),adjointstr, par_str,phsar[jj],Par[jj]);
 		}
 		else{
-			PetscPrintf(PETSC_COMM_WORLD, "|   %-2i: %5s       %6s[%-2i] = %-9.4g   \n",jj+1,adjointstr, par_str,phsar[jj],Par[jj]);
+			PetscPrintf(PETSC_COMM_WORLD, "|   %-2i: %5s       %6s[%-2i] = %-9.4g   \n",(LLD)(jj+1),adjointstr, par_str,phsar[jj],Par[jj]);
 		}
 	}
 
