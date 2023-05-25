@@ -9,20 +9,22 @@ on:
     branches: [ "master" ]
 
 jobs:
-  linux: 
-  strategy:
-    matrix:
-      ci:  
-      - cxx_compiler: g++-10
-        c_compiler: gcc-10
-        build_type: Release
-        cxxstd: 14
-        arch: 64
-        packages: 'g++-10-multilib gcc-10-multilib'
-        os: ubuntu-20.04
+  linux:
+    name: 'Linux'
+    strategy:
+      matrix:
+        ci:
+        - cxx_compiler: g++-12
+          c_compiler: gcc-12
+          build_type: Release
+          cxxstd: 20
+          arch: 64
+          packages: 'g++-12-multilib gcc-12-multilib'
+          cmake: 3.22.*
+          os: ubuntu-22.04
         
-  runs-on: ${{ matrix.ci.os }}
-  steps:
+    runs-on: ${{ matrix.ci.os }}
+    steps:
 
     - name: 'Install'
       run: |
