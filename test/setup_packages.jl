@@ -39,7 +39,8 @@ run(`ls /workspace/destdir/lib`);
 
 # Compile LaMEM
 println("Compiling LaMEM")
-run(`cd ../src`);
+@show pwd()
+run(`cd src`);
 
 cmd = addenv(PETSc_jll.ex42(), "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int64")
 compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
