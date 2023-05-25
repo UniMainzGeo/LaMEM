@@ -487,6 +487,14 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",    &bc->top,    1, scal->length  ); CHKERRQ(ierr);
         ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
         ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "velin_num_periods",  &bc->VelNumPeriods,  1,                  _max_periods_  ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_relax_d",&bc->relax_dist,1, scal->length  ); CHKERRQ(ierr);
+		if(bc->VelNumPeriods>1)
+		{
+			ierr = getScalarParam(fb, _REQUIRED_, "velin_time_delims",   bc->VelTimeDelims,  bc->VelNumPeriods-1, scal->time    ); CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",          bc->velin_array,    bc->VelNumPeriods,   scal->velocity); CHKERRQ(ierr);
+			ierr = BCGetVelins(bc); CHKERRQ(ierr);
+		}
         ierr = getScalarParam(fb, _OPTIONAL_, "bvel_phase_interval", bc->phase_interval, bc->num_phase_bc+1, scal->length); CHKERRQ(ierr);
         ierr = getStringParam(fb, _OPTIONAL_, "bvel_temperature_inflow", inflow_temp , NULL); 					CHKERRQ(ierr);
         if     	(!strcmp(inflow_temp, "Constant_T_inflow"))      bc->bvel_temperature_inflow = 1;
@@ -505,12 +513,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr);
         ierr = getScalarParam(fb, _OPTIONAL_, "bvel_veltop", &bc->veltop, 1, scal->velocity); CHKERRQ(ierr);
         
-
-        if(bc->face_out)
-        {
-            ierr = getScalarParam(fb, _REQUIRED_, "bvel_relax_d",&bc->relax_dist,1, scal->length  ); CHKERRQ(ierr);
-        }
-
         ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 
         // compute outflow velocity (if required)
@@ -741,6 +743,11 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
     if (bc->face>0){
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
+							if(bc->VelNumPeriods>1)	
+							{
+							PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %d   \n", bc->VelNumPeriods);}
+							else {PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : 1   \n");
+							}							
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %s \n", str_inflow);
      if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }
      if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %lld \n", (LLD)bc->phase);      }
@@ -1426,6 +1433,32 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
     PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode BCGetVelins(
+		BCCtx       *bc)
+{
+	Scaling     *scal;
+	PetscScalar  bz;
+	PetscInt    jj;
+	PetscScalar time;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+	// initialize
+	time = bc->ts->time;
+	scal = bc->scal;
+	if(bc->VelNumPeriods)
+	{
+		for(jj = 0; jj < bc->VelNumPeriods-1; jj++)
+		{
+			if(time < bc->VelTimeDelims[jj]) break;
+		}
+		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+		bc->velin  =  bc->velin_array[jj];
+		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 {
     // apply two-point constraints on the boundaries
@@ -1675,7 +1708,10 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 
     // check whether constraint is activated
     if(!bc->face) PetscFunctionReturn(0);
-
+	
+	// update inflow velocity value for current timestep
+	ierr = BCGetVelins(bc); CHKERRQ(ierr);
+	
     // access context
     fs     = bc->fs;
     bot    = bc->bot;
@@ -1717,12 +1753,24 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
             vel = 0.0;
             if(bc->face_out)
             {
-                if(z <= top && z >= bot) vel = velin;
+                if(z <= top && z >= bot)           vel = velin;
                 if(z >= top && z<= top+relax_dist) vel = velin-(velin/(relax_dist))*(z-top);
                 if(z <= bot && z>= bot-relax_dist) vel = velin+(velin/(relax_dist))*(z-bot);
+				if(bc->face_out != 1) {
+					if(z < bot-relax_dist)             vel = velout;
+				}
 
-                if(i == 0 )    { bcvx[k][j][i] = vel; }
-                if(i == mnx)   { bcvx[k][j][i] = vel; }
+		        if((bc->face  == 1) && i == 0)                         { bcvx[k][j][i] =  vel; }
+                if((bc->face  == 1) && i == mnx && bc->face_out == 1)  { bcvx[k][j][i] =  vel; }
+
+		        if((bc->face  == 2) && i == 0   && bc->face_out == 1)  { bcvx[k][j][i] = -vel; }
+		        if((bc->face  == 2) && i == mnx)                       { bcvx[k][j][i] = -vel; }
+
+		        if((bc->face  == 1) && i == 0   && bc->face_out == -1) { bcvx[k][j][i] =  vel; }
+		        if((bc->face  == 1) && i == mnx && bc->face_out == -1) { bcvx[k][j][i] = -vel; }
+
+		        if((bc->face  == 2) && i == 0   && bc->face_out == -1) { bcvx[k][j][i] =  vel; }
+		        if((bc->face  == 2) && i == mnx && bc->face_out == -1) { bcvx[k][j][i] = -vel; }
 
 
             }
@@ -1773,10 +1821,22 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
                 if(z <= top && z >= bot) vel = velin;
                 if(z >= top && z<= top+relax_dist) vel = velin-(velin/(relax_dist))*(z-top);
                 if(z <= bot && z>= bot-relax_dist) vel = velin+(velin/(relax_dist))*(z-bot);
+				if(bc->face_out != 1) {
+					if(z < bot-relax_dist)             vel = velout;
+				}
+
+		        if((bc->face  == 3) && j == 0)                         { bcvy[k][j][i] =  vel; }
+                if((bc->face  == 3) && j == mny && bc->face_out == 1)  { bcvy[k][j][i] =  vel; }
+
+		        if((bc->face  == 4) && j == 0   && bc->face_out == 1)  { bcvy[k][j][i] = -vel; }
+		        if((bc->face  == 4) && j == mny)                       { bcvy[k][j][i] = -vel; }
 
 
-                if(j == 0 )   { bcvy[k][j][i] = vel; }
-                if(j == mny)  { bcvy[k][j][i] = vel; }
+		        if((bc->face  == 3) && j == 0   && bc->face_out == -1) { bcvy[k][j][i] =  vel; }
+		        if((bc->face  == 3) && j == mny && bc->face_out == -1) { bcvy[k][j][i] = -vel; }
+
+		        if((bc->face  == 4) && j == 0   && bc->face_out == -1) { bcvy[k][j][i] =  vel; }
+		        if((bc->face  == 4) && j == mny && bc->face_out == -1) { bcvy[k][j][i] = -vel; }
             }
             else
             {
