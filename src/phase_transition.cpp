@@ -415,7 +415,7 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 	for (kk = 0; kk < ph->nsegs; kk++)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Phase Transition, NotInAirbox [%lld]: seg = %i, xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", \
-			(LLD)(ph->ID), kk, \
+			(LLD)(ph->ID), (LLD) kk, \
 		ph->xbounds[2*kk]* scal->length, ph->xbounds[2*kk+1]*scal->length,\
 		ph->ybounds[2*kk]* scal->length, ph->ybounds[2*kk+1]*scal->length,\
 		ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
@@ -424,13 +424,13 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
        ph->phtr_link_left = -1; 
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1); CHKERRQ(ierr);
 	if (ph->phtr_link_left>=0) {
-	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %i\n", ph->phtr_link_left);	CHKERRQ(ierr);
+	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %i\n", (LLD) ph->phtr_link_left);	CHKERRQ(ierr);
 	}
 
 	ph->phtr_link_right = -1; 
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkRight",   &ph->phtr_link_right,  1, dbm->numPhtr-1); CHKERRQ(ierr);
 	if (ph->phtr_link_right>=0) {
-	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %i\n", ph->phtr_link_right); CHKERRQ(ierr);
+	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %i\n", (LLD) ph->phtr_link_right); CHKERRQ(ierr);
 	}
 
 	
@@ -577,11 +577,11 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition avaiable you need to specify P0, T0, gamma and the number of equations ( P=(T-T0)*gamma +(P0) ).");
 	}
 
-    PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %i    [ P = P0 + gamma*(T-T0) ] \n", ph->neq);
+    PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %i    [ P = P0 + gamma*(T-T0) ] \n", (LLD) ph->neq);
         
 	for(it=0; it<ph->neq; it++)
 	{
-        PetscPrintf(PETSC_COMM_WORLD,"       eq[%i]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
+        PetscPrintf(PETSC_COMM_WORLD,"       eq[%i]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", (LLD)it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
 
 		ph->clapeyron_slope[it]     *=  1e6*(scal->temperature/scal->stress_si);                    // [K/MPa]
 		ph->P0_clapeyron[it]        /=  (scal->stress_si);                                          // [Pa]
@@ -629,11 +629,11 @@ PetscErrorCode  Overwrite_density(DBMat *dbm)
 			{
 				jj1             =   ph->PhaseBelow[iter];
 				mat[jj1].rho    =   rho_below/rho_scal;
-				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4d, rho = %4.1f %s \n",jj1,rho_below, scal->lbl_density);
+				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4d, rho = %4.1f %s \n",(LLD) jj1,rho_below, scal->lbl_density);
 
 				jj2             =   ph->PhaseAbove[iter];
 				mat[jj2].rho    =   rho_above/rho_scal;
-				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4d, rho = %4.1f %s \n",jj2,rho_above, scal->lbl_density);
+				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4d, rho = %4.1f %s \n",(LLD) jj2,rho_above, scal->lbl_density);
 			}
 
 		}

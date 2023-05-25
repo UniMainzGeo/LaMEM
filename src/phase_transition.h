@@ -36,7 +36,7 @@ PetscErrorCode Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB *
 PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph);
 PetscErrorCode Overwrite_density(DBMat *dbm);
 PetscErrorCode Phase_Transition(AdvCtx *actx);
-PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, 
+PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2, 
 			  Controls ctrl,Scaling *scal, SolVarCell *svCell, PetscInt *ph, PetscScalar *T, PetscInt *InsideAbove, PetscScalar, JacRes *jr, PetscInt cellID);
 PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_phas);
 PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl, SolVarCell *svCell, PetscInt *ph, PetscInt *InsideAbove, PetscScalar time);
