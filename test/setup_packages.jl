@@ -18,7 +18,6 @@ run(`ls $(mpi_dir)`);
 # copy mpi directories
 #run(`cp -r $mpi_dir /Users/kausb/Downloads/workspace/destdir/`)
 
-mpi_dir = mpi_dir*"*"
 run(`sudo -E cp -r $mpi_dir/bin /workspace/destdir/`)
 
 run(`ls /workspace/destdir/`);
