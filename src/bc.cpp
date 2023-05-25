@@ -1480,7 +1480,7 @@ PetscErrorCode BCGetVelins(
 	{
 		for(jj = 0; jj < bc->VelNumPeriods-1; jj++)
 		{
-			if(time*scal->time < bc->VelTimeDelims[jj]*scal->time) break;
+			if(time < bc->VelTimeDelims[jj]) break;
 		}
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 		bc->velin  =  bc->velin_array[jj];
