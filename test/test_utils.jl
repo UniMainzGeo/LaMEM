@@ -293,13 +293,11 @@ end
 This retrieves dynamic libraries, required to run LaMEM. It assumes that the global variable `use_dynamic_lib` is present
 """
 function get_dylibs()
-    @show use_dynamic_lib
     if use_dynamic_lib
         dylibs = PETSc_jll.LIBPATH;
     else
         dylibs = ""
     end
-
     return dylibs
 end
 

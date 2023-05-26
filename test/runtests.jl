@@ -13,7 +13,7 @@ if "use_dynamic_lib" in ARGS
 else
     global use_dynamic_lib=false
 end
-@show use_dynamic_lib, ARGS, typeof(ARGS)
+@show use_dynamic_lib
 
 include("test_utils.jl")
 
