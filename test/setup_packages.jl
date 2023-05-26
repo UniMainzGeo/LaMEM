@@ -24,13 +24,27 @@ for d in dirs
     run(`sudo -E cp -r $mpi_dir/$d /workspace/destdir/`)
 end
 
+
+"""
+    copy all files 
+"""
+function cp_files(srcdir, destdir; force=true)
+    for f in readdir(srcdir)
+        cp(joinpath(srcdir,f), joinpath(destdir,f), force=force)
+    end
+    return nothing
+end
+
 # And all required dynamic libraries (except petsc)
-for d in PETSc_jll.LIBPATH_list
-    if !contains(d, "/julia") && !contains(d,"petsc")
+for srcdir in PETSc_jll.LIBPATH_list
+    if !contains(srcdir, "/julia") && !contains(srcdir,"petsc")
         #run(`sudo -E cp -r $d/"*".so /workspace/destdir/lib/`)
-        run(`sudo -E cp -r $d/ /workspace/destdir/lib/`)
+        #run(`sudo -E cp -r $d/ /workspace/destdir/lib/`)
         
-        #run(`cp -r $d/ /Users/kausb/Downloads/workspace/destdir/lib/`)
+        #dest_dir = "/Users/kausb/Downloads/workspace/destdir/lib"
+        dest_dir = "/workspace/destdir/lib/"
+
+        cp_files(srcdir, dest_dir)
     end
 end
 
