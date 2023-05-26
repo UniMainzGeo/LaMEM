@@ -41,7 +41,7 @@ jobs:
       with:
         version: '1.9'
 
-    - name: 'Check Out LaMEM'
+    - name: 'Checkout LaMEM'
       uses: actions/checkout@v3
 
     - name: 'Install/compile PETSc & LaMEM'
