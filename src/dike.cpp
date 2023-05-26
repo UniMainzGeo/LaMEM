@@ -1146,7 +1146,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
   PetscScalar xcenter, sxx_max, dike_width, mindist, xshift, xcell;
   //PetscScalar dx;
   PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, L, Lx, ixcenter;
-  PetscScalar dbug1, dbug2, dbug3, ycell;
+  PetscScalar dbug1, dbug2, dbug3;
   PetscScalar sxxm, sxxp, dx12, dsdx1, dsdx2, x_maxsxx;   
   PetscInt    ixmax;
  
@@ -1225,7 +1225,6 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
      xshift=x_maxsxx-xcenter;
 
-
      //dx=SIZE_CELL(ixcenter,sx, fs->dsx);
      if (xshift>0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
      {
@@ -1241,10 +1240,10 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
      if (L==0 && dbug3 < 0.05/jr->ts->nstep_out)   //debugging
      {
-        ycell = COORD_CELL(j, sy, fs->dsy);  //debugging
-        xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g\n", jr->ts->istep+1, ycell, xcenter+xshift, 
-        CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx),nD);  //debugging
+        //ycell = COORD_CELL(j, sy, fs->dsy);  //debugging
+        //xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
+        //PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g\n", jr->ts->istep+1, ycell, xcenter+xshift, 
+        //CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx),nD);  //debugging
      }
 
   }//end loop over j cell row

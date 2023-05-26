@@ -121,7 +121,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	// print message
 	if(DisplayOutput)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file : %s \n", filename);
+		PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file \n");
 	}
 
 	// clean
@@ -130,7 +130,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	// return pointer
 	(*pfb) = fb;
 
-	if (DisplayOutput){
+	if (DisplayOutput &&  ISRankZero(PETSC_COMM_WORLD)){
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 

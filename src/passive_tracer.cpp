@@ -110,8 +110,8 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
      PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box x = [Left,Right] : %6f, %6f \n",passive_tr->box_passive_tracer[0],passive_tr->box_passive_tracer[1]);
      PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box y = [Front,Back] : %6f, %6f \n",passive_tr->box_passive_tracer[2],passive_tr->box_passive_tracer[3]);
      PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box z = [Bot, Top]   : %6f, %6f \n",passive_tr->box_passive_tracer[4],passive_tr->box_passive_tracer[5]);
-     PetscPrintf(PETSC_COMM_WORLD,"   # of tracers in [x,y,z] direction       : [%d, %d, %d] \n",(LLD) passive_tr->passive_tracer_resolution[0], (LLD) passive_tr->passive_tracer_resolution[1], (LLD) passive_tr->passive_tracer_resolution[2]);
-     PetscPrintf(PETSC_COMM_WORLD,"   Total # of tracers                      : %d \n",(LLD) nummark);
+     PetscPrintf(PETSC_COMM_WORLD,"   # of tracers in [x,y,z] direction       : [%lld, %lld, %lld] \n",(LLD) passive_tr->passive_tracer_resolution[0], (LLD) passive_tr->passive_tracer_resolution[1], (LLD) passive_tr->passive_tracer_resolution[2]);
+     PetscPrintf(PETSC_COMM_WORLD,"   Total # of tracers                      : %lld \n",(LLD) nummark);
      PetscPrintf(PETSC_COMM_WORLD,"   Tracer advection activation type        : ");
     
 	 if(passive_tr->Condition_pr==_Always_)
@@ -799,7 +799,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	}
 
     // print output
-    PetscPrintf(PETSC_COMM_WORLD,"\n Currently active tracers    :  %i \n", (LLD) numActTracers);
+    PetscPrintf(PETSC_COMM_WORLD,"\n Currently active tracers    :  %lld \n", (LLD) numActTracers);
 
 
 	// Check whatever the marker are belonging to rocks phase or not

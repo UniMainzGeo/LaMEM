@@ -1436,7 +1436,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 PetscErrorCode BCGetVelins(
 		BCCtx       *bc)
 {
-	Scaling     *scal;
 	PetscScalar  bz;
 	PetscInt    jj;
 	PetscScalar time;
@@ -1444,7 +1443,6 @@ PetscErrorCode BCGetVelins(
 	PetscFunctionBegin;
 	// initialize
 	time = bc->ts->time;
-	scal = bc->scal;
 	if(bc->VelNumPeriods)
 	{
 		for(jj = 0; jj < bc->VelNumPeriods-1; jj++)
