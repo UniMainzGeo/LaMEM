@@ -43,8 +43,8 @@ for srcdir in PETSc_jll.LIBPATH_list
         #run(`sudo -E cp -r $d/"*".so /workspace/destdir/lib/`)
         #run(`sudo -E cp -r $d/ /workspace/destdir/lib/`)
         
-        dest_dir = "/Users/kausb/Downloads/workspace/destdir/lib"
-        #dest_dir = "/workspace/destdir/lib/"
+        #dest_dir = "/Users/kausb/Downloads/workspace/destdir/lib"
+        dest_dir = "/workspace/destdir/lib/"
 
         cp_files(srcdir, dest_dir)
     end
