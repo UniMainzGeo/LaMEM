@@ -31,7 +31,11 @@ end
 function cp_files(srcdir, destdir; force=true)
     for f in readdir(srcdir)
         if isfile(joinpath(srcdir,f))
-            cp(joinpath(srcdir,f), joinpath(destdir,f), force=force)
+            src = joinpath(srcdir,f)
+            dst = joinpath(destdir,f)
+            #cp(src, dst, force=force)
+            run(`sudo -E cp -r $src $dst`)
+
         end
     end
     return nothing
