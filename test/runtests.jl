@@ -1,12 +1,19 @@
 # This is the LaMEM testing framework, run through julia
 #
 # Start it from 
-
 using LaMEM_C
 using Test
 using GeophysicalModelGenerator
 using LaMEM.IO
 using CairoMakie
+using LaMEM.LaMEM_jll.PETSc_jll
+
+if "use_dynamic_lib" in ARGS
+    global use_dynamic_lib=true
+else
+    global use_dynamic_lib=false
+end
+@show use_dynamic_lib, ARGS, typeof(ARGS)
 
 include("test_utils.jl")
 

@@ -1,19 +1,22 @@
 # These are tools that help perform the LaMEM tests, which run LaMEM locally
 using LinearAlgebra, Glob
+if use_dynamic_lib
+    using LaMEM.LaMEM_jll.PETSc_jll
+end
 
 export run_lamem_local_test, perform_lamem_test, clean_test_directory
 
 """
     run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
                         outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
-                        mpi exec="mpiexec")
+                        mpi exec="mpiexec", dylibs="")
 
 This runs a LaMEM simulation with given `ParamFile` on 1 or more cores, while writing the output to a local log file.
 
 """
 function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
                 outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
-                mpiexec="mpiexec")
+                mpiexec="mpiexec", dylibs="")
     
     cur_dir = pwd()
     if opt
@@ -25,8 +28,12 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
     success = true
     try
         if cores==1
-            perform_run = `$(exec) -ParamFile $(ParamFile) $args`;
+            perform_run = Cmd(`$(exec) -ParamFile $(ParamFile) $args`);
             
+            # add dynamic libraries to the path (if specified)
+            dylibs = get_dylibs()
+            perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+
             # Run LaMEM on a single core, which does not require a working MPI
             try 
                 if !isempty(outfile)
@@ -60,8 +67,6 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
         success = false
     end
   
-
-
     return success
 end
 
@@ -282,6 +287,23 @@ function clean_test_directory(dir)
 
 end
 
+
+"""
+    get_dylibs()
+This retrieves dynamic libraries, required to run LaMEM. It assumes that the global variable `use_dynamic_lib` is present
+"""
+function get_dylibs()
+    @show use_dynamic_lib
+    if use_dynamic_lib
+        dylibs = PETSc_jll.LIBPATH;
+    else
+        dylibs = ""
+    end
+
+    return dylibs
+end
+
+
 """
     perform_lamem_test( dir::String, 
                         ParamFile::String, 
@@ -378,3 +400,5 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     
     return success
 end 
+
+
