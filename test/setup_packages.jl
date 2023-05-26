@@ -30,7 +30,9 @@ end
 """
 function cp_files(srcdir, destdir; force=true)
     for f in readdir(srcdir)
-        cp(joinpath(srcdir,f), joinpath(destdir,f), force=force)
+        if isfile(joinpath(srcdir,f))
+            cp(joinpath(srcdir,f), joinpath(destdir,f), force=force)
+        end
     end
     return nothing
 end
@@ -41,8 +43,8 @@ for srcdir in PETSc_jll.LIBPATH_list
         #run(`sudo -E cp -r $d/"*".so /workspace/destdir/lib/`)
         #run(`sudo -E cp -r $d/ /workspace/destdir/lib/`)
         
-        #dest_dir = "/Users/kausb/Downloads/workspace/destdir/lib"
-        dest_dir = "/workspace/destdir/lib/"
+        dest_dir = "/Users/kausb/Downloads/workspace/destdir/lib"
+        #dest_dir = "/workspace/destdir/lib/"
 
         cp_files(srcdir, dest_dir)
     end
