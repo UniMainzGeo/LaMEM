@@ -43,7 +43,9 @@ end
 
 # And all required dynamic libraries (except petsc)
 for srcdir in PETSc_jll.LIBPATH_list
-    if !contains(srcdir, "/julia") && !contains(srcdir,"petsc")
+#    if !contains(srcdir, "/julia") && !contains(srcdir,"petsc")
+    if !contains(srcdir,"petsc")
+
         #run(`sudo -E cp -r $d/"*".so /workspace/destdir/lib/`)
         #run(`sudo -E cp -r $d/ /workspace/destdir/lib/`)
         
