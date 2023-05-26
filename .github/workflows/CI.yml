@@ -53,5 +53,5 @@ jobs:
     - name: 'Test LaMEM'
       run: |
         cd test
-        julia --project=../. start_tests.jl 
+        julia --project=../. start_tests_CI.jl 
         cd ..
