@@ -49,9 +49,7 @@ jobs:
         cd test
         julia --project=. setup_packages.jl
         cd ..
-        which mpiexec
         
-
     #- uses: julia-actions/julia-buildpkg@latest
     - name: 'Test LaMEM/Int64'
       uses: julia-actions/julia-runtest@latest

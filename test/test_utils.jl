@@ -9,7 +9,7 @@ export run_lamem_local_test, perform_lamem_test, clean_test_directory
 """
     run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
                         outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
-                        mpi exec="mpiexec", dylibs="")
+                        mpiexec="mpiexec", dylibs="")
 
 This runs a LaMEM simulation with given `ParamFile` on 1 or more cores, while writing the output to a local log file.
 
@@ -31,8 +31,9 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             perform_run = Cmd(`$(exec) -ParamFile $(ParamFile) $args`);
             
             # add dynamic libraries to the path (if specified)
-            dylibs = get_dylibs()
+            dylibs, mpipath = get_dylibs()
             perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+            perform_run = addenv(perform_run,"PATH"=>mpipath)
 
             # Run LaMEM on a single core, which does not require a working MPI
             try 
@@ -295,10 +296,13 @@ This retrieves dynamic libraries, required to run LaMEM. It assumes that the glo
 function get_dylibs()
     if use_dynamic_lib
         dylibs = PETSc_jll.LIBPATH;
+        mpi_path = PETSc_jll.PATH
     else
         dylibs = ""
+        mpi_path = ""
     end
-    return dylibs
+    
+    return dylibs, mpi_path
 end
 
 
