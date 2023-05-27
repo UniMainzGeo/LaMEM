@@ -8,11 +8,11 @@ using LaMEM.IO
 using CairoMakie
 using LaMEM.LaMEM_jll.PETSc_jll
 
-if "use_dynamic_lib" in ARGS
+#if "use_dynamic_lib" in ARGS
     global use_dynamic_lib=true
-else
-    global use_dynamic_lib=false
-end
+#else
+ #   global use_dynamic_lib=false
+#end
 @show use_dynamic_lib
 
 include("test_utils.jl")
