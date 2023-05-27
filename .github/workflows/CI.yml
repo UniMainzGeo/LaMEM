@@ -35,7 +35,7 @@ jobs:
         # Now create workspace directories, to later copy the pre-compiled PETSC libraries there
         sudo -E mkdir /workspace
         sudo -E mkdir /workspace/destdir
-
+        
     - name: 'Install julia'
       uses: julia-actions/setup-julia@v1
       with:
@@ -49,7 +49,10 @@ jobs:
         cd test
         julia --project=. setup_packages.jl
         cd ..
+        which mpiexec
         
-    - uses: julia-actions/julia-buildpkg@latest
-    - uses: julia-actions/julia-runtest@latest
+
+    #- uses: julia-actions/julia-buildpkg@latest
+    - name: 'Test LaMEM/Int64'
+      uses: julia-actions/julia-runtest@latest
   
