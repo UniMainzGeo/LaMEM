@@ -15,11 +15,14 @@ using LaMEM.LaMEM_jll.PETSc_jll
 #end
 @show use_dynamic_lib
 
+test_dir = pwd()
+
 include("test_utils.jl")
 
 @testset "LaMEM Testsuite" verbose=true begin
 
 @testset "t1_FB1_Direct" verbose=true begin
+    cd(test_dir)
     dir = "t1_FB1_Direct";
     
     ParamFile = "FallingBlock_mono_PenaltyDirect.dat";
@@ -40,6 +43,7 @@ include("test_utils.jl")
 end
 
 @testset "t2_FB2_MG" begin
+    cd(test_dir)
     dir = "t2_FB2_MG";
     
     ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
@@ -53,6 +57,7 @@ end
 end
 
 @testset "t3_Subduction" begin
+    cd(test_dir)
     dir = "t3_SubductionGMGinput";
     
     # input script 
@@ -108,6 +113,7 @@ end
 
 
 @testset "t4_Localisation" begin
+    cd(test_dir)
     dir = "t4_Loc";
     
     ParamFile = "localization.dat";
@@ -133,6 +139,7 @@ end
 end
 
 @testset "t5_Permeability" begin
+    cd(test_dir)
     dir = "t5_Perm";
     
     ParamFile = "Permea.dat";
@@ -146,6 +153,7 @@ end
 end
 
 @testset "t6_AdjointGradientScalingLaws_p2" begin
+    cd(test_dir)
     dir = "t6_AdjointGradientScaling";
     
     keywords   = (  "|Div|_inf",
@@ -183,6 +191,7 @@ end
 
 
 @testset "t7_AdjointGradientInversion" begin
+    cd(test_dir)
     dir = "t7_AdjointGradientInversion";
     
     # t7_AdjointGradientInversion_1
@@ -284,12 +293,14 @@ end
 
 
 @testset "t8_AdjointGradients" begin
+  cd(test_dir)
   include("AdjointGradients.jl")
 end
 
 
 
 @testset "t9_PhaseDiagrams" begin
+    cd(test_dir)
     dir = "t9_PhaseDiagrams";
     
     ParamFile = "test_9_FallingBlock_PhaseDiagrams.dat";
@@ -305,6 +316,7 @@ end
 
 # this ia a more complicated one, that requires a devoted script (with plotting)
 @testset "t10_Compressibility" begin
+    cd(test_dir)
     dir = "t10_Compressibility";
     
     ParamFile = "Compressible1D_withSaltandBasement.dat";
@@ -363,6 +375,7 @@ end
 
 
 @testset "t11_Subgrid" begin
+    cd(test_dir)
     dir = "t11_Subgrid";
     
     ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
@@ -378,6 +391,7 @@ end
 
 
 @testset "t12_Temperature_diffusion" begin
+    cd(test_dir)
     dir = "t12_Temperature_diffusion";
     include(joinpath(dir,"Temp_setup.jl"))
     ParamFile = "t12_Temperature_diffusion.dat";
@@ -421,6 +435,7 @@ end
 
 # t13_Rheology0D/
 @testset "t13_Rheology0D" begin
+    cd(test_dir)
     dir = "t13_Rheology0D";
     include(joinpath(dir,"Rheology0D.jl"))
     
@@ -537,6 +552,7 @@ end
 
 # t14_1DStrengthEnvelope/
 @testset "t14_1DStrengthEnvelope" begin
+    cd(test_dir)
     dir = "t14_1DStrengthEnvelope";
     include(joinpath(dir,"StrengthEnvelop.jl"))
 
@@ -611,6 +627,7 @@ end
 
 
 @testset "t16_PhaseTransitions" begin
+    cd(test_dir)
     dir = "t16_PhaseTransitions";
     ParamFile = "Plume_PhaseTransitions.dat";
     
@@ -645,6 +662,7 @@ end
 
 
 @testset "t17_InflowOutflow" begin
+    cd(test_dir)
     dir = "t17_InflowOutflow";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2","|eRes|_2")
@@ -676,6 +694,7 @@ end
 end
 
 @testset "t18_SimpleShear" begin
+    cd(test_dir)
     dir = "t18_SimpleShear";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -701,6 +720,7 @@ end
 end
 
 @testset "t19_CompensatedInflow" begin
+    cd(test_dir)
     dir = "t19_CompensatedInflow";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -720,6 +740,7 @@ end
 end
 
 @testset "t20_FSSA" begin
+    cd(test_dir)
     dir = "t20_FSSA";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -732,6 +753,7 @@ end
 end
 
 @testset "t21_Passive_Tracer" begin
+    cd(test_dir)
     dir = "t21_Passive_Tracer";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -749,6 +771,7 @@ end
 end
 
 @testset "t22_RidgeGeom" begin
+    cd(test_dir)
     dir = "t22_RidgeGeom";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -764,6 +787,7 @@ end
 end
 
 @testset "t23_Permeable" begin
+    cd(test_dir)
     dir = "t23_Permeable";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -775,6 +799,7 @@ end
 end
 
 @testset "t24_Erosion_Sedimentation" begin
+    cd(test_dir)
     dir = "t24_Erosion_Sedimentation";
     include(joinpath(dir,"t24_CreateSetup.jl"));      
 
@@ -797,6 +822,7 @@ end
 end
 
 @testset "t25_APS_Healing" begin
+    cd(test_dir)
     dir = "t25_APS_Healing";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -808,6 +834,7 @@ end
 end
 
 @testset "t26_Dike" begin
+    cd(test_dir)
     dir = "t26_Dike";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -854,6 +881,7 @@ end
 
 
 @testset "t27_T-dep_Conductivity" begin
+    cd(test_dir)
     dir = "t27_T-dep_Conductivity";
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
@@ -864,6 +892,7 @@ end
 end
 
 @testset "t28_HeatRecharge" begin
+    cd(test_dir)
     dir = "t28_HeatRecharge";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -882,6 +911,7 @@ end
 end
 
 @testset "t29_PermeableSides_VelBoxes" begin
+    cd(test_dir)
     dir = "t29_PermeableSides_VelBoxes";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -893,6 +923,7 @@ end
 end
 
 @testset "t30_Timestep_Schedule" begin
+    cd(test_dir)
     dir = "t30_Timestep_Schedule";
     
     keywords = ("Actual time step",)
@@ -905,6 +936,7 @@ end
 end
 
 @testset "t31_geomIO" begin
+    cd(test_dir)
     dir = "t31_geomIO";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -920,6 +952,7 @@ end
 end
 
 @testset "t32_BC_velocity" begin
+    cd(test_dir)
     dir = "t32_BC_velocity";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
