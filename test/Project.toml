@@ -1,0 +1,11 @@
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+GeophysicalModelGenerator = "3700c31b-fa53-48a6-808a-ef22d5a84742"
+Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
+LaMEM = "2e889f3d-35ce-4a77-8ea2-858aecb630f7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
