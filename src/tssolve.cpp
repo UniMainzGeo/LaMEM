@@ -344,7 +344,7 @@ PetscErrorCode TSSolGetPeriodSteps(
 	err    = span - sum;
 
 	// correction per step
-	corr   = err / n;
+	corr   = err / ((PetscScalar) n);
 
 	// add correction
 	for(i = 0; i < n; i++)

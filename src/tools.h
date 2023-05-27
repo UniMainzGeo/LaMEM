@@ -195,7 +195,7 @@ PetscInt solveBisect(
 		PetscScalar a,
 		PetscScalar b,
 		PetscScalar tol,
-		PetscScalar maxit,
+		PetscInt    maxit,
 		PetscScalar &x,
 		PetscInt    &it,
 		PetscScalar (*f) (PetscScalar x, void *pctx),

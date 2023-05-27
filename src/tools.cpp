@@ -51,7 +51,7 @@ void PrintStep(PetscInt step)
 	char line[] = "==========================================================================";
 	char left[]  = " STEP ";
 	char right[] = " ";
-	asprintf(&number, "%d", step);
+	asprintf(&number, "%i", step);
 
 	p = line + (strlen(line) - strlen(left) - strlen(number) - strlen(right))/2;
 
@@ -665,8 +665,8 @@ void findCenterMass(
         sumX += x[i];
         sumY += y[i];
     }
-    meanX = sumX/nN;
-    meanY = sumY/nN;
+    meanX = sumX/ ((PetscScalar) nN);
+    meanY = sumY/ ((PetscScalar) nN);
 
     // shift nodes by mean for better precision
     for (i=0; i < nN; i++)
@@ -805,7 +805,7 @@ PetscInt solveBisect(
 		PetscScalar a,
 		PetscScalar b,
 		PetscScalar tol,
-		PetscScalar maxit,
+		PetscInt    maxit,
 		PetscScalar &x,
 		PetscInt    &it,
 		PetscScalar (*f) (PetscScalar x, void *pctx),
@@ -847,7 +847,7 @@ PetscInt solveBisect(
 	    // update iteration count
 	    it++;
 
-	} while(PetscAbsScalar(fx) > tol && it < maxit);
+	} while( PetscAbsScalar(fx) > tol && it < maxit);
 
 	// return convergence flag
 	return PetscAbsScalar(fx) <= tol;
