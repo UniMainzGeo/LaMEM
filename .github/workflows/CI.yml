@@ -52,5 +52,5 @@ jobs:
 
     - name: 'Test LaMEM'
       run: |
-        julia --project=. /test/start_tests_CI.jl 
+        julia --project=. test/start_tests_CI.jl
         
