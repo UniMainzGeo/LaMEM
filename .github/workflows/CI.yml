@@ -52,5 +52,5 @@ jobs:
 
     - name: 'Test LaMEM'
       run: |
-        julia --project=. test/start_tests_CI.jl
-        
+        julia --color=yes --depwarn=yes --inline=yes --project=@. -e 'include(joinpath(ENV["GITHUB_ACTION_PATH"], "test_harness.jl"))'
+  
