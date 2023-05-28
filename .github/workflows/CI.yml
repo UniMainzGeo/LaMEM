@@ -52,5 +52,8 @@ jobs:
         
     #- uses: julia-actions/julia-buildpkg@latest
     - name: 'Test LaMEM/Int64'
-      uses: julia-actions/julia-runtest@latest
+      run: |
+        julia --project=. test/start_tests_CI.jl  
+      
+      #uses: julia-actions/julia-runtest@latest
   

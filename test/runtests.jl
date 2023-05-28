@@ -15,6 +15,17 @@ using LaMEM.LaMEM_jll.PETSc_jll
 #end
 @show use_dynamic_lib
 
+const mpirun = if PETSc_jll.MPICH_jll.is_available()
+    PETSc_jll.MPICH_jll.mpiexec()
+elseif PETSc_jll.MicrosoftMPI_jll.is_available()
+    PETSc_jll.MicrosoftMPI_jll.mpiexec()
+elseif PETSc_jll.OpenMPI_jll.is_available()
+    PETSc_jll.OpenMPI_jll.mpiexec()
+else
+    nothing
+end
+
+
 test_dir = pwd()
 
 include("test_utils.jl")
@@ -32,13 +43,16 @@ include("test_utils.jl")
     
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt-p1.expected", 
+                            mpiexec=mpirun,
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
     @test perform_lamem_test(dir,ParamFile,"FB1_b_Direct_deb-p1.expected", 
+                            mpiexec=mpirun,
                             keywords=keywords, accuracy=acc, cores=1, deb=true)
 
     @test perform_lamem_test(dir,ParamFile,"FB1_c_MUMPS_opt-p2.expected", 
                             keywords=keywords, accuracy=acc, cores=2, opt=true,
+                            mpiexec=mpirun,
                             args="-jp_pc_factor_mat_solver_package mumps")
 end
 
