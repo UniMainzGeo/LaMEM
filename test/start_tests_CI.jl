@@ -3,7 +3,6 @@
 using Pkg,LaMEM_C, Test
 
 
-@show versioninfo()
 
 @info "Test whether "
 
