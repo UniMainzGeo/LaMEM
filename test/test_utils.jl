@@ -26,12 +26,12 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
     end
 
     success = true
+    dylibs, mpipath = get_dylibs()
     try
         if cores==1
             perform_run = Cmd(`$(exec) -ParamFile $(ParamFile) $args`);
             
             # add dynamic libraries to the path (if specified)
-            dylibs, mpipath = get_dylibs()
             perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
             perform_run = addenv(perform_run,"PATH"=>mpipath)
 
@@ -49,7 +49,12 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
                 success = false
             end
         else
-            perform_run = `$(mpiexec) -n $(cores) $(exec) -ParamFile $(ParamFile) $args`;
+            perform_run = Cmd(`$(mpiexec) -n $(cores) $(exec) -ParamFile $(ParamFile) $args`);
+
+            # add dynamic libraries to the path (if specified)
+           # perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+           # perform_run = addenv(perform_run,"PATH"=>mpipath)
+  
             # set correct environment
             #mpirun = setenv(mpiexec, LaMEM_jll.JLLWrappers.JLLWrappers.LIBPATH_env=>LaMEM_jll.LIBPATH[]);
             # Run LaMEM in parallel
@@ -296,7 +301,17 @@ This retrieves dynamic libraries, required to run LaMEM. It assumes that the glo
 function get_dylibs()
     if use_dynamic_lib
         dylibs = PETSc_jll.LIBPATH;
-        mpi_path = PETSc_jll.PATH
+
+        mpi_path = if PETSc_jll.MPICH_jll.is_available()
+            PETSc_jll.MPICH_jll.PATH_list[1]
+        elseif PETSc_jll.MicrosoftMPI_jll.is_available()
+            PETSc_jll.MicrosoftMPI_jll.PATH_list[1]
+        elseif PETSc_jll.OpenMPI_jll.is_available()
+            PETSc_jll.OpenMPI_jll.PATH_list[1]
+        else
+            nothing
+        end
+
     else
         dylibs = ""
         mpi_path = ""
