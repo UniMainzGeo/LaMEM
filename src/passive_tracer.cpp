@@ -216,9 +216,9 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	nx = actx->Ptr->passive_tracer_resolution[0];
-	ny = actx->Ptr->passive_tracer_resolution[1];
-	nz = actx->Ptr->passive_tracer_resolution[2];
+	nx = (PetscScalar) actx->Ptr->passive_tracer_resolution[0];
+	ny = (PetscScalar) actx->Ptr->passive_tracer_resolution[1];
+	nz = (PetscScalar) actx->Ptr->passive_tracer_resolution[2];
 	dx = (actx->Ptr->box_passive_tracer[1]/(actx->dbm->scal->length)-actx->Ptr->box_passive_tracer[0]/(actx->dbm->scal->length))/nx;
 	dy = (actx->Ptr->box_passive_tracer[3]/(actx->dbm->scal->length)-actx->Ptr->box_passive_tracer[2]/(actx->dbm->scal->length))/ny;
 	dz = (actx->Ptr->box_passive_tracer[5]/(actx->dbm->scal->length)-actx->Ptr->box_passive_tracer[4]/(actx->dbm->scal->length))/nz;
@@ -250,7 +250,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				}
 				else
 				{
-					z = actx->Ptr->box_passive_tracer[4]/(actx->dbm->scal->length) + dz/2 + k*dz;
+					z = actx->Ptr->box_passive_tracer[4]/(actx->dbm->scal->length) + dz/2 + ((PetscScalar) k)*dz;
 				}
 				if(j==0)
 				{
@@ -258,7 +258,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				}
 				else
 				{
-					y = actx->Ptr->box_passive_tracer[2]/(actx->dbm->scal->length) + dy/2 + j*dy;
+					y = actx->Ptr->box_passive_tracer[2]/(actx->dbm->scal->length) + dy/2 + ((PetscScalar) j)*dy;
 				}
 				if(i==0)
 				{
@@ -266,7 +266,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				}
 				else
 				{
-					x = actx->Ptr->box_passive_tracer[0]/(actx->dbm->scal->length) + dx/2+i*dx;
+					x = actx->Ptr->box_passive_tracer[0]/(actx->dbm->scal->length) + dx/2+ ((PetscScalar) i)*dx;
 				}
 
 
@@ -274,7 +274,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				Xp[imark] = x;
 				Yp[imark] = y;
 				Zp[imark] = z;
-				ID[imark] = i+ny*j+ny*nx*k;
+				ID[imark] = ((PetscScalar) i) + ny*((PetscScalar) j) +ny*nx*((PetscScalar) k);
 
 				if(actx->Ptr->Condition_pr == _Always_)
 				{
@@ -391,7 +391,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 			IP = &actx->markers[dist.begin()->second];
 
 			// clone closest marker
-			phase[imark]= IP->phase;
+			phase[imark]= ((PetscScalar) IP->phase);
 			T[imark]= IP->T;
 			Pr[imark]= IP->p;
 			}
@@ -623,7 +623,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 						}
 					}
 					sort(dist.begin(), dist.end());
-					phase[jj] = actx->markers[dist.begin()->second].phase;
+					phase[jj] = (PetscScalar) actx->markers[dist.begin()->second].phase;
 
 					ierr = setDataPhaseDiagram(Pd, Pr[jj], T[jj], mat[PetscInt(phase[jj])].pdn); CHKERRQ(ierr);
 
@@ -643,7 +643,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			}
 
 			// override temperature of air phase
-			if(AirPhase != -1 && phase[jj] == AirPhase) T[jj] = Ttop;
+			if(AirPhase != -1 && phase[jj] == ((PetscScalar) AirPhase)) T[jj] = Ttop;
 
 			// advect marker
 
@@ -904,14 +904,14 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
 
 			// check whether rock marker is above the free surface
-            if(phaseptr[jj] != AirPhase && zp > topo)
+            if(phaseptr[jj] != ((PetscScalar) AirPhase) && zp > topo)
 			{
 				// erosion (physical or numerical) -> rock turns into air
-				phaseptr[jj]= AirPhase;
+				phaseptr[jj]= ((PetscScalar) AirPhase);
 			}
 
 			// check whether air marker is below the free surface
-			if(phaseptr[jj] == AirPhase && zp < topo)
+			if(phaseptr[jj] == ((PetscScalar) AirPhase) && zp < topo)
 			{
 				if(surf->SedimentModel > 0)
 				{
@@ -939,7 +939,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 						IP     = &actx->markers[markid];
 
 						// sort out air markers
-						if(IP->phase == AirPhase) continue;
+						if(IP->phase == ((PetscScalar) AirPhase)) continue;
 
 						// get marker coordinates
 						IX = IP->X;
@@ -972,7 +972,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 						SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
 						}
 
-						phaseptr[jj] = phaseID;
+						phaseptr[jj] = (PetscScalar) phaseID;
 					}
 				}
 				//=======================================================================
@@ -1078,7 +1078,7 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 
 		}
 		sort(dist.begin(), dist.end());
-		phase[jj]= actx->markers[dist.begin()->second].phase;
+		phase[jj]= (PetscScalar) actx->markers[dist.begin()->second].phase;
 		ierr = VecRestoreArray(actx->Ptr->phase, &phase); CHKERRQ(ierr);
 
 

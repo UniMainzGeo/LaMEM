@@ -1633,7 +1633,7 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	// Prints an overview of the material properties specified for a certain phase (for debugging)
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %i with visId=%i : \n",MatProp->ID, MatProp->visID);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %lld with visId=%lld : \n",(LLD) MatProp->ID, (LLD) MatProp->visID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Density:          rho   = %1.7e,  rho_n = %1.7e,    rho_c = %1.7e,   beta = %1.7e \n",  MatProp->rho,MatProp->rho_c, MatProp->rho_c, MatProp->beta);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Elasticity:       Kb    = %1.7e,  Kp    = %1.7e,    G     = %1.7e \n",                MatProp->Kb, MatProp->Kp, MatProp->G);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Diffusion Cr.:    Bd    = %1.7e,  Ed    = %1.7e,    Vd    = %1.7e \n",                MatProp->Bd, MatProp->Ed, MatProp->Vd);

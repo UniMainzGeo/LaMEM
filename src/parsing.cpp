@@ -570,7 +570,7 @@ PetscErrorCode getIntParam(
 		}
 		else
 		{
-			asprintf(&dbkey, "-%s[%i]", key,fb->ID);
+			asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
 		}
 
 		nval = num;
@@ -636,7 +636,7 @@ PetscErrorCode getScalarParam(
 		}
 		else
 		{
-			asprintf(&dbkey, "-%s[%i]", key,fb->ID);
+			asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
 		}
 	
 		nval = num;
@@ -693,7 +693,7 @@ PetscErrorCode getStringParam(
 		}
 		else
 		{
-			asprintf(&dbkey, "-%s[%i]", key,fb->ID);
+			asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
 		}
 	
 		ierr = PetscOptionsGetCheckString(dbkey, str, &found); CHKERRQ(ierr);
@@ -943,13 +943,13 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 		ierr 	= getIntParam(fb, _OPTIONAL_, "MGLevels",       &integer,        1, 100);          CHKERRQ(ierr);
 		if (integer){
 			
- 			sprintf(str, "-gmg_pc_mg_levels %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+ 			sprintf(str, "-gmg_pc_mg_levels %lld", (LLD) integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 		}
 		
 		integer 	= 10;
 		ierr 	= getIntParam(fb, _OPTIONAL_, "MGSweeps",       &integer,        1, 100);          CHKERRQ(ierr);
 		if (integer){
- 			sprintf(str, "-gmg_mg_levels_ksp_max_it %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+ 			sprintf(str, "-gmg_mg_levels_ksp_max_it %lld", (LLD) integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 		}
 
 		/* Specify smoother type options */
@@ -990,7 +990,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 			// define number of redundant solves
 			integer 	= 	4;
 			ierr 		= 	getIntParam(fb, _OPTIONAL_, "MGRedundantNum",       &integer,        1, 100);          CHKERRQ(ierr);
-			sprintf(str, "-crs_pc_redundant_number %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+			sprintf(str, "-crs_pc_redundant_number %lld", (LLD) integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 
 			ierr = getStringParam(fb, _OPTIONAL_, "MGRedundantSolver",          SolverType,         "superlu_dist");          CHKERRQ(ierr);
 			sprintf(str, "-crs_redundant_pc_factor_mat_solver_type %s", SolverType);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);

@@ -1351,7 +1351,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover western edge of the LaMEM box!");
 	}
 
-	if(X1+(nxTopo-1)*DX < ex){
+	if(X1+(PetscScalar (nxTopo-1))*DX < ex){
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover eastern edge of the LaMEM box!");
 	}
 
@@ -1359,7 +1359,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover southern edge of the LaMEM box!");
 	}
 
-	if(Y1+(nyTopo-1)*DY < ey){
+	if(Y1+(PetscScalar (nyTopo-1))*DY < ey){
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover northern edge of the LaMEM box!");
 	}
 
@@ -1380,8 +1380,8 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		if (Iy == nyTopo - 1) Iy = nyTopo - 2;
 
 		// get relative coordinates of the LaMEM node in relation to SW node of inout grid element
-		xpL = (PetscScalar)((xp-(X1+(Ix*DX)))/DX);
-		ypL = (PetscScalar)((yp-(Y1+(Iy*DY)))/DY);
+		xpL = (PetscScalar)((xp-(X1+(((PetscScalar) Ix)*DX)))/DX);
+		ypL = (PetscScalar)((yp-(Y1+(((PetscScalar) Iy)*DY)))/DY);
 
 		// interpolate topography from input grid onto LaMEM nodes
 		topo[level][j][i] = (

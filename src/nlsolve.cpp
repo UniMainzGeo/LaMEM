@@ -210,7 +210,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 		}
 		
 		ierr = PetscOptionsGetInt(NULL, NULL,"-gmg_mg_levels_ksp_max_it", &integer, &found); CHKERRQ(ierr);
-		if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of smoothening steps   : %i \n", integer); }
+		if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of smoothening steps   : %lld \n", (LLD) integer); }
 		/* ----- */
 
 		/* Coarse grid parameters */
@@ -252,7 +252,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 		{
 			//redundant solver @ coarse level
 			ierr = PetscOptionsGetInt(NULL, NULL,"-crs_pc_redundant_number", &integer, &found); CHKERRQ(ierr);
-			if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of redundant solvers   : %i \n", integer); }
+			if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of redundant solvers   : %lld \n", (LLD) integer); }
 			ierr = PetscOptionsGetString(NULL, NULL,"-crs_redundant_pc_factor_mat_solver_package", pname, _str_len_, &found); CHKERRQ(ierr);
 			if (found){	
 				PetscPrintf(PETSC_COMM_WORLD, "   Redundant solver package      : %s \n", pname);

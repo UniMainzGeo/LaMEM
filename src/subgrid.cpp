@@ -226,9 +226,9 @@ PetscErrorCode ADVMarkClone(
 	GET_CELL_IJK(isubcell, I, J, K, npx, npy)
 
 	// get coordinates of subcell center
-	COORD_SUBCELL(xc[0], I, s[0], h[0]);
-	COORD_SUBCELL(xc[1], J, s[1], h[1]);
-	COORD_SUBCELL(xc[2], K, s[2], h[2]);
+	COORD_SUBCELL(xc[0], (PetscScalar) I, s[0], h[0]);
+	COORD_SUBCELL(xc[1], (PetscScalar) J, s[1], h[1]);
+	COORD_SUBCELL(xc[2], (PetscScalar) K, s[2], h[2]);
 
 	// clear distance storage
 	dist.clear();
