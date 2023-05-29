@@ -4,7 +4,26 @@ if use_dynamic_lib
     using LaMEM.LaMEM_jll.PETSc_jll
 end
 
-export run_lamem_local_test, perform_lamem_test, clean_test_directory
+export run_lamem_local_test, perform_lamem_test, clean_test_directory, mpiexec
+
+
+if use_dynamic_lib
+    mpiexec = if PETSc_jll.MPICH_jll.is_available()
+        PETSc_jll.MPICH_jll.mpiexec()
+    elseif PETSc_jll.MicrosoftMPI_jll.is_available()
+        PETSc_jll.MicrosoftMPI_jll.mpiexec()
+    elseif PETSc_jll.OpenMPI_jll.is_available()
+        PETSc_jll.OpenMPI_jll.mpiexec()
+    else
+        warning("")
+        nothing
+    end
+
+else
+    mpiexec = "mpiexec"
+end
+
+
 
 """
     run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
@@ -33,7 +52,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             
             # add dynamic libraries to the path (if specified)
             perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
-            perform_run = addenv(perform_run,"PATH"=>mpipath)
+            #perform_run = addenv(perform_run,"PATH"=>mpipath)
 
             # Run LaMEM on a single core, which does not require a working MPI
             try 
