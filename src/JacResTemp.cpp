@@ -62,7 +62,7 @@ PetscErrorCode JacResGetTempParam(
 	Controls    ctrl;
 	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
 
-	PetscErrorCode ierr;
+	//PetscErrorCode ierr;
 
 	PetscFunctionBeginUser;
 
@@ -172,7 +172,6 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	FDSTAG *fs;
 	const PetscInt *lx, *ly, *lz;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
@@ -221,7 +220,6 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 {
 	// destroy temperature parameters
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	PetscCall(VecDestroy(&jr->lT));
@@ -251,7 +249,6 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	PetscScalar ***lT, ***bcT, T;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
@@ -296,7 +293,6 @@ PetscErrorCode JacResUpdateTemp(JacRes *jr)
 	PetscScalar ***lT, ***dT;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;

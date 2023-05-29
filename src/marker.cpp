@@ -1412,7 +1412,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				{
 					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %lld polygons", (LLD) Vol.num);
 				}
-				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %d: Pos: %d, Sx: %.6f, Sy: %.6f \n",i+1,CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
+				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %lld: Pos: %lld, Sx: %.6f, Sy: %.6f \n",(LLD) i+1,(LLD) CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
 				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;
     		}
 
@@ -1741,7 +1741,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	{
 		if(j==0)
 		{
-			fscanf(fp, "%lld,",(LLD) &pd->numProps[i_pd]);
+			fscanf(fp, "%i,", &pd->numProps[i_pd]);
 		}
 		else
 		{
@@ -1754,13 +1754,13 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	pd->minT[i_pd] 			=	pd->minT[i_pd]/scal->temperature;							// non-dimensionalize
 	fscanf(fp, "%lf,",&pd->dT[i_pd]);														// Temperature increment
 	pd->dT[i_pd] 			=	pd->dT[i_pd]/scal->temperature;								// non-dimensionalize
-	fscanf(fp, "%lld,",(LLD) &pd->nT[i_pd]);														// # of temperature points in diagram 
+	fscanf(fp, "%i,",(PetscInt) &pd->nT[i_pd]);														// # of temperature points in diagram 
 	pd->maxT[i_pd] 	 		=	pd->minT[i_pd] + (PetscScalar)(pd->nT[i_pd])*pd->dT[i_pd];	// maximum T of diagram
 	fscanf(fp, "%lf,",&pd->minP[i_pd]);														// minimum P of diagram [in bar]
 	pd->minP[i_pd] 			=	(pd->minP[i_pd]*1e5)/scal->stress_si;						// non-dimensionalize
 	fscanf(fp, "%lf,",&pd->dP[i_pd]);														// Pressure increment
 	pd->dP[i_pd] 			=	(pd->dP[i_pd]*1e5)/scal->stress_si;							// non-dimensionalize
-	fscanf(fp, "%lld,",(LLD) &pd->nP[i_pd]);														// # of pressure points in diagram 
+	fscanf(fp, "%i,",&pd->nP[i_pd]);														// # of pressure points in diagram 
 	pd->maxP[i_pd] 	 		=	pd->minP[i_pd] + (PetscScalar)(pd->nP[i_pd])*pd->dP[i_pd];	// maximum P of diagram
 	
 	n = pd->nT[i_pd]*pd->nP[i_pd]; // number of points
