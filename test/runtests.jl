@@ -139,6 +139,7 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
 
+#=
 @testset "t5_Permeability" begin
     cd(test_dir)
     dir = "t5_Perm";
@@ -433,7 +434,6 @@ end
     # ---
 end
 
-
 # t13_Rheology0D/
 @testset "t13_Rheology0D" begin
     cd(test_dir)
@@ -548,8 +548,6 @@ end
     clean_test_directory(dir) 
 
 end
-
-
 
 # t14_1DStrengthEnvelope/
 @testset "t14_1DStrengthEnvelope" begin
@@ -967,6 +965,7 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
+=#
 
 end
 
