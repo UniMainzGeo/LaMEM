@@ -1754,7 +1754,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	pd->minT[i_pd] 			=	pd->minT[i_pd]/scal->temperature;							// non-dimensionalize
 	fscanf(fp, "%lf,",&pd->dT[i_pd]);														// Temperature increment
 	pd->dT[i_pd] 			=	pd->dT[i_pd]/scal->temperature;								// non-dimensionalize
-	fscanf(fp, "%i,",(PetscInt) &pd->nT[i_pd]);														// # of temperature points in diagram 
+	fscanf(fp, "%i,", &pd->nT[i_pd]);														// # of temperature points in diagram 
 	pd->maxT[i_pd] 	 		=	pd->minT[i_pd] + (PetscScalar)(pd->nT[i_pd])*pd->dT[i_pd];	// maximum T of diagram
 	fscanf(fp, "%lf,",&pd->minP[i_pd]);														// minimum P of diagram [in bar]
 	pd->minP[i_pd] 			=	(pd->minP[i_pd]*1e5)/scal->stress_si;						// non-dimensionalize
