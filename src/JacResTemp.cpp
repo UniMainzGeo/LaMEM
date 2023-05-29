@@ -62,8 +62,6 @@ PetscErrorCode JacResGetTempParam(
 	Controls    ctrl;
 	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
 
-	PetscErrorCode ierr;
-
 	PetscFunctionBeginUser;
 
 	// initialize
@@ -172,7 +170,6 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	FDSTAG *fs;
 	const PetscInt *lx, *ly, *lz;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
@@ -221,7 +218,6 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 {
 	// destroy temperature parameters
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	PetscCall(VecDestroy(&jr->lT));
@@ -251,7 +247,6 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	PetscScalar ***lT, ***bcT, T;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
@@ -296,7 +291,6 @@ PetscErrorCode JacResUpdateTemp(JacRes *jr)
 	PetscScalar ***lT, ***dT;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
@@ -333,7 +327,6 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 	PetscInt    I, J, K, fi, fj, fk;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs  =  jr->fs;
@@ -420,7 +413,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar ***vx,***vy,***vz;
 	PetscScalar y_c;
 	
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access residual context variables
@@ -597,7 +589,6 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar ***lk, ***bcT, ***buff, ***lT;
 	PetscScalar y_c;
 	
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access residual context variables

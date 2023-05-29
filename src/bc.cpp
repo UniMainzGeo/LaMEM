@@ -221,7 +221,7 @@ PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %i \n", cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %lld \n", (LLD) cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Box center                              : %g, %g, %g %s \n", velbox->cenX  *scal->length, velbox->cenY  *scal->length, velbox->cenZ  *scal->length, scal->lbl_length);
 	PetscPrintf(PETSC_COMM_WORLD, "      Box width                               : %g, %g, %g %s \n", velbox->widthX*scal->length, velbox->widthY*scal->length, velbox->widthZ*scal->length, scal->lbl_length);
 	if(velbox->vx != DBL_MAX)
@@ -306,7 +306,7 @@ PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt
 {
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %i \n", cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %lld \n", (LLD) cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder base                           : %g, %g, %g %s \n", velcyl->baseX  *scal->length, velcyl->baseY  *scal->length, velcyl->baseZ  *scal->length, scal->lbl_length);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder cap                            : %g, %g, %g %s \n", velcyl->capX*scal->length, velcyl->capY*scal->length, velcyl->capZ*scal->length, scal->lbl_length);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder radius                         : %g %s \n", velcyl->rad*scal->length, scal->lbl_length);
@@ -733,7 +733,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     if(bc->Plume_VelocityType == 0){PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Poiseuille flow (and constant outflow) \n");}
     else{  				 	        PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Gaussian in/out flow \n");}
                             PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, 	 				scal->lbl_temperature);
-                            PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %i \n", bc->Plume_Phase);
+                            PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %lld \n", (LLD) bc->Plume_Phase);
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %g %s \n", bc->Plume_Inflow_Velocity*scal->velocity, scal->lbl_velocity);
                             PetscPrintf(PETSC_COMM_WORLD, "      Area fraction of plume                  : %g \n", bc->Plume_areaFrac);
     if(bc->Plume_Dimension == 1){PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g] %s \n", bc->Plume_Center[0]*scal->length,       scal->lbl_length);}
@@ -745,7 +745,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
 							if(bc->VelNumPeriods>1)	
 							{
-							PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %d   \n", bc->VelNumPeriods);}
+							PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %lld   \n", (LLD) bc->VelNumPeriods);}
 							else {PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : 1   \n");
 							}							
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %s \n", str_inflow);
@@ -1721,8 +1721,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
     veltop = bc->veltop;
 
     // set open boundary flag
-    top_open = bc->top_open;
-    bot_open = bc->bot_open;
+    top_open = (PetscScalar) bc->top_open;
+    bot_open = (PetscScalar) bc->bot_open;
 
     // initialize maximal index in all directions
     mnx = fs->dsx.tnods - 1;

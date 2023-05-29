@@ -897,7 +897,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		if (ctrl->steadyNumStep)
 		{
 			num_steps = ctrl->steadyNumStep;
-			diff_step = diff_step/num_steps;
+			diff_step = diff_step/((PetscScalar) num_steps);
 		}
 		
 		for(i=0;i<num_steps;i++)
