@@ -54,7 +54,7 @@ end
     
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1.expected", 
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, deb=true, mpiexec=mpiexec)
 end
 
 @testset "t3_Subduction" begin
