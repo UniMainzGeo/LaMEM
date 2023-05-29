@@ -4,7 +4,7 @@ if use_dynamic_lib
     using LaMEM.LaMEM_jll.PETSc_jll
 end
 
-export run_lamem_local_test, perform_lamem_test, clean_test_directory, mpiexec
+export run_lamem_local_test, perform_lamem_test, clean_test_directory, run_lamem_save_grid_local, mpiexec
 
 
 if use_dynamic_lib
@@ -35,7 +35,7 @@ This runs a LaMEM simulation with given `ParamFile` on 1 or more cores, while wr
 """
 function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
                 outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
-                mpiexec="mpiexec", dylibs="")
+                mpiexec="mpiexec")
     
     cur_dir = pwd()
     if opt
@@ -46,6 +46,8 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
 
     success = true
     dylibs, mpipath = get_dylibs()
+    args = split(args)
+
     try
         if cores==1
             perform_run = Cmd(`$(exec) -ParamFile $(ParamFile) $args`);
@@ -68,10 +70,11 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
                 success = false
             end
         else
+
             perform_run = Cmd(`$(mpiexec) -n $(cores) $(exec) -ParamFile $(ParamFile) $args`);
 
             # add dynamic libraries to the path (if specified)
-           # perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+            perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
            # perform_run = addenv(perform_run,"PATH"=>mpipath)
   
             # set correct environment
@@ -93,6 +96,55 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
     end
   
     return success
+end
+
+
+function get_line_containing(stringarray::Vector{SubString{String}}, lookfor::String)
+
+	for line in stringarray
+		   if contains(line, lookfor)
+		   foundline=line
+		   return foundline
+		   end
+	end
+end
+
+"""
+    Procpartname = CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; bin_dir="../../bin", opt=true, deb=false,mpiexec="mpiexec", dylibs="")
+
+Create a processor paritioning file with a locally build version of LaMEM (potentially compiled vs. dynamic libraries)
+"""
+function CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; 
+                LaMEM_dir="../../bin", opt=true, deb=false,
+                mpiexec="mpiexec", verbose=false)
+
+	if cores==1	& verbose==true
+		return print("No partitioning file required for 1 core model setup \n")	
+	end
+
+	ParamFile    = abspath(ParamFile)
+	args         = args*"-mode save_grid"
+
+    # run local lamem & save output to file. This takes care of locally build LaMEM vs 
+    run_lamem_local_test(ParamFile, cores, args; 
+            outfile="savegrid.log", bin_dir=LaMEM_dir, opt=opt, deb=deb,
+            mpiexec=mpiexec)
+            
+    logoutput = String(read("savegrid.log"))
+
+	arr          = split(logoutput,"\n")
+	foundline    = get_line_containing(arr,"Processor grid  [nx, ny, nz]         : ")
+	foundline    = join(map(x -> isspace(foundline[x]) ? "" : foundline[x], 1:length(foundline)))
+	sprtlftbrkt  = split(foundline,"[")
+	sprtrghtbrkt = split(sprtlftbrkt[3],"]")
+	separatecoma = split(sprtrghtbrkt[1],",")
+	procnumbers  = parse.(Int, separatecoma)
+	Procpartname = "ProcessorPartitioning_$(cores)cpu_$(procnumbers[1]).$(procnumbers[2]).$(procnumbers[3]).bin" 
+	if isfile(joinpath((splitdir(ParamFile)[1]),Procpartname))
+		return Procpartname
+	else
+	return Nothing
+	end
 end
 
 
@@ -436,5 +488,6 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     
     return success
 end 
+
 
 
