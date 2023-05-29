@@ -916,7 +916,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 				if(surf->SedimentModel > 0)
 				{
 				// sedimentation (physical) -> air turns into a prescribed rock
-					phaseptr[jj]= surf->phase;
+					phaseptr[jj]= (PetscScalar) surf->phase;
 				}
 				else
 				{
@@ -939,7 +939,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 						IP     = &actx->markers[markid];
 
 						// sort out air markers
-						if(IP->phase == ((PetscScalar) AirPhase)) continue;
+						if(IP->phase == AirPhase) continue;
 
 						// get marker coordinates
 						IX = IP->X;
@@ -960,7 +960,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 					// copy phase from closest marker
 						IP = &actx->markers[dist.begin()->second];
 
-						phaseptr[jj] = IP->phase;
+						phaseptr[jj] = (PetscScalar) IP->phase;
 					}
 					else
 					{

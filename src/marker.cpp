@@ -101,7 +101,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	{
 		if(actx->jr->dbm->phases[i].pdAct)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"        %i:  ", i);
+			PetscPrintf(PETSC_COMM_WORLD,"        %lld:  ", (LLD) i);
 
 			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
 		}
@@ -863,7 +863,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 		// random noise
 		layer->rand_amplitude = 0.0;
-		ierr = getScalarParam   (fb, _OPTIONAL_, "rand_ampl",  &layer->rand_amplitude,  1, maxPhaseID); CHKERRQ(ierr);
+		ierr = getScalarParam   (fb, _OPTIONAL_, "rand_ampl",  &layer->rand_amplitude,  1, (PetscScalar) maxPhaseID); CHKERRQ(ierr);
 
 		// Optional temperature options:
 		layer->setTemp = 0;
@@ -1401,7 +1401,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 		PetscScalar SxAll[Vol.num];
 		if (kvol == VolID)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"\nVarying volume %d (phase: %d, type: %d) \n", VolID, Vol.phase, Vol.type);
+			PetscPrintf(PETSC_COMM_WORLD,"\nVarying volume %lld (phase: %lld, type: %lld) \n", (LLD) VolID, (LLD) Vol.phase, (LLD) Vol.type);
 			
 			// shift index of control polys by 1 to be in line with c indexing
 			PetscInt    i;
@@ -1410,7 +1410,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				// also check if control polygon is out of bounds
 				if (CtrlPoly.Pos[i] > Vol.num)
 				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %d polygons", Vol.num);
+					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %lld polygons", (LLD) Vol.num);
 				}
 				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %d: Pos: %d, Sx: %.6f, Sy: %.6f \n",i+1,CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
 				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;
@@ -1567,7 +1567,7 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	// check number of control polygons
 	if (nCP > _max_ctrl_poly_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%d exceeds maximum number of control polygons (%d) \n",nCP,_max_ctrl_poly_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld exceeds maximum number of control polygons (%lld) \n",(LLD) nCP, (LLD) _max_ctrl_poly_);
 	}
 
 	// loop over blocks
@@ -1741,7 +1741,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	{
 		if(j==0)
 		{
-			fscanf(fp, "%i,",&pd->numProps[i_pd]);
+			fscanf(fp, "%lld,",(LLD) &pd->numProps[i_pd]);
 		}
 		else
 		{
@@ -1754,13 +1754,13 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	pd->minT[i_pd] 			=	pd->minT[i_pd]/scal->temperature;							// non-dimensionalize
 	fscanf(fp, "%lf,",&pd->dT[i_pd]);														// Temperature increment
 	pd->dT[i_pd] 			=	pd->dT[i_pd]/scal->temperature;								// non-dimensionalize
-	fscanf(fp, "%i,",&pd->nT[i_pd]);														// # of temperature points in diagram 
+	fscanf(fp, "%lld,",(LLD) &pd->nT[i_pd]);														// # of temperature points in diagram 
 	pd->maxT[i_pd] 	 		=	pd->minT[i_pd] + (PetscScalar)(pd->nT[i_pd])*pd->dT[i_pd];	// maximum T of diagram
 	fscanf(fp, "%lf,",&pd->minP[i_pd]);														// minimum P of diagram [in bar]
 	pd->minP[i_pd] 			=	(pd->minP[i_pd]*1e5)/scal->stress_si;						// non-dimensionalize
 	fscanf(fp, "%lf,",&pd->dP[i_pd]);														// Pressure increment
 	pd->dP[i_pd] 			=	(pd->dP[i_pd]*1e5)/scal->stress_si;							// non-dimensionalize
-	fscanf(fp, "%i,",&pd->nP[i_pd]);														// # of pressure points in diagram 
+	fscanf(fp, "%lld,",(LLD) &pd->nP[i_pd]);														// # of pressure points in diagram 
 	pd->maxP[i_pd] 	 		=	pd->minP[i_pd] + (PetscScalar)(pd->nP[i_pd])*pd->dP[i_pd];	// maximum P of diagram
 	
 	n = pd->nT[i_pd]*pd->nP[i_pd]; // number of points
