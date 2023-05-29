@@ -1,7 +1,7 @@
 # Load package that contains LaMEM I/O routines
 using GeophysicalModelGenerator, SpecialFunctions  
 
-function CreateMarkers_SubductionVEP(dir="./", ParamFile="Subduction_VEP.dat"; NumberCores=8, mpiexec="mpiexec")
+function CreateMarkers_SubductionVEP(dir="./", ParamFile="Subduction_VEP.dat"; NumberCores=8, mpiexec="mpiexec", is64bit=false)
 
     cur_dir = pwd()
     cd(dir)
@@ -119,7 +119,7 @@ function CreateMarkers_SubductionVEP(dir="./", ParamFile="Subduction_VEP.dat"; N
         #> 1 cores; create partitioning file first
         #PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/", verbose=false);
         PartFile = CreatePartitioningFile_local(ParamFile, NumberCores; LaMEM_dir="../../bin", opt=true, mpiexec=mpiexec)
-        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false)     
+        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false, is64bit=is64bit)     
     end
 
     cd(cur_dir)
