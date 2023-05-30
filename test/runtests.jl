@@ -13,9 +13,11 @@ if "use_dynamic_lib" in ARGS
 else
     global use_dynamic_lib=false
 end
-@show use_dynamic_lib
+is64bit = false
+test_superlu = false;       # do we have superlu_dist installed
 
-is64bit = true
+
+@show use_dynamic_lib is64bit test_superlu
 
 test_dir = pwd()
 
@@ -182,16 +184,19 @@ end
     split_sign = ("=","=","=","","","","","")
 
     # Perform tests
-    # t6_AdjointGradientScalingLaws_p2
-    ParamFile = "t6_RTI_ScalingLaw.dat";
-    @test perform_lamem_test(dir,ParamFile,"t6_AdjointGradientScaling_p2.expected",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, split_sign=split_sign, mpiexec=mpiexec)
-
+    if test_superlu
+        # t6_AdjointGradientScalingLaws_p2
+        ParamFile = "t6_RTI_ScalingLaw.dat";
+        @test perform_lamem_test(dir,ParamFile,"t6_AdjointGradientScaling_p2.expected",
+                                keywords=keywords, accuracy=acc, cores=2, opt=true, split_sign=split_sign, mpiexec=mpiexec)
+    end
+        
     # t6_AdjointGradientScalingLaws_SoftFilm
     ParamFile = "t6_RTI_ScalingLaw.dat";
     @test perform_lamem_test(dir,ParamFile,"t6_AdjointGradientScaling_SoftFilm_p1.expected",
                             args = "-surf_level 0.1 -eta[0] 10 -eta[1] 1 -coord_x -0.4,0.4 -FreeSurf_Wavelength 0.8", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, split_sign=split_sign,  mpiexec=mpiexec)
+
 end
 
 
@@ -355,30 +360,33 @@ end
     clean_directory(dir)
     # --------------
 
-    # test_b ------- 
-    #
-    @test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
-                            keywords=keywords, accuracy=acc, cores=2, deb=true, clean_dir=false)
+    if test_superlu
+        # test_b ------- 
+        #
+        @test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
+                                keywords=keywords, accuracy=acc, cores=2, deb=true, clean_dir=false)
 
 
-    # extract 1D profiles
-    phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data, dir)
-     
-    # 1D analytical solution
-    Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
+        # extract 1D profiles
+        phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data, dir)
+        
+        # 1D analytical solution
+        Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
 
-    # Compute difference with analytical solution
-    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-5
-    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
-    @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
+        # Compute difference with analytical solution
+        @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-5
+        @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
+        @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
 
-    # Create plot with stress & analytical solution
-    Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
-    clean_test_directory(dir)
-    # --------------
+        # Create plot with stress & analytical solution
+        Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
+        clean_test_directory(dir)
+        # --------------
+    end
 end
 
 @testset "t11_Subgrid" begin
+    if test_superlu
     cd(test_dir)
     dir = "t11_Subgrid";
     
@@ -390,6 +398,7 @@ end
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"t11_Subgrid_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+    end
 end
 
 
@@ -688,10 +697,12 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
     # test_3D_Pres():
-    # t17_InflowOutflow3D_Pres_opt
-    acc      = ((rtol=1e-7,atol=1e-7), (rtol=1e-5, atol=1e-7), (rtol=1e-4,atol=1e-8), (rtol=1e-7,atol=1e-9));
-    @test perform_lamem_test(dir,"PlumeLithos_Interaction_3D_Perm.dat","InflowOutflow-3D_Perm_p4.expected",
-                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)                         
+    if test_superlu
+        # t17_InflowOutflow3D_Pres_opt
+        acc      = ((rtol=1e-7,atol=1e-7), (rtol=1e-5, atol=1e-7), (rtol=1e-4,atol=1e-8), (rtol=1e-7,atol=1e-9));
+        @test perform_lamem_test(dir,"PlumeLithos_Interaction_3D_Perm.dat","InflowOutflow-3D_Perm_p4.expected",
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)         
+    end                
 end
 
 @testset "t18_SimpleShear" begin
@@ -899,6 +910,7 @@ end
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=5e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=2e-5,atol=1e-11));
 
+    if test_superlu
     # test_recharge1
     @test perform_lamem_test(dir,"FallingBlockHeatReacharge1.dat","t28_HeatRecharge1.expected",
                             args="-nel_x 16 -nel_y 16 -nel_z 16",
@@ -909,6 +921,7 @@ end
     @test perform_lamem_test(dir,"FallingBlockHeatReacharge2.dat","t28_HeatRecharge2.expected",
                             args="-nel_x 16 -nel_y 16 -nel_z 16",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+    end
 end
 
 @testset "t29_PermeableSides_VelBoxes" begin
@@ -942,14 +955,17 @@ end
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=2e-3,atol=2e-7), (rtol=5e-3,atol=5e-7), (rtol=5e-3,atol=5e-7));
-
+    if test_superlu
    # Test if geomIO polygons are read in correctly:
     @test perform_lamem_test(dir,"geomIO_Bulky.dat","t31_geomIO_Bulky.expected",
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+    end
 
+    if test_superlu
     # Test if geomIO polygons are read in correctly:
     @test perform_lamem_test(dir,"geomIO_Hollow.dat","t31_geomIO_Hollow.expected",
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+    end
 end
 
 @testset "t32_BC_velocity" begin
@@ -962,7 +978,7 @@ end
    # Test if boundaries are pushed from front and back inside the model:
     @test perform_lamem_test(dir,"BC_velocity_2D_FB.dat","BC_velocity_2D_FB_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
-
+    
     # Test if boundaries are pushed from left to right and then from right to left:
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
