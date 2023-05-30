@@ -14,7 +14,6 @@ else
     global use_dynamic_lib=false
 end
 @show use_dynamic_lib
-@show versioninfo()
 
 is64bit = true
 
