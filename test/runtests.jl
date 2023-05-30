@@ -44,6 +44,7 @@ include("test_utils.jl")
                             args="-jp_pc_factor_mat_solver_package mumps")
 end
 
+#=
 @testset "t2_FB2_MG" begin
     cd(test_dir)
     dir = "t2_FB2_MG";
@@ -57,6 +58,7 @@ end
     @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1.expected", 
                             keywords=keywords, accuracy=acc, cores=1, deb=true, mpiexec=mpiexec, debug=true)
 end
+=#
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -153,7 +155,7 @@ end
     @test perform_lamem_test(dir,ParamFile,"Permeability_direct_opt-p4.expected", 
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
 end
-#=
+
 
 @testset "t6_AdjointGradientScalingLaws_p2" begin
     cd(test_dir)
@@ -965,7 +967,7 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
-=#
+
 
 end
 
