@@ -140,7 +140,6 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
 
-#=
 @testset "t5_Permeability" begin
     cd(test_dir)
     dir = "t5_Perm";
@@ -154,6 +153,7 @@ end
     @test perform_lamem_test(dir,ParamFile,"Permeability_direct_opt-p4.expected", 
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
 end
+#=
 
 @testset "t6_AdjointGradientScalingLaws_p2" begin
     cd(test_dir)
