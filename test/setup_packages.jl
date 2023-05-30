@@ -62,8 +62,10 @@ cd("../src")
 
 # Take the environment (dynamic libraries etc.) from the PETSc
 cmd = addenv(PETSc_jll.ex42(), 
-                "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int64",
-                "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int64_deb",
+#                "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int64",
+#                "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int64_deb",
+                "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int32",
+                "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int32",
                 )
 compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
 run(compile_lamem)
