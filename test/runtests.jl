@@ -14,7 +14,9 @@ else
     global use_dynamic_lib=false
 end
 @show use_dynamic_lib
+@show versioninfo()
 
+is64bit = true
 
 test_dir = pwd()
 
@@ -71,7 +73,7 @@ end
     
     # test on 1 core
     # t3_Sub1_a_Direct_opt
-    CreateMarkers_Subduction(dir, ParamFile, NumberCores=1, mpiexec=mpiexec, is64bit=true)
+    CreateMarkers_Subduction(dir, ParamFile, NumberCores=1, mpiexec=mpiexec, is64bit=is64bit)
 
     @test perform_lamem_test(dir,ParamFile,"Sub1_a_Direct_opt-p1.expected", 
                             args="-nstep_max 2",
@@ -83,7 +85,7 @@ end
     acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
     
     ParamFile = "Subduction_GMG_Particles.dat";
-    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=true)
+    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt-p4.expected", 
                                 args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
@@ -93,7 +95,7 @@ end
     acc      = ((rtol=1e-6,atol=2e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=3e-4));
     
     ParamFile = "Subduction_GMG_Particles4.dat";
-    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=true)
+    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb-p4.expected", 
                                 args="-jp_pc_factor_mat_solver_type mumps  -nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
@@ -106,13 +108,12 @@ end
     acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
     
     ParamFile = "Subduction_VEP.dat";
-    CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=8, mpiexec=mpiexec, is64bit=true)
+    CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=8, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
                                 args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=8, opt=true, mpiexec=mpiexec)       
 end
 
-#=
 
 @testset "t4_Localisation" begin
     cd(test_dir)
@@ -140,6 +141,7 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
 
+#=
 @testset "t5_Permeability" begin
     cd(test_dir)
     dir = "t5_Perm";
@@ -375,7 +377,6 @@ end
     # --------------
 end
 
-
 @testset "t11_Subgrid" begin
     cd(test_dir)
     dir = "t11_Subgrid";
@@ -403,7 +404,7 @@ end
 
     # ---
     # Perform tests
-    CreateMarkers_Temperature(dir, "t12_Temperature_diffusion.dat", "./markers_pT1"; NumberCores=1)
+    CreateMarkers_Temperature(dir, "t12_Temperature_diffusion.dat", "./markers_pT1"; NumberCores=1, is64bit=is64bit)
 
     @test perform_lamem_test(dir,ParamFile,"TpD_a.expected",
                             args="-mark_load_file ./markers_pT1/mdb",
@@ -808,13 +809,13 @@ end
     ParamFile = "Erosion_Sedimentation_2D.dat"
 
     # test_a
-    t24_CreateMarkers(dir, ParamFile, NumberCores=8)
+    t24_CreateMarkers(dir, ParamFile, NumberCores=8, is64bit=is64bit)
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_opt-p8.expected",
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=8, opt=true, mpiexec=mpiexec)
 
     # test_b
-    t24_CreateMarkers(dir, ParamFile, NumberCores=8)
+    t24_CreateMarkers(dir, ParamFile, NumberCores=8, is64bit=is64bit)
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_deb-p8.expected",
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=8, deb=true, mpiexec=mpiexec)
