@@ -47,17 +47,19 @@ include("test_utils.jl")
 end
 
 @testset "t2_FB2_MG" begin
-    cd(test_dir)
-    dir = "t2_FB2_MG";
-    
-    ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
-    
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,), (rtol=1e-5,), (rtol=1e-4,));
-    
-    # Perform tests
-    @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1.expected", 
-                            keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec)
+    if test_superlu
+        cd(test_dir)
+        dir = "t2_FB2_MG";
+        
+        ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
+        
+        keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+        acc      = ((rtol=1e-7,), (rtol=1e-5,), (rtol=1e-4,));
+        
+        # Perform tests
+        @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1.expected", 
+                                keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec)
+    end
 end
 
 @testset "t3_Subduction" begin
@@ -805,7 +807,7 @@ end
 
     # test_a
     @test perform_lamem_test(dir,"Permeable.dat","Permeable_p1.expected",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 end
 
 @testset "t24_Erosion_Sedimentation" begin

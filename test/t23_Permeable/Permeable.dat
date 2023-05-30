@@ -89,7 +89,7 @@
 # Solver options
 #===============================================================================
 	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	superlu_dist			# mumps/superlu_dist/pastix	
+	#DirectSolver 	=	superlu_dist			# mumps/superlu_dist/pastix	
 	DirectPenalty 	=	1e3
 
 #===============================================================================
