@@ -46,7 +46,6 @@ include("test_utils.jl")
                             args="-jp_pc_factor_mat_solver_package mumps")
 end
 
-#=
 @testset "t2_FB2_MG" begin
     cd(test_dir)
     dir = "t2_FB2_MG";
@@ -58,9 +57,8 @@ end
     
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1.expected", 
-                            keywords=keywords, accuracy=acc, cores=1, deb=true, mpiexec=mpiexec, debug=true)
+                            keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec)
 end
-=#
 
 @testset "t3_Subduction" begin
     cd(test_dir)
