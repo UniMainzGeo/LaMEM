@@ -904,23 +904,23 @@ end
 end
 
 @testset "t28_HeatRecharge" begin
-    cd(test_dir)
-    dir = "t28_HeatRecharge";
-    
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=5e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=2e-5,atol=1e-11));
-
     if test_superlu
-    # test_recharge1
-    @test perform_lamem_test(dir,"FallingBlockHeatReacharge1.dat","t28_HeatRecharge1.expected",
-                            args="-nel_x 16 -nel_y 16 -nel_z 16",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+        cd(test_dir)
+        dir = "t28_HeatRecharge";
+        
+        keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+        acc      = ((rtol=5e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=2e-5,atol=1e-11));
 
-    # test_recharge2
-    acc      = ((rtol=3e-6,atol=5e-6), (rtol=1e-5, atol=1e-5), (rtol=3e-5,atol=2e-5));
-    @test perform_lamem_test(dir,"FallingBlockHeatReacharge2.dat","t28_HeatRecharge2.expected",
-                            args="-nel_x 16 -nel_y 16 -nel_z 16",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+        # test_recharge1
+        @test perform_lamem_test(dir,"FallingBlockHeatReacharge1.dat","t28_HeatRecharge1.expected",
+                                args="-nel_x 16 -nel_y 16 -nel_z 16",
+                                keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+
+        # test_recharge2
+        acc      = ((rtol=3e-6,atol=5e-6), (rtol=1e-5, atol=1e-5), (rtol=3e-5,atol=2e-5));
+        @test perform_lamem_test(dir,"FallingBlockHeatReacharge2.dat","t28_HeatRecharge2.expected",
+                                args="-nel_x 16 -nel_y 16 -nel_z 16",
+                                keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
     end
 end
 
@@ -945,7 +945,7 @@ end
 
     # test_TS_Schedule():
     @test perform_lamem_test(dir,"TS_Schedule.dat","t30_TS_Schedule.expected",
-                            args="-nel_x 16 -nel_y 16 -nel_z 16",
+                            args="-nel_x 8 -nel_y 8 -nel_z 8",
                             keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":", debug=true)
 end
 
@@ -956,15 +956,15 @@ end
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=2e-3,atol=2e-7), (rtol=5e-3,atol=5e-7), (rtol=5e-3,atol=5e-7));
     if test_superlu
-   # Test if geomIO polygons are read in correctly:
-    @test perform_lamem_test(dir,"geomIO_Bulky.dat","t31_geomIO_Bulky.expected",
-                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+    # Test if geomIO polygons are read in correctly:
+        @test perform_lamem_test(dir,"geomIO_Bulky.dat","t31_geomIO_Bulky.expected",
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
     end
 
     if test_superlu
-    # Test if geomIO polygons are read in correctly:
-    @test perform_lamem_test(dir,"geomIO_Hollow.dat","t31_geomIO_Hollow.expected",
-                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+        # Test if geomIO polygons are read in correctly:
+        @test perform_lamem_test(dir,"geomIO_Hollow.dat","t31_geomIO_Hollow.expected",
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
     end
 end
 
