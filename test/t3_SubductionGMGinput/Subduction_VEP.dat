@@ -221,7 +221,7 @@
 # SNES
 	-snes_monitor
 	-snes_atol 1e-4
-	-snes_rtol 1e-8
+	-snes_rtol 1e-6
 	-snes_stol 1e-16
 	-snes_max_it 50
 	-snes_max_funcs 500000
@@ -242,7 +242,7 @@
 	-js_ksp_max_it 40
 	-js_ksp_converged_reason
 	-js_ksp_monitor
-	-js_ksp_rtol 1e-6
+	-js_ksp_rtol 1e-4
 	-js_ksp_atol 1e-8
 
 # Preconditioner
