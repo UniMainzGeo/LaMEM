@@ -830,7 +830,7 @@ end
     t24_CreateMarkers(dir, ParamFile, NumberCores=2, is64bit=is64bit, mpiexec=mpiexec)
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_deb-p8.expected",
                             args="-nstep_max 2",
-                            keywords=keywords, accuracy=acc, cores=8, deb=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=2, deb=true, mpiexec=mpiexec)
 end
 
 @testset "t25_APS_Healing" begin
