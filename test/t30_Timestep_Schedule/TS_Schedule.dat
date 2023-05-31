@@ -65,9 +65,9 @@
 #===============================================================================
 	SolverType 			=	multigrid 		# solver [direct or multigrid]
 	MGLevels 			=	3				# number of MG levels
-	MGSweeps 			=	20				# number of MG smoothening steps per level [default=10]
-	MGSmoother 			=	jacobi 			# type of smoothener used [chebyshev or jacobi]
-	MGJacobiDamp 		=	0.5				# Dampening parameter [only employed for Jacbi smoothener; default=0.6]
+	#MGSweeps 			=	20				# number of MG smoothening steps per level [default=10]
+	#MGSmoother 			=	jacobi 			# type of smoothener used [chebyshev or jacobi]
+	#MGJacobiDamp 		=	0.5				# Dampening parameter [only employed for Jacbi smoothener; default=0.6]
 
 #===============================================================================
 # Model setup & advection
