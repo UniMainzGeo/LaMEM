@@ -173,10 +173,11 @@
 #	-crs_pc_factor_mat_solver_package superlu_dist
 	
 	# redundant solver @ coarse level
-#	-crs_pc_type redundant
-#	-crs_pc_redundant_number 2
-#	-crs_redundant_pc_factor_mat_solver_package superlu_dist
-
+	-crs_pc_type redundant
+	-crs_pc_redundant_number 1
+	#-crs_redundant_pc_factor_mat_solver_package superlu_dist
+	-crs_redundant_pc_factor_mat_solver_package lu
+	
 
 	# telecope preconditioner [needs more experimenting]:
 #	-crs_pc_type telescope

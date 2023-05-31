@@ -28,7 +28,7 @@
 
 # Number of cells for all segments
 
-	nel_x = 128
+	nel_x = 64
 	nel_y = 2
 	nel_z = 32
 

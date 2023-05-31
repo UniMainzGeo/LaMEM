@@ -14,7 +14,7 @@ else
     global use_dynamic_lib=false
 end
 is64bit = false
-test_superlu = false;       # do we have superlu_dist installed
+test_superlu = false;       # do we have superlu_dist installed?
 
 
 @show use_dynamic_lib is64bit test_superlu
@@ -111,10 +111,10 @@ end
     acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
     
     ParamFile = "Subduction_VEP.dat";
-    CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=8, mpiexec=mpiexec, is64bit=is64bit)
+    CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
                                 args="-nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=8, opt=true, mpiexec=mpiexec)       
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)       
 end
 
 
@@ -807,7 +807,7 @@ end
 
     # test_a
     @test perform_lamem_test(dir,"Permeable.dat","Permeable_p1.expected",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
 
 @testset "t24_Erosion_Sedimentation" begin
