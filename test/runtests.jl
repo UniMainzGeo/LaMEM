@@ -114,7 +114,7 @@ end
     CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=2, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
                                 args="-nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)       
+                                keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec, debug=true)       
 end
 
 
@@ -946,7 +946,7 @@ end
     # test_TS_Schedule():
     @test perform_lamem_test(dir,"TS_Schedule.dat","t30_TS_Schedule.expected",
                             args="-nel_x 16 -nel_y 16 -nel_z 16",
-                            keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":")
+                            keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":", debug=true)
 end
 
 @testset "t31_geomIO" begin

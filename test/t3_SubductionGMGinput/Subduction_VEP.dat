@@ -228,8 +228,8 @@
 	-snes_max_linear_solve_fail 10000
 
 	-snes_Picard_max_it 10
-	-snes_PicardSwitchToNewton_rtol 1e-2
-	-snes_NewtonSwitchToPicard_it   5
+	-snes_PicardSwitchToNewton_rtol 1e-3
+	-snes_NewtonSwitchToPicard_it   10
 	-snes_NewtonSwitchToPicard_rtol 1.1
 
 	-snes_linesearch_monitor
