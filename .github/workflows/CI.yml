@@ -50,15 +50,19 @@ jobs:
         julia --project=. setup_packages.jl
         cd ..
 
-    - name: 'Compile LaMEM Int32'
+    - name: 'Compile LaMEM | Int32'
       run: |
         cd test
         julia --project=. compile_lamem.jl int32
+        cd ../bin
+        sudo -E cp -r opt opt32
+        sudo -E cp -r deb deb32
+        cd ..
         
-    #- uses: julia-actions/julia-buildpkg@latest
-    - name: 'Test LaMEM/Int64'
+    - name: 'Test LaMEM | Int32'
       run: |
+        cd ../bin
+        sudo -E cp -r opt32 opt
+        sudo -E cp -r deb32 deb
+        cd ..
         julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl  
-      
-      #uses: julia-actions/julia-runtest@latest
-  

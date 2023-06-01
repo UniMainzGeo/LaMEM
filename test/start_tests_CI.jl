@@ -3,13 +3,15 @@
 using Pkg,LaMEM_C, Test
 
 
-
-@info "Test whether "
-
-
+if "is64bit" in ARGS
+    args_local = ["use_dynamic_lib","is64bit","test_superlu"]
+else
+    # 32bit PETSc installation
+    args_local = ["use_dynamic_lib"]
+end
 
 # run test suite
-Pkg.test("LaMEM_C", test_args=["use_dynamic_lib"])
+Pkg.test("LaMEM_C", test_args=args_local)
 
 
 exit()

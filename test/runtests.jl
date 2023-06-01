@@ -13,9 +13,18 @@ if "use_dynamic_lib" in ARGS
 else
     global use_dynamic_lib=false
 end
-is64bit = false
-test_superlu = false;       # do we have superlu_dist installed?
 
+if "is64bit" in ARGS
+    is64bit=true
+else
+    is64bit=false
+end
+
+if "test_superlu" in ARGS
+    test_superlu=true
+else
+    test_superlu=false
+end
 
 @show use_dynamic_lib is64bit test_superlu
 

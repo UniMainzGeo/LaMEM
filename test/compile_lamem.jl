@@ -5,7 +5,7 @@ using PETSc_jll
 println("Compiling LaMEM")
 cd("../src")
 
-@show ARGS
+# read command-line argument
 if any(contains.(ARGS,"int64"))
     is64bit = true
 else
@@ -28,10 +28,10 @@ else
                 )
 end
 
-println("Compiling opt version")
+println("---- Compiling LaMEM opt version ----")
 compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
 run(compile_lamem)
 
-println("Compiling deb version")
+println("---- Compiling LaMEM deb version ----")
 compile_lamem = Cmd(`make mode=deb all`, env = cmd.env)
 run(compile_lamem)
