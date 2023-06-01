@@ -36,7 +36,6 @@ include("test_utils.jl")
 
 @testset "LaMEM Testsuite" verbose=true begin
 
-#=
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
@@ -73,7 +72,6 @@ end
                                 keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec)
     end
 end
-=#
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -127,10 +125,9 @@ end
     CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=2, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
                                 args="-nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec, debug=true)       
+                                keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)       
 end
 
-#=
 @testset "t4_Localisation" begin
     cd(test_dir)
     dir = "t4_Loc";
@@ -997,7 +994,6 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
 
-=#
 
 end
 
