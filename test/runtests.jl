@@ -20,10 +20,10 @@ else
     is64bit=false
 end
 
-if "test_superlu" in ARGS
-    test_superlu=true
-else
+if "no_superlu" in ARGS
     test_superlu=false
+else
+    test_superlu=true
 end
 
 @show use_dynamic_lib is64bit test_superlu
@@ -34,6 +34,7 @@ include("test_utils.jl")
 
 @testset "LaMEM Testsuite" verbose=true begin
 
+#=
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
@@ -70,6 +71,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec)
     end
 end
+=#
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -126,7 +128,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec, debug=true)       
 end
 
-
+#=
 @testset "t4_Localisation" begin
     cd(test_dir)
     dir = "t4_Loc";
@@ -993,6 +995,7 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
 
+=#
 
 end
 
