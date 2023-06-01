@@ -55,6 +55,11 @@ jobs:
         cd test
         julia --project=. compile_lamem.jl int32
         pwd
+        # cleanup
+        rm -rf ../lib/opt/*
+        rm -rf ../lib/deb/*
+        rm -rf ../dep/opt/*
+        rm -rf ../dep/deb/*
         cd ../bin
         sudo -E mv -f opt opt32
         sudo -E mv -f deb deb32
