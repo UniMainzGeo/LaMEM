@@ -44,11 +44,16 @@ jobs:
     - name: 'Checkout LaMEM'
       uses: actions/checkout@v3
 
-    - name: 'Install/compile PETSc & LaMEM'
+    - name: 'Install PETSc & LaMEM'
       run: |
         cd test
         julia --project=. setup_packages.jl
         cd ..
+
+    - name: 'Compile LaMEM Int32'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int32
         
     #- uses: julia-actions/julia-buildpkg@latest
     - name: 'Test LaMEM/Int64'

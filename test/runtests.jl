@@ -946,7 +946,7 @@ end
     # test_TS_Schedule():
     @test perform_lamem_test(dir,"TS_Schedule.dat","t30_TS_Schedule.expected",
                             args="-nel_x 8 -nel_y 8 -nel_z 8",
-                            keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":", debug=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":", mpiexec=mpiexec)
 end
 
 @testset "t31_geomIO" begin
