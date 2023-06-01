@@ -52,7 +52,7 @@ jobs:
 
     - name: 'Compile LaMEM | Int32'
       run: |
-      cd test
+        cd test
         julia --project=. compile_lamem.jl int32
         pwd
         cd ../bin
