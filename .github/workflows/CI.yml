@@ -71,7 +71,7 @@ jobs:
 
     - name: 'Test LaMEM | Int32'
       run: |
-        cd ../bin
+        cd bin
         sudo -E cp -r opt32 opt
         sudo -E cp -r deb32 deb
         cd ..
