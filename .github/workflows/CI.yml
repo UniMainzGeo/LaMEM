@@ -56,8 +56,8 @@ jobs:
         julia --project=. compile_lamem.jl int32
         pwd
         cd ../bin
-        sudo -E mv -r opt opt32
-        sudo -E mv -r deb deb32
+        sudo -E mv -f opt opt32
+        sudo -E mv -f deb deb32
         cd ..
 
     - name: 'Compile LaMEM | Int64'
@@ -65,8 +65,8 @@ jobs:
         cd test
         julia --project=. compile_lamem.jl int64
         cd ../bin
-        sudo -E mv -r opt opt64
-        sudo -E mv -r deb deb64
+        sudo -E mv -f opt opt64
+        sudo -E mv -f deb deb64
         cd ..
 
     - name: 'Test LaMEM | Int32'
