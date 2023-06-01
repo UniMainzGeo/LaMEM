@@ -69,7 +69,7 @@ end
         
         # Perform tests
         @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1.expected", 
-                                keywords=keywords, accuracy=acc, cores=4, deb=true, mpiexec=mpiexec)
+                                keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=true)
     end
 end
 
