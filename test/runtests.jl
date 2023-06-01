@@ -26,7 +26,9 @@ else
     test_superlu=true
 end
 
-@show use_dynamic_lib is64bit test_superlu
+test_mumps=true
+
+@show use_dynamic_lib is64bit test_superlu test_mumps
 
 test_dir = pwd()
 
