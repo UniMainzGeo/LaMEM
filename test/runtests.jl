@@ -374,7 +374,7 @@ end
         # test_b ------- 
         #
         @test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
-                                keywords=keywords, accuracy=acc, cores=2, deb=true, clean_dir=false)
+                                keywords=keywords, accuracy=acc, cores=2, deb=true, clean_dir=false, debug=true)
 
 
         # extract 1D profiles
