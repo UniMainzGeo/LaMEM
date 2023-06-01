@@ -58,7 +58,16 @@ jobs:
         sudo -E cp -r opt opt32
         sudo -E cp -r deb deb32
         cd ..
-        
+
+    - name: 'Compile LaMEM | Int64'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int64
+        cd ../bin
+        sudo -E cp -r opt opt64
+        sudo -E cp -r deb deb64
+        cd ..
+
     - name: 'Test LaMEM | Int32'
       run: |
         cd ../bin
