@@ -9,8 +9,8 @@ on:
     branches: [ "master" ]
 
 jobs:
-  run_tests:
-    name: 'Linux'
+  linux:
+    name: 'Mac'
     strategy:
       matrix:
         ci:
@@ -21,9 +21,11 @@ jobs:
           arch: 64
           packages: 'g++-12-multilib gcc-12-multilib'
           cmake: 3.22.*
-        os: 
-        #- ubuntu-22.04
-        - macOS-latest
+          os: macOS-latest
+         
+        
+    runs-on: ${{ matrix.ci.os }}
+    steps:
 
     - name: 'Install compilers'
       run: |
