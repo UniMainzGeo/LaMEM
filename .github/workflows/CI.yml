@@ -9,8 +9,8 @@ on:
     branches: [ "master" ]
 
 jobs:
-  linux:
-    name: 'Mac'
+  runs_on:
+    name: 'Linux'
     strategy:
       matrix:
         ci:
@@ -21,7 +21,7 @@ jobs:
           arch: 64
           packages: 'g++-12-multilib gcc-12-multilib'
           cmake: 3.22.*
-          os: macOS-latest
+          os: ubuntu-22.04
          
         
     runs-on: ${{ matrix.ci.os }}
