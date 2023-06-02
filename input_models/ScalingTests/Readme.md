@@ -27,3 +27,18 @@ mpiexec -n 64 ./LaMEM -ParamFile FallingSpheres_Multigrid.dat -gmg_pc_mg_levels 
 | 256x256x256   |  512   |  4    |      6      |   75   |      110.0     |     99.5     |                 | slurm-3628873.out
 | 512x512x512   |  512   |  4    |      7      |   ??   |      ??        |     ??       |                 | slurm-3628971.out
 
+
+
+### MOGON2 - StokesFallingSpheres
+
+These tests are performed on the skylake partition of MOGON2 (Mainz)
+
+| resolution    | cores  | nodes | # MG levels | # iter | total time [s] | MG Apply [s] | time coarse [s] | logfile
+|---------------|--------|-------| ------------|------- |----------------|--------------| --------------- | ------
+| 128x128x128   |  64    |  2    |      3      |   -    |      -         |     --       |       OuM       | slurm-13547787.out
+| 128x128x128   |  64    |  2    |      4      |   73   |      78.9      |     70.5     |                 | slurm-13547775.out
+| 128x128x128   |  64    |  2    |      5      |   71   |      75.5      |     67.1     |                 | slurm-13547723.out
+| 256x256x256   |  512   |  16   |      6      |   75   |      81.8      |     72.4     |                 | slurm-13548462.out
+| 256x256x256   |  512   |  16   |      5      |   78   |      87.3      |     77.6     |                 | slurm-13548495.out
+| 256x256x512   |  1024  |  16   |      7      |   --   |      ----      |     ----     |                 | slurm-13548914.out
+| 512x512x512   |  4096  |  16   |      7      |   --   |      ----      |     ----     |                 | slurm-13548764.out
