@@ -205,16 +205,19 @@ PetscInt TSSolIsOutput(TSSol *ts)
 	time_out = ts->time_out + ts->dt_out - ts->tol*ts->dt_max;
 
 	// check output conditions
-	if(!ts->istep
-	|| (ts->nstep_ini &&   ts->istep <= ts->nstep_ini)
-	|| (ts->nstep_out && !(ts->istep %  ts->nstep_out))
-	|| (ts->dt_out    &&   ts->time  >= time_out))
+	if ((!ts->istep
+ 	  || (ts->nstep_ini &&   ts->istep <= ts->nstep_ini)
+	  || (ts->nstep_out && !(ts->istep %  ts->nstep_out))
+	  || (ts->dt_out    &&   ts->time  >= time_out))
+	  && (ts->nstep_out > 0) )							
 	{
 		// update output time stamp
 		ts->time_out = ts->time;
 
 		return 1;
 	}
+
+
 
 	return 0;
 }
