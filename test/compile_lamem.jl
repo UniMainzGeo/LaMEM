@@ -35,3 +35,6 @@ run(compile_lamem)
 println("---- Compiling LaMEM deb version ----")
 compile_lamem = Cmd(`make mode=deb all`, env = cmd.env)
 run(compile_lamem)
+
+
+
