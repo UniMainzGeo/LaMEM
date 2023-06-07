@@ -90,7 +90,6 @@
 	mark_ctrl      = avd               # marker control type
 	nmark_lim      = 16 100            # min/max number per cell
 	
-
 # Geometric primitives:
 	
 	# 1
@@ -170,17 +169,8 @@
 # Grid output options (output is always active)
 
 	out_file_name       = Spheres_multigrid # output file name
-	out_pvd             = 1       	# activate writing .pvd file
-	out_j2_dev_stress   = 1			# second invariant of stress tensor
-	out_strain_rate     = 1			# strain rate tensor
-	out_j2_strain_rate  = 1			# second invariant of strain rate tensor
-	
-
-# AVD phase viewer output options (requires activation)
-
-	out_avd     = 1 # activate AVD phase output
-	out_avd_pvd = 1 # activate writing .pvd file
-	out_avd_ref = 3 # AVD grid refinement factor
+	out_pvd             = 0       	# activate writing .pvd file
+	out_avd     		= 0 		# activate AVD phase output
 
 #===============================================================================
 # Material phase parameters

@@ -23,8 +23,8 @@
 	inc_dt    = 0.5   # time step increment per time step (fraction of unit)
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.5   # CFL criterion for elasticity
-	nstep_max = -1     # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 1     # save output every n steps
+	nstep_max = -1    # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = -1    # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
 
@@ -107,13 +107,8 @@
 #===============================================================================
 
 # Grid output options (output is always active)
-
 	out_file_name       = Diffusion  # output file name
-	out_pvd             = 1             # activate writing .pvd file
-    out_temperature     = 1
-    out_energ_res       = 1
-
-# AVD phase viewer output options (requires activation)
+	out_pvd             = 0             # activate writing .pvd file
 
 	out_avd     = 0 # activate AVD phase output
 
