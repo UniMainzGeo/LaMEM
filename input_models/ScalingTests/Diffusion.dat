@@ -1,0 +1,161 @@
+# This tests thermal diffusion
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = geo
+
+# Always in SI units!!
+	unit_temperature = 500
+	unit_length      = 1000
+	unit_viscosity   = 1e19
+	unit_stress      = 1e8
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 0.0   # simulation end time
+	dt        = 1e-3  # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 1e-2  # maximum time step
+	inc_dt    = 0.5   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = -1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 64
+	nel_y = 64
+	nel_z = 64
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x =  -50.0 50.0
+	coord_y =  -50.0 50.0
+	coord_z = -100.0 0.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity         = 0.0 0.0 -9.81  # gravity vector
+	act_temp_diff   = 1              # temperature diffusion activation flag
+	init_guess      = 0              # initial guess flag
+	eta_min         = 1e17           # viscosity upper bound
+	eta_max         = 1e23           # viscosity lower limit
+	eta_ref         = 1e20           # reference viscosity (initial guess) [Pas]
+
+    # this activates a few initial T steps
+	steady_temp_t   = 0.01           # time for (quasi-)steady-state temperature initial guess
+	nstep_steady    = 20            # number of steps for (quasi-)steady-state temperature initial guess (default = 1)
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+	temp_top	    =   400			 # Temperature @ top
+	temp_bot		=   600     	 # Temperature @ bottom; side BC's are flux-free
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 			=	multigrid 		# solver [direct or multigrid]
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+
+
+# Geometric primtives:
+
+<BoxStart>
+	phase       = 1
+	bounds      = -10.0 10.0 -10.0 10.0 -60.0 -40.0
+	Temperature = constant
+	cstTemp     = 1500
+<BoxEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = Diffusion  # output file name
+	out_pvd             = 1             # activate writing .pvd file
+    out_temperature     = 1
+    out_energ_res       = 1
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 0 # activate AVD phase output
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID        = 0 # phase id
+		rho       = 2700 # density
+		eta       = 1e23
+		k 	      = 3
+		Cp 	      = 1000
+		alpha     = 3e-5
+	<MaterialEnd>
+
+	# Define properties of block
+	<MaterialStart>
+		ID        = 1 # phase id
+		rho       = 3000 # density
+		eta       = 1e23
+		k 	      = 3
+		Cp 	      = 1000
+		alpha     = 3e-5
+		T         = 1000
+	<MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+# Thermal solver options
+    -its_ksp_monitor
+    -its_ksp_view
+	#-nstep_steady    = 20          # the number of steps required
+    
+    -its_pc_type mg # in case we use MG
+
+<PetscOptionsEnd>
+
+#===============================================================================
+
