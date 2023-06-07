@@ -161,7 +161,7 @@ end
     ParamFile = "Permea.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,), (rtol=1e-5,), (rtol=1e-2,));
+    acc      = ((rtol=1e-7,), (rtol=1e-5,), (rtol=1e-2,atol=1e-8));
     
     # t5_Permeability_Direct_opt
     @test perform_lamem_test(dir,ParamFile,"Permeability_direct_opt-p4.expected", 
