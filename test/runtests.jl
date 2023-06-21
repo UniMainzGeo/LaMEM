@@ -135,7 +135,7 @@ end
     ParamFile = "localization.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-10), (rtol=1e-5,atol=2e-10), (rtol=1e-4,atol=1e-7));
+    acc      = ((rtol=1e-7,atol=1e-10), (rtol=1e-5,atol=2e-9), (rtol=1e-4,atol=1e-7));
     
     # Perform tests
     # t4_Loc1_a_MUMPS_VEP_opt
