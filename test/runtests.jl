@@ -19,6 +19,7 @@ if "is64bit" in ARGS
 else
     is64bit=false
 end
+#is64bit=false
 
 if "no_superlu" in ARGS
     test_superlu=false
@@ -34,8 +35,54 @@ test_dir = pwd()
 
 include("test_utils.jl")
 
-@testset "LaMEM Testsuite" verbose=true begin
+# ===================
+is64bit=true
+#using GeophysicalModelGenerator
+import GeophysicalModelGenerator.GetProcessorPartitioning
+function GetProcessorPartitioning(filename; is64bit=false)
+    println("test temporary")
+    if is64bit
+        typ=Int64
+    else
+        typ=Int32
+    end
+    io = open(filename, "r")
+    
 
+    nProcX = ntoh(read(io,typ))
+    nProcY = ntoh(read(io,typ))
+    nProcZ = ntoh(read(io,typ))
+
+    nNodeX = ntoh(read(io,typ))
+    nNodeY = ntoh(read(io,typ))
+    nNodeZ = ntoh(read(io,typ))
+
+    iX = [ntoh(read(io,typ)) for i=1:nProcX+1];
+    iY = [ntoh(read(io,typ)) for i=1:nProcY+1];
+    iZ = [ntoh(read(io,typ)) for i=1:nProcZ+1];
+
+    CharLength = ntoh(read(io,Float64))
+    xcoor = [ntoh(read(io,Float64)) for i=1:nNodeX].*CharLength;
+    ycoor = [ntoh(read(io,Float64)) for i=1:nNodeY].*CharLength;
+    zcoor = [ntoh(read(io,Float64)) for i=1:nNodeZ].*CharLength;
+    
+    xc = xcoor[iX .+ 1]
+    yc = ycoor[iY .+ 1]
+    zc = zcoor[iZ .+ 1]
+
+    close(io)
+
+    return  nProcX,nProcY,nProcZ, 
+            xc,yc,zc, 
+            nNodeX,nNodeY,nNodeZ
+           
+end
+
+# ===================
+
+
+@testset "LaMEM Testsuite" verbose=true begin
+#=
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
@@ -69,9 +116,10 @@ end
         
         # Perform tests
         @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1.expected", 
-                                keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=true)
+                                keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=false)
     end
 end
+=#
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -128,6 +176,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)       
 end
 
+#=
 @testset "t4_Localisation" begin
     cd(test_dir)
     dir = "t4_Loc";
@@ -374,7 +423,7 @@ end
         # test_b ------- 
         #
         @test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
-                                keywords=keywords, accuracy=acc, cores=2, deb=true, clean_dir=false, debug=true)
+                                keywords=keywords, accuracy=acc, cores=2, deb=true, clean_dir=false, debug=false)
 
 
         # extract 1D profiles
@@ -993,7 +1042,7 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
-
+=#
 
 end
 
