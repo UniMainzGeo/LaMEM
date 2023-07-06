@@ -56,6 +56,7 @@ function GetProcessorPartitioning(filename; is64bit=false)
     nNodeX = ntoh(read(io,typ))
     nNodeY = ntoh(read(io,typ))
     nNodeZ = ntoh(read(io,typ))
+    @show nProcX, nProcY, nProcZ, nNodeX, nNodeY, nNodeZ, read(io,typ)
 
     iX = [ntoh(read(io,typ)) for i=1:nProcX+1];
     iY = [ntoh(read(io,typ)) for i=1:nProcY+1];
