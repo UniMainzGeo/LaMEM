@@ -112,7 +112,7 @@ end
 """
     Procpartname = CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; bin_dir="../../bin", opt=true, deb=false,mpiexec="mpiexec", dylibs="")
 
-Create a processor paritioning file with a locally build version of LaMEM (potentially compiled vs. dynamic libraries)
+Create a processor partitioning file with a locally build version of LaMEM (potentially compiled vs. dynamic libraries)
 """
 function CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; 
                 LaMEM_dir="../../bin", opt=true, deb=false,
