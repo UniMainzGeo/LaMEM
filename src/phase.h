@@ -261,7 +261,7 @@ struct DBMat
 };
 
 // read material database
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput);
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput);
 
 // read single softening law
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);

@@ -65,10 +65,9 @@
 #include "surf.h"
 #include "tssolve.h"
 #include "dike.h"
+//-----------------------------------------------------------------//
 
-//-----------------------------------------------------------------------------
-
-PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
+PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FDSTAG *fs, FB *fb)
 {
 	// read phase transitions from file
 
@@ -114,7 +113,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	else if(!strcmp(Type_,"NotInAirBox"))
 	{
 		ph->Type = _NotInAirBox_;
-		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
+		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fs, fb);		CHKERRQ(ierr);
 	}
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_tr_);      CHKERRQ(ierr);
@@ -380,16 +379,17 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 }
 //------------------------------------------------------------------------------------------------------------//
 
-PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB *fb)
+PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDSTAG *fs, FB *fb)
 {
 	Scaling      *scal;
-	PetscInt     kk;
+	Discret1D	*dsy;
 	char         Parameter[_str_len_];
-
+	PetscInt 	 j,kk;
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	scal = dbm -> scal;
+	dsy = &fs->dsy;
 
 	ph->nsegs=0;
 
@@ -420,6 +420,33 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 		ph->ybounds[2*kk]* scal->length, ph->ybounds[2*kk+1]*scal->length,\
 		ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
 	}
+
+
+
+  	//create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
+  	ierr = makeScalArray(&ph->cbuffL, 0, dsy->ncels+2); CHKERRQ(ierr);
+  	ph->celly_xboundL = ph->cbuffL + 1;
+  	ierr = makeScalArray(&ph->cbuffR, 0, dsy->ncels+2); CHKERRQ(ierr);
+  	ph->celly_xboundR = ph->cbuffR + 1;
+
+
+  	for(j = -1; j < dsy->ncels+1; j++)
+  	{
+  	   ph->celly_xboundL[j] = 1.0e12;
+	   ph->celly_xboundR[j] = -1.0e12;
+
+  	   //for each y coord, find which segment its in and then set x bounds
+	   for (kk = 0; kk < ph->nsegs; kk++)
+	   {
+  		if (ph->ybounds[2*kk] <= dsy->ccoor[j] && dsy->ccoor[j] <= ph->ybounds[2*kk+1])
+  		{
+			ph->celly_xboundL[j] = ph->xbounds[2*kk];
+			ph->celly_xboundR[j] = ph->xbounds[2*kk+1];
+			break;
+		}
+	   }
+	}
+
 
        ph->phtr_link_left = -1; 
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1); CHKERRQ(ierr);

@@ -166,7 +166,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
 
 	// create material database
-	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
+	ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
 
 	// create free surface grid
 	ierr = FreeSurfCreate(&lm->surf, fb); 			CHKERRQ(ierr);
@@ -317,7 +317,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 		ierr = FBLoad(&fb, PETSC_TRUE, restartFileName); CHKERRQ(ierr);
 
 		// override material database
-		ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
+		ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
+//		ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
 		// destroy file buffer
 		ierr = FBDestroy(&fb); CHKERRQ(ierr);
