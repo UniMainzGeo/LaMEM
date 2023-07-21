@@ -66,7 +66,7 @@ function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1,
     else
         #> 1 cores; create partitioning file first
         #PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/", verbose=false);
-         PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/", mpiexec=mpiexec);
+         PartFile = CreatePartitioningFile(ParamFile,NumberCores,LaMEM_dir="../../bin/opt/"); #, mpiexec=mpiexec);
 #        PartFile = CreatePartitioningFile_local(ParamFile, NumberCores; LaMEM_dir="../../bin/", mpiexec=mpiexec)
 #        PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/");
         Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=true, is64bit=is64bit)     
