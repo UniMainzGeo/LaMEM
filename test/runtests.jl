@@ -19,7 +19,7 @@ if "is64bit" in ARGS
 else
     is64bit=false
 end
-#is64bit=false
+#is64bit=true
 
 if "no_superlu" in ARGS
     test_superlu=false
@@ -36,8 +36,9 @@ test_dir = pwd()
 include("test_utils.jl")
 
 # ===================
-is64bit=true
+is64bit=false
 #using GeophysicalModelGenerator
+#=
 import GeophysicalModelGenerator.GetProcessorPartitioning
 function GetProcessorPartitioning(filename; is64bit=false)
     println("test temporary")
@@ -78,12 +79,13 @@ function GetProcessorPartitioning(filename; is64bit=false)
             nNodeX,nNodeY,nNodeZ
            
 end
-
+=#
 # ===================
 
 
 @testset "LaMEM Testsuite" verbose=true begin
 #=
+
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
