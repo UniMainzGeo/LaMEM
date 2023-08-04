@@ -35,6 +35,9 @@ public:
   PetscInt PhaseID, PhaseTransID, nPtr;      // associated material phase and phase transition IDs
   PetscInt istep_count, nD, j1, j2;
   PetscInt istep_nave;       //number of timesteps for time averaging
+  PetscInt nstep_locate; // Locate dike every nstep_locate timestep to allow elastic stresses to settle down between relocations
+  PetscInt out_stress;  //option to output mean stresses to std out
+  PetscInt out_dikeloc;  //option to output dike location to std out
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
   PetscScalar Mc;        // amount of magma-accommodated extension in center of box
@@ -46,7 +49,10 @@ public:
   PetscScalar filty;
   PetscScalar drhomagma;
   PetscScalar zmax_magma;
+  PetscScalar magPfac;
+  PetscScalar magPwidth;
   Vec sxx_eff_ave;
+  Vec magPressure;
   Vec sxx_eff_ave_hist;
 };
       
@@ -76,12 +82,10 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscInt J); 
 
 PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD);
-PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt  j1, PetscInt j2);
-//PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
+PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
 PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
 PetscErrorCode Locate_Dike_Zones(AdvCtx *actx);
-PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp);
-//PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp, PetscBool PrintOutput);
+PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp);
 PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp);
 PetscErrorCode DynamicDike_Destroy(JacRes *jr);
 

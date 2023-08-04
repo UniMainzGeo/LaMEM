@@ -1001,9 +1001,9 @@ PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
      PhaseTransLinkLeft = jr->dbm->matPhtr+PhaseTrans->phtr_link_left;
      for(j = -1; j < ny+1; j++)
       {
-      	  Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
-         PhaseTrans->celly_xboundL[j] = PhaseTransLinkLeft->celly_xboundR[j];
-         PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundL[j]+Phase_Width;
+      	Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
+        PhaseTrans->celly_xboundL[j] = PhaseTransLinkLeft->celly_xboundR[j];
+        PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundL[j]+Phase_Width;
       }
   }
 
@@ -1012,9 +1012,9 @@ PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
      PhaseTransLinkRight = jr->dbm->matPhtr+PhaseTrans->phtr_link_right;
      for(j = -1; j < ny+1; j++)
       {
-      	  Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
-         PhaseTrans->celly_xboundR[j] = PhaseTransLinkRight->celly_xboundL[j];
-         PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundR[j]-Phase_Width;
+      	Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
+        PhaseTrans->celly_xboundR[j] = PhaseTransLinkRight->celly_xboundL[j];
+        PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundR[j]-Phase_Width;
       }
   }
 
