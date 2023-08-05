@@ -7,7 +7,7 @@ if "is64bit" in ARGS
     args_local = ["use_dynamic_lib","is64bit"]
 else
     # 32bit PETSc installation
-    args_local = ["use_dynamic_lib","no_superlu"]
+    args_local = ["use_dynamic_lib"]
 end
 
 if "no_superlu" in ARGS
