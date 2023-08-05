@@ -76,7 +76,7 @@ function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1,
         nNodeX,nNodeY,nNodeZ = GetProcessorPartitioning(PartFile, is64bit=false)
         @show  nNodeX,nNodeY,nNodeZ 
 
-        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false, is64bit=false)     
+        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false)     
     end
 
     cd(cur_dir)
