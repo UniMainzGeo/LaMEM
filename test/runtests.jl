@@ -84,7 +84,7 @@ end
 
 
 @testset "LaMEM Testsuite" verbose=true begin
-#=
+
 
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
@@ -122,7 +122,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=false)
     end
 end
-=#
+
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -179,7 +179,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)       
 end
 
-#=
+
 @testset "t4_Localisation" begin
     cd(test_dir)
     dir = "t4_Loc";
@@ -1045,7 +1045,7 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
-=#
+
 
 end
 
