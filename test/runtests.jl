@@ -14,12 +14,13 @@ else
     global use_dynamic_lib=false
 end
 
+test_mumps=true # if we do this later on windows, we have to deactivate this
+
 if "no_superlu" in ARGS
     test_superlu=false
 else
     test_superlu=true
 end
-
 
 @show use_dynamic_lib test_superlu test_mumps
 
