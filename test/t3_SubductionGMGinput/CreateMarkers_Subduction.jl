@@ -65,17 +65,7 @@ function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1,
         Save_LaMEMMarkersParallel(Model3D, directory="./markers", verbose=false)                      # Create LaMEM marker input on 1 core
     else
         #> 1 cores; create partitioning file first
-        #PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/", verbose=false);
-#         PartFile = CreatePartitioningFile(ParamFile,NumberCores,LaMEM_dir="../../bin/opt/", mpiexec=mpiexec);
-        @show mpiexec
         PartFile = CreatePartitioningFile_local(ParamFile, NumberCores; LaMEM_dir="../../bin/", mpiexec=mpiexec)
-        #PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/");
-
-        Nprocx,Nprocy,Nprocz, 
-        xc,yc,zc, 
-        nNodeX,nNodeY,nNodeZ = GetProcessorPartitioning(PartFile, is64bit=false)
-        @show  nNodeX,nNodeY,nNodeZ 
-
         Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false)     
     end
 
