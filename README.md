@@ -1,4 +1,5 @@
 # LaMEM
+[![Build Status](https://github.com/UniMainzGeo/LaMEM/workflows/CI/badge.svg)](https://github.com/UniMainzGeo/LaMEM/actions)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://unimainzgeo.github.io/LaMEM/dev)
 
 LaMEM (Lithosphere and Mantle Evolution Model) is a parallel 3D numerical code that can be used to simulate various thermo-mechanical 
