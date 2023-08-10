@@ -1004,9 +1004,6 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, PetscInt PH
 
 	ph = P->phase;
 	T  = P->T;
-
-	PetscFunctionBeginUser;
-
 	InAbove = 0;
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
@@ -1045,8 +1042,6 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
     PetscScalar pShift;
 
     PetscFunctionBeginUser;
-	
-	PetscFunctionBeginUser;
 
 	if (ctrl.pShift){
 		pShift = ctrl.pShift;
@@ -1129,8 +1124,6 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 	PetscInt 	ph, InAb;
 	PetscScalar T;
 
-	PetscFunctionBeginUser;
-	
 	PetscFunctionBeginUser;
 
 	ph = P->phase;
