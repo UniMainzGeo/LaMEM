@@ -58,13 +58,13 @@ function extract_1D_profiles(data, dir)
     z = data.z.val[1,1,:]
 
     P = data.fields.pressure
-    SHmax_x = data.fields.SHmax[1,:,:,:];
-    SHmax_y = data.fields.SHmax[2,:,:,:];
-    SHmax_z = data.fields.SHmax[3,:,:,:];
+    SHmax_x = data.fields.SHmax[1][:,:,:];
+    SHmax_y = data.fields.SHmax[2][:,:,:];
+    SHmax_z = data.fields.SHmax[3][:,:,:];
 
-    Txx = data.fields.dev_stress[1,:,:,:];
-    Tyy = data.fields.dev_stress[5,:,:,:];
-    Tzz = data.fields.dev_stress[9,:,:,:];
+    Txx = data.fields.dev_stress[1][:,:,:];
+    Tyy = data.fields.dev_stress[5][:,:,:];
+    Tzz = data.fields.dev_stress[9][:,:,:];
 
     Szz_vec = -(-P[1,1,:] + Tzz[1,1,:]);
     Sxx_vec = -(-P[1,1,:] + Txx[1,1,:]);
