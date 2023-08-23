@@ -191,7 +191,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		dike->istep_nave = 2;
 		dike->nstep_locate = 1;
 		dike->out_stress = 0;
-		dike->out_dikeloc = 1;
+		dike->out_dikeloc = 0;
 		dike->magPfac=1.0;
 		dike->magPwidth=1e+30; 
 		//dike->ymindyn=-1e+30;
@@ -222,16 +222,16 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   
 	if (PrintOutput)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld]: PhaseTransID=%i PhaseID=%i Mf=%g, Mb=%g, Mc=%g, y_Mc=%g \n", 
-		(LLD)(dike->ID), dike->PhaseTransID, dike->PhaseID, dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
+		PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld]: PhaseTransID=%lld PhaseID=%lld Mf=%g, Mb=%g, Mc=%g, y_Mc=%g \n", 
+		(LLD)(dike->ID), (LLD)(dike->PhaseTransID), (LLD)(dike->PhaseID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
 	if (dike->dyndike_start)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"       dyndike_start=%i, Tsol=%g, zmax_magma=%g,drhomagma=%g, magPfac=%g, magPwidth=%g\n", 
-			dike->dyndike_start, dike->Tsol, dike->zmax_magma, dike->drhomagma, dike->magPfac, dike->magPwidth);
-		PetscPrintf(PETSC_COMM_WORLD,"       filtx=%g, filty=%g, istep_nave=%i, istep_count=%i \n",
-			dike->filtx, dike->filty, dike->istep_nave, dike->istep_count);
-		PetscPrintf(PETSC_COMM_WORLD,"       nstep_locate=%i, out_stress=%i, out_dikeloc=%i\n",
-			dike->nstep_locate, dike->out_stress, dike->out_dikeloc);
+		PetscPrintf(PETSC_COMM_WORLD,"       dyndike_start=%lld, Tsol=%g, zmax_magma=%g,drhomagma=%g, magPfac=%g, magPwidth=%g\n", 
+			(LLD)(dike->dyndike_start), dike->Tsol, dike->zmax_magma, dike->drhomagma, dike->magPfac, dike->magPwidth);
+		PetscPrintf(PETSC_COMM_WORLD,"       filtx=%g, filty=%g, istep_nave=%lld, istep_count=%lld \n",
+			dike->filtx, dike->filty, (LLD)(dike->istep_nave), (LLD)(dike->istep_count));
+		PetscPrintf(PETSC_COMM_WORLD,"       nstep_locate=%lld, out_stress=%lld, out_dikeloc=%lld\n",
+			(LLD)(dike->nstep_locate), (LLD)(dike->out_stress), (LLD)(dike->out_dikeloc));
     }
     PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");    
 	}
@@ -520,7 +520,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 	if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0) 
 	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
     {
-    	  PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
+    	  PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1),(LLD)(nD));
        // compute lithostatic pressure
        if (icounter==0) 
        {
@@ -541,7 +541,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
           }
        }//end loop over Phtr
        if (nPtr==-1) 
-       SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %i, nPtr=%i\n", nD, nPtr);
+       SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %lld, nPtr=%lld\n", (LLD)(nD), (LLD)(nPtr));
        CurrPhTr = jr->dbm->matPhtr+nPtr;
        //---------------------------------------------------------------------------------------------
        //  Find y-bounds of current dynamic dike
@@ -760,8 +760,8 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 			START_PLANE_LOOP
 				xcell=COORD_CELL(i, sx, fs->dsx);
 				ycell=COORD_CELL(j, sy, fs->dsy);
-				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %i %g %g %g %g %i %g %g\n", jr->ts->istep+1, 
-				xcell, ycell, gsxx_eff_ave[L][j][i], magPressure[L][j][i], nD, zsol[L][j][i],magma_presence);     
+				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %lld %g %g %g %g %lld %g %g\n", (LLD)(jr->ts->istep+1), 
+				xcell, ycell, gsxx_eff_ave[L][j][i], magPressure[L][j][i], (LLD)(nD), zsol[L][j][i],magma_presence);     
 			END_PLANE_LOOP 
 		} 
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT); //All procs must run this
@@ -1237,7 +1237,8 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 
 		if(istep_nave!=dike->istep_nave) 
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems: istep_nave=%i, dike->istep_nave=%i\n", istep_nave, dike->istep_nave);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems: istep_nave=%lld, dike->istep_nave=%lld\n", 
+			(LLD)(istep_nave), (LLD)(dike->istep_nave));
 		}
 
 		ierr = DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
@@ -1275,8 +1276,8 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 			START_PLANE_LOOP
 				xc=COORD_CELL(i, sx, fs->dsx);
 				yc=COORD_CELL(j, sy, fs->dsy);
-				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"202020.2020 %i %g %g %g %g %i %i\n", jr->ts->istep+1,xc, yc, gsxx_eff_ave[L][j][i], 
-				magPressure[L][j][i],nD, dike->istep_count);       
+				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"202020.2020 %lld %g %g %g %g %lld %lld\n", (LLD)(jr->ts->istep+1),xc, yc, gsxx_eff_ave[L][j][i], 
+				magPressure[L][j][i],(LLD)(nD), (LLD)(dike->istep_count));       
 			END_PLANE_LOOP  
 		}
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT); //All procs must run this
@@ -1326,8 +1327,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
   if (Lx>0)
   {
-     PetscPrintf(PETSC_COMM_WORLD,"Set_dike_zones requires cpu_x = 1 Lx = %i \n", Lx);
-     SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Set_dike_zones requires cpu_x = 1 Lx = %i \n", Lx);
+     PetscPrintf(PETSC_COMM_WORLD,"Set_dike_zones requires cpu_x = 1 Lx = %lld \n", (LLD)(Lx));
+     SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Set_dike_zones requires cpu_x = 1 Lx = %lld \n", (LLD)(Lx));
   }
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -1400,8 +1401,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
      {
         ycell = COORD_CELL(j, sy, fs->dsy);  
         xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %i %g %g %g %g %g %g %g %i %g \n", jr->ts->istep+1, ycell, xcenter, xshift, 
-        	x_maxsxx, COORD_CELL(ixmax, sx, fs->dsx), CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], nD, dtime);  
+        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %lld %g %g %g %g %g %g %g %lld %g \n", (LLD)(jr->ts->istep+1), ycell, xcenter, xshift, 
+        	x_maxsxx, COORD_CELL(ixmax, sx, fs->dsx), CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], (LLD)(nD), dtime);  
      }
 
   }//end loop over j cell row
