@@ -826,7 +826,8 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	PetscInt    j, jj, j1prev, j2prev, j1next, j2next, jj1, jj2, jc; 
 	PetscInt    i,ii, ii1, ii2;
 	PetscInt    sx, sy, sz, nx, ny, nz;
-	PetscInt    L, M, rank;
+	PetscInt    L, M;
+	PetscMPIInt rank;
 	PetscInt    sisc, istep_count, istep_nave, istep, nstep_out;
 
   
@@ -949,7 +950,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 //  Save info on y bounds of current dike and y coords of nodes
 	for(j = j1; j <=j2; j++)
 	{       
-		ybound[L][M][j] = j+10;
+		ybound[L][M][j] = (PetscScalar)(j+10);
 	}
 
 	for(j = 0; j <= ny; j++)
@@ -1051,21 +1052,21 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 		for(jj = sy; jj < sy+ny; jj++)
 		{
  			yy=(ycoors_prev[L][M][jj-sy+1]+ycoors_prev[L][M][jj-sy])/2;
-			if ( dsy->grprev != -1 && fabs(yc-yy) <= dfac*filtxy && ybound_prev[L][M][jj-sy]==jj-sy+10) 
+			if ( dsy->grprev != -1 && fabs(yc-yy) <= dfac*filtxy && ybound_prev[L][M][jj-sy]==(PetscScalar)(jj-sy+10)) 
 			{
 				j1prev=min(j1prev,jj);   
 				j2prev=max(j2prev,jj);
 			}
 
 			yy=(ycoors_next[L][M][jj-sy+1]+ycoors_next[L][M][jj-sy])/2;
-			if (dsy->grnext != -1 && fabs(yy-yc) <= dfac*filtxy && ybound_next[L][M][jj-sy]==jj-sy+10)
+			if (dsy->grnext != -1 && fabs(yy-yc) <= dfac*filtxy && ybound_next[L][M][jj-sy]==(PetscScalar)(jj-sy+10))
 			{
 				j1next=min(j1next,jj);   
 				j2next=max(j2next,jj);
 			}
       
 			yy=COORD_CELL(jj, sy, fs->dsy);
-			if (fabs(yy-yc) <= dfac*filtxy && ybound[L][M][jj-sy]==jj-sy+10)
+			if (fabs(yy-yc) <= dfac*filtxy && ybound[L][M][jj-sy]==(PetscScalar)(jj-sy+10))
 			{
 				jj1=min(jj1,jj);
 				jj2=max(jj2,jj);
@@ -1314,8 +1315,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
   fs  =  jr->fs;
   dsz = &fs->dsz;
   dsx = &fs->dsx;
-  L   =  dsz->rank;
-  Lx  =  dsx->rank;
+  L   =  (PetscInt)dsz->rank;
+  Lx  =  (PetscInt)dsx->rank;
 
   istep=jr->ts->istep+1; 
   nstep_out=jr->ts->nstep_out;
