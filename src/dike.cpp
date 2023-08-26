@@ -577,7 +577,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   PetscScalar ***gsxx_eff_ave, ***p_lith, ***magPressure;
   PetscScalar ***sxx, ***Pmag, ***liththick, ***zsol;
   PetscScalar  *lsxx, *lPmag, *lliththick, *lzsol;
-  PetscScalar dz, ***lT, Tc, *grav, Tsol, dPmag, magma_presence, zsol_max;
+  PetscScalar dz, ***lT, Tc, *grav, Tsol, dPmag, magma_presence;
   PetscScalar xcell, ycell;
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L, ID, AirPhase;
   PetscInt 	  istep, nstep_out;
