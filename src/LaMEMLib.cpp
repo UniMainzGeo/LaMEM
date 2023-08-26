@@ -300,8 +300,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
 
 	// read from input file, create arrays for dynamic diking, and read from restart file
-	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, fb, fp);  CHKERRQ(ierr);
-
+	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, &lm->ts, fp);  CHKERRQ(ierr);
+ 
 	// close temporary restart file
 	fclose(fp);
 

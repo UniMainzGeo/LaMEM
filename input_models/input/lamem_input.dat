@@ -684,13 +684,28 @@
 
     <DikeStart>
         ID = 0
-        Mf = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
-	Mc = 0.5	   # [optional] value for dike/magma- accommodate extension, between 0 and 1, for dike phase, 
-	     		   # M is linearly interpolated between Mf & Mc and Mc & Mb, if not set, Mc default is set to -1 so it is not used
-	y_Mc = 0.5 	   # [optional], location for Mc, must be between front and back boundaries of dike box, if not set, default value to 0.0, but not used
-        Mb = 0.5           # value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
-        PhaseID = 0
-	PhaseTransID = 0
+        Mf = 0.5		# value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
+        Mc = 0.5		# [optional] value for dike/magma- accommodate extension, between 0 and 1, for dike phase, 
+                                # M is linearly interpolated between Mf & Mc and Mc & Mb, if not set, Mc default is set to -1 so it is not used
+        y_Mc = 0.5		# [optional], location for Mc, must be between front and back boundaries of dike box, if not set, default value to 0.0, but not used
+        Mb = 0.5		# value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
+        PhaseID = 0		# material phase InsideToOutside	
+        PhaseTransID = 0	# Must point to a NotInAirbox phase transition
+        dyndike_start = 201	# activate dynamic dike at this timestep
+        filtx = 0.75		# Smoothing of stress is done with moving window, weighted as elliptical Gaussian 
+        filty = 4.0 		# filtx, filty, are 1-sigma widths perpendicular and parallel to local dike zone in km
+        zmax_magma = -10.00     # Maximum depth of magma pooling for adding magma pressure
+        drhomagma = 00	        # Density contrast of magma from asthenosphere for adding magma pressure with zmax_magma 
+        istep_nave = 2	        # Smoothing stress (sxx_eff) is done by averaging sxx_eff every istep_nave timesteps when Locate_Dike_Zones is called
+        nstep_locate = 1        # Locate_Dike_Zones is called every nstep_locate timesteps. Each time a dike shifts location, 
+							 #elastic stresses become large causing large fluctiations in stress,
+							 #which is why smoothing must be done. I'm experimenting with this to see if allowing a couple of timestep
+							 #in between when the dike is shifted allows the stresses to smooth naturally. 
+        magPfac = 1              # Magma pressure is also multiplied by a Gaussian function of x distance from previous dike location
+        magPwidth = 1000  	 # magPfac is the maximum of the function, magPwidth is the 1-sigma width of the Gaussian. 
+                                 # magPwidth=1000 km means magma pressure is present everywhere and does not decay (much) from prior location
+        out_dikeloc = 1		 # output dike location to stdout every time Set_dike_zones is called. 
+        out_stress = 0           # output stresses to std before and after smoothing.  Turn this off or else std gets really large 
     <DikeEnd>
 
     <DikeStart>
