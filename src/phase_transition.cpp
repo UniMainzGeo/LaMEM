@@ -1236,7 +1236,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
   	{
   		xboundL = PhaseTrans->celly_xboundL[J];
        	xboundR = PhaseTrans->celly_xboundR[J];
-       }
+	}
        
   	if 	( (xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
        	(PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )

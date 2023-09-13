@@ -499,7 +499,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
   PetscFunctionBeginUser;
 
   jr = actx->jr;
-    fs  =  jr->fs;
+  fs  =  jr->fs;
   ctrl = &jr->ctrl;
 
   
@@ -520,7 +520,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 	if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0) 
 	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
     {
-    	  PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1),(LLD)(nD));
+	   PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1),(LLD)(nD));
        // compute lithostatic pressure
        if (icounter==0) 
        {
@@ -950,7 +950,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 //  Save info on y bounds of current dike and y coords of nodes
 	for(j = j1; j <=j2; j++)
 	{       
-		ybound[L][M][j] = (PetscScalar)(j+10);
+		ybound[L][M][j] = (PetscScalar)(j+10); //non-zero values are along the dike. Zero otherwise. 
 	}
 
 	for(j = 0; j <= ny; j++)
@@ -1299,121 +1299,216 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1, PetscInt j2)
 {
 
-  FDSTAG      *fs;
-  Dike        *dike;
-  Discret1D   *dsx, *dsz;
-  Ph_trans_t  *CurrPhTr;
-  PetscScalar ***gsxx_eff_ave;
-  PetscScalar xcenter, sxx_max, dike_width, mindist, xshift, xcell;
-  PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, L, Lx, ixcenter;
-  PetscScalar sxxm, sxxp, dx12, dsdx1, dsdx2, x_maxsxx, ycell, dtime;   
-  PetscInt    ixmax, istep, nstep_out;
- 
-  PetscErrorCode ierr;
-  PetscFunctionBeginUser;
+	FDSTAG      *fs;
+	Dike        *dike;
+	Discret1D   *dsx, *dsy, *dsz;
+	Ph_trans_t  *CurrPhTr;
+	PetscScalar ***gsxx_eff_ave;
+	PetscScalar xcenter, sxx_max, dike_width, mindist, xshift, xcell;
+	PetscScalar ***xboundL_pass, *lxboundL_pass, ***xboundR_pass, *lxboundR_pass;
+	Vec         vxboundL_pass, vxboundR_pass;
+	PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, L, Lx, M, ixcenter;
+	PetscScalar sxxm, sxxp, dx12, dsdx1, dsdx2, x_maxsxx, ycell, dtime;   
+	PetscInt    ixmax, istep, nstep_out;
+ 	MPI_Request srequest, rrequest;
 
-  fs  =  jr->fs;
-  dsz = &fs->dsz;
-  dsx = &fs->dsx;
-  L   =  (PetscInt)dsz->rank;
-  Lx  =  (PetscInt)dsx->rank;
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
 
-  istep=jr->ts->istep+1; 
-  nstep_out=jr->ts->nstep_out;
+	fs  =  jr->fs;
+	dsz = &fs->dsz;
+	dsy = &fs->dsy;
+	dsx = &fs->dsx;
+	L   =  (PetscInt)dsz->rank;
+	M   =  (PetscInt)dsy->rank;
+	Lx  =  (PetscInt)dsx->rank;
 
-  dike = jr->dbdike->matDike+nD;
-  CurrPhTr = jr->dbm->matPhtr+nPtr;
-  dtime=jr->scal->time*jr->ts->time;
+	istep=jr->ts->istep+1; 
+	nstep_out=jr->ts->nstep_out;
+
+	dike = jr->dbdike->matDike+nD;
+	CurrPhTr = jr->dbm->matPhtr+nPtr;
+	dtime=jr->scal->time*jr->ts->time;
 
 
-  if (Lx>0)
-  {
-     PetscPrintf(PETSC_COMM_WORLD,"Set_dike_zones requires cpu_x = 1 Lx = %lld \n", (LLD)(Lx));
-     SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Set_dike_zones requires cpu_x = 1 Lx = %lld \n", (LLD)(Lx));
-  }
-  ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-  ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	if (Lx>0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"Set_dike_zones requires cpu_x = 1 Lx = %lld \n", (LLD)(Lx));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Set_dike_zones requires cpu_x = 1 Lx = %lld \n", (LLD)(Lx));
+	}
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
                                         
-  for(lj = j1; lj <= j2; lj++)  //local index
-  {
-     sxx_max=-1e12;
-     mindist=1e12;
-     ixcenter = 0;
-     xshift=0;
-     ixmax=sx+1;
+	for(lj = j1; lj <= j2; lj++)  //local index
+	{
+		sxx_max=-1e12;
+		mindist=1e12;
+		ixcenter = 0;
+		xshift=0;
+		ixmax=sx+1;
 
-     j=sy+lj;  //global index
-     dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
-     xcenter=(CurrPhTr->celly_xboundR[lj] + CurrPhTr->celly_xboundL[lj])/2;
+		j=sy+lj;  //global index
+		dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
+		xcenter=(CurrPhTr->celly_xboundR[lj] + CurrPhTr->celly_xboundL[lj])/2;
 
-     for(i=sx+1; i < sx+nx-1; i++) 
-     {
-        xcell=COORD_CELL(i, sx, fs->dsx);
-        if (fabs(xcell-xcenter) <= mindist) //find indice of dike zone center (xcenter)
-        {
-           ixcenter=i;
-           mindist=fabs(xcell-xcenter);
-        }
-     } //end loop to find ixcenter
+		for(i=sx+1; i < sx+nx-1; i++) 
+		{
+			xcell=COORD_CELL(i, sx, fs->dsx);
+			if (fabs(xcell-xcenter) <= mindist) //find indice of dike zone center (xcenter)
+			{
+				ixcenter=i;
+				mindist=fabs(xcell-xcenter);
+			}
+		} //end loop to find ixcenter
  
-     for(i=ixcenter-2; i <= ixcenter+2; i++) //find max gsxx_eff at each value of y
-     {
-        if ((gsxx_eff_ave[L][j][i] > sxx_max))
-        {
-           sxx_max=gsxx_eff_ave[L][j][i];
-           //xshift=COORD_CELL(i, sx, fs->dsx)-xcenter;
-           ixmax=i;
-        }
+		for(i=ixcenter-2; i <= ixcenter+2; i++) //find max gsxx_eff at each value of y
+		{
+			if ((gsxx_eff_ave[L][j][i] > sxx_max))
+			{
+				sxx_max=gsxx_eff_ave[L][j][i];
+				//xshift=COORD_CELL(i, sx, fs->dsx)-xcenter;
+				ixmax=i;
+			}
    
-     } 
-     //finding where slope of dsxx/dx=0
-     sxxm =  gsxx_eff_ave[L][j][ixmax-1];  //left of maximum point
-     sxxp =  gsxx_eff_ave[L][j][ixmax+1]; ;  //right of max. point
+		} 
+		//finding where slope of dsxx/dx=0
+		sxxm =  gsxx_eff_ave[L][j][ixmax-1];  //left of maximum point
+		sxxp =  gsxx_eff_ave[L][j][ixmax+1]; ;  //right of max. point
  
-     dsdx1=(sxx_max-sxxm)/(COORD_CELL(ixmax, sx, fs->dsx)-COORD_CELL(ixmax-1, sx, fs->dsx));  //slope left of max
-     dsdx2=(sxxp-sxx_max)/(COORD_CELL(ixmax+1, sx, fs->dsx)-COORD_CELL(ixmax, sx, fs->dsx));  //slope right of max
-     dx12=(COORD_CELL(ixmax+1, sx, fs->dsx)-COORD_CELL(ixmax-1, sx, fs->dsx))/2;
+		dsdx1=(sxx_max-sxxm)/(COORD_CELL(ixmax, sx, fs->dsx)-COORD_CELL(ixmax-1, sx, fs->dsx));  //slope left of max
+		dsdx2=(sxxp-sxx_max)/(COORD_CELL(ixmax+1, sx, fs->dsx)-COORD_CELL(ixmax, sx, fs->dsx));  //slope right of max
+		dx12=(COORD_CELL(ixmax+1, sx, fs->dsx)-COORD_CELL(ixmax-1, sx, fs->dsx))/2;
 
-     if ((dsdx1>0) & (dsdx2<0))  //if local maximum, interpolate to find where dsdx=0;
-     {
-        x_maxsxx=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2-dsdx1/(dsdx2-dsdx1)*dx12;
-     }
-     else  //just higher on either side of dike
-     {
-        x_maxsxx=COORD_CELL(ixmax,sx,fs->dsx);
-     }
+		if ((dsdx1>0) & (dsdx2<0))  //if local maximum, interpolate to find where dsdx=0;
+		{
+        	x_maxsxx=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2-dsdx1/(dsdx2-dsdx1)*dx12;
+		}
+		else  //just higher on either side of dike
+		{
+        	x_maxsxx=COORD_CELL(ixmax,sx,fs->dsx);
+		}
 
-     xshift=x_maxsxx-xcenter;
+		xshift=x_maxsxx-xcenter;
 
-     if (xshift>0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
-     {
-        xshift=0.5*SIZE_CELL(ixcenter, sx, fs->dsx);
-     }
-     else if (xshift<0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx)) //ensure its within the width of cell left of center
-     {
-        xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
-     }
+		if (xshift>0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
+		{
+        	xshift=0.5*SIZE_CELL(ixcenter, sx, fs->dsx);
+		}
+		else if (xshift<0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx)) //ensure its within the width of cell left of center
+		{
+        	xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
+		}
 
-	//relocating dike bounds here
-    CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2; 
-    CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2; 
+		//relocating dike bounds here
+		CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2; 
+		CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2; 
 
-     if (L==0 &&  ((istep % nstep_out)==0) && (dike->out_dikeloc > 0)) 
-     {
-        ycell = COORD_CELL(j, sy, fs->dsy);  
-        xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-        PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %lld %g %g %g %g %g %g %g %lld %g \n", (LLD)(jr->ts->istep+1), ycell, xcenter, xshift, 
-        	x_maxsxx, COORD_CELL(ixmax, sx, fs->dsx), CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], (LLD)(nD), dtime);  
-     }
+		if (L==0 &&  ((istep % nstep_out)==0) && (dike->out_dikeloc > 0)) 
+		{
+        	ycell = COORD_CELL(j, sy, fs->dsy);  
+        	xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
+        	PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %lld %g %g %g %g %g %g %g %lld %g \n", 
+				(LLD)(jr->ts->istep+1), ycell, xcenter, xshift, 
+        		x_maxsxx, COORD_CELL(ixmax, sx, fs->dsx), 
+				CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], (LLD)(nD), dtime);  
+		}
 
-  }//end loop over j cell row
+	}//end loop over j cell row
 
-  if (((istep & nstep_out)==0) && (dike->out_dikeloc > 0))  
-  {
+	if (((istep % nstep_out)==0) && (dike->out_dikeloc > 0))  
+	{
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
-  }
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-     
+	}
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+
+//-----------------------------------------------------------------------------------
+// Set locations of ghost nodes
+//-----------------------------------------------------------------------------------
+	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vxboundL_pass); CHKERRQ(ierr);
+	ierr = VecZeroEntries(vxboundL_pass); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vxboundL_pass, &xboundL_pass); CHKERRQ(ierr);
+	ierr = VecGetArray(vxboundL_pass, &lxboundL_pass); CHKERRQ(ierr);
+
+	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vxboundR_pass); CHKERRQ(ierr);
+	ierr = VecZeroEntries(vxboundR_pass); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vxboundR_pass, &xboundR_pass); CHKERRQ(ierr);
+	ierr = VecGetArray(vxboundR_pass, &lxboundR_pass); CHKERRQ(ierr);
+
+	//Northernmost (top) ghost coord of northernmost (top) proc
+	if (dsy->grnext == -1) 
+	{
+		CurrPhTr->celly_xboundL[ny] = CurrPhTr->celly_xboundL[ny-1];
+		CurrPhTr->celly_xboundR[ny] = CurrPhTr->celly_xboundR[ny-1];
+	}
+	//Southernmost ghost coord of southernmost (bottom) proc
+	if (dsy->grprev == -1)  
+	{
+		CurrPhTr->celly_xboundL[-1] = CurrPhTr->celly_xboundL[0];
+		CurrPhTr->celly_xboundR[-1] = CurrPhTr->celly_xboundR[0];
+	}
+
+	//Receive from 2nd northernmost (top in y) proc to southernmost (bottom in y) and set bottom ghost node
+	if (dsy->nproc > 1 && dsy->grnext != -1) //MPI_Wait will make this run in sequence from top to bottom
+	{
+		ierr = MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+		ierr = MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+		CurrPhTr->celly_xboundL[ny] = xboundL_pass[L][M][0];
+		CurrPhTr->celly_xboundR[ny] = xboundR_pass[L][M][0];
+	}
+
+	//Send down from northernmost (top) to southmost (bottom)
+	if(dsy->nproc != 1 && dsy->grprev != -1)
+  	{
+		for(lj = 0; lj < ny; lj++)
+		{       
+			xboundL_pass[L][M][lj] = CurrPhTr->celly_xboundL[lj];  
+			xboundR_pass[L][M][lj] = CurrPhTr->celly_xboundR[lj];  
+		}
+		ierr = MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+		ierr = MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+  	}
+
+	if(dsy->nproc != 1 && dsy->grprev != -1)  //Receive coordinates from previous node & set BOTTOM ghost node
+	{
+		ierr = MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+		ierr = MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	
+		CurrPhTr->celly_xboundL[-1] = xboundL_pass[L][M][ny-1];
+		CurrPhTr->celly_xboundR[-1] = xboundR_pass[L][M][ny-1];
+  	}
+
+	if(dsy->nproc != 1 && dsy->grnext != -1)
+  	{
+		for(lj = 0; lj < ny; lj++)
+		{       
+			xboundL_pass[L][M][lj] = CurrPhTr->celly_xboundL[lj];  
+			xboundR_pass[L][M][lj] = CurrPhTr->celly_xboundR[lj];  
+		}
+     	ierr = MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+     	ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+
+		ierr = MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+     	ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+  	}
+
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vxboundL_pass, &xboundL_pass); CHKERRQ(ierr);
+	ierr = VecRestoreArray(vxboundL_pass, &lxboundL_pass); CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vxboundL_pass); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vxboundR_pass, &xboundR_pass); CHKERRQ(ierr);
+	ierr = VecRestoreArray(vxboundR_pass, &lxboundR_pass); CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vxboundR_pass); CHKERRQ(ierr);
+
   PetscFunctionReturn(0);  
 }
 
