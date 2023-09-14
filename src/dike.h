@@ -32,6 +32,19 @@ struct Dike
 public:
   PetscInt ID;        // dike ID
   PetscInt dyndike_start;  //starting timestep for dynamic diking if 0 then no dynamic diking
+
+  // *djking
+  PetscScalar A; // Smoothing parameter for variable M calculation
+  PetscScalar B; // Value to prevent NaNs
+  PetscScalar knee; // Determines the transition from min to max M in the M_val equation
+	PetscScalar Ts; // Tensile strength of rock for variable M calculation (Pa)
+  PetscScalar zeta_0; // Initial bulk viscosity for variable M calculation (s^-1) *revisit [local initial bulk viscosity]
+  PetscScalar rho_rock; // Density of rock for variable M calculation (kg/m^3) *revisit [local volmetric density, will this matter when Pm is implemented?]
+  PetscScalar depth; // Depth of magma below seafloor (lithospheric thickness, m) *revisit [to be set by solidus]
+	PetscScalar U; // full-spreading rate (cm/yr) * revisit [should this be local rather than global?]
+	PetscScalar dike_width; // predetermined width of diking zone for maximum divergence (m) *revisit [should be box determined]
+  //
+
   PetscInt PhaseID, PhaseTransID, nPtr;      // associated material phase and phase transition IDs
   PetscInt istep_count, nD, j1, j2;
   PetscInt istep_nave;       //number of timesteps for time averaging
@@ -69,7 +82,14 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput);
 
 // compute the added RHS of the dike for the continuity equation
-PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscInt &Airphase, PetscScalar &dikeRHS, PetscScalar &y_c, PetscInt J);
+PetscErrorCode GetDikeContr(JacRes *jr,                                                                                                                                
+                            PetscScalar *phRat,          // phase ratios in the control volume   
+                            PetscInt &AirPhase,                                                                           
+                            PetscScalar &dikeRHS,
+                            PetscScalar &y_c,
+                            PetscInt J,
+                            PetscInt I,
+                            PetscScalar sxx_eff_ave_cell);
 
 // compute dike heat after Behn & Ito, 2008
 PetscErrorCode Dike_k_heatsource(JacRes *jr,

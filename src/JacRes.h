@@ -165,10 +165,9 @@ struct Controls
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
-
-  PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
-
-  PetscInt  dikeHeat;   // activation flag for using Behn & Ito heat source in dike
+	PetscInt	var_M;			// Flag to activate M controlled by bulk viscosity and stress-field
+	PetscInt    useTk;			// activation flag for using temperature-dependent conductivity
+	PetscInt 	dikeHeat;		// activation flag for using Behn & Ito heat source in dike
 };
 
 //---------------------------------------------------------------------------

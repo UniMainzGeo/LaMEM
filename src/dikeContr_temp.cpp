@@ -228,9 +228,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		dike->magPwidth=1e+30; 
 
 		ierr = getScalarParam(fb, _OPTIONAL_, "Tsol",		&dike->Tsol,		1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",	&dike->zmax_magma,	1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "filtx",		&dike->filtx,		1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "filty",		&dike->filty,		1, 1.0); CHKERRQ(ierr);
+
+		ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",	&dike->zmax_magma,	1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "drhomagma",	&dike->drhomagma,	1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "magPfac",	&dike->magPfac,		1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "magPwidth",	&dike->magPwidth,	1, 1.0); CHKERRQ(ierr);
@@ -240,6 +241,11 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		ierr = getIntParam(fb, _OPTIONAL_, "out_stress",	&dike->out_stress,	1, 50); CHKERRQ(ierr);
 		ierr = getIntParam(fb, _OPTIONAL_, "out_dikeloc",	&dike->out_dikeloc,	1, 50); CHKERRQ(ierr);
     dike->istep_count=dike->istep_nave;   //initialize so that when istep=dike_start, it is set to 0
+  }
+
+  if (jr->ctrl.var_M || dike->dyndike_start)
+  {
+
   }
 
 	// scale the location of Mc y_Mc properly:
@@ -270,16 +276,23 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		PetscPrintf(PETSC_COMM_WORLD,"       nstep_locate=%i, out_stress=%i, out_dikeloc=%i\n",
 			dike->nstep_locate, dike->out_stress, dike->out_dikeloc);
     }
+    if (jr->ctrl.var_M || dike->dyndike_start)
+    {
+      
+    }
     PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");    
   }
 
   // scale variables *revisit (do we want this done prior to screen output?)
   if (dike->dyndike_start)
   {
-      dike->Tsol = (dike->Tsol +  jr->scal->Tshift)/jr->scal->temperature;
-      dike->filtx /= jr->scal->length;
-      dike->drhomagma /= jr->scal->density;
-      dike->zmax_magma /= jr->scal->length;
+    dike->drhomagma /= jr->scal->density;
+    dike->zmax_magma /= jr->scal->length;
+  }
+  if (jr->ctrl.var_M || dike->dyndike_start)
+  {
+    dike->Tsol = (dike->Tsol +  jr->scal->Tshift)/jr->scal->temperature;
+    dike->filtx /= jr->scal->length;
   }
 
   PetscFunctionReturn(0);
@@ -319,8 +332,8 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 
   nPtr = 0;
   nD = 0;
-
-    for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks
+  
+  for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks
     {
       // access the parameters of the phasetranstion block
       CurrPhTr = jr->dbm->matPhtr+nPtr;
@@ -560,14 +573,14 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 {
 
 
-  Controls    *ctrl;
-  JacRes      *jr;
-  Dike        *dike;
-  Ph_trans_t  *CurrPhTr;
-  FDSTAG      *fs;
-  PetscInt   nD, numDike, numPhtr, nPtr, n, icounter;
-  PetscInt   j, j1, j2, sx, sy, sz, ny, nx, nz;
-  PetscErrorCode ierr; 
+  Controls        *ctrl;
+  JacRes          *jr;
+  Dike            *dike;
+  Ph_trans_t      *CurrPhTr;
+  FDSTAG          *fs;
+  PetscInt        nD, numDike, numPhtr, nPtr, n, icounter;
+  PetscInt        j, j1, j2, sx, sy, sz, ny, nx, nz;
+  PetscErrorCode  ierr; 
 
   PetscFunctionBeginUser;
 
@@ -592,8 +605,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
     if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0)
     //if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
     {
-    	  //PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
-    	  PetscPrintf(PETSC_COMM_WORLD, "Locating potential Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
+    	 PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
+
        // compute lithostatic pressure
        if (icounter==0) 
        {
