@@ -1082,7 +1082,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 
 			xc =  COORD_CELL(i, sx, fs->dsx);
       
-			//identify x cells within dfac*filtxy of xc
+			//identify x cells within dfac*filtx of xc
 			ii1=sx+nx-1; ii2=sx;
 			for (ii = sx; ii < sx+nx; ii++)
 			{
