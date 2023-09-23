@@ -817,6 +817,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	PetscScalar filtx, filty, filtxy, w, dfac, magPfac, magPwidth,xcenter;
 	PetscScalar xcenter_north, xcenter_south, ycenter_north, ycenter_south, xcenter_search, ycenter_search;
 	PetscScalar azim, dalong, dxazim, dyazim, radbound, sumslope, sumadd;
+	PetscScalar dx_tot, dy_tot, dyazmin, dyazmax, dyaz, str_y;
 
 	Vec         vycoors, vycoors_prev, vycoors_next;
 	Vec         vybound, vybound_prev, vybound_next;
@@ -1049,29 +1050,62 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 		j1prev=ny+sy-1; j2prev=sy;
 		j1next=ny+sy-1; j2next=sy;
 		jj1=sy+ny-1; jj2=sy;
+		//projected from slanted axis coords to get x & y grid distances needed to encompass dfac*filtx and dfac*filty, times 2 incase of stretching in y
+		dy_tot=(fabs(dfac*filtx*sin(azim))+2*fabs(dfac*filty*cos(azim)));  
+		dx_tot=(fabs(dfac*filtx*cos(azim))+2*fabs(dfac*filty*sin(azim)));
+
+		dyazmin=1e6; dyazmax=-1e6;  //for detecting if near dike zone end
 		for(jj = sy; jj < sy+ny; jj++)
 		{
+			//Previous proc
  			yy=(ycoors_prev[L][M][jj-sy+1]+ycoors_prev[L][M][jj-sy])/2;
-			if ( dsy->grprev != -1 && fabs(yc-yy) <= dfac*filtxy && ybound_prev[L][M][jj-sy]==(PetscScalar)(jj-sy+10)) 
+			if ( dsy->grprev != -1 && fabs(yc-yy) <= dy_tot && ybound_prev[L][M][jj-sy]==(PetscScalar)(jj-sy+10)) 
 			{
-				j1prev=min(j1prev,jj);   
-				j2prev=max(j2prev,jj);
+				j1prev=(PetscInt)min(j1prev,jj);   
+				j2prev=(PetscInt)max(j2prev,jj);
+			}
+			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
+			if ( dsy->grprev != -1 && fabs(dyaz) <= filty && ybound_prev[L][M][jj-sy]==(PetscScalar)(jj-sy+10)) 
+			{
+				dyazmin=(PetscScalar)min(dyaz,dyazmin);
 			}
 
+			//Next proc
 			yy=(ycoors_next[L][M][jj-sy+1]+ycoors_next[L][M][jj-sy])/2;
-			if (dsy->grnext != -1 && fabs(yy-yc) <= dfac*filtxy && ybound_next[L][M][jj-sy]==(PetscScalar)(jj-sy+10))
+			if (dsy->grnext != -1 && fabs(yy-yc) <= dy_tot && ybound_next[L][M][jj-sy]==(PetscScalar)(jj-sy+10))
 			{
-				j1next=min(j1next,jj);   
-				j2next=max(j2next,jj);
+				j1next=(PetscInt)min(j1next,jj);   
+				j2next=(PetscInt)max(j2next,jj);
 			}
-      
-			yy=COORD_CELL(jj, sy, fs->dsy);
-			if (fabs(yy-yc) <= dfac*filtxy && ybound[L][M][jj-sy]==(PetscScalar)(jj-sy+10))
+			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty
+			if (dsy->grnext != -1 && fabs(dyaz)<=filty && ybound_next[L][M][jj-sy]==(PetscScalar)(jj-sy+10))
 			{
-				jj1=min(jj1,jj);
-				jj2=max(jj2,jj);
+				dyazmax=(PetscScalar)max(dyaz,dyazmax);
+			}
+
+			//Current proc
+			yy=COORD_CELL(jj, sy, fs->dsy);
+			if (fabs(yy-yc) <= dy_tot && ybound[L][M][jj-sy]==(PetscScalar)(jj-sy+10))
+			{
+				jj1=(PetscInt)min(jj1,jj);
+				jj2=(PetscInt)max(jj2,jj);
+			}
+			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
+			if (fabs(dyaz) <= filty && ybound[L][M][jj-sy]==(PetscScalar)(jj-sy+10))
+			{
+				dyazmin=(PetscScalar)min(dyaz,dyazmin);
+				dyazmax=(PetscScalar)max(dyaz,dyazmax);
 			}
 		}
+		str_y=1;
+		if ((dyazmax-dyazmin)<2*filty)       //if dike zone end limits the distance to < dfac*filty north or south
+			str_y=2*filty/(dyazmax-dyazmin);  //then stretch filty smoothing extends a total distance 2*dfac*filty
+		str_y=(PetscScalar)min(str_y,2.0);
+		if (L==0)  //debugging
+		{ 
+			PetscSynchronizedPrintf(PETSC_COMM_WORLD,"212121.2121 %lld %i %g %g %g \n", 
+			(LLD)(jr->ts->istep+1), j, azim*180/3.1415927, yc, str_y);
+		}          //debugging
 
 		//Loop over i to assign filtered value in cell j,i (again, one proc across all x dimension)
 		for (i = sx; i < sx+nx; i++)  
@@ -1084,10 +1118,11 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
       
 			//identify x cells within dfac*filtx of xc
 			ii1=sx+nx-1; ii2=sx;
+
 			for (ii = sx; ii < sx+nx; ii++)
 			{
 				xx = COORD_CELL(ii, sx, fs->dsx);
-				if (fabs(xx-xc) <= dfac*filtxy)
+				if (fabs(xx-xc) <= dx_tot)
 				{
 					ii1=min(ii1,ii);
 					ii2=max(ii2,ii);
@@ -1107,10 +1142,10 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 					dxazim=cos(azim)*(xx-xc)-sin(azim)*(yy-yc);
 					dyazim=sin(azim)*(xx-xc)+cos(azim)*(yy-yc);
 
-					radbound=(pow((dxazim/(dfac*filtx)),2) + pow((dyazim/(dfac*filty)),2));					
+					radbound=(pow((dxazim/(dfac*filtx)),2) + pow((dyazim/(str_y*dfac*filty)),2));					
 					if (radbound<=1) //limit area of summing to within radbound of cell
 					{
-						w=exp(-0.5*(pow((dxazim/filtx),2) + pow((dyazim/filty),2)))*dx*dy;
+						w=exp(-0.5*(pow((dxazim/filtx),2) + pow((dyazim/(str_y*filty)),2)))*dx*dy;
 						sum_sxx += sxx_prev[L][jj][ii]*w;
 						sum_magP += magP_prev[L][jj][ii]*w;
 						sum_w+=w;
@@ -1132,10 +1167,10 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 					dxazim=cos(azim)*(xx-xc)-sin(azim)*(yy-yc);
 					dyazim=sin(azim)*(xx-xc)+cos(azim)*(yy-yc);
 
-					radbound=(pow((dxazim/(dfac*filtx)),2) + pow((dyazim/(dfac*filty)),2));					
+					radbound=(pow((dxazim/(dfac*filtx)),2) + pow((dyazim/(str_y*dfac*filty)),2));					
 					if (radbound<=1)  //limit area of summing to within radbound of cell
 					{
-						w=exp(-0.5*(pow((dxazim/filtx),2) + pow((dyazim/filty),2)))*dx*dy;
+						w=exp(-0.5*(pow((dxazim/filtx),2) + pow((dyazim/(str_y*filty)),2)))*dx*dy;
 						sum_sxx += sxx[L][jj][ii]*w;
 						sum_magP += magP[L][jj][ii]*w;
 						sum_w+=w;
@@ -1157,10 +1192,10 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 					dxazim=cos(azim)*(xx-xc)-sin(azim)*(yy-yc);
 					dyazim=sin(azim)*(xx-xc)+cos(azim)*(yy-yc);
 
-					radbound=(pow((dxazim/(dfac*filtx)),2) + pow((dyazim/(dfac*filty)),2));					
+					radbound=(pow((dxazim/(dfac*filtx)),2) + pow((dyazim/(str_y*dfac*filty)),2));					
 					if (radbound<=1)  //limit area of summing to within radbound of cell
 					{
-						w=exp(-0.5*(pow((dxazim/filtx),2) + pow((dyazim/filty),2)))*dx*dy;
+						w=exp(-0.5*(pow((dxazim/filtx),2) + pow((dyazim/(str_y*filty)),2)))*dx*dy;
 						sum_sxx += sxx_next[L][jj][ii]*w;
 						sum_magP += magP_next[L][jj][ii]*w;
 						sum_w+=w;
@@ -1175,7 +1210,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 
 		}//End loop over i
 	}// End loop over j
-  
+  	PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT); // debugging All procs must run this
 
 	//restore ycoors arrays
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vycoors_prev, &ycoors_prev); CHKERRQ(ierr);
@@ -1230,6 +1265,23 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vmagP_next); CHKERRQ(ierr);
 
 //--------------------------------------------------
+//  Send smoothed stress of current step to stdout
+//--------------------------------------------------
+if (((istep % nstep_out)==0) && (dike->out_stress>0))  
+	{
+		if (L==0)
+		{ 
+			START_PLANE_LOOP
+				xc=COORD_CELL(i, sx, fs->dsx);
+				yc=COORD_CELL(j, sy, fs->dsy);
+				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"202020.2020 %lld %g %g %g %g %lld %lld\n", (LLD)(jr->ts->istep+1),xc, yc, gsxx_eff_ave[L][j][i], 
+				magPressure[L][j][i],(LLD)(nD), (LLD)(dike->istep_count));       
+			END_PLANE_LOOP  
+		}
+		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT); //All procs must run this
+	}            
+
+//--------------------------------------------------
 //  TIME Averaging
 //--------------------------------------------------
 	if (dike->istep_nave>1)
@@ -1269,21 +1321,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 
 		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
 	}// end if nstep_ave>1
-
-	if (((istep % nstep_out)==0) && (dike->out_stress>0))  
-	{
-		if (L==0)
-		{ 
-			START_PLANE_LOOP
-				xc=COORD_CELL(i, sx, fs->dsx);
-				yc=COORD_CELL(j, sy, fs->dsy);
-				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"202020.2020 %lld %g %g %g %g %lld %lld\n", (LLD)(jr->ts->istep+1),xc, yc, gsxx_eff_ave[L][j][i], 
-				magPressure[L][j][i],(LLD)(nD), (LLD)(dike->istep_count));       
-			END_PLANE_LOOP  
-		}
-		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT); //All procs must run this
-	}            
-
 	//restore arrays
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
