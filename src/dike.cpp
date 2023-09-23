@@ -143,6 +143,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 }
 
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)
 {
 	// read dike parameter from file
@@ -194,7 +195,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     dike->B = 1e-16; 
     dike->knee = 5e6; 
 		dike->Ts = 10e6;
-    dike->zeta_0 = 1e24; // *revisit
+    dike->zeta_0 = 1e24;
     dike->rho_rock = -1; // *revisit
     dike->depth = -1; // *revisit
 		dike->U = -1; // *revisit for scaling check and correct incorporation
@@ -228,9 +229,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		dike->magPwidth=1e+30; 
 
 		ierr = getScalarParam(fb, _OPTIONAL_, "Tsol",		&dike->Tsol,		1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",	&dike->zmax_magma,	1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "filtx",		&dike->filtx,		1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "filty",		&dike->filty,		1, 1.0); CHKERRQ(ierr);
+
+		ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",	&dike->zmax_magma,	1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "drhomagma",	&dike->drhomagma,	1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "magPfac",	&dike->magPfac,		1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "magPwidth",	&dike->magPwidth,	1, 1.0); CHKERRQ(ierr);
@@ -240,6 +242,11 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		ierr = getIntParam(fb, _OPTIONAL_, "out_stress",	&dike->out_stress,	1, 50); CHKERRQ(ierr);
 		ierr = getIntParam(fb, _OPTIONAL_, "out_dikeloc",	&dike->out_dikeloc,	1, 50); CHKERRQ(ierr);
     dike->istep_count=dike->istep_nave;   //initialize so that when istep=dike_start, it is set to 0
+  }
+
+  if (jr->ctrl.var_M || dike->dyndike_start)
+  {
+
   }
 
 	// scale the location of Mc y_Mc properly:
@@ -265,7 +272,10 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
       dike->dyndike_start, dike->Tsol);
     PetscPrintf(PETSC_COMM_WORLD,"       zmax_magma=%g,drhomagma=%g, magPfac=%g, magPwidth=%g\n", 
 			dike->zmax_magma, dike->drhomagma, dike->magPfac, dike->magPwidth);
-		PetscPrintf(PETSC_COMM_WORLD,"       filtx=%g, filty=%g, istep_nave=%i, istep_count=%i \n",
+    }
+    if (jr->ctrl.var_M || dike->dyndike_start)
+    {
+    PetscPrintf(PETSC_COMM_WORLD,"       filtx=%g, filty=%g, istep_nave=%i, istep_count=%i \n",
       dike->filtx, dike->filty, dike->istep_nave, dike->istep_count);
 		PetscPrintf(PETSC_COMM_WORLD,"       nstep_locate=%i, out_stress=%i, out_dikeloc=%i\n",
 			dike->nstep_locate, dike->out_stress, dike->out_dikeloc);
@@ -276,10 +286,13 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   // scale variables *revisit (do we want this done prior to screen output?)
   if (dike->dyndike_start)
   {
-      dike->Tsol = (dike->Tsol +  jr->scal->Tshift)/jr->scal->temperature;
-      dike->filtx /= jr->scal->length;
-      dike->drhomagma /= jr->scal->density;
-      dike->zmax_magma /= jr->scal->length;
+    dike->drhomagma /= jr->scal->density;
+    dike->zmax_magma /= jr->scal->length;
+  }
+  if (jr->ctrl.var_M || dike->dyndike_start)
+  {
+    dike->Tsol = (dike->Tsol +  jr->scal->Tshift)/jr->scal->temperature;
+    dike->filtx /= jr->scal->length;
   }
 
   PetscFunctionReturn(0);
@@ -335,15 +348,26 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 	  
           if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell           
           {
+//      PetscPrintf(PETSC_COMM_WORLD,"if CurrPhTr \n");
+/*   if(phRat[i]>0)
+    {
+      PetscPrintf(PETSC_COMM_WORLD,"phRat[i] = %g, ", phRat[i]);
+    } */
 	           // check if the phase ratio of a dike phase is greater than 0 in the current cell
 	           if(phRat[i]>0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
 		         {
                 nsegs=CurrPhTr->nsegs;
+//        PetscPrintf(PETSC_COMM_WORLD,"phRat > 0 && xboundR > xboundL, ");
 
-                P_comp = sxx_eff_ave_cell + dike->Ts; // dike->sxx_eff_ave[L][J+sy][I+sx] + dike->Ts;
+                P_comp = - sxx_eff_ave_cell * 1e9 + dike->Ts; // *revisit (scale)
+                // P_comp = dike->sxx_eff_ave[L][J+sy][I+sx] + dike->Ts;
+
+//        PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g, ", sxx_eff_ave_cell);
+//        PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g, ", P_comp);
 
 		            if(dike->Mb == dike->Mf && dike->Mc < 0.0) // spatially constant M
 		            {
+//        PetscPrintf(PETSC_COMM_WORLD,"spatially constant M: ");
 		              M = dike->Mf;
 		              v_spread = PetscAbs(bc->velin);
 		              left = CurrPhTr->celly_xboundL[J];
@@ -351,6 +375,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 		              
                   if(jr->ctrl.var_M) // *djking
                   {
+//        PetscPrintf(PETSC_COMM_WORLD,"var_M on\n");
                     M_val = M * PetscSqrtReal(PetscAbs(-P_comp / (dike->knee + PetscAbs(P_comp))));
                     div_max = M_val * 2 * v_spread / PetscAbs(left-right); // maximum divergence allowed
                     dike_or = M * 2 * v_spread * 10; // dike opening rate (km/Myr) *revisit (scale??)
@@ -359,18 +384,31 @@ PetscErrorCode GetDikeContr(JacRes *jr,
                     {
                       zeta = -(dike->A * dike->zeta_0 / (P_comp + dike->B) + P_comp / div_max);
                       tempdikeRHS = - P_comp / zeta;
+        PetscPrintf(PETSC_COMM_WORLD,"diking --> ");
+        PetscPrintf(PETSC_COMM_WORLD,"M = %g, ", M_val);
+        PetscPrintf(PETSC_COMM_WORLD,"tempdikeRHS = %g \n", tempdikeRHS);
+        PetscPrintf(PETSC_COMM_WORLD,"phRat[i] = %g, ", phRat[i]);
+        PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g (MPa), ", sxx_eff_ave_cell * 1e6);
+        PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g \n", P_comp);
                     }
                     else // diking DOES NOT occur
                     {
                       tempdikeRHS = 0.0;
+//        PetscPrintf(PETSC_COMM_WORLD,"not diking --> ");
+//        PetscPrintf(PETSC_COMM_WORLD,"M = %g \n", tempdikeRHS);
                     }
 
 //                    PetscPrintf(PETSC_COMM_WORLD,"M = %g \n", tempdikeRHS);
+
                   }
                   else
                   {
                     tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
+        PetscPrintf(PETSC_COMM_WORLD,"var_M off\n");
+        PetscPrintf(PETSC_COMM_WORLD,"M = %g \n", tempdikeRHS);
                   }
+
+
 		            }
 
 		            else if(dike->Mc >= 0.0)   // Mf, Mc and Mb
@@ -592,22 +630,21 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
     if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0)
     //if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
     {
-    	  //PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
-    	  PetscPrintf(PETSC_COMM_WORLD, "Locating potential Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
+    	 PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
        // compute lithostatic pressure
        if (icounter==0) 
-       {
-         ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
-         ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
-       }
-       icounter++;
+        {
+          ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+          ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
+        }
+        icounter++;
 
-       //---------------------------------------------------------------------------------------------
-       //  Find dike phase transition
-       //---------------------------------------------------------------------------------------------
-       nPtr=-1;
-       for(n=0; n<numPhtr; n++)                          
-       {                                               
+        //---------------------------------------------------------------------------------------------
+        //  Find dike phase transition
+        //---------------------------------------------------------------------------------------------
+        nPtr=-1;
+        for(n=0; n<numPhtr; n++)                          
+        {                                               
           CurrPhTr = jr->dbm->matPhtr+n;
           if(CurrPhTr->ID == dike->PhaseTransID)  
           {
@@ -617,6 +654,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
        
        if (nPtr==-1) 
        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %i, nPtr=%i\n", nD, nPtr);
+
        CurrPhTr = jr->dbm->matPhtr+nPtr;
        //---------------------------------------------------------------------------------------------
        //  Find y-bounds of current dynamic dike
@@ -749,7 +787,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
             sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn)*dz;  //integrating dz-weighted total stress
             Pmag[L][j][i]+=p_lith[k][j][i]*dz;
 
-            liththick[L][j][i]+=dz;             //integrating thickeness
+            liththick[L][j][i]+=dz;             //integrating thickness
           }
           
           //interpolate depth to the solidus
@@ -760,7 +798,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
       END_PLANE_LOOP
   } 
 
-      //After integrating and averaging, send it down to the next proc. 
+  //After integrating thickness and dz-weighted total stress, send it down to the next proc. 
   if(dsz->nproc != 1 && dsz->grprev != -1)
   {
      ierr = MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
@@ -820,6 +858,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 */
 	magma_presence=1.0;  //testing
 	
+  // calculate depth average stress (sxx)
   START_PLANE_LOOP
 		dPmag=(dike->zmax_magma-zsol[L][j][i])*(dike->drhomagma)*grav[2];  //excess static magma pressure at solidus, z & grav[2] <0 so this is positive
 //		magma_presence=dike->magPfac*(zsol[L][j][i]-dike->zmax_magma)/(zsol_max-dike->zmax_magma);  //this feature undergoing testing

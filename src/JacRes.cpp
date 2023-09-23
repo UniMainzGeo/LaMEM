@@ -1164,6 +1164,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+	//ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -1180,6 +1181,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	  ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 	//ierr = Smooth_sxx_eff(jr, nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx	*revisit (won't work bc we need nPtr)
 	dike = jr->dbdike->matDike+nD;
+//	ierr = Locate_Dike_Zones(actx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 	}
 

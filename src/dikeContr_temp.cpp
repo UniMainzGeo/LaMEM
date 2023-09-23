@@ -143,6 +143,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 }
 
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)
 {
 	// read dike parameter from file
@@ -332,8 +333,8 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 
   nPtr = 0;
   nD = 0;
-  
-  for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks
+
+    for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks
     {
       // access the parameters of the phasetranstion block
       CurrPhTr = jr->dbm->matPhtr+nPtr;
@@ -573,14 +574,14 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 {
 
 
-  Controls        *ctrl;
-  JacRes          *jr;
-  Dike            *dike;
-  Ph_trans_t      *CurrPhTr;
-  FDSTAG          *fs;
-  PetscInt        nD, numDike, numPhtr, nPtr, n, icounter;
-  PetscInt        j, j1, j2, sx, sy, sz, ny, nx, nz;
-  PetscErrorCode  ierr; 
+  Controls    *ctrl;
+  JacRes      *jr;
+  Dike        *dike;
+  Ph_trans_t  *CurrPhTr;
+  FDSTAG      *fs;
+  PetscInt   nD, numDike, numPhtr, nPtr, n, icounter;
+  PetscInt   j, j1, j2, sx, sy, sz, ny, nx, nz;
+  PetscErrorCode ierr; 
 
   PetscFunctionBeginUser;
 
@@ -605,8 +606,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
     if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0)
     //if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
     {
-    	 PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
-
+    	  //PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
+    	  PetscPrintf(PETSC_COMM_WORLD, "Locating potential Dike zone: istep=%i dike # %i\n", jr->ts->istep + 1,nD);
        // compute lithostatic pressure
        if (icounter==0) 
        {
@@ -762,7 +763,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
             sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn)*dz;  //integrating dz-weighted total stress
             Pmag[L][j][i]+=p_lith[k][j][i]*dz;
 
-            liththick[L][j][i]+=dz;             //integrating thickeness
+            liththick[L][j][i]+=dz;             //integrating thickness
           }
           
           //interpolate depth to the solidus
@@ -773,7 +774,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
       END_PLANE_LOOP
   } 
 
-      //After integrating and averaging, send it down to the next proc. 
+      //After integrating thickness and dz-weighted total stress, send it down to the next proc. 
   if(dsz->nproc != 1 && dsz->grprev != -1)
   {
      ierr = MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
@@ -833,6 +834,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 */
 	magma_presence=1.0;  //testing
 	
+  // calculate depth average stress (sxx)
   START_PLANE_LOOP
 		dPmag=(dike->zmax_magma-zsol[L][j][i])*(dike->drhomagma)*grav[2];  //excess static magma pressure at solidus, z & grav[2] <0 so this is positive
 //		magma_presence=dike->magPfac*(zsol[L][j][i]-dike->zmax_magma)/(zsol_max-dike->zmax_magma);  //this feature undergoing testing
