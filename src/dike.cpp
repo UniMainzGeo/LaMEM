@@ -359,8 +359,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
                 nsegs=CurrPhTr->nsegs;
 //        PetscPrintf(PETSC_COMM_WORLD,"phRat > 0 && xboundR > xboundL, ");
 
-                P_comp = - sxx_eff_ave_cell * 1e9 + dike->Ts; // *revisit (scale)
-                // P_comp = dike->sxx_eff_ave[L][J+sy][I+sx] + dike->Ts;
+                P_comp = - sxx_eff_ave_cell * 1e9 + dike->Ts; // *revisit (scale; multiplied by 1e9 to convert to Pa)
 
 //        PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g, ", sxx_eff_ave_cell);
 //        PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g, ", P_comp);
@@ -377,19 +376,36 @@ PetscErrorCode GetDikeContr(JacRes *jr,
                   {
 //        PetscPrintf(PETSC_COMM_WORLD,"var_M on\n");
                     M_val = M * PetscSqrtReal(PetscAbs(-P_comp / (dike->knee + PetscAbs(P_comp))));
-                    div_max = M_val * 2 * v_spread / PetscAbs(left-right); // maximum divergence allowed
-                    dike_or = M * 2 * v_spread * 10; // dike opening rate (km/Myr) *revisit (scale??)
+//                    div_max = M_val * 2 * v_spread / PetscAbs(left-right); // maximum divergence allowed
+//                    dike_or = M * 2 * v_spread * 10; // dike opening rate (km/Myr) *revisit (scale??)
+                    div_max = M_val * 2 * (v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60)/ (PetscAbs(left-right) * 1000); //*hardcoded scale
+                    dike_or = M * 2 * (v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60); //*hardcoded scale
                     
+        PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g (MPa), ", P_comp/1e6);
+        PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g (MPa), ", sxx_eff_ave_cell*1e3);
+        PetscPrintf(PETSC_COMM_WORLD,"div_max = %g, ", div_max);
+        PetscPrintf(PETSC_COMM_WORLD,"M_val = %g, ", M_val);
+        PetscPrintf(PETSC_COMM_WORLD,"v_spread = %g, ", v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60); //*hardcoded scale
+//        PetscPrintf(PETSC_COMM_WORLD,"v_spread = %g, ", v_spread);
+        PetscPrintf(PETSC_COMM_WORLD,"left = %g, ", left);
+        PetscPrintf(PETSC_COMM_WORLD,"right = %g \n", right);
+
                     if(P_comp < 0) // diking occurs
                     {
                       zeta = -(dike->A * dike->zeta_0 / (P_comp + dike->B) + P_comp / div_max);
-                      tempdikeRHS = - P_comp / zeta;
+                      tempdikeRHS = - P_comp / zeta; // *revisit (scale;  non-dim time and lengths...)
+
         PetscPrintf(PETSC_COMM_WORLD,"diking --> ");
-        PetscPrintf(PETSC_COMM_WORLD,"M = %g, ", M_val);
+/*         PetscPrintf(PETSC_COMM_WORLD,"M = %g, ", M_val); */
         PetscPrintf(PETSC_COMM_WORLD,"tempdikeRHS = %g \n", tempdikeRHS);
-        PetscPrintf(PETSC_COMM_WORLD,"phRat[i] = %g, ", phRat[i]);
-        PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g (MPa), ", sxx_eff_ave_cell * 1e6);
-        PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g \n", P_comp);
+/*         PetscPrintf(PETSC_COMM_WORLD,"div_max = %g, ", div_max);
+        PetscPrintf(PETSC_COMM_WORLD,"left = %g, ", left);
+        PetscPrintf(PETSC_COMM_WORLD,"right = %g \n", div_max);
+//        PetscPrintf(PETSC_COMM_WORLD,"phRat[i] = %g, ", phRat[i]);
+        PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g, ", sxx_eff_ave_cell);
+        PetscPrintf(PETSC_COMM_WORLD,"div_max = %g, ", div_max); */
+        PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g, ", P_comp);
+        PetscPrintf(PETSC_COMM_WORLD,"zeta = %g \n", zeta);
                     }
                     else // diking DOES NOT occur
                     {
@@ -398,14 +414,15 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 //        PetscPrintf(PETSC_COMM_WORLD,"M = %g \n", tempdikeRHS);
                     }
 
-//                    PetscPrintf(PETSC_COMM_WORLD,"M = %g \n", tempdikeRHS);
+//        PetscPrintf(PETSC_COMM_WORLD,"M = %g \n", tempdikeRHS);
 
                   }
                   else
                   {
                     tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
         PetscPrintf(PETSC_COMM_WORLD,"var_M off\n");
-        PetscPrintf(PETSC_COMM_WORLD,"M = %g \n", tempdikeRHS);
+        PetscPrintf(PETSC_COMM_WORLD,"M = %g, ", M);
+        PetscPrintf(PETSC_COMM_WORLD,"tempdikeRHS = %g \n", tempdikeRHS);
                   }
 
 

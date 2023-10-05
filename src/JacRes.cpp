@@ -1178,7 +1178,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	if (jr->ctrl.actDike)
 	{
 	  nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
-	  ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
+	//ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 	//ierr = Smooth_sxx_eff(jr, nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx	*revisit (won't work bc we need nPtr)
 	dike = jr->dbdike->matDike+nD;
 //	ierr = Locate_Dike_Zones(actx); CHKERRQ(ierr);
@@ -1204,7 +1204,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
 		  ierr = GetDikeContr(jr, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy, i-sx, sxx_eff_ave_cell);  CHKERRQ(ierr);
-		  
+
+	if (!dikeRHS == 0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g", sxx_eff_ave_cell);
+		PetscPrintf(PETSC_COMM_WORLD,"dikeRHS = %g", dikeRHS);
+	}
+
 		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
 		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
 		  dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
