@@ -192,7 +192,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   {
 
     dike->A = 100;
-    dike->B = 1e-16; 
+    dike->B = -1e-16; 
     dike->knee = 5e6; 
 		dike->Ts = 10e6;
     dike->zeta_0 = 1e24;
@@ -384,7 +384,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
         PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g (MPa), ", P_comp/1e6);
         PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g (MPa), ", sxx_eff_ave_cell*1e3);
         PetscPrintf(PETSC_COMM_WORLD,"div_max = %g, ", div_max);
-        PetscPrintf(PETSC_COMM_WORLD,"M_val = %g, ", M_val);
+        PetscPrintf(PETSC_COMM_WORLD,"M_val = %g \n", M_val);
         PetscPrintf(PETSC_COMM_WORLD,"v_spread = %g, ", v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60); //*hardcoded scale
 //        PetscPrintf(PETSC_COMM_WORLD,"v_spread = %g, ", v_spread);
         PetscPrintf(PETSC_COMM_WORLD,"left = %g, ", left);
@@ -471,13 +471,12 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 		            }
 
                 // Divergence
-		              dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  // Give full divergence if cell is part dike part air
+		              dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS*1e10;  // Give full divergence if cell is part dike part air
 
 		        }  //close if phRat and xboundR>xboundL  
 	        }  // close phase transition and dike phase ID comparison 
 	    }  // close dike block loop
     }  // close phase transition block loop
-  
   PetscFunctionReturn(0);
 }
 
