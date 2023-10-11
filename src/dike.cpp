@@ -393,7 +393,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
                     if(P_comp < 0) // diking occurs
                     {
                       zeta = -(dike->A * dike->zeta_0 / (P_comp + dike->B) + P_comp / div_max);
-                      tempdikeRHS = - P_comp / zeta; // *revisit (scale;  non-dim time and lengths...)
+                      tempdikeRHS = - P_comp / zeta * 1e10; // *revisit (scale;  non-dim time and lengths...)
 
         PetscPrintf(PETSC_COMM_WORLD,"diking --> ");
 /*         PetscPrintf(PETSC_COMM_WORLD,"M = %g, ", M_val); */
@@ -471,7 +471,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 		            }
 
                 // Divergence
-		              dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS*1e10;  // Give full divergence if cell is part dike part air
+		              dikeRHS += (phRat[i]+phRat[AirPhase])*tempdikeRHS;  // Give full divergence if cell is part dike part air
 
 		        }  //close if phRat and xboundR>xboundL  
 	        }  // close phase transition and dike phase ID comparison 
@@ -890,7 +890,7 @@ if (((istep % nstep_out) == 0) && (dike->out_stress > 0))
 	{
 		// Form the filename based on jr->ts->istep+1
 		std::ostringstream oss;
-		oss << "gsxx_Timestep_" << (jr->ts->istep) << ".txt";
+		oss << "gsxx_Timestep_" << (jr->ts->istep+1) << ".txt";
 
 		std::string filename = oss.str();
 
@@ -1423,7 +1423,7 @@ if (jc<j && dalong<=filty) //if south of current point
     {
       // Form the filename based on jr->ts->istep+1
       std::ostringstream oss;
-      oss << "smooth_gsxx_Timestep_" << (jr->ts->istep) << ".txt";
+      oss << "smooth_gsxx_Timestep_" << (jr->ts->istep+1) << ".txt";
 
       std::string filename = oss.str();
 
@@ -1572,7 +1572,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
     {
       // Form the filename based on jr->ts->istep
       std::ostringstream oss;
-      oss << "dikeloc_Timestep_" << (jr->ts->istep) << ".txt";
+      oss << "dikeloc_Timestep_" << (jr->ts->istep+1) << ".txt";
 
       std::string filename = oss.str();
 
