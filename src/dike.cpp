@@ -791,6 +791,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   //fill ghost points
       
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
+  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->magPressure);
 
   ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -852,7 +853,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	dike = jr->dbdike->matDike+nD;
 	filtx=dike->filtx;
 	filty=dike->filty;
-	dfac=2.0; //maximum distance for Gaussian weights is dfac*filtx and dfac*filty
+	dfac=1.0; //maximum distance for Gaussian weights is dfac*filtx and dfac*filty
 
 	magPfac=dike->magPfac;
 	magPwidth=dike->magPwidth;
@@ -1118,11 +1119,11 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 				j1prev=(PetscInt)min(j1prev,jj);   
 				j2prev=(PetscInt)max(j2prev,jj);
 			}
-			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
+			/* dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
 			if ( dsy->grprev != -1 && fabs(dyaz) <= filty && xcenter_prev[L][M][jj-sy] < 1.0e+12) 
 			{
 				dyazmin=(PetscScalar)min(dyaz,dyazmin);
-			}
+			}*/
 
 			//Next proc
 			yy=(ycoors_next[L][M][jj-sy+1]+ycoors_next[L][M][jj-sy])/2;
@@ -1131,11 +1132,11 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 				j1next=(PetscInt)min(j1next,jj);   
 				j2next=(PetscInt)max(j2next,jj);
 			}
-			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty
+			/*dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty
 			if (dsy->grnext != -1 && fabs(dyaz)<=filty && xcenter_next[L][M][jj-sy] < 1.0e+12)
 			{
 				dyazmax=(PetscScalar)max(dyaz,dyazmax);
-			}
+			}*/
 
 			//Current proc
 			yy=COORD_CELL(jj, sy, fs->dsy);
@@ -1144,18 +1145,18 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 				jj1=(PetscInt)min(jj1,jj);
 				jj2=(PetscInt)max(jj2,jj);
 			}
-			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
+			/*dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
 			if (fabs(dyaz) <= filty && xcenter[L][M][jj-sy] < 1.0e+12)
 			{
 				dyazmin=(PetscScalar)min(dyaz,dyazmin);
 				dyazmax=(PetscScalar)max(dyaz,dyazmax);
-			}
+			}*/
 		}  //end y loop for defining area of Gaussian smoothing patch
 
 		str_y=1;
-		if ((dyazmax-dyazmin)<2*filty)       //if dike zone end limits the distance to < dfac*filty north or south
-			str_y=2*filty/(dyazmax-dyazmin);  //then stretch filty smoothing extends a total distance 2*dfac*filty
-		str_y=(PetscScalar)min(str_y,2.0);
+		//if ((dyazmax-dyazmin)<2*filty)       //if dike zone end limits the distance to < dfac*filty north or south
+		//	str_y=2*filty/(dyazmax-dyazmin);  //then stretch filty smoothing extends a total distance 2*dfac*filty
+		//str_y=(PetscScalar)min(str_y,2.0);
 		/*if (L==0)  //debugging
 		{ 
 			PetscSynchronizedPrintf(PETSC_COMM_WORLD,"212121.2121 %lld M=%i: %i %g prev: %g to %g, curr: %g to %g next: %g to %g dytot=%g \n", 
@@ -1260,7 +1261,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 				}
 			} //end loop over cells from next proc
 
-			sum_w=max(sum_w,0.0);
+			//sum_w=max(sum_w,0.0);  //why would sum_w be <0???!
 			magPressure[L][j][i]=(sum_magP/sum_w);
 			gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + magPressure[L][j][i]*magPfac*exp(-0.5*(pow((cos(azim)*(xcent-xc)/magPwidth),2)));
 			//gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + magPressure[L][j][i];
@@ -1382,6 +1383,8 @@ if (((istep % nstep_out)==0) && (dike->out_stress>0))
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
 
+	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
+
 	PetscFunctionReturn(0);  
 }  
 
@@ -1465,6 +1468,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 			}
    
 		} 
+		
 		//finding where slope of dsxx/dx=0
 		sxxm =  gsxx_eff_ave[L][j][ixmax-1];  //left of maximum point
 		sxxp =  gsxx_eff_ave[L][j][ixmax+1]; ;  //right of max. point
