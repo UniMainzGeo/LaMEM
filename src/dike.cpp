@@ -517,8 +517,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
   {
     dike = jr->dbdike->matDike+nD;
 
-	if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0) 
-	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
+	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0) //
+	if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
     {
 	   PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1),(LLD)(nD));
        // compute lithostatic pressure
@@ -560,8 +560,10 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
       ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 
       ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
-
-      ierr = Set_dike_zones(jr, nD, nPtr,j1, j2); CHKERRQ(ierr); //centered on peak sxx_eff_ave 
+	  if (((jr->ts->istep+1) % dike->nstep_locate) == 0)
+	  {
+      	ierr = Set_dike_zones(jr, nD, nPtr,j1, j2); CHKERRQ(ierr); //centered on peak sxx_eff_ave 
+	  }
     }
 
   }
@@ -1505,15 +1507,14 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 		{
         	ycell = COORD_CELL(j, sy, fs->dsy);  
         	xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-        	PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %lld %g %g %g %g %g %g %g %lld %g \n", 
+        	PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %lld %g %g %g %g %g %lld %g \n", 
 				(LLD)(jr->ts->istep+1), ycell, xcenter, xshift, 
-        		x_maxsxx, COORD_CELL(ixmax, sx, fs->dsx), 
 				CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], (LLD)(nD), dtime);  
 		}
 
 	}//end loop over j cell row
 
-	if (((istep % nstep_out)==0) && (dike->out_dikeloc > 0))  
+	if (((istep % dike->out_dikeloc)==0) && (dike->out_dikeloc > 0))  
 	{
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
 	}
