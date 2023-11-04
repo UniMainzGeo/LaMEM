@@ -517,8 +517,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
   {
     dike = jr->dbdike->matDike+nD;
 
-	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0) //
-	if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
+	if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0) 
+	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
     {
 	   PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1),(LLD)(nD));
        // compute lithostatic pressure
@@ -560,10 +560,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
       ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 
       ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
-	  if (((jr->ts->istep+1) % dike->nstep_locate) == 0)
-	  {
-      	ierr = Set_dike_zones(jr, nD, nPtr,j1, j2); CHKERRQ(ierr); //centered on peak sxx_eff_ave 
-	  }
+
+      ierr = Set_dike_zones(jr, nD, nPtr,j1, j2); CHKERRQ(ierr); //centered on peak sxx_eff_ave 
     }
 
   }
@@ -1121,11 +1119,11 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 				j1prev=(PetscInt)min(j1prev,jj);   
 				j2prev=(PetscInt)max(j2prev,jj);
 			}
-			/* dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
+			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
 			if ( dsy->grprev != -1 && fabs(dyaz) <= filty && xcenter_prev[L][M][jj-sy] < 1.0e+12) 
 			{
 				dyazmin=(PetscScalar)min(dyaz,dyazmin);
-			}*/
+			}
 
 			//Next proc
 			yy=(ycoors_next[L][M][jj-sy+1]+ycoors_next[L][M][jj-sy])/2;
@@ -1134,11 +1132,11 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 				j1next=(PetscInt)min(j1next,jj);   
 				j2next=(PetscInt)max(j2next,jj);
 			}
-			/*dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty
+			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty
 			if (dsy->grnext != -1 && fabs(dyaz)<=filty && xcenter_next[L][M][jj-sy] < 1.0e+12)
 			{
 				dyazmax=(PetscScalar)max(dyaz,dyazmax);
-			}*/
+			}
 
 			//Current proc
 			yy=COORD_CELL(jj, sy, fs->dsy);
@@ -1147,12 +1145,12 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 				jj1=(PetscInt)min(jj1,jj);
 				jj2=(PetscInt)max(jj2,jj);
 			}
-			/*dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
+			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
 			if (fabs(dyaz) <= filty && xcenter[L][M][jj-sy] < 1.0e+12)
 			{
 				dyazmin=(PetscScalar)min(dyaz,dyazmin);
 				dyazmax=(PetscScalar)max(dyaz,dyazmax);
-			}*/
+			}
 		}  //end y loop for defining area of Gaussian smoothing patch
 
 		str_y=1;
@@ -1514,7 +1512,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
 	}//end loop over j cell row
 
-	if (((istep % dike->out_dikeloc)==0) && (dike->out_dikeloc > 0))  
+	if (((istep % nstep_out)==0) && (dike->out_dikeloc > 0))  
 	{
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
 	}
