@@ -1,5 +1,5 @@
 
-function CreateMarkers_Temperature(dir="./", ParamFile="t12_Temperature_diffusion.dat", dir_markers="./markers_pT1"; NumberCores=1)
+function CreateMarkers_Temperature(dir="./", ParamFile="t12_Temperature_diffusion.dat", dir_markers="./markers_pT1"; NumberCores=1, is64bit=false)
     cur_dir = pwd()
     cd(dir)
 
@@ -24,7 +24,7 @@ function CreateMarkers_Temperature(dir="./", ParamFile="t12_Temperature_diffusio
     else
         #> 1 cores; create partitioning file first
         PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/");
-        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory=dir_markers, verbose=false)     
+        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory=dir_markers, verbose=false, is64bit=is64bit)     
     end
 
     cd(cur_dir)

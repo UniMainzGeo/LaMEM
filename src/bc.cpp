@@ -1,43 +1,12 @@
-/*@ ~~~~~~~~~~~~  if~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **    Copyright (c) 2011-2020, JGU Mainz, Anton Popov, Boris Kaus
- **    All rights reserved.
- **
- **    This software was developed at:
- **
- **         Institute of Geosciences
- **         Johannes-Gutenberg University, Mainz
- **         Johann-Joachim-Becherweg 21
- **         55128 Mainz, Germany
- **
- **    project:    LaMEM
- **    filename:   bc.c
- **
- **    LaMEM is free software: you can redistribute it and/or modify
- **    it under the terms of the GNU General Public License as published
- **    by the Free Software Foundation, version 3 of the License.
- **
- **    LaMEM is distributed in the hope that it will be useful,
- **    but WITHOUT ANY WARRANTY; without even the implied warranty of
- **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- **    See the GNU General Public License for more details.
- **
- **    You should have received a copy of the GNU General Public License
- **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
- **
- **
- **    Contact:
- **        Boris Kaus       [kaus@uni-mainz.de]
- **        Anton Popov      [popov@uni-mainz.de]
- **
- **
- **    This routine:
- **         Anton Popov      [popov@uni-mainz.de]
- **         Boris Kaus       [kaus@uni-mainz.de]
- **         Andrea Piccolo   [piccolo@uni-mainz.de]
+ **   Project      : LaMEM
+ **   License      : MIT, see LICENSE file for details
+ **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
+ **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
+ **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-
 //---------------------------------------------------------------------------
 //........................... BOUNDARY CONDITIONS ...........................
 //---------------------------------------------------------------------------
@@ -252,7 +221,7 @@ PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %i \n", cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %lld \n", (LLD) cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Box center                              : %g, %g, %g %s \n", velbox->cenX  *scal->length, velbox->cenY  *scal->length, velbox->cenZ  *scal->length, scal->lbl_length);
 	PetscPrintf(PETSC_COMM_WORLD, "      Box width                               : %g, %g, %g %s \n", velbox->widthX*scal->length, velbox->widthY*scal->length, velbox->widthZ*scal->length, scal->lbl_length);
 	if(velbox->vx != DBL_MAX)
@@ -337,7 +306,7 @@ PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt
 {
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %i \n", cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %lld \n", (LLD) cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder base                           : %g, %g, %g %s \n", velcyl->baseX  *scal->length, velcyl->baseY  *scal->length, velcyl->baseZ  *scal->length, scal->lbl_length);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder cap                            : %g, %g, %g %s \n", velcyl->capX*scal->length, velcyl->capY*scal->length, velcyl->capZ*scal->length, scal->lbl_length);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder radius                         : %g %s \n", velcyl->rad*scal->length, scal->lbl_length);
@@ -764,7 +733,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     if(bc->Plume_VelocityType == 0){PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Poiseuille flow (and constant outflow) \n");}
     else{  				 	        PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Gaussian in/out flow \n");}
                             PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, 	 				scal->lbl_temperature);
-                            PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %i \n", bc->Plume_Phase);
+                            PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %lld \n", (LLD) bc->Plume_Phase);
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %g %s \n", bc->Plume_Inflow_Velocity*scal->velocity, scal->lbl_velocity);
                             PetscPrintf(PETSC_COMM_WORLD, "      Area fraction of plume                  : %g \n", bc->Plume_areaFrac);
     if(bc->Plume_Dimension == 1){PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g] %s \n", bc->Plume_Center[0]*scal->length,       scal->lbl_length);}
@@ -776,7 +745,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
                             PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
 							if(bc->VelNumPeriods>1)	
 							{
-							PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %d   \n", bc->VelNumPeriods);}
+							PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %lld   \n", (LLD) bc->VelNumPeriods);}
 							else {PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : 1   \n");
 							}							
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %s \n", str_inflow);
@@ -1467,7 +1436,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 PetscErrorCode BCGetVelins(
 		BCCtx       *bc)
 {
-	Scaling     *scal;
 	PetscScalar  bz;
 	PetscInt    jj;
 	PetscScalar time;
@@ -1475,12 +1443,11 @@ PetscErrorCode BCGetVelins(
 	PetscFunctionBegin;
 	// initialize
 	time = bc->ts->time;
-	scal = bc->scal;
 	if(bc->VelNumPeriods)
 	{
 		for(jj = 0; jj < bc->VelNumPeriods-1; jj++)
 		{
-			if(time*scal->time < bc->VelTimeDelims[jj]*scal->time) break;
+			if(time < bc->VelTimeDelims[jj]) break;
 		}
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 		bc->velin  =  bc->velin_array[jj];
@@ -1754,8 +1721,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
     veltop = bc->veltop;
 
     // set open boundary flag
-    top_open = bc->top_open;
-    bot_open = bc->bot_open;
+    top_open = (PetscScalar) bc->top_open;
+    bot_open = (PetscScalar) bc->bot_open;
 
     // initialize maximal index in all directions
     mnx = fs->dsx.tnods - 1;

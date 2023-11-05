@@ -66,7 +66,7 @@ Allows you to define a square box:
 
 Allows you to define a hexahedral object (which requires you to specify 8 edge points), in the following order:
 
-![HexNumbering](./Pictures/BuildInGeometry_HexNumbering.png)
+![HexNumbering](../assets/img/BuildInGeometry_HexNumbering.png)
 
 ```
 <HexStart>

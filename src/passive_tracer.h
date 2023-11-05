@@ -1,12 +1,23 @@
+/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ **
+ **   Project      : LaMEM
+ **   License      : MIT, see LICENSE file for details
+ **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
+ **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
+ **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **
+ ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 /*
- * passive_tracer.h
- *
- *
  *  Created on: Jul 28, 2020
  *      Author: piccolo
  */
+
+//---------------------------------------------------------------------------
+
 #ifndef passive_tracer_h_
 #define passive_tracer_h_
+
 //---------------------------------------------------------------------------
 
 #include "Tensor.h" // required for Marker declaration
@@ -30,6 +41,7 @@ struct FDSTAG;
 struct JacRes;
 struct FreeSurf;
 struct DBMat;
+
 /*
  * The passive tracer are placed at the cell center. They are globally identified by the ID of the cell
  * The global ID number is given by the following formulation ID = i + Npx*(ip+j*nx+jp*ny)+Npx*Npy*npx*npy*(k+kp*nz)
@@ -37,6 +49,9 @@ struct DBMat;
  * nx,ny,nz are the number of nodes along x,y,z direction contained in each processor.
  * Each time the marker are advected, and interpolated revelant information: e.g. pressure and temperature
  */
+
+//---------------------------------------------------------------------------
+
 enum Condition
 {	_Always_,
 	_Melt_Fr_,
@@ -45,6 +60,8 @@ enum Condition
 	_Time_ptr_,
 	_Phase_ptr_
 };
+
+//---------------------------------------------------------------------------
 
 struct P_Tr
 {
@@ -93,7 +110,8 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 
 //PetscErrorCode Passive_tracers_save(AdvCtx *actx);
 
-#endif /* PASSIVE_TRACER_H */
+//---------------------------------------------------------------------------
+#endif
 
 
 

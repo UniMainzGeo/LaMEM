@@ -1,48 +1,12 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
- **    All rights reserved.
- **
- **    This software was developed at:
- **
- **         Institute of Geosciences
- **         Johannes-Gutenberg University, Mainz
- **         Johann-Joachim-Becherweg 21
- **         55128 Mainz, Germany
- **
- **    project:    LaMEM
- **    filename:   phase.c
- **
- **    LaMEM is free software: you can redistribute it and/or modify
- **    it under the terms of the GNU General Public License as published
- **    by the Free Software Foundation, version 3 of the License.
- **
- **    LaMEM is distributed in the hope that it will be useful,
- **    but WITHOUT ANY WARRANTY; without even the implied warranty of
- **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- **    See the GNU General Public License for more details.
- **
- **    You should have received a copy of the GNU General Public License
- **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
- **
- **
- **    Contact:
- **        Boris Kaus       [kaus@uni-mainz.de]
- **        Anton Popov      [popov@uni-mainz.de]
- **
- **
- **    This routine:
- **         Anton Popov      [popov@uni-mainz.de]
- **         Boris Kaus       [kaus@uni-mainz.de]
- **			Andrea Piccolo
- **         Georg Reuber
+ **   Project      : LaMEM
+ **   License      : MIT, see LICENSE file for details
+ **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
+ **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
+ **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-/*
-	This file defined various material properties for the phases
-
-*/
-
 //---------------------------------------------------------------------------
 //.................. MATERIAL PARAMETERS READING ROUTINES....................
 //---------------------------------------------------------------------------
@@ -231,35 +195,38 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",    &s->A,    1, 1.0); CHKERRQ(ierr); 
 	ierr = getScalarParam(fb, _OPTIONAL_, "APS1", &s->APS1, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "APSheal2", &s->APSheal2, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Lm",   &s->Lm,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "healTau", &s->healTau,   1, 1.0); CHKERRQ(ierr);   
     ierr = getScalarParam(fb, _OPTIONAL_, "healTau2", &s->healTau2,   1, 1.0); CHKERRQ(ierr);   
 
 	
-    if(!s->healTau &&(!s->A || !s->APS1 || !s->APS2)) 
+    if(!s->healTau && (!s->A || !s->APS1 || !s->APS2)) 
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %lld", (LLD)ID);
 	}
 
-    if (s->healTau && !s->healTau2)
-    {
-	    s->healTau2=s->healTau;
-    }
+	if ((s->healTau2 && !s->APSheal2) || (!s->healTau2 && s->APSheal2))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "healTau2 and APSheal2 must be set together for heal law %lld", (LLD)ID);
+	}
 
-    if (s->APS2 && !s->APSheal2)
-    {
-    	s->APSheal2=s->APS2;
-    }
 
 	if (PrintOutput){
 		if(s->Lm)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
 		}
-		if(s->healTau)
+		if(s->healTau && s->healTau2)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, APSheal2 = %g, healTau = %g, healTau2= %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->APSheal2,s->healTau, s->healTau2);
-        }
+		}
+		else if (s->healTau && !s->healTau2)
+  		{
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, healTau = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->healTau);
+			s->APSheal2=s->APS2;
+			s->healTau2=s->healTau;
+		}
 		else
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);

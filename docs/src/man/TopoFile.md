@@ -35,4 +35,4 @@ Topo    = Topo';
 petscBinaryWrite('Topo.dat', [size(Topo,1); size(Topo,2); min(Easting);min(Northing); dx; dy; Topo(:)]);
 ```
 
-![TopoFromFile](./Pictures/TopoFromFile.png)
+![TopoFromFile](../assets/img/TopoFromFile.png)

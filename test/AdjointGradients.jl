@@ -1,68 +1,73 @@
 # This tests various adjoint gradient cases
 dir = "t8_AdjointGradients";
-    
-# t8_Adjoint_rho_SensitivityKernel
-keywords   = (  "|Div|_inf",
-                "|Div|_2",
-                "|mRes|_2")
+if test_superlu
+   # t8_Adjoint_rho_SensitivityKernel
+   keywords   = (  "|Div|_inf",
+                  "|Div|_2",
+                  "|mRes|_2")
 
-acc        = (  (rtol=1e-7, atol=1e-6), 
-                (rtol=1e-5, atol=1e-5), 
-                (rtol=1e-5, atol=1e-5), 
-             );
+   acc        = (  (rtol=1e-7, atol=1e-6), 
+                  (rtol=1e-5, atol=1e-5), 
+                  (rtol=1e-5, atol=1e-5), 
+               );
 
-# Perform tests
-ParamFile = "t8_AdjointGradients.dat";
-@test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_Sphere_ND_all.expected",
-                        args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true)
+   # Perform tests
 
-# t8_AdjointGradients_Sphere_ND_all
-keywords   = (  "|Div|_inf",
-                "|Div|_2",
-                "|mRes|_2",
-                "|           delta(rho)[  1]",
-                "|                  eta[  0]",
-                "|   Velocity check            :",
-                "|  adjoint     2:          eta[ 0]")
+   ParamFile = "t8_AdjointGradients.dat";
+   @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_Sphere_ND_all.expected",
+                           args="",
+                           keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
+end
+if test_superlu
+   # t8_AdjointGradients_Sphere_ND_all
+   keywords   = (  "|Div|_inf",
+                  "|Div|_2",
+                  "|mRes|_2",
+                  "|           delta(rho)[  1]",
+                  "|                  eta[  0]",
+                  "|   Velocity check            :",
+                  "|  adjoint     2:          eta[ 0]")
 
-acc        = (  (rtol=1e-7, atol=1e-6), 
-                (rtol=1e-8, atol=1e-5), 
-                (rtol=1e-8, atol=1e-5), 
-                (rtol=1e-6, atol=1e-5), 
-                (rtol=1e-6, atol=1e-5), 
-                (rtol=1e-6, atol=1e-5), 
-                (rtol=1e-6, atol=1e-5), 
-             );
+   acc        = (  (rtol=1e-7, atol=1e-6), 
+                  (rtol=1e-8, atol=1e-5), 
+                  (rtol=1e-8, atol=1e-5), 
+                  (rtol=1e-6, atol=1e-5), 
+                  (rtol=1e-6, atol=1e-5), 
+                  (rtol=1e-6, atol=1e-5), 
+                  (rtol=1e-6, atol=1e-5), 
+               );
 
-ParamFile = "t8_AdjointGradients.dat";
-@test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_Sphere_ND_all.expected",
-                        args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true)
+   ParamFile = "t8_AdjointGradients.dat";
+   @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_Sphere_ND_all.expected",
+                           args="",
+                           keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
+end
 
-# t8_AdjointGradients_CompareGradients_1
-keywords   = (  "|Div|_inf",
-                "|Div|_2",
-                "|mRes|_2",
-                "|       FD     1:          eta[ 1]",
-                "|  adjoint     2:          eta[ 1]",
-                "|       FD     3:          eta[ 0]",
-                "|  adjoint     4:          eta[ 0]")
+if test_superlu
+   # t8_AdjointGradients_CompareGradients_1
+   keywords   = (  "|Div|_inf",
+                  "|Div|_2",
+                  "|mRes|_2",
+                  "|       FD     1:          eta[ 1]",
+                  "|  adjoint     2:          eta[ 1]",
+                  "|       FD     3:          eta[ 0]",
+                  "|  adjoint     4:          eta[ 0]")
 
-acc        = (  (rtol=1e-7, atol=1e-6), 
-                (rtol=1e-8, atol=1e-5), 
-                (rtol=1e-8, atol=1e-5), 
-                (rtol=1e-8, atol=1e-5), 
-                (rtol=1e-8, atol=1e-5), 
-                (rtol=1e-8, atol=1e-5), 
-                (rtol=1e-8, atol=1e-5), 
-             );
+   acc        = (  (rtol=1e-7, atol=1e-6), 
+                  (rtol=1e-8, atol=1e-5), 
+                  (rtol=1e-8, atol=1e-5), 
+                  (rtol=1e-8, atol=1e-5), 
+                  (rtol=1e-8, atol=1e-5), 
+                  (rtol=1e-8, atol=1e-5), 
+                  (rtol=1e-8, atol=1e-5), 
+               );
 
-ParamFile = "t8_AdjointGradients_CompareGradients.dat";
-@test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_CompareGradients_1.expected",
-                        args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true)
 
+   ParamFile = "t8_AdjointGradients_CompareGradients.dat";
+   @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_CompareGradients_1.expected",
+                           args="",
+                           keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
+end
 # t8_AdjointGradients_CompareGradients_geo
 keywords   = (  "|       FD     1:          eta[ 1]",
                 "|  adjoint     2:          eta[ 1]",
@@ -80,7 +85,7 @@ acc        = (  (atol=1e-30, ),
 ParamFile = "t8_AdjointGradients_CompareGradients_geo.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_CompareGradients_geo.expected",
                         args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true)
+                        keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 
 
 
@@ -103,7 +108,7 @@ acc        = (  (rtol=1e-7, atol=1e-6),
 ParamFile = "t8_AdjointGradients_CompareGradients_2.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_AdjointGradients_CompareGradients_2.expected",
                         args="",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true)
+                        keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
 # t8_Adjoint_Subduction2D_FreeSlip
 keywords   = (  "|Div|_inf",
@@ -133,7 +138,7 @@ acc        = (  (rtol=1e-7, atol=1e-6),
 ParamFile = "t8_Subduction2D_FreeSlip_DirectSolver.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_Subduction2D_FreeSlip_DirectSolver_p1.expected",
                         args="-nel_y 1",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true)
+                        keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
 
 # t8_Adjoint_PSD
@@ -150,26 +155,27 @@ acc        = (  (rtol=1e-6, atol=1e-6),
 ParamFile = "t8_FB_PSDTest.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_FB_PSDTest_p1.expected",
                         args="-nel_x 8 -nel_y 8 -nel_z 8 ",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true)
+                        keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
 # t8_Adjoint_rho_SensitivityKernel_PSD
-keywords   = ( "|Div|_inf",
-               "|Div|_2",
-               "|mRes|_2",
-                "| Current Cost function = "
-                )
+if test_superlu
+   keywords   = ( "|Div|_inf",
+                  "|Div|_2",
+                  "|mRes|_2",
+                  "| Current Cost function = "
+                  )
 
-acc        = (  (rtol=1e-7, atol=1e-6), 
-                (rtol=1e-5, atol=1e-5), 
-                (rtol=1e-4, atol=1e-5), 
-                (rtol=1e-6, atol=1e-5), 
-             );   
+   acc        = (  (rtol=1e-7, atol=1e-6), 
+                  (rtol=1e-5, atol=1e-5), 
+                  (rtol=1e-4, atol=1e-5), 
+                  (rtol=1e-6, atol=1e-5), 
+               );   
 
-ParamFile = "t8_AdjointGradients_SensitivityKernel_PSD.dat";
-@test perform_lamem_test(dir,ParamFile,"t8_Adjoint_rho_SensitivityKernel_PSD_p2.expected",
-                        args="",
-                        keywords=keywords, accuracy=acc, cores=2, opt=true)
-
+   ParamFile = "t8_AdjointGradients_SensitivityKernel_PSD.dat";
+   @test perform_lamem_test(dir,ParamFile,"t8_Adjoint_rho_SensitivityKernel_PSD_p2.expected",
+                           args="",
+                           keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
+end
 # t8_Adjoint_n_SensitivityKernel_PSD
 keywords   = ( "|   Norm of field gradient vector :",
                 )
@@ -181,7 +187,7 @@ split_sign       = (":",)
 ParamFile = "t8_PSDKernelPaper.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_Adjoint_n_SensitivityKernelPaper_PSD.expected",
                         args="-nel_x 8  -nel_y 8 -nel_z 8 ",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true)
+                        keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
 # t8_Adjoint_eta0_SensitivityKernel_PSD
 keywords   = ( "|   Norm of field gradient vector :",
@@ -194,5 +200,5 @@ split_sign       = (":",)
 ParamFile = "t8_PSDKernelPaper.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_Adjoint_eta0_SensitivityKernelPaper_PSD.expected",
                         args="-nel_x 8  -nel_y 8 -nel_z 8 -Type[0] eta0",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true, 
+                        keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec, 
                         split_sign=split_sign)

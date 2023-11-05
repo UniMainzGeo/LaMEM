@@ -107,7 +107,9 @@
 	nmark_x        = 3                 # markers per cell in x-direction
 	nmark_y        = 3                 # ...                 y-direction
 	nmark_z        = 3                 # ...                 z-direction
-	mark_load_file = ./markers_p8/mdb  # marker input file (extension is .xxxxxxxx.dat)
+	#mark_load_file = ./markers_p8/mdb  # marker input file (extension is .xxxxxxxx.dat)
+	mark_load_file = ./markers_p2/mdb  # marker input file (extension is .xxxxxxxx.dat)
+	
 	advect         = rk2               # advection scheme
 	interp         = minmod            # velocity interpolation scheme
 	mark_ctrl      = subgrid

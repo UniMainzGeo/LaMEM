@@ -1,12 +1,36 @@
 # These are tools that help perform the LaMEM tests, which run LaMEM locally
 using LinearAlgebra, Glob
+import LaMEM.Run: deactivate_multithreading
 
-export run_lamem_local_test, perform_lamem_test, clean_test_directory
+if use_dynamic_lib
+    using LaMEM.LaMEM_jll.PETSc_jll
+end
+
+export run_lamem_local_test, perform_lamem_test, clean_test_directory, run_lamem_save_grid_local, mpiexec
+
+
+if use_dynamic_lib
+    mpiexec = if PETSc_jll.MPICH_jll.is_available()
+        PETSc_jll.MPICH_jll.mpiexec()
+    elseif PETSc_jll.MicrosoftMPI_jll.is_available()
+        PETSc_jll.MicrosoftMPI_jll.mpiexec()
+    elseif PETSc_jll.OpenMPI_jll.is_available()
+        PETSc_jll.OpenMPI_jll.mpiexec()
+    else
+        warning("")
+        nothing
+    end
+
+else
+    mpiexec = "mpiexec"
+end
+
+
 
 """
     run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
                         outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
-                        mpi exec="mpiexec")
+                        mpiexec="mpiexec", dylibs="")
 
 This runs a LaMEM simulation with given `ParamFile` on 1 or more cores, while writing the output to a local log file.
 
@@ -23,10 +47,20 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
     end
 
     success = true
+    dylibs, mpipath = get_dylibs()
+    args = split(args)
+
     try
         if cores==1
-            perform_run = `$(exec) -ParamFile $(ParamFile) $args`;
+            perform_run = Cmd(`$(exec) -ParamFile $(ParamFile) $args`);
             
+            # add dynamic libraries to the path (if specified)
+            perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+
+            perform_run = deactivate_multithreading(perform_run)
+
+            #perform_run = addenv(perform_run,"PATH"=>mpipath)
+
             # Run LaMEM on a single core, which does not require a working MPI
             try 
                 if !isempty(outfile)
@@ -41,7 +75,16 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
                 success = false
             end
         else
-            perform_run = `$(mpiexec) -n $(cores) $(exec) -ParamFile $(ParamFile) $args`;
+
+            perform_run = Cmd(`$(mpiexec) -n $(cores) $(exec) -ParamFile $(ParamFile) $args`);
+
+            # add dynamic libraries to the path (if specified)
+            perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+
+            perform_run = deactivate_multithreading(perform_run)
+
+           # perform_run = addenv(perform_run,"PATH"=>mpipath)
+  
             # set correct environment
             #mpirun = setenv(mpiexec, LaMEM_jll.JLLWrappers.JLLWrappers.LIBPATH_env=>LaMEM_jll.LIBPATH[]);
             # Run LaMEM in parallel
@@ -60,9 +103,56 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
         success = false
     end
   
-
-
     return success
+end
+
+
+function get_line_containing(stringarray::Vector{SubString{String}}, lookfor::String)
+
+	for line in stringarray
+		   if contains(line, lookfor)
+		   foundline=line
+		   return foundline
+		   end
+	end
+end
+
+"""
+    Procpartname = CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; bin_dir="../../bin", opt=true, deb=false,mpiexec="mpiexec", dylibs="")
+
+Create a processor partitioning file with a locally build version of LaMEM (potentially compiled vs. dynamic libraries)
+"""
+function CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; 
+                LaMEM_dir="../../bin", opt=true, deb=false,
+                mpiexec="mpiexec", verbose=false)
+
+	if cores==1	& verbose==true
+		return print("No partitioning file required for 1 core model setup \n")	
+	end
+
+	ParamFile    = abspath(ParamFile)
+	args         = args*"-mode save_grid"
+
+    # run local lamem & save output to file. This takes care of locally build LaMEM vs 
+    run_lamem_local_test(ParamFile, cores, args; 
+            outfile="savegrid.log", bin_dir=LaMEM_dir, opt=opt, deb=deb,
+            mpiexec=mpiexec)
+            
+    logoutput = String(read("savegrid.log"))
+
+	arr          = split(logoutput,"\n")
+	foundline    = get_line_containing(arr,"Processor grid  [nx, ny, nz]         : ")
+	foundline    = join(map(x -> isspace(foundline[x]) ? "" : foundline[x], 1:length(foundline)))
+	sprtlftbrkt  = split(foundline,"[")
+	sprtrghtbrkt = split(sprtlftbrkt[3],"]")
+	separatecoma = split(sprtrghtbrkt[1],",")
+	procnumbers  = parse.(Int, separatecoma)
+	Procpartname = "ProcessorPartitioning_$(cores)cpu_$(procnumbers[1]).$(procnumbers[2]).$(procnumbers[3]).bin" 
+	if isfile(joinpath((splitdir(ParamFile)[1]),Procpartname))
+		return Procpartname
+	else
+	return Nothing
+	end
 end
 
 
@@ -282,6 +372,34 @@ function clean_test_directory(dir)
 
 end
 
+
+"""
+    get_dylibs()
+This retrieves dynamic libraries, required to run LaMEM. It assumes that the global variable `use_dynamic_lib` is present
+"""
+function get_dylibs()
+    if use_dynamic_lib
+        dylibs = PETSc_jll.LIBPATH;
+
+        mpi_path = if PETSc_jll.MPICH_jll.is_available()
+            PETSc_jll.MPICH_jll.PATH_list[1]
+        elseif PETSc_jll.MicrosoftMPI_jll.is_available()
+            PETSc_jll.MicrosoftMPI_jll.PATH_list[1]
+        elseif PETSc_jll.OpenMPI_jll.is_available()
+            PETSc_jll.OpenMPI_jll.PATH_list[1]
+        else
+            nothing
+        end
+
+    else
+        dylibs = ""
+        mpi_path = ""
+    end
+    
+    return dylibs, mpi_path
+end
+
+
 """
     perform_lamem_test( dir::String, 
                         ParamFile::String, 
@@ -378,3 +496,6 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     
     return success
 end 
+
+
+

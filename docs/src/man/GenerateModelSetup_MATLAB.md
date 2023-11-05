@@ -183,7 +183,7 @@ which shows that it created marker files for 4 processors.
 
 If you open the file `VTK_ModelSetup_paraview_binary.vtr` in Paraview, it should look like:
 
-![FinalSetup](./Pictures/Matlab_Input_Setup.png)
+![FinalSetup](../assets/img/Matlab_Input_Setup.png)
 
 Which is a subduction setup as in the example before, but this time with a halfspace cooling thermal age. 
 
@@ -208,21 +208,21 @@ The MATLAB/Octave input scripts consists of several parts.
 
 In the beginning you specify the filenames, whether the input should be in parallel or not and (if applicable) the name of the partitioning file (all in red): 
 
-![Script_Part1](./Pictures/MatlabOctave_Script_Part1.png)
+![Script_Part1](../assets/img/MatlabOctave_Script_Part1.png)
 
 In the next part, the user can do whatever to set the initial geometry. In this particular example, we create a 2D array that computes the distance of a point to the top of the slab. We also create a 2D polygon that described the slab but is set to `NaN` outside. 
 
-![Script_Part2](./Pictures/MatlabOctave_Script_Part2.png)
+![Script_Part2](../assets/img/MatlabOctave_Script_Part2.png)
 
 The following part first defines the `Phase` and `Temp` 3D arrays, and sets the phases based on the distance towards the top of the slab. We use a halfspace cooling temperature profile with a thermal age of 50 Myrs in this case.
 
-![Script_Part3](./Pictures/MatlabOctave_Script_Part3.png)
+![Script_Part3](../assets/img/MatlabOctave_Script_Part3.png)
 
 In other scripts you will always have to define and set the properties of these two 3D arrays in one way or the other (how you do it, is up to you).
 
 Finally, we save the data to LaMEM marker files and write a VTK output file:
 
-![Script_Part4](./Pictures/MatlabOctave_Script_Part4.png)
+![Script_Part4](../assets/img/MatlabOctave_Script_Part4.png)
 
 This last part is the same for all scripts and should not be modified.
 

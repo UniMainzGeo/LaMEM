@@ -44,4 +44,4 @@ msetup      =	polygons
 poly_file   =	./Output/Simple_32x32x32.bin
 ```
 
-![PhaseFromPoly](./Pictures/PhaseFromPoly.png)
+![PhaseFromPoly](../assets/img/PhaseFromPoly.png)

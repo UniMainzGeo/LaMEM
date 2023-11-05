@@ -1,45 +1,12 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
- **    All rights reserved.
- **
- **    This software was developed at:
- **
- **         Institute of Geosciences
- **         Johannes-Gutenberg University, Mainz
- **         Johann-Joachim-Becherweg 21
- **         55128 Mainz, Germany
- **
- **    project:    LaMEM
- **    filename:   LaMEMLib.c
- **
- **    LaMEM is free software: you can redistribute it and/or modify
- **    it under the terms of the GNU General Public License as published
- **    by the Free Software Foundation, version 3 of the License.
- **
- **    LaMEM is distributed in the hope that it will be useful,
- **    but WITHOUT ANY WARRANTY; without even the implied warranty of
- **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- **    See the GNU General Public License for more details.
- **
- **    You should have received a copy of the GNU General Public License
- **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
- **
- **
- **    Contact:
- **        Boris Kaus       [kaus@uni-mainz.de]
- **        Anton Popov      [popov@uni-mainz.de]
- **
- **
- **    Main development team:
- **         Anton Popov      [popov@uni-mainz.de]
- **         Boris Kaus       [kaus@uni-mainz.de]
- **         Tobias Baumann
- **         Adina Pusok
- **         Arthur Bauville
+ **   Project      : LaMEM
+ **   License      : MIT, see LICENSE file for details
+ **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
+ **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
+ **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-
 //---------------------------------------------------------------------------
 // LAMEM LIBRARY MODE ROUTINE
 //---------------------------------------------------------------------------
@@ -333,8 +300,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
 
 	// read from input file, create arrays for dynamic diking, and read from restart file
-	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, fb, fp);  CHKERRQ(ierr);
-
+	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, &lm->ts, fp);  CHKERRQ(ierr);
+ 
 	// close temporary restart file
 	fclose(fp);
 
@@ -930,7 +897,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		if (ctrl->steadyNumStep)
 		{
 			num_steps = ctrl->steadyNumStep;
-			diff_step = diff_step/num_steps;
+			diff_step = diff_step/((PetscScalar) num_steps);
 		}
 		
 		for(i=0;i<num_steps;i++)

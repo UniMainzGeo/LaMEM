@@ -1,0 +1,91 @@
+# CI for LaMEM
+# inspired by CI actions used in GEOS
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  runs_on:
+    name: 'Linux'
+    strategy:
+      matrix:
+        ci:
+        - cxx_compiler: g++-12
+          c_compiler: gcc-12
+          build_type: Release
+          cxxstd: 20
+          arch: 64
+          packages: 'g++-12-multilib gcc-12-multilib'
+          cmake: 3.22.*
+          os: ubuntu-22.04
+
+    runs-on: ${{ matrix.ci.os }}
+    steps:
+
+    - name: 'Install compilers'
+      run: |
+        set -e
+        uname -a
+        sudo -E apt-get update
+        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make ${{ matrix.ci.packages }}
+        # Now create workspace directories, to later copy the pre-compiled PETSC libraries there
+        sudo -E mkdir /workspace
+        sudo -E mkdir /workspace/destdir
+        
+    - name: 'Install julia'
+      uses: julia-actions/setup-julia@v1
+      with:
+        version: '1.9'
+
+    - name: 'Checkout LaMEM'
+      uses: actions/checkout@v3
+
+    - name: 'Install PETSc & LaMEM'
+      run: |
+        cd test
+        julia --project=. setup_packages.jl
+        cd ..
+
+    - name: 'Compile LaMEM | Int32'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int32
+        pwd
+        # cleanup
+        rm -rf ../lib/opt/*
+        rm -rf ../lib/deb/*
+        rm -rf ../dep/opt/*
+        rm -rf ../dep/deb/*
+        cd ../bin
+        sudo -E mv -f opt opt32
+        sudo -E mv -f deb deb32
+        cd ..
+
+    - name: 'Compile LaMEM | Int64'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int64
+        cd ../bin
+        sudo -E mv -f opt opt64
+        sudo -E mv -f deb deb64
+        cd ..
+
+    - name: 'Test LaMEM | Int32'
+      run: |
+        cd bin
+        sudo -E cp -r opt32 opt
+        sudo -E cp -r deb32 deb
+        cd ..
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl  
+
+    - name: 'Test LaMEM | Int64'
+      run: |
+        cd bin
+        sudo -E cp -r opt64 opt
+        sudo -E cp -r deb64 deb
+        cd ..
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit no_superlu

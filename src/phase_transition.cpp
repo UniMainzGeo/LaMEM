@@ -1,48 +1,18 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **    Copyright (c) 2011-2020, JGU Mainz, Anton Popov, Boris Kaus
- **    All rights reserved.
- **
- **    This software was developed at:
- **
- **         Institute of Geosciences
- **         Johannes-Gutenberg University, Mainz
- **         Johann-Joachim-Becherweg 21
- **         55128 Mainz, Germany
- **
- **    project:    LaMEM
- **    filename:   AVD.c
- **
- **    LaMEM is free software: you can redistribute it and/or modify
- **    it under the terms of the GNU General Public License as published
- **    by the Free Software Foundation, version 3 of the License.
- **
- **    LaMEM is distributed in the hope that it will be useful,
- **    but WITHOUT ANY WARRANTY; without even the implied warranty of
- **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- **    See the GNU General Public License for more details.
- **
- **    You should have received a copy of the GNU General Public License
- **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
- **
- **
- **    Contact:
- **        Boris Kaus       [kaus@uni-mainz.de]
- **        Anton Popov      [popov@uni-mainz.de]
- **
- **
- **    Main development team:
- **         Anton Popov      [popov@uni-mainz.de]
- **         Boris Kaus       [kaus@uni-mainz.de]
- **			Andrea Piccolo 
- ** 		Jianfeng Yang
- **		
- **		Main responsible persons for this routine:
- **			Andrea Piccolo
- **			Jianfeng Yang
- **			Boris Kaus
+ **   Project      : LaMEM
+ **   License      : MIT, see LICENSE file for details
+ **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
+ **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
+ **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
+/*
+ *  Created on: Apr 20, 2020
+ *      Author: piccolo
+ */
+
 /*	Bibliography reference for the phase transition
  * All the phase transition listed are coming from [1] (Tab.1).
  * [1] Manuele Faccenda, Luca Dal Zilio, The role of solid–solid phase transitions in mantle convection, Lithos,
@@ -95,7 +65,8 @@
 #include "surf.h"
 #include "tssolve.h"
 #include "dike.h"
-//-----------------------------------------------------------------//
+
+//-----------------------------------------------------------------------------
 
 PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 {
@@ -443,8 +414,8 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 
 	for (kk = 0; kk < ph->nsegs; kk++)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Phase Transition, NotInAirbox [%lld]: seg = %i, xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", \
-			(LLD)(ph->ID), kk, \
+		PetscPrintf(PETSC_COMM_WORLD,"Phase Transition, NotInAirbox [%lld]: seg = %lld, xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", \
+			(LLD)(ph->ID), (LLD) kk, \
 		ph->xbounds[2*kk]* scal->length, ph->xbounds[2*kk+1]*scal->length,\
 		ph->ybounds[2*kk]* scal->length, ph->ybounds[2*kk+1]*scal->length,\
 		ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
@@ -453,13 +424,13 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
        ph->phtr_link_left = -1; 
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1); CHKERRQ(ierr);
 	if (ph->phtr_link_left>=0) {
-	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %i\n", ph->phtr_link_left);	CHKERRQ(ierr);
+	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %lld\n", (LLD) ph->phtr_link_left);	CHKERRQ(ierr);
 	}
 
 	ph->phtr_link_right = -1; 
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkRight",   &ph->phtr_link_right,  1, dbm->numPhtr-1); CHKERRQ(ierr);
 	if (ph->phtr_link_right>=0) {
-	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %i\n", ph->phtr_link_right); CHKERRQ(ierr);
+	    ierr = PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %lld\n", (LLD) ph->phtr_link_right); CHKERRQ(ierr);
 	}
 
 	
@@ -606,11 +577,11 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition avaiable you need to specify P0, T0, gamma and the number of equations ( P=(T-T0)*gamma +(P0) ).");
 	}
 
-    PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %i    [ P = P0 + gamma*(T-T0) ] \n", ph->neq);
+    PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %lld    [ P = P0 + gamma*(T-T0) ] \n", (LLD) ph->neq);
         
 	for(it=0; it<ph->neq; it++)
 	{
-        PetscPrintf(PETSC_COMM_WORLD,"       eq[%i]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
+        PetscPrintf(PETSC_COMM_WORLD,"       eq[%lld]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", (LLD)it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
 
 		ph->clapeyron_slope[it]     *=  1e6*(scal->temperature/scal->stress_si);                    // [K/MPa]
 		ph->P0_clapeyron[it]        /=  (scal->stress_si);                                          // [Pa]
@@ -658,11 +629,11 @@ PetscErrorCode  Overwrite_density(DBMat *dbm)
 			{
 				jj1             =   ph->PhaseBelow[iter];
 				mat[jj1].rho    =   rho_below/rho_scal;
-				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4d, rho = %4.1f %s \n",jj1,rho_below, scal->lbl_density);
+				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4lld, rho = %4.1f %s \n",(LLD) jj1,rho_below, scal->lbl_density);
 
 				jj2             =   ph->PhaseAbove[iter];
 				mat[jj2].rho    =   rho_above/rho_scal;
-				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4d, rho = %4.1f %s \n",jj2,rho_above, scal->lbl_density);
+				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4lld, rho = %4.1f %s \n",(LLD) jj2,rho_above, scal->lbl_density);
 			}
 
 		}
@@ -1033,9 +1004,6 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, PetscInt PH
 
 	ph = P->phase;
 	T  = P->T;
-
-	PetscFunctionBeginUser;
-
 	InAbove = 0;
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
@@ -1074,8 +1042,6 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
     PetscScalar pShift;
 
     PetscFunctionBeginUser;
-	
-	PetscFunctionBeginUser;
 
 	if (ctrl.pShift){
 		pShift = ctrl.pShift;
@@ -1158,8 +1124,6 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 	PetscInt 	ph, InAb;
 	PetscScalar T;
 
-	PetscFunctionBeginUser;
-	
 	PetscFunctionBeginUser;
 
 	ph = P->phase;

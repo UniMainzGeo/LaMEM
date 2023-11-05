@@ -1,21 +1,32 @@
 name = "LaMEM_C"
 uuid = "29b6043d-3311-4c16-b469-b02bf85cb680"
 authors = ["Anton Popov <popov@uni-mainz.de>", "Boris Kaus <kaus@uni-mainz.de>"]
-version = "2.0.0"
+version = "2.1.1"
 
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 GeophysicalModelGenerator = "3700c31b-fa53-48a6-808a-ef22d5a84742"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 LaMEM = "2e889f3d-35ce-4a77-8ea2-858aecb630f7"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+
+[compat]
+GeophysicalModelGenerator = "0.5.0"
+LaMEM = "0.2.3"
+julia = "1.6"
+
+[extras]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+GeophysicalModelGenerator = "3700c31b-fa53-48a6-808a-ef22d5a84742"
+Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
-[compat]
-GeophysicalModelGenerator = "0.4.10"
-LaMEM = "0.1.9"
-julia = "1.6"
+[targets]
+test = ["CairoMakie", "Dates", "GeophysicalModelGenerator", "LinearAlgebra", "SpecialFunctions", "Statistics", "Test", "DelimitedFiles", "LaMEM", "Glob"]

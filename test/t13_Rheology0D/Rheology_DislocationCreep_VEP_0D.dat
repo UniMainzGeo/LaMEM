@@ -175,12 +175,12 @@
 
 	-snes_monitor
 	-snes_atol 1e-7   # 1e-12
-	-snes_rtol 1e-4
+	-snes_rtol 1e-8
 	-snes_stol 1e-6
 	-snes_max_it 100
 	-snes_max_funcs 50000
 
-	-js_ksp_atol 1e-10
+	-js_ksp_atol 1e-13
 
 	-res_log
 

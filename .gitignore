@@ -15,7 +15,6 @@
 *.out
 /Timestep_*
 *.mat
-*.png
 /models_not_under_git
 /input_models/**
 /src/.settings
@@ -24,4 +23,5 @@
 /test/*/ProcessorPartitioning*.*
 /test/t8_AdjointGradients/ScalingLaw_Test.dat
 Manifest.toml  
+docs/build/
 
