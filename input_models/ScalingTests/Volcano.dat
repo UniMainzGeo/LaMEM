@@ -80,9 +80,9 @@ unit_stress      = 1e9
 
 	gravity         = 0.0 0.0 -9.81  # gravity vector
 	act_temp_diff   = 1		 		 # temperature diffusion activation flag
-	#act_steady_temp = 0              # steady-state temperature initial guess activation flag
-	#steady_temp_t   = 0.1            # time for (quasi-)steady-state temperature initial guess
-	#nstep_steady    = 50             # number of steps for (quasi-)steady-state temperature initial guess (default = 1)
+	act_steady_temp = 1              # steady-state temperature initial guess activation flag
+	steady_temp_t   = 0.1            # time for (quasi-)steady-state temperature initial guess
+	nstep_steady    = 50             # number of steps for (quasi-)steady-state temperature initial guess (default = 1)
 	act_heat_rech   = 0              # heat recharge activation flag
 	init_lith_pres  = 1              # initial pressure with lithostatic pressure
 	init_guess      = 1              # initial guess flag
