@@ -17,14 +17,14 @@ unit_stress      = 1e9
 # Time stepping parameters
 #===============================================================================
 
-	dt        = 5e-4	# time step
-	dt_min    = 4.5e-4	# minimum time step (declare divergence if lower value is attempted)
+	dt        = 1e-9	# time step
+	dt_min    = 1e-12	# minimum time step (declare divergence if lower value is attempted)
 	dt_max    = 1e-3	# maximum time step
 	inc_dt    = 1		# time step increment per time step (fraction of unit)
 	CFL       = 0.5		# CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.8		# CFL criterion for elasticity
 	nstep_ini = 0		# save output for n initial steps
-	nstep_max = 5		# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 10		# maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1		# save output every n steps
 
 #===============================================================================
@@ -64,8 +64,8 @@ unit_stress      = 1e9
 
 #	noslip   = 0 0 0 0 0 0
 
-	temp_top	    =   0			# Temperature @ top
-	temp_bot		=   1350     	# Temperature @ bottom; side BC's are flux-free
+	temp_top	=   0			# Temperature @ top
+	temp_bot	=   800     	# Temperature @ bottom; side BC's are flux-free
 
 	# Background strain rate parameters
 #	exx_num_periods  = 1      # number intervals of constant strain rate (x-axis)
@@ -86,21 +86,24 @@ unit_stress      = 1e9
 	act_heat_rech   = 0              # heat recharge activation flag
 	init_lith_pres  = 1              # initial pressure with lithostatic pressure
 	init_guess      = 1              # initial guess flag
-	eta_min         = 1e19           # viscosity upper bound
+	eta_min         = 1e17           # viscosity upper bound
 	eta_max         = 1e23           # viscosity lower limit
 	eta_ref         = 1e22           # reference viscosity (initial guess)
 	T_ref           = 20             # reference temperature
 	p_lim_plast		= 1
-   
+     	min_cohes       = 1e6            # cohesion lower bound  [Pa]
+   	min_fric        = 1.0            # friction lower bound  [degree]
+    	tau_ult         = 1e9            # ultimate yield stress [Pa]
+    
 #===============================================================================
 # Solver options
 #===============================================================================
 
 	SolverType 	 =	multigrid	# solver [direct or multigrid]
-	MGLevels 	 =	5			# number of MG levels
+	MGLevels 	 =	4			# number of MG levels
 	MGSweeps 	 =	25			# number of MG smoothening steps per level
 	MGSmoother 	 =	jacobi 		# type of smoothener used [chebyshev or jacobi]
-	MGJacobiDamp =	0.5			# Dampening parameter [only employed for Jacobi smoothener; default=0.6]
+	MGJacobiDamp     =	0.5			# Dampening parameter [only employed for Jacobi smoothener; default=0.6]
 
 
 #===============================================================================
@@ -224,8 +227,8 @@ unit_stress      = 1e9
 		
 	# Plastic parameters
 		ch 		   =  10e6
-		fr 		   =  30
-	  	eta_st     =  5e20   # stabilization viscosity (default is eta_min)
+		fr 		   =  20
+	  	eta_st     	   =  5e20   # stabilization viscosity (default is eta_min)
 
 	<MaterialEnd>
 	
@@ -251,7 +254,7 @@ unit_stress      = 1e9
 		
 	# Plastic parameters
 		ch 		   =  1e6
-		fr 		   =  10
+		fr 		   =  5
 	  	eta_st     =  5e20   # stabilization viscosity (default is eta_min)
 
 	<MaterialEnd>
