@@ -8,23 +8,23 @@
 units                       =	geo
 
 # Always in SI units!!
-unit_temperature = 500
+unit_temperature = 1000
 unit_length      = 1000
-unit_viscosity   = 1e19
+unit_viscosity   = 1e20
 unit_stress      = 1e9
 
 #===============================================================================
 # Time stepping parameters
 #===============================================================================
 
-	dt        = 1e-9	# time step
-	dt_min    = 1e-12	# minimum time step (declare divergence if lower value is attempted)
+	dt        = 1e-7	# time step
+	dt_min    = 1e-9	# minimum time step (declare divergence if lower value is attempted)
 	dt_max    = 1e-3	# maximum time step
-	inc_dt    = 1		# time step increment per time step (fraction of unit)
+	inc_dt    = 0,5		# time step increment per time step (fraction of unit)
 	CFL       = 0.5		# CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.8		# CFL criterion for elasticity
 	nstep_ini = 0		# save output for n initial steps
-	nstep_max = 10		# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 1		# maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1		# save output every n steps
 
 #===============================================================================
@@ -100,7 +100,7 @@ unit_stress      = 1e9
 #===============================================================================
 
 	SolverType 	 =	multigrid	# solver [direct or multigrid]
-	MGLevels 	 =	4			# number of MG levels
+	MGLevels 	 =	3			# number of MG levels
 	MGSweeps 	 =	25			# number of MG smoothening steps per level
 	MGSmoother 	 =	jacobi 		# type of smoothener used [chebyshev or jacobi]
 	MGJacobiDamp     =	0.5			# Dampening parameter [only employed for Jacobi smoothener; default=0.6]
@@ -187,7 +187,7 @@ unit_stress      = 1e9
 	<MaterialStart>
 		Name = air
 		ID	= 0
-		rho	= 100
+		rho	= 1
 		alpha   = 3e-5 
 
 	# Linear Viscosity	
@@ -202,7 +202,7 @@ unit_stress      = 1e9
 		Cp 	= 1000
 		
 	# Plastic parameters
-		ch 	= 10e6
+		ch 	= 20e6
 		fr 	= 30
 	<MaterialEnd>
 
@@ -226,8 +226,8 @@ unit_stress      = 1e9
 		Cp 	= 1000
 		
 	# Plastic parameters
-		ch 		   =  10e6
-		fr 		   =  20
+		ch 		   =  5e6
+		fr 		   =  10
 	  	eta_st     	   =  5e20   # stabilization viscosity (default is eta_min)
 
 	<MaterialEnd>
@@ -286,7 +286,7 @@ unit_stress      = 1e9
 	-snes_max_it 200
 	-snes_rtol 1e-5
 	-snes_atol 1e-6
-	-snes_PicardSwitchToNewton_rtol 5e-2 #-7
+	-snes_PicardSwitchToNewton_rtol 1e-3 #-7
 	#-snes_NewtonSwitchToPicard_it   1       # number of Newton iterations after which we switch back to Picard
 #	-snes_monitor
 	-snes_linesearch_monitor	
