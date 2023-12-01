@@ -13,8 +13,8 @@ LaMEM = "2e889f3d-35ce-4a77-8ea2-858aecb630f7"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
-GeophysicalModelGenerator = "0.5.0"
-LaMEM = "0.2.3"
+GeophysicalModelGenerator = "0.4,0.5"
+LaMEM = "0.1, 0.2"
 julia = "1.6"
 
 [extras]
