@@ -170,7 +170,7 @@ which should give you the dirtectory `/opt/local/bin/mpiexec`. If it gives you a
 Both methods discussed above will install the parallel direct solvers MUMPS and SUPERLU_DIST. LaMEM will also work without these parallel solvers, but we find them particularly useful for 2D simulations and as coarse grid solvers.
 
 After the configuration step has finished succesfully (which will take some time), it should look something like
-![Configure PETSc](PETSc_configure.png)
+![Configure PETSc](../assets/img/PETSc_configure.png)
 
 Next, make PETSc with:
 ```
