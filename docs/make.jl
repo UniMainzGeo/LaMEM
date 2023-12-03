@@ -33,7 +33,6 @@ makedocs(;
 )
 
 deploydocs(;
-    root = "docs",
     repo="github.com/UniMainzGeo/LaMEM.git",
     branch = "gh-pages",
     target = "build",
