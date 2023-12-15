@@ -115,6 +115,8 @@ struct ModParam
 	PetscScalar      Avel_num[_MAX_OBS_];             	// Numerically computed velocity at the comparison points
 	PetscBool        Apoint_on_proc[_MAX_OBS_];         // Is the observation point on the current processor or not (simplified printing)?
 	char   			 ScalLawFilename[_str_len_];		// Name of scaling law file
+
+	PetscLogStage	 stages[4]; 						/* Create stages for PETSC profiling */
 };
 
 // observation type

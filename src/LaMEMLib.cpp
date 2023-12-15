@@ -42,7 +42,7 @@
 #include "passive_tracer.h"
 
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibMain(void *param)
+PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 {
 	LaMEMLib       lm;
 	RunMode        mode;
@@ -130,7 +130,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	else if(mode == _NORMAL_ || mode == _RESTART_)
 	{
 		// solve coupled nonlinear equations
-		ierr = LaMEMLibSolve(&lm, param); CHKERRQ(ierr);
+		ierr = LaMEMLibSolve(&lm, param,stages); CHKERRQ(ierr);
 	}
 
 	// destroy library objects
@@ -604,7 +604,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
+PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 {
 	PMat           pm;     // preconditioner matrix    (to be removed!)
 	PCStokes       pc;     // Stokes preconditioner    (to be removed!)
@@ -613,7 +613,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
 	PetscLogDouble t;
-	PetscLogStage stages[4]; /* Create stages for PETSC profiling */
 
 
 	PetscErrorCode ierr;
