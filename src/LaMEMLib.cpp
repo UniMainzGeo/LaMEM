@@ -623,12 +623,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	ierr = PCStokesCreate(&pc, pm);     CHKERRQ(ierr);
 	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
 
-	/* Register names of the stages*/
- 	PetscCall(PetscLogStageRegister("Thermal solver", &stages[0])); 
-	PetscCall(PetscLogStageRegister("SNES solve",     &stages[1]));
-	PetscCall(PetscLogStageRegister("Advect markers", &stages[2])); 
-	PetscCall(PetscLogStageRegister("I/O",            &stages[3]));
-
 	//==============
 	// INITIAL GUESS
 	//==============
