@@ -42,7 +42,7 @@
 #include "passive_tracer.h"
 
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibMain(void *param)
+PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 {
 	LaMEMLib       lm;
 	RunMode        mode;
@@ -60,7 +60,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
-	PetscPrintf(PETSC_COMM_WORLD,"     Version : 2.1.0 \n");
+	PetscPrintf(PETSC_COMM_WORLD,"     Version : 2.1.2 \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
@@ -130,7 +130,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	else if(mode == _NORMAL_ || mode == _RESTART_)
 	{
 		// solve coupled nonlinear equations
-		ierr = LaMEMLibSolve(&lm, param); CHKERRQ(ierr);
+		ierr = LaMEMLibSolve(&lm, param,stages); CHKERRQ(ierr);
 	}
 
 	// destroy library objects
@@ -604,7 +604,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
+PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 {
 	PMat           pm;     // preconditioner matrix    (to be removed!)
 	PCStokes       pc;     // Stokes preconditioner    (to be removed!)
@@ -613,6 +613,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
 	PetscLogDouble t;
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -649,17 +650,23 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
+		PetscCall(PetscLogStagePush(stages[0])); /* Start profiling stage*/
+
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
+		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 		// compute elastic parameters
 		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
 
+		PetscCall(PetscLogStagePush(stages[1])); /* Start profiling stage*/
+
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
+		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
 
@@ -686,6 +693,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================
 
+		PetscCall(PetscLogStagePush(stages[2])); /* Start profiling stage*/
+
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
 		
@@ -707,6 +716,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// Advect Passive tracers
 		ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
 
+		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
+
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
@@ -725,9 +736,13 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	
 		// update time stamp and counter
 		ierr = TSSolStepForward(&lm->ts); CHKERRQ(ierr);
-		
+
+		PetscCall(PetscLogStagePush(stages[3])); /* Start profiling stage*/
+
 		// grid & marker output
 		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
+
+		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);

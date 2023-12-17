@@ -22,7 +22,6 @@ int main(int argc, char **argv)
 
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
-
 	ModParam IOparam;
 	char      str[_str_len_];
 
@@ -45,7 +44,7 @@ int main(int argc, char **argv)
 	if(IOparam.use == 0)
 	{
 		// Forward simulation	
-		ierr = LaMEMLibMain(NULL); CHKERRQ(ierr);
+		ierr = LaMEMLibMain(NULL,IOparam.stages); CHKERRQ(ierr);
 	}
 	else
 	{

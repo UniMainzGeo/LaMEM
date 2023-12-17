@@ -189,7 +189,7 @@ typedef pair <PetscInt,    PetscInt> ipair;
 
 // LaMEM library main function
 
-PetscErrorCode LaMEMLibMain(void *param);
+PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4]);
 
 //-----------------------------------------------------------------------------
 #endif
