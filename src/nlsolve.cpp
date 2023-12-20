@@ -177,7 +177,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 
 		/* Do we have a 2D setup & only refine in x/z direction? */
 		fs  = pc->pm->jr->fs;
-		ierr = DMDAGetRefinementFactor(fs->DA_CEN, PETSC_NULL, &refine_y,PETSC_NULL); CHKERRQ(ierr);
+		ierr = DMDAGetRefinementFactor(fs->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
 		if (refine_y==1){
 			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid refinement in x/z \n"); 
 		}

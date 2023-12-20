@@ -1590,7 +1590,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	PetscMPIInt    		rank;
 	PetscMPIInt  		grank;
 
-	PetscScalar    		*rbuf1=PETSC_NULL;
+	PetscScalar    		*rbuf1=NULL;
 
  	PetscErrorCode ierr;
  	PetscFunctionBeginUser;
