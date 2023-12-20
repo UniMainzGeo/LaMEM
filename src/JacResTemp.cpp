@@ -193,6 +193,9 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
 		1, 1, lx, ly, lz, &jr->DA_T));
 
+	// set proper interpolation type for multigrid
+	PetscCall(DMDASetInterpolationType(jr->DA_T, DMDA_Q0));
+
 	// create temperature preconditioner matrix
 	PetscCall(DMCreateMatrix(jr->DA_T, &jr->Att));
 
