@@ -210,6 +210,12 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	// create temperature diffusion solver
 	PetscCall(KSPCreate(PETSC_COMM_WORLD, &jr->tksp));
+
+	// enable geometric multigrid
+	PetscCall(KSPSetDM(jr->tksp, jr->DA_T));
+	PetscCall(KSPSetDMActive(jr->tksp, PETSC_FALSE));
+
+	// set options
 	PetscCall(KSPSetOptionsPrefix(jr->tksp,"ts_"));
 	PetscCall(KSPSetFromOptions(jr->tksp));
 

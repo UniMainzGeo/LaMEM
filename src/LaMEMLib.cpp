@@ -969,6 +969,12 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	
 	// create temperature diffusion solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &tksp); CHKERRQ(ierr);
+
+	// enable geometric multigrid
+	PetscCall(KSPSetDM(tksp, jr->DA_T));
+	PetscCall(KSPSetDMActive(tksp, PETSC_FALSE));
+
+	// set options
 	ierr = KSPSetOptionsPrefix(tksp,"its_");   CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(tksp);            CHKERRQ(ierr);
 
