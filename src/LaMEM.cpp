@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 	} 
 	
 	/* Name stages */
-	PetscCall(PetscLogStageRegister("Thermal solver", &IOparam.stages[0])); 
+	PetscCall(PetscLogStageRegister("Initial guess",  &IOparam.stages[0])); 
 	PetscCall(PetscLogStageRegister("SNES solve",     &IOparam.stages[1]));
 	PetscCall(PetscLogStageRegister("Advect markers", &IOparam.stages[2])); 
 	PetscCall(PetscLogStageRegister("I/O",            &IOparam.stages[3]));
