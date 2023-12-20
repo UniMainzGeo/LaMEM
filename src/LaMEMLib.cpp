@@ -623,12 +623,16 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	ierr = PCStokesCreate(&pc, pm);     CHKERRQ(ierr);
 	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
 
+	PetscCall(PetscLogStageRegister("Initial guess", &stages[0]));
+	PetscCall(PetscLogStageRegister("Nonlinear solve", &stages[1]));
+	PetscCall(PetscLogStageRegister("Advect markers", &stages[2]));
+	PetscCall(PetscLogStageRegister("I/O", &stages[3]));
+	
 	//==============
 	// INITIAL GUESS
 	//==============
 	if (!param)
 	{
-		PetscCall(PetscLogStageRegister("Initial guess", &stages[0]));
 		PetscCall(PetscLogStagePush(stages[0])); /* Start profiling stage*/
 	}
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
@@ -668,7 +672,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		PetscTime(&t);
 		if (!param)
 		{
-			PetscCall(PetscLogStageRegister("Nonlinear solve", &stages[1]));
 			PetscCall(PetscLogStagePush(stages[1])); /* Start profiling stage*/
 		}
 
@@ -706,7 +709,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		//==========================================
 		if (!param)
 		{
-			PetscCall(PetscLogStageRegister("Advect markers", &stages[2]));
 			PetscCall(PetscLogStagePush(stages[2])); /* Start profiling stage*/
 		}
 
@@ -757,7 +759,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		
 		if (!param)
 		{
-			PetscCall(PetscLogStageRegister("I/O", &stages[3]));
 			PetscCall(PetscLogStagePush(stages[3])); /* Start profiling stage*/
 		}
 		// grid & marker output
