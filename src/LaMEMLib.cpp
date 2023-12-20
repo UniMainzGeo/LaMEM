@@ -627,12 +627,16 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	// INITIAL GUESS
 	//==============
 
+	PetscCall(PetscLogStageRegister("Initial guess", &stages[0]));
+	PetscCall(PetscLogStagePush(stages[0])); /* Start profiling stage*/
+
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
     
 	if (param)
 	{
 		ierr = AdjointCreate(&aop, &lm->jr, (ModParam *)param); CHKERRQ(ierr);
 	}
+	PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 
 	//===============
 	// TIME STEP LOOP
@@ -650,29 +654,28 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePush(stages[0])); /* Start profiling stage*/
-
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
+		
 		// compute elastic parameters
 		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
-
+		
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
-
+		PetscCall(PetscLogStageRegister("Nonlinear solve", &stages[1]));
 		PetscCall(PetscLogStagePush(stages[1])); /* Start profiling stage*/
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
-
+	
+		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
+	
 		// Compute adjoint gradients every TS
 		if (param)
 		{
@@ -692,7 +695,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		//==========================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================
-
+		PetscCall(PetscLogStageRegister("Advect markers", &stages[2]));
 		PetscCall(PetscLogStagePush(stages[2])); /* Start profiling stage*/
 
 		// calculate current time step
@@ -736,7 +739,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	
 		// update time stamp and counter
 		ierr = TSSolStepForward(&lm->ts); CHKERRQ(ierr);
-
+		
+		PetscCall(PetscLogStageRegister("I/O", &stages[3]));
 		PetscCall(PetscLogStagePush(stages[3])); /* Start profiling stage*/
 
 		// grid & marker output
