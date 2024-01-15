@@ -39,11 +39,14 @@ else
 $(error Unknown compilation mode specified)
 endif
 
+
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
 # Define PETSc-based C++ compiler command
+#${CCPPFLAGS} += -I${EXTRAE_HOME}/include
 CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
+#CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS} -I${EXTRAE_HOME}/include -I${EXTRAE_HOME}/lib
 
 #====================================================
 
@@ -65,10 +68,15 @@ LaMEM_OBJ = ../lib/${mode}/LaMEM.o
 LaMEM_DEP = ../dep/${mode}/LaMEM.d
 LaMEM_LIB = ../lib/${mode}/liblamem.a
 
+#PETSC_LIB += -L${EXTRAE_HOME}/lib -lompitrace-4.0.6
 # If we build LaMEM for BinaryBuilder we link to a PETSc build that has a different name
 ifeq ($(LAMEM_BINARYBUILDER), true)
 	PETSC_LIB := $(filter-out -lpetsc, $(PETSC_LIB))
 	PETSC_LIB += -lpetsc_double_real_Int32
+endif
+
+ifdef EXTRAE_HOME
+	PETSC_LIB += -L${EXTRAE_HOME}/lib -lmpitracecf
 endif
 #====================================================
 
@@ -136,7 +144,7 @@ ${LaMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 
 # Create a dynamic library
 dylib: ${COBJ}
-	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
+	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB}
 
 #====================================================
 
