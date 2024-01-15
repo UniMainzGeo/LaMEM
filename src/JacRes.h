@@ -12,6 +12,8 @@
 //---------------------------------------------------------------------------
 #ifndef __JacRes_h__
 #define __JacRes_h__
+#define STAGE_START 1
+#define STAGE_END   0
 
 struct FB;
 struct Scaling;

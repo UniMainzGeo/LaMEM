@@ -40,7 +40,8 @@
 #include "LaMEMLib.h"
 #include "phase_transition.h"
 #include "passive_tracer.h"
-
+#include "extrae.h"
+#include "extrae_user_events.h"
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 {
@@ -618,7 +619,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// create Stokes preconditioner, matrix and nonlinear solver
+	const extrae_type_t eventtype_stage_SNESSolve   = 4200069;    // whatever suits you	
+
+		// create Stokes preconditioner, matrix and nonlinear solver
 	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
 	ierr = PCStokesCreate(&pc, pm);     CHKERRQ(ierr);
 	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
@@ -653,10 +656,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
-	
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
-
+		
 		// compute elastic parameters
 		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
@@ -664,9 +666,15 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		PetscTime(&t);
 
 		PetscCall(PetscLogStagePush(stages[1])); /* Start profiling stage*/
-
+		
+		Extrae_restart();
+		Extrae_event(eventtype_stage_SNESSolve, STAGE_START);
+		
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
-
+		
+		Extrae_event(eventtype_stage_SNESSolve, STAGE_END);
+		Extrae_shutdown();
+		
 		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
@@ -872,7 +880,8 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-
+	
+	const extrae_type_t eventtype_stage_Thermal_solver   = 4200070;    // whatever suits you	
 	// access context
 	jr      = &lm->jr;
 	ctrl    = &jr->ctrl;
@@ -886,9 +895,15 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		// ignore existing temperature initialization
 		ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
 		ierr = JacResApplyTempBC(jr); CHKERRQ(ierr);
-
+		
+		Extrae_restart();
+		Extrae_event(eventtype_stage_Thermal_solver, STAGE_START);
+		
 		// compute steady-state temperature distribution
 		ierr = LaMEMLibSolveTemp(lm, 0.0); CHKERRQ(ierr);
+
+		Extrae_event(eventtype_stage_Thermal_solver, STAGE_END);
+		Extrae_shutdown();
 
 		// overwrite markers where T(phase) is set
 		ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
