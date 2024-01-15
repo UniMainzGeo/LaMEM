@@ -12,6 +12,8 @@
 //---------------------------------------------------------------------------
 #ifndef __LaMEMLib_h__
 #define __LaMEMLib_h__
+#define STAGE_START 1
+#define STAGE_END   0
 //---------------------------------------------------------------------------
 
 enum RunMode
@@ -78,5 +80,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt);
 
 PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm);
 
+//const unsigned nvalues_zero = 0;    // function below expects a pointers, not values
+//
 //---------------------------------------------------------------------------
 #endif
