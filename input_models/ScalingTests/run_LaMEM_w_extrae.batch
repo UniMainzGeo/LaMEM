@@ -1,0 +1,23 @@
+#!/bin/bash -l
+#SBATCH --job-name=perf_tst           # Job name
+#SBATCH --partition=standard         # Partition (queue) name
+#SBATCH --nodes=1                   # Total number of nodes 
+#SBATCH --ntasks-per-node=64
+#SBATCH --ntasks=64                # Total number of mpi tasks
+#SBATCH --mem=0                      # Allocate all the memory on the node
+#SBATCH --time=0-00:05:00            # Run time (d-hh:mm:ss)
+#SBATCH --account=project_465000139  # Project for billing
+
+
+export PROJECT_ID=465000139    # put your own here
+export SPACK_USER_PREFIX=/project/project_${PROJECT_ID}/spack_ChEESE
+module load spack/23.03-2
+export EXTRAE_HOME=/project/project_465000139/spack_ChEESE/23.03/0.20.0/extrae-4.0.6-ocz6p2e/
+export EXTRAE_CONFIG_FILE=extrae_detail_no_circular.xml
+TRACE="env LD_PRELOAD=${EXTRAE_HOME}/lib/libmpitracecf.so"
+
+
+srun ${TRACE} /pfs/lustrep4/scratch/project_465000139/iskander/soft/extrae_lamem/LaMEM/bin/opt/LaMEM -ParamFile Volcano.dat -log_view
+
+echo $SLURM_JOB_NUM_NODES
+${EXTRAE_HOME}/bin/mpi2prv -f TRACE.mpits -o trace_volcano_${SLURM_NTASKS}_cores_${SLURM_JOB_NUM_NODES}.prv
