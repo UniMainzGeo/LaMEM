@@ -103,6 +103,11 @@ ifeq ($(mode), deb)
    LAMEM_FLAGS += -g
 endif
 
+# Add extrae directory if variable EXTRAE_HOME is defined
+ifdef EXTRAE_HOME
+	LAMEM_FLAGS += -I${EXTRAE_HOME}/include
+endif
+
 # Windows requires this linker flag
 UNAME := $(shell uname)
 ifneq ($(filter MSYS%,$(UNAME)),)

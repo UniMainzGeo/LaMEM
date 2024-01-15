@@ -13,6 +13,8 @@
 #include "parsing.h"
 #include "adjoint.h"
 #include "phase.h"
+#include "extrae.h"
+#include "extrae_user_events.h"
 //---------------------------------------------------------------------------
 static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 //---------------------------------------------------------------------------
@@ -22,9 +24,18 @@ int main(int argc, char **argv)
 
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
+	
+	//const unsigned nvalues_zero = 0;    // function below expects a pointers, not values
+	//const extrae_type_t eventtype_stage_SNESSolve        = 4200069;    // whatever suits you	
+	//const extrae_type_t eventtype_stage_Thermal_solver   = 4200070;    // whatever suits you	
+	
+	//Extrae_define_event_type (&eventtype_stage_SNESSolve,       "Stage SNES solve",          &nvalues_zero, NULL, NULL);
+	//Extrae_define_event_type (&eventtype_stage_Thermal_solver,  "Stage Thermal solver",      &nvalues_zero, NULL, NULL);
+	Extrae_shutdown();
+	
 	ModParam IOparam;
 	char      str[_str_len_];
-
+	
 	// set default to be a forward run and overwrite it with input file options
 	ierr = PetscMalloc(sizeof(ModParam), &IOparam);  CHKERRQ(ierr);
 	ierr = PetscMemzero(&IOparam, sizeof(ModParam)); CHKERRQ(ierr);
