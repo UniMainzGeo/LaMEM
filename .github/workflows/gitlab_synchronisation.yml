@@ -1,9 +1,10 @@
 name: gitlab_synchronisation
 
-on: 
-  - push:tags
-  - delete
-
+on:
+  push:
+    # Pattern matched against refs/tags
+    tags:        
+      - '*'           # Push events to every tag not containing /
 jobs:
   sync:
     runs-on: ubuntu-latest
