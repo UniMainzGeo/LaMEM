@@ -39,7 +39,7 @@ jobs:
     - name: 'Install julia'
       uses: julia-actions/setup-julia@v1
       with:
-        version: '1.9'
+        version: '1.10'
 
     - name: 'Checkout LaMEM'
       uses: actions/checkout@v3
