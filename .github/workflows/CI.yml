@@ -40,7 +40,9 @@ jobs:
       uses: julia-actions/setup-julia@v1
       with:
         version: '1.10'
-
+        
+    - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
+   
     - name: 'Checkout LaMEM'
       uses: actions/checkout@v3
 
