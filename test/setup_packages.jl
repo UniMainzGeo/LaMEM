@@ -20,27 +20,6 @@ for path in PETSc_jll.PATH_list
     end
 end
 
-#=
-# This is fragile & will break if the order is different in other PETSc_jll versions
-
-mpi_dir   = PETSc_jll.PATH_list[1][1:end-3]
-petsc_dir = c
-@show mpi_dir
-@show petsc_dir
-
-# copy mpi directories - we somehow have to do that one by one
-dirs = ["bin","lib","include","share"]
-for d in dirs
-    run(`sudo -E cp -r $mpi_dir/$d /workspace/destdir/`)
-end
-
-# Same with petsc
-dirs = ["bin","lib","share"]
-for d in dirs
-    run(`sudo -E cp -r $petsc_dir/$d /workspace/destdir/`)
-end
-=#
-
 """
     copy all files 
 """
