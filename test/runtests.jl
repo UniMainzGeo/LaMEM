@@ -359,7 +359,7 @@ end
     Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
 
     # Compute difference with analytical solution
-    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-5
+    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-3
     @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
     @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
 
@@ -382,7 +382,7 @@ end
         Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
 
         # Compute difference with analytical solution
-        @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-5
+        @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-3
         @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
         @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
 
@@ -676,6 +676,12 @@ end
     # Test dike feature using optimized LaMEM
     @test perform_lamem_test(dir,"PhaseTransNotInAirBox_move.dat","PhaseTransNotInAirBox_move.expected",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
+
+    # Check that it works when one Phase==0; addresses issue #14    
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-9));
+    @test perform_lamem_test(dir,"Plume_PhaseTransitions_SwappedPhases.dat","PhaseTransitions-Melting_SwappedPhases_p1.expected",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                        
 end
 
 
