@@ -13,6 +13,7 @@
 #include "LaMEM.h"
 #include "phase.h"
 #include "dike.h"
+#include "heatzone.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
@@ -166,7 +167,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
 
 	// create material database
-	ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
+	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
 	// create free surface grid
 	ierr = FreeSurfCreate(&lm->surf, fb); 			CHKERRQ(ierr);
@@ -179,6 +180,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create dike database
 	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, &lm->jr, PETSC_TRUE);   CHKERRQ(ierr);
+
+	// create heatzone database
+	ierr = DBHeatZoneCreate(&lm->dbheatzone, &lm->dbm, fb, &lm->jr, PETSC_TRUE);   CHKERRQ(ierr);
 
 	// initialize arrays for dynamic phase transition
 	ierr = DynamicPhTr_Init(&lm->jr);			CHKERRQ(ierr);
@@ -301,7 +305,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// read from input file, create arrays for dynamic diking, and read from restart file
 	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, &lm->ts, fp);  CHKERRQ(ierr);
-
+ 
 	// close temporary restart file
 	fclose(fp);
 
@@ -317,7 +321,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 		ierr = FBLoad(&fb, PETSC_TRUE, restartFileName); CHKERRQ(ierr);
 
 		// override material database
-		ierr = DBMatCreate(&lm->dbm, fb, &lm->fs, PETSC_TRUE); 	CHKERRQ(ierr);
+		ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
 		// destroy file buffer
 		ierr = FBDestroy(&fb); CHKERRQ(ierr);
@@ -518,6 +522,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->jr.bc       = &lm->bc;
 	lm->jr.dbm      = &lm->dbm;
 	lm->jr.dbdike   = &lm->dbdike;
+	lm->jr.dbheatzone   = &lm->dbheatzone;
 	// AdvCtx
 	lm->actx.fs     = &lm->fs;
 	lm->actx.jr     = &lm->jr;

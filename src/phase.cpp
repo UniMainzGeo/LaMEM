@@ -18,7 +18,7 @@
 #include "JacRes.h"
 #include "phase_transition.h"
 //---------------------------------------------------------------------------
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput)
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read all material phases and softening laws from file
 
@@ -137,7 +137,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, FDSTAG *fs, PetscBool PrintOutput
 		// read each individual phase transition
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadPhaseTr(dbm, fs, fb); CHKERRQ(ierr);
+			ierr = DBMatReadPhaseTr(dbm, fb); CHKERRQ(ierr);
 
 			fb->blockID++;
 		}
@@ -195,35 +195,38 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",    &s->A,    1, 1.0); CHKERRQ(ierr); 
 	ierr = getScalarParam(fb, _OPTIONAL_, "APS1", &s->APS1, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "APSheal2", &s->APSheal2, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Lm",   &s->Lm,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "healTau", &s->healTau,   1, 1.0); CHKERRQ(ierr);   
     ierr = getScalarParam(fb, _OPTIONAL_, "healTau2", &s->healTau2,   1, 1.0); CHKERRQ(ierr);   
 
 	
-    if(!s->healTau &&(!s->A || !s->APS1 || !s->APS2)) 
+    if(!s->healTau && (!s->A || !s->APS1 || !s->APS2)) 
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %lld", (LLD)ID);
 	}
 
-    if (s->healTau && !s->healTau2)
-    {
-	    s->healTau2=s->healTau;
-    }
+	if ((s->healTau2 && !s->APSheal2) || (!s->healTau2 && s->APSheal2))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "healTau2 and APSheal2 must be set together for heal law %lld", (LLD)ID);
+	}
 
-    if (s->APS2 && !s->APSheal2)
-    {
-    	s->APSheal2=s->APS2;
-    }
 
 	if (PrintOutput){
 		if(s->Lm)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
 		}
-		if(s->healTau)
+		if(s->healTau && s->healTau2)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, APSheal2 = %g, healTau = %g, healTau2= %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->APSheal2,s->healTau, s->healTau2);
-        }
+		}
+		else if (s->healTau && !s->healTau2)
+  		{
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, healTau = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->healTau);
+			s->APSheal2=s->APS2;
+			s->healTau2=s->healTau;
+		}
 		else
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
@@ -1633,7 +1636,7 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	// Prints an overview of the material properties specified for a certain phase (for debugging)
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %lld with visId=%lld : \n",(LLD) MatProp->ID, (LLD) MatProp->visID);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %i with visId=%i : \n",MatProp->ID, MatProp->visID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Density:          rho   = %1.7e,  rho_n = %1.7e,    rho_c = %1.7e,   beta = %1.7e \n",  MatProp->rho,MatProp->rho_c, MatProp->rho_c, MatProp->beta);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Elasticity:       Kb    = %1.7e,  Kp    = %1.7e,    G     = %1.7e \n",                MatProp->Kb, MatProp->Kp, MatProp->G);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Diffusion Cr.:    Bd    = %1.7e,  Ed    = %1.7e,    Vd    = %1.7e \n",                MatProp->Bd, MatProp->Ed, MatProp->Vd);
@@ -1642,7 +1645,7 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	PetscPrintf(PETSC_COMM_WORLD,">>> dc Cr.:           Bdc   = %1.7e,  Edc   = %1.7e,    Rdc   = %1.7e,    mu  = %1.7e \n", MatProp->Bdc, MatProp->Edc, MatProp->Rdc, MatProp->mu);
     PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
     
-    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_st= %1.7e,    rp= %1.7e,    frSoftID = %lld,  chSoftID = %lld,   healID = %lld \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->rp, (LLD) MatProp->frSoftID, (LLD) MatProp->chSoftID, (LLD) MatProp->healID);
+    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_st= %1.7e,    rp= %1.7e,    frSoftID = %i,  chSoftID = %i,   healID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
 	PetscPrintf(PETSC_COMM_WORLD,"          			nu_k  = %1.7e,  T_Nu  = %1.7e,   \n", MatProp->nu_k, MatProp->T_Nu);
 	PetscPrintf(PETSC_COMM_WORLD,"          			T_sol = %1.7e, T_liq  = %1.7e,   Latent_hx= %1.7e,    \n", MatProp->T_sol, MatProp->T_liq, MatProp->Latent_hx);

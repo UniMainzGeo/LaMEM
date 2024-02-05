@@ -23,6 +23,7 @@
 #include "tools.h"
 #include "advect.h"
 #include "dike.h"
+#include "heatzone.h"
 //---------------------------------------------------------------------------
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {
@@ -113,6 +114,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "var_M",			 &ctrl->var_M,           1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "dikeHeat",        &ctrl->dikeHeat,        1, 1);             CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "actHeatZone",			 &ctrl->actHeatZone,           1, 1);             CHKERRQ(ierr);
 
 //
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
@@ -1084,12 +1086,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// DII = (0.5*D_ij*D_ij)^0.5
 	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
 
-  	Dike       *dike; // *djking
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
+	Dike       *dike; // *djking
+	Discret1D  *dsz; // *djking		
 	PetscInt    iter, fssa_allVel;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
@@ -1107,7 +1110,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
-	Discret1D   *dsz;		
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1164,7 +1166,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
-	//ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -1178,11 +1179,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	if (jr->ctrl.actDike)
 	{
 	  nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
-	//ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
-	//ierr = Smooth_sxx_eff(jr, nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx	*revisit (won't work bc we need nPtr)
-	dike = jr->dbdike->matDike+nD;
-//	ierr = Locate_Dike_Zones(actx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+	  dike = jr->dbdike->matDike+nD;
+	  ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr); // *revisit (can we disconnect from individual dike?)
 	}
 
 
@@ -1199,18 +1197,18 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		  y_c = COORD_CELL(j,sy,fs->dsy);
 		  sxx_eff_ave_cell = gsxx_eff_ave[L][j][i];
-
+		  
 		  dikeRHS = 0.0;
 
 		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-		  ierr = GetDikeContr(jr, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy, i-sx, sxx_eff_ave_cell);  CHKERRQ(ierr);
+		  ierr = GetDikeContr(jr, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy, sxx_eff_ave_cell);  CHKERRQ(ierr); // *revisit (PetscInt I)
 
 	if (!dikeRHS == 0)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g", sxx_eff_ave_cell);
 		PetscPrintf(PETSC_COMM_WORLD,"dikeRHS = %g", dikeRHS);
 	}
-
+		  
 		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
 		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
 		  dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
@@ -1219,8 +1217,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// access strain rates
 		XX = dxx[k][j][i];
-		YY = dyy[k][j][i];
-		ZZ = dzz[k][j][i];
+                YY = dyy[k][j][i];
+                ZZ = dzz[k][j][i];
 		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];

@@ -30,28 +30,33 @@ struct Scaling;
 struct BCCtx;
 struct Dike;
 struct DBPropDike;
+struct HeatZone;
+struct DBPropHeatZone;
 //---------------------------------------------------------------------------
 
 // constitutive equations evaluation context
 struct ConstEqCtx
 {
 	// database parameters
-	PetscInt     numPhases; 	// number phases
-	Material_t  *phases;    	// phase parameters
-	Soft_t      *soft;      	// material softening laws
-	Ph_trans_t  *PhaseTrans;    // Phase transition laws
-  PetscInt  numPhtr; // number of phase transitions laws
-    DBMat       *dbm;
-    DBPropDike  *dbdike;
-    Dike        *matDike;       // material properties of dike
-    PetscInt    numDike;        // number of dikes
-	Controls    *ctrl;      	// parameters and controls
-	PData       *Pd;        	// phase diagram data
-	Scaling     *scal;      	// scaling
-	PetscScalar  dt;        	// time step
-	PetscScalar  stats[3];  	// total number of [starts, successes, iterations]
-	PetscScalar  avg_topo;  	// average surface topography
-	BCCtx        *bc;           // boundary conditions, necessary for velin for dike
+	PetscInt         numPhases; 	// number phases
+	Material_t      *phases;    	// phase parameters
+	Soft_t          *soft;      	// material softening laws
+	Ph_trans_t      *PhaseTrans;    // Phase transition laws
+	PetscInt         numPhtr;       // number of phase transitions laws
+    DBMat           *dbm;           // material database
+    DBPropDike      *dbdike;        // dike database
+    Dike            *matDike;       // material properties of dike
+    PetscInt         numDike;       // number of dikes
+	DBPropHeatZone  *dbheatzone;    // heatzone database
+    HeatZone        *matHeatZone;   // material properties of heatzone
+    PetscInt         numHeatZone;   // number of heat zones
+	Controls        *ctrl;      	// parameters and controls
+	PData           *Pd;        	// phase diagram data
+	Scaling         *scal;      	// scaling
+	PetscScalar      dt;        	// time step
+	PetscScalar      stats[3];  	// total number of [starts, successes, iterations]
+	PetscScalar      avg_topo;  	// average surface topography
+	BCCtx           *bc;            // boundary conditions, necessary for velin for dike
 
 	// control volume parameters
 	PetscScalar *phRat;  // phase ratios in the control volume

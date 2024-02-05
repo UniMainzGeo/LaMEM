@@ -65,9 +65,11 @@
 #include "surf.h"
 #include "tssolve.h"
 #include "dike.h"
-//-----------------------------------------------------------------//
+#include "heatzone.h"
 
-PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FDSTAG *fs, FB *fb)
+//-----------------------------------------------------------------------------
+
+PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 {
 	// read phase transitions from file
 
@@ -113,7 +115,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FDSTAG *fs, FB *fb)
 	else if(!strcmp(Type_,"NotInAirBox"))
 	{
 		ph->Type = _NotInAirBox_;
-		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fs, fb);		CHKERRQ(ierr);
+		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
 	}
 	
 	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_tr_);      CHKERRQ(ierr);
@@ -379,17 +381,16 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 }
 //------------------------------------------------------------------------------------------------------------//
 
-PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDSTAG *fs, FB *fb)
+PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB *fb)
 {
 	Scaling      *scal;
-	Discret1D	*dsy;
+	PetscInt     kk;
 	char         Parameter[_str_len_];
-	PetscInt 	 j,kk;
+
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	scal = dbm -> scal;
-	dsy = &fs->dsy;
 
 	ph->nsegs=0;
 
@@ -420,33 +421,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FDS
 		ph->ybounds[2*kk]* scal->length, ph->ybounds[2*kk+1]*scal->length,\
 		ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
 	}
-
-
-
-  	//create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
-  	ierr = makeScalArray(&ph->cbuffL, 0, dsy->ncels+2); CHKERRQ(ierr);
-  	ph->celly_xboundL = ph->cbuffL + 1;
-  	ierr = makeScalArray(&ph->cbuffR, 0, dsy->ncels+2); CHKERRQ(ierr);
-  	ph->celly_xboundR = ph->cbuffR + 1;
-
-
-  	for(j = -1; j < dsy->ncels+1; j++)
-  	{
-  	   ph->celly_xboundL[j] = 1.0e12;
-	   ph->celly_xboundR[j] = -1.0e12;
-
-  	   //for each y coord, find which segment its in and then set x bounds
-	   for (kk = 0; kk < ph->nsegs; kk++)
-	   {
-  		if (ph->ybounds[2*kk] <= dsy->ccoor[j] && dsy->ccoor[j] <= ph->ybounds[2*kk+1])
-  		{
-			ph->celly_xboundL[j] = ph->xbounds[2*kk];
-			ph->celly_xboundR[j] = ph->xbounds[2*kk+1];
-			break;
-		}
-	   }
-	}
-
 
        ph->phtr_link_left = -1; 
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1); CHKERRQ(ierr);
@@ -793,7 +767,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
                 ierr = MovingBox(PhaseTrans, ts, jr); CHKERRQ(ierr);
               }
 
-              ierr = LinkNotInAirBoxes(PhaseTrans, jr); CHKERRQ(ierr);
+//              ierr = LinkNotInAirBoxes(PhaseTrans, jr); CHKERRQ(ierr);
 
 	    }
 	    
@@ -982,7 +956,7 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
   PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------
-PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
+/* PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
 {
   
   Ph_trans_t   *PhaseTransLinkLeft;
@@ -1001,9 +975,9 @@ PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
      PhaseTransLinkLeft = jr->dbm->matPhtr+PhaseTrans->phtr_link_left;
      for(j = -1; j < ny+1; j++)
       {
-      	Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
-        PhaseTrans->celly_xboundL[j] = PhaseTransLinkLeft->celly_xboundR[j];
-        PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundL[j]+Phase_Width;
+      	  Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
+         PhaseTrans->celly_xboundL[j] = PhaseTransLinkLeft->celly_xboundR[j];
+         PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundL[j]+Phase_Width;
       }
   }
 
@@ -1012,14 +986,14 @@ PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
      PhaseTransLinkRight = jr->dbm->matPhtr+PhaseTrans->phtr_link_right;
      for(j = -1; j < ny+1; j++)
       {
-      	Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
-        PhaseTrans->celly_xboundR[j] = PhaseTransLinkRight->celly_xboundL[j];
-        PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundR[j]-Phase_Width;
+      	  Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
+         PhaseTrans->celly_xboundR[j] = PhaseTransLinkRight->celly_xboundL[j];
+         PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundR[j]-Phase_Width;
       }
   }
 
   PetscFunctionReturn(0);
-}
+} */
 //----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, PetscInt PH2, Controls ctrl, Scaling *scal, 
 		    SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr, PetscInt cellID)
@@ -1031,9 +1005,6 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, PetscInt PH
 
 	ph = P->phase;
 	T  = P->T;
-
-//	PetscFunctionBeginUser;
-
 	InAbove = 0;
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
@@ -1072,8 +1043,6 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
     PetscScalar pShift;
 
     PetscFunctionBeginUser;
-	
-//	PetscFunctionBeginUser;
 
 	if (ctrl.pShift){
 		pShift = ctrl.pShift;
@@ -1157,8 +1126,6 @@ PetscInt Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH
 	PetscScalar T;
 
 	PetscFunctionBeginUser;
-	
-//	PetscFunctionBeginUser;
 
 	ph = P->phase;
 	T  = P->T;
@@ -1270,7 +1237,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
   	{
   		xboundL = PhaseTrans->celly_xboundL[J];
        	xboundR = PhaseTrans->celly_xboundR[J];
-       }
+	}
        
   	if 	( (xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
        	(PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )

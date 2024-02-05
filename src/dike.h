@@ -39,10 +39,6 @@ public:
   PetscScalar knee; // Determines the transition from min to max M in the M_val equation
 	PetscScalar Ts; // Tensile strength of rock for variable M calculation (Pa)
   PetscScalar zeta_0; // Initial bulk viscosity for variable M calculation (Pa*s) *revisit [local initial bulk viscosity]
-  PetscScalar rho_rock; // Density of rock for variable M calculation (kg/m^3) *revisit [local volmetric density, will this matter when Pm is implemented?]
-  PetscScalar depth; // Depth of magma below seafloor (lithospheric thickness, m) *revisit [to be set by solidus]
-	PetscScalar U; // full-spreading rate (cm/yr) * revisit [should this be local rather than global?]
-	PetscScalar dike_width; // predetermined width of diking zone for maximum divergence (m) *revisit [should be box determined]
   //
 
   PetscInt PhaseID, PhaseTransID, nPtr;      // associated material phase and phase transition IDs
@@ -64,6 +60,8 @@ public:
   PetscScalar zmax_magma;
   PetscScalar magPfac;
   PetscScalar magPwidth;
+  //PetscScalar ymindyn;
+  //PetscScalar ymaxdyn;
   Vec sxx_eff_ave;
   Vec magPressure;
   Vec sxx_eff_ave_hist;
@@ -88,8 +86,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
                             PetscScalar &dikeRHS,
                             PetscScalar &y_c,
                             PetscInt J,
-                            PetscInt I,
-                            PetscScalar sxx_eff_ave_cell);
+                            PetscScalar sxx_eff_ave_cell); // *revisit (PetscInt I)
 
 // compute dike heat after Behn & Ito, 2008
 PetscErrorCode Dike_k_heatsource(JacRes *jr,

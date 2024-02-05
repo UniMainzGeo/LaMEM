@@ -21,7 +21,9 @@ struct FreeSurf;
 struct BCCtx;
 struct DBMat;
 struct DBPropDike;
+struct DBPropHeatZone;
 struct Dike;
+struct HeatZone;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
@@ -165,9 +167,10 @@ struct Controls
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
-	PetscInt	var_M;			// Flag to activate M controlled by bulk viscosity and stress-field
-	PetscInt    useTk;			// activation flag for using temperature-dependent conductivity
-	PetscInt 	dikeHeat;		// activation flag for using Behn & Ito heat source in dike
+	PetscInt	var_M;          // Flag to activate M controlled by bulk viscosity and stress-field
+	PetscInt	actHeatZone;    // Flag to activate user defined heat zones	
+  	PetscInt    useTk;			// activation flag for using temperature-dependent conductivity
+  	PetscInt 	dikeHeat;		// activation flag for using Behn & Ito heat source in dike
 };
 
 //---------------------------------------------------------------------------
@@ -183,6 +186,7 @@ struct JacRes
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
     DBPropDike *dbdike; // dike database
+	DBPropHeatZone *dbheatzone; // heatzone database
 	DBMat    *dbm;   // material database
   
 	// parameters and controls
@@ -361,8 +365,10 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *rho_Cp_, // volumetric heat capacity
 	PetscScalar *rho_A_,  // volumetric radiogenic heat   
 	PetscScalar Tc,       // temperature of cell
-    PetscScalar y_c,
-    PetscInt J);     // coordinate of cell
+    PetscScalar y_c,      // center of cell in y-direction
+    PetscInt J,           // coordinate of cell
+    PetscScalar x_c,      // center of cell in x-direction
+    PetscInt I);          // coordinate of cell
 
 // check whether thermal material parameters are properly defined
 PetscErrorCode JacResCheckTempParam(JacRes *jr);

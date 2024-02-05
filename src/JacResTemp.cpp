@@ -20,6 +20,7 @@
 #include "matrix.h"
 #include "surf.h"
 #include "dike.h"
+#include "heatzone.h"
 
 //---------------------------------------------------------------------------
 
@@ -34,7 +35,7 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-  PetscCall(JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i], COORD_CELL(j,sy,fs->dsy),j-sy)); \
+  PetscCall(JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i], COORD_CELL(j,sy,fs->dsy), j-sy, COORD_CELL(i,sx,fs->dsx), i-sx)); \
   buff[k][j][i] = kc;   // added one NULL because of the new variables that are passed
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
@@ -45,14 +46,16 @@
 // Temperature parameters functions
 //---------------------------------------------------------------------------
 PetscErrorCode JacResGetTempParam(
-		JacRes      *jr,
-		PetscScalar *phRat,
-		PetscScalar *k_,      // conductivity
-		PetscScalar *rho_Cp_, // volumetric heat capacity
-		PetscScalar *rho_A_,  // volumetric radiogenic heat
-		PetscScalar Tc,
-		PetscScalar y_c,
-		PetscInt J) 
+	JacRes      *jr,
+	PetscScalar *phRat,
+	PetscScalar *k_,      // conductivity
+	PetscScalar *rho_Cp_, // volumetric heat capacity
+	PetscScalar *rho_A_,  // volumetric radiogenic heat   
+	PetscScalar Tc,       // temperature of cell
+    PetscScalar y_c,      // center of cell in y-direction
+    PetscInt J,           // coordinate of cell
+    PetscScalar x_c,      // center of cell in x-direction
+    PetscInt I)           // coordinate of cell
 
 {
 	// compute effective energy parameters in the cell
@@ -117,10 +120,14 @@ PetscErrorCode JacResGetTempParam(
 	{
 	    k = k*nu_k;
 	}
-
 	if (ctrl.actDike && ctrl.dikeHeat)
 	{
 	  PetscCall(Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c, J));
+	}
+
+	if (ctrl.actHeatZone)
+	{
+	  PetscCall(GetHeatZoneSource(jr, phases, Tc, phRat, k, rho_A, y_c, J));
 	}
 
 	// store
@@ -414,7 +421,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
-	PetscScalar y_c;
+	PetscScalar y_c, x_c;
 	
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -474,10 +481,11 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		Tn  = svBulk->Tn;  // temperature history
 		Pc  = P[k][j][i] ; // Current Pressure
 
-		y_c = COORD_CELL(j,sy,fs->dsy);
+		y_c = COORD_CELL(j, sy, fs->dsy);
+		x_c = COORD_CELL(i, sx, fs->dsx);
 
 		// conductivity, heat capacity, radiogenic heat production
-		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, j-sy));
+		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, j-sy, x_c, i-sx));
 
 		// shear heating term (effective)
 		Hr = svDev->Hr +
@@ -591,7 +599,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar v[7], cf[6], kc, rho_Cp, invdt, Tc, cond;
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff, ***lT;
-	PetscScalar y_c;
+	PetscScalar y_c, x_c;
 	
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -634,13 +642,14 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		svCell = &jr->svCell[iter++];
 		svBulk = &svCell->svBulk;
 
-		y_c = COORD_CELL(j,sy,fs->dsy);
+		y_c = COORD_CELL(j, sy, fs->dsy);
+		x_c = COORD_CELL(i, sx, fs->dsx);
 		
 		// access
 		Tc  = lT[k][j][i]; // current temperature
 		
 		// conductivity, heat capacity
-		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, y_c, j-sy));
+		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, y_c, j-sy, x_c, i-sx));
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }

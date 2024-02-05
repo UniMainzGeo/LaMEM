@@ -7,7 +7,6 @@
  **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-
 //---------------------------------------------------------------------------
 //..... LOCAL LEVEL INTEGRATION ALGORITHMS FOR CONSTITUTIVE EQUATIONS  ......
 //---------------------------------------------------------------------------
@@ -24,7 +23,6 @@
 #include "parsing.h"
 #include "bc.h"
 #include "dike.h"
-
 //---------------------------------------------------------------------------
 PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 {
@@ -58,7 +56,6 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 PetscErrorCode setUpCtrlVol(
 		ConstEqCtx  *ctx,    // context
@@ -740,22 +737,22 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 }
 //---------------------------------------------------------------------------
 PetscErrorCode cellConstEq(
-		ConstEqCtx  *ctx,    	// evaluation context
-		SolVarCell  *svCell, 	// solution variables
-		PetscScalar  dxx,    	// effective normal strain rate components
-		PetscScalar  dyy,    	// ...
-		PetscScalar  dzz,    	// ...
-		PetscScalar &sxx,    	// Cauchy stress components
-		PetscScalar &syy,    	// ...
-		PetscScalar &szz,    	// ...
-		PetscScalar &gres,   	// volumetric residual
-		PetscScalar &rho,    	// effective density
-		PetscScalar &dikeRHS)	// dike RHS for gres calculation
+		ConstEqCtx  *ctx,    // evaluation context
+		SolVarCell  *svCell, // solution variables
+		PetscScalar  dxx,    // effective normal strain rate components
+		PetscScalar  dyy,    // ...
+		PetscScalar  dzz,    // ...
+		PetscScalar &sxx,    // Cauchy stress components
+		PetscScalar &syy,    // ...
+		PetscScalar &szz,    // ...
+		PetscScalar &gres,   // volumetric residual
+		PetscScalar &rho,    // effective density
+		PetscScalar &dikeRHS) // dike RHS for gres calculation
 {
 	// evaluate constitutive equations on the cell
 
-	SolVarDev   *svDev;			// deviatoric variables
-	SolVarBulk  *svBulk;		// volumetric variables
+	SolVarDev   *svDev;
+	SolVarBulk  *svBulk;
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
 
