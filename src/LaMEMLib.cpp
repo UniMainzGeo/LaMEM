@@ -822,10 +822,10 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	ierr = LaMEMLibDiffuseTemp(lm); CHKERRQ(ierr);
 
 	// initialize pressure
-	ierr = JacResInitPres(&lm->jr); CHKERRQ(ierr);
+	ierr = JacResInitPres(&lm->jr,&lm->ts); CHKERRQ(ierr);
 
 	// lithostatic pressure initializtaion
-	ierr = JacResInitLithPres(&lm->jr, &lm->actx); CHKERRQ(ierr);
+	ierr = JacResInitLithPres(&lm->jr, &lm->actx, &lm->ts); CHKERRQ(ierr);
 
 	// compute inverse elastic parameters (dependent on dt)
 	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
@@ -864,6 +864,7 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 {
 	JacRes         *jr;
+	TSSol          *ts;
 	Controls       *ctrl;
 	AdvCtx         *actx;
 	PetscLogDouble t;
@@ -874,12 +875,13 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	PetscFunctionBeginUser;
 
 	// access context
+	ts       = &lm->ts; 
 	jr      = &lm->jr;
 	ctrl    = &jr->ctrl;
 	actx    = &lm->actx;
 
 	// check for infinite diffusion
-	if (ctrl->actTemp && ctrl->actSteadyTemp)
+	if (ctrl->actTemp && ctrl->actSteadyTemp && ts->istep<=1)
 	{
 		PrintStart(&t,"Computing steady-state temperature distribution", NULL);
 
