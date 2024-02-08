@@ -905,7 +905,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	}
 
 	// check for additional limited diffusion
-	if (ctrl->actTemp && ctrl->steadyTempStep)
+	if (ctrl->actTemp && ctrl->steadyTempStep && ts->istep==0)
 	{
 		PrintStart(&t,"Diffusing temperature", NULL);
 
