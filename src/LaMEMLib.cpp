@@ -629,7 +629,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	PetscCall(PetscLogStagePush(stages[0])); /* Start profiling stage*/
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
-    
+
 	PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 
 	if (param)
@@ -881,7 +881,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	actx    = &lm->actx;
 
 	// check for infinite diffusion
-	if (ctrl->actTemp && ctrl->actSteadyTemp && ts->istep<=1)
+	if (ctrl->actTemp && ctrl->actSteadyTemp && ts->istep==0)
 	{
 		PrintStart(&t,"Computing steady-state temperature distribution", NULL);
 
