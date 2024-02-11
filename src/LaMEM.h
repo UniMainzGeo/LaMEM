@@ -36,7 +36,7 @@
 #define _num_neighb_ 27
 
 // string length (two null characters are reserved in the end, i.e. 128)
-#define _str_len_ 130
+#define _str_len_ 260
 
 // marker storage capacity overhead
 #define _cap_overhead_ 1.61803398875
@@ -129,7 +129,7 @@
 #define _max_pd_sz_ 40100
 
 // length of unique phase diagram name
-#define _pd_name_sz_ 54
+#define _pd_name_sz_ 260
 
 // length of scaling unit label
 #define _lbl_sz_ 23
