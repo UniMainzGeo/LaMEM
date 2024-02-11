@@ -663,6 +663,7 @@ end
 
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-9));
     @test perform_lamem_test(dir,"Plume_PhaseTransitions_Melting.dat","PhaseTransitions-Melting_p1.expected",
+                            args="-mfmax 0.15",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
     # Tests phase transitions with X/Z and Box coordinates
