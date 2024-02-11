@@ -328,6 +328,7 @@ end
     
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"test_9_FallingBlock_PhaseDiagrams.expected",
+                            args="-mfmax 0.15",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 end
 
