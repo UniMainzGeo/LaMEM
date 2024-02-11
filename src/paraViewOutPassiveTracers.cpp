@@ -52,7 +52,7 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_phase",           &pvptr->Phase,   1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_MeltFraction",    &pvptr->MeltFraction, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Active",          &pvptr->Active   , 1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Grid_Mf",          &pvptr->Grid_mf   , 1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Grid_Mf",         &pvptr->Grid_mf   , 1, 1); CHKERRQ(ierr);
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Passive Tracers output parameters:\n");

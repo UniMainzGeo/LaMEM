@@ -56,7 +56,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->pShiftAct    =  0;
 	ctrl->pLithoVisc   =  1;
 	ctrl->initGuess    =  1;
-	ctrl->mfmax        =  0.15;
+	ctrl->mfmax        =  1.0;
 	ctrl->lmaxit       =  25;
 	ctrl->lrtol        =  1e-6;
 	ctrl->actTemp	   =  0;			// diffusion is not active by default (otherwise we have to define thermal properties in all cases)
