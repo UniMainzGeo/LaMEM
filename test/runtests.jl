@@ -150,6 +150,13 @@ end
     @test perform_lamem_test(dir,"localization.dat","Loc1_c_Direct_VEP_opt-p1.expected",
                             args="-nstep_max 20", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+
+
+    # t4_Loc1_d_MUMPS_VEP_VPReg_opt
+    @test perform_lamem_test(dir,"localization_eta_vp_reg.dat","t4_Loc1_d_MUMPS_VEP_VPReg_opt-p1.expected",
+                            args="-nstep_max 20", 
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+
 end
 
 @testset "t5_Permeability" begin
