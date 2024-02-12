@@ -185,7 +185,7 @@
 	<MaterialStart>
 		ID         = 2      # phase id  [-]
 		rho        = 100    # density - if dimensional [kg/m3]
-		eta        = 1e19   # Viscosity - dimensional [Pa.s]
+		eta        = 1e20   # Viscosity - dimensional [Pa.s]
 		G          =  5e10
 		Kb         =  8e10
 		ch         =  50e6

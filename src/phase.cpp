@@ -460,8 +460,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
 
 	if (PrintOutput)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"- Melt factor mfc = %f", m->mfc);
+	{	
+		if (m->mfc>0){
+			PetscPrintf(PETSC_COMM_WORLD,"- Melt factor mfc = %f", m->mfc);
+		}
 	}
 
 	// check energy parameters
