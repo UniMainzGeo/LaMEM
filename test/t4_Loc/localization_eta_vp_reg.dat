@@ -20,7 +20,7 @@
 	CFL       = 0.1    # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.1    # CFL criterion for elasticity
 	time_end  = 0.2   # simulation end time
-	nstep_out = 1      # save output every n steps
+	nstep_out = 5      # save output every n steps
 
 #===============================================================================
 # Grid & discretization parameters
@@ -77,7 +77,10 @@
 #===============================================================================
 # Solver options
 #===============================================================================
+	#SolverType 		=	multigrid 			# solver [direct or multigrid]
 	SolverType 		=	direct 			# solver [direct or multigrid]
+	
+	MGLevels 		=   4
 	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
 	DirectPenalty 	=	1e3
 
@@ -92,6 +95,12 @@
 	nmark_z        = 5                 # ...                 z-direction
 	rand_noise     = 0                 # random noise flag
 	bg_phase       = 1                 # background phase ID
+	advect         = rk2               # advection scheme
+	interp         = stagp             # velocity interpolation scheme
+	mark_ctrl      = subgrid           # marker control type
+	nmark_lim      = 8 100             # min/max number per cell
+	nmark_sub       = 1                 # max number of same phase markers per subcell (subgrid marker control)
+
 
 	# Geometric primitives:
 
