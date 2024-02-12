@@ -111,7 +111,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	Soft_t      *soft;
 	Controls    *ctrl;
 	PData       *Pd;
-	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn, DIIpl;
+	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 
 	PetscErrorCode ierr;
@@ -123,7 +123,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctrl   = ctx->ctrl;
 	Pd     = ctx->Pd;
 	APS    = ctx->svDev->APS;
-	DIIpl  = ctx->DIIpl;
 	Le     = ctx->Le;
 	dt     = ctx->dt;
 	p      = ctx->p;
@@ -314,8 +313,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	// Store viscoplasticity (for regularization)
 	ctx->eta_vp =  mat->eta_vp;
 
-	//ctx->taupl += ctx->eta_vp*ctx->DII; // add regularization
-	
 	// correct for ultimate yield stress (if defined)
 	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
 
@@ -432,19 +429,16 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	if(taupl && DII)
 	{
 		// compute plastic stress and viscosity
-		//DIIpl = 0.0;
-		//err   = 100;
-		//iter  = 0;
-		//taupl0= taupl;
-		//while ((err>1e-3) && (iter<20)){	
-		//	PetscScalar DIIpl1;
-
-			// Note: this always converges in 2 iterations, which makes me think that it is actually linear so we don't need iterations
-//			DIIpl_0 = DIIpl;
+		DIIpl = 0.0;
+		err   = 100;
+		iter  = 0;
+		taupl0= taupl;
+		while ((err>1e-5) && (iter<20)){	
+			DIIpl_0 = DIIpl;
 
 			// Add viscoplastic regularization 
-			//taupl = taupl +  ctx->eta_vp*DII;	// add regularisation
-			tauII = taupl +  ctx->eta_vp*DII; 	
+			taupl = taupl0 +  ctx->eta_vp*DIIpl;	// add regularisation based on plastic strain rate
+			tauII = taupl; 	
 			eta   = tauII/(2.0*DII);
 
 			// compute plastic strain rate
@@ -456,14 +450,9 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 				DIIpl = 0.0;
 			}
 
-			//iter += 1;
-			if (DIIpl > 0.0)
-			{
-			 // PetscPrintf(PETSC_COMM_WORLD,"iter=%i, taupl = %e  +taupl = %e eta_vp = %e \n",iter,taupl, ctx->eta_vp*DII, ctx->eta_vp);
-			}
-		//};
-
-
+			iter += 1;
+			err  = abs(DIIpl - DIIpl_0)/DII;
+		};
 	}
 
 	//=================
