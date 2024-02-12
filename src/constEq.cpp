@@ -437,7 +437,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 			DIIpl_0 = DIIpl;
 
 			// Add viscoplastic regularization 
-			taupl = taupl0 +  ctx->eta_vp*DIIpl;	// add regularisation based on plastic strain rate
+			taupl = taupl0 +  2.0*ctx->eta_vp*DIIpl;	// add regularisation based on plastic strain rate
 			tauII = taupl; 	
 			eta   = tauII/(2.0*DII);
 

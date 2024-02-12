@@ -176,7 +176,7 @@
 		fr        =  30
 		frSoftID  =  0     # softening ID
 		chSoftID  =  0
-		#eta_vp    =  1e21
+		eta_vp    =  1e21
 		#eta_st    =  1e21
 		
 	<MaterialEnd>
