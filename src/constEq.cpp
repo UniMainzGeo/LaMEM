@@ -111,7 +111,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	Soft_t      *soft;
 	Controls    *ctrl;
 	PData       *Pd;
-	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
+	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn, DIIpl;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 
 	PetscErrorCode ierr;
@@ -123,6 +123,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctrl   = ctx->ctrl;
 	Pd     = ctx->Pd;
 	APS    = ctx->svDev->APS;
+	DIIpl  = ctx->DIIpl;
 	Le     = ctx->Le;
 	dt     = ctx->dt;
 	p      = ctx->p;
@@ -183,7 +184,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 	// total pressure
 	p_total = p + ctrl->biot*p_pore; 
-
 
 	// assign pressure for viscous laws
 	if(ctrl->pLithoVisc)  p_visc = p_lith;
@@ -311,6 +311,11 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(dP < 0.0) ctx->taupl =         ch; // Von-Mises model for extension
 	else         ctx->taupl = dP*fr + ch; // Drucker-Prager model for compression
 
+	// Store viscoplasticity (for regularization)
+	ctx->eta_vp =  mat->eta_vp;
+
+	//ctx->taupl += ctx->eta_vp*ctx->DII; // add regularization
+	
 	// correct for ultimate yield stress (if defined)
 	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
 
@@ -347,8 +352,10 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	ctx->DIIpl  = 0.0; // plastic strain rate
 	ctx->yield  = 0.0; // yield stress
 
-	// zero out stabilization viscosity
+	// zero out stabilization and viscoplastic viscosity
 	svDev->eta_st = 0.0;
+	svDev->eta_vp = 0.0;
+
 
 	// viscous initial guess
 	if(ctrl->initGuess)
@@ -372,8 +379,10 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 			// compute phase viscosities and strain rate partitioning
 			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
 
-			// update stabilization viscosity
+			// update stabilization and viscoplastic viscosity
 			svDev->eta_st += phRat[i]*phases->eta_st;
+			svDev->eta_vp += phRat[i]*phases->eta_vp;
+			
 		}
 	}
 
@@ -395,9 +404,9 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	// compute phase viscosities and strain rate partitioning
 
 	Controls    *ctrl;
-	PetscInt    it, conv;
-	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
-	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIfk, DIIvs, phRat;
+	PetscInt    it, conv, iter;
+	PetscScalar eta_min, eta_mean, eta, eta_vp, eta_cr, tauII, taupl, taupl0, DII;
+	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIpl_0, err, DIIfk, DIIvs, phRat;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_fk, inv_eta_min;
 
 	PetscFunctionBeginUser;
@@ -406,6 +415,9 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	ctrl   = ctx->ctrl;              // global controls
 	phRat  = ctx->phRat[ID];         // phase ratio
 	taupl  = ctx->taupl;             // plastic yield stress
+	eta_vp = ctx->eta_vp;            // viscoplastic regularization
+
+	
 	DII    = ctx->DII;               // effective strain rate
 
 	// initialize
@@ -420,17 +432,38 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	if(taupl && DII)
 	{
 		// compute plastic stress and viscosity
-		tauII = taupl;
-		eta   = tauII/(2.0*DII);
+		//DIIpl = 0.0;
+		//err   = 100;
+		//iter  = 0;
+		//taupl0= taupl;
+		//while ((err>1e-3) && (iter<20)){	
+		//	PetscScalar DIIpl1;
 
-		// compute plastic strain rate
-		DIIpl = getConsEqRes(eta, ctx);
+			// Note: this always converges in 2 iterations, which makes me think that it is actually linear so we don't need iterations
+//			DIIpl_0 = DIIpl;
 
-		// reset if plasticity is not active
-		if(DIIpl < 0.0)
-		{
-			DIIpl = 0.0;
-		}
+			// Add viscoplastic regularization 
+			//taupl = taupl +  ctx->eta_vp*DII;	// add regularisation
+			tauII = taupl +  ctx->eta_vp*DII; 	
+			eta   = tauII/(2.0*DII);
+
+			// compute plastic strain rate
+			DIIpl = getConsEqRes(eta, ctx);
+			
+			// reset if plasticity is not active
+			if(DIIpl < 0.0)
+			{
+				DIIpl = 0.0;
+			}
+
+			//iter += 1;
+			if (DIIpl > 0.0)
+			{
+			 // PetscPrintf(PETSC_COMM_WORLD,"iter=%i, taupl = %e  +taupl = %e eta_vp = %e \n",iter,taupl, ctx->eta_vp*DII, ctx->eta_vp);
+			}
+		//};
+
+
 	}
 
 	//=================
@@ -507,6 +540,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	ctx->DIIfk  += phRat*DIIfk;  // Frank-Kamenetzky
 	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
 	ctx->yield  += phRat*taupl;  // plastic yield stress
+	ctx->eta_vp += phRat*eta_vp; // viscoplastic regularization
 
 	PetscFunctionReturn(0);
 }
@@ -668,7 +702,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			cf_comp  = 1.0;
 			cf_therm = 1.0;
 
-			// elastic compressiblility correction (Murnaghan's equation)
+			// elastic compressibility correction (Murnaghan's equation)
 			// ro/ro_0 = (1 + Kb'*P/Kb)^(1/Kb')
 			if(mat->Kb)
 			{

@@ -35,6 +35,8 @@ struct SolVarDev
 {
 	PetscScalar  eta;    // total effective viscosity
 	PetscScalar  eta_st; // stabilization viscosity
+	PetscScalar  eta_vp; // viscoplastic viscosity
+	
 	PetscScalar  I2Gdt;  // inverse elastic parameter (1/2G/dt)
 	PetscScalar  Hr;     // shear heating term contribution
 	PetscScalar  APS;    // accumulated plastic strain

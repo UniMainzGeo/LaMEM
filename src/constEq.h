@@ -40,7 +40,7 @@ struct ConstEqCtx
 	Material_t  *phases;    	// phase parameters
 	Soft_t      *soft;      	// material softening laws
 	Ph_trans_t  *PhaseTrans;    // Phase transition laws
-  PetscInt  numPhtr; // number of phase transitions laws
+    PetscInt    numPhtr;        // number of phase transitions laws
     DBMat       *dbm;
     DBPropDike  *dbdike;
     Dike        *matDike;       // material properties of dike
@@ -75,6 +75,8 @@ struct ConstEqCtx
 	PetscScalar  N_prl;  // Peierls exponent
 	PetscScalar  A_fk;   // Frank-Kamenetzky constant
 	PetscScalar  taupl;  // plastic yield stress
+	PetscScalar  eta_vp; // viscoplastic regularisation
+	
 
 	// control volume results
 	PetscScalar  eta;    // effective viscosity
