@@ -83,6 +83,9 @@ PetscErrorCode DBHeatZoneCreate(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, 
 			PetscCall(DBReadHeatZone(dbheatzone, dbm, fb, jr, PrintOutput));
 			fb->blockID++;
 		}
+
+		if (PrintOutput)
+			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 	}
 
 	PetscCall(FBFreeBlocks(fb));
@@ -95,11 +98,12 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 {
 	// read heatzone parameter from file
 	BCCtx *bc;
-	HeatZone *heatzone;
-	PetscInt ID;
 	Scaling *scal;
+	HeatZone *heatzone;
+	PetscInt i, ID;
+	PetscScalar  invt, Box[6];
 	char Parameter[_str_len_];
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -107,8 +111,7 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 	bc = jr->bc;
 
 	// HeatZone ID
-	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbheatzone->numHeatZone - 1);
-	CHKERRQ(ierr);
+	PetscCall(getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbheatzone->numHeatZone - 1));
 	fb->ID = ID;
 
 	// get pointer to specified heatzone parameters
@@ -122,34 +125,25 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 
 	// set ID
 	heatzone->ID = ID;
+	invt = 1/jr->scal->time;
 
 	// read and store heatzone  parameters
-	ierr = getIntParam(fb, _REQUIRED_, "PhaseID", &heatzone->PhaseID, 1, dbm->numPhases - 1);
-	CHKERRQ(ierr);
-	ierr = getIntParam(fb, _REQUIRED_, "PhaseTransID", &heatzone->PhaseTransID, 1, dbm->numPhtr - 1);
-	CHKERRQ(ierr);
-	ierr = getStringParam(fb, _REQUIRED_, "HeatFunction", Parameter, "q_hotspot");
+	PetscCall(getStringParam(fb, _REQUIRED_, "HeatFunction", Parameter, "q_hotspot"));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "HZ_Bounds", heatzone->bounds, 6, scal->length));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "AsthenoTemp", &heatzone->asthenoTemp, 1, 1));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "rho", &heatzone->rho, 1, scal->density));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "Cp", &heatzone->Cp, 1, scal->cpecific_heat));
 
 	if (!strcmp(Parameter, "q_hotspot"))
 	{
 		heatzone->HeatFunction = 0;
-		heatzone->heatRate = 1e-10;
-		ierr = getScalarParam(fb, _REQUIRED_, "AsthenoTemp", &heatzone->asthenoTemp, 1, 1);
-		CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "HeatRate", &heatzone->heatRate, 1, 1);
-		CHKERRQ(ierr);
+		PetscCall(getScalarParam(fb, _REQUIRED_, "HeatRate", &heatzone->heatRate, 1, scal->strain_rate));
 
-		heatzone->asthenoTemp = (heatzone->asthenoTemp + scal->Tshift) / scal->temperature; // scaling temperature input
 	}
 	else if (!strcmp(Parameter, "q_ridge"))
 	{
 		heatzone->HeatFunction = 1;
-		ierr = getScalarParam(fb, _REQUIRED_, "AsthenoTemp", &heatzone->asthenoTemp, 1, 1);
-		CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "SpreadingRate", &heatzone->spreadingRate, 1, scal->velocity);
-		CHKERRQ(ierr); // R
-
-		heatzone->asthenoTemp = (heatzone->asthenoTemp + scal->Tshift) / scal->temperature; // scaling temperature input
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "SpreadingRate", &heatzone->spreadingRate, 1, scal->velocity)); // R
 
 		if (heatzone->spreadingRate) // needs dependence on local spreading rate to be useful
 		{
@@ -165,20 +159,30 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown parameter for HeatFunction %s [q_hotspot; q_ridge]", Parameter);
 	}
 
+	// scaling
+	heatzone->asthenoTemp = (heatzone->asthenoTemp + scal->Tshift) / scal->temperature;
+
 	// print HeatZone info to terminal
 	if (PrintOutput)
 	{
+		// get heatzone bounds
+		for (i=0; i<6; i++){ Box[i] = heatzone->bounds[i]*scal->length; }
+		
+		// print block
 		if (heatzone->HeatFunction == 0)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "  HeatZone parameters ID[%lld]: PhaseTransID=%lld PhaseID=%lld AsthenoTemp=%g, HeatRate=%g \n",
-						(LLD)(heatzone->ID), (LLD)(heatzone->PhaseTransID), (LLD)(heatzone->PhaseID), heatzone->asthenoTemp * scal->temperature - scal->Tshift, heatzone->heatRate);
+			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld]: hotspot heating\n", (LLD)(heatzone->ID));
+			PetscPrintf(PETSC_COMM_WORLD, "     Bounds     : [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
+			PetscPrintf(PETSC_COMM_WORLD, "     Parameters : AsthenoTemp = %1.0f %s, HeatRate = %g %s\n", heatzone->asthenoTemp * scal->temperature - scal->Tshift, scal->lbl_temperature, heatzone->heatRate, scal->lbl_strain_rate);
+			PetscPrintf(PETSC_COMM_WORLD, "                  rho = %1.0f %s, Cp = %g %s\n", heatzone->rho * scal->density, scal->lbl_density, heatzone->Cp * scal->cpecific_heat, scal->lbl_cpecific_heat);
 		}
 		else if (heatzone->HeatFunction == 1)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "  HeatZone parameters ID[%lld]: PhaseTransID=%lld PhaseID=%lld AsthenoTemp=%g, SpreadingRate=%g \n",
-						(LLD)(heatzone->ID), (LLD)(heatzone->PhaseTransID), (LLD)(heatzone->PhaseID), heatzone->asthenoTemp * scal->temperature - scal->Tshift, heatzone->spreadingRate * scal->velocity);
+			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld]: ridge heating\n", (LLD)(heatzone->ID));
+			PetscPrintf(PETSC_COMM_WORLD, "     Bounds     : [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
+			PetscPrintf(PETSC_COMM_WORLD, "     Parameters : AsthenoTemp = %1.0f %s, SpreadingRate = %1.1f %s\n", heatzone->asthenoTemp * scal->temperature - scal->Tshift, scal->lbl_temperature, heatzone->spreadingRate * scal->velocity, scal->lbl_velocity);
+			PetscPrintf(PETSC_COMM_WORLD, "                  rho = %1.0f %s, Cp = %g %s\n", heatzone->rho * scal->density, scal->lbl_density, heatzone->Cp * scal->cpecific_heat, scal->lbl_cpecific_heat);
 		}
-		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 	}
 
 	PetscFunctionReturn(0);
@@ -189,253 +193,137 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 PetscErrorCode GetHeatZoneSource(JacRes *jr,
 								 Material_t *phases,
 								 PetscScalar &Tc,
-								 PetscScalar *phRat, // phase ratios in the control volume
-								 PetscScalar &k,
+								 PetscScalar *phRat,
 								 PetscScalar &rho_A,
 								 PetscScalar &y_c,
+								 PetscScalar &x_c,
+								 PetscScalar &z_c,
 								 PetscInt J)
 
 {
 	HeatZone *heatzone;
-	Dike *dike;
-	Ph_trans_t *CurrPhTr;
-	Material_t *mat;
-	PetscInt numHeatZone, numPhtr, numPhases, numDike;
-	PetscInt nHZ, nPtr, nPhase, nD;
-	PetscScalar heatFunct, asthenoTemp, heatRate, spreadingRate;
-	PetscScalar rho, Cp;
+	PetscInt nHZ, numHeatZone, AirPhase;
+	PetscScalar asthenoTemp, heatRate, spreadingRate;
+	PetscScalar rho, Cp, hzRat, st_dev, F_x, delta_x;
 	PetscScalar hz_left, hz_right, hz_width, hz_x_cent;
-//	PetscScalar hz_front, hz_back, hz_length, hz_y_cent; // *3D
-	PetscScalar pi, st_dev, F_x, delta_x; // *revisit
-	PetscScalar x_cellc, y_cellc, z_cellc; // *revisit
+	PetscScalar hz_front, hz_back, hz_bottom, hz_top;
+//	PetscScalar hz_length, hz_y_cent; // *3D
 
-//	PetscScalar v_spread, left, right, front, back, x_distance; // SubtractDikeHeatSource *revisit
-
-PetscInt debug;
+//	Dike *dike;
+//	Ph_trans_t *CurrPhTr;
+//	PetscInt nPtr, numPhtr, nD, numDike, nPhase, numPhases;
+//	Material_t *mat;
+//	PetscInt nHZ, nPtr, nPhase, nD;
+//	PetscScalar v_spread, left, right, front, back, x_distance;
 
 	PetscFunctionBeginUser;
 
-debug = 0;
+//	numPhtr = jr->dbm->numPhtr;				   // number of phase transitions
+//	numDike = jr->dbdike->numDike;			   // number of dikes
+//	numPhases = jr->dbm->numPhases;
 
-	numPhtr = jr->dbm->numPhtr;				   // number of phase transitions
 	numHeatZone = jr->dbheatzone->numHeatZone; // number of heatzones
-	numDike = jr->dbdike->numDike;			   // number of dikes
-	numPhases = jr->dbm->numPhases;
 
-	x_cellc = *(jr->fs->dsx.ccoor);
-	y_cellc = *(jr->fs->dsy.ccoor);
-	z_cellc = *(jr->fs->dsz.ccoor);
-
-if (debug == 1) 
-{
-	PetscPrintf(PETSC_COMM_WORLD, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-	PetscPrintf(PETSC_COMM_WORLD, "------------------ Compute Heating ----------------\n");
-	PetscPrintf(PETSC_COMM_WORLD, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n \n");
-	PetscPrintf(PETSC_COMM_WORLD, "... checking for phase transition laws of heating zones\n");
-}
-	for (nPtr = 0; nPtr < numPhtr; nPtr++) // loop over all phase transitions blocks
+	for (nHZ = 0; nHZ < numHeatZone; nHZ++) // loop through all heatzone blocks
 	{
-		// access the parameters of the phasetranstion block
-		CurrPhTr = jr->dbm->matPhtr + nPtr; // important params: ID, type (NotInAirBox), and bounds (left = bounds[0], right = bounds [1])
-		hz_left = CurrPhTr->bounds[0];
-		hz_right = CurrPhTr->bounds[1];
-//		hz_front = CurrPhTr->bounds[2]; *revisit
-//		hz_back = CurrPhTr->bounds[3]; *revisit
+		// access the necessary parameters of the heatzone block
+		heatzone = jr->dbheatzone->matHeatZone + nHZ; // getting hz params
 
-if (debug == 1) {PetscPrintf(PETSC_COMM_WORLD, "... checking phase transition %lld\n", (LLD)(nPtr));}
+		// material parameters
+		asthenoTemp = heatzone->asthenoTemp;
+		heatRate = heatzone->heatRate;
+		spreadingRate = heatzone->spreadingRate;
+		rho = heatzone->rho;
+		Cp = heatzone->Cp;
 
-		for (nHZ = 0; nHZ < numHeatZone; nHZ++) // loop through all heatzone blocks
+		// geometric parameters
+		hz_left = heatzone->bounds[0];
+		hz_right = heatzone->bounds[1];
+		hz_front = heatzone->bounds[2];
+		hz_back = heatzone->bounds[3];
+		hz_bottom = heatzone->bounds[4];
+		hz_top = heatzone->bounds[5];
+		hz_width = PetscSqrtScalar(pow(hz_right - hz_left, 2));
+		st_dev = hz_width / (2 * PetscSqrtScalar(2 * log(2)));
+		hz_x_cent = (hz_right + hz_left) / 2;
+
+		// if we are close to the heatzone
+		if (x_c > (hz_x_cent - hz_width) && x_c < (hz_x_cent + hz_width) && y_c > hz_front && y_c < hz_back && z_c > hz_bottom && z_c < hz_top)
 		{
-			// access the necessary parameters of the heatzone block
-			heatzone = jr->dbheatzone->matHeatZone + nHZ; // getting hz params
-			heatFunct = heatzone->HeatFunction;
-			asthenoTemp = heatzone->asthenoTemp;
-			heatRate = heatzone->heatRate;
-			spreadingRate = heatzone->spreadingRate;
+			// compute environmental parameters
+			delta_x = PetscSqrtScalar(pow(hz_x_cent - x_c, 2)); // *revisit
+			F_x = (hz_width / (st_dev * PetscSqrtScalar(2 * PETSC_PI))) * exp(-pow(delta_x, 2) / (2 * pow(st_dev, 2)));
+			/* 		hz_width = sqrt(pow(hz_right - hz_left, 2) + pow(hz_back - hz_front, 2)); // *3D
+					hz_length = sqrt(pow(hz_back - hz_front, 2)); // *3D
+					hz_y_cent = hz_back - hz_front/2; // *3D */
 
-
-			// if in the HeatZone 
-			if (CurrPhTr->ID == heatzone->PhaseTransID) // its a HeatZone
+			// calculate not in air phase ratio
+			hzRat = 1;
+			AirPhase = jr->surf->AirPhase;
+			if (AirPhase != -1)
 			{
+				hzRat -= phRat[AirPhase];
+			}
 
-if (debug == 1) PetscPrintf(PETSC_COMM_WORLD, "Phase Transition %lld is HeatZone %lld!!!!!\n", (LLD)(nPtr), (LLD)(nHZ));
-				
-/* 				// if this cell is within HeatZone
-				if (x_cellc >)
-				{
-					// code
-				}
-				 */
-       
-				// loop through phases
-				for (nPhase = 0; nPhase < numPhases; nPhase++)
-				{
-if (debug == 1) PetscPrintf(PETSC_COMM_WORLD, "... checking phase ID %lld for heating contributions\n", (LLD)(nPhase));
-					
-					// if the current phase exists within HeatZone
-					if(phRat[nPhase]>0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J]) // what is J? *revisit
+			// calculate heating contribution
+			if (heatzone->HeatFunction == 0) // q_hotspot
+			{
+				rho_A += hzRat * rho * Cp * heatRate * F_x * (asthenoTemp - Tc) * jr->scal->dissipation_rate; // * (jr->scal->stress_si / jr->scal->time) -> at 1 yr  // jr->ts->dt
+			}
+			else if (heatzone->HeatFunction == 1) // q_ridge
+			{
+				rho_A += hzRat * rho * Cp * F_x * (asthenoTemp - Tc) * spreadingRate / hz_width;
+			}
+			else // should not be possible
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "What did you do?!");
+			}
+
+			/* 		// is dike heating used in the simulation?
+					if (jr->ctrl.actDike && jr->ctrl.dikeHeat)
 					{
-						// compute heating
-						mat = &phases[nPhase]; // getting phase params
-						rho = mat->rho;
-						Cp = mat->Cp;
-						
-						// compute environmental params
-						pi = 3.14159265358979323846;
-						hz_width = sqrt(pow(hz_right - hz_left, 2));
-						hz_x_cent = hz_right - hz_left/2;
-						delta_x = sqrt(pow(hz_x_cent - x_cellc, 2)); // *revisit
-						st_dev = hz_width/(2*sqrt(2*log(2)));
-						F_x = (hz_width / (st_dev * sqrt(2 * pi))) * exp(-pow(delta_x, 2) / (2 * pow(st_dev, 2)));
-/*						hz_width = sqrt(pow(hz_right - hz_left, 2) + pow(hz_back - hz_front, 2)); // *3D
-						hz_length = sqrt(pow(hz_back - hz_front, 2)); // *3D
-						hz_y_cent = hz_back - hz_front/2; // *3D */
-
-
-if (debug == 1) PetscPrintf(PETSC_COMM_WORLD, "!!!!!!!!!!!!!!!! COMPUTE !!!!!!!!!!!!!!!\n");
-						
-						// calculate phaseid heating contribution from phRat
-						if (heatFunct == 0) // q_hotspot = rho_A;
-						{						
-							rho_A += phRat[nPhase]*rho*Cp*heatRate*F_x*(asthenoTemp-Tc);
-						}
-						else if (heatFunct == 1) // q_ridge *revisit
+						// loop through dike blocks to find PhaseID
+						for (nD = 0; nD < numDike; nD++)
 						{
-							rho_A += phRat[nPhase]*rho*Cp*F_x*(asthenoTemp-Tc)*spreadingRate/hz_width; // *revisit
-						}
-						else // should not be possible
-						{
-							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "What did you do?!");
-						}
-						
+							dike = jr->dbdike->matDike + nD;
 
-						// is dike heating used in the simulation?
-						if (jr->ctrl.actDike && jr->ctrl.dikeHeat)
-						{
-							// loop through dike blocks to find PhaseID
-							for (nD = 0; nD < numDike; nD++)
+							// if phase is dike zone phase
+							if (dike->PhaseID == nPhase)
 							{
-								dike = jr->dbdike->matDike + nD;
-
-								// if phase is dike zone phase
-								if (dike->PhaseID == nPhase)
-								{
-									// Subtract heat added via diking
-
-if (debug == 1) PetscPrintf(PETSC_COMM_WORLD, "###### Run SubtractDikeHeatSource ######\n");
-								}
+								// Subtract heat added via diking
+								PetscPrintf(PETSC_COMM_WORLD, "###### Run SubtractDikeHeatSource ######\n");
 							}
 						}
 					}
-				}
-			}
+
+					for (nPtr = 0; nPtr < numPhtr; nPtr++) // loop over all phase transitions blocks
+					{
+						// access the parameters of the phasetranstion block
+						CurrPhTr = jr->dbm->matPhtr + nPtr; // important params: ID, type (NotInAirBox), and bounds (left = bounds[0], right = bounds [1])
+
+						// Get HeatZone[nHZ] parameters
+						if (CurrPhTr->ID == heatzone->PhaseTransID)
+						{
+							{
+								for (nPtr = 0; nPtr < numPhtr; nPtr++) // loop over all phase transitions blocks again
+								{
+									// access the parameters of the phasetranstion block
+									CurrPhTr = jr->dbm->matPhtr + nPtr; // now we're looking for phase trasition of current cell
+
+									// loop through phases
+									for (nPhase = 0; nPhase < numPhases; nPhase++)
+									{
+										// if the current phase exists within HeatZone
+										if (phRat[nPhase] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
+										{
+										}
+									}
+								}
+							}
+						}
+					} */
 		}
 	}
-
-if (debug == 1) 
-{
-	PetscPrintf(PETSC_COMM_WORLD, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-	PetscPrintf(PETSC_COMM_WORLD, "------------ Heating Calculation Complete ---------\n");
-	PetscPrintf(PETSC_COMM_WORLD, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n \n");
-}
-	/* 	for (nPtr = 0; nPtr < numPhtr; nPtr++) // loop over all phase transitions blocks
-		{
-
-			// access the parameters of the phasetranstion block
-			CurrPhTr = jr->dbm->matPhtr + nPtr;
-
-			for (nHZ = 0; nHZ < numHeatZone; nHZ++) // loop through all heatzone blocks
-			{
-				// access the parameters of the heatzone depending on the heatzone block
-				heatzone = jr->dbheatzone->matHeatZone + nHZ; */
-
-	/* 			// access the phase ID of the heatzone parameters of each heatzone
-				i = heatzone->PhaseID; */
-	// not needed if using phase transitions in the cell... *revisit
-
-	/* 			if (CurrPhTr->ID == heatzone->PhaseTransID) // compare the phaseTransID associated with the heatzone with the actual ID of the phase transition in this cell
-	//			if (CurrPhTr->ID is within Bounds of HeatZone) // compare the phaseTransID associated with the heatzone with the actual ID of the phase transition in this cell
-				{
-
-					// if in the heatzone
-					if (CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
-					{
-						nsegs = CurrPhTr->nsegs;
-						if (heatzone->Mb == heatzone->Mf && heatzone->Mc < 0.0) // constant M
-						{
-							M = heatzone->Mf;
-							v_spread = PetscAbs(bc->velin);
-							left = CurrPhTr->celly_xboundL[J];
-							right = CurrPhTr->celly_xboundR[J];
-							tempheatzoneRHS = M * 2 * v_spread / PetscAbs(left - right);
-						}
-						else if (heatzone->Mc >= 0.0) // Mf, Mc and Mb
-						{
-							left = CurrPhTr->celly_xboundL[J];
-							right = CurrPhTr->celly_xboundR[J];
-							front = CurrPhTr->ybounds[0];
-							back = CurrPhTr->ybounds[2 * nsegs - 1];
-							v_spread = PetscAbs(bc->velin);
-
-							if (y_c >= heatzone->y_Mc)
-							{
-								// linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back
-								y_distance = y_c - heatzone->y_Mc;
-								M = heatzone->Mc + (heatzone->Mb - heatzone->Mc) * (y_distance / (back - heatzone->y_Mc));
-								tempheatzoneRHS = M * 2 * v_spread / PetscAbs(left - right);
-							}
-							else
-							{
-								// linear interpolation between different M values, Mf is M in front, Mc acts as M in back
-								y_distance = y_c - front;
-								M = heatzone->Mf + (heatzone->Mc - heatzone->Mf) * (y_distance / (heatzone->y_Mc - front));
-								tempheatzoneRHS = M * 2 * v_spread / PetscAbs(left - right);
-							}
-						}
-						else if (heatzone->Mb != heatzone->Mf && heatzone->Mc < 0.0) // only Mf and Mb, they are different
-						{
-							left = CurrPhTr->celly_xboundL[J];
-							right = CurrPhTr->celly_xboundR[J];
-							front = CurrPhTr->ybounds[0];
-							back = CurrPhTr->ybounds[2 * nsegs - 1];
-							v_spread = PetscAbs(bc->velin);
-
-							// linear interpolation between different M values, Mf is M in front, Mb is M in back
-							y_distance = y_c - front;
-							M = heatzone->Mf + (heatzone->Mb - heatzone->Mf) * (y_distance / (back - front));
-							tempheatzoneRHS = M * 2 * v_spread / PetscAbs(left - right);
-						}
-						else
-						{
-							tempheatzoneRHS = 0.0;
-						}
-
-						mat = &phases[i];
-
-						// adjust k and heat source according to Behn & Ito [2008]
-						if (Tc < mat->T_liq && Tc > mat->T_sol)
-						{
-							kfac += phRat[i] / (1 + (mat->Latent_hx / (mat->Cp * (mat->T_liq - mat->T_sol))));
-							rho_A += phRat[i] * (mat->rho * mat->Cp) * (mat->T_liq - Tc) * tempheatzoneRHS; // Cp*rho not used in the paper, added to conserve units of rho_A
-						}
-						else if (Tc <= mat->T_sol)
-						{
-							kfac += phRat[i];
-							rho_A += phRat[i] * (mat->rho * mat->Cp) * ((mat->T_liq - Tc) + mat->Latent_hx / mat->Cp) * tempheatzoneRHS;
-						}
-						else if (Tc >= mat->T_liq)
-						{
-							kfac += phRat[i];
-						}
-						// end adjust k and heat source according to Behn & Ito [2008]
-
-						k = kfac * k;
-
-					} // end if phRat and xboundR>xboundL
-				}	  // close phase transition and phase ID comparison
-			}		  // end heatzone block loop
-		}			  // close phase transition block loop */
-
 	PetscFunctionReturn(0);
 }
 

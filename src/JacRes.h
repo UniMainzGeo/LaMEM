@@ -366,9 +366,9 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *rho_A_,  // volumetric radiogenic heat   
 	PetscScalar Tc,       // temperature of cell
     PetscScalar y_c,      // center of cell in y-direction
-    PetscInt J,           // coordinate of cell
     PetscScalar x_c,      // center of cell in x-direction
-    PetscInt I);          // coordinate of cell
+    PetscScalar z_c,      // center of cell in z-direction
+    PetscInt J);          // coordinate of cell
 
 // check whether thermal material parameters are properly defined
 PetscErrorCode JacResCheckTempParam(JacRes *jr);

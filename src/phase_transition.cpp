@@ -165,7 +165,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		if (ph->number_phases>0){
 			
 			if (ph->PhaseOutside[0]>=0){
-				PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
+				PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :  ");
 				for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %lld ", (LLD)(ph->PhaseOutside[i])); }
 				PetscPrintf(PETSC_COMM_WORLD," \n");
 			}

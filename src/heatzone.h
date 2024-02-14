@@ -32,14 +32,17 @@ struct HeatZone
 public:
   PetscInt ID;               // heatzone ID
   PetscInt HeatFunction;     // heating function to use [0=q_hotspot, 1=q_ridge] from Mittelstaedt et. al., 2008
+  PetscScalar bounds[6];     //  left, right etc. of box
+  PetscScalar rho;           // density of heating material
+  PetscScalar Cp;            // cpecific heat of heating material
   PetscScalar asthenoTemp;   // required: asthenospheric temperature
   PetscScalar heatRate;      // required for q_hotspot: heating rate of the hotspot
   PetscScalar spreadingRate; // optional parameter for q_ridge that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified
 
+/*   
   PetscInt PhaseID, PhaseTransID, nPtr; // associated material phase and phase transition IDs
 
   PetscInt istep_count, nD, j1, j2;
-
 
   PetscInt dynheatzone_start;  //starting timestep for dynamic diking if 0 then no dynamic diking
   PetscScalar A; // Smoothing parameter for variable M calculation
@@ -68,7 +71,7 @@ public:
   // PetscScalar ymaxdyn;
   Vec sxx_eff_ave;
   Vec magPressure;
-  Vec sxx_eff_ave_hist;
+  Vec sxx_eff_ave_hist; */
 };
 
 struct DBPropHeatZone
@@ -88,9 +91,10 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
                                      Material_t *phases,
                                      PetscScalar &Tc,
                                      PetscScalar *phRat, // phase ratios in the control volume
-                                     PetscScalar &k,
                                      PetscScalar &rho_A,
                                      PetscScalar &y_c,
+                                     PetscScalar &x_c,
+                                     PetscScalar &z_c,
                                      PetscInt J);
 
 /* // compute and subtract dike heat for overlapping heat zone contributions
