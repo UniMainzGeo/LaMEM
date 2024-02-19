@@ -299,10 +299,10 @@ PetscErrorCode GetDikeContr(JacRes *jr,
   PetscScalar  y_distance, tempdikeRHS;
 
   // *djking
-  PetscScalar P_comp, P_star, Pm;
-  PetscScalar div_max, M_val, dike_or, zeta;
-  PetscInt    L, sy, sx;
-  PetscMPIInt rank;
+  PetscScalar P_comp, div_max, M_rat, zeta;
+  // PetscScalar  P_star, Pm, dike_or;
+  // PetscInt    L, sy, sx;
+  // PetscMPIInt rank;
   //
 
   PetscFunctionBeginUser;
@@ -347,14 +347,15 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 					   {
 /* 		        PetscPrintf(PETSC_COMM_WORLD,"var_M on\n"); */
 						   P_comp = - sxx_eff_ave_cell * 1e9 + dike->Ts; // *revisit (scale; multiplied by 1e9 to convert to Pa)
-						   M_val = M * PetscSqrtReal(PetscAbs(-P_comp / (dike->knee + PetscAbs(P_comp))));
-						   div_max = M_val * 2 * (v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60)/ (PetscAbs(left-right) * 1000); // *revisit (hardcoded scale)
-						   dike_or = M * 2 * (v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60); // *revisit (hardcoded scale)
+						   M_rat =  M; // M ratio *debugging
+						   //M_rat = M * PetscSqrtReal(PetscAbs(-P_comp / (dike->knee + PetscAbs(P_comp))));
+						   div_max = M_rat * 2 * (v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60)/ ((right-left) * 1000); // *revisit (hardcoded scale)
+//						   dike_or = M * 2 * (v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60); // *revisit (hardcoded scale)
    						
 /* 		    	PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g (MPa), ", P_comp/1e6); // *revisit (hardcoded scale)
 				PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g (MPa), ", sxx_eff_ave_cell*1e3); // *revisit (hardcoded scale)
 				PetscPrintf(PETSC_COMM_WORLD,"div_max = %g, ", div_max);
-				PetscPrintf(PETSC_COMM_WORLD,"M_val = %g \n", M_val);
+				PetscPrintf(PETSC_COMM_WORLD,"M_rat = %g \n", M_rat);
 				PetscPrintf(PETSC_COMM_WORLD,"v_spread = %g, ", v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60); // *revisit (hardcoded scale)
 				PetscPrintf(PETSC_COMM_WORLD,"left = %g, ", left);
 				PetscPrintf(PETSC_COMM_WORLD,"right = %g \n", right); */
@@ -377,7 +378,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 						   }
 					   }
 
-					   else
+					   else // not using var_M
 					   {
 						   tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
 				PetscPrintf(PETSC_COMM_WORLD,"var_M off \n");
@@ -390,6 +391,9 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 					
 		            else if(dike->Mc >= 0.0)   // Mf, Mc and Mb
 		            {
+					   if(jr->ctrl.var_M) // check varaible M option isn't used
+					   {SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");}
+
 		               left = CurrPhTr->celly_xboundL[J];
 		               right = CurrPhTr->celly_xboundR[J];
 		               front = CurrPhTr->ybounds[0];
@@ -414,6 +418,9 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 		            }
 		            else if(dike->Mb != dike->Mf && dike->Mc < 0.0)   // only Mf and Mb, they are different
 		            {
+					   if(jr->ctrl.var_M) // check varaible M option isn't used
+					   {SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");}
+
 		               left = CurrPhTr->celly_xboundL[J];
 		               right = CurrPhTr->celly_xboundR[J];
 					   back = CurrPhTr->ybounds[2*nsegs-1];
