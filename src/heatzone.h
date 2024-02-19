@@ -32,7 +32,8 @@ struct HeatZone
 public:
   PetscInt ID;               // heatzone ID
   PetscInt HeatFunction;     // heating function to use [0=q_hotspot, 1=q_ridge] from Mittelstaedt et. al., 2008
-  PetscScalar bounds[6];     //  left, right etc. of box
+  PetscInt FunctType;        // heat zone dimensionality [1d_x-gauss, 2d_xy-gauss, 3d_xyz-gauss], gaussian dependent on width in x-direction and heat zone center coordinate
+  PetscScalar bounds[6];     //  left, right, front, back, bottom, top of heatzone
   PetscScalar rho;           // density of heating material
   PetscScalar Cp;            // cpecific heat of heating material
   PetscScalar asthenoTemp;   // required: asthenospheric temperature

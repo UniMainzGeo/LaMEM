@@ -555,8 +555,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		// put right hand side to the left, which gives the following:
 
 		ge[k][j][i] = rho_Cp*(invdt*(Tc - Tn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho_A - Ha;
-		PetscPrintf(PETSC_COMM_WORLD, "stop");
-
 	}
 	END_STD_LOOP
 

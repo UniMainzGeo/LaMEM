@@ -101,8 +101,8 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 	Scaling *scal;
 	HeatZone *heatzone;
 	PetscInt i, ID;
-	PetscScalar  invt, Box[6];
-	char Parameter[_str_len_];
+	PetscScalar Box[6];
+	char Funct[_str_len_], Dim[_str_len_];
 	
 	PetscFunctionBeginUser;
 
@@ -125,22 +125,29 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 
 	// set ID
 	heatzone->ID = ID;
-	invt = 1/jr->scal->time;
 
 	// read and store heatzone  parameters
-	PetscCall(getStringParam(fb, _REQUIRED_, "HeatFunction", Parameter, "q_hotspot"));
+	PetscCall(getStringParam(fb, _REQUIRED_, "HeatFunction", Funct, NULL));
+	PetscCall(getStringParam(fb, _REQUIRED_, "FunctType", Dim, NULL));
 	PetscCall(getScalarParam(fb, _REQUIRED_, "HZ_Bounds", heatzone->bounds, 6, scal->length));
 	PetscCall(getScalarParam(fb, _REQUIRED_, "AsthenoTemp", &heatzone->asthenoTemp, 1, 1));
 	PetscCall(getScalarParam(fb, _REQUIRED_, "rho", &heatzone->rho, 1, scal->density));
 	PetscCall(getScalarParam(fb, _REQUIRED_, "Cp", &heatzone->Cp, 1, scal->cpecific_heat));
 
-	if (!strcmp(Parameter, "q_hotspot"))
+	// error checking bounds
+	if ((heatzone->bounds[1] < heatzone->bounds[0]) | (heatzone->bounds[3] < heatzone->bounds[2]) | (heatzone->bounds[5] < heatzone->bounds[4]))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Negative width detected in x, y, or z-direction: Check HZ_Bounds");
+	}
+
+	// check heat function inputs
+	if (!strcmp(Funct, "q_hotspot"))
 	{
 		heatzone->HeatFunction = 0;
 		PetscCall(getScalarParam(fb, _REQUIRED_, "HeatRate", &heatzone->heatRate, 1, scal->strain_rate));
 
 	}
-	else if (!strcmp(Parameter, "q_ridge"))
+	else if (!strcmp(Funct, "q_ridge"))
 	{
 		heatzone->HeatFunction = 1;
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "SpreadingRate", &heatzone->spreadingRate, 1, scal->velocity)); // R
@@ -156,7 +163,25 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 	}
 	else
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown parameter for HeatFunction %s [q_hotspot; q_ridge]", Parameter);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown parameter for HeatFunction %s [q_hotspot; q_ridge]", Funct);
+	}
+
+	// check heat zone dimensionality
+	if (!strcmp(Dim, "1d_x-gauss"))
+	{
+		heatzone->FunctType = 0; // default
+	}
+	else if (!strcmp(Dim, "2d_xy-gauss"))
+	{
+		heatzone->FunctType = 1;
+	}
+	else if (!strcmp(Dim, "3d_xyz-gauss"))
+	{
+		heatzone->FunctType = 2;
+	}
+	else
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown parameter for HZ_Type %s [1d_gauss; 2d_gauss]", Dim); // 1d_ydir, 2d_elliptical
 	}
 
 	// scaling
@@ -171,14 +196,14 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 		// print block
 		if (heatzone->HeatFunction == 0)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld]: hotspot heating\n", (LLD)(heatzone->ID));
+			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld]: hotspot heating, %s\n", (LLD)(heatzone->ID), Dim);
 			PetscPrintf(PETSC_COMM_WORLD, "     Bounds     : [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
 			PetscPrintf(PETSC_COMM_WORLD, "     Parameters : AsthenoTemp = %1.0f %s, HeatRate = %g %s\n", heatzone->asthenoTemp * scal->temperature - scal->Tshift, scal->lbl_temperature, heatzone->heatRate, scal->lbl_strain_rate);
 			PetscPrintf(PETSC_COMM_WORLD, "                  rho = %1.0f %s, Cp = %g %s\n", heatzone->rho * scal->density, scal->lbl_density, heatzone->Cp * scal->cpecific_heat, scal->lbl_cpecific_heat);
 		}
 		else if (heatzone->HeatFunction == 1)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld]: ridge heating\n", (LLD)(heatzone->ID));
+			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld]: ridge heating, %s\n", (LLD)(heatzone->ID), Dim);
 			PetscPrintf(PETSC_COMM_WORLD, "     Bounds     : [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
 			PetscPrintf(PETSC_COMM_WORLD, "     Parameters : AsthenoTemp = %1.0f %s, SpreadingRate = %1.1f %s\n", heatzone->asthenoTemp * scal->temperature - scal->Tshift, scal->lbl_temperature, heatzone->spreadingRate * scal->velocity, scal->lbl_velocity);
 			PetscPrintf(PETSC_COMM_WORLD, "                  rho = %1.0f %s, Cp = %g %s\n", heatzone->rho * scal->density, scal->lbl_density, heatzone->Cp * scal->cpecific_heat, scal->lbl_cpecific_heat);
@@ -203,11 +228,11 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 {
 	HeatZone *heatzone;
 	PetscInt nHZ, numHeatZone, AirPhase;
-	PetscScalar asthenoTemp, heatRate, spreadingRate;
-	PetscScalar rho, Cp, hzRat, st_dev, F_x, delta_x;
+	PetscScalar rho, Cp, asthenoTemp, heatRate, spreadingRate;
+	PetscScalar hzRat, st_dev, F_x, delta_hz_cent, hz_ind, invt;
 	PetscScalar hz_left, hz_right, hz_width, hz_x_cent;
-	PetscScalar hz_front, hz_back, hz_bottom, hz_top;
-//	PetscScalar hz_length, hz_y_cent; // *3D
+	PetscScalar hz_front, hz_back, hz_y_cent;
+	PetscScalar hz_bottom, hz_top, hz_z_cent;
 
 //	Dike *dike;
 //	Ph_trans_t *CurrPhTr;
@@ -223,6 +248,7 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 //	numPhases = jr->dbm->numPhases;
 
 	numHeatZone = jr->dbheatzone->numHeatZone; // number of heatzones
+	invt = 1/jr->scal->time;
 
 	for (nHZ = 0; nHZ < numHeatZone; nHZ++) // loop through all heatzone blocks
 	{
@@ -236,26 +262,53 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 		rho = heatzone->rho;
 		Cp = heatzone->Cp;
 
-		// geometric parameters
-		hz_left = heatzone->bounds[0];
-		hz_right = heatzone->bounds[1];
-		hz_front = heatzone->bounds[2];
-		hz_back = heatzone->bounds[3];
-		hz_bottom = heatzone->bounds[4];
-		hz_top = heatzone->bounds[5];
-		hz_width = PetscSqrtScalar(pow(hz_right - hz_left, 2));
+		// heatzone geometry
+		hz_left = heatzone->bounds[0];   // left
+		hz_right = heatzone->bounds[1];  // right
+		hz_front = heatzone->bounds[2];  // front
+		hz_back = heatzone->bounds[3];   // back
+		hz_bottom = heatzone->bounds[4]; // top
+		hz_top = heatzone->bounds[5];    // bottom
+
+		hz_width = hz_right - hz_left;   // all gaussian dependent on x-dir width!
 		st_dev = hz_width / (2 * PetscSqrtScalar(2 * log(2)));
 		hz_x_cent = (hz_right + hz_left) / 2;
+		hz_y_cent = (hz_back + hz_front) / 2;
+		hz_z_cent = (hz_top + hz_bottom) / 2;
 
-		// if we are close to the heatzone
-		if (x_c > (hz_x_cent - hz_width) && x_c < (hz_x_cent + hz_width) && y_c > hz_front && y_c < hz_back && z_c > hz_bottom && z_c < hz_top)
+		// check if within heatzone according to FunctType
+		hz_ind = 0; // heatzone boolean
+		if (heatzone->FunctType == 0) // 1d_x-gauss
+		{
+			if (x_c > (hz_x_cent - hz_width) && x_c < (hz_x_cent + hz_width) && y_c > hz_front && y_c < hz_back && z_c > hz_bottom && z_c < hz_top)
+				{
+					hz_ind = 1;
+					delta_hz_cent = abs(hz_x_cent - x_c); // distance from the center of hz
+				}
+		}
+		else if (heatzone->FunctType == 1) // 2d_xy-gauss
+		{
+			if (x_c > (hz_x_cent - hz_width) && x_c < (hz_x_cent + hz_width) && y_c > (hz_y_cent - hz_width) && y_c < (hz_y_cent + hz_width) && z_c > hz_bottom && z_c < hz_top)
+				{
+					hz_ind = 1;
+					delta_hz_cent = PetscSqrtScalar(pow(hz_x_cent - x_c, 2) + pow(hz_y_cent - y_c, 2)); // distance from the center of hz
+				}
+		}
+		else // 3d_xyz-gauss (heatzone->FunctType == 2) "little ball of heat"
+		{
+			if (x_c > (hz_x_cent - hz_width) && x_c < (hz_x_cent + hz_width) && y_c > (hz_y_cent - hz_width) && y_c < (hz_y_cent + hz_width) && z_c > (hz_z_cent - hz_width) && z_c < (hz_z_cent + hz_width))
+				{
+					hz_ind = 1;
+					delta_hz_cent = PetscSqrtScalar(pow(hz_x_cent - x_c, 2) + pow(hz_y_cent - y_c, 2) + pow(hz_z_cent - z_c, 2)); // distance from the center of hz
+				}
+		}
+		
+		
+		// if we are close to the heatzone bounds
+		if (hz_ind == 1)
 		{
 			// compute environmental parameters
-			delta_x = PetscSqrtScalar(pow(hz_x_cent - x_c, 2)); // *revisit
-			F_x = (hz_width / (st_dev * PetscSqrtScalar(2 * PETSC_PI))) * exp(-pow(delta_x, 2) / (2 * pow(st_dev, 2)));
-			/* 		hz_width = sqrt(pow(hz_right - hz_left, 2) + pow(hz_back - hz_front, 2)); // *3D
-					hz_length = sqrt(pow(hz_back - hz_front, 2)); // *3D
-					hz_y_cent = hz_back - hz_front/2; // *3D */
+			F_x = (hz_width / (st_dev * PetscSqrtScalar(2 * PETSC_PI))) * exp(-pow(delta_hz_cent, 2) / (2 * pow(st_dev, 2)));
 
 			// calculate not in air phase ratio
 			hzRat = 1;
@@ -268,7 +321,7 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 			// calculate heating contribution
 			if (heatzone->HeatFunction == 0) // q_hotspot
 			{
-				rho_A += hzRat * rho * Cp * heatRate * F_x * (asthenoTemp - Tc) * jr->scal->dissipation_rate; // * (jr->scal->stress_si / jr->scal->time) -> at 1 yr  // jr->ts->dt
+				rho_A += hzRat * rho * Cp * heatRate * F_x * (asthenoTemp - Tc); // * invt; // jr->scal->dissipation_rate; // * (jr->scal->stress_si / jr->scal->time) -> at 1 yr  // jr->ts->dt
 			}
 			else if (heatzone->HeatFunction == 1) // q_ridge
 			{
@@ -326,6 +379,34 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 	}
 	PetscFunctionReturn(0);
 }
+/* 		if (heatzone->FunctType == 0)
+		{
+		hz_width = hz_right - hz_left; // 1d x-dependent gaussian
+		st_dev = hz_width / (2 * PetscSqrtScalar(2 * log(2)));
+		hz_x_cent = (hz_right + hz_left) / 2;
+		hz_y_cent = 0;
+		hz_z_cent = 0;
+		}
+		else if (heatzone->FunctType == 1) // 2d gaussian
+		{
+		hz_width = hz_right - hz_left;
+		st_dev = hz_width / (2 * PetscSqrtScalar(2 * log(2)));
+		hz_x_cent = (hz_right + hz_left) / 2;
+		hz_y_cent = hz_back - hz_front/2;
+		hz_z_cent = 0;
+		}
+		else if (heatzone->FunctType == 3)
+		{
+		hz_width = hz_right - hz_left; // 3d gaussian
+		st_dev = hz_width / (2 * PetscSqrtScalar(2 * log(2)));
+		hz_x_cent = (hz_right + hz_left) / 2;
+		hz_y_cent = hz_back - hz_front/2;
+		hz_z_cent = hz_top - hz_bottom/2;
+		}
+		else // should not be possible
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "What did you do?!");
+		} */
 
 //------------------------------------------------------------------------------------------------------------------
 
