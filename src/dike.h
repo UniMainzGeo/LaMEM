@@ -33,14 +33,6 @@ public:
   PetscInt ID;        // dike ID
   PetscInt dyndike_start;  //starting timestep for dynamic diking if 0 then no dynamic diking
 
-  // *djking
-  PetscScalar A; // Smoothing parameter for variable M calculation
-  PetscScalar B; // Value to prevent NaNs
-  PetscScalar knee; // Determines the transition from min to max M in the M_val equation
-	PetscScalar Ts; // Tensile strength of rock for variable M calculation (Pa)
-  PetscScalar zeta_0; // Initial bulk viscosity for variable M calculation (Pa*s) *revisit [local initial bulk viscosity]
-  //
-
   PetscInt PhaseID, PhaseTransID, nPtr;      // associated material phase and phase transition IDs
   PetscInt istep_count, nD, j1, j2;
   PetscInt istep_nave;       //number of timesteps for time averaging
@@ -56,15 +48,20 @@ public:
   PetscScalar Tsol;
   PetscScalar filtx; 
   PetscScalar filty;
-  PetscScalar drhomagma;
-  PetscScalar zmax_magma;
-  PetscScalar magPfac;
-  PetscScalar magPwidth;
   //PetscScalar ymindyn;
   //PetscScalar ymaxdyn;
   Vec sxx_eff_ave;
   Vec magPressure;
   Vec sxx_eff_ave_hist;
+
+  PetscScalar drhomagma;
+  PetscScalar zmax_magma;
+  PetscScalar magPfac;
+  PetscScalar magPwidth;
+  
+  PetscScalar A; // Smoothing parameter for variable M calculation
+	PetscScalar Ts; // Tensile strength of rock for variable M calculation (Pa)
+  PetscScalar zeta_0; // Initial bulk viscosity for variable M calculation (Pa*s)
 };
       
 struct DBPropDike

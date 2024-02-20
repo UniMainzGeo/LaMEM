@@ -196,14 +196,14 @@ PetscErrorCode DBReadHeatZone(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, Ja
 		// print block
 		if (heatzone->HeatFunction == 0)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld]: hotspot heating, %s\n", (LLD)(heatzone->ID), Dim);
+			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld] : hotspot heating, %s\n", (LLD)(heatzone->ID), Dim);
 			PetscPrintf(PETSC_COMM_WORLD, "     Bounds     : [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
 			PetscPrintf(PETSC_COMM_WORLD, "     Parameters : AsthenoTemp = %1.0f %s, HeatRate = %g %s\n", heatzone->asthenoTemp * scal->temperature - scal->Tshift, scal->lbl_temperature, heatzone->heatRate, scal->lbl_strain_rate);
 			PetscPrintf(PETSC_COMM_WORLD, "                  rho = %1.0f %s, Cp = %g %s\n", heatzone->rho * scal->density, scal->lbl_density, heatzone->Cp * scal->cpecific_heat, scal->lbl_cpecific_heat);
 		}
 		else if (heatzone->HeatFunction == 1)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld]: ridge heating, %s\n", (LLD)(heatzone->ID), Dim);
+			PetscPrintf(PETSC_COMM_WORLD, "   HeatZone [%lld] : ridge heating, %s\n", (LLD)(heatzone->ID), Dim);
 			PetscPrintf(PETSC_COMM_WORLD, "     Bounds     : [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
 			PetscPrintf(PETSC_COMM_WORLD, "     Parameters : AsthenoTemp = %1.0f %s, SpreadingRate = %1.1f %s\n", heatzone->asthenoTemp * scal->temperature - scal->Tshift, scal->lbl_temperature, heatzone->spreadingRate * scal->velocity, scal->lbl_velocity);
 			PetscPrintf(PETSC_COMM_WORLD, "                  rho = %1.0f %s, Cp = %g %s\n", heatzone->rho * scal->density, scal->lbl_density, heatzone->Cp * scal->cpecific_heat, scal->lbl_cpecific_heat);
