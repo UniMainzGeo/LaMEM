@@ -1205,8 +1205,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	if (!dikeRHS == 0)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g", sxx_eff_ave_cell);
-		PetscPrintf(PETSC_COMM_WORLD,"dikeRHS = %g", dikeRHS);
+		PetscPrintf(PETSC_COMM_WORLD,"sxx_eff_ave_cell = %g: ", sxx_eff_ave_cell);
 	}
 		  
 		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation

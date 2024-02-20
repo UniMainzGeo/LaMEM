@@ -198,11 +198,11 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
     	dike->zeta_0 = 1e24;
 
 
-		ierr = getScalarParam(fb, _OPTIONAL_, "A", &dike->A, 1, 1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "A", &dike->A, 1, scal->stress_si); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "B",	&dike->B, 1, 1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _OPTIONAL_, "knee", &dike->knee, 1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "Ts", &dike->Ts, 1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "zeta_0",	&dike->zeta_0, 1, 1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "Ts", &dike->Ts, 1, scal->stress_si); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "zeta_0",	&dike->zeta_0, 1, scal->viscosity); CHKERRQ(ierr);
   }
 
 
@@ -300,6 +300,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 
   // *djking
   PetscScalar P_comp, div_max, M_rat, zeta;
+  PetscScalar P_comp_scal, div_max_scal, M_rat_scal, zeta_scal, tempdikeRHS_test;
   // PetscScalar  P_star, Pm, dike_or;
   // PetscInt    L, sy, sx;
   // PetscMPIInt rank;
@@ -346,10 +347,20 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 					   if(jr->ctrl.var_M) // *djking
 					   {
 /* 		        PetscPrintf(PETSC_COMM_WORLD,"var_M on\n"); */
-						   P_comp = - sxx_eff_ave_cell * 1e9 + dike->Ts; // *revisit (scale; multiplied by 1e9 to convert to Pa)
+/* 						   P_comp = - sxx_eff_ave_cell * 1e9 + dike->Ts; // *revisit (scale; multiplied by 1e9 to convert to Pa)
 						   M_rat =  M; // M ratio *debugging
 						   //M_rat = M * PetscSqrtReal(PetscAbs(-P_comp / (dike->knee + PetscAbs(P_comp))));
-						   div_max = M_rat * 2 * (v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60)/ ((right-left) * 1000); // *revisit (hardcoded scale)
+						   div_max = M_rat * 2 * (v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60)/ ((right-left) * 1000); // *revisit (hardcoded scale) */
+
+						   P_comp = sxx_eff_ave_cell - dike->Ts; // *revisit (scale; multiplied by 1e9 to convert to Pa)
+						   M_rat =  M; // M ratio *debugging
+						   //M_rat = M * PetscSqrtReal(PetscAbs(-P_comp / (dike->knee + PetscAbs(P_comp))));
+						   div_max = M_rat * 2 * (v_spread/ (right-left));
+
+						   P_comp_scal = sxx_eff_ave_cell - dike->Ts/jr->scal->stress_si; // *revisit (scale; multiplied by 1e9 to convert to Pa)
+						   M_rat_scal =  M; // M ratio *debugging
+						   //M_rat = M * PetscSqrtReal(PetscAbs(-P_comp / (dike->knee + PetscAbs(P_comp))));
+						   div_max_scal = M_rat_scal * 2 * (v_spread/ (right-left));
 //						   dike_or = M * 2 * (v_spread * 315.57599999999996 / 100 / 365.25 / 24 / 60/ 60); // *revisit (hardcoded scale)
    						
 /* 		    	PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g (MPa), ", P_comp/1e6); // *revisit (hardcoded scale)
@@ -360,27 +371,32 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 				PetscPrintf(PETSC_COMM_WORLD,"left = %g, ", left);
 				PetscPrintf(PETSC_COMM_WORLD,"right = %g \n", right); */
 
-						   if(P_comp < 0) // diking occurs
+						   if(P_comp > 0) // diking occurs
 						   {
+							tempdikeRHS_test = M * 2 * v_spread / (right-left); // at A=0, tempdikeRHS should be equivalent to this
+							zeta = dike->A * (dike->zeta_0 / P_comp) + P_comp / div_max;
+							tempdikeRHS = P_comp / zeta;
+/* 						   if(P_comp < 0) // diking occurs
 						   zeta = -(dike->A * dike->zeta_0 / (P_comp + dike->B) + P_comp / div_max);
-						   tempdikeRHS = - P_comp / zeta * 1e10; // *revisit (scale;  non-dim time and lengths...)
-
- 		        PetscPrintf(PETSC_COMM_WORLD,"diking --> ");
-				PetscPrintf(PETSC_COMM_WORLD,"tempdikeRHS = %g \n", tempdikeRHS);
-/*				PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g, ", P_comp);
-				PetscPrintf(PETSC_COMM_WORLD,"zeta = %g \n", zeta); */
+						   tempdikeRHS = - P_comp / zeta * 1e10; // *revisit (scale;  non-dim time and lengths...) */
+// 		        PetscPrintf(PETSC_COMM_WORLD,"diking --> ");
+				PetscPrintf(PETSC_COMM_WORLD,"tempdikeRHS = %g || scal = %g\n", tempdikeRHS, tempdikeRHS_test);
 						   }
+
 						   else // diking DOES NOT occur
 						   {
 						   tempdikeRHS = 0.0;
  		        PetscPrintf(PETSC_COMM_WORLD,"not diking --> ");
 				PetscPrintf(PETSC_COMM_WORLD,"tempdikeRHS = %g \n", tempdikeRHS);
 						   }
+						   
+/*				PetscPrintf(PETSC_COMM_WORLD,"P_comp = %g, ", P_comp);
+				PetscPrintf(PETSC_COMM_WORLD,"zeta = %g \n", zeta); */
 					   }
 
 					   else // not using var_M
 					   {
-						   tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
+						   tempdikeRHS = M * 2 * v_spread / (right-left);
 				PetscPrintf(PETSC_COMM_WORLD,"var_M off \n");
 				PetscPrintf(PETSC_COMM_WORLD,"M = %g, ", M);
 				PetscPrintf(PETSC_COMM_WORLD,"tempdikeRHS = %g \n", tempdikeRHS);
@@ -423,6 +439,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 
 		               left = CurrPhTr->celly_xboundL[J];
 		               right = CurrPhTr->celly_xboundR[J];
+		               front = CurrPhTr->ybounds[0];
 					   back = CurrPhTr->ybounds[2*nsegs-1];
 
 		               v_spread = PetscAbs(bc->velin);
@@ -499,7 +516,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                   nsegs=CurrPhTr->nsegs;
                   if(dike->Mb == dike->Mf && dike->Mc < 0.0)       // constant M                                  
                     {
-                      PetscPrintf(PETSC_COMM_WORLD, " test ");
+//                      PetscPrintf(PETSC_COMM_WORLD, "test ");
 					  M = dike->Mf;
                       v_spread = PetscAbs(bc->velin);
                       left = CurrPhTr->celly_xboundL[J];
