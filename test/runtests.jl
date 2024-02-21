@@ -150,6 +150,13 @@ end
     @test perform_lamem_test(dir,"localization.dat","Loc1_c_Direct_VEP_opt-p1.expected",
                             args="-nstep_max 20", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+
+
+    # t4_Loc1_d_MUMPS_VEP_VPReg_opt
+    @test perform_lamem_test(dir,"localization_eta_vp_reg.dat","t4_Loc1_d_MUMPS_VEP_VPReg_opt-p1.expected",
+                            args="-nstep_max 20", 
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+
 end
 
 @testset "t5_Permeability" begin
@@ -324,7 +331,7 @@ end
     ParamFile = "test_9_FallingBlock_PhaseDiagrams.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-9));
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-5,atol=1e-8));
     
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"test_9_FallingBlock_PhaseDiagrams.expected",

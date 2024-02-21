@@ -25,7 +25,6 @@ struct Dike;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
-//struct ConstEqCtx;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
