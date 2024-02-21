@@ -36,45 +36,46 @@
 #include <iostream>
 
 //---------------------------------------------------------------------------
-PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)   
+PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)
 {
 
-        // read all dike parameter blocks from file
-	Dike     *dike;
-	FDSTAG   *fs;
+	// read all dike parameter blocks from file
+	Dike *dike;
+	FDSTAG *fs;
 	PetscScalar ***gsxx_eff_ave_hist;
 	PetscInt jj, nD, numDike, numdyndike, istep_nave;
 	PetscInt i, j, istep_count, sx, sy, sisc, nx, ny;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	if (!jr->ctrl.actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
- 
+	if (!jr->ctrl.actDike)
+		PetscFunctionReturn(0); // only execute this function if dikes are active
+
 	fs = jr->fs;
- 	//===============                                                                                                                                               
-	// DIKE PARAMETER                                                                                                               
-	//===============                                                                                                                                               
+	//===============
+	// DIKE PARAMETER
+	//===============
 
-	// setup block access mode                                                                                                                                      
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<DikeStart>", "<DikeEnd>"); CHKERRQ(ierr);
+	// setup block access mode
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<DikeStart>", "<DikeEnd>"));
 
-	if(fb->nblocks)
+	if (fb->nblocks)
 	{
-	// print overview of dike blocks from file                                                                                                           
-	if (PrintOutput)
-	PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
+		// print overview of dike blocks from file
+		if (PrintOutput)
+			PetscPrintf(PETSC_COMM_WORLD, "Dike blocks : \n");
 
-	// initialize ID for consistency checks                                                                                                                 
+		// initialize ID for consistency checks
 
-	for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1; 
+		for (jj = 0; jj < _max_num_dike_; jj++)
+			dbdike->matDike[jj].ID = -1;
 
-        // error checking
-	if(fb->nblocks >_max_num_dike_)
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
+		// error checking
+		if (fb->nblocks > _max_num_dike_)
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_);
 
-        // store actual number of dike blocks 
-        dbdike->numDike = fb->nblocks;
+		// store actual number of dike blocks
+		dbdike->numDike = fb->nblocks;
 
 		if (PrintOutput)
 			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
@@ -82,70 +83,65 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 		// read each individual dike block
 		for (jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBReadDike(dbdike, dbm, fb, jr, PrintOutput);
-			CHKERRQ(ierr);
+			PetscCall(DBReadDike(dbdike, dbm, fb, jr, PrintOutput));
 			fb->blockID++;
 		}
 
 		if (PrintOutput)
 			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 	}
- 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-	numdyndike=0;
+	PetscCall(FBFreeBlocks(fb));
 
-	numDike=dbdike->numDike;
-	for(nD = 0; nD < numDike; nD++) // loop through all dike blocks
+	numdyndike = 0;
+
+	numDike = dbdike->numDike;
+	for (nD = 0; nD < numDike; nD++) // loop through all dike blocks
 	{
-		dike = dbdike->matDike+nD;
+		dike = dbdike->matDike + nD;
 		if (dike->dyndike_start)
 		{
 			numdyndike++;
-			if (numdyndike ==1) //(take this out of this loop because it will be repeated with >1 dynamic dike)
+			if (numdyndike == 1) //(take this out of this loop because it will be repeated with >1 dynamic dike)
 			{
 				// DM for 1D cell center vector. vector is ny+1 long, but for whatever reason that must appear in the first,
-				// not second entry on line 2 below 
-				ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
-				fs->dsy.tnods, fs->dsy.nproc, fs->dsz.nproc, 
-				fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
-				0, 0, 0, &jr->DA_CELL_1D); CHKERRQ(ierr);
+				// not second entry on line 2 below
+				PetscCall(DMDACreate3dSetUp(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+											fs->dsy.tnods, fs->dsy.nproc, fs->dsz.nproc,
+											fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
+											0, 0, 0, &jr->DA_CELL_1D));
 
-				//DM for 2D cell center vector, with istep_nave planes for time averaging
-				ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
-				fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
-            	fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
-				0, 0, 0, &jr->DA_CELL_2D_tave); CHKERRQ(ierr);
+				// DM for 2D cell center vector, with istep_nave planes for time averaging
+				PetscCall(DMDACreate3dSetUp(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+											fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc * dike->istep_nave,
+											fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
+											0, 0, 0, &jr->DA_CELL_2D_tave));
 			}
 
-			//creating local vectors and inializing the history vector
-			ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave);  CHKERRQ(ierr);
-			ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->magPressure);  CHKERRQ(ierr);
-			ierr = DMCreateLocalVector( jr->DA_CELL_2D_tave, &dike->sxx_eff_ave_hist);  CHKERRQ(ierr);
-			ierr = DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
-			ierr = DMDAGetCorners(jr->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave); CHKERRQ(ierr);    
+			// creating local vectors and inializing the history vector
+			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->sxx_eff_ave));
+			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->magPressure));
+			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D_tave, &dike->sxx_eff_ave_hist));
+			PetscCall(DMDAVecGetArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist));
+			PetscCall(DMDAGetCorners(jr->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave));
 
-			for(j = sy; j < sy+ny; j++) 
+			for (j = sy; j < sy + ny; j++)
 			{
-				for(i = sx; i < sx+nx; i++)
+				for (i = sx; i < sx + nx; i++)
 				{
-					for (istep_count=sisc; istep_count<sisc+istep_nave; istep_count++)
+					for (istep_count = sisc; istep_count < sisc + istep_nave; istep_count++)
 					{
-						gsxx_eff_ave_hist[istep_count][j][i]=0.0;
+						gsxx_eff_ave_hist[istep_count][j][i] = 0.0;
 					}
 				}
 			}
 
-			ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
-		}  //End if dyndike->start
- 
-	}  //End loop through dikes
-    
-
+			PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist));
+		} // End if dyndike->start
+	}	  // End loop through dikes
 
 	PetscFunctionReturn(0);
 }
-
 
 //---------------------------------------------------------------------------
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)
@@ -325,11 +321,11 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 
 			if (CurrPhTr->ID == dike->PhaseTransID) // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
 			{
-				// check if the phase ratio of a dike phase is greater than 0 in the current cell
+				// if in the dike zone
 				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
 				{
-
 					nsegs = CurrPhTr->nsegs;
+
 					if (dike->Mb == dike->Mf && dike->Mc < 0.0) // spatially constant M
 					{
 						M = dike->Mf;
@@ -348,19 +344,16 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 								zeta = dike->A * (dike->zeta_0 / P_comp) + P_comp / div_max;
 								tempdikeRHS = P_comp / zeta;
 							}
-
 							else // diking DOES NOT occur
 							{
 								tempdikeRHS = 0.0;
 							}
 						}
-
 						else // not using var_M
 						{
 							tempdikeRHS = M * 2 * v_spread / (right - left);
 						}
 					}
-
 					else if (dike->Mc >= 0.0) // Mf, Mc and Mb are all user defined
 					{
 						if (jr->ctrl.var_M) // check varaible M option isn't used
@@ -379,15 +372,14 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 							// linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back
 							y_distance = y_c - dike->y_Mc;
 							M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
-							tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+							tempdikeRHS = M * 2 * v_spread / (right - left);
 						}
-
 						else
 						{
 							// linear interpolation between different M values, Mf is M in front, Mc acts as M in back
 							y_distance = y_c - front;
 							M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
-							tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+							tempdikeRHS = M * 2 * v_spread / (right - left);
 						}
 					}
 					else if (dike->Mb != dike->Mf && dike->Mc < 0.0) // only Mf and Mb, they are different
@@ -401,13 +393,12 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 						right = CurrPhTr->celly_xboundR[J];
 						front = CurrPhTr->ybounds[0];
 						back = CurrPhTr->ybounds[2 * nsegs - 1];
-
 						v_spread = PetscAbs(bc->velin);
 
 						// linear interpolation between different M values, Mf is M in front, Mb is M in back
 						y_distance = y_c - front;
 						M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
-						tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+						tempdikeRHS = M * 2 * v_spread / (right - left);
 					}
 					else // Mb and Mf don't exist (which should not occurr)
 					{
@@ -426,133 +417,167 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 
 //-----------------------------------------------------------------------------------------------------------------
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
-                                 Material_t *phases,
-                                 PetscScalar &Tc,
-                                 PetscScalar *phRat,          // phase ratios in the control volume 
-                                 PetscScalar &k,
-                                 PetscScalar &rho_A,
-                                 PetscScalar &y_c,
-                                 PetscInt J) 
+								 Material_t *phases,
+								 PetscScalar &Tc,
+								 PetscScalar *phRat,
+								 PetscScalar &k,
+								 PetscScalar &rho_A,
+								 PetscScalar &y_c,
+								 PetscInt J,
+								 PetscScalar sxx_eff_ave_cell)
 
 {
-  BCCtx       *bc;
-  Dike        *dike;
-  Ph_trans_t  *CurrPhTr;
-  Material_t  *mat;
-  PetscInt     i, numDike, nD, nPtr, numPhtr, nsegs;
-  PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
-  PetscScalar  y_distance;
-  
-  PetscFunctionBeginUser;
+	// parameters to determine dilation term
+	BCCtx *bc;
+	Dike *dike;
+	Ph_trans_t *CurrPhTr;
+	PetscInt i, nD, nPtr, numDike, numPhtr, nsegs;
+	PetscScalar v_spread, M, left, right, front, back;
+	PetscScalar y_distance, tempdikeRHS;
+	PetscScalar P_comp, div_max, M_rat, zeta;
 
-  numDike    = jr->dbdike->numDike; // number of dikes
-  numPhtr    = jr->dbm->numPhtr;
-  bc         = jr->bc;
-  
-  nPtr = 0;
-  nD   = 0;
-  kfac = 0;
-  
-  for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks                        
-    {
+	// heating parameters
+	Material_t *mat;
+	PetscScalar kfac;
 
-      // access the parameters of the phasetranstion block                                             
-      CurrPhTr = jr->dbm->matPhtr+nPtr;
+	PetscFunctionBeginUser;
 
-      for(nD = 0; nD < numDike; nD++) // loop through all dike blocks                                    
-        {
-          // access the parameters of the dike depending on the dike block                                                    
-          dike = jr->dbdike->matDike+nD;
+	numDike = jr->dbdike->numDike; // number of dikes
+	numPhtr = jr->dbm->numPhtr;
+	bc = jr->bc;
 
-          // access the phase ID of the dike parameters of each dike                                                       
-          i = dike->PhaseID;
-	  
-          if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
-            {
+	nPtr = 0;
+	nD = 0;
+	kfac = 0;
 
-              // if in the dike zone                   
-              if(phRat[i]>0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
-                {
-                  nsegs=CurrPhTr->nsegs;
-                  if(dike->Mb == dike->Mf && dike->Mc < 0.0)       // constant M                                  
-                    {
-//                      PetscPrintf(PETSC_COMM_WORLD, "test ");
-					  M = dike->Mf;
-                      v_spread = PetscAbs(bc->velin);
-                      left = CurrPhTr->celly_xboundL[J];
-                      right = CurrPhTr->celly_xboundR[J];
-                      tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
-		                }
-		              else if(dike->Mc >= 0.0)   // Mf, Mc and Mb            
-                    {
-                      left = CurrPhTr->celly_xboundL[J];
-                      right = CurrPhTr->celly_xboundR[J];
-                      front = CurrPhTr->ybounds[0];
-                      back = CurrPhTr->ybounds[2*nsegs-1];
-                      v_spread = PetscAbs(bc->velin);
+	for (nPtr = 0; nPtr < numPhtr; nPtr++) // loop over all phase transitions blocks
+	{
 
-                      if(y_c >= dike->y_Mc)
-                        {
-                          // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back 
-                          y_distance = y_c - dike->y_Mc;
-                          M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
-                          tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-                        }
-                      else
-                        {
-                          // linear interpolation between different M values, Mf is M in front, Mc acts as M in back
-                          y_distance = y_c - front;
-                          M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
-                          tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-                        }
-                    }
-                  else if(dike->Mb != dike->Mf && dike->Mc < 0.0)   // only Mf and Mb, they are different     
-                    {
-                      left = CurrPhTr->celly_xboundL[J];
-                      right = CurrPhTr->celly_xboundR[J];
-                      front = CurrPhTr->ybounds[0];
-                      back = CurrPhTr->ybounds[2*nsegs-1];
-                      v_spread = PetscAbs(bc->velin);
+		// access the parameters of the phasetranstion block
+		CurrPhTr = jr->dbm->matPhtr + nPtr;
 
-                      // linear interpolation between different M values, Mf is M in front, Mb is M in back       
-                      y_distance = y_c - front;
-                      M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
-                      tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
-                    }
-		              else
-		               {
-		                  tempdikeRHS = 0.0;
-		               } 
-		  
-		              mat = &phases[i];
-		  
-		              //adjust k and heat source according to Behn & Ito [2008]
-		              if (Tc < mat->T_liq && Tc > mat->T_sol)
-		               {
-		                 kfac  += phRat[i] / ( 1 + ( mat->Latent_hx/ (mat->Cp*(mat->T_liq-mat->T_sol))) );
-		                 rho_A += phRat[i]*(mat->rho*mat->Cp)*(mat->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
-		               }
-		              else if (Tc <= mat->T_sol)
-		               {
-		                 kfac  += phRat[i];
-		                 rho_A += phRat[i]*( mat->rho*mat->Cp)*( (mat->T_liq-Tc) + mat->Latent_hx/mat->Cp )*tempdikeRHS;
-		               }
-		              else if (Tc >= mat->T_liq)
-		               {
-		                 kfac += phRat[i];
-		               }
-		              // end adjust k and heat source according to Behn & Ito [2008]
-		  
-		              k=kfac*k;
-		  
-		            }   // end if phRat and xboundR>xboundL
-	          } // close phase transition and phase ID comparison	  
-	      }   // end dike block loop      
-    }  // close phase transition block loop
-  
-  PetscFunctionReturn(0);
+		for (nD = 0; nD < numDike; nD++) // loop through all dike blocks
+		{
+			// access the parameters of the dike depending on the dike block
+			dike = jr->dbdike->matDike + nD;
+
+			// access the phase ID of the dike parameters of each dike
+			i = dike->PhaseID;
+
+			if (CurrPhTr->ID == dike->PhaseTransID) // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
+			{
+				// if in the dike zone
+				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
+				{
+					nsegs = CurrPhTr->nsegs;
+
+					if (dike->Mb == dike->Mf && dike->Mc < 0.0) // spatially constant M
+					{
+						M = dike->Mf;
+						v_spread = PetscAbs(bc->velin);
+						left = CurrPhTr->celly_xboundL[J];
+						right = CurrPhTr->celly_xboundR[J];
+
+						if (jr->ctrl.var_M)
+						{
+							P_comp = sxx_eff_ave_cell - dike->Ts;
+							M_rat = M; // M ratio *revisit
+							div_max = M_rat * 2 * (v_spread / (right - left));
+
+							if (P_comp > 0) // diking occurs
+							{
+								zeta = dike->A * (dike->zeta_0 / P_comp) + P_comp / div_max;
+								tempdikeRHS = P_comp / zeta;
+							}
+							else // diking DOES NOT occur
+							{
+								tempdikeRHS = 0.0;
+							}
+						}
+						else // not using var_M
+						{
+							tempdikeRHS = M * 2 * v_spread / (right - left);
+						}
+					}
+					else if (dike->Mc >= 0.0) // Mf, Mc and Mb are all user defined
+					{
+						if (jr->ctrl.var_M) // check varaible M option isn't used
+						{
+							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");
+						}
+
+						left = CurrPhTr->celly_xboundL[J];
+						right = CurrPhTr->celly_xboundR[J];
+						front = CurrPhTr->ybounds[0];
+						back = CurrPhTr->ybounds[2 * nsegs - 1];
+						v_spread = PetscAbs(bc->velin);
+
+						if (y_c >= dike->y_Mc)
+						{
+							// linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back
+							y_distance = y_c - dike->y_Mc;
+							M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
+							tempdikeRHS = M * 2 * v_spread / (right - left);
+						}
+						else
+						{
+							// linear interpolation between different M values, Mf is M in front, Mc acts as M in back
+							y_distance = y_c - front;
+							M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
+							tempdikeRHS = M * 2 * v_spread / (right - left);
+						}
+					}
+					else if (dike->Mb != dike->Mf && dike->Mc < 0.0) // only Mf and Mb, they are different
+					{
+						if (jr->ctrl.var_M) // check varaible M option isn't used
+						{
+							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");
+						}
+
+						left = CurrPhTr->celly_xboundL[J];
+						right = CurrPhTr->celly_xboundR[J];
+						front = CurrPhTr->ybounds[0];
+						back = CurrPhTr->ybounds[2 * nsegs - 1];
+						v_spread = PetscAbs(bc->velin);
+
+						// linear interpolation between different M values, Mf is M in front, Mb is M in back
+						y_distance = y_c - front;
+						M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
+						tempdikeRHS = M * 2 * v_spread / (right - left);
+					}
+					else // Mb and Mf don't exist (which should not occurr)
+					{
+						SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No values for Mb and Mf. Dike option invalid!");
+					}
+
+					mat = &phases[i];
+
+					// adjust k and heat source according to Behn & Ito [2008]
+					if (Tc < mat->T_liq && Tc > mat->T_sol)
+					{
+						kfac += phRat[i] / (1 + (mat->Latent_hx / (mat->Cp * (mat->T_liq - mat->T_sol))));
+						rho_A += phRat[i] * (mat->rho * mat->Cp) * (mat->T_liq - Tc) * tempdikeRHS; // Cp*rho not used in the paper, added to conserve units of rho_A
+					}
+					else if (Tc <= mat->T_sol)
+					{
+						kfac += phRat[i];
+						rho_A += phRat[i] * (mat->rho * mat->Cp) * ((mat->T_liq - Tc) + mat->Latent_hx / mat->Cp) * tempdikeRHS;
+					}
+					else if (Tc >= mat->T_liq)
+					{
+						kfac += phRat[i];
+					}
+					// end adjust k and heat source according to Behn & Ito [2008]
+
+					k = kfac * k;
+
+				} // end if phRat and xboundR>xboundL
+			}	  // close phase transition and phase ID comparison
+		}		  // end dike block loop
+	}			  // close phase transition block loop
+
+	PetscFunctionReturn(0);
 }
-
 
 //------------------------------------------------------------------------------------------------------------------
 PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)

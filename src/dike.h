@@ -58,7 +58,7 @@ public:
   PetscScalar zmax_magma;
   PetscScalar magPfac;
   PetscScalar magPwidth;
-  
+
   PetscScalar A; // Smoothing parameter for variable M calculation
 	PetscScalar Ts; // Tensile strength of rock for variable M calculation (Pa)
   PetscScalar zeta_0; // Initial bulk viscosity for variable M calculation (Pa*s)
@@ -78,8 +78,8 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 
 // compute the added RHS of the dike for the continuity equation
 PetscErrorCode GetDikeContr(JacRes *jr,                                                                                                                                
-                            PetscScalar *phRat,          // phase ratios in the control volume   
-                            PetscInt &AirPhase,                                                                           
+                            PetscScalar *phRat, // phase ratios in the control volume   
+                            PetscInt &AirPhase,
                             PetscScalar &dikeRHS,
                             PetscScalar &y_c,
                             PetscInt J,
@@ -89,11 +89,12 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 Material_t *phases,
                                 PetscScalar &Tc,
-                                PetscScalar *phRat,          // phase ratios in the control volume
+                                PetscScalar *phRat, // phase ratios in the control volume
                                 PetscScalar &k,
                                 PetscScalar &rho_A,
                                 PetscScalar &y_c,
-                                PetscInt J); 
+                                PetscInt J,
+                                PetscScalar sxx_eff_ave_cell); 
 
 PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD);
 PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);

@@ -1097,6 +1097,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscInt    nD, L; // *djking
+	PetscScalar ***gsxx_eff_ave, sxx_eff_ave_cell; // *djking
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
 	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
@@ -1104,7 +1105,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar dikeRHS, y_c;
-	PetscScalar ***gsxx_eff_ave, sxx_eff_ave_cell; // *djking
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
@@ -1175,14 +1175,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
-    // *djking
+	// *djking
 	if (jr->ctrl.actDike)
 	{
-	  nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
-	  dike = jr->dbdike->matDike+nD;
-	  ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr); // *revisit (can we disconnect from individual dike?)
+		nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
+		dike = jr->dbdike->matDike + nD;
+		PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave)); // *revisit (can we disconnect from individual dike?)
 	}
-
 
 	START_STD_LOOP
 	{

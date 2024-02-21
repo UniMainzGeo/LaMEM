@@ -96,7 +96,8 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
                                      PetscScalar &y_c,
                                      PetscScalar &x_c,
                                      PetscScalar &z_c,
-                                     PetscInt J);
+                                     PetscInt J,
+                                     PetscScalar sxx_eff_ave_cell);
 
 /* // compute and subtract dike heat for overlapping heat zone contributions
 PetscErrorCode SubtractDikeHeatSource(JacRes *jr,

@@ -368,7 +368,8 @@ PetscErrorCode JacResGetTempParam(
     PetscScalar y_c,      // center of cell in y-direction
     PetscScalar x_c,      // center of cell in x-direction
     PetscScalar z_c,      // center of cell in z-direction
-    PetscInt J);          // coordinate of cell
+    PetscInt J,           // coordinate of cell
+    PetscScalar sxx_eff_ave_cell); // lithospheric effective average sxx
 
 // check whether thermal material parameters are properly defined
 PetscErrorCode JacResCheckTempParam(JacRes *jr);
