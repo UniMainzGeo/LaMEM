@@ -4428,15 +4428,16 @@ PetscErrorCode cellConstEqFD(
 	SolVarDev   *svDev;
 	SolVarBulk  *svBulk;
 	Controls    *ctrl;
-	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
+	PetscScalar  eta_min, ptotal, txx, tyy, tzz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
-	svDev  = ctx->svDev;
-	svBulk = ctx->svBulk;
-	ctrl   = ctx->ctrl;
+	svDev   = ctx->svDev;
+	svBulk  = ctx->svBulk;
+	ctrl    = ctx->ctrl;
+	eta_min = ctrl->eta_min;
 
 	// evaluate deviatoric constitutive equation
 	ierr = devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk); CHKERRQ(ierr);
@@ -4444,14 +4445,10 @@ PetscErrorCode cellConstEqFD(
 	// evaluate volumetric constitutive equation
 	ierr = volConstEq(ctx); CHKERRQ(ierr);
 
-	// get stabilization viscosity
-	if(ctrl->initGuess) eta_st = 0.0;
-	else                eta_st = svDev->eta_st;
-
 	// compute stabilization stresses
-	sxx = 2.0*eta_st*svCell->dxx;
-	syy = 2.0*eta_st*svCell->dyy;
-	szz = 2.0*eta_st*svCell->dzz;
+	sxx = 2.0*eta_min*svCell->dxx;
+	syy = 2.0*eta_min*svCell->dyy;
+	szz = 2.0*eta_min*svCell->dzz;
 
 	// compute history shear stress
 	svCell->sxx = 2.0*ctx->eta*dxx;
@@ -4477,7 +4474,7 @@ PetscErrorCode cellConstEqFD(
 		sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
 
 	// compute total viscosity
-	svDev->eta = ctx->eta + eta_st;
+	svDev->eta = ctx->eta + eta_min;
 
 	// get total pressure (effective pressure + pore pressure)
 	ptotal = ctx->p + ctrl->biot*ctx->p_pore;
@@ -4755,8 +4752,6 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 
 	Controls    *ctrl;
 	PetscScalar *phRat;
-	SolVarDev   *svDev;
-	Material_t  *phases;
 	PetscInt     i, numPhases;
 
 	PetscErrorCode ierr;
@@ -4766,8 +4761,6 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 	ctrl      = ctx->ctrl;
 	numPhases = ctx->numPhases;
 	phRat     = ctx->phRat;
-	svDev     = ctx->svDev;
-	phases    = ctx->phases;
 
 	// zero out results
 	ctx->eta    = 0.0; // effective viscosity
@@ -4777,9 +4770,6 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 	ctx->DIIprl = 0.0; // Peierls creep strain rate
 	ctx->DIIpl  = 0.0; // plastic strain rate
 	ctx->yield  = 0.0; // yield stress
-
-	// zero out stabilization viscosity
-	svDev->eta_st = 0.0;
 
 	// viscous initial guess
 	if(ctrl->initGuess)
@@ -4803,8 +4793,6 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 			// compute phase viscosities and strain rate partitioning
 			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
 
-			// update stabilization viscosity
-			svDev->eta_st += phRat[i]*phases->eta_st;
 		}
 	}
 
@@ -4837,23 +4825,20 @@ PetscErrorCode edgeConstEqFD(
 	// evaluate constitutive equations on the edge
 
 	SolVarDev   *svDev;
-	PetscScalar  t, eta_st;
+	PetscScalar  t, eta_min;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
-	svDev = &svEdge->svDev;
+	svDev   = &svEdge->svDev;
+	eta_min = ctx->ctrl->eta_min;
 
 	// evaluate deviatoric constitutive equation
 	ierr = devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk); CHKERRQ(ierr);
 
-	// get stabilization viscosity
-	if(ctx->ctrl->initGuess) eta_st = 0.0;
-	else                     eta_st = svDev->eta_st;
-
 	// compute stabilization stress
-	s = 2.0*eta_st*svEdge->d;
+	s = 2.0*eta_min*svEdge->d;
 
 	// compute history shear stress
 	svEdge->s = 2.0*ctx->eta*d;
@@ -4871,7 +4856,7 @@ PetscErrorCode edgeConstEqFD(
 	svDev->Hr = 2.0*t*svEdge->s + 2.0*svEdge->d*s;
 
 	// compute total viscosity
-	svDev->eta = ctx->eta + eta_st;
+	svDev->eta = ctx->eta + eta_min;
 
 	// compute total stress
 	s += svEdge->s;
