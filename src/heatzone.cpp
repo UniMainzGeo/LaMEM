@@ -339,8 +339,7 @@ PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
 									  PetscScalar &hz_contr,
 									  PetscScalar &y_c,
 									  PetscInt J,
-									  PetscScalar sxx_eff_ave_cell,
-									  PetscViewer hz_contr_file)
+									  PetscScalar sxx_eff_ave_cell)
 
 {
 	// parameters to determine dilation term
