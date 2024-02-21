@@ -75,7 +75,7 @@ struct ConstEqCtx
 	PetscScalar  N_prl;  // Peierls exponent
 	PetscScalar  A_fk;   // Frank-Kamenetzky constant
 	PetscScalar  taupl;  // plastic yield stress
-	PetscScalar  eta_vp; // viscoplastic regularisation
+	PetscScalar  eta_vp; // regularization viscosity
 	
 
 	// control volume results
