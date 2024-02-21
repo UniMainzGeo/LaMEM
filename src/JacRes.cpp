@@ -148,7 +148,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		||  (m->Kb || m->beta))       need_top_open  = 1;
 
 		// set default stabilization viscosity
-		//if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
+		if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
 
 	}
 

@@ -510,8 +510,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 
-	m->eta_st   = eta_st;
-	m->eta_vp   = eta_vp;
+	m->eta_st = eta_st;
+	m->eta_vp = eta_vp;
 	
 	// set softening law IDs
 	m->chSoftID = chSoftID;
