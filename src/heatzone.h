@@ -99,15 +99,15 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
                                      PetscInt J,
                                      PetscScalar sxx_eff_ave_cell);
 
-/* // compute and subtract dike heat for overlapping heat zone contributions
+// compensate for dike heat contributions if within heat zone
 PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
-                                Material_t *phases,
-                                PetscScalar &Tc,
-                                PetscScalar *phRat,          // phase ratios in the control volume
-                                PetscScalar &k,
-                                PetscScalar &rho_A,
-                                PetscScalar &y_c,
-                                PetscInt J); */
+                                      Material_t *phases,
+                                      PetscScalar &Tc,
+                                      PetscScalar *phRat,
+                                      PetscScalar &rho_A,
+                                      PetscScalar &y_c,
+                                      PetscInt J,
+                                      PetscScalar sxx_eff_ave_cell);
 
 //---------------------------------------------------------------------------
 #endif

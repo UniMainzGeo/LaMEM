@@ -33,11 +33,6 @@
 #include "surf.h"
 #include "advect.h"
 
-/* // debugging tools *djking
-#include <iostream>
-		// Pause for debugging (doesn't keep variable values)
-		std::cout << "Press Enter to continue..."; std::cin.get();  return 0; */
-
 //---------------------------------------------------------------------------
 PetscErrorCode DBHeatZoneCreate(DBPropHeatZone *dbheatzone, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)
 {
@@ -234,19 +229,9 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 	PetscScalar hz_left, hz_right, hz_width, hz_x_cent;
 	PetscScalar hz_front, hz_back, hz_y_cent;
 	PetscScalar hz_bottom, hz_top, hz_z_cent;
-
-//	Dike *dike;
-//	Ph_trans_t *CurrPhTr;
-//	PetscInt nPtr, numPhtr, nD, numDike, nPhase, numPhases;
-//	Material_t *mat;
-//	PetscInt nHZ, nPtr, nPhase, nD;
-//	PetscScalar v_spread, left, right, front, back, x_distance;
+	PetscScalar hz_contr;
 
 	PetscFunctionBeginUser;
-
-//	numPhtr = jr->dbm->numPhtr;				   // number of phase transitions
-//	numDike = jr->dbdike->numDike;			   // number of dikes
-//	numPhases = jr->dbm->numPhases;
 
 	numHeatZone = jr->dbheatzone->numHeatZone; // number of heatzones
 	invt = 1/jr->scal->time;
@@ -322,218 +307,191 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 			// calculate heating contribution
 			if (heatzone->HeatFunction == 0) // q_hotspot
 			{
-				rho_A += hzRat * rho * Cp * heatRate * F_x * (asthenoTemp - Tc); // * invt; // jr->scal->dissipation_rate; // * (jr->scal->stress_si / jr->scal->time) -> at 1 yr  // jr->ts->dt
+				hz_contr = hzRat * rho * Cp * heatRate * F_x * (asthenoTemp - Tc); // * invt; // jr->scal->dissipation_rate; // * (jr->scal->stress_si / jr->scal->time) -> at 1 yr  // jr->ts->dt
 			}
 			else if (heatzone->HeatFunction == 1) // q_ridge
 			{
-				rho_A += hzRat * rho * Cp * F_x * (asthenoTemp - Tc) * spreadingRate / hz_width;
+				hz_contr = hzRat * rho * Cp * F_x * (asthenoTemp - Tc) * spreadingRate / hz_width;
 			}
 			else // should not be possible
 			{
 				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "What did you do?!");
 			}
-
-			/* 		// is dike heating used in the simulation?
-					if (jr->ctrl.actDike && jr->ctrl.dikeHeat)
-					{
-						// loop through dike blocks to find PhaseID
-						for (nD = 0; nD < numDike; nD++)
-						{
-							dike = jr->dbdike->matDike + nD;
-
-							// if phase is dike zone phase
-							if (dike->PhaseID == nPhase)
-							{
-								// Subtract heat added via diking
-								PetscPrintf(PETSC_COMM_WORLD, "###### Run SubtractDikeHeatSource ######\n");
-							}
-						}
-					}
-
-					for (nPtr = 0; nPtr < numPhtr; nPtr++) // loop over all phase transitions blocks
-					{
-						// access the parameters of the phasetranstion block
-						CurrPhTr = jr->dbm->matPhtr + nPtr; // important params: ID, type (NotInAirBox), and bounds (left = bounds[0], right = bounds [1])
-
-						// Get HeatZone[nHZ] parameters
-						if (CurrPhTr->ID == heatzone->PhaseTransID)
-						{
-							{
-								for (nPtr = 0; nPtr < numPhtr; nPtr++) // loop over all phase transitions blocks again
-								{
-									// access the parameters of the phasetranstion block
-									CurrPhTr = jr->dbm->matPhtr + nPtr; // now we're looking for phase trasition of current cell
-
-									// loop through phases
-									for (nPhase = 0; nPhase < numPhases; nPhase++)
-									{
-										// if the current phase exists within HeatZone
-										if (phRat[nPhase] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
-										{
-										}
-									}
-								}
-							}
-						}
-					} */
+			// is dike heating used in the simulation?
+			if (jr->ctrl.actDike && jr->ctrl.dikeHeat)
+			{
+				// Subtract heat added via diking
+				PetscCall(SubtractDikeHeatSource(jr, phases, Tc, phRat, hz_contr, y_c, J, sxx_eff_ave_cell));
+			}
+			
+			rho_A += hz_contr; // add heating to energy equation as source term
 		}
 	}
 	PetscFunctionReturn(0);
 }
-/* 		if (heatzone->FunctType == 0)
-		{
-		hz_width = hz_right - hz_left; // 1d x-dependent gaussian
-		st_dev = hz_width / (2 * PetscSqrtScalar(2 * log(2)));
-		hz_x_cent = (hz_right + hz_left) / 2;
-		hz_y_cent = 0;
-		hz_z_cent = 0;
-		}
-		else if (heatzone->FunctType == 1) // 2d gaussian
-		{
-		hz_width = hz_right - hz_left;
-		st_dev = hz_width / (2 * PetscSqrtScalar(2 * log(2)));
-		hz_x_cent = (hz_right + hz_left) / 2;
-		hz_y_cent = hz_back - hz_front/2;
-		hz_z_cent = 0;
-		}
-		else if (heatzone->FunctType == 3)
-		{
-		hz_width = hz_right - hz_left; // 3d gaussian
-		st_dev = hz_width / (2 * PetscSqrtScalar(2 * log(2)));
-		hz_x_cent = (hz_right + hz_left) / 2;
-		hz_y_cent = hz_back - hz_front/2;
-		hz_z_cent = hz_top - hz_bottom/2;
-		}
-		else // should not be possible
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "What did you do?!");
-		} */
 
 //------------------------------------------------------------------------------------------------------------------
 
-/* PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
-								 Material_t *phases,
-								 PetscScalar &Tc,
-								 PetscScalar *phRat,          // phase ratios in the control volume
-								 PetscScalar &k,
-								 PetscScalar &rho_A,
-								 PetscScalar &y_c,
-								 PetscInt J)
+PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
+									  Material_t *phases,
+									  PetscScalar &Tc,
+									  PetscScalar *phRat,
+									  PetscScalar &hz_contr,
+									  PetscScalar &y_c,
+									  PetscInt J,
+									  PetscScalar sxx_eff_ave_cell,
+									  PetscViewer hz_contr_file)
 
 {
-  BCCtx       *bc;
-  Dike        *dike;
-  Ph_trans_t  *CurrPhTr;
-  Material_t  *mat;
-  PetscInt     i, numDike, nHZ, nPtr, numPhtr, nsegs;
-  PetscScalar  v_spread, left, right, front, back, M, kfac, tempdikeRHS;
-  PetscScalar  y_distance;
+	// parameters to determine dilation term
+	BCCtx *bc;
+	Dike *dike;
+	Ph_trans_t *CurrPhTr;
+	PetscInt i, nD, nPtr, numDike, numPhtr, nsegs;
+	PetscScalar v_spread, M, left, right, front, back;
+	PetscScalar y_distance, tempdikeRHS;
+	PetscScalar P_comp, div_max, M_rat, zeta;
+	PetscScalar dike_contr;
 
-  PetscFunctionBeginUser;
+	// heating parameters
+	Material_t *mat;
 
-  numDike    = jr->dbdike->numDike; // number of dikes
-  numPhtr    = jr->dbm->numPhtr;
-  bc         = jr->bc;
+	PetscFunctionBeginUser;
 
-  nPtr = 0;
-  nHZ   = 0;
-  kfac = 0;
+	numDike = jr->dbdike->numDike; // number of dikes
+	numPhtr = jr->dbm->numPhtr;
+	bc = jr->bc;
 
-  for(nPtr=0; nPtr<numPhtr; nPtr++)   // loop over all phase transitions blocks
+	nPtr = 0;
+	nD = 0;
+
+	for (nPtr = 0; nPtr < numPhtr; nPtr++) // loop over all phase transitions blocks
 	{
 
-	  // access the parameters of the phasetranstion block
-	  CurrPhTr = jr->dbm->matPhtr+nPtr;
+		// access the parameters of the phasetranstion block
+		CurrPhTr = jr->dbm->matPhtr + nPtr;
 
-	  for(nHZ = 0; nHZ < numDike; nHZ++) // loop through all dike blocks
+		for (nD = 0; nD < numDike; nD++) // loop through all dike blocks
 		{
-		  // access the parameters of the dike depending on the dike block
-		  dike = jr->dbdike->matDike+nHZ;
+			// access the parameters of the dike depending on the dike block
+			dike = jr->dbdike->matDike + nD;
 
-		  // access the phase ID of the dike parameters of each dike
-		  i = dike->PhaseID;
+			// access the phase ID of the dike parameters of each dike
+			i = dike->PhaseID;
 
-		  if(CurrPhTr->ID == dike->PhaseTransID)  // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
+			if (CurrPhTr->ID == dike->PhaseTransID) // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
 			{
-
-			  // if in the dike zone
-			  if(phRat[i]>0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
+				// if in the dike zone
+				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
 				{
-				  nsegs=CurrPhTr->nsegs;
-				  if(dike->Mb == dike->Mf && dike->Mc < 0.0)       // constant M
-					{
-					  M = dike->Mf;
-					  v_spread = PetscAbs(bc->velin);
-					  left = CurrPhTr->celly_xboundL[J];
-					  right = CurrPhTr->celly_xboundR[J];
-					  tempdikeRHS = M * 2 * v_spread / PetscAbs(left-right);
-						}
-					  else if(dike->Mc >= 0.0)   // Mf, Mc and Mb
-					{
-					  left = CurrPhTr->celly_xboundL[J];
-					  right = CurrPhTr->celly_xboundR[J];
-					  front = CurrPhTr->ybounds[0];
-					  back = CurrPhTr->ybounds[2*nsegs-1];
-					  v_spread = PetscAbs(bc->velin);
+					nsegs = CurrPhTr->nsegs;
 
-					  if(y_c >= dike->y_Mc)
+					if (dike->Mb == dike->Mf && dike->Mc < 0.0) // spatially constant M
+					{
+						M = dike->Mf;
+						v_spread = PetscAbs(bc->velin);
+						left = CurrPhTr->celly_xboundL[J];
+						right = CurrPhTr->celly_xboundR[J];
+
+						if (jr->ctrl.var_M)
 						{
-						  // linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back
-						  y_distance = y_c - dike->y_Mc;
-						  M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
-						  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+							P_comp = sxx_eff_ave_cell - dike->Ts;
+							M_rat = M; // M ratio *revisit
+							div_max = M_rat * 2 * (v_spread / (right - left));
+
+							if (P_comp > 0) // diking occurs
+							{
+								zeta = dike->A * (dike->zeta_0 / P_comp) + P_comp / div_max;
+								tempdikeRHS = P_comp / zeta;
+							}
+							else // diking DOES NOT occur
+							{
+								tempdikeRHS = 0.0;
+							}
 						}
-					  else
+						else // not using var_M
 						{
-						  // linear interpolation between different M values, Mf is M in front, Mc acts as M in back
-						  y_distance = y_c - front;
-						  M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
-						  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+							tempdikeRHS = M * 2 * v_spread / (right - left);
 						}
 					}
-				  else if(dike->Mb != dike->Mf && dike->Mc < 0.0)   // only Mf and Mb, they are different
+					else if (dike->Mc >= 0.0) // Mf, Mc and Mb are all user defined
 					{
-					  left = CurrPhTr->celly_xboundL[J];
-					  right = CurrPhTr->celly_xboundR[J];
-					  front = CurrPhTr->ybounds[0];
-					  back = CurrPhTr->ybounds[2*nsegs-1];
-					  v_spread = PetscAbs(bc->velin);
+						if (jr->ctrl.var_M) // check varaible M option isn't used
+						{
+							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");
+						}
 
-					  // linear interpolation between different M values, Mf is M in front, Mb is M in back
-					  y_distance = y_c - front;
-					  M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
-					  tempdikeRHS = M * 2 * v_spread / PetscAbs(left - right);
+						left = CurrPhTr->celly_xboundL[J];
+						right = CurrPhTr->celly_xboundR[J];
+						front = CurrPhTr->ybounds[0];
+						back = CurrPhTr->ybounds[2 * nsegs - 1];
+						v_spread = PetscAbs(bc->velin);
+
+						if (y_c >= dike->y_Mc)
+						{
+							// linear interpolation between different M values, Mc is M in the middle, acts as M in front, Mb is M in back
+							y_distance = y_c - dike->y_Mc;
+							M = dike->Mc + (dike->Mb - dike->Mc) * (y_distance / (back - dike->y_Mc));
+							tempdikeRHS = M * 2 * v_spread / (right - left);
+						}
+						else
+						{
+							// linear interpolation between different M values, Mf is M in front, Mc acts as M in back
+							y_distance = y_c - front;
+							M = dike->Mf + (dike->Mc - dike->Mf) * (y_distance / (dike->y_Mc - front));
+							tempdikeRHS = M * 2 * v_spread / (right - left);
+						}
 					}
-					  else
-					   {
-						  tempdikeRHS = 0.0;
-					   }
+					else if (dike->Mb != dike->Mf && dike->Mc < 0.0) // only Mf and Mb, they are different
+					{
+						if (jr->ctrl.var_M) // check varaible M option isn't used
+						{
+							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");
+						}
 
-					  mat = &phases[i];
+						left = CurrPhTr->celly_xboundL[J];
+						right = CurrPhTr->celly_xboundR[J];
+						front = CurrPhTr->ybounds[0];
+						back = CurrPhTr->ybounds[2 * nsegs - 1];
+						v_spread = PetscAbs(bc->velin);
 
-					  //adjust k and heat source according to Behn & Ito [2008]
-					  if (Tc < mat->T_liq && Tc > mat->T_sol)
-					   {
-						 kfac  += phRat[i] / ( 1 + ( mat->Latent_hx/ (mat->Cp*(mat->T_liq-mat->T_sol))) );
-						 rho_A += phRat[i]*(mat->rho*mat->Cp)*(mat->T_liq-Tc)*tempdikeRHS;  // Cp*rho not used in the paper, added to conserve units of rho_A
-					   }
-					  else if (Tc <= mat->T_sol)
-					   {
-						 kfac  += phRat[i];
-						 rho_A += phRat[i]*( mat->rho*mat->Cp)*( (mat->T_liq-Tc) + mat->Latent_hx/mat->Cp )*tempdikeRHS;
-					   }
-					  else if (Tc >= mat->T_liq)
-					   {
-						 kfac += phRat[i];
-					   }
-					  // end adjust k and heat source according to Behn & Ito [2008]
+						// linear interpolation between different M values, Mf is M in front, Mb is M in back
+						y_distance = y_c - front;
+						M = dike->Mf + (dike->Mb - dike->Mf) * (y_distance / (back - front));
+						tempdikeRHS = M * 2 * v_spread / (right - left);
+					}
+					else // Mb and Mf don't exist (which should not occurr)
+					{
+						SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No values for Mb and Mf. Dike option invalid!");
+					}
 
-					  k=kfac*k;
+					mat = &phases[i];
 
-					}   // end if phRat and xboundR>xboundL
-			  } // close phase transition and phase ID comparison
-		  }   // end dike block loop
-	}  // close phase transition block loop
+					// find dike heat source used (Behn and Ito, 2008)
+					dike_contr = 0;
+					if (Tc < mat->T_liq && Tc > mat->T_sol)
+					{
+						dike_contr = phRat[i] * (mat->rho * mat->Cp) * (mat->T_liq - Tc) * tempdikeRHS;
+					}
+					else if (Tc <= mat->T_sol)
+					{
+						dike_contr = phRat[i] * (mat->rho * mat->Cp) * ((mat->T_liq - Tc) + mat->Latent_hx / mat->Cp) * tempdikeRHS;
+					}
 
-  PetscFunctionReturn(0);
-} */
+					// compare heat sources to limit heatzone contribution where diking
+					if (dike_contr >= hz_contr)
+					{
+						hz_contr = 0;
+					}
+					else
+					{
+						hz_contr -= dike_contr;
+					}
+					
+				} // end if phRat and xboundR>xboundL
+			}	  // close phase transition and phase ID comparison
+		}		  // end dike block loop
+	}			  // close phase transition block loop
+
+	PetscFunctionReturn(0);
+}

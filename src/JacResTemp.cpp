@@ -121,14 +121,15 @@ PetscErrorCode JacResGetTempParam(
 	{
 	    k = k*nu_k;
 	}
+
 	if (ctrl.actDike && ctrl.dikeHeat)
 	{
-	  PetscCall(Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c, J, sxx_eff_ave_cell));
+		PetscCall(Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c, J, sxx_eff_ave_cell));
 	}
 
 	if (ctrl.actHeatZone)
 	{
-	  PetscCall(GetHeatZoneSource(jr, phases, Tc, phRat, rho_A, y_c, x_c, z_c, J, sxx_eff_ave_cell));
+		PetscCall(GetHeatZoneSource(jr, phases, Tc, phRat, rho_A, y_c, x_c, z_c, J, sxx_eff_ave_cell));
 	}
 
 	// store
