@@ -174,7 +174,6 @@ public:
     PetscScalar  gamma_fk;          // parameter in Frank-Kamenetzky approximation [1/K]
 	PetscScalar  TRef_fk;           // Frank-Kamenetzky reference Temperature [K]
 	PetscScalar  eta_fk;            // reference viscosity for Frank-Kamenetzky [Pas]
-	
 	// dc-creep
 	PetscScalar  Bdc;               // pre-exponential constant                   [1/s]
 	PetscScalar  Edc;               // activation energy                          [J/mol]
@@ -187,7 +186,6 @@ public:
 	// plasticity parameters
 	PetscScalar  fr;                // friction angle                             [deg]
 	PetscScalar  ch;                // cohesion
-	PetscScalar  eta_st;            // stabilization viscosity
 	PetscScalar  eta_vp;            // viscoplastic viscosity
 	PetscScalar  rp;                // ratio of pore pressure to overburden stress
 	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
@@ -274,9 +272,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 void MatPrintScalParam(
 		PetscScalar par,  const char key[],   const char label[],
 		Scaling    *scal, const char title[], PetscInt   *print_title);
-
-// Overwrite material phase parameters with global values 
-PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb);		
 
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............

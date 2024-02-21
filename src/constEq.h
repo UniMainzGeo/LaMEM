@@ -77,7 +77,6 @@ struct ConstEqCtx
 	PetscScalar  taupl;  // plastic yield stress
 	PetscScalar  eta_vp; // regularization viscosity
 	
-
 	// control volume results
 	PetscScalar  eta;    // effective viscosity
 	PetscScalar  eta_cr; // creep viscosity
