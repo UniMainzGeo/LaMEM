@@ -280,7 +280,7 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 					delta_hz_cent = PetscSqrtScalar(pow(hz_x_cent - x_c, 2) + pow(hz_y_cent - y_c, 2)); // distance from the center of hz
 				}
 		}
-		else // 3d_xyz-gauss (heatzone->FunctType == 2) "little ball of heat"
+		else if (heatzone->FunctType == 2) // 3d_xyz-gauss "little ball of heat"
 		{
 			if (x_c > (hz_x_cent - hz_width) && x_c < (hz_x_cent + hz_width) && y_c > (hz_y_cent - hz_width) && y_c < (hz_y_cent + hz_width) && z_c > (hz_z_cent - hz_width) && z_c < (hz_z_cent + hz_width))
 				{

@@ -503,7 +503,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 					{
 						if (jr->ctrl.var_M) // check varaible M option isn't used
 						{
-							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");
+							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires single global M (i.e. Mf = Mb)");
 						}
 
 						left = CurrPhTr->celly_xboundL[J];
@@ -531,7 +531,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 					{
 						if (jr->ctrl.var_M) // check varaible M option isn't used
 						{
-							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");
+							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires single global M (i.e. Mf = Mb)");
 						}
 
 						left = CurrPhTr->celly_xboundL[J];

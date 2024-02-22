@@ -956,7 +956,7 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
   PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------
-/* PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
+PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
 {
   
   Ph_trans_t   *PhaseTransLinkLeft;
@@ -993,7 +993,7 @@ PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
   }
 
   PetscFunctionReturn(0);
-} */
+}
 //----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, PetscInt PH2, Controls ctrl, Scaling *scal, 
 		    SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr, PetscInt cellID)
