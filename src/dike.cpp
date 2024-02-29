@@ -775,8 +775,8 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
           if ((Tc<=Tsol) & (svCell->phRat[AirPhase] < 1.0))
           {
             dz  = SIZE_CELL(k, sz, (*dsz));
-            sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn)*dz;  //integrating dz-weighted total stress (*notes deviatoric??)
-            Pmag[L][j][i]+=p_lith[k][j][i]*dz;
+            sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn)*dz;  //integrating dz-weighted total stress (*revisit deviatoric??)
+            // Pmag[L][j][i]+=p_lith[k][j][i]*dz; // removed for lithostatic pressure addition to gsxx due to varM dike initiation criteria *djking
 
             liththick[L][j][i]+=dz;             //integrating thickness
           }
@@ -853,7 +853,8 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	START_PLANE_LOOP
 		dPmag=(dike->zmax_magma-zsol[L][j][i])*(dike->drhomagma)*grav[2];  //excess static magma pressure at solidus, z & grav[2] <0 so this is positive
 //		magma_presence=dike->magPfac*(zsol[L][j][i]-dike->zmax_magma)/(zsol_max-dike->zmax_magma);  //this feature undergoing testing
-		magPressure[L][j][i] = (Pmag[L][j][i]/liththick[L][j][i]+dPmag)*magma_presence;
+//		magPressure[L][j][i] = (Pmag[L][j][i]/liththick[L][j][i]+dPmag)*magma_presence;
+		magPressure[L][j][i] = (Pmag[L][j][i]+dPmag)*magma_presence; // *djking
 		gsxx_eff_ave[L][j][i]= sxx[L][j][i]/liththick[L][j][i];  //Depth weighted mean total stress                                                                
 	END_PLANE_LOOP
 
