@@ -138,8 +138,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 		if(m->G   || m->Kb)           is_elastic     = 1;
 		if(m->Ed  || m->En || m->Ep
-		|| m->Vd  || m->Vn || m->Vp
-		|| m->Bdc || m->Bps )         need_RUGC      = 1;
+		|| m->Vd  || m->Vn || m->Vp)  need_RUGC      = 1;
 		if(m->rp  || m->rho_n)        need_rho_fluid = 1;
 		if(m->rp)                     need_gw_type   = 1;
 		if(m->rho_n)                  need_surf      = 1;

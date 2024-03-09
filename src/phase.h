@@ -174,15 +174,6 @@ public:
     PetscScalar  gamma_fk;          // parameter in Frank-Kamenetzky approximation [1/K]
 	PetscScalar  TRef_fk;           // Frank-Kamenetzky reference Temperature [K]
 	PetscScalar  eta_fk;            // reference viscosity for Frank-Kamenetzky [Pas]
-	// dc-creep
-	PetscScalar  Bdc;               // pre-exponential constant                   [1/s]
-	PetscScalar  Edc;               // activation energy                          [J/mol]
-	PetscScalar  Rdc;               // stress/shear modulus ratio at abs. zero    []
-	PetscScalar  mu;                // average shear modulus                      [Pa]
-	// ps-creep
-	PetscScalar  Bps;               // pre-exponential constant                   [K*m^3/Pa/s]
-	PetscScalar  Eps;               // activation energy                          [J/mol]
-	PetscScalar  d;                 // grain size                                 [m]
 	// plasticity parameters
 	PetscScalar  fr;                // friction angle                             [deg]
 	PetscScalar  ch;                // cohesion

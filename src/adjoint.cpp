@@ -4618,13 +4618,6 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 		ctx->A_dif =  mat->Bd*exp(-Q)*mfd;
 	}
 
-	// PS-CREEP
-	else if(mat->Bps && T)
-	{
-		Q          = mat->Eps/RT;
-		ctx->A_dif = mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
-	}
-
 	// UPPER BOUND CREEP
 	if(ctrl->eta_max)
 	{
@@ -4648,14 +4641,6 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 		}
 		ctx->N_dis =  mat->n;
 		ctx->A_dis =  mat->Bn*exp(-Q)*mfn;
-	}
-
-	// DC-CREEP
-	else if(mat->Bdc && T)
-	{
-		Q          = mat->Edc/RT;
-		ctx->N_dis = Q;
-		ctx->A_dis = mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
 	}
 
 	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)

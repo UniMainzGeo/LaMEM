@@ -407,19 +407,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "TRef_fk",  &m->TRef_fk, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_fk",   &m->eta_fk,  1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
-	// dc-creep
-	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "Bdc",      &m->Bdc,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Edc",      &m->Edc,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Rdc",      &m->Rdc,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "mu",       &m->mu,    1, 1.0); CHKERRQ(ierr);
-	//=================================================================================
-	// ps-creep
-	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "Bps",      &m->Bps,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Eps",      &m->Eps,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "d",        &m->d,     1, 1.0); CHKERRQ(ierr);
-	//=================================================================================
 	// plasticity (Drucker-Prager)
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "ch",       &m->ch,     1, 1.0); CHKERRQ(ierr);
@@ -542,38 +529,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// Frank-Kamenetzky
 
-		if((m->eta_fk && (!m->gamma_fk)) || (m->gamma_fk && (!m->eta_fk)))
+	if((m->eta_fk && (!m->gamma_fk)) || (m->gamma_fk && (!m->eta_fk)))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Frank-Kamenetzky parameters are incomplete for phase %lld (eta_fk + gamma_fk)", (LLD)ID);
-	}
-
-	// DC
-
-	if(m->Bdc && (!m->Edc || !m->Rdc || !m->mu))
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dc-creep parameters are incomplete for phase %lld (Bdc + Edc + Rdc + mu)", (LLD)ID);
-	}
-
-	if(m->Bdc && m->Bn)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine dc-creep with dislocation creep for phase %lld (Bdc + Bn)", (LLD)ID);
-	}
-
-	// PS
-
-	if(m->Bps && (!m->Eps || !m->d))
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep parameters are incomplete for phase %lld (Bps + Eps + d)", (LLD)ID);
-	}
-
-	if(m->Bps && !m->Bdc && !m->Bn)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep requires either dc-creep or dislocation creep for phase %lld (Bps + Bdc, Bps + Bn)", (LLD)ID);
-	}
-
-	if(m->Bps && m->Bd)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine ps-creep with diffusion creep for phase %lld (Bps + Bd)", (LLD)ID);
 	}
 
 	// ELASTICITY
@@ -617,9 +575,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->Kb = Kb;
 
 	// check that at least one essential deformation mechanism is specified
-	if(!m->Bd && !m->Bn && !m->G && !m->Bdc && !m->eta_fk)
+	if(!m->Bd && !m->Bn && !m->G && !m->eta_fk)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G, eta_fk must be specified for phase %lld", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G, eta_fk must be specified for phase %lld", (LLD)ID);
 	}
 
 	// PRINT (optional)
@@ -686,18 +644,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->TRef_fk,  "TRef_fk",   "[C]",    scal, title, &print_title);
 		if(m->TRef_fk == 0.0 && m->eta_fk) PetscPrintf(PETSC_COMM_WORLD, "TRef_fk = %g [C]", m->TRef_fk);
 		
-
-		sprintf(title, "   (dc)     : "); print_title = 1;
-		MatPrintScalParam(m->Bdc,   "Bdc",  "[1/s]",   scal, title, &print_title);
-		MatPrintScalParam(m->Edc,   "Edc",  "[J/mol]", scal, title, &print_title);
-		MatPrintScalParam(m->Rdc,   "Rdc",  "[ ]",     scal, title, &print_title);
-		MatPrintScalParam(m->mu,    "mu",   "[Pa]",    scal, title, &print_title);
-
-		sprintf(title, "   (ps)     : "); print_title = 1;
-		MatPrintScalParam(m->Bps,   "Bps",  "[K*m^3/Pa/s]", scal, title, &print_title);
-		MatPrintScalParam(m->Eps,   "Eps",  "[J/mol]",      scal, title, &print_title);
-		MatPrintScalParam(m->d,     "d",    "[m]",          scal, title, &print_title);
-
 		sprintf(title, "   (plast)  : "); print_title = 1;
 		MatPrintScalParam(m->ch,     "ch",     "[Pa]",   scal, title, &print_title);
 		MatPrintScalParam(m->fr,     "fr",     "[deg]",  scal, title, &print_title);
@@ -745,14 +691,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->Bp     /=  scal->strain_rate;
 	m->Vp     *=  scal->stress_si;
 	m->taup   /=  scal->stress_si;
-
-	// dc-creep
-	m->Bdc    /=  scal->strain_rate;
-	m->mu     /=  scal->stress_si;
-
-	// ps-creep
-	m->Bps   *= scal->viscosity/scal->volume_si/scal->temperature;
-	m->d     /= scal->length_si;
 
 	// Frank-Kamenetzky
 	m->gamma_fk = m->gamma_fk * scal->temperature;
@@ -1633,9 +1571,6 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	PetscPrintf(PETSC_COMM_WORLD,">>> Diffusion Cr.:    Bd    = %1.7e,  Ed    = %1.7e,    Vd    = %1.7e \n",                MatProp->Bd, MatProp->Ed, MatProp->Vd);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Dislocation Cr.:  Bn    = %1.7e,  n     = %1.7e,    Vn    = %1.7e,    En  = %1.7e \n", MatProp->Bn, MatProp->n, MatProp->Vn, MatProp->En);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Peierls Cr.:      Bp    = %1.7e,  Ep    = %1.7e,    Vp    = %1.7e,    taup= %1.7e,    gamma  = %1.7e,     q        = %1.7e \n", MatProp->Bp, MatProp->Ep, MatProp->Vp, MatProp->taup, MatProp->gamma, MatProp->q);
-	PetscPrintf(PETSC_COMM_WORLD,">>> dc Cr.:           Bdc   = %1.7e,  Edc   = %1.7e,    Rdc   = %1.7e,    mu  = %1.7e \n", MatProp->Bdc, MatProp->Edc, MatProp->Rdc, MatProp->mu);
-    PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
-    
     PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_vp= %1.7e,    rp= %1.7e,    frSoftID = %i,  chSoftID = %i,   healID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_vp, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
 	PetscPrintf(PETSC_COMM_WORLD,"          			nu_k  = %1.7e,  T_Nu  = %1.7e,   \n", MatProp->nu_k, MatProp->T_Nu);
