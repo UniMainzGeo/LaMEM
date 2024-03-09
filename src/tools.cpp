@@ -853,3 +853,63 @@ PetscInt solveBisect(
 	return PetscAbsScalar(fx) <= tol;
 }
 //-----------------------------------------------------------------------------
+
+// Newton algorithm for scalar nonlinear equation with simple back-tracking line search
+PetscInt solveNewtonLS(
+		PetscScalar tol,
+		PetscInt    maxit,
+		PetscScalar lstol,
+		PetscScalar minstep,
+		PetscScalar &x,
+		PetscInt    &it,
+		void (*getffd)(PetscScalar x, PetscScalar *f, PetscScalar *fd, void *pctx),
+		void *pctx)
+{
+	PetscInt    i;
+	PetscScalar f, fm, fd, dx, xm, alpha;
+
+	for(i = 0, it = 0; i < maxit; i++)
+	{
+		// get function and derivative
+		getffd(x, &f, &fd, pctx);
+
+		// check convergence
+	    if(f < tol) break;
+
+	    // solve for increment
+	    dx = - f/fd;
+
+	    // find step length
+		alpha = 1.0;
+
+		// iterate until residual is sufficiently reduced or step length becomes too small
+		while(alpha > minstep)
+		{
+			// apply scaled update
+			xm = x + alpha*dx;
+
+			// get updated residual
+			getffd(xm, &fm, NULL, pctx);
+
+			// check whether residual is sufficiently reduced
+			if(PetscAbsScalar(fm) < lstol*PetscAbsScalar(f)) break;
+
+			// bisect step length
+			alpha /= 2.0;
+		}
+
+		// apply update
+	    x += alpha*dx;
+
+		// update iteration count
+		it++;
+	}
+
+	// return convergence flag
+	return PetscAbsScalar(f) < tol;
+}
+//-----------------------------------------------------------------------------
+
+
+
+

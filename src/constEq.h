@@ -66,16 +66,17 @@ struct ConstEqCtx
 	PetscScalar  depth;  // depth for depth-dependent density model
 
 	// phase parameters
-	PetscScalar  A_els;  // elasticity constant
-	PetscScalar  A_dif;  // diffusion constant
-	PetscScalar  A_max;  // upper bound constant
-	PetscScalar  A_dis;  // dislocation constant
-	PetscScalar  N_dis;  // dislocation exponent
-	PetscScalar  A_prl;  // Peierls constant
-	PetscScalar  N_prl;  // Peierls exponent
-	PetscScalar  A_fk;   // Frank-Kamenetzky constant
-	PetscScalar  taupl;  // plastic yield stress
-	PetscScalar  eta_vp; // regularization viscosity
+	PetscScalar  A_els;   // elasticity constant
+	PetscScalar  A_dif;   // diffusion constant
+	PetscScalar  A_dis;   // dislocation constant
+	PetscScalar  N_dis;   // dislocation exponent
+	PetscScalar  A_prl;   // Peierls constant
+	PetscScalar  N_prl;   // Peierls exponent
+	PetscScalar  A_fk;    // Frank-Kamenetzky constant
+	PetscScalar  A_max;   // upper bound constant
+	PetscScalar  taupl;   // plastic yield stress
+	PetscScalar  A_vp;    // visco-plastic constant
+	PetscScalar  eta_min; // minimum viscosity
 	
 	// control volume results
 	PetscScalar  eta;    // effective viscosity

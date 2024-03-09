@@ -201,6 +201,17 @@ PetscInt solveBisect(
 		PetscScalar (*f) (PetscScalar x, void *pctx),
 		void *pctx);
 
+// Newton algorithm for scalar nonlinear equation with simple back-tracking line search
+PetscInt solveNewtonLS(
+		PetscScalar tol,
+		PetscInt    maxit,
+		PetscScalar lstol,
+		PetscScalar minstep,
+		PetscScalar &x,
+		PetscInt    &it,
+		void (*getffd)(PetscScalar x, PetscScalar *f, PetscScalar *fd, void *pctx),
+		void *pctx);
+
 //---------------------------------------------------------------------------
 // Interpolation functions
 //---------------------------------------------------------------------------
