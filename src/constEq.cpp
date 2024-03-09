@@ -214,6 +214,12 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 		ctx->A_max = 1.0/(ctrl->eta_max)/2.0;
 	}
 
+	// LOWER BOUND CREEP
+	if(ctrl->eta_max)
+	{
+		ctx->eta_min = ctrl->eta_min;
+	}
+
 	// DISLOCATION CREEP (POWER LAW)
 	if(mat->Bn)
 	{
@@ -295,8 +301,8 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(dP < 0.0) ctx->taupl =         ch; // Von-Mises model for extension
 	else         ctx->taupl = dP*fr + ch; // Drucker-Prager model for compression
 
-	// store regularization viscosity
-	ctx->eta_vp = mat->eta_vp;
+	// visco-plastic constant
+	ctx->A_vp = 1.0/(mat->eta_vp)/2.0;
 
 	// correct for ultimate yield stress (if defined)
 	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
@@ -370,7 +376,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 {
 	// compute phase viscosities and strain rate partitioning
-
+/*
 	Controls    *ctrl;
 	PetscInt    it, conv;
 	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
@@ -397,6 +403,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 
 	if(taupl && DII)
 	{
+
 		// get initial yield stress and viscosity
 		tauII = taupl;
 		eta   = tauII/(2.0*DII);
@@ -431,6 +438,7 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 
 			} while(!conv && ++it < ctrl->lmaxit);
 		}
+
 	}
 
 	//=================
@@ -507,35 +515,51 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	ctx->DIIfk  += phRat*DIIfk;  // Frank-Kamenetzky
 	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
 	ctx->yield  += phRat*taupl;  // plastic yield stress
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
+void getConsEqJacRes(PetscScalar tauII, PetscScalar *r, PetscScalar *J, void *pctx)
 {
-	// compute residual of the nonlinear visco-elastic constitutive equation
+	// compute residual and Jacobian of the nonlinear constitutive equation
 
-	PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl, DIIfk;
+	PetscScalar eta_vs, DIIvs, dDIIvs, chi, dchi;
 
 	// access context
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
 
-	// compute stress
-	tauII = 2.0*eta*ctx->DII;
+	// get creep strain rate
+	DIIvs = ctx->A_dif    *tauII
+	+       ctx->A_dis*pow(tauII, ctx->N_dis)
+	+       ctx->A_prl*pow(tauII, ctx->N_prl)
+	+       ctx->A_fk     *tauII
+	+       ctx->A_max    *tauII;
 
-	// creep strain rates
-	DIIels = ctx->A_els*tauII;                  // elasticity
-	DIIdif = ctx->A_dif*tauII;                  // diffusion
-	DIImax = ctx->A_max*tauII;                  // upper bound
-	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
-	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	DIIfk  = ctx->A_fk*tauII;                   // Frank-Kamenetzky
+	// get creep viscosity
+	eta_vs = tauII/DIIvs/2.0;
 
-	// residual function (r)
-	// r < 0 if eta > solution (negative on overshoot)
-	// r > 0 if eta < solution (positive on undershoot)
+	// get scaling factor (chi-term)
+	chi = 1.0/(1.0 + ctx->eta_min/eta_vs);
 
-	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl + DIIfk);
+	// compute residual
+	if(r)
+	{
+		(*r) = ctx->DII - ctx->A_els*tauII - chi*DIIvs - ctx->A_vp*(tauII -  ctx->taupl);
+	}
+
+	// compute Jacobian
+	if(J)
+	{
+		dDIIvs =            ctx->A_dif
+		+                   ctx->A_fk
+		+                   ctx->A_max
+		+        ctx->N_dis*ctx->A_dis*pow(tauII, ctx->N_dis - 1.0)
+		+        ctx->N_prl*ctx->A_prl*pow(tauII, ctx->N_prl - 1.0);
+
+	    dchi = -2.0*ctx->eta_min*(chi*chi)*(dDIIvs/tauII - DIIvs/tauII/tauII);
+
+		(*J) = - ctx->A_els - dchi*DIIvs - chi*dDIIvs - ctx->A_vp;
+	}
 }
 //---------------------------------------------------------------------------
 PetscScalar applyStrainSoft(
