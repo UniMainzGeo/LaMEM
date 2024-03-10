@@ -177,7 +177,7 @@ public:
 	// plasticity parameters
 	PetscScalar  fr;                // friction angle                             [deg]
 	PetscScalar  ch;                // cohesion
-	PetscScalar  eta_vp;            // viscoplastic viscosity
+	PetscScalar  eta_vp;            // visco-plastic regularization viscosity
 	PetscScalar  rp;                // ratio of pore pressure to overburden stress
 	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID;          // cohesion softening law ID (-1 if not defined)

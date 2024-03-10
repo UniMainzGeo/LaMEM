@@ -209,7 +209,8 @@ PetscInt solveNewtonLS(
 		PetscScalar minstep,
 		PetscScalar &x,
 		PetscInt    &it,
-		void (*getffd)(PetscScalar x, PetscScalar *f, PetscScalar *fd, void *pctx),
+		void (*getf)  (PetscScalar x, PetscScalar &f,                  void *pctx),
+		void (*getffd)(PetscScalar x, PetscScalar &f, PetscScalar &fd, void *pctx),
 		void *pctx);
 
 //---------------------------------------------------------------------------

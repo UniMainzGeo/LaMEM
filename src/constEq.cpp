@@ -301,11 +301,11 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(dP < 0.0) ctx->taupl =         ch; // Von-Mises model for extension
 	else         ctx->taupl = dP*fr + ch; // Drucker-Prager model for compression
 
-	// visco-plastic constant
-	ctx->A_vp = 1.0/(mat->eta_vp)/2.0;
-
 	// correct for ultimate yield stress (if defined)
 	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
+
+	// visco-plastic constant
+	ctx->A_vp = 1.0/(mat->eta_vp)/2.0;
 
 	PetscFunctionReturn(0);
 }
@@ -486,9 +486,9 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 		// apply bisection algorithm to nonlinear scalar equation
 		conv = solveBisect(eta_mean, eta_min, ctrl->lrtol*DII, ctrl->lmaxit, eta, it, getConsEqRes, ctx);
 
-		// compute stress
-		tauII = 2.0*eta*DII;
+
 	}
+
 
 	// update iteration statistics
 	ctx->stats[0] += 1.0;               // start counter
@@ -506,6 +506,9 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	// compute creep viscosity
 	if(DIIvs) eta_cr = tauII/DIIvs/2.0;
 
+
+
+
 	// update results
 	ctx->eta    += phRat*eta;    // effective viscosity
 	ctx->eta_cr += phRat*eta_cr; // creep viscosity
@@ -519,11 +522,49 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-void getConsEqJacRes(PetscScalar tauII, PetscScalar *r, PetscScalar *J, void *pctx)
+PetscScalar getInitGuess(PetscScalar DII, ConstEqCtx *ctx)
 {
-	// compute residual and Jacobian of the nonlinear constitutive equation
+	// compute visco-elastic initial guess
 
-	PetscScalar eta_vs, DIIvs, dDIIvs, chi, dchi;
+	PetscScalar itauv, itauel, tauII;
+
+    // get inverse viscous stress
+    itauv = 1./(1./(ctx->A_dif/DII
+    		+   pow(ctx->A_dis/DII, 1./ctx->N_dis)
+			+   pow(ctx->A_prl/DII, 1./ctx->N_prl)
+			+       ctx->A_max/DII
+			+       ctx->A_fk /DII)
+    		+ 2.0*ctx->eta_min*DII);
+
+    // get inverse elastic stress
+    itauel = ctx->A_els/DII;
+
+    // get visco-elastic initial guess
+    tauII = 1./(itauv + itauel);
+
+    return tauII;
+}
+//------------------------------------------------------------------------------
+PetscScalar getInitEta(ConstEqCtx *ctx)
+{
+	// compute effective viscosity at zero strain rate
+
+	PetscScalar eta_cr, eta;
+
+    // get creep viscosity
+	eta_cr = 1.0/(ctx->A_dif + ctx->A_fk + ctx->A_max)/2.0 + ctx->eta_min;
+
+    // get effective viscosity
+    eta = 1.0/(1.0/eta_cr + 2.0*ctx->A_els);
+
+    return eta;
+}
+//------------------------------------------------------------------------------
+void getConsEqRes(PetscScalar tauII, PetscScalar &r, void *pctx)
+{
+	// compute residual of the nonlinear constitutive equation
+
+	PetscScalar eta_vs, DIIvs, chi;
 
 	// access context
 	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
@@ -542,24 +583,43 @@ void getConsEqJacRes(PetscScalar tauII, PetscScalar *r, PetscScalar *J, void *pc
 	chi = 1.0/(1.0 + ctx->eta_min/eta_vs);
 
 	// compute residual
-	if(r)
-	{
-		(*r) = ctx->DII - ctx->A_els*tauII - chi*DIIvs - ctx->A_vp*(tauII -  ctx->taupl);
-	}
+	r = ctx->DII - ctx->A_els*tauII - chi*DIIvs - ctx->A_vp*(tauII - ctx->taupl);
+}
+//---------------------------------------------------------------------------
+void getConsEqJacRes(PetscScalar tauII, PetscScalar &r, PetscScalar &J, void *pctx)
+{
+	// compute residual and Jacobian of the nonlinear constitutive equation
+
+	PetscScalar eta_vs, DIIvs, dDIIvs, chi, dchi;
+
+	// access context
+	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
+
+	// get creep strain rate & derivative
+	DIIvs = ctx->A_dif    *tauII
+	+       ctx->A_dis*pow(tauII, ctx->N_dis)
+	+       ctx->A_prl*pow(tauII, ctx->N_prl)
+	+       ctx->A_fk     *tauII
+	+       ctx->A_max    *tauII;
+
+	dDIIvs =             ctx->A_dif
+	+         ctx->N_dis*ctx->A_dis*pow(tauII, ctx->N_dis - 1.0)
+	+         ctx->N_prl*ctx->A_prl*pow(tauII, ctx->N_prl - 1.0)
+	+                    ctx->A_fk
+	+                    ctx->A_max;
+
+	// get creep viscosity
+	eta_vs = tauII/DIIvs/2.0;
+
+	// get scaling factor (chi-term) and derivative
+	chi  =  1.0/(1.0 + ctx->eta_min/eta_vs);
+    dchi = -2.0*ctx->eta_min*(chi*chi)*(dDIIvs/tauII - DIIvs/tauII/tauII);
+
+	// compute residual
+    r = ctx->DII - ctx->A_els*tauII - chi*DIIvs - ctx->A_vp*(tauII - ctx->taupl);
 
 	// compute Jacobian
-	if(J)
-	{
-		dDIIvs =            ctx->A_dif
-		+                   ctx->A_fk
-		+                   ctx->A_max
-		+        ctx->N_dis*ctx->A_dis*pow(tauII, ctx->N_dis - 1.0)
-		+        ctx->N_prl*ctx->A_prl*pow(tauII, ctx->N_prl - 1.0);
-
-	    dchi = -2.0*ctx->eta_min*(chi*chi)*(dDIIvs/tauII - DIIvs/tauII/tauII);
-
-		(*J) = - ctx->A_els - dchi*DIIvs - chi*dDIIvs - ctx->A_vp;
-	}
+	J = - ctx->A_els - dchi*DIIvs - chi*dDIIvs - ctx->A_vp;
 }
 //---------------------------------------------------------------------------
 PetscScalar applyStrainSoft(
