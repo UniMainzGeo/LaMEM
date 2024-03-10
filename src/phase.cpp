@@ -370,8 +370,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// elasticity
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "G",        &G,        1, 1.0); CHKERRQ(ierr);
-//	ierr = getScalarParam(fb, _OPTIONAL_, "K",        &K,        1, 1.0); CHKERRQ(ierr); // note-> will be removed (avoid confusion with k)
-	ierr = getScalarParam(fb, _OPTIONAL_, "Kb",       &Kb,       1, 1.0); CHKERRQ(ierr); // note-> new nomenclature of bulk modulus (avoid confusion with k)
+	ierr = getScalarParam(fb, _OPTIONAL_, "Kb",       &Kb,       1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "E",        &E,        1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "nu",       &nu,       1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Kp",       &m->Kp,    1, 1.0); CHKERRQ(ierr);
@@ -480,6 +479,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
 	}
+
+	if((m->fr || m->ch) && !m->eta_vp)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Visco-plastic regularization viscosity must be specified for phase %lld (fr + ch + eta_vp)", (LLD)ID);
+	}
+
 	
 	if((!m->rho_melt && m->Phase_Diagram_melt))
 	{

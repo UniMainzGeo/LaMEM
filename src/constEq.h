@@ -116,8 +116,17 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx);
 // compute phase viscosities and strain rate partitioning
 PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID);
 
-// compute residual of the visco-elastic constitutive equation
-PetscScalar getConsEqRes(PetscScalar eta, void *pctx);
+// compute visco-elastic initial guess
+PetscScalar getInitGuess(PetscScalar DII, ConstEqCtx *ctx);
+
+// compute effective viscosity at zero strain rate
+PetscScalar getInitEta(PetscScalar DII, ConstEqCtx *ctx);
+
+// compute residual of the nonlinear constitutive equation
+void getConsEqRes(PetscScalar tauII, PetscScalar &r, void *pctx);
+
+// compute residual and Jacobian of the nonlinear constitutive equation
+void getConsEqJacRes(PetscScalar tauII, PetscScalar &r, PetscScalar &J, void *pctx);
 
 // apply strain softening to a parameter (friction, cohesion)
 PetscScalar applyStrainSoft(

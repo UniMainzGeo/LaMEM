@@ -862,7 +862,8 @@ PetscInt solveNewtonLS(
 		PetscScalar minstep,
 		PetscScalar &x,
 		PetscInt    &it,
-		void (*getffd)(PetscScalar x, PetscScalar *f, PetscScalar *fd, void *pctx),
+		void (*getf)  (PetscScalar x, PetscScalar &f,                  void *pctx),
+		void (*getffd)(PetscScalar x, PetscScalar &f, PetscScalar &fd, void *pctx),
 		void *pctx)
 {
 	PetscInt    i;
@@ -871,7 +872,7 @@ PetscInt solveNewtonLS(
 	for(i = 0, it = 0; i < maxit; i++)
 	{
 		// get function and derivative
-		getffd(x, &f, &fd, pctx);
+		getffd(x, f, fd, pctx);
 
 		// check convergence
 	    if(f < tol) break;
@@ -888,8 +889,8 @@ PetscInt solveNewtonLS(
 			// apply scaled update
 			xm = x + alpha*dx;
 
-			// get updated residual
-			getffd(xm, &fm, NULL, pctx);
+			// get updated function
+			getf(xm, fm, pctx);
 
 			// check whether residual is sufficiently reduced
 			if(PetscAbsScalar(fm) < lstol*PetscAbsScalar(f)) break;
