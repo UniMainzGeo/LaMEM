@@ -59,6 +59,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->mfmax        =  1.0;
 	ctrl->lmaxit       =  25;
 	ctrl->lrtol        =  1e-6;
+	ctrl->lstol        =  0.95;
+	ctrl->minstep      =  0.05;
 	ctrl->actTemp	   =  0;			// diffusion is not active by default (otherwise we have to define thermal properties in all cases)
 	ctrl->printNorms   =  0;			// print norms of velocity/pressure/temperature?
 	ctrl->Adiabatic_gr = 0.0;
@@ -103,8 +105,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,         1, 1);              CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfmax",           &ctrl->mfmax,          1, 1.0);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);           CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 100);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "lstol",           &ctrl->lstol,          1, 1.0);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "minstep",         &ctrl->minstep,        1, 1.0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "Passive_Tracer",  &ctrl->Passive_Tracer, 1, 1);              CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms,     1, 1);              CHKERRQ(ierr);
@@ -263,8 +267,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->tauUlt)         PetscPrintf(PETSC_COMM_WORLD, "   Ultimate yield stress                   : %g %s \n", ctrl->tauUlt,    scal->lbl_stress_si);
 	if(ctrl->rho_fluid)      PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid, scal->lbl_density);
 	if(ctrl->mfmax)          PetscPrintf(PETSC_COMM_WORLD, "   Max. melt fraction (viscosity, density) : %g    \n", ctrl->mfmax);
-	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %lld  \n", (LLD) ctrl->lmaxit);
+	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology maximum iteration number       : %lld  \n", (LLD) ctrl->lmaxit);
 	if(ctrl->lrtol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration tolerance            : %g    \n", ctrl->lrtol);
+	if(ctrl->lstol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology line search tolerance          : %g    \n", ctrl->lstol);
+	if(ctrl->minstep)        PetscPrintf(PETSC_COMM_WORLD, "   Rheology line search minimum step       : %g    \n", ctrl->minstep);
 	if(ctrl->Adiabatic_gr)   PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic gradient                      : %g    \n", ctrl->Adiabatic_gr);
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");

@@ -400,24 +400,16 @@ PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 
 	SolVarEdge  *svEdge;
 	SolVarCell  *svCell;
-	PetscScalar  pf, eta_min;
 
 	COPY_FUNCTION_HEADER
 
-	// get pre-factor
-	if(jr->ctrl.initGuess) pf = 0.0;
-	else                   pf = 2.0;
-
-	// get minimum viscosity
-	eta_min = jr->ctrl.eta_min;
-
 	// macro to copy deviatoric stress components to buffer
-	#define GET_SXX { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->sxx + pf*eta_min*svCell->dxx; }
-	#define GET_SYY { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->syy + pf*eta_min*svCell->dyy; }
-	#define GET_SZZ { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->szz + pf*eta_min*svCell->dzz; }
-	#define GET_SXY { svEdge = &jr->svXYEdge[iter++]; buff[k][j][i] = svEdge->s   + pf*eta_min*svEdge->d;   }
-	#define GET_SYZ { svEdge = &jr->svYZEdge[iter++]; buff[k][j][i] = svEdge->s   + pf*eta_min*svEdge->d;   }
-	#define GET_SXZ { svEdge = &jr->svXZEdge[iter++]; buff[k][j][i] = svEdge->s   + pf*eta_min*svEdge->d;   }
+	#define GET_SXX { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->sxx; }
+	#define GET_SYY { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->syy; }
+	#define GET_SZZ { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->szz; }
+	#define GET_SXY { svEdge = &jr->svXYEdge[iter++]; buff[k][j][i] = svEdge->s;   }
+	#define GET_SYZ { svEdge = &jr->svYZEdge[iter++]; buff[k][j][i] = svEdge->s;   }
+	#define GET_SXZ { svEdge = &jr->svXZEdge[iter++]; buff[k][j][i] = svEdge->s;   }
 
 	cf = scal->stress;
 
@@ -439,28 +431,21 @@ PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 {
 	SolVarCell  *svCell;
 	SolVarEdge  *svEdge;
-	PetscScalar s, J2, pf, eta_min;
+	PetscScalar s, J2;
 
 	COPY_FUNCTION_HEADER
-
-	// get pre-factor
-	if(jr->ctrl.initGuess) pf = 0.0;
-	else                   pf = 2.0;
-
-	// get minimum viscosity
-	eta_min = jr->ctrl.eta_min;
 
 	// macros to copy deviatoric strain rate invariant to buffer
 	#define GET_J2_STRESS_CENTER \
 		svCell = &jr->svCell[iter++]; \
-		s = svCell->sxx + pf*eta_min*svCell->dxx; J2  = s*s; \
-		s = svCell->syy + pf*eta_min*svCell->dyy; J2 += s*s; \
-		s = svCell->szz + pf*eta_min*svCell->dzz; J2 += s*s; \
+		s = svCell->sxx; J2  = s*s; \
+		s = svCell->syy; J2 += s*s; \
+		s = svCell->szz; J2 += s*s; \
 		buff[k][j][i] = 0.5*J2;
 
-	#define GET_J2_STRESS_XY_EDGE { svEdge = &jr->svXYEdge[iter++]; s = svEdge->s + pf*eta_min*svEdge->d; buff[k][j][i] = s*s;}
-	#define GET_J2_STRESS_YZ_EDGE { svEdge = &jr->svYZEdge[iter++]; s = svEdge->s + pf*eta_min*svEdge->d; buff[k][j][i] = s*s;}
-	#define GET_J2_STRESS_XZ_EDGE { svEdge = &jr->svXZEdge[iter++]; s = svEdge->s + pf*eta_min*svEdge->d; buff[k][j][i] = s*s;}
+	#define GET_J2_STRESS_XY_EDGE { svEdge = &jr->svXYEdge[iter++]; s = svEdge->s; buff[k][j][i] = s*s;}
+	#define GET_J2_STRESS_YZ_EDGE { svEdge = &jr->svYZEdge[iter++]; s = svEdge->s; buff[k][j][i] = s*s;}
+	#define GET_J2_STRESS_XZ_EDGE { svEdge = &jr->svXZEdge[iter++]; s = svEdge->s; buff[k][j][i] = s*s;}
 
 	cf = scal->stress;
 

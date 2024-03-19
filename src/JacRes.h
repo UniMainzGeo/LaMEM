@@ -158,15 +158,16 @@ struct Controls
 
 	PetscInt    lmaxit;         // maximum number of local rheology iterations
 	PetscScalar lrtol;          // local rheology iterations relative tolerance
+	PetscScalar lstol;          // local rheology line search stop tolerance (relative)
+	PetscScalar minstep;        // local rheology line search minimum step length
+
 	PetscInt    Phasetrans;     // Flag to activate phase transition routines
 	PetscInt    Passive_Tracer; // Flag to activate passive tracer routine
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
-
-  PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
-
-  PetscInt  dikeHeat;   // activation flag for using Behn & Ito heat source in dike
+	PetscInt    useTk;          // activation flag for using temperature-dependent conductivity
+	PetscInt    dikeHeat;       // activation flag for using Behn & Ito heat source in dike
 };
 
 //---------------------------------------------------------------------------
