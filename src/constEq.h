@@ -110,10 +110,7 @@ PetscErrorCode setUpCtrlVol(
 // setup phase parameters for deviatoric constitutive equation
 PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID);
 
-// evaluate deviatoric constitutive equations in control volume
-PetscErrorCode devConstEq(ConstEqCtx *ctx);
-
-// compute phase viscosities and strain rate partitioning
+// compute phase viscosity and strain rate partitioning
 PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID);
 
 // compute visco-elastic initial guess
@@ -142,6 +139,9 @@ PetscScalar getI2Gdt(
 		Material_t  *phases,    // phase parameters
 		PetscScalar *phRat,     // phase ratios in the control volume
 		PetscScalar  dt);       // time step
+
+// evaluate deviatoric constitutive equations in control volume
+PetscErrorCode devConstEq(ConstEqCtx *ctx);
 
 // evaluate volumetric constitutive equations in control volume
 PetscErrorCode volConstEq(ConstEqCtx *ctx);
