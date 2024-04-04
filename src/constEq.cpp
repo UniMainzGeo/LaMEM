@@ -325,7 +325,7 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	Controls    *ctrl;
 	PetscScalar *phRat;
 	SolVarDev   *svDev;
-	Material_t  *phases;
+	Material_t  *mat;
 	PetscInt     i, numPhases;
 
 	PetscErrorCode ierr;
@@ -336,7 +336,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	numPhases = ctx->numPhases;
 	phRat     = ctx->phRat;
 	svDev     = ctx->svDev;
-	phases    = ctx->phases;
 
 	// zero out results
 	ctx->eta    = 0.0; // effective viscosity
@@ -374,7 +373,8 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
 
 			// update stabilization and viscoplastic viscosity
-			svDev->eta_st += phRat[i]*phases->eta_st;
+			mat            = ctx->phases + i;
+			svDev->eta_st += phRat[i]*mat->eta_st;
 		}
 	}
 
