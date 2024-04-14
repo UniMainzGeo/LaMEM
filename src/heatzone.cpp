@@ -400,7 +400,15 @@ PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
 
 							if (P_comp > 0) // diking occurs
 							{
-								zeta = dike->A * (dike->zeta_0 / P_comp) + P_comp / div_max;
+								if (dike->Mf == 0)
+								{
+									zeta = dike->A * (dike->zeta_0 / P_comp);
+								}
+								else
+								{
+									zeta = dike->A * (dike->zeta_0 / P_comp) + P_comp / div_max;
+								}
+								
 								tempdikeRHS = P_comp / zeta;
 							}
 							else // diking DOES NOT occur

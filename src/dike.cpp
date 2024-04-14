@@ -776,7 +776,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
           {
             dz  = SIZE_CELL(k, sz, (*dsz));
             sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn)*dz;  //integrating dz-weighted total stress (*revisit deviatoric??)
-            // Pmag[L][j][i]+=p_lith[k][j][i]*dz; // removed for lithostatic pressure addition to gsxx due to varM dike initiation criteria *djking
+            Pmag[L][j][i]+=p_lith[k][j][i]*dz; // removed from magPressure due to varM dike initiation criteria *djking
 
             liththick[L][j][i]+=dz;             //integrating thickness
           }
@@ -848,19 +848,23 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	END_PLANE_LOOP
 */
 	magma_presence=1.0;  //testing
-	
-// calculate depth average stress (sxx)
+
+	// calculate depth average stress (sxx)
 	START_PLANE_LOOP
-		dPmag=(dike->zmax_magma-zsol[L][j][i])*(dike->drhomagma)*grav[2];  //excess static magma pressure at solidus, z & grav[2] <0 so this is positive
-//		magma_presence=dike->magPfac*(zsol[L][j][i]-dike->zmax_magma)/(zsol_max-dike->zmax_magma);  //this feature undergoing testing
-//		magPressure[L][j][i] = (Pmag[L][j][i]/liththick[L][j][i]+dPmag)*magma_presence;
-		magPressure[L][j][i] = (Pmag[L][j][i]+dPmag)*magma_presence; // *djking
-		gsxx_eff_ave[L][j][i]= sxx[L][j][i]/liththick[L][j][i];  //Depth weighted mean total stress                                                                
+	dPmag = 0; // set dPmag to zero
+	if (dike->zmax_magma - zsol[L][j][i] < 0) // if negative, then postive magma pressure at solidus exists
+	{
+		dPmag = (dike->zmax_magma - zsol[L][j][i]) * (dike->drhomagma) * grav[2]; // excess static magma pressure at solidus
+	}
+
+	//		magma_presence=dike->magPfac*(zsol[L][j][i]-dike->zmax_magma)/(zsol_max-dike->zmax_magma);  //this feature undergoing testing
+	//		magPressure[L][j][i] = (Pmag[L][j][i]/liththick[L][j][i]+dPmag)*magma_presence;
+	magPressure[L][j][i] = dPmag * magma_presence;			   // *djking
+	gsxx_eff_ave[L][j][i] = sxx[L][j][i] / liththick[L][j][i]; // Depth weighted mean total stress
 	END_PLANE_LOOP
 
-	
-// output mean stress array to .txt file on timesteps of other output *djking
-	if (((istep % nstep_out) == 0) && (dike->out_stress > 0))  
+	// output mean stress array to .txt file on timesteps of other output *djking
+	if (((istep % nstep_out) == 0 || istep == 1) && (dike->out_stress > 0))  
 	{
 		if (L == 0)
 {
@@ -1495,7 +1499,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	}// end if nstep_ave>1
 
   // output smoothed stress array to .txt file on timesteps of other output *djking
-  if (((istep % nstep_out) == 0) && (dike->out_stress > 0))
+  if (((istep % nstep_out) == 0 || istep == 1) && (dike->out_stress > 0)) 
   {
     if (L == 0)
     {
@@ -1651,7 +1655,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 		CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2; 
 
  // dike location to .txt file on timesteps of other output *djking
-    if (L==0 &&  ((istep % nstep_out) == 0) && (dike->out_dikeloc > 0))
+    if (L==0 &&  ((istep % nstep_out) == 0 || istep == 1) && (dike->out_dikeloc > 0))
     {
       // Form the filename based on jr->ts->istep
       std::ostringstream oss;
@@ -1682,7 +1686,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
     }
   } //end loop over j cell row
 
-	if (((istep % nstep_out)==0) && (dike->out_dikeloc > 0))  
+	if (((istep % nstep_out)==0 || istep == 1) && (dike->out_dikeloc > 0))  
 	{
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
 	}
