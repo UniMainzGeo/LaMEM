@@ -864,39 +864,39 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	END_PLANE_LOOP
 
 	// output mean stress array to .txt file on timesteps of other output *djking
-	if (((istep % nstep_out) == 0 || istep == 1) && (dike->out_stress > 0))  
+	if (((istep % nstep_out) == 0 || istep == 1) && (dike->out_stress > 0))
 	{
 		if (L == 0)
-{
-		// Form the filename based on jr->ts->istep+1
-		std::ostringstream oss;
-		oss << "gsxx_Timestep_" << (jr->ts->istep+1) << ".txt";
-
-		std::string filename = oss.str();
-
-		// Open a file with the formed filename
-		std::ofstream outFile(filename);
-		if (outFile)
 		{
-			START_PLANE_LOOP
+			// Form the filename based on jr->ts->istep+1
+			std::ostringstream oss;
+			oss << "gsxx_Timestep_" << (jr->ts->istep + 1) << ".txt";
+
+			std::string filename = oss.str();
+
+			// Open a file with the formed filename
+			std::ofstream outFile(filename);
+			if (outFile)
+			{
+				START_PLANE_LOOP
 				xcell = COORD_CELL(i, sx, fs->dsx);
 				ycell = COORD_CELL(j, sy, fs->dsy);
-				
-			// Writing space delimited data
-			outFile  
-				<< " " << xcell << " " << ycell 
-				<< " " << gsxx_eff_ave[L][j][i] 
-				<< " " << magPressure[L][j][i] 
-				<< " " << nD << " " << zsol[L][j][i] 
-				<< " " << magma_presence << "\n";    
 
-			END_PLANE_LOOP 
-		} 
-		else
-		{
-			std::cerr << "Error creating file: " << filename << std::endl;
+				// Writing space delimited data
+				outFile
+					<< " " << xcell << " " << ycell
+					<< " " << gsxx_eff_ave[L][j][i]
+					<< " " << magPressure[L][j][i]
+					<< " " << nD << " " << zsol[L][j][i]
+					<< " " << magma_presence << "\n";
+
+				END_PLANE_LOOP
+			}
+			else
+			{
+				std::cerr << "Error creating file: " << filename << std::endl;
+			}
 		}
-	}
 	}
 
   // restore buffer and mean stress vectors
