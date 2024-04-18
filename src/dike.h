@@ -51,8 +51,15 @@ public:
   //PetscScalar ymindyn;
   //PetscScalar ymaxdyn;
   Vec sxx_eff_ave;
-  Vec magPressure;
   Vec sxx_eff_ave_hist;
+  Vec raw_sxx;
+  Vec raw_sxx_ave;
+  Vec raw_sxx_ave_hist;
+  Vec smooth_sxx;
+  Vec smooth_sxx_ave;
+  Vec smooth_sxx_ave_hist;
+  Vec magPressure;
+  Vec focused_magPressure;
 
   PetscScalar drhomagma;
   PetscScalar zmax_magma;

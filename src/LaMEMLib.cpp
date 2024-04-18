@@ -59,11 +59,11 @@ PetscErrorCode LaMEMLibMain(void *param)
 	ierr = PetscTime(&cputime_start); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
+	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                  \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
 	PetscPrintf(PETSC_COMM_WORLD,"     Version : 2.1.0 \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
+	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION          \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 
 	// read run mode
