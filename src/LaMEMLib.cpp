@@ -566,8 +566,6 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	step    = ts->istep;
 	bgPhase = lm->actx.bgPhase;
 
-
-
 	// create directory (encode current time & step number)
 	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
 

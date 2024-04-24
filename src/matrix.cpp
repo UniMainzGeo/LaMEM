@@ -906,20 +906,24 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// dump preconditioning matrices to disk to inspect them with MATLAB (mainly for debugging)
 	PetscViewer viewer;
 	PetscBool   flg, flg_name;
-	char        name[_str_len_], name_A[_str_len_];
+	char        name[_str_len_], *fname;
 
-	ierr = PetscOptionsHasName(NULL, NULL, "-dump_precondition_matrixes", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-dump_pmat", &flg); CHKERRQ(ierr);
 
-	if (flg)
+	if(flg)
 	{
-		PetscOptionsGetString(NULL,NULL,"-dump_precondition_matrixes_prefix",name,sizeof(name),&flg_name);
-		if(!flg_name) SETERRQ(PETSC_COMM_WORLD,1,"Must indicate binary file name with the -dump_precondition_matrixes_prefix option");
+		PetscOptionsGetString(NULL, NULL, "-dump_pmat", name, sizeof(name), &flg_name);
+		if(!flg_name)
+		{
+			SETERRQ(PETSC_COMM_WORLD,1,"Must indicate binary file name with the -dump_pmat option");
+		}
 
-		// dump the A preconditioning matrix 2 disk
-		sprintf(name_A, "%s_A.bin", name);
-		PetscViewerBinaryOpen(PETSC_COMM_WORLD, name_A, FILE_MODE_WRITE, &viewer);
+		// dump preconditioning matrix to disk
+		asprintf(&fname, "%s.bin", name);
+		PetscViewerBinaryOpen(PETSC_COMM_WORLD, fname, FILE_MODE_WRITE, &viewer);
 		MatView(P->A, viewer);
 		PetscViewerDestroy(&viewer);
+		free(fname);
 	}
 
 	PetscFunctionReturn(0);
@@ -1266,12 +1270,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
 
-	// option for viscosity presmoothing
-	PetscBool	flg;
-	char        pname[_str_len_];
-	ierr = PetscOptionsGetString(NULL, NULL, "-BFBT_viscositySmoothing", pname, _str_len_, &flg); CHKERRQ(ierr);
-	if(flg==PETSC_TRUE){ierr = BFBTGaussianSmoothing(jr); CHKERRQ(ierr);}
-
 	//---------------
 	// central points
 	//---------------
@@ -1284,8 +1282,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	START_STD_LOOP
 	{
 		// get density, shear & inverse bulk viscosities
-		if(flg==PETSC_TRUE){eta  = jr->svCell[iter].svDev.eta_smoothed;}
-		else{eta  = jr->svCell[iter].svDev.eta;}
+		eta  = jr->svCell[iter].svDev.eta;
 		IKdt = jr->svCell[iter].svBulk.IKdt;
 		rho  = jr->svCell[iter].svBulk.rho;
 
@@ -1367,8 +1364,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	START_STD_LOOP
 	{
 		// get viscosity
-		if(flg==PETSC_TRUE){eta = jr->svXYEdge[iter++].svDev.eta_smoothed;}
-		else{eta = jr->svXYEdge[iter++].svDev.eta;}
+		eta = jr->svXYEdge[iter++].svDev.eta;
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);

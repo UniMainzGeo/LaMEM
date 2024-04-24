@@ -956,6 +956,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 
     // close file
     fclose(fp);
+    free(filename);
 
     PrintDone(t);
 
