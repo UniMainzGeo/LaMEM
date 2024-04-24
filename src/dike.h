@@ -61,6 +61,8 @@ public:
   Vec magPressure;
   Vec focused_magPressure;
 
+  Vec solidus;
+
   PetscScalar drhomagma;
   PetscScalar zmax_magma;
   PetscScalar magPfac;
