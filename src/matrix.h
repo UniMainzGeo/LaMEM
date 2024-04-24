@@ -125,7 +125,6 @@ struct PMatBlock
 	Mat K;    // Schur complement preconditioner matrix
 	Mat C;    // diagonal viscosity weighting matrix
 	Vec wv2;  // working vectors in velocity space
-
 };
 
 //---------------------------------------------------------------------------

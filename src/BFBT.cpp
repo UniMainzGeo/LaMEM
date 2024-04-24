@@ -21,9 +21,6 @@
 #include "multigrid.h"
 #include "lsolve.h"
 #include "BFBT.h"
-#include "marker.h"
-#include "advect.h"
-#include "parsing.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PMatBFBTCreate"
@@ -37,7 +34,7 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	const PetscInt *lx, *ly, *lz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// BFBT cases only
 	if(pm->stype != _wBFBT_) PetscFunctionReturn(0);
@@ -100,7 +97,7 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// BFBT cases only
 	if(pm->stype != _wBFBT_) PetscFunctionReturn(0);
@@ -308,7 +305,7 @@ PetscErrorCode PMatBFBTDestroy(PMat pm)
 	PMatBlock *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// BFBT cases only
 	if(pm->stype != _wBFBT_) PetscFunctionReturn(0);
@@ -336,7 +333,7 @@ PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y)
 	PMatBlock  *P;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
@@ -367,5 +364,4 @@ PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
 

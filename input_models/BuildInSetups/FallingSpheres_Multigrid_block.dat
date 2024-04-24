@@ -1,0 +1,256 @@
+# This shows an example with 10 falling spheres in non-dimensional units, 
+# using a multigrid solver. Linear viscosity is assumed.
+# It runs for 1 timestep and creates output every timestep.
+#
+# This setup is a useful test for multigrid solvers (more realistic than a single sphere)
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1000  # simulation end time
+	dt        = 10    # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 100   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 32
+	nel_y = 32
+	nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 1.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -1.0   # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 0              # initial guess flag
+	eta_min        = 1e-3           # viscosity upper bound
+	eta_max        = 1e12           # viscosity lower limit
+
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	
+	advect          = basic             # advection scheme
+	interp          = stag              # velocity interpolation scheme
+	mark_ctrl       = subgrid           # marker control type
+	nmark_sub       = 1                 # max number of same phase markers per subcell (subgrid marker control)
+
+# Geometric primitives:
+	
+	# 1
+	<SphereStart>	
+		phase  = 1
+		center = 0.9 0.9 0.8  
+		radius = 0.05
+	<SphereEnd>
+	
+	# 2
+	<SphereStart>	
+		phase  = 1
+		center = 0.2 0.3 0.4  
+		radius = 0.05
+	<SphereEnd>	
+
+	# 3
+	<SphereStart>	
+		phase  = 1
+		center = 0.5 0.3 0.7  
+		radius = 0.05
+	<SphereEnd>	
+
+	# 4
+	<SphereStart>	
+		phase  = 1
+		center = 0.8 0.8 0.8  
+		radius = 0.05
+	<SphereEnd>	
+	
+	# 5
+	<SphereStart>	
+		phase  = 1
+		center = 0.2 0.5 0.4  
+		radius = 0.05
+	<SphereEnd>
+
+	# 6
+	<SphereStart>	
+		phase  = 1
+		center = 0.3 0.3 0.3  
+		radius = 0.1
+	<SphereEnd>
+
+	# 7
+	<SphereStart>	
+		phase  = 1
+		center = 0.6 0.4 0.8  
+		radius = 0.1
+	<SphereEnd>
+
+	# 8
+	<SphereStart>	
+		phase  = 1
+		center = 0.5 0.8 0.9  
+		radius = 0.1
+	<SphereEnd>
+
+	# 9
+	<SphereStart>	
+		phase  = 1
+		center = 0.5 0.8 0.6  
+		radius = 0.1
+	<SphereEnd>
+	
+	# 10
+	<SphereStart>	
+		phase  = 1
+		center = 0.7 0.4 0.6  
+		radius = 0.1
+	<SphereEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = Spheres_multigrid # output file name
+	out_pvd             = 1       	# activate writing .pvd file
+	out_moment_res      = 1
+	out_cont_res        = 1
+	
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 1 # density
+		eta = 1 # viscosity
+	<MaterialEnd>
+
+	# Define properties of spheres
+	<MaterialStart>
+		ID  = 1   # phase id
+		rho = 2   # density
+		eta = 10 # viscosity
+	<MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_type ksponly 		# no nonlinear solver
+
+	-js_ksp_type fgmres
+	-js_ksp_max_it 1000
+	-js_ksp_monitor
+	-js_ksp_rtol 1e-6
+
+#	-pcmat_type block
+#	-pcmat_pgamma 1e3
+#	-jp_type bf
+#	-bf_type upper
+#	-bf_vs_type user
+#	-vs_ksp_type preonly
+#	-vs_pc_type lu
+#	-vs_pc_factor_mat_solver_package mumps
+
+
+	-pcmat_type block
+	-pcmat_schur_type wbfbt
+	-jp_type bf
+	-bf_type upper
+	-bf_vs_type mg
+	-vs_ksp_type gmres
+	-vs_ksp_rtol 1e-2
+	-vs_ksp_max_it 10
+
+	-ks_ksp_type gmres
+	-ks_ksp_rtol 1e-2
+	-ks_ksp_max_it 10
+
+	-ks_pc_type mg
+	-ks_pc_mg_levels 3
+	-ks_pc_mg_galerkin
+	-ks_pc_mg_type multiplicative
+	-ks_pc_mg_cycle_type v
+
+#	-pcmat_type mono
+#	-jp_type mg
+
+	-gmg_pc_type mg
+	-gmg_pc_mg_levels 4
+	-gmg_pc_mg_galerkin
+	-gmg_pc_mg_type multiplicative
+	-gmg_pc_mg_cycle_type v
+
+	-gmg_mg_levels_ksp_type richardson
+	-gmg_mg_levels_ksp_richardson_scale 0.5
+	-gmg_mg_levels_ksp_max_it 20
+	-gmg_mg_levels_pc_type jacobi
+
+	-crs_ksp_type preonly
+	-crs_pc_type lu
+	-crs_pc_factor_mat_solver_package mumps
+
+
+#-vs_ksp_view
+#-crs_ksp_view
+-ps_ksp_view
+
+
+<PetscOptionsEnd>
+
+#===============================================================================

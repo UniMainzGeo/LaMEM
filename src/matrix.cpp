@@ -111,7 +111,7 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	Vec          nullsp_vecs[_max_nullsp_sz_]; // near null space vectors
 	PetscScalar *v;
 	PetscBool    set_nullsp;
-	PetscInt     i, j, sz, ln=0, iter, nullsp_sz=0, lbsz[_max_nullsp_sz_];
+	PetscInt     i, j, sz, ln, iter, nullsp_sz, lbsz[_max_nullsp_sz_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -136,9 +136,8 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	{
 		// create
 		ierr = VecCreateMPI(PETSC_COMM_WORLD, ln, PETSC_DETERMINE, &nullsp_vecs[i]); CHKERRQ(ierr);
-		ierr = VecSetFromOptions(nullsp_vecs[i]); 	CHKERRQ(ierr);
-
-		ierr = VecZeroEntries (nullsp_vecs[i]);     CHKERRQ(ierr);
+		ierr = VecSetFromOptions(nullsp_vecs[i]);   CHKERRQ(ierr);
+		ierr = VecZeroEntries   (nullsp_vecs[i]);   CHKERRQ(ierr);
 
 		// initialize
 		ierr = VecZeroEntries (nullsp_vecs[i]);     CHKERRQ(ierr);
@@ -1176,9 +1175,9 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(P->xv); 									 CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(P->xp); 									 CHKERRQ(ierr);
+	ierr = VecSetFromOptions(P->xp);                                     CHKERRQ(ierr);
+	ierr = VecSetFromOptions(P->xv);                                     CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->rv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->rp);                                  CHKERRQ(ierr);
