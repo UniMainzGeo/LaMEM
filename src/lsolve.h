@@ -82,7 +82,6 @@ struct PCStokesBF
 	KSP         vksp;  // velocity solver
 	MG          vmg;   // velocity multigrid context
 	KSP 	    pksp;  // pressure solver
-
 };
 
 //---------------------------------------------------------------------------

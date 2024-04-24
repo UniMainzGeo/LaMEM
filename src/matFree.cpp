@@ -25,7 +25,7 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
 	JacRes *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ierr = MatShellGetContext(A, (void**)&jr); CHKERRQ(ierr);
@@ -55,7 +55,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***p;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs   = jr->fs;
 	dt   = jr->ts->dt;      // time step
@@ -262,7 +262,7 @@ PetscErrorCode JacApplyJacobian(Mat A, Vec x, Vec y)
 	JacRes *jr;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	// access context
 	ierr = MatShellGetContext(A, (void**)&jr); CHKERRQ(ierr);
@@ -294,7 +294,7 @@ PetscErrorCode JacResGetJ2Derivatives(JacRes *jr)
 	PetscScalar ***centerSum, ***xyEdgeSum, ***xzEdgeSum, ***yzEdgeSum;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs = jr->fs;
 
@@ -459,7 +459,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 	PetscScalar ***centerSum, ***xyEdgeSum, ***xzEdgeSum, ***yzEdgeSum;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBeginUser;
 
 	fs   = jr->fs;
 	dt   = jr->ts->dt;     // time step
