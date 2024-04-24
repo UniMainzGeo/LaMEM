@@ -1386,7 +1386,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 					dxazim=cos(azim)*(xx-xc)-sin(azim)*(yy-yc);
 					dyazim=sin(azim)*(xx-xc)+cos(azim)*(yy-yc);
 
-					radbound=(pow((dxazim/(dfac*filtx)),2) + pow((dyazim/(dfac*filty)),2));					
+					radbound=(pow((dxazim/(dfac*filtx)),2) + pow((dyazim/(dfac*filty)),2));
 					if (radbound<=1) //limit area of summing to within radbound of cell
 					{
 						w=exp(-0.5*(pow((dxazim/filtx),2) + pow((dyazim/(str_y*filty)),2)))*dx*dy;
@@ -1454,7 +1454,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 			smooth_gsxx[L][j][i]=(sum_sxx/sum_w);
 			smooth_gsxx_ave[L][j][i]=(sum_sxx/sum_w);
 			gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + focused_magPressure[L][j][i];
-			//gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + magPressure[L][j][i];
 
 		}//End loop over i
 	}// End loop over j
@@ -1593,7 +1592,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
           << " " << smooth_gsxx[L][j][i] 
           << " " << smooth_gsxx_ave[L][j][i] 
           << " " << gsxx_eff_ave[L][j][i] 
-          << " " << jr->ts->istep+1 << " " << jr->ts->time << "\n";    
+          << " " << jr->ts->istep+1 << " " << jr->ts->time * jr->scal->time << "\n";    
 
         END_PLANE_LOOP
       }
