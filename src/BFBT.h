@@ -42,12 +42,5 @@ PetscErrorCode PMatBFBTDestroy(PMat pm);
 
 PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y);
 
-//PetscErrorCode BFBTGaussianSmoothing(AdvCtx *actx, FB *fb, GeomPrim *geom, AllGeom1 blubb);
-PetscErrorCode BFBTGaussianSmoothing(JacRes *jr);
-
-//---------------------------------------------------------------------------
-// compute |a-b|, a,b are vectors
-#define VEC_ABS(vecabs, a, b) {vecabs = sqrt( (a[2]-b[2])*(a[2]-b[2]) + (a[1]-b[1])*(a[1]-b[1]) + (a[0]-b[0])*(a[0]-b[0]) );}
-
 //---------------------------------------------------------------------------
 #endif
