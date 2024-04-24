@@ -24,7 +24,7 @@ enum PCStokesType
 
 //---------------------------------------------------------------------------
 
-// Stokes preconditioner type
+// Block factorization type
 enum PCBFType
 {
 	_UPPER_,  // upper triangular factorization
@@ -77,10 +77,11 @@ PetscErrorCode PCStokesDestroy(PCStokes pc);
 // Block Factorization preconditioner context
 struct PCStokesBF
 {
-	PCVelType vtype; // velocity solver type
-	KSP       vksp;  // velocity solver
-	MG        vmg;   // velocity multigrid context
-	PCBFType  type;  // factorization type
+	PCBFType    ftype; // factorization type
+	PCVelType   vtype; // velocity solver type
+	KSP         vksp;  // velocity solver
+	MG          vmg;   // velocity multigrid context
+	KSP 	    pksp;  // pressure solver
 
 };
 
@@ -102,7 +103,6 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec x, Vec y);
 struct PCStokesMG
 {
 	MG mg; // coupled multigrid context
-
 };
 
 //---------------------------------------------------------------------------
@@ -123,7 +123,7 @@ struct PCStokesUser
 	PC pc;       // general preconditioner object
 	IS isv, isp; // velocity and pressure index sets
 
-} ;
+};
 
 //---------------------------------------------------------------------------
 

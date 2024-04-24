@@ -16,6 +16,7 @@
 #include "multigrid.h"
 #include "lsolve.h"
 #include "JacRes.h"
+#include "BFBT.h"
 //---------------------------------------------------------------------------
 // * implement preconditioners in PETSc
 // * add default solver options
@@ -78,7 +79,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 
 	// read options
 	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
-	pm_type = _BLOCK_;
+
 	if(pc->type == _STOKES_BF_)
 	{
 		// Block Factorization
@@ -147,8 +148,9 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 //---------------------------------------------------------------------------
 PetscErrorCode PCStokesBFCreate(PCStokes pc)
 {
-	PC          vpc;
+	PC          vpc, ppc;
 	PCStokesBF *bf;
+	PMatBlock  *P;
 	JacRes     *jr;
 
 	PetscErrorCode ierr;
@@ -177,11 +179,50 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// create & set velocity multigrid preconditioner
 	if(bf->vtype == _VEL_MG_)
 	{
+/*		ierr = KSPSetOperators(bf->vksp, P->Avv, P->Avv); CHKERRQ(ierr);
+		ierr = KSPGetPC(bf->vksp, &vpc); CHKERRQ(ierr);
+		ierr = PCSetType(vpc, PCGAMG); CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(bf->vksp); CHKERRQ(ierr);
+		*/
+
 		ierr = MGCreate(&bf->vmg, jr);           CHKERRQ(ierr);
 		ierr = KSPGetPC(bf->vksp, &vpc);         CHKERRQ(ierr);
 		ierr = PCSetType(vpc, PCSHELL);          CHKERRQ(ierr);
 		ierr = PCShellSetContext(vpc, &bf->vmg); CHKERRQ(ierr);
 		ierr = PCShellSetApply(vpc, MGApply);    CHKERRQ(ierr);
+
+	}
+
+	// create & set pressure Schur complement solver
+	if(pc->pm->stype == _wBFBT_)
+	{
+		// access block matrix
+		P = (PMatBlock*)pc->pm->data;
+
+		// create pressure solver
+		ierr = KSPCreate(PETSC_COMM_WORLD, &bf->pksp); CHKERRQ(ierr);
+/*
+		ierr = KSPSetDM(bf->pksp, P->DA_P);            CHKERRQ(ierr);
+		ierr = KSPSetDMActive(bf->pksp, PETSC_FALSE);   CHKERRQ(ierr);
+		ierr = KSPSetOptionsPrefix(bf->pksp,"ps_");    CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(bf->pksp);            CHKERRQ(ierr);
+*/
+
+		ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
+		ierr = KSPGetPC(bf->pksp, &ppc); CHKERRQ(ierr);
+		ierr = PCSetType(ppc, PCGAMG); CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(bf->pksp); CHKERRQ(ierr);
+
+/*		// maybe in higher petsc-version? hybrid multigrid
+  		ierr = KSPGetPC(bf->pksp, &ppc); CHKERRQ(ierr);
+		ierr = PCSetType(ppc, PCHMG); CHKERRQ(ierr);
+		ierr = PCHMGSetInnerPCType(ppc, PCAMG); CHKERRQ(ierr);
+		ierr = PCHMGSetReuseInterpolation(ppc, PETSC_TRUE); CHKERRQ(ierr);
+		ierr = PCHMGSetUseSubspaceCoarsening(ppc, PETSC_TRUE); CHKERRQ(ierr);
+		ierr = PCHMGUseMatMAIJ(ppc, PETSC_FALSE); CHKERRQ(ierr);
+		ierr = PCHMGSetCoarseningComponent(ppc, 0); CHKERRQ(ierr);
+*/
+
 	}
 
 	PetscFunctionReturn(0);
@@ -209,13 +250,13 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
 
-			bf->type = _UPPER_;
+			bf->ftype = _UPPER_;
 		}
 		else if(!strcmp(pname, "lower"))
 		{
 			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : lower \n");
 
-			bf->type = _LOWER_;
+			bf->ftype = _LOWER_;
 		}
 		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect block factorization type: %s", pname);
 	}
@@ -223,7 +264,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
 
-		bf->type = _UPPER_;
+		bf->ftype = _UPPER_;
 	}
 
 	// set velocity solver type
@@ -272,6 +313,11 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 		ierr = MGDestroy(&bf->vmg); CHKERRQ(ierr);
 	}
 
+	if(pc->pm->stype == _wBFBT_)
+	{
+		ierr = KSPDestroy(&bf->pksp);  CHKERRQ(ierr);
+	}
+
 	ierr = PetscFree(bf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -298,6 +344,12 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 
 	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
 
+	if(pc->pm->stype == _wBFBT_)
+	{
+		ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
+		ierr = KSPSetUp(bf->pksp);                    CHKERRQ(ierr);
+	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -307,7 +359,6 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	// r - residual vector      (input)
 	// x - approximate solution (output)
 	//======================================================================
-
 	PCStokes    pc;
 	PCStokesBF *bf;
 	PMatBlock  *P;
@@ -324,14 +375,21 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	// extract residual blocks
 	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
-	if(bf->type == _UPPER_)
+	if(bf->ftype == _UPPER_)
 	{
 		//=======================
 		// BLOCK UPPER TRIANGULAR
 		//=======================
 
-		// Schur complement already contains negative sign (no negative sign here)
-		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
+		// Schur complement applies negative sign internally (no negative sign here)
+		if(pc->pm->stype == _wBFBT_)
+		{
+			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+		}
+		else if(pc->pm->stype == _INV_ETA_)
+		{
+			ierr = MatMult(P->iS, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+		}
 
 		ierr = MatMult(P->Avp, P->xp, P->wv);    CHKERRQ(ierr); // wv = Avp*xp
 
@@ -339,7 +397,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 
 		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
 	}
-	else if(bf->type == _LOWER_)
+	else if(bf->ftype == _LOWER_)
 	{
 		//=======================
 		// BLOCK LOWER TRIANGULAR
@@ -351,8 +409,15 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 
 		ierr = VecAXPY(P->rp, -1.0, P->wp);      CHKERRQ(ierr); // rp = rp - wp
 
-		// Schur complement already contains negative sign (no negative sign here)
-		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
+		// Schur complement applies negative sign internally (no negative sign here)
+		if(pc->pm->stype == _wBFBT_)
+		{
+			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+		}
+		else if(pc->pm->stype == _INV_ETA_)
+		{
+			ierr = MatMult(P->iS, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+		}
 	}
 
 	// compose approximate solution
