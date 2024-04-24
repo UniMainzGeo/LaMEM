@@ -254,6 +254,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "JacApplyJacobian"
 PetscErrorCode JacApplyJacobian(Mat A, Vec x, Vec y)
@@ -829,6 +830,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
+*/
 //-----------------------------------------------------------------------------
 /*
 		cellSum[k][j][i] =

@@ -18,6 +18,7 @@
 #include "lsolve.h"
 #include "nlsolve.h"
 #include "JacRes.h"
+#include "matFree.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 // * add bound checking for iterative solution vector in SNES

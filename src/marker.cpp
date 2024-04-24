@@ -1666,7 +1666,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	FILE          *fp;
     PetscInt       i_pd,j,ij,lineStart,n,found, NumberOfPhaseDiagramProperties;
     PetscScalar    fl[2];
-    char           buf[1000],name[_str_len_];
+    char           buf[1000],name[_str_len_+_str_len_];
     PData         *pd;
     Scaling       *scal;
    
