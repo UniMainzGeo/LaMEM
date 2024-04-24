@@ -7,31 +7,11 @@
  **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-
-#ifndef __bfbt_h__
-#define __bfbt_h__
-
-
-
-struct _p_PMat;
-typedef struct _p_PMat *PMat;
-struct AdvCtx;
-struct FB;
-struct GeomPrim;
-struct JacRes;
-
-struct SphereData{
-	PetscScalar centerx;
-	PetscScalar centery;
-	PetscScalar centerz;
-	PetscScalar radius;
-	PetscInt	phase;
-};
-
-
-
 //---------------------------------------------------------------------------
 //..........................   BFBT FUNCTIONS   .............................
+//---------------------------------------------------------------------------
+#ifndef __bfbt_h__
+#define __bfbt_h__
 //---------------------------------------------------------------------------
 
 PetscErrorCode PMatBFBTCreate(PMat pm);
