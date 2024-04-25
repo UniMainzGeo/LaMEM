@@ -735,6 +735,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 
   dike = jr->dbdike->matDike+nD;
+  vzsol = dike->solidus; // *djking
 
   // get local grid sizes
   ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -756,8 +757,8 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, vPmag, &Pmag); CHKERRQ(ierr);
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, vliththick, &liththick); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &zsol); CHKERRQ(ierr); // *djking
-//  ierr = DMDAVecGetArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr); // *djking
+  ierr = DMDAVecGetArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr);
+//  ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &zsol); CHKERRQ(ierr); // *djking
 
   // open linear buffer for send/receive  (returns the point, lsxx, that contains this processor portion of vector data, vsxx<<G.Ito)
   //Returns a pointer to a contiguous array that contains this processors portion of the vector data.
@@ -950,8 +951,8 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vPmag, &Pmag); CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vliththick, &liththick); CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &zsol); CHKERRQ(ierr); // *djking
-//  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr); *djking
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr);
+//  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &zsol); CHKERRQ(ierr); // *djking
 
   ierr = VecRestoreArray(vsxx, &lsxx); CHKERRQ(ierr);
   ierr = VecRestoreArray(vPmag, &lPmag); CHKERRQ(ierr);
