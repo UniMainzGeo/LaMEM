@@ -975,7 +975,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx_ave);
 
-  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+//  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
 
   ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -1630,7 +1630,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &zsol); CHKERRQ(ierr); // *djking
 
 	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
-	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+//	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
 
 	PetscFunctionReturn(0);  
 }  
