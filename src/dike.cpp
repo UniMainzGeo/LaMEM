@@ -758,6 +758,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, vPmag, &Pmag); CHKERRQ(ierr);
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, vliththick, &liththick); CHKERRQ(ierr);
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr);
+
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr); // *djking
 
   // open linear buffer for send/receive  (returns the point, lsxx, that contains this processor portion of vector data, vsxx<<G.Ito)
@@ -861,11 +862,15 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 
   }
 
-  ///// store solidus in dike structure and find global max /// *djking
+  // store solidus in dike structure*djking
   START_PLANE_LOOP
   solidus[L][j][i] = zsol[L][j][i]; // store zsol in the solidus array outside function
-//  zsol_max_local = PetscMax(zsol[L][j][i], zsol_max_local); // finding max solidus (thinnest lithosphere)
   END_PLANE_LOOP
+  
+/*   ///// find solidus global max /// *djking
+  START_PLANE_LOOP
+//  zsol_max_local = PetscMax(zsol[L][j][i], zsol_max_local); // finding max solidus (thinnest lithosphere)
+  END_PLANE_LOOP */
 
 /*   MPI_Allreduce(&zsol_max_local, &zsol_max_global, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD);
   // this might be easier if we change solidus to a global vector in DBDikeCreate and passing ghosts at the end via:
@@ -960,6 +965,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vPmag, &Pmag); CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vliththick, &liththick); CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr);
+
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr); // *djking
 
   ierr = VecRestoreArray(vsxx, &lsxx); CHKERRQ(ierr);
@@ -972,6 +978,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vliththick); CHKERRQ(ierr);
   ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vzsol); CHKERRQ(ierr);
 
+
   //fill ghost points
 
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->magPressure);
@@ -983,7 +990,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx_ave);
 
-//  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
 //  ierr = VecGhostUpdateBegin(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
 //  ierr = VecGhostUpdateEnd(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
 
@@ -1640,7 +1647,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr); // *djking
 
 	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
-//	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
 
 	PetscFunctionReturn(0);  
 }  
