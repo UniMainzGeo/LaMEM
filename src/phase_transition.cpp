@@ -767,7 +767,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
                 ierr = MovingBox(PhaseTrans, ts, jr); CHKERRQ(ierr);
               }
 
-//              ierr = LinkNotInAirBoxes(PhaseTrans, jr); CHKERRQ(ierr);
+              ierr = LinkNotInAirBoxes(PhaseTrans, jr); CHKERRQ(ierr);
 
 	    }
 	    
