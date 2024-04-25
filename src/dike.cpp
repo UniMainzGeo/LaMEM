@@ -809,7 +809,6 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
           if ((Tc <= Tsol) && (Tsol < lT[k-1][j][i]))
           {
             zsol[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz])/(lT[k-1][j][i]-Tc)*(Tsol-Tc); 
-			solidus[L][j][i] = zsol[L][j][i]; // store zsol in the solidus array outside function
           }
       END_PLANE_LOOP
   } 
@@ -862,6 +861,19 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 
   }
 
+  ///// store solidus in dike structure and find global max /// *djking
+  START_PLANE_LOOP
+  solidus[L][j][i] = zsol[L][j][i]; // store zsol in the solidus array outside function
+//  zsol_max_local = PetscMax(zsol[L][j][i], zsol_max_local); // finding max solidus (thinnest lithosphere)
+  END_PLANE_LOOP
+
+/*   MPI_Allreduce(&zsol_max_local, &zsol_max_global, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD);
+  // this might be easier if we change solidus to a global vector in DBDikeCreate and passing ghosts at the end via:
+  // ierr = VecGhostUpdateBegin(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
+  // ierr = VecGhostUpdateEnd(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
+ */
+
+
   // (gdev is the array that shares data with devxx_mean and is indexed with global dimensions)
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr);
@@ -873,17 +885,6 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->smooth_sxx_ave, &smooth_gsxx_ave); CHKERRQ(ierr);
 
   //now all cores in z have the same solution so give that to the stress array
-
-/*	// finding max solidus (thinnest lithosphere) *djking
-	START_PLANE_LOOP  //testing this option
-		zsol_max_local = PetscMax(zsol[L][j][i], zsol_max_local); 
-		// this might be easier if we change solidus to a global vector in DBDikeCreate and passing ghosts at the end via:
-		ierr = VecGhostUpdateBegin(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
-    	ierr = VecGhostUpdateEnd(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
-	END_PLANE_LOOP
-	
-	MPI_Allreduce(&zsol_max_local, &zsol_max_global, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD);
-*/
 	magma_presence=1.0;  //testing
 
 	// calculate depth average stress (sxx) and excess magma pressure
@@ -982,7 +983,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx_ave);
 
-  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+//  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
 //  ierr = VecGhostUpdateBegin(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
 //  ierr = VecGhostUpdateEnd(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
 
@@ -1639,7 +1640,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr); // *djking
 
 	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
-	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+//	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
 
 	PetscFunctionReturn(0);  
 }  
