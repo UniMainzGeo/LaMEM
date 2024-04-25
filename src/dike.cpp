@@ -119,6 +119,9 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 											0, 0, 0, &jr->DA_CELL_2D_tave));
 			}
 
+			// creating global vectors
+			PetscCall(DMCreateGlobalVector(jr->DA_CELL_2D, &dike->solidus)); // *djking
+			
 			// creating local vectors and inializing the history vector
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->magPressure));
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->focused_magPressure));
@@ -129,8 +132,6 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->smooth_sxx));
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->smooth_sxx_ave));
 
-			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->solidus)); // *djking
-			
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D_tave, &dike->sxx_eff_ave_hist));
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D_tave, &dike->raw_sxx_ave_hist));
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D_tave, &dike->smooth_sxx_ave_hist));
@@ -978,7 +979,9 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx_ave);
 
-  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+//  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+//  ierr = VecGhostUpdateBegin(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
+//  ierr = VecGhostUpdateEnd(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
 
   ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -1633,7 +1636,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr); // *djking
 
 	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
-	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+//	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
 
 	PetscFunctionReturn(0);  
 }  
