@@ -701,13 +701,13 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 {
   MPI_Request srequest, rrequest;
-  Vec         vsxx, vPmag, vliththick; //, vzsol *djking
+  Vec         vsxx, vPmag, vliththick, vzsol; 
   PetscScalar ***magPressure, ***focused_magPressure;
   PetscScalar ***gsxx_eff_ave, ***p_lith;
   PetscScalar ***raw_gsxx, ***smooth_gsxx;
   PetscScalar ***raw_gsxx_ave, ***smooth_gsxx_ave;
   PetscScalar ***sxx, ***Pmag, ***liththick, ***zsol;
-  PetscScalar  *lsxx, *lPmag, *lliththick; //, *lzsol *djking
+  PetscScalar  *lsxx, *lPmag, *lliththick, *lzsol;
   PetscScalar dz, ***lT, Tc, *grav, Tsol, dPmag, magma_presence;
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L, ID, AirPhase;
   PetscMPIInt rank;
@@ -743,12 +743,12 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vsxx); CHKERRQ(ierr);
   ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vPmag); CHKERRQ(ierr);
   ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vliththick); CHKERRQ(ierr);
-//  ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vzsol); CHKERRQ(ierr); *djking
+  ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vzsol); CHKERRQ(ierr);
 
   ierr = VecZeroEntries(vsxx); CHKERRQ(ierr);
   ierr = VecZeroEntries(vPmag); CHKERRQ(ierr);
   ierr = VecZeroEntries(vliththick); CHKERRQ(ierr);
-//  ierr = VecZeroEntries(vzsol); CHKERRQ(ierr); *djking
+  ierr = VecZeroEntries(vzsol); CHKERRQ(ierr);
 
   // open index buffer for computation (sxx the array that shares data with vector vsxx and is indexed with global dimensions<<G.Ito)
   // DMDAVecGetArray(DM da,Vec vec,void *array) Returns a multiple dimension array that shares data with the underlying vector 
@@ -757,14 +757,14 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, vPmag, &Pmag); CHKERRQ(ierr);
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, vliththick, &liththick); CHKERRQ(ierr);
   ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &zsol); CHKERRQ(ierr); // *djking
-//  ierr = DMDAVecGetArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr); *djking
+//  ierr = DMDAVecGetArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr); // *djking
 
   // open linear buffer for send/receive  (returns the point, lsxx, that contains this processor portion of vector data, vsxx<<G.Ito)
   //Returns a pointer to a contiguous array that contains this processors portion of the vector data.
   ierr = VecGetArray(vsxx, &lsxx); CHKERRQ(ierr);
   ierr = VecGetArray(vPmag, &lPmag); CHKERRQ(ierr);
   ierr = VecGetArray(vliththick, &lliththick); CHKERRQ(ierr);
-//  ierr = VecGetArray(vzsol, &lzsol); CHKERRQ(ierr); *djking
+  ierr = VecGetArray(vzsol, &lzsol); CHKERRQ(ierr);
 
   //Access temperatures
   ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
@@ -782,8 +782,8 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
      ierr = MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
      ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
 
- //    ierr = MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr); *djking
- //    ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr); *djking
+    ierr = MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+    ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
 
   }
   Tsol=dike->Tsol;
@@ -824,8 +824,8 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
      ierr = MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
      ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
 
-//     ierr = MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr); *djking
-//     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr); *djking
+     ierr = MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
   }
       
 	//Now receive/send the answer from successive previous (underlying) procs so all procs have the answers
@@ -840,8 +840,8 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
      ierr = MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
      ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
 
-//     ierr = MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr); *djking
-//     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr); *djking
+     ierr = MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
   }
 
   if(dsz->nproc != 1 && dsz->grnext != -1)
@@ -855,8 +855,8 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
      ierr = MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
      ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
 
-//     ierr = MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr); *djking
-//     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr); *djking
+     ierr = MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
 
   }
 
@@ -956,12 +956,12 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = VecRestoreArray(vsxx, &lsxx); CHKERRQ(ierr);
   ierr = VecRestoreArray(vPmag, &lPmag); CHKERRQ(ierr);
   ierr = VecRestoreArray(vliththick, &lliththick); CHKERRQ(ierr);
-//  ierr = VecRestoreArray(vzsol, &lzsol); CHKERRQ(ierr); *djking
+  ierr = VecRestoreArray(vzsol, &lzsol); CHKERRQ(ierr);
 
   ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx); CHKERRQ(ierr);
   ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vPmag); CHKERRQ(ierr);  
   ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vliththick); CHKERRQ(ierr);
-//  ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vzsol); CHKERRQ(ierr); *djking
+  ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vzsol); CHKERRQ(ierr);
 
   //fill ghost points
 
