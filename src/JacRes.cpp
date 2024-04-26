@@ -1214,7 +1214,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		  dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
 		
 		  // save global dike divergence for debug output // *djking
-		  div_dike[k][j][i] = dikeRHS
+		  div_dike[k][j][i] = dikeRHS;
 		}
 
 		// access strain rates
