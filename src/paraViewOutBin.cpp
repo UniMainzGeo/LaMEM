@@ -299,6 +299,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->energ_res)      cnt++; // energy residual
 	if(omask->vel_gr_tensor)  cnt++; // velocity gradient tensor
 	if(omask->heat_source)    cnt++; // heat source  // *djking
+	if(omask->div_dike)       cnt++; // diking divergence // *djking
 
 
 	// phase aggregates
@@ -370,6 +371,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_heat_source",    &omask->heat_source,       1, 1); CHKERRQ(ierr); // *djking
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_div_dike",       &omask->div_dike,          1, 1); CHKERRQ(ierr); // *djking
 
 
 	// read phase aggregates
@@ -402,6 +404,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	// check
 	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0;   // heat diffusion is deactivated
 	if(!pvout->jr->ctrl.actTemp)             omask->heat_source = 0; // heat diffusion is deactivated // *djking
+//	if(!pvout->jr->ctrl.actDike)             omask->div_dike = 0;    // diking is deactivated // *djking
 	if( pvout->jr->ctrl.gwType == _GW_NONE_) omask->eff_press = 0;   // pore pressure is deactivated
 
 	// print summary
@@ -445,7 +448,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->melt_fraction)  PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction                           @ \n");
 	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
 	if(omask->vel_gr_tensor)  PetscPrintf(PETSC_COMM_WORLD, "   Velocity Gradient Tensor                @ \n");
-	if(omask->heat_source)    PetscPrintf(PETSC_COMM_WORLD, "   Heating                                 @ \n");  // *djking
+	if(omask->heat_source)    PetscPrintf(PETSC_COMM_WORLD, "   Heating                                 @ \n"); // *djking
+	if(omask->div_dike)       PetscPrintf(PETSC_COMM_WORLD, "   Dike Continuity RHS                     @ \n"); // *djking
 
 
 	for(i = 0; i < omask->num_agg; i++)
@@ -535,7 +539,8 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL);
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1, NULL);
 	if(omask->vel_gr_tensor)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "vel_gr_tensor",  scal->lbl_strain_rate,      &PVOutWriteVelocityGr,   9, NULL);
-	if(omask->heat_source)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rho_A",      scal->lbl_dissipation_rate, &PVOutWriteHeatSource,      1, NULL); // *djking
+	if(omask->heat_source)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rho_A",          scal->lbl_dissipation_rate, &PVOutWriteHeatSource,      1, NULL); // *djking
+	if(omask->div_dike)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "div_dike",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL); // *djking
 
 
 	// setup phase aggregate output vectors

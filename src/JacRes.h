@@ -228,6 +228,7 @@ struct JacRes
 
 	// continuity residual
 	Vec gc; // global
+	Vec dc; // dike contribution to residual (source term RHS) // *djking
 
 	// corner buffer
 	Vec lbcor; // local (ghosted)
