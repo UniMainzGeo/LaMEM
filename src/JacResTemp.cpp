@@ -216,6 +216,7 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	// energy residual
 	PetscCall(DMCreateGlobalVector(jr->DA_T, &jr->ge));
+	PetscCall(DMCreateGlobalVector(jr->DA_T, &jr->hs)); // *djking
 
 	// create temperature diffusion solver
 	PetscCall(KSPCreate(PETSC_COMM_WORLD, &jr->tksp));
@@ -243,6 +244,7 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	PetscCall(VecDestroy(&jr->dT));
 
 	PetscCall(VecDestroy(&jr->ge));
+	PetscCall(VecDestroy(&jr->hs)); // *djking
 
 	PetscCall(KSPDestroy(&jr->tksp));
 
@@ -426,6 +428,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
  	PetscScalar dx, dy, dz;
 	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;
+	PetscScalar ***heat_source; // *djking
 	PetscScalar ***vx,***vy,***vz;
 	PetscScalar y_c, x_c, z_c;
 
@@ -463,6 +466,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 
 	// access work vectors
 	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->ge,   &ge));
+	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->hs,   &heat_source)); // *djking
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk));
 	PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &hxy));
 	PetscCall(DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &hxz));
@@ -583,11 +587,13 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		// put right hand side to the left, which gives the following:
 
 		ge[k][j][i] = rho_Cp*(invdt*(Tc - Tn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho_A - Ha;
+		heat_source[k][j][i] = rho_A; // *djking
 	}
 	END_STD_LOOP
 
 	// restore access
 	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->ge,   &ge));
+	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->hs,   &heat_source));  // *djking
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk));
 	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &hxy));

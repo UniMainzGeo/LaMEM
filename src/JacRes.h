@@ -256,6 +256,7 @@ struct JacRes
 	Mat Att;  // temperature preconditioner matrix
 	Vec dT;   // temperature increment (global)
 	Vec ge;   // energy residual (global)
+	Vec hs;   // source heat added via rho_A (global) *djking
 	KSP tksp; // temperature diffusion solver
 
 	//==========================

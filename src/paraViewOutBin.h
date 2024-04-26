@@ -132,6 +132,7 @@ struct OutMask
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
 	PetscInt vel_gr_tensor;  // velocity gradient tensor
+	PetscInt heat_source;    // energy residual // *djking
 
 	// phase aggregates
 	PetscInt num_agg;                                              // number of phase aggregates
