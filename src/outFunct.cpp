@@ -926,7 +926,7 @@ PetscErrorCode PVOutWriteDikeRHS(OutVec* outvec) // *djking
 
 	cf  = scal->strain_rate;
 
-	ierr = JacResCopyContinuityRes(jr, jr->dc); CHKERRQ(ierr);
+	ierr = JacResCopyDikeRHS(jr, jr->dc); CHKERRQ(ierr);
 
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->dc, outbuf->lbcen)
 
