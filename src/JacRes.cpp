@@ -1098,6 +1098,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscInt    nD, L; // *djking
 	PetscScalar ***gsxx_eff_ave, sxx_eff_ave_cell; // *djking
+	PetscScalar ***gsolidus, zsolidus; // *djking
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
 	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
@@ -1181,6 +1182,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
 		dike = jr->dbdike->matDike + nD;
 		PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave)); // *revisit (can we disconnect from individual dike?)
+		PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &gsolidus)); // *revisit (can we disconnect from individual dike?)
 	}
 
 	START_STD_LOOP
@@ -1196,11 +1198,12 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		  y_c = COORD_CELL(j,sy,fs->dsy);
 		  sxx_eff_ave_cell = gsxx_eff_ave[L][j][i];
+		  zsolidus = gsolidus[L][j][i];
 		  
 		  dikeRHS = 0.0;
 
 		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-		  ierr = GetDikeContr(jr, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy, sxx_eff_ave_cell);  CHKERRQ(ierr); // *revisit (PetscInt I?)
+		  ierr = GetDikeContr(jr, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy, sxx_eff_ave_cell, zsolidus);  CHKERRQ(ierr); // *revisit (PetscInt I?)
 		  
 		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
 		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
@@ -1662,6 +1665,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+
+	// *djking
+	if (jr->ctrl.actDike)
+	{
+		PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
+		PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &gsolidus));
+	}
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)

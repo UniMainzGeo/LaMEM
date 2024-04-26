@@ -305,7 +305,8 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 							PetscScalar &dikeRHS,
 							PetscScalar &y_c,
 							PetscInt J,
-							PetscScalar sxx_eff_ave_cell) // *revisit (add PetscInt I if more than 1 dike?)
+							PetscScalar sxx_eff_ave_cell,
+							PetscScalar zsolidus) // *revisit (add PetscInt I if more than 1 dike?)
 
 {
 
@@ -342,10 +343,8 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 
 			if (CurrPhTr->ID == dike->PhaseTransID) // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
 			{
-				// find solidus
-
 				// if in the dike zone
-				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
+				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J]) // add solidus criteria
 				{
 					nsegs = CurrPhTr->nsegs;
 
@@ -887,9 +886,20 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	zsol_max_local = PetscMax(zsol[L][j][i], zsol_max_local); // finding local max solidus (thinnest lithosphere)
 	END_PLANE_LOOP
 	MPI_Allreduce(&zsol_max_local, &zsol_max_global, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); // find solidus global max
-	// this might be easier if we change solidus to a global vector in DBDikeCreate and passing ghosts at the end via:
-	// ierr = VecGhostUpdateBegin(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
-	// ierr = VecGhostUpdateEnd(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
+
+/* 	// to find 2 peaks if we switch to using focused_magPressure *djking testing
+	PetscScalar zsol_max_local[2] = {-PETSC_MAX_REAL, -PETSC_MAX_REAL}; // Array to store local top two maxima
+    PetscScalar zsol_max_global[2];
+	    START_PLANE_LOOP
+        solidus[L][j][i] = zsol[L][j][i];
+        if (zsol[L][j][i] > zsol_max_local[0]) {
+            zsol_max_local[1] = zsol_max_local[0];
+            zsol_max_local[0] = zsol[L][j][i];
+        } else if (zsol[L][j][i] > zsol_max_local[1]) {
+            zsol_max_local[1] = zsol[L][j][i];
+        }
+    END_PLANE_LOOP
+	MPI_Allreduce(&zsol_max_local, &zsol_max_global, 2, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); */
 
 	// calculate depth average stress (sxx) and excess magma pressure
 	START_PLANE_LOOP
