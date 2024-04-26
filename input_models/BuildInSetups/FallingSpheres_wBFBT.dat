@@ -62,8 +62,8 @@
 	gravity        = 0.0 0.0 -1.0   # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	init_guess     = 0              # initial guess flag
-	eta_min        = 1e-3           # viscosity upper bound
-	eta_max        = 1e12           # viscosity lower limit
+	eta_min        = 0.1            # viscosity lower bound
+	eta_max        = 1e12           # viscosity upper limit
 
 
 #===============================================================================
@@ -179,9 +179,9 @@
 
 	# Define properties of spheres
 	<MaterialStart>
-		ID  = 1   # phase id
-		rho = 2   # density
-		eta = 10 # viscosity
+		ID  = 1    # phase id
+		rho = 2    # density
+		eta = 1000 # viscosity
 	<MaterialEnd>
 
 #===============================================================================
@@ -190,65 +190,50 @@
 
 <PetscOptionsStart>
 
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly 		# no nonlinear solver
+# LINEAR & NONLINEAR SOLVER OPTIONS
+-snes_type ksponly 		# no nonlinear solver
+-js_ksp_type fgmres
+-js_ksp_max_it 1000
+-js_ksp_monitor
+-js_ksp_rtol 1e-6
 
-	-js_ksp_type fgmres
-	-js_ksp_max_it 1000
-	-js_ksp_monitor
-	-js_ksp_rtol 1e-6
+# wBFBT PRECONDITIONER WITH MULTIGRID
 
-#	-pcmat_type block
-#	-pcmat_pgamma 1e3
-#	-jp_type bf
-#	-bf_type upper
-#	-bf_vs_type user
-#	-vs_ksp_type preonly
-#	-vs_pc_type lu
-#	-vs_pc_factor_mat_solver_package mumps
+-pcmat_type block
+#-pcmat_schur_type wbfbt
+-pcmat_schur_type inv_eta
+
+-jp_type bf
+
+-bf_type lower
+-bf_vs_type mg
+
+-vs_ksp_type preonly
+
+#-ks_ksp_type preonly
+#-ks_pc_type mg
+#-ks_pc_mg_levels 4
+#-ks_pc_mg_galerkin
+#-ks_pc_mg_type multiplicative
+#-ks_pc_mg_cycle_type v
 
 
-	-pcmat_type block
-	-pcmat_schur_type wbfbt
-	-jp_type bf
-	-bf_type upper
-	-bf_vs_type mg
-	-vs_ksp_type gmres
-	-vs_ksp_rtol 1e-2
-	-vs_ksp_max_it 10
-
-	-ks_ksp_type gmres
-	-ks_ksp_rtol 1e-2
-	-ks_ksp_max_it 10
-
-	-ks_pc_type mg
-	-ks_pc_mg_levels 3
-	-ks_pc_mg_galerkin
-	-ks_pc_mg_type multiplicative
-	-ks_pc_mg_cycle_type v
-
-#	-pcmat_type mono
-#	-jp_type mg
-
-	-gmg_pc_type mg
-	-gmg_pc_mg_levels 4
-	-gmg_pc_mg_galerkin
-	-gmg_pc_mg_type multiplicative
-	-gmg_pc_mg_cycle_type v
-
-	-gmg_mg_levels_ksp_type richardson
-	-gmg_mg_levels_ksp_richardson_scale 0.5
-	-gmg_mg_levels_ksp_max_it 20
-	-gmg_mg_levels_pc_type jacobi
-
-	-crs_ksp_type preonly
-	-crs_pc_type lu
-	-crs_pc_factor_mat_solver_package mumps
-
+-gmg_pc_type mg
+-gmg_pc_mg_levels 4
+-gmg_pc_mg_galerkin
+-gmg_pc_mg_type multiplicative
+-gmg_pc_mg_cycle_type v
+-gmg_mg_levels_ksp_type richardson
+-gmg_mg_levels_ksp_richardson_scale 0.5
+-gmg_mg_levels_ksp_max_it 20
+-gmg_mg_levels_pc_type jacobi
+-crs_ksp_type preonly
+-crs_pc_type lu
+-crs_pc_factor_mat_solver_type mumps
 
 #-vs_ksp_view
 #-crs_ksp_view
--ps_ksp_view
+#-ks_ksp_view
 
 
 <PetscOptionsEnd>
