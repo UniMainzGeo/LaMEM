@@ -35,7 +35,7 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-  PetscCall(JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i], COORD_CELL(j,sy,fs->dsy), COORD_CELL(i,sx,fs->dsx), COORD_CELL(k,sz,fs->dsz), j-sy, 1.0)); \
+  PetscCall(JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i], COORD_CELL(j,sy,fs->dsy), COORD_CELL(i,sx,fs->dsx), COORD_CELL(k,sz,fs->dsz), j-sy, 1.0, 1.0)); \
   buff[k][j][i] = kc;   // added one NULL because of the new variables that are passed
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
@@ -56,7 +56,8 @@ PetscErrorCode JacResGetTempParam(
     PetscScalar x_c,      // center of cell in x-direction
     PetscScalar z_c,      // center of cell in z-direction
     PetscInt J,           // coordinate of cell
-    PetscScalar sxx_eff_ave_cell) // lithospheric sxx
+    PetscScalar sxx_eff_ave_cell,
+	PetscScalar zsolidus) // lithospheric sxx
 
 {
 	// compute effective energy parameters in the cell
@@ -124,12 +125,12 @@ PetscErrorCode JacResGetTempParam(
 
 	if (ctrl.actDike && ctrl.dikeHeat)
 	{
-		PetscCall(Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c, J, sxx_eff_ave_cell));
+		PetscCall(Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c, z_c, J, sxx_eff_ave_cell, zsolidus));
 	}
 
 	if (ctrl.actHeatZone)
 	{
-		PetscCall(GetHeatZoneSource(jr, phases, Tc, phRat, rho_A, y_c, x_c, z_c, J, sxx_eff_ave_cell));
+		PetscCall(GetHeatZoneSource(jr, phases, Tc, phRat, rho_A, y_c, x_c, z_c, J, sxx_eff_ave_cell, zsolidus));
 	}
 
 	// store
@@ -421,6 +422,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscInt    nD, L; // *djking
 	PetscScalar ***gsxx_eff_ave, sxx_eff_ave_cell; // *djking
+	PetscScalar ***gsolidus, zsolidus; // *djking
  	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
@@ -489,6 +491,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
 		dike = jr->dbdike->matDike + nD;
 		PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave)); // *revisit (can we disconnect from individual dike?)
+		PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &gsolidus)); // *revisit (can we disconnect from individual dike?)
 	}
 
 	START_STD_LOOP
@@ -511,12 +514,13 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		if (jr->ctrl.actDike)
 		{
 			sxx_eff_ave_cell = gsxx_eff_ave[L][j][i];
+			zsolidus = gsolidus[L][j][i];
 
-			PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, x_c, z_c, j-sy, sxx_eff_ave_cell));
+			PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, x_c, z_c, j-sy, sxx_eff_ave_cell, zsolidus));
 		}
 		else
 		{
-			PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, x_c, z_c, j-sy, 1.0));
+			PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, x_c, z_c, j-sy, 1.0, 1.0));
 		}
 		
 
@@ -604,6 +608,12 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz) );
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &P)  );
 
+	// *djking
+	if (jr->ctrl.actDike)
+	{
+		PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
+		PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &gsolidus));
+	}
 
 	// impose primary temperature constraints
 	PetscCall(VecGetArray(jr->ge, &e));
@@ -685,7 +695,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		Tc  = lT[k][j][i]; // current temperature
 		
 		// conductivity, heat capacity
-		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, y_c, x_c, z_c, j-sy, 1.0));
+		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, y_c, x_c, z_c, j-sy, 1.0, 1.0));
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }

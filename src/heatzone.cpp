@@ -225,7 +225,8 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 								 PetscScalar &x_c,
 								 PetscScalar &z_c,
 								 PetscInt J,
-								 PetscScalar sxx_eff_ave_cell)
+								 PetscScalar sxx_eff_ave_cell,
+								 PetscScalar zsolidus)
 
 {
 	HeatZone *heatzone;
@@ -339,7 +340,7 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 			if (jr->ctrl.actDike && jr->ctrl.dikeHeat)
 			{
 				// Subtract heat added via diking
-				PetscCall(SubtractDikeHeatSource(jr, phases, Tc, phRat, hz_contr, y_c, J, sxx_eff_ave_cell));
+				PetscCall(SubtractDikeHeatSource(jr, phases, Tc, phRat, hz_contr, y_c, z_c, J, sxx_eff_ave_cell, zsolidus));
 			}
 
 			rho_A += hz_contr; // add heating to energy equation as source term
@@ -356,8 +357,10 @@ PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
 									  PetscScalar *phRat,
 									  PetscScalar &hz_contr,
 									  PetscScalar &y_c,
+									  PetscScalar &z_c,
 									  PetscInt J,
-									  PetscScalar sxx_eff_ave_cell)
+									  PetscScalar sxx_eff_ave_cell,
+									  PetscScalar zsolidus)
 
 {
 	// parameters to determine dilation term
@@ -400,6 +403,7 @@ PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
 			{
 				// if in the dike zone
 				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
+				//if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J] && z_c >= zsolidus) // *djking
 				{
 					nsegs = CurrPhTr->nsegs;
 

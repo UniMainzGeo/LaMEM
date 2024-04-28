@@ -92,6 +92,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
                             PetscInt &AirPhase,
                             PetscScalar &dikeRHS,
                             PetscScalar &y_c,
+                            PetscScalar &z_c,
                             PetscInt J,
                             PetscScalar sxx_eff_ave_cell,
                             PetscScalar zsolidus); // *revisit (PetscInt I)
@@ -104,8 +105,10 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar &k,
                                 PetscScalar &rho_A,
                                 PetscScalar &y_c,
+                                PetscScalar &z_c,
                                 PetscInt J,
-                                PetscScalar sxx_eff_ave_cell); 
+                                PetscScalar sxx_eff_ave_cell,
+                                PetscScalar zsolidus); 
 
 PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD);
 PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);

@@ -304,6 +304,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 							PetscInt &AirPhase,
 							PetscScalar &dikeRHS,
 							PetscScalar &y_c,
+							PetscScalar &z_c,
 							PetscInt J,
 							PetscScalar sxx_eff_ave_cell,
 							PetscScalar zsolidus) // *revisit (add PetscInt I if more than 1 dike?)
@@ -344,7 +345,8 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 			if (CurrPhTr->ID == dike->PhaseTransID) // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
 			{
 				// if in the dike zone
-				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J]) // add solidus criteria
+				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
+				// if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J] && z_c >= zsolidus) // solidus *djking
 				{
 					nsegs = CurrPhTr->nsegs;
 
@@ -445,8 +447,10 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 								 PetscScalar &k,
 								 PetscScalar &rho_A,
 								 PetscScalar &y_c,
+								 PetscScalar &z_c,
 								 PetscInt J,
-								 PetscScalar sxx_eff_ave_cell)
+								 PetscScalar sxx_eff_ave_cell,
+								 PetscScalar zsolidus)
 
 {
 	// parameters to determine dilation term
@@ -488,10 +492,9 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 
 			if (CurrPhTr->ID == dike->PhaseTransID) // compare the phaseTransID associated with the dike with the actual ID of the phase transition in this cell
 			{
-				// find solidus
-
 				// if in the dike zone
-				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J])
+				if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J]) // solidus *djking
+				// if (phRat[i] > 0 && CurrPhTr->celly_xboundR[J] > CurrPhTr->celly_xboundL[J] && z_c >= zsolidus) // solidus *djking
 				{
 					nsegs = CurrPhTr->nsegs;
 
