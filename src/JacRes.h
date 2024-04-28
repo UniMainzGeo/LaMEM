@@ -332,7 +332,7 @@ PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f);
 // copy continuity residuals from global to local vectors for output
 PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
 
-// copy dikeRHS continuity from global to local vectors for output
+// copy dikeRHS continuity from global to local vectors for output // *djking
 PetscErrorCode JacResCopyDikeRHS(JacRes *jr, Vec f);
 
 PetscErrorCode JacResViewRes(JacRes *jr);

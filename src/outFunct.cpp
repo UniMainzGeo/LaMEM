@@ -922,7 +922,36 @@ PetscErrorCode PVOutWriteHeatSource(OutVec* outvec) // *djking
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteDikeRHS(OutVec* outvec) // *djking
 {
+	FDSTAG      *fs;
+	PetscScalar ***lbcen, ***div_dike;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
 	ACCESS_FUNCTION_HEADER
+
+	cf = scal->dissipation_rate;
+
+	fs = jr->fs;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_T,   jr->dc,         &div_dike);    CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		lbcen[k][j][i] = div_dike[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_T,   jr->dc,         &div_dike);    CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
+
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
+
+	PetscFunctionReturn(0);
+/* 	ACCESS_FUNCTION_HEADER
 
 	cf  = scal->strain_rate;
 
@@ -932,6 +961,6 @@ PetscErrorCode PVOutWriteDikeRHS(OutVec* outvec) // *djking
 
 	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 
-	PetscFunctionReturn(0);
+	PetscFunctionReturn(0); */
 }
 //---------------------------------------------------------------------------

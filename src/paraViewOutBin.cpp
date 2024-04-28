@@ -540,7 +540,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1, NULL);
 	if(omask->vel_gr_tensor)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "vel_gr_tensor",  scal->lbl_strain_rate,      &PVOutWriteVelocityGr,   9, NULL);
 	if(omask->heat_source)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rho_A",          scal->lbl_dissipation_rate, &PVOutWriteHeatSource,      1, NULL); // *djking
-	if(omask->div_dike)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "div_dike",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL); // *djking
+	if(omask->div_dike)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "div_dike",       scal->lbl_strain_rate,      &PVOutWriteDikeRHS,      1, NULL); // *djking
 
 
 	// setup phase aggregate output vectors
