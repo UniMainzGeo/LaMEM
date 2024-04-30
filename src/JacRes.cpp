@@ -1745,11 +1745,6 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 
 		if(fj && fk) SET_EDGE_CORNER(lvx, K, J, i, k, j, i, pmdof)
 
-        /* 
-            Note: a special case occurs for 2D setups, in which nel_y==1
-        */
-       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fj && fk )  SET_EDGE_CORNER(lvx, K, J, i, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 
@@ -1797,11 +1792,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 
-		/* 
-            Note: a special case occurs for 2D setups with nel_y==1
-        */
-       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fi && fj) SET_EDGE_CORNER(lvz, k, J, I, k, j, i, pmdof)
+		if(fi && fj) SET_EDGE_CORNER(lvz, k, J, I, k, j, i, pmdof)
 
 	}
 	END_STD_LOOP

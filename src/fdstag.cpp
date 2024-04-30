@@ -67,6 +67,12 @@ PetscErrorCode MeshSeg1DReadParam(
 	}
 	ms->istart[ms->nsegs] = tcels;
 
+	// check total number of cells
+	if(tcels < 2)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Less than two cells are specified in the %s - direction\n", dir);
+	}
+
 	// check ordering
 	for(i = 0; i < ms->nsegs; i++)
 	{
