@@ -409,7 +409,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr);
 	if(bc[k][j][i] == DBL_MAX) a[k][j][i] = pmdof; \
 	else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
 
-#define SET_EDGE_CORNER(n, a, K, J, I, k, j, i, pmdof) \
+#define SET_EDGE_CORNER(a, K, J, I, k, j, i, pmdof) \
 	a[K][J][I] = a[k][j][I] + a[k][J][i] + a[K][j][i] - 2.0*pmdof;
 
 //---------------------------------------------------------------------------

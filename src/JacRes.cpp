@@ -49,7 +49,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;
 	ctrl->FSSA         =  1.0;
-	ctrl->FSSA_allVel  =  0;
 	ctrl->AdiabHeat    =  0.0;
 	ctrl->shearHeatEff =  1.0;
 	ctrl->biot         =  1.0;
@@ -1088,7 +1087,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
-	PetscInt    iter, fssa_allVel;
+	PetscInt    iter;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
@@ -1121,9 +1120,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz  = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	fssa   			=  	jr->ctrl.FSSA; 			// Density gradient penalty parameter
-	fssa_allVel		=	jr->ctrl.FSSA_allVel; 	// Use all velocity components for FSSA or only Vz? 
-
+	fssa   			=  	jr->ctrl.FSSA; // Density gradient penalty parameter
 	grav   			=  	jr->ctrl.grav; // gravity acceleration
 	dt     			=  	jr->ts->dt;    // time step
 
@@ -1270,17 +1267,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// momentum
-		if (fssa_allVel){
-			fx[k][j][i] -= (sxx + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1] + vy[k][j][i+1] + vz[k][j][i+1])*tx)/fdx - gx/2.0;
-			fy[k][j][i] -= (syy + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vx[k][j+1][i] + vy[k][j+1][i] + vz[k][j+1][i])*ty)/fdy - gy/2.0;
-			fz[k][j][i] -= (szz + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vx[k+1][j][i] + vy[k+1][j][i] + vz[k+1][j][i])*tz)/fdz - gz/2.0;
-		}
-		else{
-			fx[k][j][i] -= (sxx + (vx[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1])*tx)/fdx - gx/2.0;
-			fy[k][j][i] -= (syy + (vy[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vy[k][j+1][i])*ty)/fdy - gy/2.0;
-			fz[k][j][i] -= (szz + (vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vz[k+1][j][i])*tz)/fdz - gz/2.0;
-		}
-
+		fx[k][j][i] -= (sxx + (vx[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1])*tx)/fdx - gx/2.0;
+		fy[k][j][i] -= (syy + (vy[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vy[k][j+1][i])*ty)/fdy - gy/2.0;
+		fz[k][j][i] -= (szz + (vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vz[k+1][j][i])*tz)/fdz - gz/2.0;
 
 		// pressure boundary constraints
 		if(i == 0   && bcp[k][j][i-1] != DBL_MAX) fx[k][j][i]   += -p[k][j][i-1]/bdx;
@@ -1755,13 +1744,13 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
 
-		if(fj && fk) SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
+		if(fj && fk) SET_EDGE_CORNER(lvx, K, J, i, k, j, i, pmdof)
 
         /* 
             Note: a special case occurs for 2D setups, in which nel_y==1
         */
        	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fj && fk )  SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
+        if(fj && fk )  SET_EDGE_CORNER(lvx, K, J, i, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 
@@ -1784,7 +1773,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 
-		if(fi && fk) SET_EDGE_CORNER(n, lvy, K, j, I, k, j, i, pmdof)
+		if(fi && fk) SET_EDGE_CORNER(lvy, K, j, I, k, j, i, pmdof)
 
 	}
 	END_STD_LOOP
@@ -1813,7 +1802,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
             Note: a special case occurs for 2D setups with nel_y==1
         */
        	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fi && fj) SET_EDGE_CORNER(n, lvz, k, J, I, k, j, i, pmdof)
+        if(fi && fj) SET_EDGE_CORNER(lvz, k, J, I, k, j, i, pmdof)
 
 	}
 	END_STD_LOOP
@@ -1902,10 +1891,10 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcp, lp, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcp, lp, K, j, i, pmdof) }
 
-		if(fi && fj)       SET_EDGE_CORNER(n, lp, k, J, I, k, j, i, pmdof)
-		if(fi && fk)       SET_EDGE_CORNER(n, lp, K, j, I, k, j, i, pmdof)
-		if(fj && fk)       SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk) SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
+		if(fi && fj)       SET_EDGE_CORNER(lp, k, J, I, k, j, i, pmdof)
+		if(fi && fk)       SET_EDGE_CORNER(lp, K, j, I, k, j, i, pmdof)
+		if(fj && fk)       SET_EDGE_CORNER(lp, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk) SET_EDGE_CORNER(lp, K, J, I, k, j, i, pmdof)
 
 		 /* 
             Note: a special case occurs for 2D setups with nel_y==1
@@ -1913,12 +1902,9 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
             to ensure that both front & back side are accounted for.
         */
        	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fi && fj )           SET_EDGE_CORNER(n, lp, k, J, I, k, j, i, pmdof)
-        if(fj && fk )           SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk   )   SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
-
-
-
+        if(fi && fj )           SET_EDGE_CORNER(lp, k, J, I, k, j, i, pmdof)
+        if(fj && fk )           SET_EDGE_CORNER(lp, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk   )   SET_EDGE_CORNER(lp, K, J, I, k, j, i, pmdof)
 
 	}
 	END_STD_LOOP
