@@ -15,6 +15,8 @@
 #include "matFree.h"
 #include "fdstag.h"
 #include "JacRes.h"
+#include "matrix.h"
+#include "bc.h"
 #include "tssolve.h"
 
 //---------------------------------------------------------------------------
@@ -46,21 +48,30 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
 PetscErrorCode JacResPicardMatFree(JacRes *jr)
 {
 	FDSTAG     *fs;
+	BCCtx      *bc;
+	PetscInt    mcx, mcy, mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar dx, dy, dz, tx, ty, tz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar dxx, dyy, dzz, dvxdy, dvydx, dvxdz, dvzdx, dvydz, dvzdy;
-	PetscScalar eta, theta, tr, rho, IKdt, pc, dt, fssa, *grav;
+	PetscScalar eta, theta, tr, rho, IKdt, pc, dt, fssa, *grav, cf[6];
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***p;
+	PetscScalar ***bcp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs   = jr->fs;
+	bc   = jr->bc;
 	dt   = jr->ts->dt;      // time step
 	fssa = jr->ctrl.FSSA;  // density gradient penalty parameter
     grav = jr->ctrl.grav;  // gravity acceleration
+
+	// initialize index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
 
     // clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -77,6 +88,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp); CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -114,10 +126,18 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		// access current pressure
 		pc = p[k][j][i];
 
-		// compute total Cauchy stresses
-		sxx = 2.0*eta*dxx - pc;
-		syy = 2.0*eta*dyy - pc;
-		szz = 2.0*eta*dzz - pc;
+		// set pressure two-point constraints
+		SET_PRES_TPC(bcp, i-1, j,   k,   i, 0,   cf[0])
+		SET_PRES_TPC(bcp, i+1, j,   k,   i, mcx, cf[1])
+		SET_PRES_TPC(bcp, i,   j-1, k,   j, 0,   cf[2])
+		SET_PRES_TPC(bcp, i,   j+1, k,   j, mcy, cf[3])
+		SET_PRES_TPC(bcp, i,   j,   k-1, k, 0,   cf[4])
+		SET_PRES_TPC(bcp, i,   j,   k+1, k, mcz, cf[5])
+
+		// compute deviatoric stresses
+		sxx = 2.0*eta*dxx;
+		syy = 2.0*eta*dyy;
+		szz = 2.0*eta*dzz;
 
 		// compute stabilization terms (lumped approximation)
 		tx = -fssa*dt*(rho*grav[0]);
@@ -130,9 +150,9 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// momentum
-		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx;
-		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy;
-		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz;
+		fx[k][j][i] -= ((sxx - cf[0]*pc) + vx[k][j][i]*tx)/bdx;   fx[k][j][i+1] += ((sxx - cf[1]*pc) + vx[k][j][i+1]*tx)/fdx;
+		fy[k][j][i] -= ((syy - cf[2]*pc) + vy[k][j][i]*ty)/bdy;   fy[k][j+1][i] += ((syy - cf[3]*pc) + vy[k][j+1][i]*ty)/fdy;
+		fz[k][j][i] -= ((szz - cf[4]*pc) + vz[k][j][i]*tz)/bdz;   fz[k+1][j][i] += ((szz - cf[5]*pc) + vz[k+1][j][i]*tz)/fdz;
 
 		// mass
 		gc[k][j][i] = -IKdt*pc - theta;
@@ -245,6 +265,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,  &bcp); CHKERRQ(ierr);
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
