@@ -163,10 +163,8 @@ struct Controls
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
-
-  PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
-
-  PetscInt  dikeHeat;   // activation flag for using Behn & Ito heat source in dike
+	PetscInt    useTk;          // activation flag for using temperature-dependent conductivity
+	PetscInt    dikeHeat;       // activation flag for using Behn & Ito heat source in dike
 };
 
 //---------------------------------------------------------------------------
@@ -176,14 +174,14 @@ struct Controls
 struct JacRes
 {
 	// external handles
-	Scaling  *scal;  // scaling
-	TSSol    *ts;    // time-stepping parameters
-	FDSTAG   *fs;    // staggered-grid layout
-	FreeSurf *surf;  // free surface
-	BCCtx    *bc;    // boundary condition context
-    DBPropDike *dbdike; // dike database
-	DBMat    *dbm;   // material database
-  
+	Scaling    *scal;   // scaling
+	TSSol      *ts;     // time-stepping parameters
+	FDSTAG     *fs;     // staggered-grid layout
+	FreeSurf   *surf;   // free surface
+	BCCtx      *bc;     // boundary condition context
+	DBPropDike *dbdike; // dike database
+	DBMat      *dbm;    // material database
+
 	// parameters and controls
 	Controls ctrl;
 
@@ -257,7 +255,6 @@ struct JacRes
 	// 2D integration primitives
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
-
 
 	//===========================================
 	// 2D planview plus levels for time averaging
