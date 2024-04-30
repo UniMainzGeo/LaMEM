@@ -119,7 +119,6 @@ struct Controls
 {
 	PetscScalar grav[3];       // global gravity components
 	PetscScalar FSSA;          // free surface stabilization parameter [0 - 1]
-	PetscInt    FSSA_allVel;   // Use all velocity components for FSSA?
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
