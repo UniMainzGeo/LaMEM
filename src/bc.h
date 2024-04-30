@@ -388,6 +388,7 @@ PetscErrorCode BCGetBGStrainRates(
 		PetscScalar *Rxx_,
 		PetscScalar *Ryy_,
 		PetscScalar *Rzz_);
+
 //change velin in accordance with given time intervals
 PetscErrorCode BCGetVelins(
 		BCCtx       *bc);
