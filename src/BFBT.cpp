@@ -22,8 +22,6 @@
 #include "lsolve.h"
 #include "BFBT.h"
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBFBTCreate"
 PetscErrorCode PMatBFBTCreate(PMat pm)
 {
 	PMatBlock      *P;
@@ -78,8 +76,6 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBFBTAssemble"
 PetscErrorCode PMatBFBTAssemble(PMat pm)
 {
 	PMatBlock  *P;
@@ -298,8 +294,6 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PMatBFBTDestroy"
 PetscErrorCode PMatBFBTDestroy(PMat pm)
 {
 	PMatBlock *P;
@@ -320,8 +314,6 @@ PetscErrorCode PMatBFBTDestroy(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFBTApply"
 PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y)
 {
 	//=============

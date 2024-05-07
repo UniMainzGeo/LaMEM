@@ -81,7 +81,6 @@ struct NLSol
 	PetscScalar rtolPic;  // relative Picard residual reduction tolerance
 	PetscInt    nNwtIt;   // number of Newton iterations before switch to Picard
 	PetscScalar rtolNwt;  // Newton divergence tolerance
-
 } ;
 
 //---------------------------------------------------------------------------
@@ -108,7 +107,6 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y);
 
 PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg);
 
-
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,
 	PetscInt            it,
@@ -121,5 +119,7 @@ PetscErrorCode SNESCoupledTest(
 //---------------------------------------------------------------------------
 
 PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes);
+
+//---------------------------------------------------------------------------
 
 #endif

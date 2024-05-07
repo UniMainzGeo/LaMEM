@@ -32,4 +32,11 @@ PetscErrorCode JacResGetJ2Derivatives(JacRes *jr);
 PetscErrorCode JacResJacobianMatFree(JacRes *jr);
 */
 //---------------------------------------------------------------------------
+// MACROS
+//---------------------------------------------------------------------------
+
+// set velocity two-point constraint
+#define SET_VEL_TPC(bc, i, j, k, ind, lim, icf, gcf) { if(ind == lim) { gcf = 0.0; if(bc[k][j][i] != DBL_MAX) { icf = 2.0; } else { icf = 0.0; } } }
+
+//---------------------------------------------------------------------------
 #endif

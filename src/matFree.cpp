@@ -20,8 +20,6 @@
 #include "tssolve.h"
 
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacApplyPicard"
 PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
 {
 	JacRes *jr;
@@ -32,46 +30,54 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
 	// access context
 	ierr = MatShellGetContext(A, (void**)&jr); CHKERRQ(ierr);
 
-	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
+	// copy solution from global to local vectors, do not enforce boundary constraints
+	ierr = JacResCopyVelNoBC(jr, x); CHKERRQ(ierr);
 
+	// compute matrix-free matrix-vector product
 	ierr = JacResPicardMatFree(jr); CHKERRQ(ierr);
 
-	// copy residuals to global vector
+	// assemble residuals to global vector
 	ierr = JacResCopyRes(jr, y); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResPicardMatFree"
 PetscErrorCode JacResPicardMatFree(JacRes *jr)
 {
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	PetscInt    mcx, mcy, mcz;
+	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar dx, dy, dz, tx, ty, tz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar dxx, dyy, dzz, dvxdy, dvydx, dvxdz, dvzdx, dvydz, dvzdy;
-	PetscScalar eta, theta, tr, rho, IKdt, pc, dt, fssa, *grav, cf[6];
+	PetscScalar eta, theta, tr, rho, IKdt, pc, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***p;
-	PetscScalar ***bcp;
+
+	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
+	PetscScalar cf[6];
+//	PetscInt    rescal;
+//	PetscScalar dr;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	fs   = jr->fs;
-	bc   = jr->bc;
-	dt   = jr->ts->dt;      // time step
-	fssa = jr->ctrl.FSSA;  // density gradient penalty parameter
-    grav = jr->ctrl.grav;  // gravity acceleration
+	fs     = jr->fs;
+	bc     = jr->bc;
+	dt     = jr->ts->dt;      // time step
+	fssa   = jr->ctrl.FSSA;   // density gradient penalty parameter
+	grav   = jr->ctrl.grav;   // gravity acceleration
+//    rescal = jr->ctrl.rescal; // stencil rescaling flag
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
 	mcy = fs->dsy.tcels - 1;
 	mcz = fs->dsz.tcels - 1;
+	mnx = fs->dsx.tnods - 1;
+	mny = fs->dsy.tnods - 1;
+	mnz = fs->dsz.tnods - 1;
 
     // clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -88,7 +94,12 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp); CHKERRQ(ierr);
+
+	// access boundary constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx,  &bcvx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);   CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -118,7 +129,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		theta = dxx + dyy + dzz;
 
 		// compute & store total deviatoric strain rates
-		tr  = theta/3.0;
+		tr   = theta/3.0;
 		dxx -= tr;
 		dyy -= tr;
 		dzz -= tr;
@@ -167,6 +178,18 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 
 	START_STD_LOOP
 	{
+		// initialize scaling factors
+		cf[0] = 1.0;
+		cf[1] = 1.0;
+		cf[2] = 1.0;
+		cf[3] = 1.0;
+
+		// set velocity two-point constraints
+		SET_VEL_TPC(bcvx, i,   j-1, k, j, 0,   cf[1], cf[0])
+		SET_VEL_TPC(bcvx, i,   j,   k, j, mny, cf[0], cf[1])
+		SET_VEL_TPC(bcvy, i-1, j,   k, i, 0,   cf[3], cf[2])
+		SET_VEL_TPC(bcvy, i,   j,   k, i, mnx, cf[2], cf[3])
+
 		// get effective viscosity
 		eta = jr->svXYEdge[iter++].svDev.eta;
 
@@ -175,8 +198,8 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		dy = SIZE_NODE(j, sy, fs->dsy);
 
 		// compute velocity gradients
-		dvxdy = (vx[k][j][i] - vx[k][j-1][i])/dy;
-		dvydx = (vy[k][j][i] - vy[k][j][i-1])/dx;
+		dvxdy = (cf[1]*vx[k][j][i] - cf[0]*vx[k][j-1][i])/dy;
+		dvydx = (cf[3]*vy[k][j][i] - cf[2]*vy[k][j][i-1])/dx;
 
 		// compute stress
 		sxy = eta*(dvxdy + dvydx);
@@ -200,6 +223,18 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 
 	START_STD_LOOP
 	{
+		// initialize scaling factors
+		cf[0] = 1.0;
+		cf[1] = 1.0;
+		cf[2] = 1.0;
+		cf[3] = 1.0;
+
+		// set velocity two-point constraints
+		SET_VEL_TPC(bcvx, i,   j,   k-1, k, 0,   cf[1], cf[0])
+		SET_VEL_TPC(bcvx, i,   j,   k,   k, mnz, cf[0], cf[1])
+		SET_VEL_TPC(bcvz, i-1, j,   k,   i, 0,   cf[3], cf[2])
+		SET_VEL_TPC(bcvz, i,   j,   k,   i, mnx, cf[2], cf[3])
+
 		// get effective viscosity
 		eta = jr->svXZEdge[iter++].svDev.eta;
 
@@ -208,11 +243,11 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		dz = SIZE_NODE(k, sz, fs->dsz);
 
 		// compute velocity gradients
-		dvxdz = (vx[k][j][i] - vx[k-1][j][i])/dz;
-		dvzdx = (vz[k][j][i] - vz[k][j][i-1])/dx;
+		dvxdz = (cf[1]*vx[k][j][i] - cf[0]*vx[k-1][j][i])/dz;
+		dvzdx = (cf[3]*vz[k][j][i] - cf[2]*vz[k][j][i-1])/dx;
 
 		// compute stress
-        sxz = eta*(dvxdz + dvzdx);
+		sxz = eta*(dvxdz + dvzdx);
 
 		// get mesh steps for the backward and forward derivatives
 		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
@@ -232,6 +267,18 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 
 	START_STD_LOOP
 	{
+		// initialize scaling factors
+		cf[0] = 1.0;
+		cf[1] = 1.0;
+		cf[2] = 1.0;
+		cf[3] = 1.0;
+
+		// set velocity two-point constraints
+		SET_VEL_TPC(bcvy, i,   j,   k-1, k, 0,   cf[1], cf[0])
+		SET_VEL_TPC(bcvy, i,   j,   k,   k, mnz, cf[0], cf[1])
+		SET_VEL_TPC(bcvz, i,   j-1, k,   j, 0,   cf[3], cf[2])
+		SET_VEL_TPC(bcvz, i,   j,   k,   j, mny, cf[2], cf[3])
+
 		// get effective viscosity
 		eta = jr->svYZEdge[iter++].svDev.eta;
 
@@ -240,8 +287,8 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		dz = SIZE_NODE(k, sz, fs->dsz);
 
 		// compute velocity gradients
-		dvydz = (vy[k][j][i] - vy[k-1][j][i])/dz;
-		dvzdy = (vz[k][j][i] - vz[k][j-1][i])/dy;
+		dvydz = (cf[1]*vy[k][j][i] - cf[0]*vy[k-1][j][i])/dz;
+		dvzdy = (cf[3]*vz[k][j][i] - cf[2]*vz[k][j-1][i])/dy;
 
 		// compute stress
 		syz = eta*(dvydz + dvzdy);
@@ -256,7 +303,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	// restore vectors
+	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
@@ -265,7 +312,10 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,  &bcp); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
@@ -276,8 +326,6 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 }
 //---------------------------------------------------------------------------
 /*
-#undef __FUNCT__
-#define __FUNCT__ "JacApplyJacobian"
 PetscErrorCode JacApplyJacobian(Mat A, Vec x, Vec y)
 {
 	JacRes *jr;
@@ -301,8 +349,6 @@ PetscErrorCode JacApplyJacobian(Mat A, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetJ2Derivatives"
 PetscErrorCode JacResGetJ2Derivatives(JacRes *jr)
 {
 	FDSTAG     *fs;
@@ -458,8 +504,6 @@ PetscErrorCode JacResGetJ2Derivatives(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResJacobianMatFree"
 PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 {
 	FDSTAG     *fs;

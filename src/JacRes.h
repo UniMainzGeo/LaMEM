@@ -301,6 +301,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr);
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 
+// copy solution from global to local vectors, do not enforce boundary constraints
+PetscErrorCode JacResCopyVelNoBC(JacRes *jr, Vec x);
+
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopyVel(JacRes *jr, Vec x);
 
