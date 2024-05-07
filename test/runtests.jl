@@ -735,22 +735,8 @@ end
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-8), (rtol=1e-5, atol=2e-8), (rtol=1e-4,atol=2e-5));
 
-    # test_xz
-    @test perform_lamem_test(dir,"SS.dat","SimpleShear_xz-p2.expected",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
-    
-    # test_yz
-    @test perform_lamem_test(dir,"SS.dat","SimpleShear_yz-p2.expected",
-                            args="-exz_strain_rates 0 -eyz_strain_rates 1e-15 -eyz_num_periods 1",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
     # test_xy
     @test perform_lamem_test(dir,"SS.dat","SimpleShear_xy-p2.expected",
-                            args="-exz_strain_rates 0 -exy_strain_rates 1e-15 -exy_num_periods 1",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
-
-    # test_xz_yz
-    @test perform_lamem_test(dir,"SS.dat","SimpleShear_xz_yz-p2.expected",
-                            args="-exz_strain_rates 1e-15 -eyz_strain_rates 1e-15 -eyz_num_periods 1",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 end
 

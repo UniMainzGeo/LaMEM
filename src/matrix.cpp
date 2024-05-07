@@ -677,7 +677,14 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// compute penalty term
-		pt = -1.0/(pgamma*eta);
+		if(pgamma)
+		{
+			pt = -1.0/(pgamma*eta);
+		}
+		else
+		{
+			pt = 0.0;
+		}
 
 		// get pressure diagonal element (with penalty)
 		diag = -IKdt + pt;

@@ -1192,6 +1192,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 
 	FDSTAG      *fs;
 	PetscScalar Tbot, Ttop;
+	PetscScalar x, y;
 	PetscInt    mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcT;
@@ -1232,12 +1233,8 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 			// in case we have a plume-like inflow boundary condition:
 			if(bc->Plume_Inflow == 1 && k==0)
 			{
-				PetscScalar x,y;
-
-				x       = COORD_CELL(i, sx, fs->dsx);
-				y       = COORD_CELL(j, sy, fs->dsy);
-				x       = COORD_CELL_GHOST(i, fs->dsx);
-				y       = COORD_CELL_GHOST(j, fs->dsy);
+				x = COORD_CELL_GHOST(i, fs->dsx);
+				y = COORD_CELL_GHOST(j, fs->dsy);
 
 				if(bc->Plume_Dimension==1)	// 2D plume
 				{
@@ -1280,13 +1277,11 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscScalar ex,  ey,  ez;
 	PetscScalar vbx, vby, vbz;
 	PetscScalar vex, vey, vez;
-
 	PetscScalar y;
 
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
-
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1345,6 +1340,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx + (y-Ryy)*Exy; }
 		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex + (y-Ryy)*Exy; }
+
 		iter++;
 	}
 	END_STD_LOOP
@@ -1415,6 +1411,7 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscInt    nsLeft, nsRight, nsFront, nsBack, nsBottom, nsTop;
+	PetscScalar Exy, Ryy, y, dy, vx;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
 	PetscErrorCode ierr;
@@ -1436,6 +1433,9 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 	nsBottom = bc->noslip[4];
 	nsTop    = bc->noslip[5];
 
+	// get background shear strain rate
+	ierr = BCGetBGStrainRates(bc, NULL, NULL, NULL, &Exy, NULL, &Ryy, NULL); CHKERRQ(ierr);
+
 	//=========================================================================
 	// TPC (no-slip boundary conditions)
 	//=========================================================================
@@ -1448,7 +1448,7 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 	//-----------------------------------------------------
 	// X points (TPC only, hence looping over ghost points)
 	//-----------------------------------------------------
-	if(nsFront || nsBack || nsBottom || nsTop)
+	if(nsFront || nsBack || nsBottom || nsTop || Exy)
 	{
 		GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
 		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
@@ -1456,21 +1456,35 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 
 		START_STD_LOOP
 		{
-			if(nsFront  && j == 0)   { bcvx[k][j-1][i] = 0.0; }
-			if(nsBack   && j == mcy) { bcvx[k][j+1][i] = 0.0; }
-			if(nsBottom && k == 0)   { bcvx[k-1][j][i] = 0.0; }
-			if(nsTop    && k == mcz) { bcvx[k+1][j][i] = 0.0; }
+			// set tangential velocity
+			if(Exy)
+			{
+				// get coordinate and cell size
+				y  = COORD_CELL_GHOST(j, fs->dsy);
+				dy = SIZE_CELL(j, sy, fs->dsy);
+
+				// compute velocity
+				vx = (y-Ryy)*Exy;
+
+				if(j == 0)   { bcvx[k][j-1][i] = vx - dy*Exy/2.0; }
+				if(j == mcy) { bcvx[k][j+1][i] = vx + dy*Exy/2.0; }
+			}
+			else
+			{
+				if(nsFront  && j == 0)   { bcvx[k][j-1][i] = 0.0; }
+				if(nsBack   && j == mcy) { bcvx[k][j+1][i] = 0.0; }
+				if(nsBottom && k == 0)   { bcvx[k-1][j][i] = 0.0; }
+				if(nsTop    && k == mcz) { bcvx[k+1][j][i] = 0.0; }
+			}
 		}
 		END_STD_LOOP
 	}
-
 
 	//-----------------------------------------------------
 	// Y points (TPC only, hence looping over ghost points)
 	//-----------------------------------------------------
 	if(nsLeft || nsRight || nsBottom || nsTop)
 	{
-
 		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
 		GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
 		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
@@ -1490,7 +1504,6 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 	//-----------------------------------------------------
 	if(nsLeft || nsRight || nsFront || nsBack)
 	{
-
 		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
 		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
 		GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
