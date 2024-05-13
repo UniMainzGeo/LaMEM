@@ -626,8 +626,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 	fs = jr->fs;
 	ctrl = &jr->ctrl;
 
-	if (!ctrl->actDike || jr->ts->istep + 1 == 0)
-		PetscFunctionReturn(0); // only execute this function if dikes are active
+	if (!ctrl->actDike || jr->ts->istep + 1 == 0) PetscFunctionReturn(0); // only execute this function if dikes are active
 	fs = jr->fs;
 
 	PetscPrintf(PETSC_COMM_WORLD, "\n");
@@ -635,98 +634,104 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 	numPhtr = jr->dbm->numPhtr;
 
 	icounter = 0;
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz);
-	CHKERRQ(ierr);
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	if ((dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start)) || (jr->ctrl.var_M))
+	if (ctrl->actDike)
 	{
 		for (nD = 0; nD < numDike; nD++)
 		{
 			dike = jr->dbdike->matDike + nD; // sets dike to point to the nD-th element of matDike array
 
-			PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1), (LLD)(nD));
-			// compute lithostatic pressure
-			if (icounter == 0)
+			if ((dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start)) || (jr->ctrl.var_M))
 			{
-				ierr = JacResGetLithoStaticPressure(jr);
-				CHKERRQ(ierr);
-				ierr = ADVInterpMarkToCell(actx);
-				CHKERRQ(ierr);
-			}
-			icounter++;
-
-			//---------------------------------------------------------------------------------------------
-			//  Find dike phase transition
-			//---------------------------------------------------------------------------------------------
-			nPtr = -1;
-			for (n = 0; n < numPhtr; n++)
-			{
-				CurrPhTr = jr->dbm->matPhtr + n;
-				if (CurrPhTr->ID == dike->PhaseTransID)
+				PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1), (LLD)(nD));
+				// compute lithostatic pressure
+				if (icounter == 0)
 				{
-					nPtr = n;
+					ierr = JacResGetLithoStaticPressure(jr);
+					CHKERRQ(ierr);
+					ierr = ADVInterpMarkToCell(actx);
+					CHKERRQ(ierr);
 				}
-			} // end loop over Phtr
+				icounter++;
 
-			if (nPtr == -1)
-				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %lld, nPtr=%lld\n", (LLD)(nD), (LLD)(nPtr));
-
-			CurrPhTr = jr->dbm->matPhtr + nPtr;
-
-			//---------------------------------------------------------------------------------------------
-			//  Find y-bounds of current dynamic dike
-			//---------------------------------------------------------------------------------------------
-			j1 = ny - 1;
-			j2 = 0;
-			for (j = 0; j < ny; j++)
-			{
-				if (CurrPhTr->celly_xboundR[j] > CurrPhTr->celly_xboundL[j])
+				//---------------------------------------------------------------------------------------------
+				//  Find dike phase transition
+				//---------------------------------------------------------------------------------------------
+				nPtr = -1;
+				for (n = 0; n < numPhtr; n++)
 				{
-					j1 = min(j1, j);
-					j2 = max(j2, j);
-				}
-			}
+					CurrPhTr = jr->dbm->matPhtr + n;
+					if (CurrPhTr->ID == dike->PhaseTransID)
+					{
+						nPtr = n;
+					}
+				} // end loop over Phtr
 
-			ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
+				if (nPtr == -1)
+					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %lld, nPtr=%lld\n", (LLD)(nD), (LLD)(nPtr));
 
-			ierr = Smooth_sxx_eff(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // smooth mean effective sxx
+				CurrPhTr = jr->dbm->matPhtr + nPtr;
 
-			// Only relocate dike zone if dynamic diking is on and if on an nstep_locate timestep
-			if (dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start) && ((jr->ts->istep + 1) % dike->nstep_locate) == 0)
-			{
-				ierr = Set_dike_zones(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // centered on peak sxx_eff_ave
-			}
-
-			// change z boundary of dike box if trackSolidus is set
-			if (jr->ctrl.sol_track) // *djking
-			{
-				// get solidus array from the vector
-				ierr = VecGetArray(dike->solidus, &solidus); CHKERRQ(ierr);
-
-				// maximum value in dike zone nD
-				for (i = j1; i <= j2; i++)
+				//---------------------------------------------------------------------------------------------
+				//  Find y-bounds of current dynamic dike
+				//---------------------------------------------------------------------------------------------
+				j1 = ny - 1;
+				j2 = 0;
+				for (j = 0; j < ny; j++)
 				{
-					maxSolidus = PetscMax(maxSolidus, solidus[i]);
+					if (CurrPhTr->celly_xboundR[j] > CurrPhTr->celly_xboundL[j])
+					{
+						j1 = min(j1, j);
+						j2 = max(j2, j);
+					}
 				}
 
-				// restore the array to the vector
-				ierr = VecRestoreArray(dike->solidus, &solidus); CHKERRQ(ierr);
+				ierr = Compute_sxx_magP(jr, nD);
+				CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
 
-				// set zbounds[0] so that divergence only occurs in brittle lithosphere
-				CurrPhTr->zbounds[0] = maxSolidus;
+				ierr = Smooth_sxx_eff(jr, nD, nPtr, j1, j2);
+				CHKERRQ(ierr); // smooth mean effective sxx
 
-				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"mSol: %lld zBound: %lld\n", (LLD)(maxSolidus), (LLD)(CurrPhTr->zbounds[0]));       
+				// Only relocate dike zone if dynamic diking is on and if on an nstep_locate timestep
+				if (dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start) && ((jr->ts->istep + 1) % dike->nstep_locate) == 0)
+				{
+					ierr = Set_dike_zones(jr, nD, nPtr, j1, j2);
+					CHKERRQ(ierr); // centered on peak sxx_eff_ave
+				}
 
+				// change z boundary of dike box if trackSolidus is set
+				if (jr->ctrl.sol_track) // *djking
+				{
+					// get solidus array from the vector
+					ierr = VecGetArray(dike->solidus, &solidus);
+					CHKERRQ(ierr);
+
+					// maximum value in dike zone nD
+					for (i = j1; i <= j2; i++)
+					{
+						maxSolidus = PetscMax(maxSolidus, solidus[i]);
+					}
+
+					// restore the array to the vector
+					ierr = VecRestoreArray(dike->solidus, &solidus);
+					CHKERRQ(ierr);
+
+					// set zbounds[0] so that divergence only occurs in brittle lithosphere
+					CurrPhTr->zbounds[0] = maxSolidus;
+
+					PetscSynchronizedPrintf(PETSC_COMM_WORLD, "mSol: %lld zBound: %lld\n", (LLD)(maxSolidus), (LLD)(CurrPhTr->zbounds[0]));
+				}
 			}
-			
+			PetscFunctionReturn(0);
 		}
 	}
 	else if (jr->ctrl.sol_track) // gets solidus array (as well as average sxx, etc...)
 	{
 		nD = 0;
-		ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
+		ierr = Compute_sxx_magP(jr, nD);
+		CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
 	}
-	PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
 
