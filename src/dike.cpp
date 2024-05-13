@@ -221,7 +221,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	}
 
 	// parameters for average lithospheric stress calculations (includes magma pressure)
-	if (dike->dyndike_start || jr->ctrl.var_M)
+	if (dike->dyndike_start || jr->ctrl.var_M || jr->ctrl.sol_track)
 	{
 		dike->Tsol = 1000;
 		dike->zmax_magma = -15.0;
@@ -610,94 +610,123 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 {
 
+	Controls *ctrl;
+	JacRes *jr;
+	Dike *dike;
+	Ph_trans_t *CurrPhTr;
+	FDSTAG *fs;
+	PetscInt nD, numDike, numPhtr, nPtr, n, icounter;
+	PetscScalar maxSolidus = -PETSC_MAX_REAL, *solidus;
+	PetscInt i, j, j1, j2, sx, sy, sz, ny, nx, nz;
+	PetscErrorCode ierr;
 
-  Controls    *ctrl;
-  JacRes      *jr;
-  Dike        *dike;
-  Ph_trans_t  *CurrPhTr;
-  FDSTAG      *fs;
-  PetscInt   nD, numDike, numPhtr, nPtr, n, icounter;
-  PetscInt   j, j1, j2, sx, sy, sz, ny, nx, nz;
-  PetscErrorCode ierr; 
+	PetscFunctionBeginUser;
 
-  PetscFunctionBeginUser;
+	jr = actx->jr;
+	fs = jr->fs;
+	ctrl = &jr->ctrl;
 
-  jr = actx->jr;
-  fs  =  jr->fs;
-  ctrl = &jr->ctrl;
-  
-  if (!ctrl->actDike || jr->ts->istep+1 == 0) PetscFunctionReturn(0);   // only execute this function if dikes are active
-  fs = jr->fs;
+	if (!ctrl->actDike || jr->ts->istep + 1 == 0)
+		PetscFunctionReturn(0); // only execute this function if dikes are active
+	fs = jr->fs;
 
-  PetscPrintf(PETSC_COMM_WORLD, "\n");
-  numDike    = jr->dbdike->numDike; // number of dikes
-  numPhtr    = jr->dbm->numPhtr;
+	PetscPrintf(PETSC_COMM_WORLD, "\n");
+	numDike = jr->dbdike->numDike; // number of dikes
+	numPhtr = jr->dbm->numPhtr;
 
-  icounter=0;
-  ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	icounter = 0;
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz);
+	CHKERRQ(ierr);
 
-  for(nD = 0; nD < numDike; nD++)
-  {
-    dike = jr->dbdike->matDike+nD; // sets dike to point to the nD-th element of matDike array
+	if ((dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start)) || (jr->ctrl.var_M))
+	{
+		for (nD = 0; nD < numDike; nD++)
+		{
+			dike = jr->dbdike->matDike + nD; // sets dike to point to the nD-th element of matDike array
 
-	if ((dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) || (jr->ctrl.var_M)) 
-	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
-    {
-	   PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1),(LLD)(nD));
-       // compute lithostatic pressure
-       if (icounter==0) 
-       {
-         ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
-         ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
-       }
-       icounter++;
-
-       //---------------------------------------------------------------------------------------------
-       //  Find dike phase transition
-       //---------------------------------------------------------------------------------------------
-       nPtr=-1;
-       for(n=0; n<numPhtr; n++)                          
-       {                                               
-          CurrPhTr = jr->dbm->matPhtr+n;
-          if(CurrPhTr->ID == dike->PhaseTransID)  
-          {
-            nPtr=n;
-          }
-       }//end loop over Phtr
-
-       if (nPtr==-1) 
-       SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %lld, nPtr=%lld\n", (LLD)(nD), (LLD)(nPtr));
-
-       CurrPhTr = jr->dbm->matPhtr+nPtr;
-       
-	   //---------------------------------------------------------------------------------------------
-       //  Find y-bounds of current dynamic dike
-       //---------------------------------------------------------------------------------------------
-       j1=ny-1;
-       j2=0;
-       for(j = 0; j < ny; j++)
-       {
-			if (CurrPhTr->celly_xboundR[j] > CurrPhTr->celly_xboundL[j])
+			PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1), (LLD)(nD));
+			// compute lithostatic pressure
+			if (icounter == 0)
 			{
-				j1=min(j1,j);
-				j2=max(j2,j);
+				ierr = JacResGetLithoStaticPressure(jr);
+				CHKERRQ(ierr);
+				ierr = ADVInterpMarkToCell(actx);
+				CHKERRQ(ierr);
 			}
-       }
+			icounter++;
 
-       ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
+			//---------------------------------------------------------------------------------------------
+			//  Find dike phase transition
+			//---------------------------------------------------------------------------------------------
+			nPtr = -1;
+			for (n = 0; n < numPhtr; n++)
+			{
+				CurrPhTr = jr->dbm->matPhtr + n;
+				if (CurrPhTr->ID == dike->PhaseTransID)
+				{
+					nPtr = n;
+				}
+			} // end loop over Phtr
 
-       ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
+			if (nPtr == -1)
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %lld, nPtr=%lld\n", (LLD)(nD), (LLD)(nPtr));
 
-       // Only relocate dike zone if dynamic diking is on and if on an nstep_locate timestep
-       if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0)
-       {
-      	 ierr = Set_dike_zones(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); //centered on peak sxx_eff_ave
-       }
-    }
+			CurrPhTr = jr->dbm->matPhtr + nPtr;
 
-  }
-  PetscFunctionReturn(0);
+			//---------------------------------------------------------------------------------------------
+			//  Find y-bounds of current dynamic dike
+			//---------------------------------------------------------------------------------------------
+			j1 = ny - 1;
+			j2 = 0;
+			for (j = 0; j < ny; j++)
+			{
+				if (CurrPhTr->celly_xboundR[j] > CurrPhTr->celly_xboundL[j])
+				{
+					j1 = min(j1, j);
+					j2 = max(j2, j);
+				}
+			}
 
+			ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
+
+			ierr = Smooth_sxx_eff(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // smooth mean effective sxx
+
+			// Only relocate dike zone if dynamic diking is on and if on an nstep_locate timestep
+			if (dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start) && ((jr->ts->istep + 1) % dike->nstep_locate) == 0)
+			{
+				ierr = Set_dike_zones(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // centered on peak sxx_eff_ave
+			}
+
+			// change z boundary of dike box if trackSolidus is set
+			if (jr->ctrl.sol_track) // *djking
+			{
+				// get solidus array from the vector
+				ierr = VecGetArray(dike->solidus, &solidus); CHKERRQ(ierr);
+
+				// maximum value in dike zone nD
+				for (i = j1; i <= j2; i++)
+				{
+					maxSolidus = PetscMax(maxSolidus, solidus[i]);
+				}
+
+				// restore the array to the vector
+				ierr = VecRestoreArray(dike->solidus, &solidus); CHKERRQ(ierr);
+
+				// set zbounds[0] so that divergence only occurs in brittle lithosphere
+				CurrPhTr->zbounds[0] = maxSolidus;
+
+				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"mSol: %lld zBound: %lld\n", (LLD)(maxSolidus), (LLD)(CurrPhTr->zbounds[0]));       
+
+			}
+			
+		}
+	}
+	else if (jr->ctrl.sol_track) // gets solidus array (as well as average sxx, etc...)
+	{
+		nD = 0;
+		ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
+	}
+	PetscFunctionReturn(0);
 }
 //------------------------------------------------------------------------------------------------------------------
 
@@ -1611,15 +1640,15 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D_tave, dike->smooth_sxx_ave_hist, &smooth_gsxx_ave_hist); CHKERRQ(ierr);
 	}// end if nstep_ave>1
 
-  // output smoothed stress array to .txt file on timesteps of other output *djking
+  // output smoothed stress array to .txt file on timesteps of other output
   if (((istep % nstep_out) == 0 || istep == 1) && (dike->out_stress > 0)) 
   {
     if (L == 0)
     {
       // Form the filename based on jr->ts->istep+1
       std::ostringstream oss;
-	  oss << "gsxx_Timestep_" << (jr->ts->istep + 1) << ".txt";
-      //oss << "sxx_outputs_Timestep_" << std::setfill('0') << std::setw(8) << (jr->ts->istep+1) << ".txt";
+	  //oss << "gsxx_Timestep_" << (jr->ts->istep + 1) << ".txt";
+      oss << "sxx_outputs_Timestep_" << std::setfill('0') << std::setw(8) << (jr->ts->istep+1) << ".txt";
       std::string filename = oss.str();
 
       // Open a file with the formed filename
@@ -1784,7 +1813,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 		CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2; 
 		CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2; 
 
- // dike location to .txt file on timesteps of other output *djking
+ // dike location to .txt file on timesteps of other output
     if (L==0 &&  ((istep % nstep_out) == 0 || istep == 1) && (dike->out_dikeloc > 0))
     {
       // Form the filename based on jr->ts->istep

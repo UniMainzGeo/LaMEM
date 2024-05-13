@@ -217,7 +217,7 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	// energy residual
 	PetscCall(DMCreateGlobalVector(jr->DA_T, &jr->ge));
-	PetscCall(DMCreateGlobalVector(jr->DA_T, &jr->hs)); // *djking
+	PetscCall(DMCreateGlobalVector(jr->DA_T, &jr->hs));
 
 	// create temperature diffusion solver
 	PetscCall(KSPCreate(PETSC_COMM_WORLD, &jr->tksp));
@@ -245,7 +245,7 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	PetscCall(VecDestroy(&jr->dT));
 
 	PetscCall(VecDestroy(&jr->ge));
-	PetscCall(VecDestroy(&jr->hs)); // *djking
+	PetscCall(VecDestroy(&jr->hs));
 
 	PetscCall(KSPDestroy(&jr->tksp));
 
@@ -414,15 +414,15 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	SolVarCell *svCell;
     SolVarDev  *svDev;
 	SolVarBulk *svBulk;
-	Dike       *dike; // *djking
-	Discret1D  *dsz; // *djking
+	Dike       *dike;
+	Discret1D  *dsz;
 	Controls    ctrl;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
-	PetscInt    nD, L; // *djking
-	PetscScalar ***gsxx_eff_ave, sxx_eff_ave_cell; // *djking
-	PetscScalar ***gsolidus, zsolidus; // *djking
+	PetscInt    nD, L;
+	PetscScalar ***gsxx_eff_ave, sxx_eff_ave_cell;
+	PetscScalar ***gsolidus, zsolidus;
  	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
@@ -430,7 +430,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
  	PetscScalar dx, dy, dz;
 	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha, cond;
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;
-	PetscScalar ***heat_source; // *djking
+	PetscScalar ***heat_source;
 	PetscScalar ***vx,***vy,***vz;
 	PetscScalar y_c, x_c, z_c;
 
@@ -443,7 +443,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	num   = bc->tNumSPC;
 	list  = bc->tSPCList;
 
-	// establishing z rank for varM dike heating *djking
+	// establishing z rank for varM dike heating
 	dsz = &fs->dsz;
 	L   =  (PetscInt)dsz->rank;
 
@@ -468,7 +468,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 
 	// access work vectors
 	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->ge,   &ge));
-	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->hs,   &heat_source)); // *djking
+	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->hs,   &heat_source));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk));
 	PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &hxy));
 	PetscCall(DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &hxz));
@@ -485,7 +485,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	iter = 0;
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
-	// *djking
 	if (jr->ctrl.actDike)
 	{
 		nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
@@ -591,13 +590,13 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		// put right hand side to the left, which gives the following:
 
 		ge[k][j][i] = rho_Cp*(invdt*(Tc - Tn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho_A - Ha;
-		heat_source[k][j][i] = rho_A; // *djking
+		heat_source[k][j][i] = rho_A;
 	}
 	END_STD_LOOP
 
 	// restore access
 	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->ge,   &ge));
-	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->hs,   &heat_source));  // *djking
+	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->hs,   &heat_source));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk));
 	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &hxy));
@@ -608,7 +607,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz) );
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &P)  );
 
-	// *djking
 	if (jr->ctrl.actDike)
 	{
 		PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));

@@ -1240,7 +1240,7 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
 	}
        
   	if 	( (xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
-       	(PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )
+       	(PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) ) // *djking
     	{
         	// We are within the box
 		ph = PH1;

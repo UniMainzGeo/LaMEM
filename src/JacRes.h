@@ -167,7 +167,9 @@ struct Controls
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
-	PetscInt	var_M;          // Flag to activate M controlled by bulk viscosity and stress-field
+	PetscInt	var_M;          // Flag to activate M controlled by bulk viscosity and stress-field (This is globally on now. Could be interesting to have it be dike dependent *djking)
+	PetscInt	sol_track;      // Flag to activate solidus tracking (Currently piggy-backs on diking code and dike default values. Needs to be separated *djking)
+
 	PetscInt	actHeatZone;    // Flag to activate user defined heat zones	
   	PetscInt    useTk;			// activation flag for using temperature-dependent conductivity
   	PetscInt 	dikeHeat;		// activation flag for using Behn & Ito heat source in dike
@@ -228,7 +230,7 @@ struct JacRes
 
 	// continuity residual
 	Vec gc; // global
-	Vec dc; // dike contribution to residual (source term RHS) // *djking
+	Vec dc; // dike contribution to residual (source term RHS)
 
 	// corner buffer
 	Vec lbcor; // local (ghosted)
@@ -257,7 +259,7 @@ struct JacRes
 	Mat Att;  // temperature preconditioner matrix
 	Vec dT;   // temperature increment (global)
 	Vec ge;   // energy residual (global)
-	Vec hs;   // source heat added via rho_A (global) *djking
+	Vec hs;   // source heat added via rho_A (global)
 	KSP tksp; // temperature diffusion solver
 
 	//==========================

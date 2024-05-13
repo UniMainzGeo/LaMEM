@@ -112,6 +112,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,1, 1.0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "var_M",			 &ctrl->var_M,           1, 1);             CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "trackSolidus",	 &ctrl->sol_track,       1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "dikeHeat",        &ctrl->dikeHeat,        1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "actHeatZone",			 &ctrl->actHeatZone,           1, 1);             CHKERRQ(ierr);
@@ -414,7 +415,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 
 	// continuity residual
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->dc); CHKERRQ(ierr); // dikeRHS contribution // *djking
+	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->dc); CHKERRQ(ierr); // dikeRHS contribution
 
 	// corner buffer
 	ierr = DMCreateLocalVector(fs->DA_COR,  &jr->lbcor); CHKERRQ(ierr);
@@ -544,7 +545,7 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->lp_pore); CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->dc);      CHKERRQ(ierr); // *djking
+	ierr = VecDestroy(&jr->dc);      CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->phi);     CHKERRQ(ierr);
 
@@ -1091,14 +1092,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
-	Dike       *dike; // *djking
-	Discret1D  *dsz; // *djking		
+	Dike       *dike;
+	Discret1D  *dsz;	
 	PetscInt    iter, fssa_allVel;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
-	PetscInt    nD, L; // *djking
-	PetscScalar ***gsxx_eff_ave, sxx_eff_ave_cell; // *djking
-	PetscScalar ***gsolidus, zsolidus, z_c; // *djking
+	PetscInt    nD, L;
+	PetscScalar ***gsxx_eff_ave, sxx_eff_ave_cell;
+	PetscScalar ***gsolidus, zsolidus, z_c;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
 	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
@@ -1110,7 +1111,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
-	PetscScalar ***div_dike;  // *djking
+	PetscScalar ***div_dike;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 
 	PetscErrorCode ierr;
@@ -1120,7 +1121,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	fs = jr->fs;
 	bc = jr->bc;
 
-	// establishing z rank for diking *djking
+	// establishing z rank for diking
 	dsz = &fs->dsz;
 	L   =  (PetscInt)dsz->rank;
 
@@ -1148,7 +1149,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = VecZeroEntries(jr->lfy); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->dc);  CHKERRQ(ierr); // *djking
+	ierr = VecZeroEntries(jr->dc);  CHKERRQ(ierr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);       CHKERRQ(ierr);
@@ -1169,7 +1170,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);      CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dc,      &div_dike); CHKERRQ(ierr); // *djking
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dc,      &div_dike); CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -1179,7 +1180,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
-	// *djking
 	if (jr->ctrl.actDike)
 	{
 		nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
@@ -1214,14 +1214,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		  dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
 		  dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
 		
-		  // save global dike divergence for debug output // *djking
+		  // save global dike divergence for debug output
 		  div_dike[k][j][i] = dikeRHS;
 		}
 
 		// access strain rates
 		XX = dxx[k][j][i];
-                YY = dyy[k][j][i];
-                ZZ = dzz[k][j][i];
+        YY = dyy[k][j][i];
+        ZZ = dzz[k][j][i];
 		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];
@@ -1672,9 +1672,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);      CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dc,      &div_dike); CHKERRQ(ierr); // *djking
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dc,      &div_dike); CHKERRQ(ierr);
 
-	// *djking
 	if (jr->ctrl.actDike)
 	{
 		PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
