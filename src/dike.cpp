@@ -616,7 +616,6 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 	Ph_trans_t *CurrPhTr;
 	FDSTAG *fs;
 	PetscInt nD, numDike, numPhtr, nPtr, n, icounter;
-	PetscScalar maxSolidus = -PETSC_MAX_REAL, *solidus;
 	PetscInt i, j, j1, j2, sx, sy, sz, ny, nx, nz;
 	PetscErrorCode ierr;
 
@@ -648,10 +647,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 				// compute lithostatic pressure
 				if (icounter == 0)
 				{
-					ierr = JacResGetLithoStaticPressure(jr);
-					CHKERRQ(ierr);
-					ierr = ADVInterpMarkToCell(actx);
-					CHKERRQ(ierr);
+					ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+					ierr = ADVInterpMarkToCell(actx); CHKERRQ(ierr);
 				}
 				icounter++;
 
@@ -682,45 +679,25 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 				{
 					if (CurrPhTr->celly_xboundR[j] > CurrPhTr->celly_xboundL[j])
 					{
-						j1 = min(j1, j);
-						j2 = max(j2, j);
+						j1 = (PetscInt)min(j1, j);
+						j2 = (PetscInt)max(j2, j);
 					}
 				}
 
-				ierr = Compute_sxx_magP(jr, nD);
-				CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
+				ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
 
-				ierr = Smooth_sxx_eff(jr, nD, nPtr, j1, j2);
-				CHKERRQ(ierr); // smooth mean effective sxx
+				ierr = Smooth_sxx_eff(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // smooth mean effective sxx
 
 				// Only relocate dike zone if dynamic diking is on and if on an nstep_locate timestep
 				if (dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start) && ((jr->ts->istep + 1) % dike->nstep_locate) == 0)
 				{
-					ierr = Set_dike_zones(jr, nD, nPtr, j1, j2);
-					CHKERRQ(ierr); // centered on peak sxx_eff_ave
+					ierr = Set_dike_zones(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // centered on peak sxx_eff_ave
 				}
 
 				// change z boundary of dike box if trackSolidus is set
 				if (jr->ctrl.sol_track) // *djking
 				{
-					// get solidus array from the vector
-					ierr = VecGetArray(dike->solidus, &solidus);
-					CHKERRQ(ierr);
-
-					// maximum value in dike zone nD
-					for (i = j1; i <= j2; i++)
-					{
-						maxSolidus = PetscMax(maxSolidus, solidus[i]);
-					}
-
-					// restore the array to the vector
-					ierr = VecRestoreArray(dike->solidus, &solidus);
-					CHKERRQ(ierr);
-
-					// set zbounds[0] so that divergence only occurs in brittle lithosphere
-					CurrPhTr->zbounds[0] = maxSolidus;
-
-					PetscSynchronizedPrintf(PETSC_COMM_WORLD, "mSol: %lld zBound: %lld\n", (LLD)(maxSolidus), (LLD)(CurrPhTr->zbounds[0]));
+					ierr = Set_dike_base(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // use solidus values to set zbound of dike
 				}
 			}
 			PetscFunctionReturn(0);
@@ -1652,7 +1629,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
     {
       // Form the filename based on jr->ts->istep+1
       std::ostringstream oss;
-	  //oss << "gsxx_Timestep_" << (jr->ts->istep + 1) << ".txt";
       oss << "sxx_outputs_Timestep_" << std::setfill('0') << std::setw(8) << (jr->ts->istep+1) << ".txt";
       std::string filename = oss.str();
 
@@ -1943,6 +1919,82 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_1D, vxboundR_pass, &xboundR_pass); CHKERRQ(ierr);
 	ierr = VecRestoreArray(vxboundR_pass, &lxboundR_pass); CHKERRQ(ierr);
 	ierr = DMRestoreGlobalVector(jr->DA_CELL_1D, &vxboundR_pass); CHKERRQ(ierr);
+
+  PetscFunctionReturn(0);  
+}
+//----------------------------------------------------------------------------------------------------
+// Set bottom bounds of NotInAir box based on solidus
+// NOTE: this only tested with cpu_x = 1
+//
+
+PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1, PetscInt j2)
+{
+
+	FDSTAG      *fs;
+	Dike        *dike;
+	Discret1D   *dsz;
+	Ph_trans_t  *CurrPhTr;
+	PetscScalar ldikeSolidus = PETSC_MAX_REAL;
+	PetscScalar gdikeSolidus, ***solidus, xc;
+	PetscInt    sx, nx, sy, ny, sz, nz, i, j, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	fs  =  jr->fs;
+	dsz = &fs->dsz;
+	L   =  (PetscInt)dsz->rank;
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	dike = jr->dbdike->matDike+nD;
+	CurrPhTr = jr->dbm->matPhtr+nPtr;
+
+	// get solidus array
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
+
+	// find local minimum solidus in dike zone nD
+	for (j = j1; j <= j2; j++)
+	{
+		for (i = sx; i < sx + nx; i++)
+		{
+			xc =  COORD_CELL(i, sx, fs->dsx);
+			if (xc >= CurrPhTr->celly_xboundL[j] && xc <= CurrPhTr->celly_xboundR[j])
+			{
+				ldikeSolidus = PetscMin(ldikeSolidus, solidus[L][j][i]);
+			}
+		}
+	}
+	
+	// find the global minimum across all processors (should be the same across all z-procs anyways)
+	ierr = MPI_Allreduce(&ldikeSolidus, &gdikeSolidus, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	// restore solidus array
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
+
+	// set zbounds[0] so that divergence only occurs in brittle lithosphere
+	CurrPhTr->zbounds[0] = gdikeSolidus;
+
+	// output *djking
+	if (L == 0)
+	{
+		std::ostringstream oss;
+		oss << "dikeSolidus_Timestep_" << std::setfill('0') << std::setw(8) << (jr->ts->istep + 1) << ".txt";
+		std::string filename = oss.str();
+
+		// open output file
+		::ofstream outFile(filename, std::ios_base::app); // append if already created
+		if (outFile)
+		{
+			// write data
+			outFile
+				<< "dike " << nD << " " << gdikeSolidus << " " << CurrPhTr->zbounds[0] << "\n";
+		}
+		else
+		{
+			std::cerr << "Error opening file: " << filename << std::endl;
+		}
+	}
 
   PetscFunctionReturn(0);  
 }
