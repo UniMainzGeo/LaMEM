@@ -92,10 +92,8 @@ PetscErrorCode GetDikeContr(JacRes *jr,
                             PetscInt &AirPhase,
                             PetscScalar &dikeRHS,
                             PetscScalar &y_c,
-                            PetscScalar &z_c,
                             PetscInt J,
-                            PetscScalar sxx_eff_ave_cell,
-                            PetscScalar zsolidus); // *revisit (PetscInt I)
+                            PetscScalar sxx_eff_ave_cell);
 
 // compute dike heat after Behn & Ito, 2008
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
@@ -105,10 +103,8 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar &k,
                                 PetscScalar &rho_A,
                                 PetscScalar &y_c,
-                                PetscScalar &z_c,
                                 PetscInt J,
-                                PetscScalar sxx_eff_ave_cell,
-                                PetscScalar zsolidus); 
+                                PetscScalar sxx_eff_ave_cell); 
 
 PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD);
 PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);

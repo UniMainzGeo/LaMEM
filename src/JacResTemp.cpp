@@ -48,16 +48,16 @@
 PetscErrorCode JacResGetTempParam(
 	JacRes      *jr,
 	PetscScalar *phRat,
-	PetscScalar *k_,      // conductivity
-	PetscScalar *rho_Cp_, // volumetric heat capacity
-	PetscScalar *rho_A_,  // volumetric radiogenic heat   
-	PetscScalar Tc,       // temperature of cell
-    PetscScalar y_c,      // center of cell in y-direction
-    PetscScalar x_c,      // center of cell in x-direction
-    PetscScalar z_c,      // center of cell in z-direction
-    PetscInt J,           // coordinate of cell
-    PetscScalar sxx_eff_ave_cell,
-	PetscScalar zsolidus) // lithospheric sxx
+	PetscScalar *k_,              // conductivity
+	PetscScalar *rho_Cp_,         // volumetric heat capacity
+	PetscScalar *rho_A_,          // volumetric radiogenic heat   
+	PetscScalar Tc,               // temperature of cell
+    PetscScalar y_c,              // center of cell in y-direction
+    PetscScalar x_c,              // center of cell in x-direction
+    PetscScalar z_c,              // center of cell in z-direction
+    PetscInt    J,                // coordinate of cell
+    PetscScalar sxx_eff_ave_cell, // lithospheric sxx
+	PetscScalar zsolidus) 
 
 {
 	// compute effective energy parameters in the cell
@@ -67,9 +67,18 @@ PetscErrorCode JacResGetTempParam(
 	Controls    ctrl;
 	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
 
-	//PetscErrorCode ierr;
+/* 	// depth dependent conductivity *mcr
+	FDSTAG      *fs;
+	Discret1D   *dsz;
+	FreeSurf    *surf;
+	PetscScalar surf_depth, z_Nu, ***surface;
+	PetscInt    i, j, sx, sy, sz, nx, ny, nz, L; */
 
 	PetscFunctionBeginUser;
+
+/* 	fs = jr->fs;
+	L   =  (PetscInt)fs->dsz.rank;
+	surf = jr->surf; */
 
 	// initialize
 	k         = 0.0;
@@ -123,9 +132,34 @@ PetscErrorCode JacResGetTempParam(
 	    k = k*nu_k;
 	}
 
+/* 	// switch and temperature / depth condition to use T-D conductivity adapted from Gregg et al., 2009 *mcr
+	// get topography / depth of surface from top of model *mcr
+	if (ctrl.useTDk)
+	{
+		PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &surface));
+
+		// get local grid sizes
+		PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
+
+		START_PLANE_LOOP
+		{
+			// new variable for depth
+			surf_depth = surface[L][j][i] + z_Nu;
+
+			if (Tc <= T_Nu && z_c <= surface[L][j][i] && z_c >= surf_depth)
+			{
+				k = k + k * (nu_k - 1) * (1 - (Tc / T_Nu)) * (1 - ((z_c - surface[L][j][i]) / (z_Nu)));
+			} //*mcr
+		}
+		END_PLANE_LOOP
+
+		// restore access
+		PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, surf->ltopo, &surface));
+	} */
+
 	if (ctrl.actDike && ctrl.dikeHeat)
 	{
-		PetscCall(Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c, z_c, J, sxx_eff_ave_cell, zsolidus));
+		PetscCall(Dike_k_heatsource(jr, phases, Tc, phRat, k, rho_A, y_c, J, sxx_eff_ave_cell));
 	}
 
 	if (ctrl.actHeatZone)

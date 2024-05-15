@@ -226,7 +226,7 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 								 PetscScalar &z_c,
 								 PetscInt J,
 								 PetscScalar sxx_eff_ave_cell,
-								 PetscScalar zsolidus)
+								 PetscScalar zsolidus) // pontentially use for max height
 
 {
 	HeatZone *heatzone;
@@ -340,7 +340,7 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 			if (jr->ctrl.actDike && jr->ctrl.dikeHeat)
 			{
 				// Subtract heat added via diking
-				PetscCall(SubtractDikeHeatSource(jr, phases, Tc, phRat, hz_contr, y_c, z_c, J, sxx_eff_ave_cell, zsolidus));
+				PetscCall(SubtractDikeHeatSource(jr, phases, Tc, phRat, hz_contr, y_c, J, sxx_eff_ave_cell));
 			}
 
 			rho_A += hz_contr; // add heating to energy equation as source term
@@ -357,10 +357,8 @@ PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
 									  PetscScalar *phRat,
 									  PetscScalar &hz_contr,
 									  PetscScalar &y_c,
-									  PetscScalar &z_c,
 									  PetscInt J,
-									  PetscScalar sxx_eff_ave_cell,
-									  PetscScalar zsolidus)
+									  PetscScalar sxx_eff_ave_cell)
 
 {
 	// parameters to determine dilation term

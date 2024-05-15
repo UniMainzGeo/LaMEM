@@ -75,10 +75,8 @@ PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
                                       PetscScalar *phRat,
                                       PetscScalar &rho_A,
                                       PetscScalar &y_c,
-                                      PetscScalar &z_c,
                                       PetscInt J,
-                                      PetscScalar sxx_eff_ave_cell,
-                                      PetscScalar zsolidus);
+                                      PetscScalar sxx_eff_ave_cell);
 
 //---------------------------------------------------------------------------
 #endif
