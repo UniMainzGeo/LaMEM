@@ -633,7 +633,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 	{
 		for (nD = 0; nD < numDike; nD++)
 		{
-			dike = jr->dbdike->matDike + nD; // sets dike to point to the nD-th element of matDike array
+			// access the parameters of the dike depending on the dike block
+			dike = jr->dbdike->matDike + nD;
 
 			if ((dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start)) || (jr->ctrl.var_M))
 			{
@@ -694,7 +695,6 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 					ierr = Set_dike_base(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // use solidus values to set zbound of dike
 				}
 			}
-			PetscFunctionReturn(0);
 		}
 	}
 	else if (jr->ctrl.sol_track) // gets solidus array (as well as average sxx, etc...)
@@ -702,6 +702,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 		nD = 0;
 		ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
 	}
+	
+	PetscFunctionReturn(0);
 }
 
 //------------------------------------------------------------------------------------------------------------------
