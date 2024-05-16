@@ -225,8 +225,7 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
 								 PetscScalar &x_c,
 								 PetscScalar &z_c,
 								 PetscInt J,
-								 PetscScalar sxx_eff_ave_cell,
-								 PetscScalar zsolidus) // pontentially use for max height
+								 PetscScalar sxx_eff_ave_cell)
 
 {
 	HeatZone *heatzone;

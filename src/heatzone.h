@@ -65,8 +65,7 @@ PetscErrorCode GetHeatZoneSource(JacRes *jr,
                                      PetscScalar &x_c,
                                      PetscScalar &z_c,
                                      PetscInt J,
-                                     PetscScalar sxx_eff_ave_cell,
-                                     PetscScalar zsolidus);
+                                     PetscScalar sxx_eff_ave_cell);
 
 // compensate for dike heat contributions if within heat zone
 PetscErrorCode SubtractDikeHeatSource(JacRes *jr,
