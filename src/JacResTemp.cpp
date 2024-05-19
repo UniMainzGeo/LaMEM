@@ -22,12 +22,6 @@
 #include "dike.h"
 #include "heatzone.h"
 
-// added for debug file output *djking
-#include <sstream>
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-
 //---------------------------------------------------------------------------
 
 #define SCATTER_FIELD(da, vec, lT, FIELD)				\
@@ -162,31 +156,8 @@ PetscErrorCode JacResGetTempParam(
 
 		if (Tc <= T_Nu && z_c <= surface && z_c >= surf_depth)
 		{
-			k = k + k * (nu_k - 1) * (1 - (Tc / T_Nu)) * (1 - ((z_c - surface) / (z_Nu)));
+			k += k * (nu_k - 1) * (1 - (Tc / T_Nu)) * (1 - ((z_c - surface) / (z_Nu)));
 		} //*mcr
-
-		// debug verify *djking
-			// form the filename based on jr->ts->istep+1
-			std::ostringstream oss;
-			oss << "surface_outputs_Timestep_" << std::setfill('0') << std::setw(8) << (jr->ts->istep + 1) << ".txt";
-			std::string filename = oss.str();
-
-			// create file
-			std::ofstream outFile(filename, std::ios_base::app); // append if already created
-			if (outFile)
-			{
-				// write space delimited data
-				outFile
-					<< " " << x_c << " " << y_c 
-					<< " " << z_c << " " << Tc * jr->scal->temperature
-					<< " " << surface << surf_depth 
-					<< " " << k*jr->scal->conductivity << "\n";
-			}
-			else
-			{
-				std::cerr << "Error creating file: " << filename << std::endl;
-			}
-
 	}
 
 	if (ctrl.actDike && ctrl.dikeHeat)

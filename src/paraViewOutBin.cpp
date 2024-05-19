@@ -404,7 +404,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	// check
 	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0;   // heat diffusion is deactivated
 	if(!pvout->jr->ctrl.actTemp)             omask->heat_source = 0; // heat diffusion is deactivated // *djking
-//	if(!pvout->jr->ctrl.actDike)             omask->div_dike = 0;    // diking is deactivated // *djking
+	if(!pvout->jr->ctrl.actDike)             omask->div_dike = 0;    // diking is deactivated // *djking
 	if( pvout->jr->ctrl.gwType == _GW_NONE_) omask->eff_press = 0;   // pore pressure is deactivated
 
 	// print summary

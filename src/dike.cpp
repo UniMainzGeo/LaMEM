@@ -357,7 +357,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 						if (jr->ctrl.var_M)
 						{
 							P_comp = sxx_eff_ave_cell - dike->Ts;
-							M_rat = M; // M ratio *revisit
+							M_rat = M; // M ratio *revisit to include global var_M
 							div_max = M_rat * 2 * (v_spread / (right - left));
 
 							if (P_comp > 0) // diking occurs
@@ -636,7 +636,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 			// access the parameters of the dike depending on the dike block
 			dike = jr->dbdike->matDike + nD;
 
-			if ((dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start)) || (jr->ctrl.var_M))
+			if (dike->dyndike_start || (jr->ctrl.var_M)) // debugging *djking
+			//if ((dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start)) || (jr->ctrl.var_M))
 			{
 				PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1), (LLD)(nD));
 				// compute lithostatic pressure

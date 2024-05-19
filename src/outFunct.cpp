@@ -928,7 +928,7 @@ PetscErrorCode PVOutWriteDikeRHS(OutVec* outvec) // *djking
 
 	ACCESS_FUNCTION_HEADER
 
-	cf = scal->dissipation_rate;
+	cf = 1.0;
 
 	fs = jr->fs;
 
