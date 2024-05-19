@@ -61,7 +61,7 @@ PetscErrorCode JacResGetTempParam(
     PetscScalar y_c,              // center of cell in y-direction
     PetscScalar x_c,              // center of cell in x-direction
     PetscScalar z_c,              // center of cell in z-direction
-    PetscInt    J,                // coordinate of cell
+    PetscInt    J,                // coordinate of y-plane
     PetscScalar sxx_eff_ave_cell, // lithospheric sxx
 	PetscScalar surface) 
 
@@ -162,8 +162,30 @@ PetscErrorCode JacResGetTempParam(
 
 		if (Tc <= T_Nu && z_c <= surface && z_c >= surf_depth)
 		{
-			k += k * (nu_k - 1) * (1 - (Tc / T_Nu)) * (1 - ((z_c - surface) / (z_Nu)));
+			k = k + k * (nu_k - 1) * (1 - (Tc / T_Nu)) * (1 - ((z_c - surface) / (z_Nu)));
 		} //*mcr
+
+		// debug verify *djking
+			// form the filename based on jr->ts->istep+1
+			std::ostringstream oss;
+			oss << "surface_outputs_Timestep_" << std::setfill('0') << std::setw(8) << (jr->ts->istep + 1) << ".txt";
+			std::string filename = oss.str();
+
+			// create file
+			std::ofstream outFile(filename, std::ios_base::app); // append if already created
+			if (outFile)
+			{
+				// write space delimited data
+				outFile
+					<< " " << x_c << " " << y_c 
+					<< " " << z_c << " " << Tc * jr->scal->temperature
+					<< " " << surface << surf_depth 
+					<< " " << k*jr->scal->conductivity << "\n";
+			}
+			else
+			{
+				std::cerr << "Error creating file: " << filename << std::endl;
+			}
 
 	}
 
@@ -542,35 +564,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	if (jr->ctrl.useTDk)
 	{
 		PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &surf_topo));
-		
-		if (L == 0) // debug print out *djking
-		{
-			// form the filename based on jr->ts->istep+1
-			std::ostringstream oss;
-			oss << "surface_outputs_Timestep_" << std::setfill('0') << std::setw(8) << (jr->ts->istep + 1) << ".txt";
-			std::string filename = oss.str();
-
-			// create file
-			std::ofstream outFile(filename);
-			if (outFile)
-			{
-				START_PLANE_LOOP
-
-				x_c = COORD_CELL(i, sx, fs->dsx);
-				y_c = COORD_CELL(j, sy, fs->dsy);
-
-				// write space delimited data
-				outFile
-					<< " " << x_c << " " << y_c
-					<< " " << surf_topo[L][j][i] << "\n";
-
-				END_PLANE_LOOP
-			}
-			else
-			{
-				std::cerr << "Error creating file: " << filename << std::endl;
-			}
-		}
 	}
 
 	START_STD_LOOP

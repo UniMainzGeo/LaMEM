@@ -30,7 +30,7 @@
 #include "surf.h"
 #include "advect.h"
 
-// added for file output *djking
+// added for debug file output *djking
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -121,7 +121,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 
 			// creating local vectors and inializing the history vector
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->magPressure));
-			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->focused_magPressure));
+			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->focused_magPressure)); // *djking
 
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->sxx_eff_ave));
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->raw_sxx));
@@ -129,7 +129,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->smooth_sxx));
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->smooth_sxx_ave));
 
-			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->solidus)); // *djking
+			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->solidus));
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->magPresence)); // *djking
 			
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D_tave, &dike->sxx_eff_ave_hist));
@@ -690,7 +690,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 				}
 
 				// change z boundary of dike box if trackSolidus is set
-				if (jr->ctrl.sol_track) // *djking
+				if (jr->ctrl.sol_track)
 				{
 					ierr = Set_dike_base(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // use solidus values to set zbound of dike
 				}
@@ -711,7 +711,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 {
   MPI_Request srequest, rrequest;
   Vec         vsxx, vPmag, vliththick, vzsol; 
-  PetscScalar ***magPressure, ***focused_magPressure;
+  PetscScalar ***magPressure, ***focused_magPressure; // *djking
   PetscScalar ***gsxx_eff_ave, ***p_lith;
   PetscScalar ***raw_gsxx, ***smooth_gsxx;
   PetscScalar ***raw_gsxx_ave, ***smooth_gsxx_ave;
@@ -797,7 +797,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 
   }
   
-  ///// INTEGRATE LITHSPHERIC SXX, LITHOSTATIC PRESSURE (Pmag), AND THICKNESS /////
+  ///// INTEGRATE LITHSPHERIC SXX, LITHOSTATIC PRESSURE (Pmag), AND THICKNESS OF T-DETERMINED LITHOSPHERE/////
   Tsol=dike->Tsol;
   for(k = sz + nz - 1; k >= sz; k--)
   {
@@ -810,10 +810,10 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
           if ((Tc<=Tsol) && (svCell->phRat[AirPhase] < 1.0))
           {
             dz  = SIZE_CELL(k, sz, (*dsz));
-            sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn)*dz;  //integrating dz-weighted total stress (*revisit deviatoric??)
-            Pmag[L][j][i]+=p_lith[k][j][i]*dz; // removed from magPressure due to varM dike initiation criteria *djking
+            sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn)*dz;  //integrating dz-weighted total stress
+            Pmag[L][j][i]+=p_lith[k][j][i]*dz; // integrating lithostatic pressure
 
-            liththick[L][j][i]+=dz;             //integrating thickness
+            liththick[L][j][i]+=dz; //integrating thickness
           }
           
           //interpolate depth to the solidus
@@ -878,7 +878,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 
   // (gdev is the array that shares data with devxx_mean and is indexed with global dimensions)
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr); // *djking
 
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->raw_sxx, &raw_gsxx); CHKERRQ(ierr);
@@ -886,7 +886,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->smooth_sxx, &smooth_gsxx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->smooth_sxx_ave, &smooth_gsxx_ave); CHKERRQ(ierr);
 
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr); // *djking
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPresence, &magPresence); CHKERRQ(ierr); // *djking
 
 	// store solidus in dike structure and find solidus max *djking
@@ -921,7 +921,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 			magma_presence=dike->magPfac*(zsol[L][j][i]-dike->zmax_magma)/(zsol_max_global-dike->zmax_magma);  //undergoing testing
 		}
 		//magPressure[L][j][i] = (Pmag[L][j][i]/liththick[L][j][i]+dPmag)*magma_presence;
-		magPressure[L][j][i] = dPmag;	// removed average lithostatic pressure *djking
+		magPressure[L][j][i] = dPmag;	// removed average lithostatic pressure (above) *djking
 		focused_magPressure[L][j][i] = dPmag * magma_presence;	// revisit and turn on magma_presence *djking
 		magPresence[L][j][i] = magma_presence; // testing *djking
 	
@@ -933,47 +933,11 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 		
 	END_PLANE_LOOP
 
-/* 	// output mean stress array to .txt file on timesteps of standard output *djking
-	if (((istep % nstep_out) == 0 || istep == 1) && (dike->out_stress > 0))
-	{
-		if (L == 0)
-		{
-			// Form the filename based on jr->ts->istep+1
-			std::ostringstream oss;
-			oss << "gsxx_Timestep_" << (jr->ts->istep + 1) << ".txt";
-
-			std::string filename = oss.str();
-
-			// Open a file with the formed filename
-			std::ofstream outFile(filename);
-			if (outFile)
-			{
-				START_PLANE_LOOP
-				xcell = COORD_CELL(i, sx, fs->dsx);
-				ycell = COORD_CELL(j, sy, fs->dsy);
-
-				// Writing space delimited data
-				outFile
-					<< " " << xcell << " " << ycell
-					<< " " << gsxx_eff_ave[L][j][i]
-					<< " " << magPressure[L][j][i]
-					<< " " << nD << " " << zsol[L][j][i]
-					<< " " << magma_presence << "\n";
-
-				END_PLANE_LOOP
-			}
-			else
-			{
-				std::cerr << "Error creating file: " << filename << std::endl;
-			}
-		}
-	} */
-
   // restore buffer and mean stress vectors
   ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
 
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr);
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr); // *djking
 
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->raw_sxx, &raw_gsxx); CHKERRQ(ierr);
@@ -981,7 +945,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->smooth_sxx, &smooth_gsxx); CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->smooth_sxx_ave, &smooth_gsxx_ave); CHKERRQ(ierr); 
 
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr); // *djking
+  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPresence, &magPresence); CHKERRQ(ierr); // *djking
 
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
@@ -1003,7 +967,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   //fill ghost points
 
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->magPressure);
-  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->focused_magPressure);
+  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->focused_magPressure); // *djking
       
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->raw_sxx);
@@ -1011,7 +975,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->smooth_sxx_ave);
 
-  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+  LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->magPresence); // *djking
 //  ierr = VecGhostUpdateBegin(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
 //  ierr = VecGhostUpdateEnd(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
@@ -1032,7 +996,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	Discret1D   *dsz, *dsy;
 	Ph_trans_t  *CurrPhTr;
 
-	PetscScalar ***magPressure, ***focused_magPressure;
+	PetscScalar ***magPressure, ***focused_magPressure; // *djking
 	PetscScalar ***solidus, ***magPresence; // *djking
 	PetscScalar ***gsxx_eff_ave, ***gsxx_eff_ave_hist;
 	PetscScalar ***raw_gsxx, ***smooth_gsxx;
@@ -1169,9 +1133,9 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->smooth_sxx_ave, &smooth_gsxx_ave); CHKERRQ(ierr);
 
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr); // *djking
 
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr); // *djking
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPresence, &magPresence); CHKERRQ(ierr); // *djking
   
 	START_PLANE_LOOP
@@ -1502,12 +1466,12 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 
 			//sum_w=max(sum_w,0.0);  //why would sum_w be <0???!
 			magPressure[L][j][i]=(sum_magP/sum_w);
-			focused_magPressure[L][j][i]=(sum_magP/sum_w)*magPfac*exp(-0.5*(pow((cos(azim)*(xcent-xc)/magPwidth),2)));
+			focused_magPressure[L][j][i]=(sum_magP/sum_w)*magPfac*exp(-0.5*(pow((cos(azim)*(xcent-xc)/magPwidth),2))); // *djking
 
 			smooth_gsxx[L][j][i]=(sum_sxx/sum_w);
 			smooth_gsxx_ave[L][j][i]=(sum_sxx/sum_w);
 			gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + magPressure[L][j][i];
-			//gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + focused_magPressure[L][j][i]; // testing
+			//gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + focused_magPressure[L][j][i]; // *djking
 
 		}//End loop over i
 	}// End loop over j
@@ -1639,7 +1603,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
         outFile
           << " " << xc << " " << yc 
           << " " << magPressure[L][j][i] 
-          << " " << focused_magPressure[L][j][i] 
+          << " " << focused_magPressure[L][j][i]
           << " " << raw_gsxx[L][j][i] 
           << " " << raw_gsxx_ave[L][j][i] 
           << " " << smooth_gsxx[L][j][i] 
@@ -1659,7 +1623,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 
 	//restore arrays
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr); // *djking
 
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->raw_sxx, &raw_gsxx); CHKERRQ(ierr);
@@ -1667,11 +1631,11 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->smooth_sxx, &smooth_gsxx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->smooth_sxx_ave, &smooth_gsxx_ave); CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr); // *djking
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPresence, &magPresence); CHKERRQ(ierr); // *djking
 
 	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
-	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus); // *djking
+	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus);
 	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->magPresence); // *djking
 
 	PetscFunctionReturn(0);  
@@ -1970,7 +1934,7 @@ PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1
 	// set zbounds[0] so that divergence only occurs in brittle lithosphere
 	CurrPhTr->zbounds[0] = gdikeSolidus;
 
-	// output *djking
+	// solidus debug output *djking
 	if (L == 0)
 	{
 		std::ostringstream oss;

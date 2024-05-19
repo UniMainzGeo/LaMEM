@@ -59,10 +59,10 @@ public:
   Vec smooth_sxx_ave;
   Vec smooth_sxx_ave_hist;
   Vec magPressure;
-  Vec focused_magPressure;
+  Vec focused_magPressure; // *djking
 
   Vec solidus;
-  Vec magPresence;
+  Vec magPresence; // *djking
 
   PetscScalar drhomagma;
   PetscScalar zmax_magma;
