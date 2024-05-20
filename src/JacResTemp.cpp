@@ -66,21 +66,9 @@ PetscErrorCode JacResGetTempParam(
 	Material_t  *phases, *M;
 	Controls    ctrl;
 	PetscScalar cf, k, rho, rho_Cp, rho_A, density, nu_k, T_Nu; 
-
-/* 	// depth dependent conductivity *mcr
-	FDSTAG      *fs;
-	Discret1D   *dsz;
-	FreeSurf    *surf;
-	PetscScalar surf_depth, z_Nu, ***surface;
-	PetscInt    i, j, sx, sy, sz, nx, ny, nz, L; */
-
 	PetscScalar surf_depth, z_Nu;
 
 	PetscFunctionBeginUser;
-
-/* 	fs = jr->fs;
-	L   =  (PetscInt)fs->dsz.rank;
-	surf = jr->surf; */
 
 	// initialize
 	k         = 0.0;
@@ -148,11 +136,10 @@ PetscErrorCode JacResGetTempParam(
 	    k = k*nu_k;
 	}
 
-	// switch and temperature / depth condition to use T-D conductivity adapted from Gregg et al., 2009 *mcr
-	// get topography / depth of surface from top of model *mcr
+	// temperature & depth condition to use T-D conductivity adapted from Gregg et al., 2009 *mcr
 	if (ctrl.useTDk)
 	{
-		surf_depth = surface + z_Nu;
+		surf_depth = surface + z_Nu; // find depth from top of model where condition is applied  
 
 		if (Tc <= T_Nu && z_c <= surface && z_c >= surf_depth)
 		{
@@ -451,6 +438,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	SolVarCell *svCell;
     SolVarDev  *svDev;
 	SolVarBulk *svBulk;
+	FreeSurf   *surf;
 	Dike       *dike;
 	Discret1D  *dsz;
 	Controls    ctrl;
@@ -458,9 +446,8 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscInt    nD, L;
+	PetscScalar ***surf_topo, surface;
 	PetscScalar ***gsxx_eff_ave, sxx_eff_ave_cell;
-	FreeSurf    *surf; // *mcr
-	PetscScalar ***surf_topo, surface; // *mcr
  	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
@@ -481,7 +468,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	num   = bc->tNumSPC;
 	list  = bc->tSPCList;
 
-	// establishing z rank for varM dike heating and useTDk
+	// establishing z rank for varM dike heating
 	dsz = &fs->dsz;
 	L   =  (PetscInt)dsz->rank;
 
@@ -518,6 +505,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy) );
 	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz) );
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &P ));
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &surf_topo));
 
 
 	//---------------
@@ -526,15 +514,11 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	iter = 0;
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
-	if (jr->ctrl.actDike)
+	if (jr->ctrl.actDike && jr->ctrl.var_M)
 	{
 		nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
 		dike = jr->dbdike->matDike + nD;
-		PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave)); // *revisit (can we disconnect from individual dike?)
-	}
-	if (jr->ctrl.useTDk)
-	{
-		PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &surf_topo));
+		PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
 	}
 
 	START_STD_LOOP
@@ -553,29 +537,17 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		x_c = COORD_CELL(i, sx, fs->dsx);
 		z_c = COORD_CELL(k, sz, fs->dsz);
 
+		surface = surf_topo[L][j][i];
+
 		// conductivity, heat capacity, radiogenic heat production
-		if (jr->ctrl.actDike)
+		if(jr->ctrl.actDike && jr->ctrl.var_M)
 		{
 			sxx_eff_ave_cell = gsxx_eff_ave[L][j][i];
-
-			PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, x_c, z_c, j-sy, sxx_eff_ave_cell, 1.0));
-		}
-		else if (jr->ctrl.actDike && jr->ctrl.useTDk)
-		{
-			sxx_eff_ave_cell = gsxx_eff_ave[L][j][i];
-			surface = surf_topo[L][j][i];
-
 			PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, x_c, z_c, j-sy, sxx_eff_ave_cell, surface));
-		}
-		else if (jr->ctrl.useTDk)
-		{
-			surface = surf_topo[L][j][i];
-
-			PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, x_c, z_c, j-sy, 1.0, surface));
 		}
 		else
 		{
-			PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, x_c, z_c, j-sy, 1.0, 1.0));
+			PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y_c, x_c, z_c, j-sy, 1.0, surface));
 		}
 		
 
@@ -662,15 +634,11 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy) );
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz) );
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &P)  );
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &surf_topo));
 
-	if (jr->ctrl.actDike)
+	if (jr->ctrl.actDike && jr->ctrl.var_M)
 	{
 		PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
-	}
-
-	if (jr->ctrl.useTDk)
-	{
-		PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &surf_topo));
 	}
 
 	// impose primary temperature constraints

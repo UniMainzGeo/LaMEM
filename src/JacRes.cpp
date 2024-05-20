@@ -1181,11 +1181,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
-	if (jr->ctrl.actDike)
+	if (jr->ctrl.actDike && jr->ctrl.var_M)
 	{
 		nD = 0; // sets dike number to 0 for calculation of sxx_eff_ave across entire domain
 		dike = jr->dbdike->matDike + nD;
-		PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave)); // *revisit (can we disconnect from individual dike?)
+		PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
 	}
 
 	START_STD_LOOP
@@ -1199,12 +1199,19 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if (jr->ctrl.actDike)
 		{
 		  y_c = COORD_CELL(j,sy,fs->dsy);
-		  sxx_eff_ave_cell = gsxx_eff_ave[L][j][i];
 		
 		  dikeRHS = 0.0;
 
 		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-		  ierr = GetDikeContr(jr, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy, sxx_eff_ave_cell);  CHKERRQ(ierr); // *revisit (PetscInt I?)
+		  if (jr->ctrl.var_M)
+		  {
+		  	sxx_eff_ave_cell = gsxx_eff_ave[L][j][i];
+		    ierr = GetDikeContr(jr, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy, sxx_eff_ave_cell);  CHKERRQ(ierr);
+		  }
+		  else
+		  {
+		  	ierr = GetDikeContr(jr, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy, 1.0);  CHKERRQ(ierr);
+		  }
 		  
 		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
 		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
@@ -1671,7 +1678,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);      CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dc,      &div_dike); CHKERRQ(ierr);
 
-	if (jr->ctrl.actDike)
+	if (jr->ctrl.actDike && jr->ctrl.var_M)
 	{
 		PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
 	}

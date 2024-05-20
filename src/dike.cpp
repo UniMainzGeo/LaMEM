@@ -100,7 +100,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 	for (nD = 0; nD < numDike; nD++) // loop through all dike blocks
 	{
 		dike = dbdike->matDike + nD;
-		if (dike->dyndike_start)
+		if (dike->dyndike_start > 0 || jr->ctrl.var_M || jr->ctrl.sol_track)
 		{
 			numdyndike++;
 			if (numdyndike == 1) //(take this out of this loop because it will be repeated with >1 dynamic dike)
@@ -221,7 +221,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	}
 
 	// parameters for average lithospheric stress calculations (includes magma pressure)
-	if (dike->dyndike_start || jr->ctrl.var_M || jr->ctrl.sol_track)
+	if (dike->dyndike_start > 0 || jr->ctrl.var_M || jr->ctrl.sol_track)
 	{
 		dike->Tsol = 1000;
 		dike->zmax_magma = -15.0;
@@ -250,8 +250,8 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 
 		PetscCall(getIntParam(fb, _OPTIONAL_, "istep_nave", &dike->istep_nave, 1, 50));
 		PetscCall(getIntParam(fb, _OPTIONAL_, "nstep_locate", &dike->nstep_locate, 1, 1000));
-		PetscCall(getIntParam(fb, _OPTIONAL_, "out_stress", &dike->out_stress, 1, 50));
-		PetscCall(getIntParam(fb, _OPTIONAL_, "out_dikeloc", &dike->out_dikeloc, 1, 50));
+		PetscCall(getIntParam(fb, _OPTIONAL_, "out_stress", &dike->out_stress, 1, 1));
+		PetscCall(getIntParam(fb, _OPTIONAL_, "out_dikeloc", &dike->out_dikeloc, 1, 1));
 
 		// scaling
 		dike->Tsol = (dike->Tsol + jr->scal->Tshift) / jr->scal->temperature;
@@ -264,7 +264,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	if (PrintOutput)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "Dike [%lld]: ", (LLD)(dike->ID));
-		if (dike->dyndike_start)
+		if (dike->dyndike_start > 0)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "Dynamic starting at timestep = %lld\n", (LLD)(dike->dyndike_start));
 		}
@@ -280,7 +280,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 			PetscPrintf(PETSC_COMM_WORLD, "     A = %lld %s, Ts = %lld %s, zeta_0 = %g %s\n",
 						(LLD)(dike->A * scal->stress), scal->lbl_stress, (LLD)(dike->Ts * scal->stress), scal->lbl_stress, dike->zeta_0 * scal->viscosity, scal->lbl_viscosity);
 		}
-		if (dike->dyndike_start || jr->ctrl.var_M)
+		if (dike->dyndike_start > 0 || jr->ctrl.var_M)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "   gsxx_eff_ave smoothing parameters:\n");
 			PetscPrintf(PETSC_COMM_WORLD, "     Tsol = %1.0f %s, filtx = %1.2f %s, filty = %1.2f %s\n",
@@ -619,8 +619,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 	fs = jr->fs;
 	ctrl = &jr->ctrl;
 
-	if (!ctrl->actDike || jr->ts->istep + 1 == 0) PetscFunctionReturn(0); // only execute this function if dikes are active
-	fs = jr->fs;
+	if (!ctrl->actDike || jr->ts->istep + 1 == 0) PetscFunctionReturn(0); // only execute if diking is activated
+	// if (!ctrl->actDike || !ctrl->sol_track || jr->ts->istep + 1 == 0) PetscFunctionReturn(0); // Solidus tracking outside of diking?? debugging
 
 	PetscPrintf(PETSC_COMM_WORLD, "\n");
 	numDike = jr->dbdike->numDike; // number of dikes
@@ -636,10 +636,9 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 			// access the parameters of the dike depending on the dike block
 			dike = jr->dbdike->matDike + nD;
 
-			if (dike->dyndike_start || (jr->ctrl.var_M)) // debugging *djking
-			//if ((dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start)) || (jr->ctrl.var_M))
+			// if there is any reason to find stress, magmatic pressure, or even the solidus
+			if (dike->dyndike_start > 0 || jr->ctrl.var_M || jr->ctrl.sol_track)
 			{
-				PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1), (LLD)(nD));
 				// compute lithostatic pressure
 				if (icounter == 0)
 				{
@@ -685,8 +684,9 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 				ierr = Smooth_sxx_eff(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // smooth mean effective sxx
 
 				// Only relocate dike zone if dynamic diking is on and if on an nstep_locate timestep
-				if (dike->dyndike_start && (jr->ts->istep + 1 >= dike->dyndike_start) && ((jr->ts->istep + 1) % dike->nstep_locate) == 0)
+				if (dike->dyndike_start > 0 && (jr->ts->istep + 1 >= dike->dyndike_start) && ((jr->ts->istep + 1) % dike->nstep_locate) == 0)
 				{
+					PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1), (LLD)(nD));
 					ierr = Set_dike_zones(jr, nD, nPtr, j1, j2); CHKERRQ(ierr); // centered on peak sxx_eff_ave
 				}
 
@@ -698,11 +698,13 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 			}
 		}
 	}
+/*  // Solidus tracking outside of diking?? debugging
+	// Currently requires Tsol which is set in the dike block 
 	else if (jr->ctrl.sol_track) // gets solidus array (as well as average sxx, etc...)
 	{
 		nD = 0;
 		ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr); // compute mean effective sxx across the lithosphere
-	}
+	} */
 	
 	PetscFunctionReturn(0);
 }
@@ -978,8 +980,6 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->magPresence); // *djking
-//  ierr = VecGhostUpdateBegin(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
-//  ierr = VecGhostUpdateEnd(dike->solidus, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
 
   ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
   PetscFunctionReturn(0);
@@ -1534,7 +1534,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 //--------------------------------------------------
 //  TIME Averaging
 //--------------------------------------------------
-	if (dike->istep_nave>1)
+	if (dike->istep_nave > 1)
 	{
 		ierr = DMDAGetCorners(jr->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave); CHKERRQ(ierr);
 
@@ -1985,7 +1985,7 @@ PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *
 	for(nD = 0; nD < numDike; nD++)
 	{
 		dike = jr->dbdike->matDike+nD;
-		if (dike->dyndike_start)
+		if (dike->dyndike_start > 0 || jr->ctrl.var_M)
 		{
 			// read mean stress history, 2D array (local vector created with DA_CELL_2D_tave in DBReadDike)
 			ierr = VecReadRestart(dike->sxx_eff_ave_hist, fp); CHKERRQ(ierr);
@@ -2015,7 +2015,7 @@ PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp)
   for(nD = 0; nD < numDike; nD++)
   {
     dike = jr->dbdike->matDike+nD;
-    if (dike->dyndike_start)
+    if (dike->dyndike_start > 0 || jr->ctrl.var_M)
     {
       // WRITE mean stress history 2D array (local vector created with DA_CELL_2D_tave in DBReadDike)
        ierr = VecWriteRestart(dike->sxx_eff_ave_hist, fp); CHKERRQ(ierr);
@@ -2047,7 +2047,7 @@ PetscErrorCode DynamicDike_Destroy(JacRes *jr)
   for(nD = 0; nD < numDike; nD++)
   {
      dike = jr->dbdike->matDike+nD;
-     if (dike->dyndike_start)
+     if (dike->dyndike_start > 0 || jr->ctrl.var_M)
      {
        ierr = VecDestroy(&dike->sxx_eff_ave_hist); CHKERRQ(ierr);
        dyndike_on=1;

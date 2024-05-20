@@ -928,7 +928,7 @@ PetscErrorCode PVOutWriteDikeRHS(OutVec* outvec) // *djking
 
 	ACCESS_FUNCTION_HEADER
 
-	cf = 1.0;
+	cf = scal->strain_rate;
 
 	fs = jr->fs;
 
