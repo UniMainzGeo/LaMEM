@@ -214,14 +214,21 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		dike->A = 1e3;		 // default smoothing
 		dike->Ts = 10e6;	 // default tensile strength
 		dike->zeta_0 = 1e22; // default reference bulk viscosity
+		dike->const_M = 0;   // flag to turn off var_M (per-dike basis)
 
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "A", &dike->A, 1, scal->stress_si));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "Ts", &dike->Ts, 1, scal->stress_si));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "zeta_0", &dike->zeta_0, 1, scal->viscosity));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "A", &dike->A, 1, 1));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "Ts", &dike->Ts, 1, 1));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "zeta_0", &dike->zeta_0, 1, 1));
+		PetscCall(getIntParam(fb, _OPTIONAL_, "const_M", &dike->const_M, 1, 1));
+
+		// scaling
+		dike->A /= scal->stress_si;
+		dike->Ts /= scal->stress_si;
+		dike->zeta_0 /= scal->viscosity;
 	}
 
 	// parameters for average lithospheric stress calculations (includes magma pressure)
-	if (dike->dyndike_start > 0 || jr->ctrl.var_M || jr->ctrl.sol_track)
+	if (dike->dyndike_start > 0 || jr->ctrl.var_M || jr->ctrl.sol_track) 
 	{
 		dike->Tsol = 1000;
 		dike->zmax_magma = -15.0;
@@ -238,13 +245,13 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		// dike->ymaxdyn=1e+30;
 
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "Tsol", &dike->Tsol, 1, 1.0));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "filtx", &dike->filtx, 1, scal->length));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "filty", &dike->filty, 1, scal->length));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "filtx", &dike->filtx, 1, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "filty", &dike->filty, 1, 1.0));
 
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "zmax_magma", &dike->zmax_magma, 1, scal->length));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "drhomagma", &dike->drhomagma, 1, scal->density));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "zmax_magma", &dike->zmax_magma, 1, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "drhomagma", &dike->drhomagma, 1, 1.0));
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "magPfac", &dike->magPfac, 1, 1.0));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "magPwidth", &dike->magPwidth, 1, scal->length));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "magPwidth", &dike->magPwidth, 1, 1.0));
 		// PetscCall(getScalarParam(fb, _OPTIONAL_, "ymindyn",	&dike->ymindyn,		1, 1.0));
 		// PetscCall(getScalarParam(fb, _OPTIONAL_, "ymaxdyn",	&dike->ymaxdyn,		1, 1.0));
 
@@ -255,6 +262,11 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 
 		// scaling
 		dike->Tsol = (dike->Tsol + jr->scal->Tshift) / jr->scal->temperature;
+		dike->filtx /= scal->length;
+		dike->filty /= scal->length;
+		dike->zmax_magma /= scal->length;
+		dike->drhomagma /= scal->density;
+		dike->magPwidth /= scal->length;
 
 		// initialize so that when istep=dike_start, it is set to 0
 		dike->istep_count = dike->istep_nave;
@@ -274,11 +286,11 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		}
 		PetscPrintf(PETSC_COMM_WORLD, "   PhaseTransID=%lld PhaseID=%lld Mf=%g, Mb=%g, Mc=%g, y_Mc=%g \n",
 					(LLD)(dike->PhaseTransID), (LLD)(dike->PhaseID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
-		if (jr->ctrl.var_M)
+		if (jr->ctrl.var_M && !(dike->const_M > 0))
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Variable M option used:\n");
 			PetscPrintf(PETSC_COMM_WORLD, "     A = %lld %s, Ts = %lld %s, zeta_0 = %g %s\n",
-						(LLD)(dike->A * scal->stress), scal->lbl_stress, (LLD)(dike->Ts * scal->stress), scal->lbl_stress, dike->zeta_0 * scal->viscosity, scal->lbl_viscosity);
+						(LLD)(dike->A * scal->stress_si), scal->lbl_stress_si, (LLD)(dike->Ts * scal->stress), scal->lbl_stress, dike->zeta_0 * scal->viscosity, scal->lbl_viscosity);
 		}
 		if (dike->dyndike_start > 0 || jr->ctrl.var_M)
 		{
@@ -354,7 +366,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 						left = CurrPhTr->celly_xboundL[J];
 						right = CurrPhTr->celly_xboundR[J];
 
-						if (jr->ctrl.var_M)
+						if (jr->ctrl.var_M && !(dike->const_M > 0))
 						{
 							P_comp = sxx_eff_ave_cell - dike->Ts;
 							M_rat = M; // M ratio *revisit to include global var_M
@@ -377,7 +389,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 					}
 					else if (dike->Mc >= 0.0) // Mf, Mc and Mb are all user defined
 					{
-						if (jr->ctrl.var_M) // check varaible M option isn't used
+						if (jr->ctrl.var_M && !(dike->const_M > 0)) // check variable M option isn't used
 						{
 							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");
 						}
@@ -405,7 +417,7 @@ PetscErrorCode GetDikeContr(JacRes *jr,
 					}
 					else if (dike->Mb != dike->Mf && dike->Mc < 0.0) // only Mf and Mb, they are different
 					{
-						if (jr->ctrl.var_M) // check varaible M option isn't used
+						if (jr->ctrl.var_M && !(dike->const_M > 0)) // check varaible M option isn't used
 						{
 							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires uniform M");
 						}
@@ -499,7 +511,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 						left = CurrPhTr->celly_xboundL[J];
 						right = CurrPhTr->celly_xboundR[J];
 
-						if (jr->ctrl.var_M)
+						if (jr->ctrl.var_M && !(dike->const_M > 0))
 						{
 							P_comp = sxx_eff_ave_cell - dike->Ts;
 							M_rat = M; // M ratio *revisit
@@ -522,7 +534,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 					}
 					else if (dike->Mc >= 0.0) // Mf, Mc and Mb are all user defined
 					{
-						if (jr->ctrl.var_M) // check varaible M option isn't used
+						if (jr->ctrl.var_M && !(dike->const_M > 0)) // check varaible M option isn't used
 						{
 							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires single global M (i.e. Mf = Mb)");
 						}
@@ -550,7 +562,7 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 					}
 					else if (dike->Mb != dike->Mf && dike->Mc < 0.0) // only Mf and Mb, they are different
 					{
-						if (jr->ctrl.var_M) // check varaible M option isn't used
+						if (jr->ctrl.var_M && !(dike->const_M > 0)) // check varaible M option isn't used
 						{
 							SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid option: var_M option requires single global M (i.e. Mf = Mb)");
 						}
