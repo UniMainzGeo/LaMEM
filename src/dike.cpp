@@ -1905,27 +1905,32 @@ PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1
 	FDSTAG      *fs;
 	Dike        *dike;
 	Discret1D   *dsz;
+	FreeSurf    *surf;
 	Ph_trans_t  *CurrPhTr;
-	PetscScalar ldikeSolidus = PETSC_MAX_REAL;
-	PetscScalar gdikeSolidus, ***solidus, xc;
+	PetscScalar ***surface, ***solidus;
+	PetscScalar dikeSolidus, xc;
+	PetscScalar localMinSolidus = PETSC_MAX_REAL;
+	PetscScalar lithick, minLithoThick;
+	PetscScalar localMinThickness = PETSC_MAX_REAL;
 	PetscInt    sx, nx, sy, ny, sz, nz, i, j, L;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs  =  jr->fs;
 	dsz = &fs->dsz;
 	L   =  (PetscInt)dsz->rank;
 
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	dike = jr->dbdike->matDike+nD;
+	surf = jr->surf;
 	CurrPhTr = jr->dbm->matPhtr+nPtr;
 
-	// get solidus array
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
+	// access work vectors
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &solidus));
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &surface));
 
-	// find local minimum solidus in dike zone nD
+	// find local minimum solidus and associated surface in dike zone nD
 	for (j = j1; j <= j2; j++)
 	{
 		for (i = sx; i < sx + nx; i++)
@@ -1933,19 +1938,23 @@ PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1
 			xc =  COORD_CELL(i, sx, fs->dsx);
 			if (xc >= CurrPhTr->celly_xboundL[j] && xc <= CurrPhTr->celly_xboundR[j])
 			{
-				ldikeSolidus = PetscMin(ldikeSolidus, solidus[L][j][i]);
+				lithick = surface[L][j][i] - solidus[L][j][i]; // local index (lithospheric) thickness
+				localMinThickness = PetscMin(localMinThickness, lithick);
+				localMinSolidus = PetscMin(localMinSolidus, solidus[L][j][i]);
 			}
 		}
 	}
 	
-	// find the global minimum across all processors (should be the same across all z-procs anyways)
-	ierr = MPI_Allreduce(&ldikeSolidus, &gdikeSolidus, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	// find the minimum values across processors
+	PetscCall(MPI_Allreduce(&localMinSolidus, &dikeSolidus, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
+	PetscCall(MPI_Allreduce(&localMinThickness, &minLithoThick, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
 
-	// restore solidus array
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
+	// restore access
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus));
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &surface));
 
 	// set zbounds[0] so that divergence only occurs in brittle lithosphere
-	CurrPhTr->zbounds[0] = gdikeSolidus;
+	CurrPhTr->zbounds[0] = dikeSolidus;
 
 	// solidus debug output *djking
 	if (L == 0)
@@ -1958,9 +1967,13 @@ PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1
 		::ofstream outFile(filename, std::ios_base::app); // append if already created
 		if (outFile)
 		{
-			// write data
+			// write data [dike#, solidus, minimum lithospheric thicknes]
 			outFile
-				<< "dike " << nD << " " << gdikeSolidus << " " << CurrPhTr->zbounds[0] << "\n";
+				<< nD << " " << CurrPhTr->zbounds[0] 
+				<< " " << minLithoThick << "\n";
+/* 			outFile // too fancy *djking
+				<< "dike [" << nD << "]: " << "dikeSolidus = " << CurrPhTr->zbounds[0] 
+				<< ", minLithoThick = " << minLithoThick << "\n"; */
 		}
 		else
 		{
