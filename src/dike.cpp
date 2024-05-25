@@ -1767,7 +1767,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 		CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2; 
 
  // dike location to .txt file on timesteps of other output
-    if (L==0 &&  ((istep % nstep_out) == 0 || istep == 1) && (dike->out_dikeloc > 0))
+       if (L==0 &&  ((istep % nstep_out) == 0 || istep == 1) && (dike->out_dikeloc > 0))
     {
       // Form the filename based on jr->ts->istep
       std::ostringstream oss;
@@ -1913,12 +1913,16 @@ PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1
 	PetscScalar lithick, minLithoThick;
 	PetscScalar localMinThickness = PETSC_MAX_REAL;
 	PetscInt    sx, nx, sy, ny, sz, nz, i, j, L;
+	PetscInt    istep, nstep_out;
 
 	PetscFunctionBeginUser;
 
 	fs  =  jr->fs;
 	dsz = &fs->dsz;
 	L   =  (PetscInt)dsz->rank;
+
+	istep=jr->ts->istep+1; 
+	nstep_out=jr->ts->nstep_out;
 
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
@@ -1957,7 +1961,7 @@ PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1
 	CurrPhTr->zbounds[0] = dikeSolidus;
 
 	// solidus debug output *djking
-	if (L == 0)
+	if (L==0 && ((istep % nstep_out) == 0 || istep == 1))
 	{
 		std::ostringstream oss;
 		oss << "dikeSolidus_Timestep_" << std::setfill('0') << std::setw(8) << (jr->ts->istep + 1) << ".txt";
