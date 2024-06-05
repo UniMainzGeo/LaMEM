@@ -1007,10 +1007,11 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	FDSTAG      *fs;
 	Dike        *dike;
 	Discret1D   *dsz, *dsy;
+	FreeSurf    *surf;
 	Ph_trans_t  *CurrPhTr;
 
-	PetscScalar ***magPressure, ***focused_magPressure; // *djking
-	PetscScalar ***solidus, ***magPresence; // *djking
+	PetscScalar ***surface, ***solidus, lithick; // *djking
+	PetscScalar ***magPressure, ***focused_magPressure, ***magPresence; // *djking
 	PetscScalar ***gsxx_eff_ave, ***gsxx_eff_ave_hist;
 	PetscScalar ***raw_gsxx, ***smooth_gsxx;
 	PetscScalar ***raw_gsxx_ave, ***raw_gsxx_ave_hist;
@@ -1064,6 +1065,8 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	magPfac=dike->magPfac;
 	magPwidth=dike->magPwidth;
 	CurrPhTr = jr->dbm->matPhtr+nPtr;
+
+	surf = jr->surf;
 
 // get communication buffer (Gets a PETSc vector, vycoors, that may be used with the DM global routines)
 //y node coords
@@ -1144,13 +1147,12 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->raw_sxx_ave, &raw_gsxx_ave); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->smooth_sxx, &smooth_gsxx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->smooth_sxx_ave, &smooth_gsxx_ave); CHKERRQ(ierr);
-
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr); // *djking
-
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPresence, &magPresence); CHKERRQ(ierr); // *djking
-  
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPresence, &magPresence); CHKERRQ(ierr);	
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &surface); CHKERRQ(ierr);
+	
 	START_PLANE_LOOP
 
 		magP[L][j][i]=magPressure[L][j][i];
@@ -1611,6 +1613,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
         START_PLANE_LOOP
         xc = COORD_CELL(i, sx, fs->dsx);
         yc = COORD_CELL(j, sy, fs->dsy);
+		lithick = surface[L][j][i] - solidus[L][j][i];
 
         // Writing space delimited data
         outFile
@@ -1623,7 +1626,8 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
           << " " << smooth_gsxx_ave[L][j][i] 
           << " " << gsxx_eff_ave[L][j][i] 
           << " " << jr->ts->istep+1 << " " << jr->ts->time * jr->scal->time    
-          << " " << solidus[L][j][i] << " " << magPresence[L][j][i] << "\n";    
+		  << " " << surface[L][j][i] << " " << solidus[L][j][i]    
+		  << " " << lithick << " " << magPresence[L][j][i] << "\n";    
 
         END_PLANE_LOOP
       }
@@ -1636,16 +1640,15 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 
 	//restore arrays
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr); // *djking
-
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->raw_sxx, &raw_gsxx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->raw_sxx_ave, &raw_gsxx_ave); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->smooth_sxx, &smooth_gsxx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->smooth_sxx_ave, &smooth_gsxx_ave); CHKERRQ(ierr);
-
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->solidus, &solidus); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPresence, &magPresence); CHKERRQ(ierr); // *djking
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPresence, &magPresence); CHKERRQ(ierr); 
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &surface); CHKERRQ(ierr);
 
 	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
 	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->solidus);
@@ -1784,7 +1787,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
         // Writing space delimited data
         outFile
-          << " " << xcell << " " << ycell 
+          << xcell << " " << ycell 
           << " " << xcenter << " " << xshift << " " << x_maxsxx 
           << " " << COORD_CELL(ixmax, sx, fs->dsx) 
           << " " << CurrPhTr->celly_xboundL[lj] 
@@ -1908,10 +1911,12 @@ PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1
 	FreeSurf    *surf;
 	Ph_trans_t  *CurrPhTr;
 	PetscScalar ***surface, ***solidus;
-	PetscScalar dikeSolidus, xc;
+	PetscScalar dikeSolidus, xc, yc;
 	PetscScalar localMinSolidus = PETSC_MAX_REAL;
 	PetscScalar lithick, minLithoThick;
 	PetscScalar localMinThickness = PETSC_MAX_REAL;
+	PetscScalar yMinThick, loopx, xlt, localxlt, localyMinThickness;
+	PetscScalar yMinSolidus, xms, localxms, localyMinSolidus;
 	PetscInt    sx, nx, sy, ny, sz, nz, i, j, L;
 	PetscInt    istep, nstep_out;
 
@@ -1937,19 +1942,91 @@ PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1
 	// find local minimum solidus and associated surface in dike zone nD
 	for (j = j1; j <= j2; j++)
 	{
+		yc = COORD_CELL(j, sy, fs->dsy);
+		localyMinThickness = PETSC_MAX_REAL;
+		localyMinSolidus = PETSC_MAX_REAL;
+
 		for (i = sx; i < sx + nx; i++)
 		{
-			xc =  COORD_CELL(i, sx, fs->dsx);
+			xc = COORD_CELL(i, sx, fs->dsx);
 			if (xc >= CurrPhTr->celly_xboundL[j] && xc <= CurrPhTr->celly_xboundR[j])
 			{
 				lithick = surface[L][j][i] - solidus[L][j][i]; // local index (lithospheric) thickness
 				localMinThickness = PetscMin(localMinThickness, lithick);
 				localMinSolidus = PetscMin(localMinSolidus, solidus[L][j][i]);
+
+				// set local y-dependent minimum thickness
+				if (lithick < localyMinThickness)
+				{
+					localyMinThickness = lithick; 
+				}
+
+				// set local y-dependent minimum solidus
+				if (solidus[L][j][i] < localyMinSolidus)
+				{
+					localyMinSolidus = solidus[L][j][i];
+				}
+				
 			}
 		}
+
+		// find y-location specific minimum lithospheric thickness and minimum solidus
+			PetscCall(MPI_Allreduce(&localyMinThickness, &yMinThick, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
+			PetscCall(MPI_Allreduce(&localyMinSolidus, &yMinSolidus, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
+        
+			// find associated coordinates
+			localxlt = PETSC_MAX_REAL; // set really high so when reducing across procs we get the actual xlt-coord
+			localxms = PETSC_MAX_REAL; // set really high so when reducing across procs we get the actual xms-coord
+
+			for (i = sx; i < sx + nx; i++)
+			{
+				loopx = COORD_CELL(i, sx, fs->dsx);
+				if (loopx >= CurrPhTr->celly_xboundL[j] && loopx <= CurrPhTr->celly_xboundR[j])
+				{
+					lithick = surface[L][j][i] - solidus[L][j][i]; 
+					
+					// local x-coords of minimum lithospheric thickness in y-location
+					if (lithick == yMinThick)
+					{
+						localxlt = loopx;
+					}
+
+					// local x-coord minimum solidus (dike solidus by y-coord if this were not tied to entire dike)
+					if (solidus[L][j][i] == yMinSolidus)
+					{
+						localxms = loopx;
+					}
+				}
+			}
+
+			// send coords to rank 0 processor
+			PetscCall(MPI_Allreduce(&localxlt, &xlt, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
+			PetscCall(MPI_Allreduce(&localxms, &xms, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
+
+			// print info to file
+			if (L == 0 && ((istep % nstep_out) == 0 || istep == 1))
+			{
+				std::ostringstream oss;
+				oss << "dikeSolidus_Timestep_" << std::setfill('0') << std::setw(8) << (jr->ts->istep + 1) << ".txt";
+				std::string filename = oss.str();
+
+				// open output file
+				::ofstream outFile(filename, std::ios_base::app); // append if already created
+				if (outFile)
+				{
+					// write data [dike#, y-coord, minimum solidus (ms), xms, minimum lithospheric thickness (lt), xlt]
+					outFile
+						<< nD << " " << yc << " " << yMinSolidus << " " << xms
+						<< " " << yMinThick << " " << xlt << "\n";
+				}
+				else
+				{
+					std::cerr << "Error opening file: " << filename << std::endl;
+				}
+		}
 	}
-	
-	// find the minimum values across processors
+
+	// find the minimum values across processors for this dike
 	PetscCall(MPI_Allreduce(&localMinSolidus, &dikeSolidus, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
 	PetscCall(MPI_Allreduce(&localMinThickness, &minLithoThick, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
 
@@ -1971,13 +2048,10 @@ PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j1
 		::ofstream outFile(filename, std::ios_base::app); // append if already created
 		if (outFile)
 		{
-			// write data [dike#, solidus, minimum lithospheric thicknes]
+			// write data [dike#, dike solidus, minimum lithospheric thickness]
 			outFile
-				<< nD << " " << CurrPhTr->zbounds[0] 
-				<< " " << minLithoThick << "\n";
-/* 			outFile // too fancy *djking
-				<< "dike [" << nD << "]: " << "dikeSolidus = " << CurrPhTr->zbounds[0] 
-				<< ", minLithoThick = " << minLithoThick << "\n"; */
+				<< "dike " << nD << " dikeSolidus " << CurrPhTr->zbounds[0] 
+				<< " minLithoThick " << minLithoThick << "\n";
 		}
 		else
 		{
