@@ -1262,8 +1262,8 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 			} //end loop over cells from next proc
 
 			//sum_w=max(sum_w,0.0);  //why would sum_w be <0???!
-			magPressure[L][j][i]=(sum_magP/sum_w);
-			gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + magPressure[L][j][i]*magPfac*exp(-0.5*(pow((cos(azim)*(xcent-xc)/magPwidth),2)));
+			magPressure[L][j][i]=(sum_magP/sum_w)*magPfac*exp(-0.5*(pow((cos(azim)*(xcent-xc)/magPwidth),2)));
+			gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + magPressure[L][j][i];
 			//gsxx_eff_ave[L][j][i]=(sum_sxx/sum_w) + magPressure[L][j][i];
 
 		}//End loop over i
