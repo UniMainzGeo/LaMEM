@@ -517,8 +517,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
   {
     dike = jr->dbdike->matDike+nD;
 
-	if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0) 
-	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
+	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0) 
+	if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
     {
 	   PetscPrintf(PETSC_COMM_WORLD, "Locating Dike zone: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1),(LLD)(nD));
        // compute lithostatic pressure
@@ -557,11 +557,13 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 			}
        }
 
-      ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
+		ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 
-      ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
-
-      ierr = Set_dike_zones(jr, nD, nPtr,j1, j2); CHKERRQ(ierr); //centered on peak sxx_eff_ave 
+		ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
+		if (((jr->ts->istep+1) % dike->nstep_locate) == 0)
+		{
+			ierr = Set_dike_zones(jr, nD, nPtr,j1, j2); CHKERRQ(ierr); //centered on peak sxx_eff_ave 
+		}
     }
 
   }
