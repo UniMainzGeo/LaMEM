@@ -36,7 +36,7 @@ end
 function Plot_Analytics_vs_Numerics(z,T_anal, T, dir, filename="Analytics_vs_LaMEM.png")
 
     # Open figure 
-    f = Figure(resolution = (1500, 800))
+    f = Figure(size = (1500, 800))
     ax = Axis(f[1, 1],  xlabel = "depth [km]", ylabel = "T [C]")
     lines!(ax, z, T_anal,  label = "Analytical T") 
     scatter!(ax, z, T,  label = "LaMEM T") 
