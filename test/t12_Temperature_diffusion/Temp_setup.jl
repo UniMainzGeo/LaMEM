@@ -4,7 +4,7 @@ function CreateMarkers_Temperature(dir="./", ParamFile="t12_Temperature_diffusio
     cd(dir)
 
     # Load LaMEM particles grid
-    Grid        =   ReadLaMEM_InputFile(ParamFile)
+    Grid        =   read_LaMEM_inputfile(ParamFile)
 
     Phases      =   zeros(Int64, size(Grid.X));      # Rock numbers
     Temp        =   zeros(Float64,size(Grid.X));     # Temperature in C    
@@ -20,11 +20,11 @@ function CreateMarkers_Temperature(dir="./", ParamFile="t12_Temperature_diffusio
     # Save LaMEM markers
     if NumberCores==1
         # 1 core
-        Save_LaMEMMarkersParallel(Model3D, directory=dir_markers, verbose=false)                      # Create LaMEM marker input on 1 core
+        save_LaMEM_markers_parallel(Model3D, directory=dir_markers, verbose=false)                      # Create LaMEM marker input on 1 core
     else
         #> 1 cores; create partitioning file first
         PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/");
-        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory=dir_markers, verbose=false, is64bit=is64bit)     
+        save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile,  directory=dir_markers, verbose=false, is64bit=is64bit)     
     end
 
     cd(cur_dir)

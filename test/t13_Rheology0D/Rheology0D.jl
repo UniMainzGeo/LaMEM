@@ -7,13 +7,13 @@ This extracts τII-time curves from LaMEM results, by computing the average stre
 """
 function StressTime_0D(FileName::String, DirName::String="")
 
-    Timestep, _, _= Read_LaMEM_simulation(FileName, DirName);
+    Timestep, _, _= read_LaMEM_simulation(FileName, DirName);
     
     N = length(Timestep)
     τII_vec = Vector{Float64}(undef, N)
     t_vec = Vector{Float64}(undef, N)
     for (i,it) in enumerate(Timestep)
-        data,t = Read_LaMEM_timestep(FileName, it, DirName, fields=("j2_dev_stress [MPa]",));
+        data,t = read_LaMEM_timestep(FileName, it, DirName, fields=("j2_dev_stress [MPa]",));
         τII =    Float64(mean(data.fields.j2_dev_stress))
         τII_vec[i] = τII
         t_vec[i] = t[1]
@@ -140,7 +140,7 @@ function StressStrainrate0D_LaMEM(FileName::String, DirName::String="", OutFile=
     cd(DirName)
     for (i,ε) in enumerate(ε_vec)
         out = run_lamem_local_test(FileName, 1, "-exx_strain_rates $ε"; opt=true, bin_dir="../../bin")  # run LaMEM
-        data, t = Read_LaMEM_timestep(OutFile, 2, pwd(), fields=("j2_dev_stress [MPa]",))   # read stress
+        data, t = read_LaMEM_timestep(OutFile, 2, pwd(), fields=("j2_dev_stress [MPa]",))   # read stress
         τ[i] = mean(data.fields.j2_dev_stress)  # store
     end
     cd(cur_dir)
