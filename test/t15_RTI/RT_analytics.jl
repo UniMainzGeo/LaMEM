@@ -11,7 +11,7 @@ function Compute_RT_growthrate_LaMEM(wav_x, FileName, DirName, OutFile="RTI_test
         args = "-coord_x -$(wav/2),$(wav/2) -FreeSurf_Wavelength $wav"
         out = run_lamem_local_test(FileName, 1, args; opt=true, bin_dir="../../bin")  # run LaMEM
         
-        data, t = Read_LaMEM_timestep(OutFile, 0, pwd(), fields=("velocity [ ]","amplitude [ ]"), surf=true, last=true)   # read surface
+        data, t = read_LaMEM_timestep(OutFile, 0, pwd(), fields=("velocity [ ]","amplitude [ ]"), surf=true, last=true)   # read surface
 
         Vz_max = maximum(data.fields.velocity[3])
         A_max  = maximum(data.fields.amplitude)

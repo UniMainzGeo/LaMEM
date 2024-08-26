@@ -350,7 +350,7 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
     
     # load the data
-    data, t = Read_LaMEM_timestep("output", 20, dir, last=true);
+    data, t = read_LaMEM_timestep("output", 20, dir, last=true);
 
     # extract 1D profiles
     include(joinpath(dir,"t10_analytics.jl"))
@@ -429,9 +429,9 @@ end
                             args="-mark_load_file ./markers_pT1/mdb",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false,  mpiexec=mpiexec)
     
-    data, t1 = Read_LaMEM_timestep("t13", 1, dir); T1=data.fields.temperature[1,1,:]; 
-    data, t3 = Read_LaMEM_timestep("t13", 3, dir); T3=data.fields.temperature[1,1,:];
-    data, t5 = Read_LaMEM_timestep("t13", 5, dir); T5=data.fields.temperature[1,1,:];
+    data, t1 = read_LaMEM_timestep("t13", 1, dir); T1=data.fields.temperature[1,1,:]; 
+    data, t3 = read_LaMEM_timestep("t13", 3, dir); T3=data.fields.temperature[1,1,:];
+    data, t5 = read_LaMEM_timestep("t13", 5, dir); T5=data.fields.temperature[1,1,:];
     z = data.z.val[1,1,:]
 
     T_a5 = Analytical_1D(z, t5)
@@ -510,7 +510,7 @@ end
     FileName = "Rheolog0D_DislocationCreep_VE"
     t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
     YieldStress = 1e10  
-    data,t = Read_LaMEM_timestep(FileName, 0, dir, fields=("temperature [C]",));
+    data,t = read_LaMEM_timestep(FileName, 0, dir, fields=("temperature [C]",));
     T = mean(data.fields.temperature)
 
     # Create plot
@@ -528,7 +528,7 @@ end
     FileName = "Rheolog0D_DislocationCreep_VEP"
     t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
     YieldStress = 15e6  
-    data,t = Read_LaMEM_timestep(FileName, 0, dir, fields=("temperature [C]",));
+    data,t = read_LaMEM_timestep(FileName, 0, dir, fields=("temperature [C]",));
     T = mean(data.fields.temperature)
 
     # Create plot
@@ -603,10 +603,10 @@ end
     # ---
     
     # Read output of various simulations:
-    VP,  _  = Read_LaMEM_timestep("outputVP", 0, dir; last=true);       τII_1 =  Float64.(VP.fields.j2_dev_stress[1,1,:]);
-    VEP5,_  = Read_LaMEM_timestep("outputVEP5", 0, dir; last=true);     τII_2 =  Float64.(VEP5.fields.j2_dev_stress[1,1,:]);
-    VEP10,_ = Read_LaMEM_timestep("outputVEP10", 0, dir; last=true);    τII_3 =  Float64.(VEP10.fields.j2_dev_stress[1,1,:]);
-    VEP50,_ = Read_LaMEM_timestep("outputVEP50", 0, dir; last=true);    τII_4 =  Float64.(VEP50.fields.j2_dev_stress[1,1,:]);
+    VP,  _  = read_LaMEM_timestep("outputVP", 0, dir; last=true);       τII_1 =  Float64.(VP.fields.j2_dev_stress[1,1,:]);
+    VEP5,_  = read_LaMEM_timestep("outputVEP5", 0, dir; last=true);     τII_2 =  Float64.(VEP5.fields.j2_dev_stress[1,1,:]);
+    VEP10,_ = read_LaMEM_timestep("outputVEP10", 0, dir; last=true);    τII_3 =  Float64.(VEP10.fields.j2_dev_stress[1,1,:]);
+    VEP50,_ = read_LaMEM_timestep("outputVEP50", 0, dir; last=true);    τII_4 =  Float64.(VEP50.fields.j2_dev_stress[1,1,:]);
 
     z       =  VP.z.val[1,1,:]
     phase   =  VP.fields.phase[1,1,:]

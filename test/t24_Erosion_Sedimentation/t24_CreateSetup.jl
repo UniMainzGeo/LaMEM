@@ -7,7 +7,7 @@ function t24_CreateMarkers(dir="./", ParamFile="test.dat"; NumberCores=1, is64bi
     cd(dir)
 
     # Load LaMEM particles grid
-    Grid        =   ReadLaMEM_InputFile(ParamFile)
+    Grid        =   read_LaMEM_inputfile(ParamFile)
 
     # Geometry- related parameters
     ThickAir=   20;

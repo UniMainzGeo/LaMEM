@@ -4,7 +4,7 @@ function CreateMarkers_Temperature(dir="./", ParamFile="t12_Temperature_diffusio
     cd(dir)
 
     # Load LaMEM particles grid
-    Grid        =   ReadLaMEM_InputFile(ParamFile)
+    Grid        =   read_LaMEM_inputfile(ParamFile)
 
     Phases      =   zeros(Int64, size(Grid.X));      # Rock numbers
     Temp        =   zeros(Float64,size(Grid.X));     # Temperature in C    

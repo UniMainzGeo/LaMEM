@@ -8,7 +8,7 @@ function CreateMarkers_SubductionVEP(dir="./", ParamFile="Subduction_VEP.dat"; N
 
     # Load LaMEM particles grid
     #ParamFile_2 =   "Subduction_MATLAB_Particles.dat"
-    Grid        =   ReadLaMEM_InputFile(ParamFile)
+    Grid        =   read_LaMEM_inputfile(ParamFile)
 
     # Geometry- related parameters
     ThickAir=   20;
