@@ -90,7 +90,7 @@ jobs:
         sudo -E cp -r opt64 opt
         sudo -E cp -r deb64 deb
         cd ..
-        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit no_superlu
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 
   build_docs:
     runs-on: ubuntu-20.04
     steps:
