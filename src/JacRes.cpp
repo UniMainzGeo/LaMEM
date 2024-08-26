@@ -148,7 +148,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		||  (m->Kb || m->beta))       need_top_open  = 1;
 
 		// set default stabilization viscosity
-		//if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
+		if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
 
 	}
 
@@ -1930,9 +1930,11 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResInitPres(JacRes *jr)
+PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts)
+
 {
 	FDSTAG            *fs;
+	
 	BCCtx             *bc;
 	SolVarCell        *svCell;
 	const PetscScalar *p;
@@ -1949,7 +1951,7 @@ PetscErrorCode JacResInitPres(JacRes *jr)
 	fixPhase = bc->fixPhase;
 
 	// check activation
-	if(!bc->initPres) PetscFunctionReturn(0);
+	if(!bc->initPres || ts->istep>0) PetscFunctionReturn(0);
 
 	// get grid coordinate bounds in z-direction
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
@@ -1999,7 +2001,7 @@ PetscErrorCode JacResInitPres(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
+PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 {
 	FDSTAG            *fs;
 	SolVarCell        *svCell;
@@ -2015,7 +2017,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 	PetscFunctionBeginUser;
 
 	// check activation
-	if(!jr->ctrl.initLithPres) PetscFunctionReturn(0);
+	if(!jr->ctrl.initLithPres || ts->istep >0) PetscFunctionReturn(0);
 
 	// print
 	PrintStart(&t, "Initializing pressure with lithostatic pressure", NULL);

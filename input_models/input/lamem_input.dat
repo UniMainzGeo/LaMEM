@@ -768,7 +768,8 @@
         TRef_fk    = 1000.0 # reference Temperature for Frank-Kamenetzky viscosity (if not set it is 0°C) 
         ch         = 2e7    # cohesion
         fr         = 30.0   # friction angle
-        eta_st     = 1e19   # stabilization viscosity (default is eta_min)
+        eta_st     = 1e19   # stabilization viscosity (minimum viscosity for this phase; default is eta_min)
+        eta_vp     = 1e19   # viscoplastic regularisation viscosity (increases yield stress as tau_y += eta_vp*DIIpl where DIIpl is the plastic strainrate)
         rp         = 0.7    # pore-pressure ratio
         chSoftID   = 0      # friction softening law ID
         frSoftID   = 0      # cohesion softening law ID
