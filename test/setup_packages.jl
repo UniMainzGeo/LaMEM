@@ -2,7 +2,7 @@
 
 # Add PETSc
 using Pkg
-Pkg.add(name="PETSc_jll", version="3.18.8")
+Pkg.add(name="PETSc_jll", version="3.19.6")
 
 # Copy the relevant directories over
 using PETSc_jll
