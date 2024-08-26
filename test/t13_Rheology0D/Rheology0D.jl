@@ -7,7 +7,7 @@ This extracts τII-time curves from LaMEM results, by computing the average stre
 """
 function StressTime_0D(FileName::String, DirName::String="")
 
-    Timestep, _, _= Read_LaMEM_simulation(FileName, DirName);
+    Timestep, _, _= read_LaMEM_simulation(FileName, DirName);
     
     N = length(Timestep)
     τII_vec = Vector{Float64}(undef, N)
