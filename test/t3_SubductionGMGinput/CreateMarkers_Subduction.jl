@@ -35,7 +35,7 @@ function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1,
     # ==========================================================================
 
     # Inclined part of slab        
-    AddBox!(Phases,Temp,Grid,
+    add_box!(Phases,Temp,Grid,
             xlim=(w_min_op-w_op, w_min_op), 
             zlim=(-ThicknessPlate   , 0.0),
             Origin = (w_min_op, 0.0, 0.0),
@@ -44,7 +44,7 @@ function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1,
             T=HalfspaceCoolingTemp(Age=ThermalAge_Myrs, Tsurface=T_surface) );               
 
     # Create horizontal part of slab with crust & mantle lithosphere
-    AddBox!(Phases,Temp,Grid,
+    add_box!(Phases,Temp,Grid,
             xlim=(w_min_op, w_max_op), 
             zlim=(-ThicknessPlate   , 0.0),
             phase=LithosphericPhases(Layers=[ThickCrust ThickOP ThickWL], Phases=[0 1 2 3]),
