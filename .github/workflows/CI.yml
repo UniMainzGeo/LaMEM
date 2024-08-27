@@ -42,7 +42,9 @@ jobs:
         version: '1.10'
         
     - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
-   
+
+    - run: julia -e 'Base.BinaryPlatforms.HostPlatform()'
+
     - name: 'Checkout LaMEM'
       uses: actions/checkout@v3
 
