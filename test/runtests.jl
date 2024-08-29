@@ -386,7 +386,7 @@ end
         # Note on the CI with 3.19.6 and Int64 this does not work on 2 cores; works fine 
         # on mac - I have deactived this test for now but we should try again with future PETSc versions
         @test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
-                                keywords=keywords, accuracy=acc, cores=1, deb=false, clean_dir=false, debug=true)
+                                keywords=keywords, accuracy=acc, cores=1, deb=false, clean_dir=false, debug=false)
 
         # extract 1D profiles
         phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec = extract_1D_profiles(data, dir)
