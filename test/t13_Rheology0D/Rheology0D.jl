@@ -45,7 +45,7 @@ end
 function Plot_StressStrain(t_anal,τII_anal, t_num, τII_num, dir, filename="Analytics_vs_LaMEM.png"; τII_no_iter=nothing)
 
     # Open figure 
-    f = Figure(resolution = (1500, 800))
+    f = Figure(size = (1500, 800))
     ax = Axis(f[1, 1],  xlabel = "time [Myrs]", ylabel = "τII [MPa]")
     lines!(ax, t_anal, τII_anal,  label = "Analytical") 
     if !isnothing(τII_no_iter)
@@ -153,7 +153,7 @@ end
 function Plot_StressStrainrate(ε, τ, τ_anal, dir, filename="t13_Stress_Strainrate.png")
 
     # Open figure 
-    f = Figure(resolution = (1500, 800))
+    f = Figure(size = (1500, 800))
     ax = Axis(f[1, 1],  xlabel = "strainrate [1/s]", ylabel = "τII [MPa]"; yscale=log10, xscale=log10)
     lines!(ax, -ε[:], τ_anal[:],  label = "Analytical") 
 

@@ -40,7 +40,7 @@ end
 
 
 function Plot_growthrate(filename::String, dir::String, λ,q,λ_anal,q_anal)
-    f = Figure(resolution = (500, 500))
+    f = Figure(size = (500, 500))
     datetime = Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
     ax = Axis(f[1, 1],  xlabel = "wavelength [ ]", ylabel = "growthrate [ ]", title=datetime)
     
