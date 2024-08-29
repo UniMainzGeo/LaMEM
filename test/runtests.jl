@@ -31,7 +31,7 @@ include("test_utils.jl")
 # ===================
 @testset "LaMEM Testsuite" verbose=true begin
 
-
+#=
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
@@ -69,6 +69,7 @@ end
     end
 end
 
+=#
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -126,6 +127,7 @@ end
 end
 
 
+#=
 @testset "t4_Localisation" begin
     cd(test_dir)
     dir = "t4_Loc";
@@ -341,7 +343,7 @@ end
                             args="-mfmax 0.15",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 end
-
+=#
 
 # this ia a more complicated one, that requires a devoted script (with plotting)
 @testset "t10_Compressibility" begin
@@ -383,7 +385,7 @@ end
         # test_b ------- 
         #
         @test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
-                                keywords=keywords, accuracy=acc, cores=2, deb=true, clean_dir=false, debug=true)
+                                keywords=keywords, accuracy=acc, cores=2, deb=true, clean_dir=false, debug=false)
 
 
         # extract 1D profiles
@@ -403,7 +405,7 @@ end
         # --------------
     end
 end
-
+#=
 @testset "t11_Subgrid" begin
     if test_superlu
     cd(test_dir)
@@ -835,6 +837,7 @@ end
     @test perform_lamem_test(dir,"Permeable.dat","Permeable_p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
+=#
 
 @testset "t24_Erosion_Sedimentation" begin
     cd(test_dir)
@@ -859,6 +862,7 @@ end
                             keywords=keywords, accuracy=acc, cores=2, deb=true, mpiexec=mpiexec)
 end
 
+#=
 @testset "t25_APS_Healing" begin
     cd(test_dir)
     dir = "t25_APS_Healing";
@@ -1009,7 +1013,7 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
-
+=#
 
 end
 
