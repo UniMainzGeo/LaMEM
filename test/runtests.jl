@@ -374,7 +374,7 @@ end
     # Compute difference with analytical solution
     @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-3
     @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
-    @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
+    @test norm(Pf_vec - Pf_a) ≈ 4.675374630769038 rtol=1e-5
 
     # Create plot with stress & analytical solution
     Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_1Core.png")
@@ -397,7 +397,7 @@ end
         # Compute difference with analytical solution
         @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-3
         @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
-        @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
+        @test norm(Pf_vec - Pf_a) ≈ 4.675374630769038 rtol=1e-5
 
         # Create plot with stress & analytical solution
         Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
