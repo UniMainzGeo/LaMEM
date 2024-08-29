@@ -52,20 +52,20 @@ jobs:
         julia --project=. setup_packages.jl
         cd ..
 
-#    - name: 'Compile LaMEM | Int32'
-#      run: |
-#        cd test
-#        julia --project=. compile_lamem.jl int32
-#        pwd
-#        # cleanup
-#        rm -rf ../lib/opt/*
-#        rm -rf ../lib/deb/*
-#        rm -rf ../dep/opt/*
-#        rm -rf ../dep/deb/*
-#        cd ../bin
-#        sudo -E mv -f opt opt32
-#        sudo -E mv -f deb deb32
-#        cd ..
+    - name: 'Compile LaMEM | Int32'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int32
+        pwd
+        # cleanup
+        rm -rf ../lib/opt/*
+        rm -rf ../lib/deb/*
+        rm -rf ../dep/opt/*
+        rm -rf ../dep/deb/*
+        cd ../bin
+        sudo -E mv -f opt opt32
+        sudo -E mv -f deb deb32
+        cd ..
 
     - name: 'Compile LaMEM | Int64'
       run: |
@@ -76,19 +76,23 @@ jobs:
         sudo -E mv -f deb deb64
         cd ..
 
-#    - name: 'Test LaMEM | Int32'
-#      run: |
-#        cd bin
-#        sudo -E cp -r opt32 opt
-#        sudo -E cp -r deb32 deb
-#        cd ..
-#        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl  
+    - name: 'Test LaMEM | Int32'
+      run: |
+        cd bin
+        sudo -E cp -r opt32 opt
+        sudo -E cp -r deb32 deb
+        cd ..
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl  
 
     - name: 'Test LaMEM | Int64'
       run: |
         cd bin
+        sudo -E rm -rf opt
+        sudo -E rm -rf deb
+        
         sudo -E cp -r opt64 opt
         sudo -E cp -r deb64 deb
+        
         cd ..
         julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit no_superlu
   build_docs:
