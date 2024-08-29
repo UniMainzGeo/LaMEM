@@ -384,8 +384,11 @@ end
     if test_superlu
         # test_b ------- 
         #
-        @test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
-                                keywords=keywords, accuracy=acc, cores=1, deb=false, clean_dir=false, debug=true)
+        @test perform_lamem_test(dir,ParamFile,"test_10_Compressibility_opt-p1.expected",
+                                keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false)
+
+        #@test perform_lamem_test(dir,ParamFile,"Compressibility_Direct_deb-p2.expected",
+        #                        keywords=keywords, accuracy=acc, cores=1, deb=false, clean_dir=false, debug=true)
 
 
         # extract 1D profiles
