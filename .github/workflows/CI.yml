@@ -1,5 +1,6 @@
 # CI for LaMEM
 # inspired by CI actions used in GEOS
+#
 name: CI
 
 on:
