@@ -1,5 +1,5 @@
 # Load package that contains LaMEM I/O routines
-using GeophysicalModelGenerator, SpecialFunctions  
+using GeophysicalModelGenerator, SpecialFunctions, LaMEM  
 
 function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1,  mpiexec="mpiexec", is64bit=false)
 
@@ -67,7 +67,7 @@ function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1,
         #> 1 cores; create partitioning file first
         #PartFile = CreatePartitioningFile_local(ParamFile, NumberCores; LaMEM_dir="../../bin/", mpiexec=mpiexec)
         #PartFile = create_partitioning_file(ParamFile, NumberCores; LaMEM_dir="../../bin/", mpiexec=mpiexec)
-        PartFile = run_lamem_save_grid(ParamFile, NumberCores, verbose=true)
+        PartFile = LaMEM.run_lamem_save_grid(ParamFile, NumberCores, verbose=true)
         
         save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false)     
     end

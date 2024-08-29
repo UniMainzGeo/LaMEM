@@ -122,7 +122,7 @@ function CreateMarkers_SubductionVEP(dir="./", ParamFile="Subduction_VEP.dat"; N
         #save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false, is64bit=is64bit) 
         
         
-        PartFile = run_lamem_save_grid(ParamFile, cores, verbose=false)
+        PartFile = run_lamem_save_grid(ParamFile, NumberCores, verbose=false)
         save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile, directory="./markers", verbose=false, is64bit=is64bit)
 
     end
