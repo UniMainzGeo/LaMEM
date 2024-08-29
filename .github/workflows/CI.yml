@@ -89,6 +89,11 @@ jobs:
     - name: 'Test LaMEM | Int64'
       run: |
         cd bin
+        # delete old directories
+        sudo -E rm -rf opt
+        sudo -E rm -rf deb
+        
+        #rename directories
         sudo -E cp -r opt64 opt
         sudo -E cp -r deb64 deb
         cd ..
