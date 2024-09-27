@@ -37,3 +37,6 @@ purge : clean
 	@rm -rf *.output
 	@rm -f output/*
 	@rm -f log/*
+	@rm -f **/*.png
+	@rm -f **/*.log
+	
