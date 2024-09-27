@@ -576,7 +576,7 @@ PetscErrorCode PCStokesUserSetup(PCStokes pc)
 
 	if(flg == PETSC_TRUE)
 	{
-		ierr = PCView(user->pc, PETSC_VIEWER_STDOUT_SELF); CHKERRQ(ierr);
+		ierr = PCView(user->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
