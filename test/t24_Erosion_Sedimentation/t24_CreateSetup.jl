@@ -1,5 +1,5 @@
 # Load package that contains LaMEM I/O routines
-using GeophysicalModelGenerator, SpecialFunctions  
+using GeophysicalModelGenerator, SpecialFunctions, LaMEM  
 
 function t24_CreateMarkers(dir="./", ParamFile="test.dat"; NumberCores=1, is64bit=false, mpiexec="mpiexec")
 
@@ -7,7 +7,7 @@ function t24_CreateMarkers(dir="./", ParamFile="test.dat"; NumberCores=1, is64bi
     cd(dir)
 
     # Load LaMEM particles grid
-    Grid        =   ReadLaMEM_InputFile(ParamFile)
+    Grid        =   read_LaMEM_inputfile(ParamFile)
 
     # Geometry- related parameters
     ThickAir=   20;
@@ -113,16 +113,20 @@ function t24_CreateMarkers(dir="./", ParamFile="test.dat"; NumberCores=1, is64bi
 
     # Save julia setup 
     Model3D     =   CartData(Grid, (Phases=Phase,Temp=Temp))   # Create LaMEM model:
-    Write_Paraview(Model3D,"LaMEM_ModelSetup", verbose=false)                  # Save model to paraview   (load with opening LaMEM_ModelSetup.vts in paraview)  
+    write_paraview(Model3D,"LaMEM_ModelSetup", verbose=false)                  # Save model to paraview   (load with opening LaMEM_ModelSetup.vts in paraview)  
 
     # Save LaMEM markers
     if NumberCores==1
         # 1 core
-        Save_LaMEMMarkersParallel(Model3D, directory="./markers_p$NumberCores", verbose=false)                      # Create LaMEM marker input on 1 core
+        save_LaMEM_markers_parallel(Model3D, directory="./markers_p$NumberCores", verbose=false)                      # Create LaMEM marker input on 1 core
     else
         #> 1 cores; create partitioning file first
-        PartFile = CreatePartitioningFile_local(ParamFile, NumberCores; LaMEM_dir="../../bin", mpiexec=mpiexec)
-        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers_p$NumberCores", verbose=false, is64bit=is64bit)     
+        #PartFile = CreatePartitioningFile_local(ParamFile, NumberCores; LaMEM_dir="../../bin", mpiexec=mpiexec)
+        #save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile,  directory="./markers_p$NumberCores", verbose=false, is64bit=is64bit)     
+
+        PartFile = run_lamem_save_grid(ParamFile, NumberCores, verbose=false)
+        save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile, directory="./markers_p$NumberCores", verbose=false, is64bit=is64bit)
+
     end
 
     cd(cur_dir)

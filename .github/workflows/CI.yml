@@ -1,5 +1,6 @@
 # CI for LaMEM
 # inspired by CI actions used in GEOS
+#
 name: CI
 
 on:
@@ -42,7 +43,9 @@ jobs:
         version: '1.10'
         
     - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
-   
+
+    - run: julia -e '@show Base.BinaryPlatforms.HostPlatform()'
+
     - name: 'Checkout LaMEM'
       uses: actions/checkout@v3
 
@@ -87,10 +90,16 @@ jobs:
     - name: 'Test LaMEM | Int64'
       run: |
         cd bin
+        #rename directories
+        sudo -E rm -rf opt
+        sudo -E rm -rf deb
+        
         sudo -E cp -r opt64 opt
         sudo -E cp -r deb64 deb
+        
         cd ..
-        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit no_superlu
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 
+        
   build_docs:
     runs-on: ubuntu-20.04
     steps:

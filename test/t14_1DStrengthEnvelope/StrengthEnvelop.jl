@@ -2,7 +2,7 @@ using Dates
 
 function Plot_StrengthEnvelop(filename::String, dir::String, z::Vector, DataSets::NTuple{N,Vector}, Names::NTuple{N,String}) where {N}
     # Open figure 
-    f = Figure(resolution = (800, 1500))
+    f = Figure(size = (800, 1500))
     datetime = Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
     ax = Axis(f[1, 1],  xlabel = "τII [MPa]", ylabel = "Depth [km]", title=datetime)
     

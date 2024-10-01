@@ -7,13 +7,13 @@ This extracts τII-time curves from LaMEM results, by computing the average stre
 """
 function StressTime_0D(FileName::String, DirName::String="")
 
-    Timestep, _, _= Read_LaMEM_simulation(FileName, DirName);
+    Timestep, _, _= read_LaMEM_simulation(FileName, DirName);
     
     N = length(Timestep)
     τII_vec = Vector{Float64}(undef, N)
     t_vec = Vector{Float64}(undef, N)
     for (i,it) in enumerate(Timestep)
-        data,t = Read_LaMEM_timestep(FileName, it, DirName, fields=("j2_dev_stress [MPa]",));
+        data,t = read_LaMEM_timestep(FileName, it, DirName, fields=("j2_dev_stress [MPa]",));
         τII =    Float64(mean(data.fields.j2_dev_stress))
         τII_vec[i] = τII
         t_vec[i] = t[1]
@@ -45,7 +45,7 @@ end
 function Plot_StressStrain(t_anal,τII_anal, t_num, τII_num, dir, filename="Analytics_vs_LaMEM.png"; τII_no_iter=nothing)
 
     # Open figure 
-    f = Figure(resolution = (1500, 800))
+    f = Figure(size = (1500, 800))
     ax = Axis(f[1, 1],  xlabel = "time [Myrs]", ylabel = "τII [MPa]")
     lines!(ax, t_anal, τII_anal,  label = "Analytical") 
     if !isnothing(τII_no_iter)
@@ -140,7 +140,7 @@ function StressStrainrate0D_LaMEM(FileName::String, DirName::String="", OutFile=
     cd(DirName)
     for (i,ε) in enumerate(ε_vec)
         out = run_lamem_local_test(FileName, 1, "-exx_strain_rates $ε"; opt=true, bin_dir="../../bin")  # run LaMEM
-        data, t = Read_LaMEM_timestep(OutFile, 2, pwd(), fields=("j2_dev_stress [MPa]",))   # read stress
+        data, t = read_LaMEM_timestep(OutFile, 2, pwd(), fields=("j2_dev_stress [MPa]",))   # read stress
         τ[i] = mean(data.fields.j2_dev_stress)  # store
     end
     cd(cur_dir)
@@ -153,7 +153,7 @@ end
 function Plot_StressStrainrate(ε, τ, τ_anal, dir, filename="t13_Stress_Strainrate.png")
 
     # Open figure 
-    f = Figure(resolution = (1500, 800))
+    f = Figure(size = (1500, 800))
     ax = Axis(f[1, 1],  xlabel = "strainrate [1/s]", ylabel = "τII [MPa]"; yscale=log10, xscale=log10)
     lines!(ax, -ε[:], τ_anal[:],  label = "Analytical") 
 
