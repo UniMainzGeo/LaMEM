@@ -169,14 +169,6 @@
     exy_time_delims  = 1.0
     exy_strain_rates = 1e-15 2e-15
 
-    exz_num_periods  = 2                 # same for simple shear components in x/z direction
-    exz_time_delims  = 1.0
-    exz_strain_rates = 1e-15 2e-15
-
-    eyz_num_periods  = 2                 # same for simple shear components in y/z direction
-    eyz_time_delims  = 1.0
-    eyz_strain_rates = 1e-15 2e-15
-
     bg_ref_point     = 0.0 0.0 0.0       # background strain rate reference point (fixed)
 
 # Bezier blocks (single entry per block)
@@ -252,7 +244,6 @@
 # Permeable lower boundary flag    
     open_bot_bound = 0
     permeable_phase_inflow = 1 # Phase of the inflow material from the bottom (The temperature of the inflow phase it is the same of the bottom boundary)
-
     
 # No-slip boundary flag mask (left right front back bottom top)
 
@@ -277,7 +268,6 @@
 
     temp_bot_num_periods    =   2                                   # How many periods with different temp_bot do we have? 
     temp_bot_time_delim     =   1.2                                 # At which time do we switch from one to the next period?
-
 
 # temperature initial guess flag
 # linear profile between temp_top and temp_bot
@@ -315,7 +305,6 @@
 
     gravity         = 0.0 0.0 -10.0  # gravity vector
     FSSA            = 1.0            # free surface stabilization parameter [0 - 1]
-    FSSA_allVel     = 1              # apply free surface stabilisation to all velocity components [1]
     shear_heat_eff  = 1.0            # shear heating efficiency parameter   [0 - 1]
     Adiabatic_Heat  = 0.0            # Adiabatic Heating activaction flag and efficiency. [0.0 - 1.0] (e.g. 0.5 means that only 50% of the potential adiabatic heating affects the energy equation)   
     act_temp_diff   = 1              # temperature diffusion activation flag
@@ -329,7 +318,7 @@
     p_litho_visc    = 1              # use lithostatic pressure for creep laws
     p_litho_plast   = 1              # use lithostatic pressure for plasticity
     p_lim_plast     = 1              # limit pressure at first iteration for plasticity
-    p_shift 		= 0              # constant [MPa] added to the total pressure field, before evaluating plasticity (e.g., when the domain is located @ some depth within the crust)  	
+    p_shift         = 0              # constant [MPa] added to the total pressure field, before evaluating plasticity (e.g., when the domain is located @ some depth within the crust)  	
     act_p_shift     = 1              # pressure shift activation flag (enforce zero pressure on average in the top cell layer); note: this overwrites p_shift above!
     
     eta_min         = 1e18           # viscosity lower bound [Pas]
@@ -377,7 +366,7 @@
     MGCoarseSolver 		=	direct 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
     MGRedundantNum 		=	4			# How many times do we copy the coarse grid? [only employed for redundant solver; default is 4]
     MGRedundantSolver	= 	mumps		# The coarse grid solver for each of the redundant solves [only employed for redundant; options are mumps/superlu_dist with default superlu_dist]
-    
+
 #===============================================================================
 # Model setup & advection
 #===============================================================================

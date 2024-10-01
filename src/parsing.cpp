@@ -856,7 +856,7 @@ PetscErrorCode  PetscOptionsGetCheckString(
 PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 {
 	PetscErrorCode ierr;
- 	char     		SolverType[_str_len_], DirectSolver[_str_len_], str[256], SmootherType[_str_len_];
+ 	char     		SolverType[_str_len_], DirectSolver[_str_len_], str[_str_len_+_str_len_], SmootherType[_str_len_];
 	PetscScalar 	scalar;
 	PetscInt 		integer, nel_y;
 	

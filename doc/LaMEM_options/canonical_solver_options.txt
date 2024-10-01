@@ -14,9 +14,10 @@ OPTIONS & PREFIXES
 
 * Jacobian preconditioner matrix is controlled with prefix -pcmat_
 
-     -pcmat_type [block, mono] - select matrix type (block or monolithic) (default - mono)
-     -pcmat_pgamma [value]     - set the penalty parameter (pgamma >= 1)  (default - 1)
-     -pcmat_no_dev_proj        - switch off deviatoric projection         (default - not set)
+     -pcmat_type [block, mono]          - select matrix type (block or monolithic)  (default - mono)
+     -pcmat_schur_type [wbfbt, inv_eta] - Schur preconditiner type (wBFBt or I/eta) (default - inv_eta)
+     -pcmat_pgamma [value]              - set the penalty parameter (pgamma >= 1)   (default - 1)
+     -pcmat_no_dev_proj                 - switch off deviatoric projection          (default - not set)
 
       If matrix type is 'block', and 'pgamma' > 1, velocity Schur complement is assembled
      
@@ -24,7 +25,7 @@ OPTIONS & PREFIXES
 
      -jp_type [bf, mg, user] - select preconditioner type (default user)
      
-      bf   - block factorization (currently only block upper triangular)
+      bf   - block factorization
       mg   - coupled Galerkin geometric multigrid
       user - coupled user-defined preconditioner controlled via options
          
@@ -34,12 +35,16 @@ OPTIONS & PREFIXES
 
 * Block factorization preconditioner is controlled with prefix -bf
 
-     -bf_vs_type [mg, user] - select velocity block solver:
+     -bf_type [upper, lower] - block factorization type (default upper)
+
+     -bf_vs_type [mg, user] - select velocity block solver (default user)
      
       mg   - Galerkin geometric multigrid
       user - user-defined preconditioner controlled via options
       
       Option prefix for user-defined velocity solver is -vs
+      
+      Option prefix for pressure block solver is -ks (only relevant for -pcmat_schur_type wbfbt)
 
  * Galerkin geometric multigrid option (both coupled and velocity) is -gmg_
 
@@ -78,11 +83,20 @@ Examples
 
 	-jp_type user
 	-jp_pc_type lu
-	-jp_pc_factor_mat_solver_package mumps
+	-jp_pc_factor_mat_solver_type mumps
 
 ================================================================================
 
-[3] block factorization with penalty and direct solver for velocity block (a-la Powell-Hesteness)
+[3] multigrid for coupled system
+    (see [7] for coupled multigrid settings)
+
+	-pcmat_type mono
+
+	-jp_type mg
+
+================================================================================
+
+[4] block factorization with penalty and direct solver for velocity block (a-la Powell-Hesteness)
 	(play with -pcmat_pgamma to see the iteration count)
 
 	-pcmat_type block
@@ -94,19 +108,12 @@ Examples
 
 	-vs_ksp_type preonly
 	-vs_pc_type lu
-	-vs_pc_factor_mat_solver_package mumps
-
-================================================================================
-
-[4] multigrid for coupled system
-
-	-pcmat_type mono
-
-	-jp_type mg
+	-vs_pc_factor_mat_solver_type mumps
 
 ================================================================================
 
 [5] block factorization with multigrid for velocity block
+    (see [7] for velocity multigrid settings)
 
 	-pcmat_type block
 
@@ -118,7 +125,28 @@ Examples
 
 ================================================================================
 
-[6] multigrid & coarse solver settings (both coupled & velocity)
+[6] block factorization with wBFBT preconditioner and multigrid for velocity and pressure blocks
+    (see [7] for velocity multigrid settings)
+    (see [8] for pressure multigrid settings)
+
+	-pcmat_type block
+	-pcmat_schur_type wbfbt
+	
+	-jp_type bf
+
+	-bf_vs_type mg
+
+	-vs_ksp_type gmres
+	-vs_ksp_rtol 1e-2
+	-vs_ksp_max_it 10
+
+	-ks_ksp_type gmres
+	-ks_ksp_rtol 1e-2
+	-ks_ksp_max_it 10
+
+================================================================================
+
+[7] multigrid & coarse solver settings (both coupled system & velocity block)
 
 	-gmg_pc_view
 	-gmg_pc_type mg
@@ -135,6 +163,17 @@ Examples
 	-crs_ksp_type preonly
 	-crs_pc_type redundant
 	-crs_pc_redundant_number 1
-	-crs_redundant_pc_factor_mat_solver_package mumps
+	-crs_redundant_pc_factor_mat_solver_type mumps
 
 ================================================================================
+
+[8] multigrid settings for pressure block
+
+	-ks_pc_type mg
+	-ks_pc_mg_levels 3
+	-ks_pc_mg_galerkin
+	-ks_pc_mg_type multiplicative
+	-ks_pc_mg_cycle_type v
+
+================================================================================
+

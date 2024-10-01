@@ -13,15 +13,11 @@
 *.pvts
 *.vtk
 *.out
-/Timestep_*
 *.mat
-/models_not_under_git
-/input_models/**
+/Timestep_*
 /src/.settings
 /src/.vscode/
 /src/.project
-/test/*/ProcessorPartitioning*.*
-/test/t8_AdjointGradients/ScalingLaw_Test.dat
 Manifest.toml  
 docs/build/
 

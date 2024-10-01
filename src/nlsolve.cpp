@@ -18,6 +18,7 @@
 #include "lsolve.h"
 #include "nlsolve.h"
 #include "JacRes.h"
+#include "matFree.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 // * add bound checking for iterative solution vector in SNES
@@ -432,21 +433,27 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// setup Jacobian
 	if(nl->jtype == _PICARD_)
 	{
-		// ... Picard
-		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))pm->Picard); CHKERRQ(ierr);
-		ierr = MatShellSetContext(nl->J, pm->data);                                CHKERRQ(ierr);
+		// ... matrix-free Picard
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(nl->J, (void*)jr);                                   CHKERRQ(ierr);
 	}
 	else if(nl->jtype == _MFFD_)
 	{
 		// ... matrix-free finite-difference (MMFD)
 		ierr = MatMFFDSetFunction(nl->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes); CHKERRQ(ierr);
 		ierr = MatMFFDSetBase(nl->MFFD, x, jr->gres);                                                      CHKERRQ(ierr);
-		//ierr = MatMFFDSetType(nl->MFFD, MATMFFD_DS); 	  CHKERRQ(ierr);
-		ierr = MatMFFDSetType(nl->MFFD, MATMFFD_WP); 	  CHKERRQ(ierr);
-		
+		ierr = MatMFFDSetType(nl->MFFD, MATMFFD_WP);                                                       CHKERRQ(ierr);
 		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyMFFD);                       CHKERRQ(ierr);
 		ierr = MatShellSetContext(nl->J, (void*)&nl->MFFD);                                                CHKERRQ(ierr);
 	}
+/*	
+	else if(nl->jtype == _MF_)
+	{
+		// ... matrix-free closed-form
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyJacobian); CHKERRQ(ierr);
+		ierr = MatShellSetContext(nl->J, (void*)jr);                                     CHKERRQ(ierr);
+	}
+*/
 
 	// assemble Jacobian & preconditioner
 	ierr = MatAssemblyBegin(nl->P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);

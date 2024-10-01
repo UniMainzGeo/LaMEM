@@ -137,7 +137,7 @@ acc        = (  (rtol=1e-7, atol=1e-6),
 
 ParamFile = "t8_Subduction2D_FreeSlip_DirectSolver.dat";
 @test perform_lamem_test(dir,ParamFile,"t8_Subduction2D_FreeSlip_DirectSolver_p1.expected",
-                        args="-nel_y 1",
+                        args="-nel_y 2",
                         keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
 
