@@ -367,9 +367,9 @@ end
     Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
 
     # Compute difference with analytical solution
-    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-3
-    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
-    @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
+    @test norm(Szz_vec - Sv_a) ≈ 1.0769790188863786 rtol=1e-3
+    @test norm(Sxx_vec - Sh_a) ≈ 19.596753495502448 rtol=1e-4
+    @test norm(Pf_vec - Pf_a) ≈ 4.67681896070838 rtol=1e-5
 
     # Create plot with stress & analytical solution
     Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_1Core.png")
@@ -390,9 +390,9 @@ end
         Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
 
         # Compute difference with analytical solution
-        @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-3
-        @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
-        @test norm(Pf_vec - Pf_a) ≈ 4.67442385860321 rtol=1e-5
+        @test norm(Szz_vec - Sv_a) ≈ 1.0769790188863786 rtol=1e-3
+        @test norm(Sxx_vec - Sh_a) ≈ 19.596753495502448 rtol=1e-4
+        @test norm(Pf_vec - Pf_a) ≈ 4.67681896070838 rtol=1e-5
 
         # Create plot with stress & analytical solution
         Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
@@ -461,7 +461,7 @@ end
     # ---
 end
 
-# t13_Rheology0D/
+
 @testset "t13_Rheology0D" begin
     cd(test_dir)
     dir = "t13_Rheology0D";
@@ -576,7 +576,7 @@ end
 
 end
 
-# t14_1DStrengthEnvelope/
+
 @testset "t14_1DStrengthEnvelope" begin
     cd(test_dir)
     dir = "t14_1DStrengthEnvelope";
@@ -642,7 +642,7 @@ end
     q_num   = Compute_RT_growthrate_LaMEM(λ, ParamFile, dir)
     q_anal  = AnalyticalSolution_RTI_FreeSlip(λ)
 
-    @test  norm(q_num - q_anal) ≈ 0.0015857520938151908
+    @test  norm(q_num - q_anal) ≈ 0.001481104083594891
 
     # Plot 
     λ_pl     = range(1e-9,5,100)
@@ -863,31 +863,31 @@ end
 
     # test_M1_2D
     @test perform_lamem_test(dir,"dike_M1_2D.dat","dike_M1_2D.expected",
-                            args="-nstep_max 5  -nel_y 1",
+                            args="-nstep_max 5  -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
     # test_M075_2D_2cores
     @test perform_lamem_test(dir,"dike_M075_2D_2cores.dat","dike_M075_2D_2cores.expected",
-                            args="-nstep_max 2 -nel_y 1",
+                            args="-nstep_max 2 -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 
     # test_variableM
     @test perform_lamem_test(dir,"dike_variableM.dat","dike_variableM.expected",
-                            args="-nstep_max 2 -nel_y 1",
+                            args="-nstep_max 2 -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
     # heat_kfac
     keywords = ("|eRes|_2",)
     acc      = ((rtol=1e-4,atol=1e-9),);
     @test perform_lamem_test(dir,"dike_heating_kfac.dat","dike_heating_kfac.expected",
-                            args="-nstep_max 2 -nel_y 1",
+                            args="-nstep_max 2 -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
     # heat_rhoA
     keywords = ("|eRes|_2",)
     acc      = ((rtol=1e-4,atol=1e-8),);
     @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA.expected",
-                            args="-nstep_max 2 -nel_y 1",
+                            args="-nstep_max 2 -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
     # dyndike_4core.dat
