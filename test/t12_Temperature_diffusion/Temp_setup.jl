@@ -4,7 +4,7 @@ function CreateMarkers_Temperature(dir="./", ParamFile="t12_Temperature_diffusio
     cd(dir)
 
     # Load LaMEM particles grid
-    Grid        =   read_LaMEM_inputfile(ParamFile)
+    Grid        =   ReadLaMEM_InputFile(ParamFile)
 
     Phases      =   zeros(Int64, size(Grid.X));      # Rock numbers
     Temp        =   zeros(Float64,size(Grid.X));     # Temperature in C    
@@ -20,11 +20,11 @@ function CreateMarkers_Temperature(dir="./", ParamFile="t12_Temperature_diffusio
     # Save LaMEM markers
     if NumberCores==1
         # 1 core
-        save_LaMEM_markers_parallel(Model3D, directory=dir_markers, verbose=false)                      # Create LaMEM marker input on 1 core
+        Save_LaMEMMarkersParallel(Model3D, directory=dir_markers, verbose=false)                      # Create LaMEM marker input on 1 core
     else
         #> 1 cores; create partitioning file first
         PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/");
-        save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile,  directory=dir_markers, verbose=false, is64bit=is64bit)     
+        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory=dir_markers, verbose=false, is64bit=is64bit)     
     end
 
     cd(cur_dir)
@@ -36,7 +36,7 @@ end
 function Plot_Analytics_vs_Numerics(z,T_anal, T, dir, filename="Analytics_vs_LaMEM.png")
 
     # Open figure 
-    f = Figure(size = (1500, 800))
+    f = Figure(resolution = (1500, 800))
     ax = Axis(f[1, 1],  xlabel = "depth [km]", ylabel = "T [C]")
     lines!(ax, z, T_anal,  label = "Analytical T") 
     scatter!(ax, z, T,  label = "LaMEM T") 
