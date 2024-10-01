@@ -119,7 +119,6 @@ struct Controls
 {
 	PetscScalar grav[3];       // global gravity components
 	PetscScalar FSSA;          // free surface stabilization parameter [0 - 1]
-	PetscInt    FSSA_allVel;   // Use all velocity components for FSSA?
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
@@ -164,10 +163,8 @@ struct Controls
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
-
-  PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
-
-  PetscInt  dikeHeat;   // activation flag for using Behn & Ito heat source in dike
+	PetscInt    useTk;          // activation flag for using temperature-dependent conductivity
+	PetscInt    dikeHeat;       // activation flag for using Behn & Ito heat source in dike
 };
 
 //---------------------------------------------------------------------------
@@ -177,14 +174,14 @@ struct Controls
 struct JacRes
 {
 	// external handles
-	Scaling  *scal;  // scaling
-	TSSol    *ts;    // time-stepping parameters
-	FDSTAG   *fs;    // staggered-grid layout
-	FreeSurf *surf;  // free surface
-	BCCtx    *bc;    // boundary condition context
-    DBPropDike *dbdike; // dike database
-	DBMat    *dbm;   // material database
-  
+	Scaling    *scal;   // scaling
+	TSSol      *ts;     // time-stepping parameters
+	FDSTAG     *fs;     // staggered-grid layout
+	FreeSurf   *surf;   // free surface
+	BCCtx      *bc;     // boundary condition context
+	DBPropDike *dbdike; // dike database
+	DBMat      *dbm;    // material database
+
 	// parameters and controls
 	Controls ctrl;
 
@@ -259,7 +256,6 @@ struct JacRes
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
 
-
 	//===========================================
 	// 2D planview plus levels for time averaging
 	//===========================================
@@ -304,6 +300,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr);
 
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
+
+// copy solution from global to local vectors, do not enforce boundary constraints
+PetscErrorCode JacResCopyVelNoBC(JacRes *jr, Vec x);
 
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopyVel(JacRes *jr, Vec x);
@@ -409,7 +408,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr);
 	if(bc[k][j][i] == DBL_MAX) a[k][j][i] = pmdof; \
 	else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
 
-#define SET_EDGE_CORNER(n, a, K, J, I, k, j, i, pmdof) \
+#define SET_EDGE_CORNER(a, K, J, I, k, j, i, pmdof) \
 	a[K][J][I] = a[k][j][I] + a[k][J][i] + a[K][j][i] - 2.0*pmdof;
 
 //---------------------------------------------------------------------------

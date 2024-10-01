@@ -7,6 +7,7 @@
  **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 //---------------------------------------------------------------------------
 //.....................   PRECONDITIONING MATRICES   ........................
 //---------------------------------------------------------------------------
@@ -31,13 +32,25 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof);
 
 //---------------------------------------------------------------------------
+
 // preconditioning matrix storage format
 enum PMatType
 {
 	_MONOLITHIC_,
 	_BLOCK_
 
-} ;
+};
+
+//---------------------------------------------------------------------------
+
+// Schur preconditioner type
+enum PCSCHURType
+{
+	_wBFBT_,   // scaled BFBT
+	_INV_ETA_, // inverse viscosity
+
+};
+
 //---------------------------------------------------------------------------
 
 typedef struct _p_PMat *PMat;
@@ -47,13 +60,13 @@ typedef struct _p_PMat
 	JacRes     *jr;     // assembly context
 	void       *data;   // type-specific context
 	PMatType    type;   // matrix type
+	PCSCHURType stype;  // Schur preconditiner type
 	PetscScalar pgamma; // penalty parameter
 
 	// operations
 	PetscErrorCode (*Create)  (PMat pm);
 	PetscErrorCode (*Assemble)(PMat pm);
 	PetscErrorCode (*Destroy) (PMat pm);
-	PetscErrorCode (*Picard)  (Mat J, Vec x, Vec y);
 
 	// get cell stiffness matrix
 	void (*getStiffMat)(
@@ -85,17 +98,11 @@ PetscErrorCode PMatDestroy(PMat pm);
 struct PMatMono
 {
 	Mat A; // monolithic matrix
-	Mat M; // penalty terms compensation matrix
-
-	Vec w; // work vector for computing Jacobian action
-
 };
 
 PetscErrorCode PMatMonoCreate(PMat pm);
 
 PetscErrorCode PMatMonoAssemble(PMat pm);
-
-PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
 
 PetscErrorCode PMatMonoDestroy(PMat pm);
 
@@ -113,6 +120,11 @@ struct PMatBlock
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
 
+	// wBFBT data
+	DM  DA_P; // cell-based grid
+	Mat K;    // Schur complement preconditioner matrix
+	Mat C;    // diagonal viscosity weighting matrix
+	Vec wv2;  // working vectors in velocity space
 };
 
 //---------------------------------------------------------------------------
@@ -120,10 +132,6 @@ struct PMatBlock
 PetscErrorCode PMatBlockCreate(PMat pm);
 
 PetscErrorCode PMatBlockAssemble(PMat pm);
-
-PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec y);
-
-PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec y);
 
 PetscErrorCode PMatBlockDestroy(PMat pm);
 
@@ -180,7 +188,7 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 // set pressure two-point constraint
 #define SET_PRES_TPC(bc, i, j, k, ind, lim, cf) { cf = 1.0; if(ind == lim && bc[k][j][i] != DBL_MAX) cf = 2.0; }
 
-// set pressure two-point constraint
+// compute scaled shear stress stencil for constrained internal velocity case
 #define RESCALE_STENCIL(rescal, d, df, db, cf, cb, dr) { dr = 0.0; if(rescal) { if(cf == DBL_MAX) { dr += df; } if(cb == DBL_MAX) { dr += db; } } if(dr) { d = dr/2.0; } }
 
 //---------------------------------------------------------------------------

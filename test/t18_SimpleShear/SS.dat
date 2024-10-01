@@ -53,8 +53,8 @@
 	temp_top = 650
 	temp_bot = 650;
 
-	exz_num_periods  = 1       			# number intervals of constant simple shear strain rate (xz-axis)
-	exz_strain_rates = -1e-15   		# strain rates for each interval (positive=extension)
+	exy_num_periods  = 1       			# number intervals of constant simple shear strain rate (xz-axis)
+	exy_strain_rates = -1e-15   		# strain rates for each interval (positive=extension)
 	
 	bg_ref_point     = 0.0 0.0 -20      # background strain rate reference point (fixed)
 	

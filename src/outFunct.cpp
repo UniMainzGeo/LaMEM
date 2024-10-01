@@ -235,6 +235,7 @@ PetscErrorCode PVOutWriteVelocity(OutVec* outvec)
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->velocity;
+
 	iflag.use_bound = 1;
 
 	ierr = JacResCopyVel(jr, jr->gsol); CHKERRQ(ierr);
@@ -570,8 +571,6 @@ PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
 {
 	PetscErrorCode ierr;
@@ -669,7 +668,6 @@ PetscErrorCode PVOutWritePlastDissip(OutVec* outvec)
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteTotDispl(OutVec* outvec)
 {
-
 	COPY_FUNCTION_HEADER
 
 	cf = scal->length;
@@ -868,9 +866,7 @@ PetscErrorCode PVOutWriteVelocityGr(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
 
-	//COPY_FUNCTION_HEADER
 	ACCESS_FUNCTION_HEADER
-//	// macro to copy deviatoric strain rate components to buffer
 
 	cf = scal->strain_rate;
 

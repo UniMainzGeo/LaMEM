@@ -49,7 +49,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;
 	ctrl->FSSA         =  1.0;
-	ctrl->FSSA_allVel  =  0;
 	ctrl->AdiabHeat    =  0.0;
 	ctrl->shearHeatEff =  1.0;
 	ctrl->biot         =  1.0;
@@ -72,7 +71,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// read from options
 	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",          ctrl->grav,           3, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1);              CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "FSSA_allVel",     &ctrl->FSSA_allVel,    1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0);            CHKERRQ(ierr);
@@ -759,17 +757,16 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
 
-
-	// access the velocity gradient tensor
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
+	// access velocity gradient tensor
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points (dxx, dyy, dzz)
@@ -796,9 +793,9 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		yy = (vy[k][j+1][i] - vy[k][j][i])/dy;
 		zz = (vz[k+1][j][i] - vz[k][j][i])/dz;
 
-			vx_x[k][j][i] = xx;
-			vy_y[k][j][i] = yy;
-			vz_z[k][j][i] = zz;
+		vx_x[k][j][i] = xx;
+		vy_y[k][j][i] = yy;
+		vz_z[k][j][i] = zz;
 
 		// compute & store volumetric strain rate
 		theta = xx + yy + zz;
@@ -844,9 +841,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		dvxdy = (vx[k][j][i] - vx[k][j-1][i])/dy;
 		dvydx = (vy[k][j][i] - vy[k][j][i-1])/dx;
 
-
-			vx_y[k][j][i] = dvxdy;
-			vy_x[k][j][i] = dvydx;
+		vx_y[k][j][i] = dvxdy;
+		vy_x[k][j][i] = dvydx;
 
 		// compute & store total strain rate
 		xy = 0.5*(dvxdy + dvydx);
@@ -880,12 +876,12 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		dvxdz = (vx[k][j][i] - vx[k-1][j][i])/dz;
 		dvzdx = (vz[k][j][i] - vz[k][j][i-1])/dx;
 
-			vx_z[k][j][i] = dvxdz;
-			vz_x[k][j][i] = dvzdx;
+		vx_z[k][j][i] = dvxdz;
+		vz_x[k][j][i] = dvzdx;
 
 		// compute & store total strain rate
-        xz = 0.5*(dvxdz + dvzdx);
-        svEdge->d = xz;
+		xz = 0.5*(dvxdz + dvzdx);
+		svEdge->d = xz;
 
 		// compute & store effective deviatoric strain rate
 		dxz[k][j][i] = xz + svEdge->h*svDev->I2Gdt;
@@ -912,8 +908,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		dz = SIZE_NODE(k, sz, fs->dsz);
 
 		// compute velocity gradients
-
-
 		dvydz = (vy[k][j][i] - vy[k-1][j][i])/dz;
 		dvzdy = (vz[k][j][i] - vz[k][j-1][i])/dy;
 
@@ -941,7 +935,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
 
-
 	// communicate boundary strain-rate values
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
@@ -950,28 +943,26 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->ldxz);
 	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->ldyz);
 
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
 
-	// access the velocity gradient tensor
-
-		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
-
-		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvxdx);
-		LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvxdy);
-		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvxdz);
-		LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvydx);
-		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvydy);
-		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvydz);
-		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvzdx);
-		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvzdy);
-		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvzdz);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvxdx);
+	LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvxdy);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvxdz);
+	LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvydx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvydy);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvydz);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvzdx);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvzdy);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvzdz);
 
 	PetscFunctionReturn(0);
 }
@@ -1088,7 +1079,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
-	PetscInt    iter, fssa_allVel;
+	PetscInt    iter;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
@@ -1121,11 +1112,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz  = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	fssa   			=  	jr->ctrl.FSSA; 			// Density gradient penalty parameter
-	fssa_allVel		=	jr->ctrl.FSSA_allVel; 	// Use all velocity components for FSSA or only Vz? 
-
-	grav   			=  	jr->ctrl.grav; // gravity acceleration
-	dt     			=  	jr->ts->dt;    // time step
+	fssa = jr->ctrl.FSSA; // Density gradient penalty parameter
+	grav = jr->ctrl.grav; // gravity acceleration
+	dt   = jr->ts->dt;    // time step
 
 	// setup constitutive equation evaluation context parameters
 	ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
@@ -1176,22 +1165,23 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if (jr->ctrl.actDike)
 		{
 
-		  y_c = COORD_CELL(j,sy,fs->dsy);
-		  
-		  dikeRHS = 0.0;
-		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-		  ierr = GetDikeContr(&ctx, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy);  CHKERRQ(ierr);
-		  
-		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
-		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
-		  dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
-		  dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
+			y_c = COORD_CELL(j,sy,fs->dsy);
+
+			dikeRHS = 0.0;
+
+			// function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
+			ierr = GetDikeContr(&ctx, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy);  CHKERRQ(ierr);
+
+			// remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
+			dxx[k][j][i] -=  (2.0/3.0) * dikeRHS;
+			dyy[k][j][i] -= -(1.0/3.0) * dikeRHS;
+			dzz[k][j][i] -= -(1.0/3.0) * dikeRHS;
 		}
 
 		// access strain rates
 		XX = dxx[k][j][i];
-                YY = dyy[k][j][i];
-                ZZ = dzz[k][j][i];
+		YY = dyy[k][j][i];
+		ZZ = dzz[k][j][i];
 		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];
@@ -1270,17 +1260,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// momentum
-		if (fssa_allVel){
-			fx[k][j][i] -= (sxx + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1] + vy[k][j][i+1] + vz[k][j][i+1])*tx)/fdx - gx/2.0;
-			fy[k][j][i] -= (syy + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vx[k][j+1][i] + vy[k][j+1][i] + vz[k][j+1][i])*ty)/fdy - gy/2.0;
-			fz[k][j][i] -= (szz + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vx[k+1][j][i] + vy[k+1][j][i] + vz[k+1][j][i])*tz)/fdz - gz/2.0;
-		}
-		else{
-			fx[k][j][i] -= (sxx + (vx[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1])*tx)/fdx - gx/2.0;
-			fy[k][j][i] -= (syy + (vy[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vy[k][j+1][i])*ty)/fdy - gy/2.0;
-			fz[k][j][i] -= (szz + (vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vz[k+1][j][i])*tz)/fdz - gz/2.0;
-		}
-
+		fx[k][j][i] -= (sxx + (vx[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1])*tx)/fdx - gx/2.0;
+		fy[k][j][i] -= (syy + (vy[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vy[k][j+1][i])*ty)/fdy - gy/2.0;
+		fz[k][j][i] -= (szz + (vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vz[k+1][j][i])*tz)/fdz - gz/2.0;
 
 		// pressure boundary constraints
 		if(i == 0   && bcp[k][j][i-1] != DBL_MAX) fx[k][j][i]   += -p[k][j][i-1]/bdx;
@@ -1668,6 +1650,56 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode JacResCopyVelNoBC(JacRes *jr, Vec x)
+{
+	// copy solution from global to local vectors, do not enforce boundary constraints
+
+	FDSTAG            *fs;
+	PetscScalar       *vx, *vy, *vz, *p;
+	const PetscScalar *sol, *iter;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	fs = jr->fs;
+
+	// access vectors
+	ierr = VecGetArray    (jr->gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gp,  &p);   CHKERRQ(ierr);
+	ierr = VecGetArrayRead(x,       &sol); CHKERRQ(ierr);
+
+	// copy vectors component-wise
+	iter = sol;
+
+	ierr  = PetscMemcpy(vx, iter, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nXFace;
+
+	ierr  = PetscMemcpy(vy, iter, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nYFace;
+
+	ierr  = PetscMemcpy(vz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nZFace;
+
+	ierr = PetscMemcpy(p,   iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// restore access
+	ierr = VecRestoreArray    (jr->gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gp,  &p);   CHKERRQ(ierr);
+	ierr = VecRestoreArrayRead(x,       &sol); CHKERRQ(ierr);
+
+	// fill local (ghosted) version of solution vectors
+	GLOBAL_TO_LOCAL(fs->DA_X,   jr->gvx, jr->lvx)
+	GLOBAL_TO_LOCAL(fs->DA_Y,   jr->gvy, jr->lvy)
+	GLOBAL_TO_LOCAL(fs->DA_Z,   jr->gvz, jr->lvz)
+	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 {
 	// copy velocity from global to local vectors, enforce boundary constraints
@@ -1755,13 +1787,8 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
 
-		if(fj && fk) SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
+		if(fj && fk) SET_EDGE_CORNER(lvx, K, J, i, k, j, i, pmdof)
 
-        /* 
-            Note: a special case occurs for 2D setups, in which nel_y==1
-        */
-       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fj && fk )  SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 
@@ -1784,7 +1811,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 
-		if(fi && fk) SET_EDGE_CORNER(n, lvy, K, j, I, k, j, i, pmdof)
+		if(fi && fk) SET_EDGE_CORNER(lvy, K, j, I, k, j, i, pmdof)
 
 	}
 	END_STD_LOOP
@@ -1809,11 +1836,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 
-		/* 
-            Note: a special case occurs for 2D setups with nel_y==1
-        */
-       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fi && fj) SET_EDGE_CORNER(n, lvz, k, J, I, k, j, i, pmdof)
+		if(fi && fj) SET_EDGE_CORNER(lvz, k, J, I, k, j, i, pmdof)
 
 	}
 	END_STD_LOOP
@@ -1902,24 +1925,10 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcp, lp, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcp, lp, K, j, i, pmdof) }
 
-		if(fi && fj)       SET_EDGE_CORNER(n, lp, k, J, I, k, j, i, pmdof)
-		if(fi && fk)       SET_EDGE_CORNER(n, lp, K, j, I, k, j, i, pmdof)
-		if(fj && fk)       SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk) SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
-
-		 /* 
-            Note: a special case occurs for 2D setups with nel_y==1
-            In that we need to split the setting of edges & corners in two parts 
-            to ensure that both front & back side are accounted for.
-        */
-       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fi && fj )           SET_EDGE_CORNER(n, lp, k, J, I, k, j, i, pmdof)
-        if(fj && fk )           SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk   )   SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
-
-
-
-
+		if(fi && fj)       SET_EDGE_CORNER(lp, k, J, I, k, j, i, pmdof)
+		if(fi && fk)       SET_EDGE_CORNER(lp, K, j, I, k, j, i, pmdof)
+		if(fj && fk)       SET_EDGE_CORNER(lp, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk) SET_EDGE_CORNER(lp, K, J, I, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 
@@ -1931,7 +1940,6 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 }
 //---------------------------------------------------------------------------
 PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts)
-
 {
 	FDSTAG            *fs;
 	
@@ -2263,17 +2271,17 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f)
 	fs  = jr->fs;
 
 	// access vectors
-	ierr = VecGetArray(jr->gc,  &c);  CHKERRQ(ierr);
-	ierr = VecGetArray(f, &res);      CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gc, &c);   CHKERRQ(ierr);
+	ierr = VecGetArray(f,      &res); CHKERRQ(ierr);
 
 	// copy vectors component-wise
 	iter = res + fs->dof.lnv;
 
-	ierr = PetscMemcpy(c,  iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr = PetscMemcpy(c, iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
 
 	// restore access
-	ierr = VecRestoreArray(jr->gc,   &c);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(f, &res);       CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gc, &c);   CHKERRQ(ierr);
+	ierr = VecRestoreArray(f,      &res); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

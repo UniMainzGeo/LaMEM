@@ -197,9 +197,27 @@
 -js_ksp_monitor
 -js_ksp_rtol 1e-6
 
-# COUPLED MULTIGRID
--pcmat_type mono
--jp_type mg
+# wBFBT PRECONDITIONER WITH MULTIGRID
+
+-pcmat_type block
+#-pcmat_schur_type wbfbt
+-pcmat_schur_type inv_eta
+
+-jp_type bf
+
+-bf_type lower
+-bf_vs_type mg
+
+-vs_ksp_type preonly
+
+#-ks_ksp_type preonly
+#-ks_pc_type mg
+#-ks_pc_mg_levels 4
+#-ks_pc_mg_galerkin
+#-ks_pc_mg_type multiplicative
+#-ks_pc_mg_cycle_type v
+
+
 -gmg_pc_type mg
 -gmg_pc_mg_levels 4
 -gmg_pc_mg_galerkin
@@ -212,7 +230,6 @@
 -crs_ksp_type preonly
 -crs_pc_type lu
 -crs_pc_factor_mat_solver_type mumps
-
 
 #-vs_ksp_view
 #-crs_ksp_view
