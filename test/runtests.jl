@@ -371,10 +371,10 @@ end
     Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
 
     # Compute difference with analytical solution
-    @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-3
-    @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
-    @test norm(Pf_vec - Pf_a) ≈ 4.675374630769038 rtol=1e-5
-
+    @test norm(Szz_vec - Sv_a) ≈ 1.0769790188863786 rtol=1e-3
+    @test norm(Sxx_vec - Sh_a) ≈ 19.596753495502448 rtol=1e-4
+    @test norm(Pf_vec - Pf_a) ≈ 4.676818965337232 rtol=1e-5
+    
     # Create plot with stress & analytical solution
     Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_1Core.png")
     clean_directory(dir)
@@ -394,11 +394,10 @@ end
         # 1D analytical solution
         Sv_a, Pf_a, P_hydro_a, Sh_a = AnalyticalSolution(ρ, phase_vec, z)
 
-        # Compute difference with analytical solution
-        @test norm(Szz_vec - Sv_a) ≈ 1.075864674505617 rtol=1e-3
-        @test norm(Sxx_vec - Sh_a) ≈ 19.59995396792367 rtol=1e-4
-        @test norm(Pf_vec - Pf_a) ≈ 4.675374630769038 rtol=1e-5
-
+    	# Compute difference with analytical solution
+    	@test norm(Szz_vec - Sv_a) ≈ 1.0769790188863786 rtol=1e-3
+    	@test norm(Sxx_vec - Sh_a) ≈ 19.596753495502448 rtol=1e-4
+    	@test norm(Pf_vec - Pf_a) ≈ 4.676818965337232 rtol=1e-5
 
         # Create plot with stress & analytical solution
         Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
