@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May 17 2023 - Time: 10:57:24 	    
-     Version : 2.1.0 
+     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -26,8 +26,7 @@ Parsing input file : BC_velocity_2D_LR.dat
    Adding PETSc option: -gmg_mg_levels_pc_type jacobi
    Adding PETSc option: -crs_ksp_type preonly
    Adding PETSc option: -crs_pc_type lu
-   Adding PETSc option: -crs_pc_factor_mat_solver_package superlu_dist
-Finished parsing input file : BC_velocity_2D_LR.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -51,10 +50,10 @@ Time stepping parameters:
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
-   Fine grid cells [nx, ny, nz]         : [32, 1, 16]
-   Number of cells                      :  512
-   Number of faces                      :  2096
-   Maximum cell aspect ratio            :  2.50000
+   Fine grid cells [nx, ny, nz]         : [32, 2, 16]
+   Number of cells                      :  1024
+   Number of faces                      :  3680
+   Maximum cell aspect ratio            :  5.00000
    Lower coordinate bounds [bx, by, bz] : [-100., -2.5, -100.]
    Upper coordinate bounds [ex, ey, ez] : [100., 2.5, 100.]
 --------------------------------------------------------------------------
@@ -64,24 +63,24 @@ Softening laws:
 --------------------------------------------------------------------------
 Material parameters: 
 --------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0   
+   Phase ID : 0   
    (elast)  : G = 5e+10 [Pa]  
    (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
    (plast)  : ch = 2e+07 [Pa]  fr = 15. [deg]  
 
-- Melt factor mfc = 0.000000   Phase ID : 1   
+   Phase ID : 1   
    (dens)   : rho = 3300. [kg/m^3]  
    (elast)  : G = 5e+10 [Pa]  Vs = 3892.49 [m/s]  
    (diff)   : eta = 1e+20 [Pa*s]  Bd = 5e-21 [1/Pa/s]  
    (plast)  : ch = 2e+06 [Pa]  fr = 15. [deg]  frSoftID = 0 
 
-- Melt factor mfc = 0.000000   Phase ID : 2   
+   Phase ID : 2   
    (dens)   : rho = 3250. [kg/m^3]  
    (elast)  : G = 5e+10 [Pa]  Vs = 3922.32 [m/s]  
    (diff)   : eta = 1e+21 [Pa*s]  Bd = 5e-22 [1/Pa/s]  
    (plast)  : ch = 2e+06 [Pa]  fr = 15. [deg]  frSoftID = 0 
 
-- Melt factor mfc = 0.000000   Phase ID : 3   
+   Phase ID : 3   
    (dens)   : rho = 3300. [kg/m^3]  
    (elast)  : G = 5e+10 [Pa]  Vs = 3892.49 [m/s]  
    (diff)   : eta = 1e+20 [Pa*s]  Bd = 5e-21 [1/Pa/s]  
@@ -102,6 +101,7 @@ Boundary condition parameters:
    Top boundary temperature                   : 0. [C] 
    Bottom boundary temperature                : 1300. [C] 
    Adding inflow velocity at boundary         @ 
+      Number of inflow periods                : 3   
       Inflow velocity boundary                : Right 
       Outflow at opposite boundary            @ 
       Inflow phase from next to boundary      @ 
@@ -123,8 +123,8 @@ Solution parameters & controls:
    Minimum cohesion                        : 1e+06 [Pa] 
    Minimum friction                        : 1. [deg] 
    Ultimate yield stress                   : 1e+09 [Pa] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -138,7 +138,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00029878 sec)
+Reading geometric primitives ... done (0.000647865 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : BC_velocity_LR 
@@ -173,9 +173,10 @@ AVD output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Matrix type                   : monolithic
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : coupled Galerkin geometric multigrid
-   Global coarse grid [nx,ny,nz] : [8, 1, 4]
-   Local coarse grid  [nx,ny,nz] : [8, 1, 4]
+   Global coarse grid [nx,ny,nz] : [8, 2, 4]
+   Local coarse grid  [nx,ny,nz] : [8, 2, 4]
    Number of multigrid levels    :  3
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -188,1925 +189,1933 @@ Solver parameters specified:
    Number of smoothening steps   : 4 
    Coarse level KSP              : preonly 
    Coarse level PC               : lu 
-   Coarse level solver package   : superlu_dist 
+   Coarse level solver package   : (null) 
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.662630109205e+00 
+  0 SNES Function norm 3.765528647013e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
-** PETSc DEPRECATION WARNING ** : the option -pc_factor_mat_solver_package is deprecated as of version 3.9 and will be removed in a future release. Please use the option -pc_factor_mat_solver_type instead. (Silence this warning with -options_suppress_deprecated_warnings)
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 5
-  1 SNES Function norm 1.907852413299e-02 
-  1 PICARD ||F||/||F0||=7.165293e-03 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  2 SNES Function norm 5.007146364355e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
+  1 SNES Function norm 2.717185528325e-02 
+  1 PICARD ||F||/||F0||=7.215947e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 18
+  2 SNES Function norm 1.488704600146e-05 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.0195484 (sec)
+SNES solution time      : 0.0461908 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.923914647316e-09 
-      |Div|_2   = 4.218819754113e-08 
+      |Div|_inf = 1.066315732462e-09 
+      |Div|_2   = 8.609163696266e-09 
    Momentum: 
-      |mRes|_2  = 5.006968630825e-06 
+      |mRes|_2  = 1.488704351212e-05 
 --------------------------------------------------------------------------
-Saving output ... done (0.009429 sec)
+Saving output ... done (0.0167352 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.082351143692e-01 
+  0 SNES Function norm 5.770725733352e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 3.839576971778e-03 
-  1 PICARD ||F||/||F0||=9.405308e-03 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
-  2 SNES Function norm 5.428326917516e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+  1 SNES Function norm 8.096206524379e-03 
+  1 PICARD ||F||/||F0||=1.402979e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 18
+  2 SNES Function norm 8.882435972330e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.018388 (sec)
+SNES solution time      : 0.0418446 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.501242502862e-07 
-      |Div|_2   = 1.763131918040e-06 
+      |Div|_inf = 1.234729139545e-06 
+      |Div|_2   = 5.377459681823e-06 
    Momentum: 
-      |mRes|_2  = 5.428298283994e-04 
+      |mRes|_2  = 8.882273194136e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 2 markers in 7.4688e-04 s 
+Marker control [0]: (Corners ) injected 4 markers in 9.6725e-04 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00879721 sec)
+Saving output ... done (0.016007 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00100000 [Myr] 
 Tentative time step : 0.00120000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.402301440579e-03 
+  0 SNES Function norm 4.918923397575e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 1.709772270693e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+  1 SNES Function norm 1.753972234120e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00933094 (sec)
+SNES solution time      : 0.0205739 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.112235677668e-06 
-      |Div|_2   = 2.658292518373e-06 
+      |Div|_inf = 8.125216258592e-07 
+      |Div|_2   = 3.749279857788e-06 
    Momentum: 
-      |mRes|_2  = 1.709565607316e-04 
+      |mRes|_2  = 1.753571466499e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00120 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 7 markers in 7.6592e-04 s 
+Marker control [0]: (Corners ) injected 10 markers in 1.0015e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00220000 [Myr] 
 Tentative time step : 0.00144000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 8.361797707781e-04 
+  0 SNES Function norm 1.404438074150e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 1.082904971817e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+  1 SNES Function norm 1.971025057043e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00953676 (sec)
+SNES solution time      : 0.0197093 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 9.746689626477e-07 
-      |Div|_2   = 2.530660830500e-06 
+      |Div|_inf = 1.497097701769e-06 
+      |Div|_2   = 7.498918782969e-06 
    Momentum: 
-      |mRes|_2  = 1.082609234009e-04 
+      |mRes|_2  = 1.969598029345e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00144 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 5 markers in 7.5972e-04 s 
+Marker control [0]: (Corners ) injected 9 markers in 9.9608e-04 s 
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00364000 [Myr] 
 Tentative time step : 0.00172800 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 7.346001194230e-04 
+  0 SNES Function norm 1.065014809887e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 1.027761484545e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+  1 SNES Function norm 1.700323571356e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00932947 (sec)
+SNES solution time      : 0.0195921 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.565202756523e-06 
-      |Div|_2   = 3.913252340592e-06 
+      |Div|_inf = 2.176553487728e-06 
+      |Div|_2   = 1.187406311014e-05 
    Momentum: 
-      |mRes|_2  = 1.027016219311e-04 
+      |mRes|_2  = 1.696172429275e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00173 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 3 markers in 7.5603e-04 s 
+Marker control [0]: (Corners ) injected 10 markers in 1.0008e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00536800 [Myr] 
 Tentative time step : 0.00207360 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 8.593500763018e-04 
+  0 SNES Function norm 9.781453703202e-04 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 2.773358368498e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+  1 SNES Function norm 1.054510746180e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00940716 (sec)
+SNES solution time      : 0.0204357 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.240075872299e-06 
-      |Div|_2   = 5.574091371193e-06 
+      |Div|_inf = 9.435703517744e-07 
+      |Div|_2   = 5.916493333469e-06 
    Momentum: 
-      |mRes|_2  = 2.772798151805e-04 
+      |mRes|_2  = 1.052849668506e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00207 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 7 markers in 7.7029e-04 s 
+Marker control [0]: (Corners ) injected 13 markers in 1.0233e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00954304 sec)
+Saving output ... done (0.0163759 sec)
 --------------------------------------------------------------------------
 ================================= STEP 6 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00744160 [Myr] 
 Tentative time step : 0.00248832 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 6.540160906558e-04 
+  0 SNES Function norm 1.385596294979e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 1.409155760578e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+  1 SNES Function norm 4.363895002086e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00939105 (sec)
+SNES solution time      : 0.0196935 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 9.750842967438e-07 
-      |Div|_2   = 3.011875589319e-06 
+      |Div|_inf = 2.922449816891e-06 
+      |Div|_2   = 1.333920600554e-05 
    Momentum: 
-      |mRes|_2  = 1.408833850429e-04 
+      |mRes|_2  = 4.361855814622e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00249 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 3 markers in 7.6530e-04 s 
+Marker control [0]: (Corners ) injected 7 markers in 1.0025e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 7 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00992992 [Myr] 
 Tentative time step : 0.00298598 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 6.444019981334e-04 
+  0 SNES Function norm 1.958570925466e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 1.239182212736e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+  1 SNES Function norm 5.014378887002e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00941414 (sec)
+SNES solution time      : 0.0204653 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.065886339362e-06 
-      |Div|_2   = 3.410318237828e-06 
+      |Div|_inf = 3.083864903342e-06 
+      |Div|_2   = 1.527039202183e-05 
    Momentum: 
-      |mRes|_2  = 1.238712851839e-04 
+      |mRes|_2  = 5.012053185587e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00299 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 5 markers in 7.7805e-04 s 
+Marker control [0]: (Corners ) injected 4 markers in 9.8116e-04 s 
 --------------------------------------------------------------------------
 ================================= STEP 8 =================================
 --------------------------------------------------------------------------
 Current time        : 0.01291590 [Myr] 
 Tentative time step : 0.00358318 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.076725874534e-03 
+  0 SNES Function norm 1.017470663097e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 1.528087288798e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+  1 SNES Function norm 1.500414735446e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00993018 (sec)
+SNES solution time      : 0.0204752 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.536559591547e-06 
-      |Div|_2   = 5.852438861852e-06 
+      |Div|_inf = 6.780685657548e-07 
+      |Div|_2   = 4.003445633623e-06 
    Momentum: 
-      |mRes|_2  = 1.526966161421e-04 
+      |mRes|_2  = 1.499880535459e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00358 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 9 markers in 7.8561e-04 s 
+Marker control [0]: (Corners ) injected 17 markers in 1.0410e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 9 =================================
 --------------------------------------------------------------------------
 Current time        : 0.01649908 [Myr] 
 Tentative time step : 0.00429982 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.026759688024e-03 
+  0 SNES Function norm 1.392136599319e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 9.490448304872e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+  1 SNES Function norm 1.304544825551e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00978674 (sec)
+SNES solution time      : 0.0205521 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.036960359448e-06 
-      |Div|_2   = 4.655726792221e-06 
+      |Div|_inf = 1.610590376384e-06 
+      |Div|_2   = 3.513340030156e-06 
    Momentum: 
-      |mRes|_2  = 9.479021632416e-05 
+      |mRes|_2  = 1.304071641458e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00430 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 10 markers in 7.8819e-04 s 
+Marker control [0]: (Corners ) injected 13 markers in 1.0285e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 10 =================================
 --------------------------------------------------------------------------
 Current time        : 0.02079890 [Myr] 
 Tentative time step : 0.00515978 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.068066399566e-03 
+  0 SNES Function norm 1.711712623996e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 1.026783710313e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+  1 SNES Function norm 1.227574556622e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0098643 (sec)
+SNES solution time      : 0.0204657 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.342479714098e-07 
-      |Div|_2   = 1.190769536502e-06 
+      |Div|_inf = 1.405776314323e-06 
+      |Div|_2   = 4.568651492647e-06 
    Momentum: 
-      |mRes|_2  = 1.026714660728e-04 
+      |mRes|_2  = 1.226724106887e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00516 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 7 markers in 7.7332e-04 s 
+Marker control [0]: (Corners ) injected 18 markers in 1.0398e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00984046 sec)
+Saving output ... done (0.0167914 sec)
 --------------------------------------------------------------------------
 ================================ STEP 11 =================================
 --------------------------------------------------------------------------
 Current time        : 0.02595868 [Myr] 
 Tentative time step : 0.00619174 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.349653124954e-03 
+  0 SNES Function norm 1.726345052997e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 9.573859211917e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 15
+  1 SNES Function norm 1.116294269829e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0098464 (sec)
+SNES solution time      : 0.0215334 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.487676082254e-06 
-      |Div|_2   = 3.231638602931e-06 
+      |Div|_inf = 1.931913596930e-06 
+      |Div|_2   = 9.315595541534e-06 
    Momentum: 
-      |mRes|_2  = 9.568403489036e-05 
+      |mRes|_2  = 1.112400496595e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00619 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 9 markers in 7.8605e-04 s 
+Marker control [0]: (Corners ) injected 26 markers in 1.0690e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 12 =================================
 --------------------------------------------------------------------------
 Current time        : 0.03215042 [Myr] 
 Tentative time step : 0.00743008 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.002262142138e-03 
+  0 SNES Function norm 1.177428580560e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 6.106059420298e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+  1 SNES Function norm 7.816830937568e-05 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00988195 (sec)
+SNES solution time      : 0.0205371 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.894295314177e-07 
-      |Div|_2   = 1.474577853235e-06 
+      |Div|_inf = 8.011177983276e-07 
+      |Div|_2   = 2.901099840300e-06 
    Momentum: 
-      |mRes|_2  = 6.104278650730e-05 
+      |mRes|_2  = 7.811445583481e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.00743 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 13 markers in 7.9148e-04 s 
+Marker control [0]: (Corners ) injected 16 markers in 1.0201e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 13 =================================
 --------------------------------------------------------------------------
 Current time        : 0.03958050 [Myr] 
 Tentative time step : 0.00891610 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.621168820623e-03 
+  0 SNES Function norm 1.754905446494e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
-  1 SNES Function norm 7.265994178863e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 19
+  1 SNES Function norm 1.243408412205e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0108378 (sec)
+SNES solution time      : 0.0249317 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.561425246323e-06 
-      |Div|_2   = 6.429381078625e-06 
+      |Div|_inf = 2.911897235037e-07 
+      |Div|_2   = 9.276387834188e-07 
    Momentum: 
-      |mRes|_2  = 7.265709718477e-04 
+      |mRes|_2  = 1.243373808704e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00892 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 13 markers in 7.9409e-04 s 
+Marker control [0]: (Corners ) injected 17 markers in 1.0162e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 14 =================================
 --------------------------------------------------------------------------
 Current time        : 0.04849660 [Myr] 
 Tentative time step : 0.01069932 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.740617545491e-03 
+  0 SNES Function norm 1.798847587752e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
-  1 SNES Function norm 1.917089324610e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 19
+  1 SNES Function norm 1.624883362466e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0102229 (sec)
+SNES solution time      : 0.0250306 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.193701974006e-07 
-      |Div|_2   = 1.598551214204e-06 
+      |Div|_inf = 4.332237404186e-07 
+      |Div|_2   = 1.146791041997e-06 
    Momentum: 
-      |mRes|_2  = 1.917022676427e-04 
+      |mRes|_2  = 1.624842893528e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.01070 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 12 markers in 7.8590e-04 s 
+Marker control [0]: (Corners ) injected 28 markers in 1.0666e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 15 =================================
 --------------------------------------------------------------------------
 Current time        : 0.05919592 [Myr] 
 Tentative time step : 0.01283918 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.686863573739e-03 
+  0 SNES Function norm 2.300067660217e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
-  1 SNES Function norm 1.008690044958e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 18
+  1 SNES Function norm 8.663199756748e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0108156 (sec)
+SNES solution time      : 0.0240362 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.920319974595e-07 
-      |Div|_2   = 1.860530664368e-06 
+      |Div|_inf = 3.602324776299e-06 
+      |Div|_2   = 1.090387245319e-05 
    Momentum: 
-      |mRes|_2  = 1.008518442748e-04 
+      |mRes|_2  = 8.662513525639e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.01284 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 17 markers in 8.0683e-04 s 
+Marker control [0]: (Corners ) injected 41 markers in 1.1121e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0101669 sec)
+Saving output ... done (0.0172043 sec)
 --------------------------------------------------------------------------
 ================================ STEP 16 =================================
 --------------------------------------------------------------------------
 Current time        : 0.07203511 [Myr] 
 Tentative time step : 0.01540702 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.738642066388e-03 
+  0 SNES Function norm 2.923501398602e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 1.454089548002e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 18
+  1 SNES Function norm 6.869475020099e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0113294 (sec)
+SNES solution time      : 0.0241342 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.283071837179e-06 
-      |Div|_2   = 3.878783942874e-06 
+      |Div|_inf = 3.065901507091e-06 
+      |Div|_2   = 8.974196063528e-06 
    Momentum: 
-      |mRes|_2  = 1.453572123123e-04 
+      |mRes|_2  = 6.868888806224e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.01541 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 29 markers in 8.2696e-04 s 
+Marker control [0]: (Corners ) injected 39 markers in 1.1061e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 17 =================================
 --------------------------------------------------------------------------
 Current time        : 0.08744213 [Myr] 
 Tentative time step : 0.01848843 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.699598207697e-03 
+  0 SNES Function norm 3.379739360565e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 2.355647161492e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 5.167266646822e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118303 (sec)
+SNES solution time      : 0.0257967 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.056951784768e-06 
-      |Div|_2   = 2.496010213639e-06 
+      |Div|_inf = 7.600161111361e-07 
+      |Div|_2   = 4.201944545178e-06 
    Momentum: 
-      |mRes|_2  = 2.355514920934e-04 
+      |mRes|_2  = 5.167095796051e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.01849 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 29 markers in 8.2221e-04 s 
+Marker control [0]: (Corners ) injected 67 markers in 1.1655e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 18 =================================
 --------------------------------------------------------------------------
 Current time        : 0.10593056 [Myr] 
 Tentative time step : 0.02218611 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 7.782508506605e-02 
+  0 SNES Function norm 1.112262963503e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 2.549510001859e-02 
-  1 PICARD ||F||/||F0||=3.275949e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  2 SNES Function norm 3.072799539770e-03 
-  2 PICARD ||F||/||F0||=3.948341e-02 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  3 SNES Function norm 5.945953796565e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 15
+  1 SNES Function norm 3.661708712955e-02 
+  1 PICARD ||F||/||F0||=3.292125e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 19
+  2 SNES Function norm 4.522816266411e-03 
+  2 PICARD ||F||/||F0||=4.066319e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 16
+  3 SNES Function norm 8.891461359021e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 3
-SNES solution time      : 0.0281503 (sec)
+SNES solution time      : 0.06477 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.502381195645e-07 
-      |Div|_2   = 1.524106931749e-06 
+      |Div|_inf = 2.197723719112e-07 
+      |Div|_2   = 1.083088016620e-06 
    Momentum: 
-      |mRes|_2  = 5.945934263066e-04 
+      |mRes|_2  = 8.891454762354e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.02219 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 11 markers in 8.0066e-04 s 
+Marker control [0]: (Corners ) injected 20 markers in 1.0604e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 19 =================================
 --------------------------------------------------------------------------
 Current time        : 0.12811667 [Myr] 
 Tentative time step : 0.02662333 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.837891652438e-03 
+  0 SNES Function norm 7.228096738474e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 5.744797275394e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 17
+  1 SNES Function norm 7.550291655150e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0114151 (sec)
+SNES solution time      : 0.0232261 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.252417079900e-05 
-      |Div|_2   = 2.708435720352e-05 
+      |Div|_inf = 1.230287887868e-05 
+      |Div|_2   = 7.195848551294e-05 
    Momentum: 
-      |mRes|_2  = 5.738409143208e-04 
+      |mRes|_2  = 7.515923211030e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.02662 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 15 markers in 7.8894e-04 s 
+Marker control [0]: (Corners ) injected 32 markers in 1.0598e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 20 =================================
 --------------------------------------------------------------------------
 Current time        : 0.15474000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.149099032089e-03 
+  0 SNES Function norm 5.092871467452e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.182727170361e-03 
-  1 PICARD ||F||/||F0||=3.755764e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
-  2 SNES Function norm 4.219213528540e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 1.449684766638e-03 
+  1 PICARD ||F||/||F0||=2.846498e-01 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  2 SNES Function norm 3.889969145620e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.0229899 (sec)
+SNES solution time      : 0.0497878 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.187633932866e-08 
-      |Div|_2   = 1.421592613009e-07 
+      |Div|_inf = 1.163683232604e-07 
+      |Div|_2   = 5.387615803402e-07 
    Momentum: 
-      |mRes|_2  = 4.219213289050e-04 
+      |mRes|_2  = 3.889965414689e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 32 markers in 8.2275e-04 s 
+Marker control [0]: (Corners ) injected 58 markers in 1.1297e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00984063 sec)
+Saving output ... done (0.0169693 sec)
 --------------------------------------------------------------------------
 ================================ STEP 21 =================================
 --------------------------------------------------------------------------
 Current time        : 0.18599000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.629263800473e-03 
+  0 SNES Function norm 5.154999677648e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.148040947260e-03 
-  1 PICARD ||F||/||F0||=3.163289e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  2 SNES Function norm 2.375773013761e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 15
+  1 SNES Function norm 1.057504596232e-03 
+  1 PICARD ||F||/||F0||=2.051415e-01 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  2 SNES Function norm 1.260282019219e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.0225398 (sec)
+SNES solution time      : 0.0453688 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.251796922897e-07 
-      |Div|_2   = 2.578363509433e-07 
+      |Div|_inf = 1.013066972933e-07 
+      |Div|_2   = 4.675717303023e-07 
    Momentum: 
-      |mRes|_2  = 2.375771614646e-04 
+      |mRes|_2  = 1.260273345602e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 37 markers in 8.2683e-04 s 
+Marker control [0]: (Corners ) injected 71 markers in 1.1532e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 22 =================================
 --------------------------------------------------------------------------
 Current time        : 0.21724000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.711427601608e-03 
+  0 SNES Function norm 4.639428067575e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.108412617792e-03 
-  1 PICARD ||F||/||F0||=2.986486e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  2 SNES Function norm 5.148765035465e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 1.127930823138e-03 
+  1 PICARD ||F||/||F0||=2.431185e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  2 SNES Function norm 1.328676964681e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.0225173 (sec)
+SNES solution time      : 0.0497607 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.102537587784e-07 
-      |Div|_2   = 5.095578932908e-07 
+      |Div|_inf = 9.648568100620e-08 
+      |Div|_2   = 2.615910861301e-07 
    Momentum: 
-      |mRes|_2  = 5.148762513993e-04 
+      |mRes|_2  = 1.328674389564e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 40 markers in 8.2841e-04 s 
+Marker control [0]: (Corners ) injected 76 markers in 1.2508e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 23 =================================
 --------------------------------------------------------------------------
 Current time        : 0.24849000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.975005944703e-03 
+  0 SNES Function norm 4.841473487626e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.634561503903e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 16
+  1 SNES Function norm 1.754011745832e-03 
+  1 PICARD ||F||/||F0||=3.622888e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  2 SNES Function norm 3.960034632383e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.0118468 (sec)
+Number of iterations    : 2
+SNES solution time      : 0.0461561 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.648781840490e-06 
-      |Div|_2   = 4.265586104442e-06 
+      |Div|_inf = 2.787570291186e-07 
+      |Div|_2   = 8.025658330134e-07 
    Momentum: 
-      |mRes|_2  = 1.634004830948e-04 
+      |mRes|_2  = 3.960026499720e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 38 markers in 8.3448e-04 s 
+Marker control [0]: (Corners ) injected 79 markers in 1.1737e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 24 =================================
 --------------------------------------------------------------------------
 Current time        : 0.27974000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.721148074312e-03 
+  0 SNES Function norm 4.771043796392e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 2.632739754179e-03 
-  1 PICARD ||F||/||F0||=7.075074e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  2 SNES Function norm 1.111936887291e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 1.402970698361e-03 
+  1 PICARD ||F||/||F0||=2.940595e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 15
+  2 SNES Function norm 2.562107852421e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.0205525 (sec)
+SNES solution time      : 0.0452501 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.498301211756e-07 
-      |Div|_2   = 3.875382462880e-07 
+      |Div|_inf = 7.942736874158e-08 
+      |Div|_2   = 2.076837312988e-07 
    Momentum: 
-      |mRes|_2  = 1.111930133924e-04 
+      |mRes|_2  = 2.562107010682e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 36 markers in 8.2763e-04 s 
+Marker control [0]: (Corners ) injected 78 markers in 1.1720e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 25 =================================
 --------------------------------------------------------------------------
 Current time        : 0.31099000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.184291035429e-03 
+  0 SNES Function norm 4.286899765096e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.914355873525e-03 
-  1 PICARD ||F||/||F0||=6.011875e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  2 SNES Function norm 4.814819076771e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 16
+  1 SNES Function norm 2.071240344128e-03 
+  1 PICARD ||F||/||F0||=4.831558e-01 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  2 SNES Function norm 4.916053569909e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.0225039 (sec)
+SNES solution time      : 0.0460986 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.951292035839e-07 
-      |Div|_2   = 6.131424428785e-07 
+      |Div|_inf = 2.938229606303e-07 
+      |Div|_2   = 7.778793113674e-07 
    Momentum: 
-      |mRes|_2  = 4.814815172743e-04 
+      |mRes|_2  = 4.916047415617e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 51 markers in 8.6819e-04 s 
+Marker control [0]: (Corners ) injected 89 markers in 1.2168e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0101588 sec)
+Saving output ... done (0.0173885 sec)
 --------------------------------------------------------------------------
 ================================ STEP 26 =================================
 --------------------------------------------------------------------------
 Current time        : 0.34224000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.338363787335e-03 
+  0 SNES Function norm 4.725792707928e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.251191332613e-03 
-  1 PICARD ||F||/||F0||=3.747918e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
-  2 SNES Function norm 1.720517136960e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 7.765061079340e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 2
-SNES solution time      : 0.0230682 (sec)
+Number of iterations    : 1
+SNES solution time      : 0.0259033 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.256666401999e-07 
-      |Div|_2   = 2.166401507079e-07 
+      |Div|_inf = 3.656019593416e-06 
+      |Div|_2   = 1.652244470795e-05 
    Momentum: 
-      |mRes|_2  = 1.720515773040e-04 
+      |mRes|_2  = 7.763303062998e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 39 markers in 8.3419e-04 s 
+Marker control [0]: (Corners ) injected 83 markers in 1.1947e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 27 =================================
 --------------------------------------------------------------------------
 Current time        : 0.37349000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.980162663999e-03 
+  0 SNES Function norm 4.389542513111e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 9.442150932478e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 6.834207783813e-05 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118448 (sec)
+SNES solution time      : 0.0258578 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.531154284457e-06 
-      |Div|_2   = 6.078438227527e-06 
+      |Div|_inf = 1.854656251449e-06 
+      |Div|_2   = 5.475224570278e-06 
    Momentum: 
-      |mRes|_2  = 9.441955278996e-04 
+      |mRes|_2  = 6.812240100831e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 38 markers in 8.3855e-04 s 
+Marker control [0]: (Corners ) injected 91 markers in 1.2047e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 28 =================================
 --------------------------------------------------------------------------
 Current time        : 0.40474000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.500050096897e-03 
+  0 SNES Function norm 6.522702076176e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.232096580812e-03 
-  1 PICARD ||F||/||F0||=3.520226e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  2 SNES Function norm 3.869625742216e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.198698839310e-03 
+  1 PICARD ||F||/||F0||=1.837734e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  2 SNES Function norm 1.699748920804e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.0220123 (sec)
+SNES solution time      : 0.0496459 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.974431428092e-07 
-      |Div|_2   = 6.179526130453e-07 
+      |Div|_inf = 1.994819423066e-07 
+      |Div|_2   = 5.543324120032e-07 
    Momentum: 
-      |mRes|_2  = 3.869620808074e-04 
+      |mRes|_2  = 1.699739881667e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 48 markers in 8.9535e-04 s 
+Marker control [0]: (Corners ) injected 89 markers in 1.1983e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 29 =================================
 --------------------------------------------------------------------------
 Current time        : 0.43599000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.773275090293e-03 
+  0 SNES Function norm 4.976102749211e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 9.337188788289e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 4.191062747059e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0119026 (sec)
+SNES solution time      : 0.0258147 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.195429207934e-06 
-      |Div|_2   = 2.592402379350e-06 
+      |Div|_inf = 6.039987861653e-07 
+      |Div|_2   = 3.051376627679e-06 
    Momentum: 
-      |mRes|_2  = 9.337152800139e-04 
+      |mRes|_2  = 4.190951665177e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 41 markers in 8.6050e-04 s 
+Marker control [0]: (Corners ) injected 90 markers in 1.2185e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 30 =================================
 --------------------------------------------------------------------------
 Current time        : 0.46724000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.620029884522e-03 
+  0 SNES Function norm 5.698514639854e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 8.129184864667e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 19
+  1 SNES Function norm 1.680934184219e-03 
+  1 PICARD ||F||/||F0||=2.949776e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  2 SNES Function norm 4.328921097137e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.0113729 (sec)
+Number of iterations    : 2
+SNES solution time      : 0.0488019 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.340804875358e-05 
-      |Div|_2   = 2.645463366025e-05 
+      |Div|_inf = 2.797532776720e-07 
+      |Div|_2   = 6.670534531793e-07 
    Momentum: 
-      |mRes|_2  = 8.124879186776e-04 
+      |mRes|_2  = 4.328915957743e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 46 markers in 8.5401e-04 s 
+Marker control [0]: (Corners ) injected 95 markers in 1.2054e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0101433 sec)
+Saving output ... done (0.0173771 sec)
 --------------------------------------------------------------------------
 ================================ STEP 31 =================================
 --------------------------------------------------------------------------
 Current time        : 0.49849000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.440474545632e-03 
+  0 SNES Function norm 6.595800373857e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 6.041350823559e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 6.664091090713e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0114243 (sec)
+SNES solution time      : 0.0259438 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.525605971456e-06 
-      |Div|_2   = 1.488819421131e-05 
+      |Div|_inf = 1.589916251403e-06 
+      |Div|_2   = 7.406427823718e-06 
    Momentum: 
-      |mRes|_2  = 6.039516035298e-04 
+      |mRes|_2  = 6.663679505199e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 52 markers in 8.7326e-04 s 
+Marker control [0]: (Corners ) injected 91 markers in 1.2048e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 32 =================================
 --------------------------------------------------------------------------
 Current time        : 0.52974000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.611059197648e-03 
+  0 SNES Function norm 5.472249127680e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 4.650680566945e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 7.872828871454e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0114003 (sec)
+SNES solution time      : 0.0258262 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.518940883614e-05 
-      |Div|_2   = 2.530125015902e-05 
+      |Div|_inf = 3.475221457451e-06 
+      |Div|_2   = 1.958922334572e-05 
    Momentum: 
-      |mRes|_2  = 4.643793105835e-04 
+      |mRes|_2  = 7.870391392559e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 44 markers in 8.4304e-04 s 
+Marker control [0]: (Corners ) injected 90 markers in 1.1801e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 33 =================================
 --------------------------------------------------------------------------
 Current time        : 0.56099000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.859591278942e-03 
+  0 SNES Function norm 6.211463451499e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 6.442549102457e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 3.888952328162e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0114107 (sec)
+SNES solution time      : 0.0258342 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.780642701258e-06 
-      |Div|_2   = 5.205225782196e-06 
+      |Div|_inf = 7.287404514970e-07 
+      |Div|_2   = 3.532805010606e-06 
    Momentum: 
-      |mRes|_2  = 6.442338822200e-04 
+      |mRes|_2  = 3.888791861182e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 60 markers in 8.6728e-04 s 
+Marker control [0]: (Corners ) injected 91 markers in 1.1995e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 34 =================================
 --------------------------------------------------------------------------
 Current time        : 0.59224000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.105974765732e-03 
+  0 SNES Function norm 6.029032373595e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 3.792059530286e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 16
+  1 SNES Function norm 3.754183452319e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.011867 (sec)
+SNES solution time      : 0.0222662 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.985224817129e-06 
-      |Div|_2   = 4.333810606482e-06 
+      |Div|_inf = 6.569775578266e-07 
+      |Div|_2   = 3.083892453247e-06 
    Momentum: 
-      |mRes|_2  = 3.791811874262e-04 
+      |mRes|_2  = 3.754056786251e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 49 markers in 8.5441e-04 s 
+Marker control [0]: (Corners ) injected 93 markers in 1.1927e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 35 =================================
 --------------------------------------------------------------------------
 Current time        : 0.62349000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 6.906267600136e-02 
+  0 SNES Function norm 9.869186343558e-02 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 2.793541376322e-02 
-  1 PICARD ||F||/||F0||=4.044936e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  2 SNES Function norm 2.690762015936e-03 
-  2 PICARD ||F||/||F0||=3.896116e-02 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  3 SNES Function norm 5.037282530132e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+  1 SNES Function norm 4.098779444582e-02 
+  1 PICARD ||F||/||F0||=4.153108e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 19
+  2 SNES Function norm 3.911840649600e-03 
+  2 PICARD ||F||/||F0||=3.963691e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 18
+  3 SNES Function norm 6.639501130303e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 3
-SNES solution time      : 0.0284856 (sec)
+SNES solution time      : 0.0656248 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.009598483060e-07 
-      |Div|_2   = 9.227579854890e-07 
+      |Div|_inf = 2.383742082270e-07 
+      |Div|_2   = 1.038576358282e-06 
    Momentum: 
-      |mRes|_2  = 5.037274078323e-04 
+      |mRes|_2  = 6.639493007393e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 19 markers in 8.2072e-04 s 
+Marker control [0]: (Corners ) injected 40 markers in 1.1187e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0100932 sec)
+Saving output ... done (0.0173339 sec)
 --------------------------------------------------------------------------
 ================================ STEP 36 =================================
 --------------------------------------------------------------------------
 Current time        : 0.65474000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.335693525404e-03 
+  0 SNES Function norm 7.332722814031e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 3.305785824378e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+  1 SNES Function norm 3.346377442749e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0114296 (sec)
+SNES solution time      : 0.0205777 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.679739111621e-06 
-      |Div|_2   = 1.825598361720e-05 
+      |Div|_inf = 1.223219509026e-05 
+      |Div|_2   = 3.535483212586e-05 
    Momentum: 
-      |mRes|_2  = 3.300741102067e-04 
+      |mRes|_2  = 3.327648655413e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 26 markers in 8.2518e-04 s 
+Marker control [0]: (Corners ) injected 41 markers in 1.0899e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 37 =================================
 --------------------------------------------------------------------------
 Current time        : 0.68599000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 5.837289493712e-03 
+  0 SNES Function norm 7.799066025647e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 2.517054783991e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 3.731834517914e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118181 (sec)
+SNES solution time      : 0.0258551 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.454012765500e-06 
-      |Div|_2   = 5.296507777775e-06 
+      |Div|_inf = 2.659258151051e-06 
+      |Div|_2   = 1.754332656379e-05 
    Momentum: 
-      |mRes|_2  = 2.516497463966e-04 
+      |mRes|_2  = 3.727708684756e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 37 markers in 8.3565e-04 s 
+Marker control [0]: (Corners ) injected 66 markers in 1.1491e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 38 =================================
 --------------------------------------------------------------------------
 Current time        : 0.71724000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.563488838945e-03 
+  0 SNES Function norm 8.529475944287e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 2.294131213213e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 3.495152182519e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118327 (sec)
+SNES solution time      : 0.0260991 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.454411842799e-06 
-      |Div|_2   = 6.496445264719e-06 
+      |Div|_inf = 2.374553803374e-06 
+      |Div|_2   = 1.528826633952e-05 
    Momentum: 
-      |mRes|_2  = 2.293211207745e-04 
+      |mRes|_2  = 3.491806934841e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 30 markers in 8.2590e-04 s 
+Marker control [0]: (Corners ) injected 66 markers in 1.1384e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 39 =================================
 --------------------------------------------------------------------------
 Current time        : 0.74849000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.828900762336e-03 
+  0 SNES Function norm 5.799559478539e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.250998594383e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.266036636612e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118109 (sec)
+SNES solution time      : 0.025772 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.984338901864e-06 
-      |Div|_2   = 7.106755824552e-06 
+      |Div|_inf = 1.389360688409e-06 
+      |Div|_2   = 6.155152100708e-06 
    Momentum: 
-      |mRes|_2  = 1.248978336606e-04 
+      |mRes|_2  = 1.264539511247e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 38 markers in 8.2360e-04 s 
+Marker control [0]: (Corners ) injected 73 markers in 1.2549e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 40 =================================
 --------------------------------------------------------------------------
 Current time        : 0.77974000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.846687068876e-03 
+  0 SNES Function norm 7.790715286282e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 1.467575936430e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.638066447225e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00990562 (sec)
+SNES solution time      : 0.0260847 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.796252148124e-06 
-      |Div|_2   = 5.894064217891e-06 
+      |Div|_inf = 1.260084594569e-06 
+      |Div|_2   = 7.049771609215e-06 
    Momentum: 
-      |mRes|_2  = 1.466391874598e-04 
+      |mRes|_2  = 1.636548733631e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 38 markers in 8.2859e-04 s 
+Marker control [0]: (Corners ) injected 65 markers in 1.1191e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0100897 sec)
+Saving output ... done (0.0171784 sec)
 --------------------------------------------------------------------------
 ================================ STEP 41 =================================
 --------------------------------------------------------------------------
 Current time        : 0.81099000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.884043953493e-03 
+  0 SNES Function norm 4.971494164630e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 9.996768799549e-05 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.738426364244e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118924 (sec)
+SNES solution time      : 0.0260096 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.238915888644e-06 
-      |Div|_2   = 7.565608032666e-06 
+      |Div|_inf = 2.195408532417e-06 
+      |Div|_2   = 8.517301198049e-06 
    Momentum: 
-      |mRes|_2  = 9.968099226162e-05 
+      |mRes|_2  = 1.736338613845e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 36 markers in 8.2313e-04 s 
+Marker control [0]: (Corners ) injected 78 markers in 1.1503e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 42 =================================
 --------------------------------------------------------------------------
 Current time        : 0.84224000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.364069890632e-03 
+  0 SNES Function norm 7.657821610821e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 2.635474828725e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 9.875175374527e-05 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118762 (sec)
+SNES solution time      : 0.0261375 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.150918149046e-06 
-      |Div|_2   = 4.512308839400e-06 
+      |Div|_inf = 6.288102250023e-07 
+      |Div|_2   = 3.228295281992e-06 
    Momentum: 
-      |mRes|_2  = 2.635088514593e-04 
+      |mRes|_2  = 9.869897151105e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 36 markers in 8.2172e-04 s 
+Marker control [0]: (Corners ) injected 78 markers in 1.1657e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 43 =================================
 --------------------------------------------------------------------------
 Current time        : 0.87349000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.139677911888e-03 
+  0 SNES Function norm 5.262211555941e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.977210142152e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.481202861418e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118776 (sec)
+SNES solution time      : 0.0261657 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.383144908953e-06 
-      |Div|_2   = 2.619969965259e-06 
+      |Div|_inf = 8.261855447939e-07 
+      |Div|_2   = 3.760563454678e-06 
    Momentum: 
-      |mRes|_2  = 1.977036550488e-04 
+      |mRes|_2  = 1.480725407671e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 43 markers in 8.3864e-04 s 
+Marker control [0]: (Corners ) injected 70 markers in 1.1188e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 44 =================================
 --------------------------------------------------------------------------
 Current time        : 0.90474000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.963706787046e-03 
+  0 SNES Function norm 6.599657762840e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
-  1 SNES Function norm 1.041623037810e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.868761912699e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0123257 (sec)
+SNES solution time      : 0.0259851 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.811385237547e-07 
-      |Div|_2   = 1.631844900733e-06 
+      |Div|_inf = 1.571085207456e-06 
+      |Div|_2   = 7.230709234270e-06 
    Momentum: 
-      |mRes|_2  = 1.041495204558e-04 
+      |mRes|_2  = 1.867362517229e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 38 markers in 8.4324e-04 s 
+Marker control [0]: (Corners ) injected 76 markers in 1.1399e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 45 =================================
 --------------------------------------------------------------------------
 Current time        : 0.93599000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.227875711643e-03 
+  0 SNES Function norm 4.550974543626e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 3.593379683010e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 17
+  1 SNES Function norm 2.636344851616e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118921 (sec)
+SNES solution time      : 0.023223 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.768728266103e-06 
-      |Div|_2   = 6.285983738726e-06 
+      |Div|_inf = 5.588557226406e-07 
+      |Div|_2   = 2.789120928178e-06 
    Momentum: 
-      |mRes|_2  = 3.592829829968e-04 
+      |mRes|_2  = 2.636197309969e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 39 markers in 8.3431e-04 s 
+Marker control [0]: (Corners ) injected 73 markers in 1.1147e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0100819 sec)
+Saving output ... done (0.017199 sec)
 --------------------------------------------------------------------------
 ================================ STEP 46 =================================
 --------------------------------------------------------------------------
 Current time        : 0.96724000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.765127281552e-03 
+  0 SNES Function norm 3.993782204706e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 2.830791081925e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 8.044374275266e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0119337 (sec)
+SNES solution time      : 0.025961 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.708787488419e-06 
-      |Div|_2   = 6.299704967602e-06 
+      |Div|_inf = 6.688829255725e-07 
+      |Div|_2   = 3.294983457441e-06 
    Momentum: 
-      |mRes|_2  = 2.830090019988e-04 
+      |mRes|_2  = 8.044306793563e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 38 markers in 8.1066e-04 s 
+Marker control [0]: (Corners ) injected 87 markers in 1.1523e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 47 =================================
 --------------------------------------------------------------------------
 Current time        : 0.99849000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.603533805929e-03 
+  0 SNES Function norm 4.797628982510e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 8.296375083957e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 5.410411758311e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118835 (sec)
+SNES solution time      : 0.0259339 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.590172910729e-06 
-      |Div|_2   = 5.985158248453e-06 
+      |Div|_inf = 1.736101575178e-06 
+      |Div|_2   = 7.724522629977e-06 
    Momentum: 
-      |mRes|_2  = 8.296159190962e-04 
+      |mRes|_2  = 5.409860309609e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 39 markers in 8.1121e-04 s 
+Marker control [0]: (Corners ) injected 83 markers in 1.1526e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 48 =================================
 --------------------------------------------------------------------------
 Current time        : 1.02974000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.493882519785e-03 
+  0 SNES Function norm 5.147487556397e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 4.195043918095e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 6.653049828146e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118931 (sec)
+SNES solution time      : 0.0258209 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.467750182427e-06 
-      |Div|_2   = 3.381365749441e-06 
+      |Div|_inf = 1.446451030147e-06 
+      |Div|_2   = 5.526557556208e-06 
    Momentum: 
-      |mRes|_2  = 4.194907640379e-04 
+      |mRes|_2  = 6.652820284056e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 37 markers in 8.1386e-04 s 
+Marker control [0]: (Corners ) injected 86 markers in 1.1477e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 49 =================================
 --------------------------------------------------------------------------
 Current time        : 1.06099000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.265281129100e-03 
+  0 SNES Function norm 3.938478059126e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 5.051413014051e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 6.486054501314e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118566 (sec)
+SNES solution time      : 0.0258743 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.453719247844e-06 
-      |Div|_2   = 4.683754333458e-06 
+      |Div|_inf = 1.309228380010e-06 
+      |Div|_2   = 4.912428110169e-06 
    Momentum: 
-      |mRes|_2  = 5.051195866630e-04 
+      |mRes|_2  = 6.485868469143e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 44 markers in 8.3974e-04 s 
+Marker control [0]: (Corners ) injected 90 markers in 1.1704e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 50 =================================
 --------------------------------------------------------------------------
 Current time        : 1.09224000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.011137489077e-03 
+  0 SNES Function norm 3.827037107790e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 3.486673365501e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.897424189584e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.011836 (sec)
+SNES solution time      : 0.0259196 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.715639488843e-06 
-      |Div|_2   = 3.315555316986e-06 
+      |Div|_inf = 2.120086880570e-06 
+      |Div|_2   = 8.214238692070e-06 
    Momentum: 
-      |mRes|_2  = 3.486515720170e-04 
+      |mRes|_2  = 1.895645321121e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 43 markers in 8.2476e-04 s 
+Marker control [0]: (Corners ) injected 102 markers in 1.1935e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0100484 sec)
+Saving output ... done (0.0171801 sec)
 --------------------------------------------------------------------------
 ================================ STEP 51 =================================
 --------------------------------------------------------------------------
 Current time        : 1.12349000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.025811908014e-03 
+  0 SNES Function norm 4.297195776237e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.391752005932e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.243976253291e-03 
+  1 PICARD ||F||/||F0||=2.894856e-01 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  2 SNES Function norm 3.767454172774e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.0118672 (sec)
+Number of iterations    : 2
+SNES solution time      : 0.0498236 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.969403102196e-06 
-      |Div|_2   = 3.369065763778e-06 
+      |Div|_inf = 2.870511285024e-07 
+      |Div|_2   = 9.421512727944e-07 
    Momentum: 
-      |mRes|_2  = 1.391344165045e-04 
+      |mRes|_2  = 3.767442392267e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 49 markers in 8.5735e-04 s 
+Marker control [0]: (Corners ) injected 87 markers in 1.1441e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 52 =================================
 --------------------------------------------------------------------------
 Current time        : 1.15474000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.169548054806e-03 
+  0 SNES Function norm 4.419447084370e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 7.792901416560e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.223443392475e-03 
+  1 PICARD ||F||/||F0||=2.768318e-01 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  2 SNES Function norm 2.258292856385e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.00998246 (sec)
+Number of iterations    : 2
+SNES solution time      : 0.0496769 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.831861375032e-06 
-      |Div|_2   = 4.561499803584e-06 
+      |Div|_inf = 1.843102995691e-07 
+      |Div|_2   = 5.691690939740e-07 
    Momentum: 
-      |mRes|_2  = 7.792767913917e-04 
+      |mRes|_2  = 2.258285683844e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 48 markers in 8.3648e-04 s 
+Marker control [0]: (Corners ) injected 87 markers in 1.1847e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 53 =================================
 --------------------------------------------------------------------------
 Current time        : 1.18599000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.551110475389e-03 
+  0 SNES Function norm 4.535564091623e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
-  1 SNES Function norm 6.538013149850e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.206424783027e-03 
+  1 PICARD ||F||/||F0||=2.659922e-01 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  2 SNES Function norm 2.319961037012e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.0109611 (sec)
+Number of iterations    : 2
+SNES solution time      : 0.0497483 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.012504274212e-06 
-      |Div|_2   = 2.182395678485e-06 
+      |Div|_inf = 1.713544583166e-07 
+      |Div|_2   = 5.134423462809e-07 
    Momentum: 
-      |mRes|_2  = 6.537976725450e-04 
+      |mRes|_2  = 2.319955355378e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 47 markers in 8.3210e-04 s 
+Marker control [0]: (Corners ) injected 100 markers in 1.1878e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 54 =================================
 --------------------------------------------------------------------------
 Current time        : 1.21724000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.898433933912e-03 
+  0 SNES Function norm 3.776458282464e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 7.327811170880e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 1.984050594269e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0114158 (sec)
+SNES solution time      : 0.0258092 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.287375410480e-06 
-      |Div|_2   = 2.064639362994e-06 
+      |Div|_inf = 2.159289179568e-07 
+      |Div|_2   = 1.060597376883e-06 
    Momentum: 
-      |mRes|_2  = 7.327782084812e-04 
+      |mRes|_2  = 1.984022246332e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 52 markers in 8.6948e-04 s 
+Marker control [0]: (Corners ) injected 90 markers in 1.1605e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 55 =================================
 --------------------------------------------------------------------------
 Current time        : 1.24849000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.740852240799e-03 
+  0 SNES Function norm 4.120718444037e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 4.086199617162e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.485895531012e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00997093 (sec)
+SNES solution time      : 0.0257959 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.320876329582e-06 
-      |Div|_2   = 2.455288028895e-06 
+      |Div|_inf = 9.483341236312e-07 
+      |Div|_2   = 2.788316063354e-06 
    Momentum: 
-      |mRes|_2  = 4.086125850651e-04 
+      |mRes|_2  = 1.485633891117e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 41 markers in 8.2592e-04 s 
+Marker control [0]: (Corners ) injected 99 markers in 1.2021e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0100794 sec)
+Saving output ... done (0.0173212 sec)
 --------------------------------------------------------------------------
 ================================ STEP 56 =================================
 --------------------------------------------------------------------------
 Current time        : 1.27974000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.429126218518e-03 
+  0 SNES Function norm 4.834807837749e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 1.129028687610e-03 
-  1 PICARD ||F||/||F0||=3.292468e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  2 SNES Function norm 3.286645010450e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 3.450855391208e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 2
-SNES solution time      : 0.022593 (sec)
+Number of iterations    : 1
+SNES solution time      : 0.025863 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.339040425979e-07 
-      |Div|_2   = 6.325746421103e-07 
+      |Div|_inf = 1.507841140972e-06 
+      |Div|_2   = 3.739041057126e-06 
    Momentum: 
-      |mRes|_2  = 3.286638922919e-04 
+      |mRes|_2  = 3.450652820587e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 45 markers in 8.3501e-04 s 
+Marker control [0]: (Corners ) injected 102 markers in 1.1975e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 57 =================================
 --------------------------------------------------------------------------
 Current time        : 1.31099000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.905353032095e-03 
+  0 SNES Function norm 4.377345574091e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 4.967015232978e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 2.209759806440e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118847 (sec)
+SNES solution time      : 0.0258123 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.091281492162e-06 
-      |Div|_2   = 2.028735447231e-06 
+      |Div|_inf = 1.010077075928e-06 
+      |Div|_2   = 3.474297722204e-06 
    Momentum: 
-      |mRes|_2  = 4.966973801812e-04 
+      |mRes|_2  = 2.209486666104e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 45 markers in 8.2936e-04 s 
+Marker control [0]: (Corners ) injected 91 markers in 1.1775e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 58 =================================
 --------------------------------------------------------------------------
 Current time        : 1.34224000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.454980855707e-03 
+  0 SNES Function norm 4.590453053315e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
-  1 SNES Function norm 8.526777982338e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 2.428130934865e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0108965 (sec)
+SNES solution time      : 0.0258665 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.756356098598e-07 
-      |Div|_2   = 3.108495703334e-06 
+      |Div|_inf = 1.096069909857e-06 
+      |Div|_2   = 5.448070167365e-06 
    Momentum: 
-      |mRes|_2  = 8.526721320973e-04 
+      |mRes|_2  = 2.427519658004e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 52 markers in 8.4510e-04 s 
+Marker control [0]: (Corners ) injected 107 markers in 1.2122e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 59 =================================
 --------------------------------------------------------------------------
 Current time        : 1.37349000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.366244225331e-03 
+  0 SNES Function norm 4.404413028159e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 3.002236153988e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 4.131875186356e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118594 (sec)
+SNES solution time      : 0.0257987 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.099608212970e-06 
-      |Div|_2   = 4.502147278190e-06 
+      |Div|_inf = 1.915246479178e-06 
+      |Div|_2   = 6.370140951631e-06 
    Momentum: 
-      |mRes|_2  = 3.001898564459e-04 
+      |mRes|_2  = 4.131384112625e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 55 markers in 8.6567e-04 s 
+Marker control [0]: (Corners ) injected 110 markers in 1.2263e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 60 =================================
 --------------------------------------------------------------------------
 Current time        : 1.40474000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.318751453882e-03 
+  0 SNES Function norm 4.908627061907e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 2.192988158339e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 1.835875889981e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118851 (sec)
+SNES solution time      : 0.0258712 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.329159749679e-06 
-      |Div|_2   = 2.490573233865e-06 
+      |Div|_inf = 2.091314323303e-06 
+      |Div|_2   = 7.808813179348e-06 
    Momentum: 
-      |mRes|_2  = 2.192846726771e-04 
+      |mRes|_2  = 1.834214416879e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 47 markers in 8.2528e-04 s 
+Marker control [0]: (Corners ) injected 81 markers in 1.1428e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0100323 sec)
+Saving output ... done (0.0172463 sec)
 --------------------------------------------------------------------------
 ================================ STEP 61 =================================
 --------------------------------------------------------------------------
 Current time        : 1.43599000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.408975661076e-03 
+  0 SNES Function norm 4.900847700286e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 3.115784022500e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 3.977203343990e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0119132 (sec)
+SNES solution time      : 0.025897 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.098670385702e-06 
-      |Div|_2   = 2.758696357365e-06 
+      |Div|_inf = 1.747732350251e-06 
+      |Div|_2   = 7.402736078957e-06 
    Momentum: 
-      |mRes|_2  = 3.115661893452e-04 
+      |mRes|_2  = 3.976514351703e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 49 markers in 8.3246e-04 s 
+Marker control [0]: (Corners ) injected 107 markers in 1.2414e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 62 =================================
 --------------------------------------------------------------------------
 Current time        : 1.46724000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.265754165159e-03 
+  0 SNES Function norm 5.339578413885e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 3.640498593100e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 2.474964566088e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0113997 (sec)
+SNES solution time      : 0.0258322 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.881757561203e-06 
-      |Div|_2   = 3.394085945631e-06 
+      |Div|_inf = 1.191243707172e-06 
+      |Div|_2   = 3.855601219773e-06 
    Momentum: 
-      |mRes|_2  = 3.640340372056e-04 
+      |mRes|_2  = 2.474664227186e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 52 markers in 8.7343e-04 s 
+Marker control [0]: (Corners ) injected 87 markers in 1.1760e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 63 =================================
 --------------------------------------------------------------------------
 Current time        : 1.49849000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.992296825194e-03 
+  0 SNES Function norm 5.503947205524e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 4.188867296423e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 3.115668090999e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118929 (sec)
+SNES solution time      : 0.0258476 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.380042070055e-06 
-      |Div|_2   = 2.759505063808e-06 
+      |Div|_inf = 1.104493978338e-06 
+      |Div|_2   = 5.266900888760e-06 
    Momentum: 
-      |mRes|_2  = 4.188776401317e-04 
+      |mRes|_2  = 3.115222885890e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 52 markers in 8.3963e-04 s 
+Marker control [0]: (Corners ) injected 122 markers in 1.2462e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 64 =================================
 --------------------------------------------------------------------------
 Current time        : 1.52974000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.633285397436e-03 
+  0 SNES Function norm 5.293264682649e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 6.120508417077e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 2.682605438860e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0118779 (sec)
+SNES solution time      : 0.0258393 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.046607721358e-06 
-      |Div|_2   = 4.357435777707e-06 
+      |Div|_inf = 5.596368028855e-07 
+      |Div|_2   = 1.614804052687e-06 
    Momentum: 
-      |mRes|_2  = 6.120353303434e-04 
+      |mRes|_2  = 2.682556836563e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 44 markers in 8.2352e-04 s 
+Marker control [0]: (Corners ) injected 81 markers in 1.1527e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 65 =================================
 --------------------------------------------------------------------------
 Current time        : 1.56099000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.074516143645e-03 
+  0 SNES Function norm 6.374928099827e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 5.361818852681e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 2.351491487326e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0113496 (sec)
+SNES solution time      : 0.0258938 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.308874993624e-06 
-      |Div|_2   = 9.163792307242e-06 
+      |Div|_inf = 3.263969355698e-06 
+      |Div|_2   = 7.053511658441e-06 
    Momentum: 
-      |mRes|_2  = 5.361035711504e-04 
+      |mRes|_2  = 2.350433366912e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 50 markers in 8.4083e-04 s 
+Marker control [0]: (Corners ) injected 101 markers in 1.2033e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00998649 sec)
+Saving output ... done (0.0172742 sec)
 --------------------------------------------------------------------------
 ================================ STEP 66 =================================
 --------------------------------------------------------------------------
 Current time        : 1.59224000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.637988133929e-03 
+  0 SNES Function norm 4.493014518554e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 1.749380631254e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 5.452014303761e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0114625 (sec)
+SNES solution time      : 0.0258742 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.082434653893e-06 
-      |Div|_2   = 4.598453565845e-06 
+      |Div|_inf = 1.303688879167e-06 
+      |Div|_2   = 3.353601254765e-06 
    Momentum: 
-      |mRes|_2  = 1.748776147907e-04 
+      |mRes|_2  = 5.451911160710e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 55 markers in 8.5636e-04 s 
+Marker control [0]: (Corners ) injected 110 markers in 1.2327e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 67 =================================
 --------------------------------------------------------------------------
 Current time        : 1.62349000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.332724052862e-03 
+  0 SNES Function norm 6.306713809580e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 3.525823353757e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 16
+  1 SNES Function norm 1.009777697389e-03 
+  1 PICARD ||F||/||F0||=1.601115e-01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 17
+  2 SNES Function norm 9.816484518484e-05 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 1
-SNES solution time      : 0.0113742 (sec)
+Number of iterations    : 2
+SNES solution time      : 0.0435557 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.600929088207e-06 
-      |Div|_2   = 2.763792256137e-06 
+      |Div|_inf = 1.331683978459e-08 
+      |Div|_2   = 1.258890012557e-07 
    Momentum: 
-      |mRes|_2  = 3.525715029201e-04 
+      |mRes|_2  = 9.816476446324e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 58 markers in 8.5535e-04 s 
+Marker control [0]: (Corners ) injected 102 markers in 1.2234e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 68 =================================
 --------------------------------------------------------------------------
 Current time        : 1.65474000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.982650138216e-03 
+  0 SNES Function norm 5.303996079372e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 9.308260752441e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 2.831587719291e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0113926 (sec)
+SNES solution time      : 0.0257812 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.209431721838e-06 
-      |Div|_2   = 2.240637138578e-06 
+      |Div|_inf = 5.847462173580e-07 
+      |Div|_2   = 2.381883823891e-06 
    Momentum: 
-      |mRes|_2  = 9.308233784664e-04 
+      |mRes|_2  = 2.831487537494e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 56 markers in 8.5165e-04 s 
+Marker control [0]: (Corners ) injected 121 markers in 1.2496e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 69 =================================
 --------------------------------------------------------------------------
 Current time        : 1.68599000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.809757501089e-03 
+  0 SNES Function norm 5.995489514403e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 7.871571959347e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 6.898549290795e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0114213 (sec)
+SNES solution time      : 0.0257991 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.270789398403e-06 
-      |Div|_2   = 4.822794805148e-06 
+      |Div|_inf = 4.814216241520e-07 
+      |Div|_2   = 3.427331860915e-06 
    Momentum: 
-      |mRes|_2  = 7.871424215236e-04 
+      |mRes|_2  = 6.898464152053e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 58 markers in 8.6206e-04 s 
+Marker control [0]: (Corners ) injected 95 markers in 1.1918e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 70 =================================
 --------------------------------------------------------------------------
 Current time        : 1.71724000 [Myr] 
 Tentative time step : 0.03125000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.269927954493e-03 
+  0 SNES Function norm 6.502859266251e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
-  1 SNES Function norm 1.467431831467e-03 
-  1 PICARD ||F||/||F0||=3.436666e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
-  2 SNES Function norm 4.741752491465e-04 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
+  1 SNES Function norm 7.389281064029e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 2
-SNES solution time      : 0.0211456 (sec)
+Number of iterations    : 1
+SNES solution time      : 0.0258078 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.288284027128e-07 
-      |Div|_2   = 2.402393017262e-07 
+      |Div|_inf = 1.152965724568e-06 
+      |Div|_2   = 6.232487423178e-06 
    Momentum: 
-      |mRes|_2  = 4.741751882883e-04 
+      |mRes|_2  = 7.389018219849e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.03125 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 60 markers in 8.8491e-04 s 
+Marker control [0]: (Corners ) injected 116 markers in 1.2662e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.00998381 sec)
+Saving output ... done (0.0174016 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 1.65085 (sec) 
+Total solution time : 3.25652 (sec) 
 --------------------------------------------------------------------------

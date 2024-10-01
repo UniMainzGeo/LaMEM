@@ -1,10 +1,11 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Mar  7 2022 - Time: 14:35:02 	    
+     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : ./t29_PermeableSides_VelBoxes/VelBoxes_Permeable_sides.dat 
+Parsing input file : VelBoxes_Permeable_sides.dat 
    Adding PETSc option: -snes_rtol 1e-4
    Adding PETSc option: -snes_atol 1e-4
    Adding PETSc option: -snes_max_it 30
@@ -16,7 +17,7 @@ Parsing input file : ./t29_PermeableSides_VelBoxes/VelBoxes_Permeable_sides.dat
    Adding PETSc option: -js_ksp_rtol 1e-5
    Adding PETSc option: -snes_linesearch_type l2
    Adding PETSc option: -snes_linesearch_maxstep 10
-Finished parsing input file : ./t29_PermeableSides_VelBoxes/VelBoxes_Permeable_sides.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -36,6 +37,16 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
    Save restart every [n] steps : 200 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 2 
+   Processor grid  [nx, ny, nz]         : [2, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [128, 2, 32]
+   Number of cells                      :  8192
+   Number of faces                      :  28992
+   Maximum cell aspect ratio            :  1.64062
+   Lower coordinate bounds [bx, by, bz] : [-2100., -20., -1000.]
+   Upper coordinate bounds [ex, ey, ez] : [2100., 20., 0.]
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Material parameters: 
@@ -260,16 +271,6 @@ Phase Transition laws:
      Phase              :    7, rho = 3300.0 [kg/m^3] 
      Phase              :   10, rho = 3300.0 [kg/m^3] 
 --------------------------------------------------------------------------
-Grid parameters:
-   Total number of cpu                  : 2 
-   Processor grid  [nx, ny, nz]         : [2, 1, 1]
-   Fine grid cells [nx, ny, nz]         : [128, 1, 32]
-   Number of cells                      :  4096
-   Number of faces                      :  16544
-   Maximum cell aspect ratio            :  1.28000
-   Lower coordinate bounds [bx, by, bz] : [-2100., -20., -1000.]
-   Upper coordinate bounds [ex, ey, ez] : [2100., 20., 0.]
---------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
    Top boundary temperature                   : 0. [C] 
@@ -302,7 +303,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.666667 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.004399 sec)
+Reading geometric primitives ... done (0.0103552 sec)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Passive Tracers: 
@@ -348,6 +349,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+04
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -355,82 +357,82 @@ Solver parameters specified:
    Solver type                   : parallel direct/lu 
    Solver package                : mumps 
 --------------------------------------------------------------------------
-Initializing pressure with lithostatic pressure ... done (0.000823 sec)
+Initializing pressure with lithostatic pressure ... done (0.00106674 sec)
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.015025707776e+02 
+  0 SNES Function norm 2.849608533268e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 2
-  1 SNES Function norm 4.742423917003e-09 
+  1 SNES Function norm 5.909179649446e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.853184 (sec)
+SNES solution time      : 0.49946 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.762805613969e-10 
-      |Div|_2   = 4.742423649925e-09 
+      |Div|_inf = 3.364346247339e-10 
+      |Div|_2   = 5.909179421339e-09 
    Momentum: 
-      |mRes|_2  = 1.591601563304e-12 
+      |mRes|_2  = 1.641903320515e-12 
    Energy: 
-      |eRes|_2  = 7.204699733820e-09 
+      |eRes|_2  = 1.207327899537e-08 
 --------------------------------------------------------------------------
-Saving output ... done (0.13113 sec)
+Saving output ... done (0.0823386 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.015086 sec)
+Phase_Transition ... done (0.0323884 sec)
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.183753339545e+03 
+  0 SNES Function norm 1.488892784046e+03 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 7.916714715625e+01 
-  1 PICARD ||F||/||F0||=6.687808e-02 
+  1 SNES Function norm 1.096239222784e+02 
+  1 PICARD ||F||/||F0||=7.362781e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  2 SNES Function norm 2.556252258866e+01 
-  2 PICARD ||F||/||F0||=2.159447e-02 
+  2 SNES Function norm 3.543390553173e+01 
+  2 PICARD ||F||/||F0||=2.379883e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  3 SNES Function norm 6.646665843827e+00 
-  3 PICARD ||F||/||F0||=5.614908e-03 
+  3 SNES Function norm 9.023594300706e+00 
+  3 PICARD ||F||/||F0||=6.060607e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  4 SNES Function norm 5.820506663003e-01 
-  4 PICARD ||F||/||F0||=4.916993e-04 
+  4 SNES Function norm 7.784072913083e-01 
+  4 PICARD ||F||/||F0||=5.228095e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  5 SNES Function norm 1.831257047730e-01 
-  5 PICARD ||F||/||F0||=1.546992e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 3
-  6 SNES Function norm 3.897516926260e-02 
+  5 SNES Function norm 2.542379010714e-01 
+  5 PICARD ||F||/||F0||=1.707564e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  6 SNES Function norm 4.018478388761e-02 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 6
-SNES solution time      : 2.8323 (sec)
+SNES solution time      : 1.41776 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.350463648646e-07 
-      |Div|_2   = 1.490293644576e-06 
+      |Div|_inf = 5.150328481715e-07 
+      |Div|_2   = 2.326046505615e-06 
    Momentum: 
-      |mRes|_2  = 3.897516923411e-02 
+      |mRes|_2  = 4.018478382029e-02 
    Energy: 
-      |eRes|_2  = 2.758275711364e-14 
+      |eRes|_2  = 4.053093090329e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Advection Passive tracers ... 
  Currently active tracers    :  0 
-done (0.007963 sec)
+done (0.0093822 sec)
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 0 markers in 3.1060e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 0 markers in 4.1771e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.132187 sec)
+Saving output ... done (0.0805451 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 4.11695 (sec) 
+Total solution time : 2.32145 (sec) 
 --------------------------------------------------------------------------
