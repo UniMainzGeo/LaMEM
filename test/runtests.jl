@@ -50,7 +50,7 @@ include("test_utils.jl")
 
     @test perform_lamem_test(dir,ParamFile,"FB1_c_MUMPS_opt-p2.expected", 
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
-                            args="-jp_pc_factor_mat_solver_package mumps")
+                            args="-jp_pc_factor_mat_solver_type mumps")
 end
 
 @testset "t2_FB2_MG" begin
@@ -447,7 +447,7 @@ end
     z = data.z.val[1,1,:]
 
     T_a5 = Analytical_1D(z, t5)
-    @test norm(T_a5 - T5)/length(T5) ≈ 0.03356719876721563
+    @test norm(T_a5 - T5)/length(T5) ≈ 0.03356725901141689
 
     Plot_Analytics_vs_Numerics(z,T_a5, T5, dir, "T_anal3.png")
     clean_directory(dir)
@@ -627,10 +627,10 @@ end
     τy      =  VP.fields.yield[1,1,:]
     τ_anal  =  Analytical_StrengthEnvelop(phase, T, P, τy)      # analytical solution 
 
-    @test norm(τII_1 - τII_2) ≈ 11.4882145f0
-    @test norm(τII_1 - τII_3) ≈ 11.532428f0
-    @test norm(τII_1 - τII_4) ≈ 13.671384f0
-    @test norm(τII_1 - τ_anal) ≈ 147.6532112114033
+    @test norm(τII_1 - τII_2) ≈ 106.54804495583619
+    @test norm(τII_1 - τII_3) ≈ 74.52658531093326
+    @test norm(τII_1 - τII_4) ≈ 57.419951900695494
+    @test norm(τII_1 - τ_anal) ≈ 148.18742956153582
     
     # Create plot
     Plot_StrengthEnvelop("t14_StrengthEnvelop_1D.png", dir, z, (τII_1, τII_2, τII_3, τII_4, τ_anal),("Viscoplastic", "VEP dt=5ka", "VEP dt=10ka", "VEP dt=50ka", "Analytical"))
@@ -654,6 +654,9 @@ end
     q_anal_pl = AnalyticalSolution_RTI_FreeSlip(λ_pl)
 
     Plot_growthrate("t15_RTI_analytics_numerics.png", dir, λ,q_num,λ_pl,q_anal_pl)
+    
+    clean_test_directory(dir)
+    
 end
 
 
