@@ -869,7 +869,7 @@
 #   -bf_vs_type user
 #   -vs_ksp_type preonly
 #   -vs_pc_type lu
-#   -vs_pc_factor_mat_solver_package mumps
+#   -vs_pc_factor_mat_solver_type mumps
 
 #   -pcmat_type block
 #   -pcmat_no_dev_proj
@@ -895,7 +895,7 @@
 
     -crs_ksp_type preonly
     -crs_pc_type lu
-    -crs_pc_factor_mat_solver_package mumps
+    -crs_pc_factor_mat_solver_type mumps
 
     -objects_dump
 

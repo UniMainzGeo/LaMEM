@@ -322,7 +322,8 @@
 
 	-snes_linesearch_type l2
 	-snes_linesearch_monitor
-	-snes_linesearch_maxstep 10
+	-snes_linesearch_maxstep 1.2
+	-snes_linesearch_minlambda 0.05
 	
 <PetscOptionsEnd>
 

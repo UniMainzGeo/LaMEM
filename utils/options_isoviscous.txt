@@ -16,7 +16,7 @@
 -A11_fieldsplit_ksp_maxit 4
 
 -A11_fieldsplit_mg_coarse_pc_type lu
--A11_fieldsplit_mg_coarse_pc_factor_mat_solver_package mumps
+-A11_fieldsplit_mg_coarse_pc_factor_mat_solver_type mumps
 
 -fc_ksp_atol 1.0e-13 
 -fc_ksp_rtol 1e-5 

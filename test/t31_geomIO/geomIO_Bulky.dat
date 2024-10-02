@@ -160,12 +160,12 @@
 	# direct solver @ coarse level
 #	-crs_ksp_type preonly
 #	-crs_pc_type lu
-#	-crs_pc_factor_mat_solver_package superlu_dist
+#	-crs_pc_factor_mat_solver_type superlu_dist
 	
 	# redundant solver @ coarse level
 #	-crs_pc_type redundant
 #	-crs_pc_redundant_number 2
-#	-crs_redundant_pc_factor_mat_solver_package superlu_dist
+#	-crs_redundant_pc_factor_mat_solver_type superlu_dist
 
 
 	# telecope preconditioner [needs more experimenting]:
@@ -176,7 +176,7 @@
 #	-pcmat_pgamma  1e5	# penalty parameter
 #	-jp_type       user
 #	-jp_pc_type    lu
-#	-jp_pc_factor_mat_solver_package superlu_dist
+#	-jp_pc_factor_mat_solver_type superlu_dist
 	
 	
 

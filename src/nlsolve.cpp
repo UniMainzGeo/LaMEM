@@ -240,7 +240,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 
 		if (!strcmp(pname, PCLU)){
 			// direct solver @ coarse level
-			ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_factor_mat_solver_package", pname, _str_len_, &found); CHKERRQ(ierr);
+			ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_factor_mat_solver_type", pname, _str_len_, &found); CHKERRQ(ierr);
 			if (found){	
 				PetscPrintf(PETSC_COMM_WORLD, "   Coarse level solver package   : %s \n", pname);
 			}
@@ -254,7 +254,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 			//redundant solver @ coarse level
 			ierr = PetscOptionsGetInt(NULL, NULL,"-crs_pc_redundant_number", &integer, &found); CHKERRQ(ierr);
 			if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of redundant solvers   : %lld \n", (LLD) integer); }
-			ierr = PetscOptionsGetString(NULL, NULL,"-crs_redundant_pc_factor_mat_solver_package", pname, _str_len_, &found); CHKERRQ(ierr);
+			ierr = PetscOptionsGetString(NULL, NULL,"-crs_redundant_pc_factor_mat_solver_type", pname, _str_len_, &found); CHKERRQ(ierr);
 			if (found){	
 				PetscPrintf(PETSC_COMM_WORLD, "   Redundant solver package      : %s \n", pname);
 			}
