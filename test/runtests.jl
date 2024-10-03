@@ -34,7 +34,7 @@ include("test_utils.jl")
 
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
-    dir = "t1_FB1_Direct";
+    dir = "t01_FB1_Direct";
     
     ParamFile = "FallingBlock_mono_PenaltyDirect.dat";
     
@@ -56,7 +56,7 @@ end
 @testset "t2_FB2_MG" begin
     if test_superlu
         cd(test_dir)
-        dir = "t2_FB2_MG";
+        dir = "t02_FB2_MG";
         
         ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
         
@@ -72,7 +72,7 @@ end
 
 @testset "t3_Subduction" begin
     cd(test_dir)
-    dir = "t3_SubductionGMGinput";
+    dir = "t03_SubductionGMGinput";
     
     # input script 
     include(joinpath(dir,"CreateMarkers_Subduction.jl"));      
@@ -129,7 +129,7 @@ end
 
 @testset "t4_Localisation" begin
     cd(test_dir)
-    dir = "t4_Loc";
+    dir = "t04_Loc";
     
     ParamFile = "localization.dat";
     
@@ -165,7 +165,7 @@ end
 
 @testset "t5_Permeability" begin
     cd(test_dir)
-    dir = "t5_Perm";
+    dir = "t05_Perm";
     
     ParamFile = "Permea.dat";
     
@@ -180,7 +180,7 @@ end
 
 @testset "t6_AdjointGradientScalingLaws_p2" begin
     cd(test_dir)
-    dir = "t6_AdjointGradientScaling";
+    dir = "t06_AdjointGradientScaling";
     
     keywords   = (  "|Div|_inf",
                     "|Div|_2",
@@ -221,7 +221,7 @@ end
 
 @testset "t7_AdjointGradientInversion" begin
     cd(test_dir)
-    dir = "t7_AdjointGradientInversion";
+    dir = "t07_AdjointGradientInversion";
     
     # t7_AdjointGradientInversion_1
     keywords   = (  "| 1 Diff parameter value =",
@@ -330,7 +330,7 @@ end
 
 @testset "t9_PhaseDiagrams" begin
     cd(test_dir)
-    dir = "t9_PhaseDiagrams";
+    dir = "t09_PhaseDiagrams";
     
     ParamFile = "test_9_FallingBlock_PhaseDiagrams.dat";
     
@@ -342,6 +342,7 @@ end
                             args="-mfmax 0.15",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 end
+
 
 
 # this ia a more complicated one, that requires a devoted script (with plotting)
@@ -1002,6 +1003,7 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
+
 
 
 end

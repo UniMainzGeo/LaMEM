@@ -1,5 +1,5 @@
 # This tests various adjoint gradient cases
-dir = "t8_AdjointGradients";
+dir = "t08_AdjointGradients";
 if test_superlu
    # t8_Adjoint_rho_SensitivityKernel
    keywords   = (  "|Div|_inf",
