@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -27,10 +27,10 @@ Parsing input file : PlumeLithos_Interaction_3D_Perm.dat
    Adding PETSc option: -gmg_mg_levels_ksp_max_it 2
    Adding PETSc option: -crs_ksp_type preonly
    Adding PETSc option: -crs_pc_type lu
-   Adding PETSc option: -crs_pc_factor_mat_solver_package superlu_dist
+   Adding PETSc option: -crs_pc_factor_mat_solver_type superlu_dist
    Adding PETSc option: -crs_pc_type redundant
    Adding PETSc option: -crs_pc_redundant_number 2
-   Adding PETSc option: -crs_redundant_pc_factor_mat_solver_package superlu_dist
+   Adding PETSc option: -crs_redundant_pc_factor_mat_solver_type superlu_dist
 Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
@@ -132,7 +132,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.666667 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0667011 sec)
+Reading geometric primitives ... done (0.066128 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : PlumeLithosphereInteraction_3D 
@@ -180,20 +180,18 @@ Solver parameters specified:
    Number of redundant solvers   : 2 
    Redundant solver package      : superlu_dist 
 --------------------------------------------------------------------------
-Initializing pressure with lithostatic pressure ... done (0.0106164 sec)
+Initializing pressure with lithostatic pressure ... done (0.0102498 sec)
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
   0 SNES Function norm 1.131161907075e+03 
   0 PICARD ||F||/||F0||=1.000000e+00 
-** PETSc DEPRECATION WARNING ** : the option -pc_factor_mat_solver_package is deprecated as of version 3.9 and will be removed in a future release. Please use the option -pc_factor_mat_solver_type instead. (Silence this warning with -options_suppress_deprecated_warnings)
-** PETSc DEPRECATION WARNING ** : the option -pc_factor_mat_solver_package is deprecated as of version 3.9 and will be removed in a future release. Please use the option -pc_factor_mat_solver_type instead. (Silence this warning with -options_suppress_deprecated_warnings)
   Linear js_ solve converged due to CONVERGED_RTOL iterations 13
   1 SNES Function norm 8.656009835639e-01 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.770048 (sec)
+SNES solution time      : 0.767347 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -202,7 +200,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 8.178902100517e-01 
 --------------------------------------------------------------------------
-Saving output ... done (0.520859 sec)
+Saving output ... done (0.521022 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -211,14 +209,12 @@ Tentative time step : 0.00010000 [Myr]
 --------------------------------------------------------------------------
   0 SNES Function norm 8.627010350148e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
-** PETSc DEPRECATION WARNING ** : the option -pc_factor_mat_solver_package is deprecated as of version 3.9 and will be removed in a future release. Please use the option -pc_factor_mat_solver_type instead. (Silence this warning with -options_suppress_deprecated_warnings)
-** PETSc DEPRECATION WARNING ** : the option -pc_factor_mat_solver_package is deprecated as of version 3.9 and will be removed in a future release. Please use the option -pc_factor_mat_solver_type instead. (Silence this warning with -options_suppress_deprecated_warnings)
   Linear js_ solve converged due to CONVERGED_RTOL iterations 16
   1 SNES Function norm 5.434275089950e-01 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.526271 (sec)
+SNES solution time      : 0.509087 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -230,9 +226,9 @@ Residual summary:
 Actual time step : 0.00011 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 2 markers and merged 2 markers in 3.6916e-02 s
+Marker control [0]: (subgrid) cloned 2 markers and merged 2 markers in 3.7126e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.508958 sec)
+Saving output ... done (0.506431 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -241,54 +237,52 @@ Tentative time step : 0.00011000 [Myr]
 --------------------------------------------------------------------------
   0 SNES Function norm 5.434275123703e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
-** PETSc DEPRECATION WARNING ** : the option -pc_factor_mat_solver_package is deprecated as of version 3.9 and will be removed in a future release. Please use the option -pc_factor_mat_solver_type instead. (Silence this warning with -options_suppress_deprecated_warnings)
-** PETSc DEPRECATION WARNING ** : the option -pc_factor_mat_solver_package is deprecated as of version 3.9 and will be removed in a future release. Please use the option -pc_factor_mat_solver_type instead. (Silence this warning with -options_suppress_deprecated_warnings)
   Linear js_ solve converged due to CONVERGED_ATOL iterations 21
-  1 SNES Function norm 8.692437388619e-04 
+  1 SNES Function norm 8.692437388622e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.617213 (sec)
+SNES solution time      : 0.611669 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.877275885755e-07 
-      |Div|_2   = 1.286226999093e-05 
+      |Div|_inf = 1.877275885753e-07 
+      |Div|_2   = 1.286226999092e-05 
    Momentum: 
-      |mRes|_2  = 8.691485716270e-04 
+      |mRes|_2  = 8.691485716273e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00012 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 3.7288e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 3.7829e-02 s
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00023100 [Myr] 
 Tentative time step : 0.00012100 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 8.692437529113e-04 
+  0 SNES Function norm 8.692437529112e-04 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 0
-  1 SNES Function norm 8.692437529113e-04 
+  1 SNES Function norm 8.692437529112e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.205159 (sec)
+SNES solution time      : 0.204824 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.877275885755e-07 
-      |Div|_2   = 1.286226999093e-05 
+      |Div|_inf = 1.877275885753e-07 
+      |Div|_2   = 1.286226999092e-05 
    Momentum: 
-      |mRes|_2  = 8.691485856780e-04 
+      |mRes|_2  = 8.691485856779e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00013 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 3.8100e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 3.7298e-02 s
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 5.5206 (sec) 
+Total solution time : 5.47692 (sec) 
 --------------------------------------------------------------------------

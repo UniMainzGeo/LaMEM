@@ -36,7 +36,7 @@
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -124,7 +124,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00509152 sec)
+Reading geometric primitives ... done (0.0051028 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -210,7 +210,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 3
-SNES solution time      : 1.61515 (sec)
+SNES solution time      : 1.56613 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -219,7 +219,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 7.599542533418e-14 
 --------------------------------------------------------------------------
-Saving output ... done (0.130849 sec)
+Saving output ... done (0.130143 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -353,7 +353,7 @@ Tentative time step : 0.10000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 6
-SNES solution time      : 3.48154 (sec)
+SNES solution time      : 3.50491 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -365,13 +365,13 @@ Residual summary:
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 15 markers in 8.9447e-03 s 
+Marker control [0]: (Corners ) injected 15 markers in 8.8743e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.123817 sec)
+Saving output ... done (0.123801 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 5.5954 (sec) 
+Total solution time : 5.56841 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************ 
 |                       FINITE DIFFERENCE GRADIENTS                        
@@ -379,7 +379,7 @@ Total solution time : 5.5954 (sec)
 | Reference objective function: -1.279306e-01 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -467,7 +467,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00501758 sec)
+Reading geometric primitives ... done (0.0051905 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -553,7 +553,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 3
-SNES solution time      : 1.6079 (sec)
+SNES solution time      : 1.45861 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -562,7 +562,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 7.599542533418e-14 
 --------------------------------------------------------------------------
-Saving output ... done (0.128267 sec)
+Saving output ... done (0.131195 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -696,7 +696,7 @@ Tentative time step : 0.10000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 6
-SNES solution time      : 3.38797 (sec)
+SNES solution time      : 3.56645 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -708,19 +708,19 @@ Residual summary:
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 15 markers in 8.7822e-03 s 
+Marker control [0]: (Corners ) injected 15 markers in 8.7100e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.121771 sec)
+Saving output ... done (0.121161 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 5.47289 (sec) 
+Total solution time : 5.50609 (sec) 
 --------------------------------------------------------------------------
 |  Perturbed Misfit value     : -1.279306e-01 
 |  Brute force FD gradient    fr[ 2] = 2.129448e-04, with eps=1.0000e-06 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -808,7 +808,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00521057 sec)
+Reading geometric primitives ... done (0.00499791 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -893,7 +893,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 3
-SNES solution time      : 1.47069 (sec)
+SNES solution time      : 1.59444 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -902,7 +902,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 8.891483828246e-14 
 --------------------------------------------------------------------------
-Saving output ... done (0.126414 sec)
+Saving output ... done (0.126074 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -1036,7 +1036,7 @@ Tentative time step : 0.10000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 6
-SNES solution time      : 3.70624 (sec)
+SNES solution time      : 3.71977 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1048,19 +1048,19 @@ Residual summary:
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 15 markers in 8.7983e-03 s 
+Marker control [0]: (Corners ) injected 15 markers in 8.6374e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.121415 sec)
+Saving output ... done (0.121418 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 5.63882 (sec) 
+Total solution time : 5.7759 (sec) 
 --------------------------------------------------------------------------
 |  Perturbed Misfit value     : -1.279466e-01 
 |  Brute force FD gradient   rho[ 1] = -4.961658e-03, with eps=1.0000e-06 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -1148,7 +1148,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00505646 sec)
+Reading geometric primitives ... done (0.00515119 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -1234,7 +1234,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 3
-SNES solution time      : 1.52424 (sec)
+SNES solution time      : 1.56203 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1243,7 +1243,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 7.599542533418e-14 
 --------------------------------------------------------------------------
-Saving output ... done (0.119085 sec)
+Saving output ... done (0.118562 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -1376,7 +1376,7 @@ Tentative time step : 0.10000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 6
-SNES solution time      : 3.49742 (sec)
+SNES solution time      : 3.51996 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1388,19 +1388,19 @@ Residual summary:
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 15 markers in 9.0242e-03 s 
+Marker control [0]: (Corners ) injected 15 markers in 8.9485e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.121261 sec)
+Saving output ... done (0.119874 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 5.47795 (sec) 
+Total solution time : 5.53399 (sec) 
 --------------------------------------------------------------------------
 |  Perturbed Misfit value     : -1.279248e-01 
 |  Brute force FD gradient   eta[ 0] = 2.751933e-01, with eps=1.0000e-06 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -1488,7 +1488,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0051274 sec)
+Reading geometric primitives ... done (0.00498104 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -1574,7 +1574,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 3
-SNES solution time      : 1.64194 (sec)
+SNES solution time      : 1.5469 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1583,7 +1583,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 7.599542533418e-14 
 --------------------------------------------------------------------------
-Saving output ... done (0.119097 sec)
+Saving output ... done (0.118159 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -1717,7 +1717,7 @@ Tentative time step : 0.10000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 6
-SNES solution time      : 3.86924 (sec)
+SNES solution time      : 3.77769 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1745,13 +1745,13 @@ Residual summary:
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 15 markers in 9.2450e-03 s 
+Marker control [0]: (Corners ) injected 15 markers in 8.8404e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.120489 sec)
+Saving output ... done (0.120832 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 6.26598 (sec) 
+Total solution time : 6.07515 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
@@ -1814,5 +1814,5 @@ Total solution time : 6.26598 (sec)
 |   Scaling law data saved to :  ScalingLaw_Test.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 28.452 s                         	 
+| Adjoint computation was successful & took 28.4606 s                         	 
 | ************************************************************************ 

@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -87,7 +87,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.054531 sec)
+Reading geometric primitives ... done (0.0541709 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : RT_FSSA 
@@ -119,7 +119,7 @@ Solver parameters specified:
    Solver type                   : serial direct/lu 
    Solver package                : petsc 
 --------------------------------------------------------------------------
-Saving output ... done (0.71281 sec)
+Saving output ... done (0.710388 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -133,7 +133,7 @@ Tentative time step : 0.01000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.922379 (sec)
+SNES solution time      : 0.955585 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -145,9 +145,9 @@ Residual summary:
 Actual time step : 0.01100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.7904e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.9191e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.694335 sec)
+Saving output ... done (0.712208 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -161,7 +161,7 @@ Tentative time step : 0.01100000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.768085 (sec)
+SNES solution time      : 0.72614 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -173,7 +173,7 @@ Residual summary:
 Actual time step : 0.01210 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.7228e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.8778e-02 s
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
@@ -187,7 +187,7 @@ Tentative time step : 0.01210000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.771794 (sec)
+SNES solution time      : 0.723224 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -199,7 +199,7 @@ Residual summary:
 Actual time step : 0.01331 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.7387e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.9486e-02 s
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
@@ -213,7 +213,7 @@ Tentative time step : 0.01331000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.778567 (sec)
+SNES solution time      : 0.728309 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -225,7 +225,7 @@ Residual summary:
 Actual time step : 0.01464 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.6796e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 6.0707e-02 s
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
@@ -239,7 +239,7 @@ Tentative time step : 0.01464100 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.781278 (sec)
+SNES solution time      : 0.727868 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -251,7 +251,7 @@ Residual summary:
 Actual time step : 0.01611 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.6603e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.9475e-02 s
 --------------------------------------------------------------------------
 ================================= STEP 6 =================================
 --------------------------------------------------------------------------
@@ -265,7 +265,7 @@ Tentative time step : 0.01610510 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.778747 (sec)
+SNES solution time      : 0.738062 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -277,7 +277,7 @@ Residual summary:
 Actual time step : 0.01772 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.6754e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.9433e-02 s
 --------------------------------------------------------------------------
 ================================= STEP 7 =================================
 --------------------------------------------------------------------------
@@ -291,7 +291,7 @@ Tentative time step : 0.01771561 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.781737 (sec)
+SNES solution time      : 0.739199 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -303,7 +303,7 @@ Residual summary:
 Actual time step : 0.01949 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.7708e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.9193e-02 s
 --------------------------------------------------------------------------
 ================================= STEP 8 =================================
 --------------------------------------------------------------------------
@@ -317,7 +317,7 @@ Tentative time step : 0.01948717 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.768239 (sec)
+SNES solution time      : 0.72876 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -329,7 +329,7 @@ Residual summary:
 Actual time step : 0.02144 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.7299e-02 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 5.8660e-02 s
 --------------------------------------------------------------------------
 ================================= STEP 9 =================================
 --------------------------------------------------------------------------
@@ -343,7 +343,7 @@ Tentative time step : 0.02143589 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.768017 (sec)
+SNES solution time      : 0.721403 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -355,7 +355,7 @@ Residual summary:
 Actual time step : 0.02358 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 740 markers and merged 0 markers in 5.9988e-02 s
+Marker control [0]: (subgrid) cloned 740 markers and merged 0 markers in 6.2148e-02 s
 --------------------------------------------------------------------------
 ================================ STEP 10 =================================
 --------------------------------------------------------------------------
@@ -369,7 +369,7 @@ Tentative time step : 0.02357948 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.780165 (sec)
+SNES solution time      : 0.731939 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -381,7 +381,7 @@ Residual summary:
 Actual time step : 0.02594 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1120 markers and merged 0 markers in 6.2452e-02 s
+Marker control [0]: (subgrid) cloned 1120 markers and merged 0 markers in 6.5668e-02 s
 --------------------------------------------------------------------------
 ================================ STEP 11 =================================
 --------------------------------------------------------------------------
@@ -395,7 +395,7 @@ Tentative time step : 0.02593742 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.77449 (sec)
+SNES solution time      : 0.73211 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -407,7 +407,7 @@ Residual summary:
 Actual time step : 0.02853 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1380 markers and merged 0 markers in 6.3266e-02 s
+Marker control [0]: (subgrid) cloned 1380 markers and merged 0 markers in 6.5197e-02 s
 --------------------------------------------------------------------------
 ================================ STEP 12 =================================
 --------------------------------------------------------------------------
@@ -421,7 +421,7 @@ Tentative time step : 0.02853117 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.778216 (sec)
+SNES solution time      : 0.734416 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -433,7 +433,7 @@ Residual summary:
 Actual time step : 0.03138 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1560 markers and merged 0 markers in 6.4112e-02 s
+Marker control [0]: (subgrid) cloned 1560 markers and merged 0 markers in 6.6402e-02 s
 --------------------------------------------------------------------------
 ================================ STEP 13 =================================
 --------------------------------------------------------------------------
@@ -447,7 +447,7 @@ Tentative time step : 0.03138428 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.781665 (sec)
+SNES solution time      : 0.727308 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -459,9 +459,9 @@ Residual summary:
 Actual time step : 0.03452 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1940 markers and merged 0 markers in 6.6541e-02 s
+Marker control [0]: (subgrid) cloned 1940 markers and merged 0 markers in 6.8090e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.693043 sec)
+Saving output ... done (0.691316 sec)
 --------------------------------------------------------------------------
 ================================ STEP 14 =================================
 --------------------------------------------------------------------------
@@ -475,7 +475,7 @@ Tentative time step : 0.03452271 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.78103 (sec)
+SNES solution time      : 0.692924 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -487,7 +487,7 @@ Residual summary:
 Actual time step : 0.03797 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 2780 markers and merged 0 markers in 7.0289e-02 s
+Marker control [0]: (subgrid) cloned 2780 markers and merged 0 markers in 7.2294e-02 s
 --------------------------------------------------------------------------
 ================================ STEP 15 =================================
 --------------------------------------------------------------------------
@@ -501,7 +501,7 @@ Tentative time step : 0.03797498 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.788822 (sec)
+SNES solution time      : 0.694141 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -513,7 +513,7 @@ Residual summary:
 Actual time step : 0.04177 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3240 markers and merged 0 markers in 7.2993e-02 s
+Marker control [0]: (subgrid) cloned 3240 markers and merged 0 markers in 7.5471e-02 s
 --------------------------------------------------------------------------
 ================================ STEP 16 =================================
 --------------------------------------------------------------------------
@@ -527,7 +527,7 @@ Tentative time step : 0.04177248 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.791829 (sec)
+SNES solution time      : 0.693708 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -539,7 +539,7 @@ Residual summary:
 Actual time step : 0.04595 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 3900 markers and merged 0 markers in 7.7112e-02 s
+Marker control [0]: (subgrid) cloned 3900 markers and merged 0 markers in 8.0379e-02 s
 --------------------------------------------------------------------------
 ================================ STEP 17 =================================
 --------------------------------------------------------------------------
@@ -553,7 +553,7 @@ Tentative time step : 0.04594973 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.79 (sec)
+SNES solution time      : 0.699992 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -565,7 +565,7 @@ Residual summary:
 Actual time step : 0.05054 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 4700 markers and merged 0 markers in 8.1880e-02 s
+Marker control [0]: (subgrid) cloned 4700 markers and merged 0 markers in 8.3420e-02 s
 --------------------------------------------------------------------------
 ================================ STEP 18 =================================
 --------------------------------------------------------------------------
@@ -579,7 +579,7 @@ Tentative time step : 0.05054470 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.797852 (sec)
+SNES solution time      : 0.708583 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -591,7 +591,7 @@ Residual summary:
 Actual time step : 0.05560 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 5200 markers and merged 0 markers in 8.5566e-02 s
+Marker control [0]: (subgrid) cloned 5200 markers and merged 0 markers in 8.6835e-02 s
 --------------------------------------------------------------------------
 ================================ STEP 19 =================================
 --------------------------------------------------------------------------
@@ -605,7 +605,7 @@ Tentative time step : 0.05559917 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.805612 (sec)
+SNES solution time      : 0.710312 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -617,9 +617,9 @@ Residual summary:
 Actual time step : 0.06116 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 6400 markers and merged 0 markers in 9.4724e-02 s
+Marker control [0]: (subgrid) cloned 6400 markers and merged 0 markers in 9.2729e-02 s
 --------------------------------------------------------------------------
-Saving output ... done (0.70243 sec)
+Saving output ... done (0.694337 sec)
 --------------------------------------------------------------------------
 ================================ STEP 20 =================================
 --------------------------------------------------------------------------
@@ -633,7 +633,7 @@ Tentative time step : 0.06115909 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.797037 (sec)
+SNES solution time      : 0.794557 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -645,9 +645,9 @@ Residual summary:
 Actual time step : 0.06727 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 8400 markers and merged 0 markers in 1.0279e-01 s
+Marker control [0]: (subgrid) cloned 8400 markers and merged 0 markers in 1.0438e-01 s
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 27.5819 (sec) 
+Total solution time : 26.6767 (sec) 
 --------------------------------------------------------------------------

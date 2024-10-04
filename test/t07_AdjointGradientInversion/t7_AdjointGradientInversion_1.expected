@@ -28,13 +28,14 @@
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -55,23 +56,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 1e+21 [Pa*s]  Bd = 5e-22 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -81,6 +65,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 1e+21 [Pa*s]  Bd = 5e-22 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -94,8 +95,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -110,7 +111,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000796352 sec)
+Reading geometric primitives ... done (0.00165196 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -140,6 +141,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -153,67 +155,67 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.701785496583e+02 
-    1 KSP Residual norm 5.651198477633e-02 
-    2 KSP Residual norm 6.050386176328e-08 
+    1 KSP Residual norm 5.651198477587e-02 
+    2 KSP Residual norm 6.050373212903e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.256529991267e-09 
+  1 SNES Function norm 4.256530178230e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0546856 (sec)
+SNES solution time      : 0.0726121 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.285191998335e-10 
-      |Div|_2   = 4.256437299606e-09 
+      |Div|_inf = 4.285192024356e-10 
+      |Div|_2   = 4.256437306769e-09 
    Momentum: 
-      |mRes|_2  = 2.809058703210e-11 
+      |mRes|_2  = 2.811781869428e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.026937 sec)
+Saving output ... done (0.0330756 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.561046100810e+00 
+  0 SNES Function norm 1.561046100812e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.351152880402e-01 
-    1 KSP Residual norm 1.963879999092e-06 
+    0 KSP Residual norm 2.351152880392e-01 
+    1 KSP Residual norm 1.963770251585e-06 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 2.167957499904e-06 
+  1 SNES Function norm 2.168000840970e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.0345542 (sec)
+SNES solution time      : 0.0518676 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.086431098139e-09 
-      |Div|_2   = 1.893580327016e-08 
+      |Div|_inf = 3.086431103641e-09 
+      |Div|_2   = 1.893580335784e-08 
    Momentum: 
-      |mRes|_2  = 2.167874801908e-06 
+      |mRes|_2  = 2.167918144625e-06 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 3.396469141955e-03 
-    1 KSP Residual norm 3.179500098984e-07 
-    2 KSP Residual norm 6.679707134766e-12 
+    0 KSP Residual norm 3.396469132926e-03 
+    1 KSP Residual norm 3.179500553225e-07 
+    2 KSP Residual norm 6.679559966778e-12 
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 3 markers in 1.7868e-03 s 
+Marker control [0]: (Corners ) injected 3 markers in 1.8834e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0234056 sec)
+Saving output ... done (0.0300412 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.193338 (sec) 
+Total solution time : 0.255951 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 3.1782342164e-02
+| Current Cost function = 3.1782342005e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -251,13 +253,14 @@ Total solution time : 0.193338 (sec)
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -278,23 +281,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 7.94328e+18 [Pa*s]  Bd = 6.29463e-20 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3542. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -304,6 +290,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 7.94328e+18 [Pa*s]  Bd = 6.29463e-20 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3542. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -317,8 +320,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -333,7 +336,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00076228 sec)
+Reading geometric primitives ... done (0.00113106 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -363,6 +366,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -375,69 +379,69 @@ Solver parameters specified:
   0 SNES Function norm 1.381750838666e+01 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.737605410276e+02 
-    1 KSP Residual norm 2.571084654771e-01 
-    2 KSP Residual norm 2.661014248525e-04 
+    0 KSP Residual norm 2.737605410248e+02 
+    1 KSP Residual norm 2.571084414294e-01 
+    2 KSP Residual norm 2.661013152728e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.148503048444e-06 
+  1 SNES Function norm 4.148500085621e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.0502628 (sec)
+SNES solution time      : 0.0754478 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.172403615885e-07 
-      |Div|_2   = 4.145787015691e-06 
+      |Div|_inf = 2.172402664979e-07 
+      |Div|_2   = 4.145784035181e-06 
    Momentum: 
-      |mRes|_2  = 1.500918501285e-07 
+      |mRes|_2  = 1.500922850687e-07 
 --------------------------------------------------------------------------
-Saving output ... done (0.0266641 sec)
+Saving output ... done (0.0334344 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 7.184900751098e+02 
+  0 SNES Function norm 7.184900751088e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 4.026133102563e+01 
-    1 KSP Residual norm 8.097653805178e-03 
-    2 KSP Residual norm 4.635565695720e-07 
+    0 KSP Residual norm 4.026133102793e+01 
+    1 KSP Residual norm 8.097683423867e-03 
+    2 KSP Residual norm 4.635239148766e-07 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.220234278755e-06 
+  1 SNES Function norm 4.220313051619e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.0357581 (sec)
+SNES solution time      : 0.0465363 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.974959666963e-09 
-      |Div|_2   = 3.814144083472e-08 
+      |Div|_inf = 7.974462152648e-09 
+      |Div|_2   = 3.813905905942e-08 
    Momentum: 
-      |mRes|_2  = 4.220061918748e-06 
+      |mRes|_2  = 4.220140716355e-06 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 3.885429313468e+00 
-    1 KSP Residual norm 1.824544953076e-03 
-    2 KSP Residual norm 3.456464996101e-08 
+    0 KSP Residual norm 3.885429160413e+00 
+    1 KSP Residual norm 1.824544915944e-03 
+    2 KSP Residual norm 3.456465353559e-08 
 Actual time step : 0.05140 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 44 markers in 2.0141e-03 s 
+Marker control [0]: (Corners ) injected 45 markers in 2.1568e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0264048 sec)
+Saving output ... done (0.0334957 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.186571 (sec) 
+Total solution time : 0.245285 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 9.7357846376e+01
+| Current Cost function = 9.7357846484e+01
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -461,13 +465,14 @@ Total solution time : 0.186571 (sec)
 |               LINE SEARCH IT 1                       
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -488,23 +493,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 7.82577e+20 [Pa*s]  Bd = 6.38915e-22 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -514,6 +502,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 7.82577e+20 [Pa*s]  Bd = 6.38915e-22 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -527,8 +532,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -543,7 +548,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000769731 sec)
+Reading geometric primitives ... done (0.00113108 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -573,6 +578,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -586,68 +592,68 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.701785535114e+02 
-    1 KSP Residual norm 5.651198783153e-02 
-    2 KSP Residual norm 6.050932821478e-08 
+    1 KSP Residual norm 5.651198783105e-02 
+    2 KSP Residual norm 6.050911991342e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.256914405929e-09 
+  1 SNES Function norm 4.256914576567e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0490728 (sec)
+SNES solution time      : 0.0786602 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.285661829757e-10 
-      |Div|_2   = 4.256821922482e-09 
+      |Div|_inf = 4.285661915409e-10 
+      |Div|_2   = 4.256821932971e-09 
    Momentum: 
-      |mRes|_2  = 2.806028650913e-11 
+      |mRes|_2  = 2.808457161933e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.0240396 sec)
+Saving output ... done (0.0304131 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.563590442027e+00 
+  0 SNES Function norm 1.563590442038e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.338414978662e-01 
-    1 KSP Residual norm 2.373072389963e-06 
-    2 KSP Residual norm 7.395627587947e-11 
+    0 KSP Residual norm 2.338414978860e-01 
+    1 KSP Residual norm 2.373045055361e-06 
+    2 KSP Residual norm 7.395559963162e-11 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 2.281241421559e-10 
+  1 SNES Function norm 2.463342523838e-10 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0358793 (sec)
+SNES solution time      : 0.046801 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.692017073667e-13 
-      |Div|_2   = 1.504658562542e-12 
+      |Div|_inf = 2.691944161071e-13 
+      |Div|_2   = 1.504594275201e-12 
    Momentum: 
-      |mRes|_2  = 2.281191798972e-10 
+      |mRes|_2  = 2.463296573568e-10 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 3.115020858345e-03 
-    1 KSP Residual norm 3.487341569591e-07 
-    2 KSP Residual norm 7.020035398099e-12 
+    0 KSP Residual norm 3.115020855676e-03 
+    1 KSP Residual norm 3.487342723009e-07 
+    2 KSP Residual norm 7.019977909948e-12 
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 4 markers in 1.7596e-03 s 
+Marker control [0]: (Corners ) injected 4 markers in 1.8725e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0239054 sec)
+Saving output ... done (0.0304369 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.178347 (sec) 
+Total solution time : 0.240345 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.5856199609e-02
+| Current Cost function = 2.5856199577e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -687,13 +693,14 @@ Total solution time : 0.178347 (sec)
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -714,23 +721,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 5.9978e+20 [Pa*s]  Bd = 8.33639e-22 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -740,6 +730,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 5.9978e+20 [Pa*s]  Bd = 8.33639e-22 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -753,8 +760,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -769,7 +776,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00076342 sec)
+Reading geometric primitives ... done (0.00114527 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -799,6 +806,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -812,68 +820,68 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.701785577900e+02 
-    1 KSP Residual norm 5.651199122448e-02 
-    2 KSP Residual norm 6.051543362271e-08 
+    1 KSP Residual norm 5.651199122397e-02 
+    2 KSP Residual norm 6.051527174670e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.257341817529e-09 
+  1 SNES Function norm 4.257341918208e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0487247 (sec)
+SNES solution time      : 0.0639754 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.286183576032e-10 
-      |Div|_2   = 4.257249016732e-09 
+      |Div|_inf = 4.286183607474e-10 
+      |Div|_2   = 4.257249025835e-09 
    Momentum: 
-      |mRes|_2  = 2.810979919534e-11 
+      |mRes|_2  = 2.812366549798e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.0241021 sec)
+Saving output ... done (0.03057 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.565805797359e+00 
+  0 SNES Function norm 1.565805797369e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.322389656259e-01 
-    1 KSP Residual norm 2.950119676629e-06 
-    2 KSP Residual norm 9.189499568620e-11 
+    0 KSP Residual norm 2.322389656651e-01 
+    1 KSP Residual norm 2.950118233752e-06 
+    2 KSP Residual norm 9.189843844706e-11 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 2.768060885556e-10 
+  1 SNES Function norm 3.025971061953e-10 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0357031 (sec)
+SNES solution time      : 0.0486889 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.807033085047e-13 
-      |Div|_2   = 2.144291561943e-12 
+      |Div|_inf = 3.806864220558e-13 
+      |Div|_2   = 2.144190430106e-12 
    Momentum: 
-      |mRes|_2  = 2.767977830025e-10 
+      |mRes|_2  = 3.025895092781e-10 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 2.741663667695e-03 
-    1 KSP Residual norm 3.756535233984e-07 
-    2 KSP Residual norm 7.161228530626e-12 
+    0 KSP Residual norm 2.741663665711e-03 
+    1 KSP Residual norm 3.756535989181e-07 
+    2 KSP Residual norm 7.161126919810e-12 
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 4 markers in 1.7692e-03 s 
+Marker control [0]: (Corners ) injected 4 markers in 1.8713e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0242045 sec)
+Saving output ... done (0.0305348 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.177089 (sec) 
+Total solution time : 0.22719 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.9019648383e-02
+| Current Cost function = 1.9019648349e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -911,13 +919,14 @@ Total solution time : 0.177089 (sec)
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -938,23 +947,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 4.42816e+20 [Pa*s]  Bd = 1.12914e-21 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3220.01 [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -964,6 +956,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 4.42816e+20 [Pa*s]  Bd = 1.12914e-21 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3220.01 [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -977,8 +986,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -993,7 +1002,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0007618 sec)
+Reading geometric primitives ... done (0.00113749 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -1023,6 +1032,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -1036,68 +1046,68 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.701785628162e+02 
-    1 KSP Residual norm 5.651199521060e-02 
-    2 KSP Residual norm 6.052251550285e-08 
+    1 KSP Residual norm 5.651199521016e-02 
+    2 KSP Residual norm 6.052235799291e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.257843324849e-09 
+  1 SNES Function norm 4.257843602493e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0491475 (sec)
+SNES solution time      : 0.0729482 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.286796512383e-10 
-      |Div|_2   = 4.257750754731e-09 
+      |Div|_inf = 4.286796594782e-10 
+      |Div|_2   = 4.257750763348e-09 
    Momentum: 
-      |mRes|_2  = 2.807649473512e-11 
+      |mRes|_2  = 2.811726340530e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.0240536 sec)
+Saving output ... done (0.0308983 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.567786554354e+00 
+  0 SNES Function norm 1.567786554357e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.301659533583e-01 
-    1 KSP Residual norm 3.845918604765e-06 
-    2 KSP Residual norm 1.189278232926e-10 
+    0 KSP Residual norm 2.301659533533e-01 
+    1 KSP Residual norm 3.845883762007e-06 
+    2 KSP Residual norm 1.189175287013e-10 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 3.399563269175e-10 
+  1 SNES Function norm 3.496405199302e-10 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0356823 (sec)
+SNES solution time      : 0.0499536 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.559269678716e-13 
-      |Div|_2   = 3.202057231359e-12 
+      |Div|_inf = 5.559165866358e-13 
+      |Div|_2   = 3.202017018515e-12 
    Momentum: 
-      |mRes|_2  = 3.399412464540e-10 
+      |mRes|_2  = 3.496258575449e-10 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 2.205989855877e-03 
-    1 KSP Residual norm 3.804385359849e-07 
-    2 KSP Residual norm 6.833652140575e-12 
+    0 KSP Residual norm 2.205989855631e-03 
+    1 KSP Residual norm 3.804385851173e-07 
+    2 KSP Residual norm 6.833520126799e-12 
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 4 markers in 1.7531e-03 s 
+Marker control [0]: (Corners ) injected 4 markers in 1.8903e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0481156 sec)
+Saving output ... done (0.0307656 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.201624 (sec) 
+Total solution time : 0.237668 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.1276181351e-02
+| Current Cost function = 1.1276181336e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -1135,13 +1145,14 @@ Total solution time : 0.201624 (sec)
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -1162,23 +1173,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 3.23671e+20 [Pa*s]  Bd = 1.54478e-21 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3220.01 [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -1188,6 +1182,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 3.23671e+20 [Pa*s]  Bd = 1.54478e-21 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3220.01 [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -1201,8 +1212,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -1217,7 +1228,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000777431 sec)
+Reading geometric primitives ... done (0.00113787 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -1247,6 +1258,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -1260,68 +1272,68 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.701785682329e+02 
-    1 KSP Residual norm 5.651199950680e-02 
-    2 KSP Residual norm 6.053024281477e-08 
+    1 KSP Residual norm 5.651199950633e-02 
+    2 KSP Residual norm 6.053008492040e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.258384234789e-09 
+  1 SNES Function norm 4.258384341546e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0570019 (sec)
+SNES solution time      : 0.0732655 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.287457030031e-10 
-      |Div|_2   = 4.258291461001e-09 
+      |Div|_inf = 4.287457139535e-10 
+      |Div|_2   = 4.258291472965e-09 
    Momentum: 
-      |mRes|_2  = 2.810914917500e-11 
+      |mRes|_2  = 2.812350606418e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.0244052 sec)
+Saving output ... done (0.030758 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.569367876119e+00 
+  0 SNES Function norm 1.569367876123e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.278744908779e-01 
-    1 KSP Residual norm 5.148910391404e-06 
-    2 KSP Residual norm 1.563339899021e-10 
+    0 KSP Residual norm 2.278744908582e-01 
+    1 KSP Residual norm 5.148891169252e-06 
+    2 KSP Residual norm 1.562992259343e-10 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 5.088449677242e-10 
+  1 SNES Function norm 5.395507144583e-10 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0356962 (sec)
+SNES solution time      : 0.0625463 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.781281095067e-13 
-      |Div|_2   = 4.837447689985e-12 
+      |Div|_inf = 8.780040496731e-13 
+      |Div|_2   = 4.836744176320e-12 
    Momentum: 
-      |mRes|_2  = 5.088219730693e-10 
+      |mRes|_2  = 5.395290347870e-10 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 1.481664509677e-03 
-    1 KSP Residual norm 3.197107169346e-07 
-    2 KSP Residual norm 5.482176805934e-12 
+    0 KSP Residual norm 1.481664506078e-03 
+    1 KSP Residual norm 3.197107237021e-07 
+    2 KSP Residual norm 5.482147480035e-12 
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 4 markers in 1.7716e-03 s 
+Marker control [0]: (Corners ) injected 4 markers in 1.8780e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.023898 sec)
+Saving output ... done (0.0307789 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.194213 (sec) 
+Total solution time : 0.250636 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 4.4327743496e-03
+| Current Cost function = 4.4327743295e-03
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -1359,13 +1371,14 @@ Total solution time : 0.194213 (sec)
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -1386,23 +1399,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 2.49871e+20 [Pa*s]  Bd = 2.00103e-21 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3220.01 [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -1412,6 +1408,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 2.49871e+20 [Pa*s]  Bd = 2.00103e-21 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3220.01 [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -1425,8 +1438,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -1441,7 +1454,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000769381 sec)
+Reading geometric primitives ... done (0.00113937 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -1471,6 +1484,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -1484,68 +1498,68 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.701785729656e+02 
-    1 KSP Residual norm 5.651200326090e-02 
-    2 KSP Residual norm 6.053691944241e-08 
+    1 KSP Residual norm 5.651200326042e-02 
+    2 KSP Residual norm 6.053677652530e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.258857111427e-09 
+  1 SNES Function norm 4.258856997603e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0491171 (sec)
+SNES solution time      : 0.0642798 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.288034167110e-10 
-      |Div|_2   = 4.258763904529e-09 
+      |Div|_inf = 4.288034273362e-10 
+      |Div|_2   = 4.258763915830e-09 
    Momentum: 
-      |mRes|_2  = 2.817624940288e-11 
+      |mRes|_2  = 2.815733037430e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.0239819 sec)
+Saving output ... done (0.0305694 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.570407206010e+00 
+  0 SNES Function norm 1.570407206017e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.260367822102e-01 
-    1 KSP Residual norm 6.627698884957e-06 
-    2 KSP Residual norm 1.960145985228e-10 
+    0 KSP Residual norm 2.260367821916e-01 
+    1 KSP Residual norm 6.627660704996e-06 
+    2 KSP Residual norm 1.959734181781e-10 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 7.006367477323e-10 
+  1 SNES Function norm 7.046284649329e-10 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0353477 (sec)
+SNES solution time      : 0.0546432 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.287632272941e-12 
-      |Div|_2   = 6.794580703672e-12 
+      |Div|_inf = 1.287503849194e-12 
+      |Div|_2   = 6.793975910974e-12 
    Momentum: 
-      |mRes|_2  = 7.006038009788e-10 
+      |mRes|_2  = 7.045957106632e-10 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 6.880360514426e-04 
-    1 KSP Residual norm 1.751998516489e-07 
-    2 KSP Residual norm 2.936998489079e-12 
+    0 KSP Residual norm 6.880360437373e-04 
+    1 KSP Residual norm 1.751998324271e-07 
+    2 KSP Residual norm 2.937002211494e-12 
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 4 markers in 1.7671e-03 s 
+Marker control [0]: (Corners ) injected 4 markers in 1.8739e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0239839 sec)
+Saving output ... done (0.0306916 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.176622 (sec) 
+Total solution time : 0.233404 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 8.1369136863e-04
+| Current Cost function = 8.1369134860e-04
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -1583,13 +1597,14 @@ Total solution time : 0.176622 (sec)
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -1610,23 +1625,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 2.17611e+20 [Pa*s]  Bd = 2.29768e-21 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3220.01 [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -1636,6 +1634,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 2.17611e+20 [Pa*s]  Bd = 2.29768e-21 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3220.01 [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -1649,8 +1664,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -1665,7 +1680,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000783511 sec)
+Reading geometric primitives ... done (0.00113455 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -1695,6 +1710,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -1708,68 +1724,68 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.701785756470e+02 
-    1 KSP Residual norm 5.651200538795e-02 
-    2 KSP Residual norm 6.054071640769e-08 
+    1 KSP Residual norm 5.651200538746e-02 
+    2 KSP Residual norm 6.054059765336e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.259124545623e-09 
+  1 SNES Function norm 4.259124650801e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0489711 (sec)
+SNES solution time      : 0.075622 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.288361193927e-10 
-      |Div|_2   = 4.259031573629e-09 
+      |Div|_inf = 4.288361289337e-10 
+      |Div|_2   = 4.259031586124e-09 
    Momentum: 
-      |mRes|_2  = 2.814160554858e-11 
+      |mRes|_2  = 2.815562917469e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.0240206 sec)
+Saving output ... done (0.0307068 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.570886656606e+00 
+  0 SNES Function norm 1.570886656609e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.251448024169e-01 
-    1 KSP Residual norm 7.611930702532e-06 
-    2 KSP Residual norm 2.208514338712e-10 
+    0 KSP Residual norm 2.251448023987e-01 
+    1 KSP Residual norm 7.611879794852e-06 
+    2 KSP Residual norm 2.208613004067e-10 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 8.552694232060e-10 
+  1 SNES Function norm 8.557023385544e-10 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0352015 (sec)
+SNES solution time      : 0.0468106 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.570167661256e-12 
-      |Div|_2   = 8.141290222884e-12 
+      |Div|_inf = 1.570276189893e-12 
+      |Div|_2   = 8.141921015686e-12 
    Momentum: 
-      |mRes|_2  = 8.552306739498e-10 
+      |mRes|_2  = 8.556636029011e-10 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 1.601695759145e-04 
-    1 KSP Residual norm 4.414518548665e-08 
-    2 KSP Residual norm 7.353722312688e-13 
+    0 KSP Residual norm 1.601695711349e-04 
+    1 KSP Residual norm 4.414518588204e-08 
+    2 KSP Residual norm 7.353687860923e-13 
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 6 markers in 1.7651e-03 s 
+Marker control [0]: (Corners ) injected 6 markers in 1.9006e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0239129 sec)
+Saving output ... done (0.0307975 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.176309 (sec) 
+Total solution time : 0.237261 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 3.9639049359e-05
+| Current Cost function = 3.9639046960e-05
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -1807,13 +1823,14 @@ Total solution time : 0.176309 (sec)
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -1834,23 +1851,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 2.10014e+20 [Pa*s]  Bd = 2.3808e-21 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3220.01 [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -1860,6 +1860,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 2.10014e+20 [Pa*s]  Bd = 2.3808e-21 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3220.01 [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -1873,8 +1890,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -1889,7 +1906,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00076383 sec)
+Reading geometric primitives ... done (0.00113771 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -1919,6 +1936,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -1932,68 +1950,68 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.701785763619e+02 
-    1 KSP Residual norm 5.651200595513e-02 
-    2 KSP Residual norm 6.054180120860e-08 
+    1 KSP Residual norm 5.651200595462e-02 
+    2 KSP Residual norm 6.054161872229e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.259195896817e-09 
+  1 SNES Function norm 4.259195827024e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0488836 (sec)
+SNES solution time      : 0.077021 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.288448339929e-10 
-      |Div|_2   = 4.259102936995e-09 
+      |Div|_inf = 4.288448453771e-10 
+      |Div|_2   = 4.259102948585e-09 
    Momentum: 
-      |mRes|_2  = 2.813999887816e-11 
+      |mRes|_2  = 2.812767835603e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.0239475 sec)
+Saving output ... done (0.0305104 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.571002906160e+00 
+  0 SNES Function norm 1.571002906159e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.249310668140e-01 
-    1 KSP Residual norm 7.890700739022e-06 
-    2 KSP Residual norm 2.277605433317e-10 
+    0 KSP Residual norm 2.249310668356e-01 
+    1 KSP Residual norm 7.890722417669e-06 
+    2 KSP Residual norm 2.276965182886e-10 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 8.931829177850e-10 
+  1 SNES Function norm 9.073605614485e-10 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.035543 (sec)
+SNES solution time      : 0.0625662 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.651537630612e-12 
-      |Div|_2   = 8.529351109087e-12 
+      |Div|_inf = 1.651212857851e-12 
+      |Div|_2   = 8.527707168139e-12 
    Momentum: 
-      |mRes|_2  = 8.931421918108e-10 
+      |mRes|_2  = 9.073204873045e-10 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 9.808830977820e-06 
-    1 KSP Residual norm 2.755903324499e-09 
-    2 KSP Residual norm 4.586097069030e-14 
+    0 KSP Residual norm 9.808831073243e-06 
+    1 KSP Residual norm 2.755903496288e-09 
+    2 KSP Residual norm 4.586075557301e-14 
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 6 markers in 1.7692e-03 s 
+Marker control [0]: (Corners ) injected 6 markers in 1.8923e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0239856 sec)
+Saving output ... done (0.0305849 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.176672 (sec) 
+Total solution time : 0.253824 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.4429059166e-07
+| Current Cost function = 1.4429059468e-07
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -2031,13 +2049,14 @@ Total solution time : 0.176672 (sec)
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 16 2023 - Time: 22:17:59 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
 Parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : t7_Subduction2D_FreeSlip_Inversion.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -2058,23 +2077,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Material parameters: 
---------------------------------------------------------------------------
-- Melt factor mfc = 0.000000   Phase ID : 0     --   Mantle 
-   (dens)   : rho = 3200. [kg/m^3]  
-   (diff)   : eta = 2.09512e+20 [Pa*s]  Bd = 2.3865e-21 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 1     --   Slab 
-   (dens)   : rho = 3220.01 [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
-- Melt factor mfc = 0.000000   Phase ID : 2     --   PlasticCrust 
-   (dens)   : rho = 3220. [kg/m^3]  
-   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
-
---------------------------------------------------------------------------
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
    Processor grid  [nx, ny, nz]         : [1, 1, 1]
@@ -2084,6 +2086,23 @@ Grid parameters:
    Maximum cell aspect ratio            :  4.68750
    Lower coordinate bounds [bx, by, bz] : [-1500., -10., -660.]
    Upper coordinate bounds [ex, ey, ez] : [1500., 10., 0.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Mantle 
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : eta = 2.09512e+20 [Pa*s]  Bd = 2.3865e-21 [1/Pa/s]  
+
+   Phase ID : 1     --   Slab 
+   (dens)   : rho = 3220.01 [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+   Phase ID : 2     --   PlasticCrust 
+   (dens)   : rho = 3220. [kg/m^3]  
+   (diff)   : eta = 1e+23 [Pa*s]  Bd = 5e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -2097,8 +2116,8 @@ Solution parameters & controls:
    Minimum viscosity                       : 1e+17 [Pa*s] 
    Maximum viscosity                       : 1e+23 [Pa*s] 
    Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
-   Max. melt fraction (viscosity, density) : 0.15    
-   Rheology iteration number               : 25    
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
@@ -2113,7 +2132,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00076387 sec)
+Reading geometric primitives ... done (0.00114012 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_direct 
@@ -2143,6 +2162,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -2156,68 +2176,68 @@ Solver parameters specified:
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.701785764105e+02 
-    1 KSP Residual norm 5.651200599364e-02 
-    2 KSP Residual norm 6.054185252272e-08 
+    1 KSP Residual norm 5.651200599318e-02 
+    2 KSP Residual norm 6.054168858854e-08 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 4.259200538214e-09 
+  1 SNES Function norm 4.259200793422e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0485795 (sec)
+SNES solution time      : 0.0645394 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.288454268347e-10 
-      |Div|_2   = 4.259107785703e-09 
+      |Div|_inf = 4.288454365925e-10 
+      |Div|_2   = 4.259107795890e-09 
    Momentum: 
-      |mRes|_2  = 2.810861945602e-11 
+      |mRes|_2  = 2.814572218188e-11 
 --------------------------------------------------------------------------
-Saving output ... done (0.0238442 sec)
+Saving output ... done (0.0306194 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.10000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.571010634064e+00 
+  0 SNES Function norm 1.571010634062e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.249169515259e-01 
-    1 KSP Residual norm 7.909876707455e-06 
-    2 KSP Residual norm 2.282202847036e-10 
+    0 KSP Residual norm 2.249169515206e-01 
+    1 KSP Residual norm 7.909793503582e-06 
+    2 KSP Residual norm 2.281480927561e-10 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 9.174763301613e-10 
+  1 SNES Function norm 8.993092199918e-10 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0354957 (sec)
+SNES solution time      : 0.0573434 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.657082023682e-12 
-      |Div|_2   = 8.555845370457e-12 
+      |Div|_inf = 1.656844637616e-12 
+      |Div|_2   = 8.554693741013e-12 
    Momentum: 
-      |mRes|_2  = 9.174364358997e-10 
+      |mRes|_2  = 8.992685307389e-10 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
-    0 KSP Residual norm 5.424339260075e-07 
-    1 KSP Residual norm 1.525975147267e-10 
-    2 KSP Residual norm 2.539216767873e-15 
+    0 KSP Residual norm 5.424338594067e-07 
+    1 KSP Residual norm 1.525974690269e-10 
+    2 KSP Residual norm 2.539214141971e-15 
 Actual time step : 0.11000 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 6 markers in 1.7701e-03 s 
+Marker control [0]: (Corners ) injected 6 markers in 1.8986e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0241832 sec)
+Saving output ... done (0.0307737 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.176409 (sec) 
+Total solution time : 0.236673 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 4.4036169827e-10
+| Current Cost function = 4.4036159207e-10
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -2225,8 +2245,8 @@ Total solution time : 0.176409 (sec)
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:   log10  eta[ 0]           -1.620173e-05 
-|  adjoint     2:          rho[ 1]            4.046843e-07 
+|  adjoint     1:   log10  eta[ 0]           -1.620172e-05 
+|  adjoint     2:          rho[ 1]            4.046842e-07 
 | 
 | 
 | Observation points: 
@@ -2235,7 +2255,7 @@ Total solution time : 0.176409 (sec)
 |       --------------------------------- --- ------------- ------------- 
 | 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.60030e-01 
 | 
-| AdjointOptimisation: Gradients. [0]=-1.620173e-05, [1]=4.046843e-07 
+| AdjointOptimisation: Gradients. [0]=-1.620172e-05, [1]=4.046842e-07 
 
 | ------------------------------------------------------------------------ 
 | 9. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.38555e-08
@@ -2276,5 +2296,5 @@ Total solution time : 0.176409 (sec)
 | rho[1] = 3.22001e+03
 | ------------------------------------------------------------------------- 
 
-| Adjoint computation was successful & took 1.83855 s                         	 
+| Adjoint computation was successful & took 2.41966 s                         	 
 | ************************************************************************ 

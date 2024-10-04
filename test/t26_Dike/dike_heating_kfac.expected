@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -146,7 +146,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00205069 sec)
+Reading geometric primitives ... done (0.00212743 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : testHeatM0 
@@ -191,7 +191,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.235116 (sec)
+SNES solution time      : 0.244881 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -202,7 +202,7 @@ Residual summary:
    Energy: 
       |eRes|_2  = 1.092301660117e-06 
 --------------------------------------------------------------------------
-Saving output ... done (0.0574456 sec)
+Saving output ... done (0.0583154 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -210,7 +210,7 @@ Current time        : 0.00000000 [Myr]
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00577734 sec)
+done (0.00587272 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.430011730731e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -225,7 +225,7 @@ done (0.00577734 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.240913 (sec)
+SNES solution time      : 0.264648 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -239,9 +239,9 @@ Residual summary:
 Actual time step : 0.00100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 47 markers in 4.5028e-03 s 
+Marker control [0]: (Corners ) injected 47 markers in 4.4626e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0542045 sec)
+Saving output ... done (0.0538026 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -249,7 +249,7 @@ Current time        : 0.00100000 [Myr]
 Tentative time step : 0.00110000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00571628 sec)
+done (0.00584409 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 5.008409456285e-02 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -319,7 +319,7 @@ done (0.00571628 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 8
-SNES solution time      : 1.80748 (sec)
+SNES solution time      : 1.99652 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -333,11 +333,11 @@ Residual summary:
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 49 markers in 4.5447e-03 s 
+Marker control [0]: (Corners ) injected 49 markers in 4.5969e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0521619 sec)
+Saving output ... done (0.0524266 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 2.63732 (sec) 
+Total solution time : 2.86351 (sec) 
 --------------------------------------------------------------------------

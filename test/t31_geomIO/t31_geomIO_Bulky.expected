@@ -1,15 +1,16 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May  5 2022 - Time: 14:36:00 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : Test.dat 
+Parsing input file : geomIO_Bulky.dat 
    Adding PETSc option: -snes_rtol 1e-8
    Adding PETSc option: -js_ksp_rtol 1e-3
    Adding PETSc option: -js_ksp_atol 1e-5
    Adding PETSc option: -js_ksp_max_it 20
-Finished parsing input file : Test.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
@@ -24,6 +25,16 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 4 
+   Processor grid  [nx, ny, nz]         : [1, 2, 2]
+   Fine grid cells [nx, ny, nz]         : [32, 32, 32]
+   Number of cells                      :  32768
+   Number of faces                      :  101376
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [-100., -100., -100.]
+   Upper coordinate bounds [ex, ey, ez] : [100., 100., 100.]
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Material parameters: 
 --------------------------------------------------------------------------
@@ -37,16 +48,6 @@ Material parameters:
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-Grid parameters:
-   Total number of cpu                  : 4 
-   Processor grid  [nx, ny, nz]         : [1, 2, 2]
-   Fine grid cells [nx, ny, nz]         : [32, 32, 32]
-   Number of cells                      :  32768
-   Number of faces                      :  101376
-   Maximum cell aspect ratio            :  1.00000
-   Lower coordinate bounds [bx, by, bz] : [-100., -100., -100.]
-   Upper coordinate bounds [ex, ey, ez] : [100., 100., 100.]
---------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
 --------------------------------------------------------------------------
@@ -56,7 +57,7 @@ Solution parameters & controls:
    Use lithostatic pressure for creep      @ 
    Minimum viscosity                       : 0.001 [ ] 
    Maximum viscosity                       : 1e+12 [ ] 
-   Max. melt fraction (viscosity, density) : 0.15    
+   Max. melt fraction (viscosity, density) : 1.    
    Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
@@ -70,7 +71,7 @@ Advection parameters:
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : uniform
 --------------------------------------------------------------------------
-Loading polygons redundantly from file(s) <Polygons_Bulky.bin> ... done (0.122493 sec)
+Loading polygons redundantly from file(s) <Polygons_Bulky.bin> ... done (0.100081 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Bulky 
@@ -87,6 +88,7 @@ AVD output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Matrix type                   : monolithic
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : coupled Galerkin geometric multigrid
    Global coarse grid [nx,ny,nz] : [8, 8, 8]
    Local coarse grid  [nx,ny,nz] : [8, 4, 4]
@@ -102,8 +104,9 @@ Solver parameters specified:
    Coarse level KSP              : preonly 
    Coarse level PC               : redundant 
    Number of redundant solvers   : 1 
+   Redundant solver package      : superlu_dist 
 --------------------------------------------------------------------------
-Saving output ... done (0.116953 sec)
+Saving output ... done (0.109412 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -113,64 +116,64 @@ Tentative time step : 0.01000000 [ ]
   0 SNES Function norm 3.334424388981e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  1 SNES Function norm 3.380684098793e+01 
+  1 SNES Function norm 3.380684099779e+01 
   1 PICARD ||F||/||F0||=1.013873e-01 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  2 SNES Function norm 5.820122560346e-02 
+  2 SNES Function norm 5.820122560588e-02 
   2 MMFD   ||F||/||F0||=1.745465e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 11
-  3 SNES Function norm 1.894757488011e-05 
-  3 MMFD   ||F||/||F0||=5.682413e-08 
+  3 SNES Function norm 1.896870100470e-05 
+  3 MMFD   ||F||/||F0||=5.688748e-08 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 4
-  4 SNES Function norm 1.859619133355e-06 
+  4 SNES Function norm 1.857305367837e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 4
-SNES solution time      : 2.07641 (sec)
+SNES solution time      : 1.39991 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.394301548194e-07 
-      |Div|_2   = 1.826209770762e-06 
+      |Div|_inf = 4.388561958280e-07 
+      |Div|_2   = 1.823873683192e-06 
    Momentum: 
-      |mRes|_2  = 3.509147963721e-07 
+      |mRes|_2  = 3.508105146056e-07 
 --------------------------------------------------------------------------
 Actual time step : 0.00510 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.123463 sec)
+Saving output ... done (0.111131 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00510019 [ ] 
 Tentative time step : 0.00510019 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.976603855719e+02 
+  0 SNES Function norm 4.976603855709e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 2.746403490361e-01 
+  1 SNES Function norm 2.746403490472e-01 
   1 MMFD   ||F||/||F0||=5.518630e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 10
-  2 SNES Function norm 2.792695525885e-04 
-  2 MMFD   ||F||/||F0||=5.611649e-07 
+  2 SNES Function norm 2.791543009993e-04 
+  2 MMFD   ||F||/||F0||=5.609333e-07 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 8
-  3 SNES Function norm 1.523484367019e-06 
+  3 SNES Function norm 1.522144069705e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 3
-SNES solution time      : 1.59007 (sec)
+SNES solution time      : 1.1474 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.769303364403e-07 
-      |Div|_2   = 1.518978011247e-06 
+      |Div|_inf = 2.765681017536e-07 
+      |Div|_2   = 1.517906569106e-06 
    Momentum: 
-      |mRes|_2  = 1.170914937075e-07 
+      |mRes|_2  = 1.134998519924e-07 
 --------------------------------------------------------------------------
 Actual time step : 0.00511 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.125431 sec)
+Saving output ... done (0.117218 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 4.4561 (sec) 
+Total solution time : 3.19848 (sec) 
 --------------------------------------------------------------------------

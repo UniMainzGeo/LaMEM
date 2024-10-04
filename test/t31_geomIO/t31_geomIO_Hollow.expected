@@ -1,15 +1,16 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May  5 2022 - Time: 14:36:00 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : Test.dat 
+Parsing input file : geomIO_Hollow.dat 
    Adding PETSc option: -snes_rtol 1e-8
    Adding PETSc option: -js_ksp_rtol 1e-3
    Adding PETSc option: -js_ksp_atol 1e-5
    Adding PETSc option: -js_ksp_max_it 20
-Finished parsing input file : Test.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
@@ -24,6 +25,16 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 4 
+   Processor grid  [nx, ny, nz]         : [1, 2, 2]
+   Fine grid cells [nx, ny, nz]         : [32, 32, 32]
+   Number of cells                      :  32768
+   Number of faces                      :  101376
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [-100., -100., -100.]
+   Upper coordinate bounds [ex, ey, ez] : [100., 100., 100.]
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Material parameters: 
 --------------------------------------------------------------------------
@@ -37,16 +48,6 @@ Material parameters:
 
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-Grid parameters:
-   Total number of cpu                  : 4 
-   Processor grid  [nx, ny, nz]         : [1, 2, 2]
-   Fine grid cells [nx, ny, nz]         : [32, 32, 32]
-   Number of cells                      :  32768
-   Number of faces                      :  101376
-   Maximum cell aspect ratio            :  1.00000
-   Lower coordinate bounds [bx, by, bz] : [-100., -100., -100.]
-   Upper coordinate bounds [ex, ey, ez] : [100., 100., 100.]
---------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
 --------------------------------------------------------------------------
@@ -56,7 +57,7 @@ Solution parameters & controls:
    Use lithostatic pressure for creep      @ 
    Minimum viscosity                       : 0.001 [ ] 
    Maximum viscosity                       : 1e+12 [ ] 
-   Max. melt fraction (viscosity, density) : 0.15    
+   Max. melt fraction (viscosity, density) : 1.    
    Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
@@ -70,7 +71,7 @@ Advection parameters:
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : uniform
 --------------------------------------------------------------------------
-Loading polygons redundantly from file(s) <Polygons_Hollow.bin> ... done (0.145222 sec)
+Loading polygons redundantly from file(s) <Polygons_Hollow.bin> ... done (0.101697 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Hollow 
@@ -87,6 +88,7 @@ AVD output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Matrix type                   : monolithic
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : coupled Galerkin geometric multigrid
    Global coarse grid [nx,ny,nz] : [8, 8, 8]
    Local coarse grid  [nx,ny,nz] : [8, 4, 4]
@@ -102,8 +104,9 @@ Solver parameters specified:
    Coarse level KSP              : preonly 
    Coarse level PC               : redundant 
    Number of redundant solvers   : 1 
+   Redundant solver package      : superlu_dist 
 --------------------------------------------------------------------------
-Saving output ... done (0.119267 sec)
+Saving output ... done (0.107105 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -113,76 +116,76 @@ Tentative time step : 0.01000000 [ ]
   0 SNES Function norm 3.232314796416e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  1 SNES Function norm 4.857543696982e+01 
+  1 SNES Function norm 4.857543696305e+01 
   1 PICARD ||F||/||F0||=1.502807e-01 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 17
-  2 SNES Function norm 1.371680299382e-01 
+  2 SNES Function norm 1.371680299415e-01 
   2 MMFD   ||F||/||F0||=4.243647e-04 
   Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
-  3 SNES Function norm 1.108623910297e-03 
-  3 MMFD   ||F||/||F0||=3.429814e-06 
+  3 SNES Function norm 1.108620210475e-03 
+  3 MMFD   ||F||/||F0||=3.429803e-06 
   Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
-  4 SNES Function norm 1.156575317730e-05 
-  4 MMFD   ||F||/||F0||=3.578164e-08 
+  4 SNES Function norm 1.156584127705e-05 
+  4 MMFD   ||F||/||F0||=3.578191e-08 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 4
-  5 SNES Function norm 6.279428793852e-06 
-  5 MMFD   ||F||/||F0||=1.942703e-08 
+  5 SNES Function norm 6.279585932864e-06 
+  5 MMFD   ||F||/||F0||=1.942752e-08 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 0
-  6 SNES Function norm 6.279428793852e-06 
+  6 SNES Function norm 6.279585932864e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 Number of iterations    : 6
-SNES solution time      : 3.81755 (sec)
+SNES solution time      : 2.80211 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.708303433328e-06 
-      |Div|_2   = 6.275860498805e-06 
+      |Div|_inf = 2.708148495033e-06 
+      |Div|_2   = 6.276003395262e-06 
    Momentum: 
-      |mRes|_2  = 2.116624118750e-07 
+      |mRes|_2  = 2.120869418099e-07 
 --------------------------------------------------------------------------
 Actual time step : 0.00555 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.119914 sec)
+Saving output ... done (0.112335 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00554549 [ ] 
 Tentative time step : 0.00554549 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 5.074794371980e+02 
+  0 SNES Function norm 5.074794371979e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 8.591043634105e-01 
+  1 SNES Function norm 8.591043633764e-01 
   1 MMFD   ||F||/||F0||=1.692885e-03 
   Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
-  2 SNES Function norm 2.888078697635e-03 
-  2 MMFD   ||F||/||F0||=5.691026e-06 
+  2 SNES Function norm 2.887907033842e-03 
+  2 MMFD   ||F||/||F0||=5.690688e-06 
   Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
-  3 SNES Function norm 2.165875541504e-05 
-  3 MMFD   ||F||/||F0||=4.267908e-08 
+  3 SNES Function norm 2.165383647844e-05 
+  3 MMFD   ||F||/||F0||=4.266939e-08 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 7
-  4 SNES Function norm 5.316315284863e-06 
-  4 MMFD   ||F||/||F0||=1.047592e-08 
+  4 SNES Function norm 5.317174474814e-06 
+  4 MMFD   ||F||/||F0||=1.047762e-08 
   Linear js_ solve converged due to CONVERGED_ATOL iterations 0
-  5 SNES Function norm 5.316315284863e-06 
+  5 SNES Function norm 5.317174474814e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 Number of iterations    : 5
-SNES solution time      : 3.18298 (sec)
+SNES solution time      : 2.43349 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.050878415538e-06 
-      |Div|_2   = 5.302735930767e-06 
+      |Div|_inf = 2.051341855935e-06 
+      |Div|_2   = 5.304188739750e-06 
    Momentum: 
-      |mRes|_2  = 3.797365621368e-07 
+      |mRes|_2  = 3.713841794116e-07 
 --------------------------------------------------------------------------
 Actual time step : 0.00555 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.126598 sec)
+Saving output ... done (0.11776 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 7.80033 (sec) 
+Total solution time : 5.88279 (sec) 
 --------------------------------------------------------------------------

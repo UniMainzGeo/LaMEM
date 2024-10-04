@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -303,7 +303,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.666667 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0103552 sec)
+Reading geometric primitives ... done (0.0114716 sec)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Passive Tracers: 
@@ -357,7 +357,7 @@ Solver parameters specified:
    Solver type                   : parallel direct/lu 
    Solver package                : mumps 
 --------------------------------------------------------------------------
-Initializing pressure with lithostatic pressure ... done (0.00106674 sec)
+Initializing pressure with lithostatic pressure ... done (0.00106553 sec)
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
@@ -368,7 +368,7 @@ Initializing pressure with lithostatic pressure ... done (0.00106674 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.49946 (sec)
+SNES solution time      : 0.501665 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -379,14 +379,14 @@ Residual summary:
    Energy: 
       |eRes|_2  = 1.207327899537e-08 
 --------------------------------------------------------------------------
-Saving output ... done (0.0823386 sec)
+Saving output ... done (0.0828504 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.0323884 sec)
+Phase_Transition ... done (0.0321904 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 1.488892784046e+03 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -406,18 +406,18 @@ Phase_Transition ... done (0.0323884 sec)
   5 SNES Function norm 2.542379010714e-01 
   5 PICARD ||F||/||F0||=1.707564e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  6 SNES Function norm 4.018478388761e-02 
+  6 SNES Function norm 4.018478388757e-02 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 6
-SNES solution time      : 1.41776 (sec)
+SNES solution time      : 1.43159 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.150328481715e-07 
-      |Div|_2   = 2.326046505615e-06 
+      |Div|_inf = 5.150328481754e-07 
+      |Div|_2   = 2.326046505627e-06 
    Momentum: 
-      |mRes|_2  = 4.018478382029e-02 
+      |mRes|_2  = 4.018478382025e-02 
    Energy: 
       |eRes|_2  = 4.053093090329e-14 
 --------------------------------------------------------------------------
@@ -425,14 +425,14 @@ Actual time step : 0.00110 [Myr]
 --------------------------------------------------------------------------
 Advection Passive tracers ... 
  Currently active tracers    :  0 
-done (0.0093822 sec)
+done (0.00919902 sec)
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 0 markers in 4.1771e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 0 markers in 4.2451e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0805451 sec)
+Saving output ... done (0.0787372 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 2.32145 (sec) 
+Total solution time : 2.33528 (sec) 
 --------------------------------------------------------------------------

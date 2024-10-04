@@ -146,7 +146,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0020585 sec)
+Reading geometric primitives ... done (0.00204033 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : testrhoA_Heat_M1 
@@ -191,7 +191,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.232048 (sec)
+SNES solution time      : 0.273455 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -202,7 +202,7 @@ Residual summary:
    Energy: 
       |eRes|_2  = 5.156333577810e-15 
 --------------------------------------------------------------------------
-Saving output ... done (0.0574777 sec)
+Saving output ... done (0.0581884 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -210,7 +210,7 @@ Current time        : 0.00000000 [Myr]
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00588049 sec)
+done (0.00589315 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 3.228836946581e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -225,7 +225,7 @@ done (0.00588049 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.207935 (sec)
+SNES solution time      : 0.265438 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -239,9 +239,9 @@ Residual summary:
 Actual time step : 0.00100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 47 markers in 4.6436e-03 s 
+Marker control [0]: (Corners ) injected 47 markers in 4.5968e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0538908 sec)
+Saving output ... done (0.0539839 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -249,7 +249,7 @@ Current time        : 0.00100000 [Myr]
 Tentative time step : 0.00110000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00585943 sec)
+done (0.00604672 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 4.942550962092e-02 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -273,7 +273,7 @@ done (0.00585943 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 0.41132 (sec)
+SNES solution time      : 0.52067 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -287,11 +287,11 @@ Residual summary:
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 38 markers in 4.9490e-03 s 
+Marker control [0]: (Corners ) injected 38 markers in 4.6532e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0527557 sec)
+Saving output ... done (0.0525389 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 1.20359 (sec) 
+Total solution time : 1.41472 (sec) 
 --------------------------------------------------------------------------

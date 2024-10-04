@@ -24,13 +24,14 @@
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Jun  3 2020 - Time: 12:29:01 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : ./t8_AdjointGradients/t8_AdjointGradients.dat 
+Parsing input file : t8_AdjointGradients.dat 
    Adding PETSc option: -snes_type ksponly
-Finished parsing input file : ./t8_AdjointGradients/t8_AdjointGradients.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
@@ -45,16 +46,6 @@ Time stepping parameters:
    Output every [n] steps       : 10 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
-Material parameters: 
-   Phase ID : 0
-   (dens)   : rho = 1. [ ]  
-   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
-
-   Phase ID : 1
-   (dens)   : rho = 2. [ ]  
-   (diff)   : eta = 1000. [ ]  Bd = 0.0005 [ ]  
-
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 2 
    Processor grid  [nx, ny, nz]         : [1, 1, 2]
@@ -65,6 +56,19 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
    Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
 --------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Matrix 
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 1     --   FallingSphere 
+   (dens)   : rho = 2. [ ]  
+   (diff)   : eta = 1000. [ ]  Bd = 0.0005 [ ]  
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
 --------------------------------------------------------------------------
@@ -74,13 +78,14 @@ Solution parameters & controls:
    Use lithostatic pressure for creep      @ 
    Minimum viscosity                       : 0.001 [ ] 
    Maximum viscosity                       : 1e+06 [ ] 
-   Maximum melt fraction (viscosity)       : 0.15    
+   Max. melt fraction (viscosity, density) : 1.    
    Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
+   Periodic marker advection     : 0 0 0 
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -88,7 +93,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000565052 sec)
+Reading geometric primitives ... done (0.00208618 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -106,6 +111,7 @@ AVD output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Matrix type                   : monolithic
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -113,36 +119,36 @@ Solver parameters specified:
    Solver type                   : parallel direct/lu 
    Solver package                : superlu_dist 
 --------------------------------------------------------------------------
-Saving output ... done (0.03631 sec)
+Saving output ... done (0.0182186 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
-Current time        : 0.00000 [ ] 
-Tentative time step : 0.01000 [ ] 
+Current time        : 0.00000000 [ ] 
+Tentative time step : 0.01000000 [ ] 
 --------------------------------------------------------------------------
   0 SNES Function norm 2.216709541792e+01 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 10
-  1 SNES Function norm 2.608159934529e-05 
+  1 SNES Function norm 2.608159905000e-05 
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.058013 (sec)
+SNES solution time      : 0.041608 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 9.899833848640e-06 
-      |Div|_2   = 2.477156507230e-05 
+      |Div|_inf = 9.899833848782e-06 
+      |Div|_2   = 2.477156507298e-05 
    Momentum: 
-      |mRes|_2  = 8.162070097558e-06 
+      |mRes|_2  = 8.162069151884e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.034143 sec)
+Saving output ... done (0.0147152 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.190666 (sec) 
+Total solution time : 0.115697 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
@@ -155,18 +161,18 @@ Total solution time : 0.190666 (sec)
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 0]            6.581468e-04 
-|  adjoint     2:          eta[ 0]            6.055305e-04 
-|  adjoint     3:          rho[ 1]           -6.577876e-04 
-|  adjoint     4:          eta[ 1]            5.162207e-08 
+|  adjoint     1:          rho[ 0]            6.580124e-04 
+|  adjoint     2:          eta[ 0]            6.055263e-04 
+|  adjoint     3:          rho[ 1]           -6.577962e-04 
+|  adjoint     4:          eta[ 1]            5.162167e-08 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [ ]       
 |                       Location         |      Target         Value     
-|       ---------------------------------  -- ------------- ------------- 
-| 
+|       --------------------------------- --- ------------- ------------- 
 | 1   : [    0.500;     0.500;     0.900]  Vz -4.24800e-02  -6.57813e-04 
+| 
 | 
 | -------------------------------------------------------------------------
 | 
@@ -186,11 +192,11 @@ Total solution time : 0.190666 (sec)
 |                  eta[  1]      -0.078           FallingSphere
 |           delta(rho)[  0]      -0.000           Matrix
 |       
-|   Prefactor A               : -1.13117121e-03 
+|   Prefactor A               : -1.13116647e-03 
 |   Reference Density         :  1.00  
 |   Velocity check            : -6.57813055e-04 
 |   Scaling law data saved to :  ScalingLaw_Test.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 0.191782 s                         	 
+| Adjoint computation was successful & took 0.11641 s                         	 
 | ************************************************************************ 
