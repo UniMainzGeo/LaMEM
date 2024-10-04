@@ -1,10 +1,11 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May  9 2020 - Time: 20:31:11 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : ./t5_Perm/Permea.dat 
+Parsing input file : Permea.dat 
    Adding PETSc option: -snes_type ksponly
    Adding PETSc option: -js_ksp_type fgmres
    Adding PETSc option: -js_ksp_max_it 50
@@ -16,7 +17,7 @@ Parsing input file : ./t5_Perm/Permea.dat
    Adding PETSc option: -jp_type user
    Adding PETSc option: -jp_pc_type lu
    Adding PETSc option: -objects_dump
-Finished parsing input file : ./t5_Perm/Permea.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
@@ -30,14 +31,6 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
-Material parameters: 
-   Phase ID : 0
-   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
-
-   Phase ID : 1
-   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
-
---------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 4 
    Processor grid  [nx, ny, nz]         : [1, 2, 2]
@@ -48,6 +41,17 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
    Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
 --------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0   
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 1   
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 1 1 0 0 0 0 
    Fixed phase                                : 0  
@@ -56,13 +60,14 @@ Boundary condition parameters:
 --------------------------------------------------------------------------
 Solution parameters & controls:
    Use lithostatic pressure for creep      @ 
-   Maximum melt fraction (viscosity)       : 0.15    
+   Max. melt fraction (viscosity, density) : 1.    
    Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
+   Periodic marker advection     : 0 0 0 
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -70,7 +75,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000106096 sec)
+Reading geometric primitives ... done (0.000190014 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : permea 
@@ -85,6 +90,7 @@ Output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -92,12 +98,12 @@ Solver parameters specified:
    Solver type                   : parallel direct/lu 
    Solver package                : petsc default
 --------------------------------------------------------------------------
-Saving output ... done (0.00230289 sec)
+Saving output ... done (0.000600553 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
-Current time        : 0.00000 [ ] 
-Tentative time step : 0.20000 [ ] 
+Current time        : 0.00000000 [ ] 
+Tentative time step : 0.20000000 [ ] 
 --------------------------------------------------------------------------
   0 SNES Function norm 3.620386719675e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -109,14 +115,14 @@ Tentative time step : 0.20000 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.594822 (sec)
+SNES solution time      : 0.270432 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 9.687396488770e-06 
+      |Div|_inf = 9.687396488824e-06 
       |Div|_2   = 2.611431342555e-04 
    Momentum: 
-      |mRes|_2  = 1.882945812547e-10 
+      |mRes|_2  = 1.883962795121e-10 
 --------------------------------------------------------------------------
 Actual time step : 0.22000 [ ] 
 --------------------------------------------------------------------------
@@ -124,9 +130,9 @@ Saving output ...
 ==========================================================================
 EFFECTIVE PERMEABILITY CONSTANT: 1.464855E-02 [ ]
 ==========================================================================
-done (0.00225806 sec)
+done (0.000734856 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.626465 (sec) 
+Total solution time : 0.287778 (sec) 
 --------------------------------------------------------------------------

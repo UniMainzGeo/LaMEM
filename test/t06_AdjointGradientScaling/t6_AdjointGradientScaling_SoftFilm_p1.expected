@@ -24,7 +24,7 @@
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -102,7 +102,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 1 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000530892 sec)
+Reading geometric primitives ... done (0.000499811 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : RTI_test 
@@ -130,7 +130,7 @@ Solver parameters specified:
    Solver type                   : serial direct/lu 
    Solver package                : petsc 
 --------------------------------------------------------------------------
-Saving output ... done (0.00106084 sec)
+Saving output ... done (0.000963021 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -144,7 +144,7 @@ Tentative time step : 100.00000000 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.308327 (sec)
+SNES solution time      : 0.273895 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -155,11 +155,11 @@ Residual summary:
 --------------------------------------------------------------------------
 Actual time step : 110.00000 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.000915061 sec)
+Saving output ... done (0.00091265 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.492323 (sec) 
+Total solution time : 0.455983 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
@@ -209,5 +209,5 @@ Total solution time : 0.492323 (sec)
 |   Scaling law data saved to :  ScalingLaw.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 0.492928 s                         	 
+| Adjoint computation was successful & took 0.456662 s                         	 
 | ************************************************************************ 

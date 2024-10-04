@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 30 2024 - Time: 10:21:50 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
      Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -131,7 +131,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00112759 sec)
+Reading geometric primitives ... done (0.0011364 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : CompensatedInflow2D 
@@ -189,7 +189,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.104611 (sec)
+SNES solution time      : 0.111668 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -198,7 +198,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 2.790929909872e-08 
 --------------------------------------------------------------------------
-Saving output ... done (0.030491 sec)
+Saving output ... done (0.0296378 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -218,7 +218,7 @@ Tentative time step : 0.00100000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0848948 (sec)
+SNES solution time      : 0.074011 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -231,7 +231,7 @@ Actual time step : 0.00100 [Myr]
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
 --------------------------------------------------------------------------
-Saving output ... done (0.027362 sec)
+Saving output ... done (0.0269944 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -250,7 +250,7 @@ Tentative time step : 0.00110000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0832766 (sec)
+SNES solution time      : 0.0724772 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -262,7 +262,7 @@ Residual summary:
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 1 markers in 1.8698e-03 s 
+Marker control [0]: (Corners ) injected 1 markers in 1.8514e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
@@ -281,7 +281,7 @@ Tentative time step : 0.00121000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0836024 (sec)
+SNES solution time      : 0.0726952 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -293,7 +293,7 @@ Residual summary:
 Actual time step : 0.00121 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 1 markers in 1.8538e-03 s 
+Marker control [0]: (Corners ) injected 1 markers in 1.8529e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
@@ -360,7 +360,7 @@ Tentative time step : 0.00133100 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 7
-SNES solution time      : 0.565006 (sec)
+SNES solution time      : 0.488581 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -372,7 +372,7 @@ Residual summary:
 Actual time step : 0.00133 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 3 markers in 1.8740e-03 s 
+Marker control [0]: (Corners ) injected 3 markers in 1.8632e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 5 =================================
 --------------------------------------------------------------------------
@@ -447,7 +447,7 @@ Tentative time step : 0.00146410 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 8
-SNES solution time      : 0.643217 (sec)
+SNES solution time      : 0.558209 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -459,9 +459,9 @@ Residual summary:
 Actual time step : 0.00146 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 2 markers in 1.8755e-03 s 
+Marker control [0]: (Corners ) injected 2 markers in 1.8726e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0273336 sec)
+Saving output ... done (0.027301 sec)
 --------------------------------------------------------------------------
 ================================= STEP 6 =================================
 --------------------------------------------------------------------------
@@ -504,7 +504,7 @@ Tentative time step : 0.00161051 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 4
-SNES solution time      : 0.322744 (sec)
+SNES solution time      : 0.281491 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -516,7 +516,7 @@ Residual summary:
 Actual time step : 0.00161 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 3 markers in 1.8780e-03 s 
+Marker control [0]: (Corners ) injected 3 markers in 1.8816e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 7 =================================
 --------------------------------------------------------------------------
@@ -751,7 +751,7 @@ Tentative time step : 0.00177156 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 28
-SNES solution time      : 2.26407 (sec)
+SNES solution time      : 1.94332 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -763,7 +763,7 @@ Residual summary:
 Actual time step : 0.00177 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 1 markers in 1.8689e-03 s 
+Marker control [0]: (Corners ) injected 1 markers in 1.8714e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 8 =================================
 --------------------------------------------------------------------------
@@ -918,7 +918,7 @@ Tentative time step : 0.00194872 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 18
-SNES solution time      : 1.45333 (sec)
+SNES solution time      : 1.25012 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -930,7 +930,7 @@ Residual summary:
 Actual time step : 0.00195 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 1 markers in 1.8733e-03 s 
+Marker control [0]: (Corners ) injected 1 markers in 1.8694e-03 s 
 --------------------------------------------------------------------------
 ================================= STEP 9 =================================
 --------------------------------------------------------------------------
@@ -1101,7 +1101,7 @@ Tentative time step : 0.00214359 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 20
-SNES solution time      : 1.61205 (sec)
+SNES solution time      : 1.38974 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1113,7 +1113,7 @@ Residual summary:
 Actual time step : 0.00214 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 3 markers in 1.8885e-03 s 
+Marker control [0]: (Corners ) injected 3 markers in 1.8965e-03 s 
 --------------------------------------------------------------------------
 ================================ STEP 10 =================================
 --------------------------------------------------------------------------
@@ -1212,7 +1212,7 @@ Tentative time step : 0.00235795 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 11
-SNES solution time      : 0.890274 (sec)
+SNES solution time      : 0.766374 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -1224,11 +1224,11 @@ Residual summary:
 Actual time step : 0.00236 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 2 markers in 1.9120e-03 s 
+Marker control [0]: (Corners ) injected 2 markers in 1.8871e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0281884 sec)
+Saving output ... done (0.0277288 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 8.48955 (sec) 
+Total solution time : 7.38927 (sec) 
 --------------------------------------------------------------------------

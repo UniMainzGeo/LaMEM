@@ -162,7 +162,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00100902 sec)
+Reading geometric primitives ... done (0.00102151 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : dike_variableM 
@@ -209,7 +209,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.078331 (sec)
+SNES solution time      : 0.0767497 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -220,7 +220,7 @@ Residual summary:
    Energy: 
       |eRes|_2  = 2.036807429158e-01 
 --------------------------------------------------------------------------
-Saving output ... done (0.0281395 sec)
+Saving output ... done (0.0281859 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -228,7 +228,7 @@ Current time        : 0.00000000 [Myr]
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00259119 sec)
+done (0.00282632 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 2.097063465184e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -306,7 +306,7 @@ done (0.00259119 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 8
-SNES solution time      : 0.515225 (sec)
+SNES solution time      : 0.64251 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -320,9 +320,9 @@ Residual summary:
 Actual time step : 0.00100 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 30 markers in 1.9035e-03 s 
+Marker control [0]: (Corners ) injected 30 markers in 1.9027e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0255749 sec)
+Saving output ... done (0.0254524 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -330,7 +330,7 @@ Current time        : 0.00100000 [Myr]
 Tentative time step : 0.00110000 [Myr] 
 --------------------------------------------------------------------------
 Phase_Transition ... 
-done (0.00260594 sec)
+done (0.00251446 sec)
 --------------------------------------------------------------------------
   0 SNES Function norm 5.355376362116e-01 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -461,7 +461,7 @@ done (0.00260594 sec)
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 14
-SNES solution time      : 0.884237 (sec)
+SNES solution time      : 1.11091 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -475,11 +475,11 @@ Residual summary:
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
-Marker control [0]: (Corners ) injected 16 markers in 1.8609e-03 s 
+Marker control [0]: (Corners ) injected 16 markers in 1.8830e-03 s 
 --------------------------------------------------------------------------
-Saving output ... done (0.0255205 sec)
+Saving output ... done (0.0265741 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 1.64021 (sec) 
+Total solution time : 1.99402 (sec) 
 --------------------------------------------------------------------------

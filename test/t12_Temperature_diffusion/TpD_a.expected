@@ -82,7 +82,7 @@ Advection parameters:
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : uniform
 --------------------------------------------------------------------------
-Loading markers in parallel from file(s) <./markers_pT1/mdb> ... done (0.00526803 sec)
+Loading markers in parallel from file(s) <./markers_pT1/mdb> ... done (0.00516642 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : t13 
@@ -116,7 +116,7 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0207746 (sec)
+SNES solution time      : 0.0198017 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -127,7 +127,7 @@ Residual summary:
    Energy: 
       |eRes|_2  = 1.107251837344e-03 
 --------------------------------------------------------------------------
-Saving output ... done (0.000587792 sec)
+Saving output ... done (0.000560392 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -141,7 +141,7 @@ Tentative time step : 0.10000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00952987 (sec)
+SNES solution time      : 0.00953382 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -156,7 +156,7 @@ Actual time step : 0.11000 [Myr]
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
 --------------------------------------------------------------------------
-Saving output ... done (0.000534901 sec)
+Saving output ... done (0.000575233 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -170,7 +170,7 @@ Tentative time step : 0.11000000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00963564 (sec)
+SNES solution time      : 0.00984668 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -197,7 +197,7 @@ Tentative time step : 0.12100000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00957241 (sec)
+SNES solution time      : 0.00954757 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -212,7 +212,7 @@ Actual time step : 0.13310 [Myr]
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
 --------------------------------------------------------------------------
-Saving output ... done (0.00049306 sec)
+Saving output ... done (0.000480931 sec)
 --------------------------------------------------------------------------
 ================================= STEP 4 =================================
 --------------------------------------------------------------------------
@@ -226,7 +226,7 @@ Tentative time step : 0.13310000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00955974 (sec)
+SNES solution time      : 0.00950362 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -253,7 +253,7 @@ Tentative time step : 0.14641000 [Myr]
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.00954704 (sec)
+SNES solution time      : 0.00946854 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -268,9 +268,9 @@ Actual time step : 0.16105 [Myr]
 --------------------------------------------------------------------------
 Performing marker control (standard algorithm)
 --------------------------------------------------------------------------
-Saving output ... done (0.00048887 sec)
+Saving output ... done (0.00046023 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.115315 (sec) 
+Total solution time : 0.114073 (sec) 
 --------------------------------------------------------------------------

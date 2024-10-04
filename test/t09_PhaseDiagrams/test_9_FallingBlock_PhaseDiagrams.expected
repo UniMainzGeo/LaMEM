@@ -1,12 +1,13 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Dec  1 2020 - Time: 11:48:15 	    
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : ./t9_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.dat 
+Parsing input file : test_9_FallingBlock_PhaseDiagrams.dat 
    Adding PETSc option: -objects_dump
-Finished parsing input file : ./t9_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.dat 
+Finished parsing input file 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 273. [C/K] 
@@ -27,6 +28,16 @@ Time stepping parameters:
    Output every [n] steps       : 1 
    Output [n] initial steps     : 1 
 --------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 2 
+   Processor grid  [nx, ny, nz]         : [1, 1, 2]
+   Fine grid cells [nx, ny, nz]         : [32, 8, 32]
+   Number of cells                      :  8192
+   Number of faces                      :  26112
+   Maximum cell aspect ratio            :  4.00000
+   Lower coordinate bounds [bx, by, bz] : [0., 0., -10.]
+   Upper coordinate bounds [ex, ey, ez] : [10., 10., 0.]
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Material parameters: 
 --------------------------------------------------------------------------
@@ -42,16 +53,6 @@ Material parameters:
    (temp)   : T = 800. [C]  
 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Grid parameters:
-   Total number of cpu                  : 2 
-   Processor grid  [nx, ny, nz]         : [1, 1, 2]
-   Fine grid cells [nx, ny, nz]         : [32, 8, 32]
-   Number of cells                      :  8192
-   Number of faces                      :  26112
-   Maximum cell aspect ratio            :  4.00000
-   Lower coordinate bounds [bx, by, bz] : [0., 0., -10.]
-   Upper coordinate bounds [ex, ey, ez] : [10., 10., 0.]
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
@@ -72,6 +73,7 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
+   Periodic marker advection     : 0 0 0 
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -79,10 +81,13 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000334978 sec)
+Reading geometric primitives ... done (0.000170633 sec)
 --------------------------------------------------------------------------
 Phase Diagrams:  
-   Diagrams employed for phases  : 0, 1, 
+   Diagrams employed for phases  : 
+         0:   P range=[0.0-10.1] kbar, T range = [283.1-1780.7] K 
+        1:   P range=[0.0-10.1] kbar, T range = [283.1-1780.7] K 
+
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : FB_test 
@@ -104,6 +109,7 @@ AVD output parameters:
 Preconditioner parameters: 
    Matrix type                   : monolithic
    Penalty parameter (pgamma)    : 1.000000e+05
+   Schur preconditioner type     : inv_eta 
    Preconditioner type           : user-defined
 --------------------------------------------------------------------------
 Solver parameters specified: 
@@ -111,12 +117,12 @@ Solver parameters specified:
    Solver type                   : parallel direct/lu 
    Solver package                : mumps 
 --------------------------------------------------------------------------
-Saving output ... done (0.0714929 sec)
+Saving output ... done (0.0301778 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
-Current time        : 0.00000 [Myr] 
-Tentative time step : 0.00001 [Myr] 
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.00001000 [Myr] 
 --------------------------------------------------------------------------
   0 SNES Function norm 2.332692371613e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
@@ -124,70 +130,70 @@ Tentative time step : 0.00001 [Myr]
   1 SNES Function norm 5.571912044213e-02 
   1 PICARD ||F||/||F0||=2.388618e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.651339576622e-02 
+  2 SNES Function norm 1.651339576623e-02 
   2 MMFD   ||F||/||F0||=7.079114e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  3 SNES Function norm 5.209263956390e-03 
+  3 SNES Function norm 5.209263960139e-03 
   3 MMFD   ||F||/||F0||=2.233155e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 7
-  4 SNES Function norm 4.658608054775e-04 
-  4 MMFD   ||F||/||F0||=1.997095e-04 
+  4 SNES Function norm 4.658585240473e-04 
+  4 MMFD   ||F||/||F0||=1.997085e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  5 SNES Function norm 3.025355901525e-04 
-  5 MMFD   ||F||/||F0||=1.296937e-04 
+  5 SNES Function norm 3.025328539154e-04 
+  5 MMFD   ||F||/||F0||=1.296926e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  6 SNES Function norm 2.292297534939e-04 
+  6 SNES Function norm 2.292283281340e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 6
-SNES solution time      : 16.1469 (sec)
+SNES solution time      : 3.75055 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.305482302629e-18 
-      |Div|_2   = 5.844071911041e-17 
+      |Div|_inf = 8.475679676745e-18 
+      |Div|_2   = 6.059976371554e-17 
    Momentum: 
-      |mRes|_2  = 2.292297534939e-04 
+      |mRes|_2  = 2.292283281340e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0684841 sec)
+Saving output ... done (0.0292222 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
-Current time        : 0.00001 [Myr] 
-Tentative time step : 0.00001 [Myr] 
+Current time        : 0.00001100 [Myr] 
+Tentative time step : 0.00001100 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.292297535091e-04 
+  0 SNES Function norm 2.292283281491e-04 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 8.000601248103e-05 
-  1 PICARD ||F||/||F0||=3.490211e-01 
+  1 SNES Function norm 8.000493263882e-05 
+  1 PICARD ||F||/||F0||=3.490185e-01 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 1.457394460255e-05 
-  2 PICARD ||F||/||F0||=6.357789e-02 
+  2 SNES Function norm 1.457356245512e-05 
+  2 PICARD ||F||/||F0||=6.357662e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  3 SNES Function norm 1.238883010322e-06 
-  3 MMFD   ||F||/||F0||=5.404547e-03 
+  3 SNES Function norm 1.238893902248e-06 
+  3 MMFD   ||F||/||F0||=5.404628e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  4 SNES Function norm 4.129666607849e-08 
+  4 SNES Function norm 4.160959699784e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 4
-SNES solution time      : 8.42341 (sec)
+SNES solution time      : 1.82204 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.370606842137e-18 
-      |Div|_2   = 4.915173886604e-18 
+      |Div|_inf = 1.365446889476e-18 
+      |Div|_2   = 4.888467556294e-18 
    Momentum: 
-      |mRes|_2  = 4.129666607849e-08 
+      |mRes|_2  = 4.160959699784e-08 
 --------------------------------------------------------------------------
 Actual time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.072412 sec)
+Saving output ... done (0.0291438 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 24.9097 (sec) 
+Total solution time : 5.76896 (sec) 
 --------------------------------------------------------------------------

@@ -17,12 +17,229 @@
 |   Total number of observation points     : 1   
 |       [0.600000,0.500000,0.990000] will compute gradient w.r.t. PSD 
 | 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
+     Version : 2.1.4 
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : t8_PSDKernelPaper.dat 
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-10
+   Adding PETSc option: -js_ksp_atol 1e-15
+   Adding PETSc option: -snes_max_it 20
+   Adding PETSc option: -snes_atol 1e-12
+   Adding PETSc option: -snes_rtol 1e-20
+   Adding PETSc option: -snes_stol 1e-20
+   Adding PETSc option: -objects_dump
+Finished parsing input file 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 0.01 [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 0.1 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 0.2 [ ] 
+   Output every [n] steps       : 10 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [8, 8, 8]
+   Number of cells                      :  512
+   Number of faces                      :  1728
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
+   Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Matrix 
+   (dens)   : rho = 1. [ ]  
+   (disl)   : eta0 = 1. [ ]  e0 = 1e-06 [ ]  Bn = 0.5 [ ]  n = 1. [ ]  
+
+   Phase ID : 1     --   Block1 
+   (dens)   : rho = 1. [ ]  
+   (disl)   : eta0 = 1. [ ]  e0 = 1e-06 [ ]  Bn = 0.5 [ ]  n = 1. [ ]  
+
+   Phase ID : 2     --   Block2 
+   (dens)   : rho = 2. [ ]  
+   (disl)   : eta0 = 100. [ ]  e0 = 1e-06 [ ]  Bn = 0.005 [ ]  n = 1. [ ]  
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Periodic marker advection     : 0 0 0 
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : uniform
+   Background phase ID           : 0 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.000588153 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : AdjointKernel_PSD_vs_n 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Adjoint gradient                        @ 
+   Deviatoric strain rate tensor           @ 
+   Maximum horizontal stress               @ 
+   Principal stress angle                  @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Schur preconditioner type     : inv_eta 
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.028777 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [ ] 
+Tentative time step : 0.01000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.323790007724e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.374793003585e+00 
+    1 KSP Residual norm 1.607698157867e+00 
+    2 KSP Residual norm 1.631369661855e-01 
+    3 KSP Residual norm 6.429891350847e-02 
+    4 KSP Residual norm 2.722475478786e-02 
+    5 KSP Residual norm 1.044024240633e-02 
+    6 KSP Residual norm 3.409068271736e-03 
+    7 KSP Residual norm 1.875925997546e-03 
+    8 KSP Residual norm 5.635543456706e-04 
+    9 KSP Residual norm 1.314391840962e-04 
+   10 KSP Residual norm 6.707130382833e-05 
+   11 KSP Residual norm 1.897051975760e-05 
+   12 KSP Residual norm 1.008866899241e-05 
+   13 KSP Residual norm 4.429500596412e-06 
+   14 KSP Residual norm 1.832442919536e-06 
+   15 KSP Residual norm 6.753619414239e-07 
+   16 KSP Residual norm 1.931510434977e-07 
+   17 KSP Residual norm 7.115985200127e-08 
+   18 KSP Residual norm 4.251068058381e-08 
+   19 KSP Residual norm 1.055717259195e-08 
+   20 KSP Residual norm 4.840386521910e-09 
+   21 KSP Residual norm 1.972900912443e-09 
+   22 KSP Residual norm 8.425398812506e-10 
+   23 KSP Residual norm 3.176297269234e-10 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 23
+  1 SNES Function norm 2.854767206886e-10 
+  1 MMFD   ||F||/||F0||=1.228496e-11 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.176541006722e-10 
+    1 KSP Residual norm 2.549021393826e-10 
+    2 KSP Residual norm 1.410243879109e-10 
+    3 KSP Residual norm 3.295051872813e-11 
+    4 KSP Residual norm 2.020879818647e-11 
+    5 KSP Residual norm 5.525239838050e-12 
+    6 KSP Residual norm 2.695034097931e-12 
+    7 KSP Residual norm 9.261270106870e-13 
+    8 KSP Residual norm 5.504814301155e-13 
+    9 KSP Residual norm 1.705784973363e-13 
+   10 KSP Residual norm 6.137260270387e-14 
+   11 KSP Residual norm 1.980826344520e-14 
+   12 KSP Residual norm 1.186190407433e-14 
+   13 KSP Residual norm 3.894687014960e-15 
+   14 KSP Residual norm 1.904691536783e-15 
+   15 KSP Residual norm 4.411983674085e-16 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 15
+  2 SNES Function norm 3.325138693697e-14 
+--------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 2
+SNES solution time      : 0.0559348 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.214306433184e-16 
+      |Div|_2   = 4.163982568404e-16 
+   Momentum: 
+      |mRes|_2  = 3.324877961255e-14 
+--------------------------------------------------------------------------
 | IOparam->mfit = 2.780205e+00 
+    Residual norms for as_ solve.
+    0 KSP Residual norm 5.970017905694e+01 
+    1 KSP Residual norm 3.026944296428e+01 
+    2 KSP Residual norm 8.310454019297e+00 
+    3 KSP Residual norm 3.371066078616e+00 
+    4 KSP Residual norm 1.417553351145e+00 
+    5 KSP Residual norm 7.035163280598e-01 
+    6 KSP Residual norm 2.177620824451e-01 
+    7 KSP Residual norm 1.080796265912e-01 
+    8 KSP Residual norm 3.984913522666e-02 
+    9 KSP Residual norm 1.923841682587e-02 
+   10 KSP Residual norm 5.733927891140e-03 
+   11 KSP Residual norm 3.185933055452e-03 
+   12 KSP Residual norm 7.650119330986e-04 
+   13 KSP Residual norm 4.592729340347e-04 
+   14 KSP Residual norm 1.936284895269e-04 
+   15 KSP Residual norm 6.943980086157e-05 
+   16 KSP Residual norm 3.589671936110e-05 
+   17 KSP Residual norm 1.328935876272e-05 
+   18 KSP Residual norm 4.875136785545e-06 
+   19 KSP Residual norm 1.765440621104e-06 
+   20 KSP Residual norm 1.041794731904e-06 
+   21 KSP Residual norm 2.724892061555e-07 
+   22 KSP Residual norm 1.794440788380e-07 
+   23 KSP Residual norm 6.235181439360e-08 
+   24 KSP Residual norm 2.489148043000e-08 
+   25 KSP Residual norm 6.771028054566e-09 
+   26 KSP Residual norm 3.955367116554e-09 
 | Starting computation of Field-based gradients.  
-|   Norm of field gradient vector : 5.323697786077980e+01 
+|   Norm of field gradient vector : 5.323697361540060e+01 
 | Finished gradient computation & added it to VTK
 | Add '-out_gradient = 1' to your parameter file. 
+Actual time step : 0.01100 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0280065 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 0.843635 (sec) 
+--------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
@@ -41,5 +258,5 @@ SNES Convergence Reason : ||F|| < atol
 |       --------------------------------- --- ------------- ------------- 
 | 1   : [    0.600;     0.500;     0.990] PSD   9.00000e+01   1.59294e+02
 | 
-| Adjoint computation was successful & took 0.910996 s                         	 
+| Adjoint computation was successful & took 0.844066 s                         	 
 | ************************************************************************ 
