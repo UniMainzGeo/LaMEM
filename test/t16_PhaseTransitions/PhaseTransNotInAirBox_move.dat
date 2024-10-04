@@ -393,7 +393,7 @@
 	# LINEAR & NONLINEAR SOLVER OPTIONS
 	-snes_rtol 5e-2					
 	-snes_atol 1e-4					
-	-snes_max_it 2				
+	-snes_max_it 15				
 	
 	-snes_PicardSwitchToNewton_rtol 1e-5   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
@@ -406,7 +406,8 @@
 
 	-snes_linesearch_type l2
 	-snes_linesearch_monitor
-	-snes_linesearch_maxstep 10
+	-snes_linesearch_maxstep 1.2
+	-snes_linesearch_minlambda 0.05
 
 #For MULTIGRID
 	-snes_ksp_ew

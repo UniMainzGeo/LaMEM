@@ -306,8 +306,8 @@
 #	-snes_ksp_ew
 #	-snes_ksp_ew_rtolmax 1e-3
 	-snes_rtol 5e-2					
-	-snes_atol 1e-4					
-	-snes_max_it 10					
+	-snes_atol 7e-3					
+	-snes_max_it 20					
 	
 	-snes_PicardSwitchToNewton_rtol 1e-5   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
@@ -315,13 +315,14 @@
 	
 	-js_ksp_type fgmres
 	-js_ksp_monitor 				# display how the inner iterations converge
-	-js_ksp_max_it 20				# inner
+	-js_ksp_max_it 50				# inner
 	-js_ksp_atol 1e-8
-	-js_ksp_rtol 1e-3
+	-js_ksp_rtol 1e-5
 
-	-snes_linesearch_type l2
+	-snes_linesearch_type cp
 	-snes_linesearch_monitor
-	-snes_linesearch_maxstep 10
+	-snes_linesearch_maxstep 1.2
+	-snes_linesearch_minlambda 0.05
 	
 <PetscOptionsEnd>
 
