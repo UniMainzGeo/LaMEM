@@ -20,14 +20,6 @@
 #include "BFBT.h"
 
 //---------------------------------------------------------------------------
-// * pressure Schur complement preconditioners
-// * matrix-free preconditioner action
-// * linear system scaling (fdstag multigrid paper)
-// * temperature scaling
-// * preallocation for temperature & pressure Schur PC
-// * figure out why block factorization with penalty
-//   doesn't work with non-homogeneous Dirichlet BC
-//---------------------------------------------------------------------------
 PetscErrorCode MatAIJCreate(
 	PetscInt m, PetscInt n,
 	PetscInt d_nz, const PetscInt d_nnz[],
@@ -197,6 +189,7 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 		pm->Create   = PMatMonoCreate;
 		pm->Assemble = PMatMonoAssemble;
 		pm->Destroy  = PMatMonoDestroy;
+		pm->Picard   = PMatMonoPicard;
 	}
 	else if(pm->type == _BLOCK_)
 	{
@@ -204,6 +197,7 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 		pm->Create   = PMatBlockCreate;
 		pm->Assemble = PMatBlockAssemble;
 		pm->Destroy  = PMatBlockDestroy;
+		pm->Picard   = PMatBlockPicard;
 	}
 	// create type-specific context
 	ierr = pm->Create(pm); CHKERRQ(ierr);
@@ -266,19 +260,6 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	if(pm->pgamma > 1.0)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", pm->pgamma);
-	}
-
-	// set cell stiffness function
-	ierr = PetscOptionsHasName(NULL, NULL, "-pcmat_no_dev_proj", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Exclude deviatoric projection @ \n");
-		pm->getStiffMat = getStiffMatClean;
-	}
-	else
-	{
-		pm->getStiffMat = getStiffMatDevProj;
 	}
 
 	// set Schur preconditiner type
@@ -446,7 +427,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 		ind = (PetscInt) ivz[k+1][j][i-1]; CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k][j][i];     CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k+1][j][i];   CHECK_DOF(ind, start, ln, nd, no);
- 		// pressure
+		// pressure
 		ind = (PetscInt) ip[k][j][i-1];    CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ip[k][j][i];      CHECK_DOF(ind, start, ln, nd, no);
 		// update counters
@@ -570,6 +551,8 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 
 	// create matrices & vectors
 	ierr = MatAIJCreate(ln, ln, 0, d_nnz, 0, o_nnz, &P->A); CHKERRQ(ierr);
+	ierr = MatAIJCreateDiag(ln, start, &P->M);              CHKERRQ(ierr);
+	ierr = VecDuplicate(pm->jr->gsol, &P->w);               CHKERRQ(ierr);
 
 	// clear work arrays
 	ierr = PetscFree(d_nnz); CHKERRQ(ierr);
@@ -590,6 +573,10 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// all X-Y-Z-P DOF of the first processor
 	// are followed by X-Y-Z-P DOF of the second one, and so on.
 	//
+	// Picard Jacobian (J) can be computed as follows when necessary:
+	// J = P - M
+	// P - preconditioner matrix (computed in this function)
+	// M - inverse viscosity matrix (computed in this function)
 	//======================================================================
 
 	JacRes      *jr;
@@ -622,8 +609,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// get density gradient stabilization parameters
 	dt     = jr->ts->dt;      // time step
 	fssa   = jr->ctrl.FSSA;   // density gradient penalty parameter
-    grav   = jr->ctrl.grav;   // gravity acceleration
-    rescal = jr->ctrl.rescal; // stencil rescaling flag
+	grav   = jr->ctrl.grav;   // gravity acceleration
+	rescal = jr->ctrl.rescal; // stencil rescaling flag
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
@@ -635,6 +622,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->A); CHKERRQ(ierr);
+	ierr = MatZeroEntries(P->M); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
@@ -677,14 +665,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// compute penalty term
-		if(pgamma)
-		{
-			pt = -1.0/(pgamma*eta);
-		}
-		else
-		{
-			pt = 0.0;
-		}
+		pt = -1.0/(pgamma*eta);
 
 		// get pressure diagonal element (with penalty)
 		diag = -IKdt + pt;
@@ -698,7 +679,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		SET_PRES_TPC(bcp, i,   j,   k+1, k, mcz, cf[5])
 
 		// compute local matrix
-		pm->getStiffMat(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+		getStiffMat(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// compute density gradient stabilization terms
 		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
@@ -727,6 +708,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 		// update global & penalty compensation matrices
 		ierr = MatSetValues(P->A, 7, idx, 7, idx, v,  ADD_VALUES);    CHKERRQ(ierr);
+		ierr = MatSetValue (P->M, idx[6], idx[6], pt, INSERT_VALUES); CHKERRQ(ierr);
 	}
 	END_STD_LOOP
 
@@ -908,29 +890,30 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 	// assemble velocity-pressure matrix, remove constrained rows
 	ierr = MatAIJAssemble(P->A, bc->numSPC, bc->SPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->M, bc->numSPC, bc->SPCList, 0.0); CHKERRQ(ierr);
 
-	// dump preconditioning matrices to disk to inspect them with MATLAB (mainly for debugging)
-	PetscViewer viewer;
-	PetscBool   flg, flg_name;
-	char        name[_str_len_], *fname;
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
+{
+	// actual operation is: r = J*x = A*x - M*x
 
-	ierr = PetscOptionsHasName(NULL, NULL, "-dump_pmat", &flg); CHKERRQ(ierr);
+	PMatMono *P;
 
-	if(flg)
-	{
-		PetscOptionsGetString(NULL, NULL, "-dump_pmat", name, sizeof(name), &flg_name);
-		if(!flg_name)
-		{
-			SETERRQ(PETSC_COMM_WORLD,1,"Must indicate binary file name with the -dump_pmat option");
-		}
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
 
-		// dump preconditioning matrix to disk
-		asprintf(&fname, "%s.bin", name);
-		PetscViewerBinaryOpen(PETSC_COMM_WORLD, fname, FILE_MODE_WRITE, &viewer);
-		MatView(P->A, viewer);
-		PetscViewerDestroy(&viewer);
-		free(fname);
-	}
+	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
+
+	// compute action of preconditioner matrix
+	ierr = MatMult(P->A, x, r); CHKERRQ(ierr);
+
+	// compute compensation
+	ierr = MatMult(P->M, x, P->w); CHKERRQ(ierr);
+
+	// update result
+	ierr = VecAXPY(r, -1.0, P->w);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -946,6 +929,8 @@ PetscErrorCode PMatMonoDestroy(PMat pm)
 	P = (PMatMono*)pm->data;
 
 	ierr = MatDestroy (&P->A); CHKERRQ(ierr);
+	ierr = MatDestroy (&P->M); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->w); CHKERRQ(ierr);
 	ierr = PetscFree(P);       CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -1176,6 +1161,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	// create matrices & vectors
 	ierr = MatAIJCreate(lnv, lnv, 0, Avv_d_nnz, 0, Avv_o_nnz, &P->Avv);  CHKERRQ(ierr);
+	ierr = MatAIJCreate(lnv, lnv, 0, Avv_d_nnz, 0, Avv_o_nnz, &P->Cvv);  CHKERRQ(ierr);
 	ierr = MatAIJCreate(lnv, lnp, 0, Avp_d_nnz, 0, Avp_o_nnz, &P->Avp);  CHKERRQ(ierr);
 	ierr = MatAIJCreate(lnp, lnv, 0, Apv_d_nnz, 0, Apv_o_nnz, &P->Apv);  CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->App);                       CHKERRQ(ierr);
@@ -1219,6 +1205,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	// where S is the pressure Schur complement preconditioner:
 	//
 	//    S = - 1/(K*dt) - 1/(pgamma*eta)
+	//
+	// clean velocity block is also assembled
 	//======================================================================
 
 	JacRes      *jr;
@@ -1227,7 +1215,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	DOFIndex    *dof;
 	PMatBlock   *P;
 	PetscInt    idx[7];
-	PetscScalar v[49], a[36], d[6], g[6];
+	PetscScalar v[49], vc[49], a[36], ac[36], d[6], g[6];
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar eta, rho, IKdt, diag, pgamma, dt, fssa, *grav;
@@ -1260,9 +1248,10 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	mcz = fs->dsz.tcels - 1;
 
 	// clear matrix coefficients
-	ierr = MatZeroEntries(P->Avv); CHKERRQ(ierr);
-	ierr = MatZeroEntries(P->Avp); CHKERRQ(ierr);
-	ierr = MatZeroEntries(P->Apv); CHKERRQ(ierr);
+	ierr = MatZeroEntries(P->Avv);  CHKERRQ(ierr);
+	ierr = MatZeroEntries(P->Cvv);  CHKERRQ(ierr);
+	ierr = MatZeroEntries(P->Avp);  CHKERRQ(ierr);
+	ierr = MatZeroEntries(P->Apv);  CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
@@ -1314,10 +1303,13 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		SET_PRES_TPC(bcp, i,   j,   k+1, k, mcz, cf[5])
 
 		// compute local matrix
-		pm->getStiffMat(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+		getStiffMat(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// compute density gradient stabilization terms
 		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
+
+		// copy clean stiffness matrix
+		ierr = PetscMemcpy(vc, v, sizeof(v)); CHKERRQ(ierr);
 
 		// compute velocity Schur complement
 		if(pm->pgamma != 1.0) getVelSchur(v, d, g);
@@ -1343,12 +1335,15 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 		// constrain local matrix
 		constrLocalMat(7, pdofidx, cf, v);
+		constrLocalMat(7, pdofidx, cf, vc);
 
 		// extract operators
-		getSubMat(v, a, d, g);
+		getSubMat(v,  a,  d, g);
+		getSubMat(vc, ac, d, g);
 
 		// update global matrices
 		ierr = MatSetValues(P->Avv, 6, idx,   6, idx,   a,    ADD_VALUES);    CHKERRQ(ierr);
+		ierr = MatSetValues(P->Cvv, 6, idx,   6, idx,   ac,   ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValues(P->Avp, 6, idx,   1, idx+6, g,    ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValues(P->Apv, 1, idx+6, 6, idx,   d,    ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValue (P->App, idx[6], idx[6], -IKdt,    INSERT_VALUES); CHKERRQ(ierr);
@@ -1536,6 +1531,44 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec r)
+{
+	//=======================================================================
+	// Get action of the Picard Jacobian
+	//
+	// rv = Cvv*xv + Avp*xp
+	// rp = Apv*xv + App*xp
+	//=======================================================================
+
+	PMatBlock *P;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// get context
+	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
+
+	// extract solution blocks
+	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_REVERSE); CHKERRQ(ierr);
+
+	ierr = MatMult(P->Apv,  P->xv, P->rp); CHKERRQ(ierr); // rp = Apv*xv
+
+	ierr = MatMult(P->App,  P->xp, P->wp); CHKERRQ(ierr); // wp = App*xp
+
+	ierr = VecAXPY(P->rp,   1.0,   P->wp); CHKERRQ(ierr); // rp = rp + wp
+
+	ierr = MatMult(P->Avp,  P->xp, P->rv); CHKERRQ(ierr); // rv = Avp*xp
+
+	ierr = MatMult(P->Cvv,  P->xv, P->wv); CHKERRQ(ierr); // wv = Cvv*xv
+
+	ierr = VecAXPY(P->rv,   1.0,   P->wv); CHKERRQ(ierr); // rv = rv + wv
+
+	// compose coupled residual
+	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_FORWARD); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode PMatBlockDestroy(PMat pm)
 {
 	PMatBlock *P;
@@ -1547,10 +1580,11 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	P = (PMatBlock*)pm->data;
 
 	ierr = MatDestroy (&P->Avv); CHKERRQ(ierr);
+	ierr = MatDestroy (&P->Cvv); CHKERRQ(ierr);
 	ierr = MatDestroy (&P->Avp); CHKERRQ(ierr);
 	ierr = MatDestroy (&P->Apv); CHKERRQ(ierr);
 	ierr = MatDestroy (&P->App); CHKERRQ(ierr);
-	ierr = MatDestroy (&P->iS);   CHKERRQ(ierr);
+	ierr = MatDestroy (&P->iS);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rp);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->xv);  CHKERRQ(ierr);
@@ -1568,7 +1602,7 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 //---------------------------------------------------------------------------
 // SERVICE FUNCTIONS
 //---------------------------------------------------------------------------
-void getStiffMatDevProj(
+void getStiffMat(
 	PetscScalar eta, PetscScalar diag,
 	PetscScalar *v,  PetscScalar *cf,
 	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
@@ -1587,28 +1621,7 @@ void getStiffMatDevProj(
 	v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -cf[3]/fdy; // fy_(j+1) [syy]
 	v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  cf[4]/bdz; // fz_(k)   [szz]
 	v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -cf[5]/fdz; // fz_(k+1) [szz]
-	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;     // g
-}
-//---------------------------------------------------------------------------
-void getStiffMatClean(
-	PetscScalar eta, PetscScalar diag,
-	PetscScalar *v,  PetscScalar *cf,
-	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz)
-{
-	// compute cell stiffness matrix without deviatoric projection
-
-	PetscScalar E2 = 2.0*eta;
-
-	//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
-	v[0]  =  E2/dx/bdx;  v[1]  = -E2/dx/bdx;  v[2]  =  0.0;        v[3]  =  0.0;        v[4]  =  0.0;        v[5]  =  0.0;        v[6]  =  cf[0]/bdx; // fx_(i)   [sxx]
-	v[7]  = -E2/dx/fdx;  v[8]  =  E2/dx/fdx;  v[9]  =  0.0;        v[10] =  0.0;        v[11] =  0.0;        v[12] =  0.0;        v[13] = -cf[1]/fdx; // fx_(i+1) [sxx]
-	v[14] =  0.0;        v[15] =  0.0;        v[16] =  E2/dy/bdy;  v[17] = -E2/dy/bdy;  v[18] =  0.0;        v[19] =  0.0;        v[20] =  cf[2]/bdy; // fy_(j)   [syy]
-	v[21] =  0.0;        v[22] =  0.0;        v[23] = -E2/dy/fdy;  v[24] =  E2/dy/fdy;  v[25] =  0.0;        v[26] =  0.0;        v[27] = -cf[3]/fdy; // fy_(j+1) [syy]
-	v[28] =  0.0;        v[29] =  0.0;        v[30] =  0.0;        v[31] =  0.0;        v[32] =  E2/dz/bdz;  v[33] = -E2/dz/bdz;  v[34] =  cf[4]/bdz; // fz_(k)   [szz]
-	v[35] =  0.0;        v[36] =  0.0;        v[37] =  0.0;        v[38] =  0.0;        v[39] = -E2/dz/fdz;  v[40] =  E2/dz/fdz;  v[41] = -cf[5]/fdz; // fz_(k+1) [szz]
-	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;    // g
+	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;      // g
 }
 //---------------------------------------------------------------------------
 void addDensGradStabil(

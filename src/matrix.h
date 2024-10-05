@@ -67,14 +67,7 @@ typedef struct _p_PMat
 	PetscErrorCode (*Create)  (PMat pm);
 	PetscErrorCode (*Assemble)(PMat pm);
 	PetscErrorCode (*Destroy) (PMat pm);
-
-	// get cell stiffness matrix
-	void (*getStiffMat)(
-		PetscScalar,  PetscScalar,
-		PetscScalar*, PetscScalar*,
-		PetscScalar,  PetscScalar, PetscScalar,
-		PetscScalar,  PetscScalar, PetscScalar,
-		PetscScalar,  PetscScalar, PetscScalar);
+	PetscErrorCode (*Picard)  (Mat J, Vec x, Vec y);
 
 } p_PMat;
 
@@ -98,11 +91,16 @@ PetscErrorCode PMatDestroy(PMat pm);
 struct PMatMono
 {
 	Mat A; // monolithic matrix
+	Mat M; // penalty terms compensation matrix
+	Vec w; // work vector for computing Jacobian action
+
 };
 
 PetscErrorCode PMatMonoCreate(PMat pm);
 
 PetscErrorCode PMatMonoAssemble(PMat pm);
+
+PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
 
 PetscErrorCode PMatMonoDestroy(PMat pm);
 
@@ -112,9 +110,10 @@ PetscErrorCode PMatMonoDestroy(PMat pm);
 
 struct PMatBlock
 {
-	Mat Avv, Avp; // velocity sub-matrices
-	Mat Apv, App; // pressure sub-matrices
-	Mat iS;       // inverse of Schur complement preconditioner
+	Mat Avv, Avp;  // velocity sub-matrices
+	Mat Apv, App;  // pressure sub-matrices
+	Mat iS;        // inverse of pressure Schur complement preconditioner
+	Mat Cvv;       // clean velocity submatix
 
 	Vec rv, rp;   // residual blocks
 	Vec xv, xp;   // solution blocks
@@ -124,7 +123,7 @@ struct PMatBlock
 	DM  DA_P; // cell-based grid
 	Mat K;    // Schur complement preconditioner matrix
 	Mat C;    // diagonal viscosity weighting matrix
-	Vec wv2;  // working vectors in velocity space
+	Vec w;    // working vectors in velocity space
 };
 
 //---------------------------------------------------------------------------
@@ -133,6 +132,8 @@ PetscErrorCode PMatBlockCreate(PMat pm);
 
 PetscErrorCode PMatBlockAssemble(PMat pm);
 
+PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec y);
+
 PetscErrorCode PMatBlockDestroy(PMat pm);
 
 //---------------------------------------------------------------------------
@@ -140,15 +141,7 @@ PetscErrorCode PMatBlockDestroy(PMat pm);
 //---------------------------------------------------------------------------
 
 // compute cell stiffness matrix with deviatoric projection
-void getStiffMatDevProj(
-	PetscScalar eta, PetscScalar diag,
-	PetscScalar *v,  PetscScalar *cf,
-	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
-
-// compute cell stiffness matrix without deviatoric projection
-void getStiffMatClean(
+void getStiffMat(
 	PetscScalar eta, PetscScalar diag,
 	PetscScalar *v,  PetscScalar *cf,
 	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
