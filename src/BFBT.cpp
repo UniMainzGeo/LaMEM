@@ -71,7 +71,7 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	ierr = MatAIJCreateDiag(lnv, stv, &P->C); CHKERRQ(ierr);
 
 	// allocate work vectors
-	ierr = VecDuplicate(P->xv, &P->wv2);  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->w);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -309,7 +309,7 @@ PetscErrorCode PMatBFBTDestroy(PMat pm)
 	ierr = DMDestroy (&P->DA_P); CHKERRQ(ierr);
 	ierr = MatDestroy(&P->K); 	 CHKERRQ(ierr);
 	ierr = MatDestroy(&P->C); 	 CHKERRQ(ierr);
-	ierr = VecDestroy(&P->wv2);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->w);    CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -341,13 +341,13 @@ PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y)
 
 	ierr = MatMult(P->Avp, P->wp, P->wv);  CHKERRQ(ierr); // wv = Avp*wp
 
-	ierr = MatMult(P->C, P->wv, P->wv2);   CHKERRQ(ierr); // wv2 = C*wv
+	ierr = MatMult(P->C, P->wv, P->w);     CHKERRQ(ierr); // w = C*wv
 
-	ierr = MatMult(P->Avv, P->wv2, P->wv); CHKERRQ(ierr); // wv = Avv * wv2
+	ierr = MatMult(P->Avv, P->w, P->wv);   CHKERRQ(ierr); // wv = Avv * w
 
-	ierr = MatMult(P->C, P->wv, P->wv2);   CHKERRQ(ierr); // wv2 = C*wv
+	ierr = MatMult(P->C, P->wv, P->w);     CHKERRQ(ierr); // w = C*wv
 
-	ierr = MatMult(P->Apv, P->wv2, P->wp); CHKERRQ(ierr); // wp = Apv*wv2
+	ierr = MatMult(P->Apv, P->w, P->wp);   CHKERRQ(ierr); // wp = Apv*w
 
 	ierr = KSPSolve(bf->pksp, P->wp, y);   CHKERRQ(ierr); // y = (K^⁻1)*wp
 
