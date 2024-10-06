@@ -11,40 +11,39 @@ OPTIONS & PREFIXES
 * MFFD Jacobian options are set with prefix -fd_
 
 * Jacobian linear solver is controlled with prefix -js_ 
-
-* Jacobian preconditioner matrix is controlled with prefix -pcmat_
-
-     -pcmat_type [block, mono]          - select matrix type (block or monolithic)  (default - mono)
-     -pcmat_schur_type [wbfbt, inv_eta] - Schur preconditiner type (wBFBt or I/eta) (default - inv_eta)
-     -pcmat_pgamma [value]              - set the penalty parameter (pgamma >= 1)   (default - 1)
-     -pcmat_no_dev_proj                 - switch off deviatoric projection          (default - not set)
-
-      If matrix type is 'block', and 'pgamma' > 1, velocity Schur complement is assembled
-     
+  
+     -js_mat_free - do not use assembled matrices in ksp solve (defult unset)
+    
 * Jacobian preconditioner is controlled with prefix -jp
 
      -jp_type [bf, mg, user] - select preconditioner type (default user)
      
-      bf   - block factorization
-      mg   - coupled Galerkin geometric multigrid
-      user - coupled user-defined preconditioner controlled via options
+         bf    - block factorization  
+         mg    - coupled Galerkin geometric multigrid
+         user  - coupled user-defined preconditioner controlled via options
          
-     'mg' and 'user' types require 'mono' matrix
-     'bf' type requires 'block' matrix
-      Option prefix for user-defined preconditioner is -jp
+     -jp_pgamma [value] - penalty parameter (pgamma >= 1) (default - 1)
+     
+         WARNING! Only use this option with direct solvers (block and coupled)
+         WARNING! Avoid using coupled direct solvers (use block solvers instead)
 
 * Block factorization preconditioner is controlled with prefix -bf
 
      -bf_type [upper, lower] - block factorization type (default upper)
 
-     -bf_vs_type [mg, user] - select velocity block solver (default user)
+     -bf_vs_type [mg, user]  - select velocity block solver (default user)
      
-      mg   - Galerkin geometric multigrid
-      user - user-defined preconditioner controlled via options
+         mg   - Galerkin geometric multigrid
+         user - user-defined preconditioner controlled via options
       
-      Option prefix for user-defined velocity solver is -vs
-      
-      Option prefix for pressure block solver is -ks (only relevant for -pcmat_schur_type wbfbt)
+     Option prefix for user-defined velocity solver is -vs
+
+     -bf_schur_type [inv_eta, wbfbt] - pressure Schur preconditioner type
+         
+         inv_eta - inverse viscosity
+         wbfbt   - weighted BFBT
+               
+     Option prefix for wbfbt pressure block solver is -ks
 
  * Galerkin geometric multigrid option (both coupled and velocity) is -gmg_
 

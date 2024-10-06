@@ -76,8 +76,6 @@ typedef struct _p_PMat
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PMatSetFromOptions(PMat pm);
-
 PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr);
 
 PetscErrorCode PMatAssemble(PMat pm);

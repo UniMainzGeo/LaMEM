@@ -178,7 +178,7 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 	ierr = PetscMemzero(pm, sizeof(p_PMat)); CHKERRQ(ierr);
 
 	// set type
-	ierr = PMatSetFromOptions(pm); CHKERRQ(ierr);
+//	ierr = PMatSetFromOptions(pm); CHKERRQ(ierr);
 
 	// set context
 	pm->jr = jr;
