@@ -255,8 +255,13 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	if(nl->jtype == _PICARD_)
 	{
 		// ... matrix-free Picard
-		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
-		ierr = MatShellSetContext(nl->J, (void*)jr);                                   CHKERRQ(ierr);
+//		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
+//		ierr = MatShellSetContext(nl->J, (void*)jr);                                   CHKERRQ(ierr);
+
+		// ... Picard
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))pm->Picard);     CHKERRQ(ierr);
+		ierr = MatShellSetContext(nl->J, pm->data);                                    CHKERRQ(ierr);
+
 	}
 	else if(nl->jtype == _MFFD_)
 	{
@@ -267,14 +272,6 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyMFFD);                       CHKERRQ(ierr);
 		ierr = MatShellSetContext(nl->J, (void*)&nl->MFFD);                                                CHKERRQ(ierr);
 	}
-/*	
-	else if(nl->jtype == _MF_)
-	{
-		// ... matrix-free closed-form
-		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyJacobian); CHKERRQ(ierr);
-		ierr = MatShellSetContext(nl->J, (void*)jr);                                     CHKERRQ(ierr);
-	}
-*/
 
 	// assemble Jacobian & preconditioner
 	ierr = MatAssemblyBegin(nl->P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
