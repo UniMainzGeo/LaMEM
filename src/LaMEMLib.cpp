@@ -604,22 +604,16 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 {
-	PMat           pm;     // preconditioner matrix    (to be removed!)
-	PCStokes       pc;     // Stokes preconditioner    (to be removed!)
-	NLSol          nl;     // nonlinear solver context (to be removed!)
- 	AdjGrad        aop;    // Adjoint options          (to be removed!)
 	SNES           snes;   // PETSc nonlinear solver
+ 	AdjGrad        aop;    // Adjoint options
 	PetscInt       restart;
 	PetscLogDouble t;
-
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// create Stokes preconditioner, matrix and nonlinear solver
-	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
-	ierr = PCStokesCreate(&pc, pm);     CHKERRQ(ierr);
-	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
+	// create nonlinear solver
+	ierr = NLSolCreate(&snes, &lm->jr); CHKERRQ(ierr);
 
 	//==============
 	// INITIAL GUESS
@@ -630,7 +624,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 
 	PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 
-	if (param)
+	if(param)
 	{
 		ierr = AdjointCreate(&aop, &lm->jr, (ModParam *)param); CHKERRQ(ierr);
 	}
@@ -673,18 +667,17 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
 
 		// Compute adjoint gradients every TS
-		if (param)
+		if(param)
 		{
+			ModParam *IOparam = (ModParam *)param;
 			
-			ModParam      *IOparam;
-			IOparam       = (ModParam *)param;	
-			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ || IOparam->use == _inversion_ )
+			if(IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ || IOparam->use == _inversion_ )
 			{	/* 	Compute the adjoint gradients 
 				 	
 					This is done here, as the adjoint should be cmputed with the current residual that does not take advection etc.
 					into account. It does compute it every dt; one can perhaps only activate it for the last dt.
 				*/
-				ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
+				ierr = AdjointObjectiveAndGradientFunction(&aop, (ModParam*)param, snes); CHKERRQ(ierr);
 			}
 		}
 
@@ -752,11 +745,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	// END OF TIME STEP LOOP
 	//======================
 
-	if (param)
+	if(param)
 	{
-
-		ModParam      *IOparam;
-		IOparam       = (ModParam *)param;
+		ModParam *IOparam = (ModParam *)param;
 
 		if(IOparam->use == _syntheticforwardrun_)
 		{	// Assume this as a forward simulation and save the solution vector
@@ -764,15 +755,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 			//VecCopy(lm->jr.gsol, IOparam->xini);
 		}
 
-		ierr = AdjointDestroy (&aop,  IOparam);  	CHKERRQ(ierr);
-
+		ierr = AdjointDestroy(&aop, IOparam); CHKERRQ(ierr);
 	}
 
 	// destroy objects
-	ierr = PCStokesDestroy(pc);    			CHKERRQ(ierr);
-	ierr = PMatDestroy    (pm);    			CHKERRQ(ierr);
-	ierr = SNESDestroy    (&snes); 			CHKERRQ(ierr);
-	ierr = NLSolDestroy   (&nl);   			CHKERRQ(ierr);
+	ierr = NLSolDestroy(&snes); CHKERRQ(ierr);
 
 	// save marker database
 	ierr = ADVMarkSave(&lm->actx); CHKERRQ(ierr);

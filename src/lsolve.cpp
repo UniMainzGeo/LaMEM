@@ -18,9 +18,6 @@
 #include "JacRes.h"
 #include "BFBT.h"
 //---------------------------------------------------------------------------
-// * implement preconditioners in PETSc
-// * add default solver options
-//---------------------------------------------------------------------------
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 {
 	PetscBool found;
@@ -58,9 +55,129 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 
 	PetscFunctionReturn(0);
 }
+
+
+/*
+
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
+PetscErrorCode PMatSetFromOptions(PMat pm)
 {
+	PetscBool   flg;
+	PetscScalar pgamma;
+	char        pname[_str_len_];
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
+
+	// set matrix type
+	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, _str_len_, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		if(!strcmp(pname, "mono"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
+			pm->type = _MONOLITHIC_;
+		}
+		else if(!strcmp(pname, "block"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
+			pm->type = _BLOCK_;
+		}
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
+		pm->type = _MONOLITHIC_;
+	}
+
+	// set penalty parameter
+	pm->pgamma = 1.0;
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-pcmat_pgamma", &pgamma, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		if(pgamma < 1.0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Penalty parameter [-pcmat_pgamma] is less than unit");
+		}
+
+		pm->pgamma = pgamma;
+	}
+
+	if(pm->pgamma > 1.0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", pm->pgamma);
+	}
+
+	// set Schur preconditiner type
+	ierr = PetscOptionsGetString(NULL, NULL, "-pcmat_schur_type", pname, _str_len_, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		if(!strcmp(pname, "wbfbt"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : wbfbt \n");
+
+			pm->stype = _wBFBT_;
+		}
+		else if(!strcmp(pname, "inv_eta"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : inv_eta\n");
+
+			pm->stype = _INV_ETA_;
+		}
+		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Schur factorization type: %s", pname);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : inv_eta \n");
+
+		pm->stype = _INV_ETA_;
+	}
+
+	if(pm->stype == _wBFBT_ && pm->pgamma != 1.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "BFBT preconditioner is incompatible with matrix penalty (pcmat_schur_type, pcmat_pgamma)");
+	}
+
+	if(pm->stype == _wBFBT_ && pm->type != _BLOCK_)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "BFBT preconditioner requires block matrix type (pcmat_schur_type, pcmat_type)");
+	}
+
+	PetscFunctionReturn(0);
+}
+
+*/
+
+//---------------------------------------------------------------------------
+PetscErrorCode PCStokesCreate(PCStokes *p_pc)
+{
+
+/*
+
+	PMat pm
+
+
+	// create Stokes preconditioner, matrix and nonlinear solver
+	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
+	ierr = PCStokesCreate(&pc, pm);     CHKERRQ(ierr);
+
+
+	// destroy objects
+	ierr = PCStokesDestroy(pc);    			CHKERRQ(ierr);
+	ierr = PMatDestroy    (pm);    			CHKERRQ(ierr);
+
+
+
+
+
+
 	//========================================================================
 	// create Stokes preconditioner context
 	//========================================================================
@@ -119,6 +236,8 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 
 	// return preconditioner
 	(*p_pc) = pc;
+
+*/
 
 	PetscFunctionReturn(0);
 }

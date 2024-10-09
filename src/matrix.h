@@ -18,8 +18,6 @@
 struct JacRes;
 struct DOFIndex;
 
-// WARNING! Add MatSetNearNullSpace for all matrix types
-
 //---------------------------------------------------------------------------
 
 PetscErrorCode MatAIJCreate(PetscInt m, PetscInt n, PetscInt d_nz,
@@ -53,9 +51,9 @@ enum PCSCHURType
 
 //---------------------------------------------------------------------------
 
-typedef struct _p_PMat *PMat;
+typedef struct p_PMat *PMat;
 
-typedef struct _p_PMat
+struct p_PMat
 {
 	JacRes     *jr;     // assembly context
 	void       *data;   // type-specific context
@@ -68,15 +66,19 @@ typedef struct _p_PMat
 	PetscErrorCode (*Assemble)(PMat pm);
 	PetscErrorCode (*Destroy) (PMat pm);
 	PetscErrorCode (*Picard)  (Mat J, Vec x, Vec y);
-
-} p_PMat;
+};
 
 // PMat - pointer to an opaque structure (to be used in declarations)
 // sizeof(p_PMat) - size of the opaque structure
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr);
+PetscErrorCode PMatCreate(
+		PMat        *p_pm,
+		JacRes      *jr,
+		PMatType     type,
+		PCSCHURType  stype,
+		PetscScalar  pgamma);
 
 PetscErrorCode PMatAssemble(PMat pm);
 
@@ -91,16 +93,15 @@ struct PMatMono
 	Mat A; // monolithic matrix
 	Mat M; // penalty terms compensation matrix
 	Vec w; // work vector for computing Jacobian action
-
 };
 
 PetscErrorCode PMatMonoCreate(PMat pm);
 
 PetscErrorCode PMatMonoAssemble(PMat pm);
 
-PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
-
 PetscErrorCode PMatMonoDestroy(PMat pm);
+
+PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 //...........................   BLOCK MATRIX   ..............................
@@ -130,9 +131,9 @@ PetscErrorCode PMatBlockCreate(PMat pm);
 
 PetscErrorCode PMatBlockAssemble(PMat pm);
 
-PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec y);
-
 PetscErrorCode PMatBlockDestroy(PMat pm);
+
+PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 // SERVICE FUNCTIONS

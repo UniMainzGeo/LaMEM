@@ -28,8 +28,10 @@ enum JacType
 
 };
 //---------------------------------------------------------------------------
+
 struct NLSol
 {
+	JacRes   *jr;     // assembly context
 	Mat       J;      // Jacobian matrix
 	Mat       P;      // preconditioner
 	Mat       MFFD;   // matrix-free finite difference Jacobian
@@ -43,15 +45,13 @@ struct NLSol
 	PetscScalar rtolPic;  // relative Picard residual reduction tolerance
 	PetscInt    nNwtIt;   // number of Newton iterations before switch to Picard
 	PetscScalar rtolNwt;  // Newton divergence tolerance
-} ;
+};
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode NLSolClear(NLSol *nl);
+PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr);
 
-PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes);
-
-PetscErrorCode NLSolDestroy(NLSol *nl);
+PetscErrorCode NLSolDestroy(SNES *p_snes);
 
 //---------------------------------------------------------------------------
 

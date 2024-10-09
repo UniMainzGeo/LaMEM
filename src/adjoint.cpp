@@ -1554,13 +1554,21 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	PetscFunctionReturn(0);
 }
- //---------------------------------------------------------------------------
- PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf)
- {
+//---------------------------------------------------------------------------
+PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, ModParam *IOparam, SNES snes)
+{
 	// This computes the objective function and adjoint gradients (not the 'brute-force' FD gradients)
+	NLSol    *nl;
+	JacRes   *jr;
+	FreeSurf *surf;
 
- 	PetscErrorCode ierr;
- 	PetscFunctionBeginUser;
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = SNESGetApplicationContext(snes, &nl); CHKERRQ(ierr);
+
+	jr   = nl->jr;
+	surf = jr->surf;
 
 	//========================================
 	// COMPUTE OBJECTIVE FUNCTION & GRADIENT
@@ -1571,14 +1579,15 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	if (IOparam->BruteForce_FD){PetscFunctionReturn(0); }	// in case we compute Brute force FD (or if we only compute the misfit), we can return at this stage
 
- 	// Get the adjoint gradients
- 	ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam);        CHKERRQ(ierr);
+	// Get the adjoint gradients
+	ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam);        CHKERRQ(ierr);
 
- 	PetscFunctionReturn(0);
- }
- //---------------------------------------------------------------------------
- PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOparam, FreeSurf *surf)
- {
+	PetscFunctionReturn(0);
+
+}
+//---------------------------------------------------------------------------
+PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOparam, FreeSurf *surf)
+{
 	// This computes the objective function
 
 	Scaling             *scal;
@@ -1786,8 +1795,8 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	ierr = VecDestroy(&sqrtpro);
 
 
- 	PetscFunctionReturn(0);
- }
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 /* 
 	Brute Force finite difference computation of the gradient, by calling LaMEM twice & perturbing the parameter 
@@ -1800,21 +1809,21 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 	char 			CurName[_str_len_];
 	PetscBool 		flg, FD_Adjoint = PETSC_FALSE;
 
- 	PetscFunctionBeginUser;
+	PetscFunctionBeginUser;
 
 
 	// 0) Retrieve (optional) command-line parameters
 	ierr = PetscOptionsGetScalar(NULL, NULL,"-FD_gradients_eps",&FD_gradients_eps,&flg); CHKERRQ(ierr);
-    if (flg){
+	if (flg){
 		PetscPrintf(PETSC_COMM_WORLD,"| Updated eps used for computing finite difference gradients to: %2.5e  \n",FD_gradients_eps);
-    }
+	}
 
 	// 1) Compute 'reference' state using LaMEM & the current set of parameters
 	// Set parameters as command-line options
 	VecGetArray(IOparam->P,&Par);
 	for(j = 0; j < IOparam->mdN; j++){
 		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
-    }
+	}
 	VecRestoreArray(IOparam->P,&Par);
 
 	// check if we actually need to compute FD gradients
@@ -1882,8 +1891,8 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 	}
 
 
- 	PetscFunctionReturn(0);
- }
+	PetscFunctionReturn(0);
+}
 
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam)
@@ -1899,8 +1908,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	Vec 				res_pert, sol, psi, psiPar, drdp, res;
 	PC                  ipc_as;
 	Scaling             *scal;
-    PetscBool           flg;
-    char                CurName[_str_len_];
+	PetscBool           flg;
+	char                CurName[_str_len_];
 	BCCtx 				*bc;
 	
 
@@ -1938,17 +1947,17 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
 	}
 	else if(IOparam->MfitType == 1)
- 	{
+	{
 		ierr = Adjoint_ApplyBCs(aop->dPardu, bc);		CHKERRQ(ierr);		// apply BC's to dF vector 
- 		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
- 		ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
- 		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
- 		ierr = KSPGetPC(ksp_as, &ipc_as);            	CHKERRQ(ierr);
- 		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
- 		ierr = KSPSetOperators(ksp_as,nl->J,nl->P);		CHKERRQ(ierr);
- 		ierr = KSPSolve(ksp_as,aop->dPardu,psiPar);		CHKERRQ(ierr);
- 		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
- 	}
+		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
+		ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
+		ierr = KSPGetPC(ksp_as, &ipc_as);            	CHKERRQ(ierr);
+		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
+		ierr = KSPSetOperators(ksp_as,nl->J,nl->P);		CHKERRQ(ierr);
+		ierr = KSPSolve(ksp_as,aop->dPardu,psiPar);		CHKERRQ(ierr);
+		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
+	}
 
 	// Check error
 	{ 
