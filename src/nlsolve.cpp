@@ -21,30 +21,41 @@
 #include "matFree.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-PetscErrorCode NLSolClear(NLSol *nl)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// clear object
-	ierr = PetscMemzero(nl, sizeof(NLSol)); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
+PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 {
 	SNES            snes;
 	KSP             ksp;
 	PC              ipc;
 	SNESLineSearch  ls;
-	JacRes         *jr;
 	DOFIndex       *dof;
 	PetscBool       flg;
 	SNESType        type;
+	NLSol          *nl;
+
+
+
+
+
+
+
+
+
+	PCStokes pc;
 
     PetscErrorCode ierr;
     PetscFunctionBeginUser;
+
+
+	ierr = PetscMalloc(sizeof(NLSol), &nl); CHKERRQ(ierr);
+
+	// clear object
+	ierr = PetscMemzero(nl, sizeof(NLSol)); CHKERRQ(ierr);
+
+
+	// create Stokes preconditioner, matrix and nonlinear solver
+	ierr = PCStokesCreate(&pc);     CHKERRQ(ierr);
+
+
 
 	// store context
  	nl->pc = pc;
@@ -88,6 +99,11 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 
 	ierr = SNESSetConvergenceTest(snes, &SNESCoupledTest, nl, NULL); CHKERRQ(ierr);
 
+
+	// PetscErrorCode SNESSetApplicationContext(SNES snes, void *usrP)
+
+
+
 	// initialize Jacobian controls
 	nl->jtype   = _PICARD_;
 	nl->nPicIt  = 5;
@@ -118,17 +134,26 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	// force one nonlinear iteration regardless of the initial residual
 	ierr = SNESSetForceIteration(snes, PETSC_TRUE); CHKERRQ(ierr);
 
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode NLSolDestroy(NLSol *nl)
+PetscErrorCode NLSolDestroy(SNES *p_snes)
 {
+	NLSol *nl;
+
 	PetscErrorCode ierr;
  	PetscFunctionBeginUser;
 
-	ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
-	ierr = MatDestroy(&nl->P);    CHKERRQ(ierr);
-	ierr = MatDestroy(&nl->MFFD); CHKERRQ(ierr);
+	ierr = SNESGetApplicationContext((*p_snes), &nl); CHKERRQ(ierr);
+
+ 	ierr = MatDestroy(&nl->J);      CHKERRQ(ierr);
+	ierr = MatDestroy(&nl->P);      CHKERRQ(ierr);
+	ierr = MatDestroy(&nl->MFFD);   CHKERRQ(ierr);
+	ierr = PCStokesDestroy(nl->pc); CHKERRQ(ierr);
+	ierr = PetscFree(nl);           CHKERRQ(ierr);
+	ierr = SNESDestroy(p_snes);     CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -140,6 +165,11 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
+
+	// clear unused parameters
+	if(ctx) ctx = NULL;
+
+	ierr = SNESGetApplicationContext(snes, &nl); CHKERRQ(ierr);
 
 	// clear unused parameters
 	if(snes) snes = NULL;

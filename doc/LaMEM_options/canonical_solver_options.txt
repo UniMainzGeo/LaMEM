@@ -12,7 +12,7 @@ OPTIONS & PREFIXES
 
 * Jacobian linear solver is controlled with prefix -js_ 
   
-     -js_mat_free - do not use assembled matrices in ksp solve (defult unset)
+     -js_mat_free - do not use assembled matrices in ksp solve (default unset)
     
 * Jacobian preconditioner is controlled with prefix -jp
 

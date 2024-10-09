@@ -13,6 +13,7 @@
 #ifndef __lsolve_h__
 #define __lsolve_h__
 //---------------------------------------------------------------------------
+
 // Stokes preconditioner type
 enum PCStokesType
 {
@@ -64,7 +65,7 @@ typedef struct _p_PCStokes
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm);
+PetscErrorCode PCStokesCreate(PCStokes *p_pc);
 
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc);
 
@@ -74,7 +75,7 @@ PetscErrorCode PCStokesDestroy(PCStokes pc);
 
 //---------------------------------------------------------------------------
 
-// Block Factorization preconditioner context
+// Block factorization preconditioner context
 struct PCStokesBF
 {
 	PCBFType    ftype; // factorization type

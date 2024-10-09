@@ -160,7 +160,12 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
+PetscErrorCode PMatCreate(
+		PMat        *p_pm,
+		JacRes      *jr,
+		PMatType     type,
+		PCSCHURType  stype,
+		PetscScalar  pgamma)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -177,11 +182,11 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 	// clear object
 	ierr = PetscMemzero(pm, sizeof(p_PMat)); CHKERRQ(ierr);
 
-	// set type
-//	ierr = PMatSetFromOptions(pm); CHKERRQ(ierr);
-
 	// set context
-	pm->jr = jr;
+	pm->jr     = jr;
+	pm->type   = type;
+	pm->stype  = stype;
+	pm->pgamma = pgamma;
 
 	if(pm->type == _MONOLITHIC_)
 	{
@@ -207,99 +212,7 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-PetscErrorCode PMatSetFromOptions(PMat pm)
-{
-	PetscBool   flg;
-	PetscScalar pgamma;
-	char        pname[_str_len_];
 
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
-
-	// set matrix type
-	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, _str_len_, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		if(!strcmp(pname, "mono"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
-			pm->type = _MONOLITHIC_;
-		}
-		else if(!strcmp(pname, "block"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
-			pm->type = _BLOCK_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
-		pm->type = _MONOLITHIC_;
-	}
-
-	// set penalty parameter
-	pm->pgamma = 1.0;
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-pcmat_pgamma", &pgamma, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		if(pgamma < 1.0)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Penalty parameter [-pcmat_pgamma] is less than unit");
-		}
-
-		pm->pgamma = pgamma;
-	}
-
-	if(pm->pgamma > 1.0)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", pm->pgamma);
-	}
-
-	// set Schur preconditiner type
-	ierr = PetscOptionsGetString(NULL, NULL, "-pcmat_schur_type", pname, _str_len_, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		if(!strcmp(pname, "wbfbt"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : wbfbt \n");
-
-			pm->stype = _wBFBT_;
-		}
-		else if(!strcmp(pname, "inv_eta"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : inv_eta\n");
-
-			pm->stype = _INV_ETA_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Schur factorization type: %s", pname);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : inv_eta \n");
-
-		pm->stype = _INV_ETA_;
-	}
-
-	if(pm->stype == _wBFBT_ && pm->pgamma != 1.0)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "BFBT preconditioner is incompatible with matrix penalty (pcmat_schur_type, pcmat_pgamma)");
-	}
-
-	if(pm->stype == _wBFBT_ && pm->type != _BLOCK_)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "BFBT preconditioner requires block matrix type (pcmat_schur_type, pcmat_type)");
-	}
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 PetscErrorCode PMatAssemble(PMat pm)
 {
