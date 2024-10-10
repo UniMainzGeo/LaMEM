@@ -93,7 +93,6 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 	// zero out constrained rows, form unit diagonal for the constrained block
 	ierr = MatZeroRows(P, numRows, rows, diag, NULL, NULL); CHKERRQ(ierr);
 
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -160,12 +159,36 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PMatCreate(
-		PMat        *p_pm,
-		JacRes      *jr,
-		PMatType     type,
-		PCSCHURType  stype,
-		PetscScalar  pgamma)
+PetscErrorCode PMatSetFromOptions(PMat pm)
+{
+	char pname[_str_len_];
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// set defaults
+	sprintf(pname, "user");
+	pm->pgamma = 1.0;
+
+	// read options
+	ierr = PetscOptionsGetString(NULL, NULL, "-jp_type",    pname, _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma", &pm->pgamma,       NULL); CHKERRQ(ierr);
+
+	if     (!strcmp(pname, "mg") || !strcmp(pname, "user")) pm->type = _MONOLITHIC_;
+	else if(!strcmp(pname, "bf"))                           pm->type = _BLOCK_;
+	else    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner type (jp_type): %s", pname);
+
+	if(pm->pgamma < 1.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Penalty parameter is less than unit (jp_pgamma)");
+
+	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
+	if     (pm->type == _MONOLITHIC_) PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
+	else if(pm->type == _BLOCK_)      PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
+	if     (pm->pgamma > 1.0)         PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", pm->pgamma);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -183,10 +206,10 @@ PetscErrorCode PMatCreate(
 	ierr = PetscMemzero(pm, sizeof(p_PMat)); CHKERRQ(ierr);
 
 	// set context
-	pm->jr     = jr;
-	pm->type   = type;
-	pm->stype  = stype;
-	pm->pgamma = pgamma;
+	pm->jr = jr;
+
+	// read options
+	ierr = PMatSetFromOptions(pm); CHKERRQ(ierr);
 
 	if(pm->type == _MONOLITHIC_)
 	{
@@ -221,8 +244,6 @@ PetscErrorCode PMatAssemble(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-//	PetscPrintf(PETSC_COMM_WORLD, " Starting preconditioner assembly\n");
-
 	bc = pm->jr->bc;
 
 	// shift constrained node indices to global index space
@@ -232,8 +253,6 @@ PetscErrorCode PMatAssemble(PMat pm)
 
 	// shift constrained node indices back to local index space
 	ierr = BCShiftIndices(bc,  _GLOBAL_TO_LOCAL_); CHKERRQ(ierr);
-
-//	PetscPrintf(PETSC_COMM_WORLD, " Finished preconditioner assembly\n");
 
 	PetscFunctionReturn(0);
 }
@@ -851,6 +870,27 @@ PetscErrorCode PMatMonoDestroy(PMat pm)
 //---------------------------------------------------------------------------
 //...........................   BLOCK MATRIX   ..............................
 //---------------------------------------------------------------------------
+PetscErrorCode PMatBlockSetFromOptions(PMat pm)
+{
+	PMatBlock *P;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	P = (PMatBlock*)pm->data;
+
+	ierr = PetscOptionsHasName(NULL, NULL, "-bf_schur_wbfbt", &P->wbfbt); CHKERRQ(ierr);
+
+	if(P->wbfbt && pm->pgamma != 1.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "wBFBT preconditioner is incompatible with matrix penalty (bf_schur_wbfbt, jp_pgamma)");
+	}
+
+	if(P->wbfbt) PetscPrintf(PETSC_COMM_WORLD, "   Using wBFBT preconditioner    @ \n");
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode PMatBlockCreate(PMat pm)
 {
 	JacRes      *jr;
@@ -876,6 +916,9 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	// store context
 	pm->data = (void*)P;
+
+	// read options
+	ierr = PMatBlockSetFromOptions(pm); CHKERRQ(ierr);
 
 	// compute global indexing
 	ierr = DOFIndexCompute(dof, IDXUNCOUPLED); CHKERRQ(ierr);

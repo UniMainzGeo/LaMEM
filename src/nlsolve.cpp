@@ -34,6 +34,7 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 
 
 
+	PetscBool    ksp_mat_free;
 
 
 
@@ -53,7 +54,7 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 
 
 	// create Stokes preconditioner, matrix and nonlinear solver
-	ierr = PCStokesCreate(&pc);     CHKERRQ(ierr);
+	ierr = PCStokesCreate(&pc, jr);     CHKERRQ(ierr);
 
 
 
@@ -116,6 +117,13 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic,&flg); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt, &flg); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, &flg); CHKERRQ(ierr);
+
+
+//
+
+	ierr = PetscOptionsHasName(NULL, NULL, "-js_mat_free ", &ksp_mat_free); CHKERRQ(ierr);
+
+
 
 	// return solver
 	(*p_snes) = snes;

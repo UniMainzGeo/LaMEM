@@ -38,11 +38,8 @@ OPTIONS & PREFIXES
       
      Option prefix for user-defined velocity solver is -vs
 
-     -bf_schur_type [inv_eta, wbfbt] - pressure Schur preconditioner type
-         
-         inv_eta - inverse viscosity
-         wbfbt   - weighted BFBT
-               
+     -bf_schur_wbfbt - weighted BFBT pressure Schur preconditioner (default unset)
+                   
      Option prefix for wbfbt pressure block solver is -ks
 
  * Galerkin geometric multigrid option (both coupled and velocity) is -gmg_

@@ -36,17 +36,6 @@ enum PMatType
 {
 	_MONOLITHIC_,
 	_BLOCK_
-
-};
-
-//---------------------------------------------------------------------------
-
-// Schur preconditioner type
-enum PCSCHURType
-{
-	_wBFBT_,   // scaled BFBT
-	_INV_ETA_, // inverse viscosity
-
 };
 
 //---------------------------------------------------------------------------
@@ -58,7 +47,6 @@ struct p_PMat
 	JacRes     *jr;     // assembly context
 	void       *data;   // type-specific context
 	PMatType    type;   // matrix type
-	PCSCHURType stype;  // Schur preconditiner type
 	PetscScalar pgamma; // penalty parameter
 
 	// operations
@@ -73,12 +61,9 @@ struct p_PMat
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PMatCreate(
-		PMat        *p_pm,
-		JacRes      *jr,
-		PMatType     type,
-		PCSCHURType  stype,
-		PetscScalar  pgamma);
+PetscErrorCode PMatSetFromOptions(PMat pm);
+
+PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr);
 
 PetscErrorCode PMatAssemble(PMat pm);
 
@@ -119,13 +104,16 @@ struct PMatBlock
 	Vec wv, wp;   // work vectors
 
 	// wBFBT data
-	DM  DA_P; // cell-based grid
-	Mat K;    // Schur complement preconditioner matrix
-	Mat C;    // diagonal viscosity weighting matrix
-	Vec w;    // working vectors in velocity space
+	PetscBool wbfbt; // wbfbt preconditioner flag
+	DM        DA_P;  // cell-based grid
+	Mat       K;     // Schur complement preconditioner matrix
+	Mat       C;     // diagonal viscosity weighting matrix
+	Vec       w;     // working vector in velocity space
 };
 
 //---------------------------------------------------------------------------
+
+PetscErrorCode PMatBlockSetFromOptions(PMat pm);
 
 PetscErrorCode PMatBlockCreate(PMat pm);
 
