@@ -20,170 +20,41 @@
 //---------------------------------------------------------------------------
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 {
-	PetscBool found;
-	char      pname[_str_len_];
+	char pname[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = PetscOptionsGetString(NULL, NULL,"-jp_type", pname, _str_len_, &found); CHKERRQ(ierr);
+	// set defaults
+	sprintf(pname, "user");
 
-	if(found == PETSC_TRUE)
+	// read options
+	ierr = PetscOptionsGetString(NULL, NULL, "-jp_type", pname, _str_len_, NULL); CHKERRQ(ierr);
+
+	if     (!strcmp(pname, "mg"))   pc->type = _STOKES_MG_;
+	else if(!strcmp(pname, "bf"))   pc->type = _STOKES_BF_;
+	else if(!strcmp(pname, "user")) pc->type = _STOKES_USER_;
+	else    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner type (jp_type): %s", pname);
+
+	if(pc->type == _STOKES_MG_ && pc->pm->pgamma != 1.0)
 	{
-		if(!strcmp(pname, "bf"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : block factorization\n");
-			pc->type = _STOKES_BF_;
-		}
-		else if(!strcmp(pname, "mg"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : coupled Galerkin geometric multigrid\n");
-			pc->type = _STOKES_MG_;
-		}
-		else if(!strcmp(pname, "user"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
-			pc->type = _STOKES_USER_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Jacobian preconditioner type: %s", pname);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Geometric multigrid is incompatible with matrix penalty (jp_type, jp_pgamma)");
 	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
-		pc->type = _STOKES_USER_;
-	}
+
+	if     (pc->type == _STOKES_MG_)   PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : coupled Galerkin geometric multigrid\n");
+	else if(pc->type == _STOKES_BF_)   PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : block factorization\n");
+	else if(pc->type == _STOKES_USER_) PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
 
 	PetscFunctionReturn(0);
 }
-
-
-/*
-
 //---------------------------------------------------------------------------
-PetscErrorCode PMatSetFromOptions(PMat pm)
+PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr)
 {
-	PetscBool   flg;
-	PetscScalar pgamma;
-	char        pname[_str_len_];
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
-
-	// set matrix type
-	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, _str_len_, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		if(!strcmp(pname, "mono"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
-			pm->type = _MONOLITHIC_;
-		}
-		else if(!strcmp(pname, "block"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
-			pm->type = _BLOCK_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
-		pm->type = _MONOLITHIC_;
-	}
-
-	// set penalty parameter
-	pm->pgamma = 1.0;
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-pcmat_pgamma", &pgamma, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		if(pgamma < 1.0)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Penalty parameter [-pcmat_pgamma] is less than unit");
-		}
-
-		pm->pgamma = pgamma;
-	}
-
-	if(pm->pgamma > 1.0)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", pm->pgamma);
-	}
-
-	// set Schur preconditiner type
-	ierr = PetscOptionsGetString(NULL, NULL, "-pcmat_schur_type", pname, _str_len_, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		if(!strcmp(pname, "wbfbt"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : wbfbt \n");
-
-			pm->stype = _wBFBT_;
-		}
-		else if(!strcmp(pname, "inv_eta"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : inv_eta\n");
-
-			pm->stype = _INV_ETA_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Schur factorization type: %s", pname);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner type     : inv_eta \n");
-
-		pm->stype = _INV_ETA_;
-	}
-
-	if(pm->stype == _wBFBT_ && pm->pgamma != 1.0)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "BFBT preconditioner is incompatible with matrix penalty (pcmat_schur_type, pcmat_pgamma)");
-	}
-
-	if(pm->stype == _wBFBT_ && pm->type != _BLOCK_)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "BFBT preconditioner requires block matrix type (pcmat_schur_type, pcmat_type)");
-	}
-
-	PetscFunctionReturn(0);
-}
-
-*/
-
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesCreate(PCStokes *p_pc)
-{
-
-/*
-
-	PMat pm
-
-
-	// create Stokes preconditioner, matrix and nonlinear solver
-	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
-	ierr = PCStokesCreate(&pc, pm);     CHKERRQ(ierr);
-
-
-	// destroy objects
-	ierr = PCStokesDestroy(pc);    			CHKERRQ(ierr);
-	ierr = PMatDestroy    (pm);    			CHKERRQ(ierr);
-
-
-
-
-
-
 	//========================================================================
 	// create Stokes preconditioner context
 	//========================================================================
 
 	PCStokes pc;
-	PMatType pm_type;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -193,6 +64,9 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc)
 
 	// clear object
 	ierr = PetscMemzero(pc, sizeof(p_PCStokes)); CHKERRQ(ierr);
+
+	// create matrix
+	ierr = PMatCreate(&pc->pm, jr);
 
 	// read options
 	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
@@ -204,7 +78,6 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc)
 		pc->Setup   = PCStokesBFSetup;
 		pc->Destroy = PCStokesBFDestroy;
 		pc->Apply   = PCStokesBFApply;
-		pm_type     = _BLOCK_;
 	}
 	else if(pc->type == _STOKES_MG_)
 	{
@@ -213,7 +86,6 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc)
 		pc->Setup   = PCStokesMGSetup;
 		pc->Destroy = PCStokesMGDestroy;
 		pc->Apply   = PCStokesMGApply;
-		pm_type     = _MONOLITHIC_;
 	}
 	else if(pc->type == _STOKES_USER_)
 	{
@@ -222,22 +94,13 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc)
 		pc->Setup   = PCStokesUserSetup;
 		pc->Destroy = PCStokesUserDestroy;
 		pc->Apply   = PCStokesUserApply;
-		pm_type     = _MONOLITHIC_;
 	}
-
-	// check matrix type
-	if(pm->type != pm_type) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner matrix type used");
-
-	// set matrix
-	pc->pm = pm;
 
 	// create preconditioner
 	ierr = pc->Create(pc); CHKERRQ(ierr);
 
 	// return preconditioner
 	(*p_pc) = pc;
-
-*/
 
 	PetscFunctionReturn(0);
 }
@@ -257,8 +120,9 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = pc->Destroy(pc); CHKERRQ(ierr);
-	ierr = PetscFree(pc);   CHKERRQ(ierr);
+	ierr = PMatDestroy(pc->pm); CHKERRQ(ierr);
+	ierr = pc->Destroy(pc);     CHKERRQ(ierr);
+	ierr = PetscFree(pc);       CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -306,7 +170,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	}
 
 	// create & set pressure Schur complement solver
-	if(pc->pm->stype == _wBFBT_)
+	if(bf->wbfbt)
 	{
 		// access block matrix
 		P = (PMatBlock*)pc->pm->data;
@@ -325,9 +189,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 {
 	PCStokesBF *bf;
-
-	PetscBool   flg;
-	char        pname[_str_len_];
+	char        bf_type[_str_len_], vs_type[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -335,57 +197,32 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	// access context
 	bf = (PCStokesBF*)pc->data;
 
-	// set factorization type
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_type", pname, _str_len_, &flg); CHKERRQ(ierr);
+	// set defaults
+	sprintf(bf_type, "upper");
+	sprintf(vs_type, "user");
 
-	if(flg == PETSC_TRUE)
+	// read options
+	ierr = PetscOptionsGetString(NULL, NULL,"-bf_type",    bf_type, _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-bf_vs_type", vs_type, _str_len_, NULL); CHKERRQ(ierr);
+
+	if     (!strcmp(bf_type, "upper")) bf->ftype = _UPPER_;
+	else if(!strcmp(bf_type, "lower")) bf->ftype = _LOWER_;
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect block factorization type (bf_type): %s", bf_type);
+
+	if     (!strcmp(vs_type, "mg"))   bf->vtype = _VEL_MG_;
+	else if(!strcmp(vs_type, "user")) bf->vtype = _VEL_USER_;
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type (bf_vs_type): %s", vs_type);
+
+	if(bf->vtype == _VEL_MG_ && pc->pm->pgamma != 1.0)
 	{
-		if(!strcmp(pname, "upper"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
-
-			bf->ftype = _UPPER_;
-		}
-		else if(!strcmp(pname, "lower"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : lower \n");
-
-			bf->ftype = _LOWER_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect block factorization type: %s", pname);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
-
-		bf->ftype = _UPPER_;
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Geometric multigrid is incompatible with matrix penalty (bf_vs_type, jp_pgamma)");
 	}
 
-	// set velocity solver type
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_vs_type", pname, _str_len_, &flg); CHKERRQ(ierr);
+	if     (bf->ftype == _UPPER_)    PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
+	else if(bf->ftype == _LOWER_)    PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : lower \n");
 
-	if(flg == PETSC_TRUE)
-	{
-		if(!strcmp(pname, "mg"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : Galerkin geometric multigrid\n");
-
-			bf->vtype = _VEL_MG_;
-		}
-		else if(!strcmp(pname, "user"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
-
-			bf->vtype = _VEL_USER_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type: %s", pname);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
-
-		bf->vtype = _VEL_USER_;
-	}
+	if     (bf->vtype == _VEL_MG_)   PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : Galerkin geometric multigrid\n");
+	else if(bf->vtype == _VEL_USER_) PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
 
 	PetscFunctionReturn(0);
 }
@@ -407,7 +244,7 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 		ierr = MGDestroy(&bf->vmg); CHKERRQ(ierr);
 	}
 
-	if(pc->pm->stype == _wBFBT_)
+	if(bf->wbfbt)
 	{
 		ierr = KSPDestroy(&bf->pksp);  CHKERRQ(ierr);
 	}
@@ -438,7 +275,7 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 
 	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
 
-	if(pc->pm->stype == _wBFBT_)
+	if(bf->wbfbt)
 	{
 		ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
 		ierr = KSPSetUp(bf->pksp);                    CHKERRQ(ierr);
@@ -476,11 +313,11 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		//=======================
 
 		// Schur complement applies negative sign internally (no negative sign here)
-		if(pc->pm->stype == _wBFBT_)
+		if(bf->wbfbt)
 		{
 			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
-		else if(pc->pm->stype == _INV_ETA_)
+		else
 		{
 			ierr = MatMult(P->iS, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
@@ -504,11 +341,11 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		ierr = VecAXPY(P->rp, -1.0, P->wp);      CHKERRQ(ierr); // rp = rp - wp
 
 		// Schur complement applies negative sign internally (no negative sign here)
-		if(pc->pm->stype == _wBFBT_)
+		if(bf->wbfbt)
 		{
 			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
-		else if(pc->pm->stype == _INV_ETA_)
+		else
 		{
 			ierr = MatMult(P->iS, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}

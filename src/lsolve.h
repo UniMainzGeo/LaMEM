@@ -25,7 +25,7 @@ enum PCStokesType
 
 //---------------------------------------------------------------------------
 
-// Block factorization type
+// block factorization type
 enum PCBFType
 {
 	_UPPER_,  // upper triangular factorization
@@ -48,7 +48,7 @@ typedef struct _p_PCStokes *PCStokes;
 
 typedef struct _p_PCStokes
 {
-	PCStokesType  type;
+	PCStokesType  type; // preconditioner type
 	PMat          pm;   // preconditioner matrix
 	void         *data; // type-specific context
 
@@ -65,7 +65,7 @@ typedef struct _p_PCStokes
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PCStokesCreate(PCStokes *p_pc);
+PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr);
 
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc);
 
@@ -80,6 +80,7 @@ struct PCStokesBF
 {
 	PCBFType    ftype; // factorization type
 	PCVelType   vtype; // velocity solver type
+	PetscBool   wbfbt; // wBFBT preconditioner flag
 	KSP         vksp;  // velocity solver
 	MG          vmg;   // velocity multigrid context
 	KSP 	    pksp;  // pressure solver
@@ -122,7 +123,6 @@ struct PCStokesUser
 {
 	PC pc;       // general preconditioner object
 	IS isv, isp; // velocity and pressure index sets
-
 };
 
 //---------------------------------------------------------------------------
