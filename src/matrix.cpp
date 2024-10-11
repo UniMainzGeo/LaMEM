@@ -872,16 +872,18 @@ PetscErrorCode PMatMonoDestroy(PMat pm)
 //---------------------------------------------------------------------------
 PetscErrorCode PMatBlockSetFromOptions(PMat pm)
 {
-	PMatBlock *P;
+	PMatBlock   *P;
+	PetscScalar  pgamma;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	P = (PMatBlock*)pm->data;
 
-	ierr = PetscOptionsHasName(NULL, NULL, "-bf_schur_wbfbt", &P->wbfbt); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-bf_schur_wbfbt", &P->wbfbt);     CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",      &pgamma, NULL); CHKERRQ(ierr);
 
-	if(P->wbfbt && pm->pgamma != 1.0)
+	if(P->wbfbt && pgamma != 1.0)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "wBFBT preconditioner is incompatible with matrix penalty (bf_schur_wbfbt, jp_pgamma)");
 	}
@@ -1162,7 +1164,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	//
 	//    S = - 1/(K*dt) - 1/(pgamma*eta)
 	//
-	// clean velocity block is also assembled
+	// Cvv matrix always contains a clean velocity block
 	//======================================================================
 
 	JacRes      *jr;

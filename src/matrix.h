@@ -97,7 +97,7 @@ struct PMatBlock
 	Mat Avv, Avp;  // velocity sub-matrices
 	Mat Apv, App;  // pressure sub-matrices
 	Mat iS;        // inverse of pressure Schur complement preconditioner
-	Mat Cvv;       // clean velocity submatix
+	Mat Cvv;       // clean velocity sub-matix
 
 	Vec rv, rp;   // residual blocks
 	Vec xv, xp;   // solution blocks

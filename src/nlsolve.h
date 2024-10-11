@@ -31,22 +31,22 @@ enum JacType
 
 struct NLSol
 {
-	JacRes   *jr;     // assembly context
-	Mat       J;      // Jacobian matrix
-	Mat       P;      // preconditioner
+	Mat       J;      // matrix-free Jacobian operator
+	Mat       P;      // matrix-free preconditioner operator
 	Mat       MFFD;   // matrix-free finite difference Jacobian
+	PMat      pm;     // preconditioner matrix
 	PCStokes  pc;     // Stokes preconditioner
 
-	JacType     jtype;    // actual type of Jacobian operator
-	PetscInt    it;       // iteration counter
-	PetscInt    it_Nwt;   // newton iteration counter
-	PetscScalar refRes;   // reference residual norm
-	PetscInt    nPicIt;   // number of Picard iteraions before switch to Newton
-	PetscScalar rtolPic;  // relative Picard residual reduction tolerance
-	PetscInt    nNwtIt;   // number of Newton iterations before switch to Picard
-	PetscScalar rtolNwt;  // Newton divergence tolerance
+	JacType     jtype;        // actual type of Jacobian operator
+	PetscInt    it;           // iteration counter
+	PetscInt    it_Nwt;       // newton iteration counter
+	PetscScalar refRes;       // reference residual norm
+	PetscInt    nPicIt;       // number of Picard iteraions before switch to Newton
+	PetscScalar rtolPic;      // relative Picard residual reduction tolerance
+	PetscInt    nNwtIt;       // number of Newton iterations before switch to Picard
+	PetscScalar rtolNwt;      // Newton divergence tolerance
+	PetscBool   ksp_mat_free; // ksp solve matrix-free flag
 };
-
 //---------------------------------------------------------------------------
 
 PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr);
@@ -67,7 +67,7 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg);
+PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg);
 
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,
@@ -80,7 +80,7 @@ PetscErrorCode SNESCoupledTest(
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes);
+PetscErrorCode DisplaySolverOptions(PCStokes pc, SNES snes);
 
 //---------------------------------------------------------------------------
 
