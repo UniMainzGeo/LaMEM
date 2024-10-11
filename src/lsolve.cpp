@@ -21,22 +21,25 @@
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 {
 	char pname[_str_len_];
+	PetscScalar pgamma;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// set defaults
 	sprintf(pname, "user");
+	pgamma = 1.0;
 
 	// read options
-	ierr = PetscOptionsGetString(NULL, NULL, "-jp_type", pname, _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-jp_type",    pname, _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma", &pgamma,           NULL); CHKERRQ(ierr);
 
 	if     (!strcmp(pname, "mg"))   pc->type = _STOKES_MG_;
 	else if(!strcmp(pname, "bf"))   pc->type = _STOKES_BF_;
 	else if(!strcmp(pname, "user")) pc->type = _STOKES_USER_;
 	else    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner type (jp_type): %s", pname);
 
-	if(pc->type == _STOKES_MG_ && pc->pm->pgamma != 1.0)
+	if(pc->type == _STOKES_MG_ && pgamma != 1.0)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Geometric multigrid is incompatible with matrix penalty (jp_type, jp_pgamma)");
 	}
@@ -48,7 +51,7 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr)
+PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 {
 	//========================================================================
 	// create Stokes preconditioner context
@@ -64,9 +67,6 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr)
 
 	// clear object
 	ierr = PetscMemzero(pc, sizeof(p_PCStokes)); CHKERRQ(ierr);
-
-	// create matrix
-	ierr = PMatCreate(&pc->pm, jr);
 
 	// read options
 	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
@@ -96,6 +96,9 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr)
 		pc->Apply   = PCStokesUserApply;
 	}
 
+	// set matrix
+	pc->pm = pm;
+
 	// create preconditioner
 	ierr = pc->Create(pc); CHKERRQ(ierr);
 
@@ -120,7 +123,6 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = PMatDestroy(pc->pm); CHKERRQ(ierr);
 	ierr = pc->Destroy(pc);     CHKERRQ(ierr);
 	ierr = PetscFree(pc);       CHKERRQ(ierr);
 
@@ -153,6 +155,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 
 	// access context
 	jr = pc->pm->jr;
+	P  = (PMatBlock*)pc->pm->data;
 
 	// create velocity solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->vksp); CHKERRQ(ierr);
@@ -170,11 +173,8 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	}
 
 	// create & set pressure Schur complement solver
-	if(bf->wbfbt)
+	if(P->wbfbt)
 	{
-		// access block matrix
-		P = (PMatBlock*)pc->pm->data;
-
 		// create pressure solver
 		ierr = KSPCreate(PETSC_COMM_WORLD, &bf->pksp); CHKERRQ(ierr);
 		ierr = KSPSetDM(bf->pksp, P->DA_P);            CHKERRQ(ierr);
@@ -189,6 +189,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 {
 	PCStokesBF *bf;
+	PetscScalar pgamma;
 	char        bf_type[_str_len_], vs_type[_str_len_];
 
 	PetscErrorCode ierr;
@@ -200,10 +201,12 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	// set defaults
 	sprintf(bf_type, "upper");
 	sprintf(vs_type, "user");
+	pgamma = 1.0;
 
 	// read options
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_type",    bf_type, _str_len_, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_vs_type", vs_type, _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-bf_type",    bf_type, _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-bf_vs_type", vs_type, _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",  &pgamma,            NULL); CHKERRQ(ierr);
 
 	if     (!strcmp(bf_type, "upper")) bf->ftype = _UPPER_;
 	else if(!strcmp(bf_type, "lower")) bf->ftype = _LOWER_;
@@ -213,7 +216,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	else if(!strcmp(vs_type, "user")) bf->vtype = _VEL_USER_;
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type (bf_vs_type): %s", vs_type);
 
-	if(bf->vtype == _VEL_MG_ && pc->pm->pgamma != 1.0)
+	if(bf->vtype == _VEL_MG_ && pgamma != 1.0)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Geometric multigrid is incompatible with matrix penalty (bf_vs_type, jp_pgamma)");
 	}
@@ -230,12 +233,15 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 {
 	PCStokesBF *bf;
+	PMatBlock  *P;
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
 	bf = (PCStokesBF*)pc->data;
+	P  = (PMatBlock*) pc->pm->data;
 
 	ierr = KSPDestroy(&bf->vksp);  CHKERRQ(ierr);
 
@@ -244,7 +250,7 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 		ierr = MGDestroy(&bf->vmg); CHKERRQ(ierr);
 	}
 
-	if(bf->wbfbt)
+	if(P->wbfbt)
 	{
 		ierr = KSPDestroy(&bf->pksp);  CHKERRQ(ierr);
 	}
@@ -275,7 +281,7 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 
 	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
 
-	if(bf->wbfbt)
+	if(P->wbfbt)
 	{
 		ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
 		ierr = KSPSetUp(bf->pksp);                    CHKERRQ(ierr);
@@ -313,7 +319,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		//=======================
 
 		// Schur complement applies negative sign internally (no negative sign here)
-		if(bf->wbfbt)
+		if(P->wbfbt)
 		{
 			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
@@ -341,7 +347,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		ierr = VecAXPY(P->rp, -1.0, P->wp);      CHKERRQ(ierr); // rp = rp - wp
 
 		// Schur complement applies negative sign internally (no negative sign here)
-		if(bf->wbfbt)
+		if(P->wbfbt)
 		{
 			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}

@@ -23,10 +23,6 @@
 #include "constEq.h"
 #include "surf.h"
 //---------------------------------------------------------------------------
-// * open box & Winkler (with tangential viscous friction)
-// * tangential velocities
-// * extend two-point constraint specification
-//---------------------------------------------------------------------------
 // Bezier block functions
 //---------------------------------------------------------------------------
 PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)

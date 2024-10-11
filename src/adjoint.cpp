@@ -1567,7 +1567,7 @@ PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, ModParam *IOpar
 
 	ierr = SNESGetApplicationContext(snes, &nl); CHKERRQ(ierr);
 
-	jr   = nl->jr;
+	jr   = nl->pm->jr;
 	surf = jr->surf;
 
 	//========================================

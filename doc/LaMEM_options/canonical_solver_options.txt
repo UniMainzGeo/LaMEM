@@ -12,7 +12,7 @@ OPTIONS & PREFIXES
 
 * Jacobian linear solver is controlled with prefix -js_ 
   
-     -js_mat_free - do not use assembled matrices in ksp solve (default unset)
+     -js_mat_free - do not use assembled matrices in ksp solve
     
 * Jacobian preconditioner is controlled with prefix -jp
 
@@ -38,7 +38,7 @@ OPTIONS & PREFIXES
       
      Option prefix for user-defined velocity solver is -vs
 
-     -bf_schur_wbfbt - weighted BFBT pressure Schur preconditioner (default unset)
+     -bf_schur_wbfbt - use weighted BFBT pressure Schur preconditioner
                    
      Option prefix for wbfbt pressure block solver is -ks
 

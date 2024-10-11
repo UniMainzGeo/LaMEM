@@ -65,7 +65,7 @@ typedef struct _p_PCStokes
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr);
+PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm);
 
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc);
 
@@ -80,7 +80,6 @@ struct PCStokesBF
 {
 	PCBFType    ftype; // factorization type
 	PCVelType   vtype; // velocity solver type
-	PetscBool   wbfbt; // wBFBT preconditioner flag
 	KSP         vksp;  // velocity solver
 	MG          vmg;   // velocity multigrid context
 	KSP 	    pksp;  // pressure solver
