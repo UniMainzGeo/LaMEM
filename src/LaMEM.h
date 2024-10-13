@@ -184,12 +184,18 @@ typedef pair <PetscScalar, PetscInt> spair;
 typedef pair <PetscInt,    PetscInt> ipair;
 
 //-----------------------------------------------------------------------------
+// UNUSED PARAMETERS MACRO
+//-----------------------------------------------------------------------------
+
+#define UNUSED(x) (void)(x)
+
+//-----------------------------------------------------------------------------
 // PROTOTYPES
 //-----------------------------------------------------------------------------
 
 // LaMEM library main function
 
-PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4]);
+PetscErrorCode LaMEMLibMain(void *param, PetscLogStage stages[4]);
 
 //-----------------------------------------------------------------------------
 #endif
