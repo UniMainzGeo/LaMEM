@@ -1907,16 +1907,17 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	PetscScalar         grd, Perturb, *Par, CurVal;
 	Vec 				res_pert, sol, psi, psiPar, drdp, res;
 	PC                  ipc_as;
+	Mat                 J, P;
 	Scaling             *scal;
 	PetscBool           flg;
 	char                CurName[_str_len_];
 	BCCtx 				*bc;
 	
-
-	bc = jr->bc;
-
+	bc   = jr->bc;
 	scal = jr->scal;
 	
+	ierr = SNESGetJacobian(snes, &J, &P, NULL, NULL); CHKERRQ(ierr);
+
 	// Create all needed vectors in the same size as the solution vector
 	ierr = VecDuplicate(jr->gsol, &psi);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &psiPar);	 	 CHKERRQ(ierr);
@@ -1934,7 +1935,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	// (A side note that I figured out, ksp still sometimes results in a > 0 gradient even if cost function is zero.. possibly really bad condition number?)
 	if(IOparam->MfitType == 0)
 	{
-
 		ierr = Adjoint_ApplyBCs(aop->dF, bc);			CHKERRQ(ierr);		// apply BC's to dF vector
 
 		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
@@ -1942,7 +1942,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
 		ierr = KSPGetPC(ksp_as, &ipc_as);           	CHKERRQ(ierr);
 		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
-		ierr = KSPSetOperators(ksp_as,nl->J,nl->P);		CHKERRQ(ierr);
+		ierr = KSPSetOperators(ksp_as, J, P);		    CHKERRQ(ierr);
 		ierr = KSPSolve(ksp_as,aop->dF,psi);			CHKERRQ(ierr);
 		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
 	}
@@ -1954,7 +1954,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
 		ierr = KSPGetPC(ksp_as, &ipc_as);            	CHKERRQ(ierr);
 		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
-		ierr = KSPSetOperators(ksp_as,nl->J,nl->P);		CHKERRQ(ierr);
+		ierr = KSPSetOperators(ksp_as, J, P);		    CHKERRQ(ierr);
 		ierr = KSPSolve(ksp_as,aop->dPardu,psiPar);		CHKERRQ(ierr);
 		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
 	}

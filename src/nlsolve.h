@@ -31,8 +31,6 @@ enum JacType
 
 struct NLSol
 {
-	Mat       J;      // matrix-free Jacobian operator
-	Mat       P;      // matrix-free preconditioner operator
 	Mat       MFFD;   // matrix-free finite difference Jacobian
 	PMat      pm;     // preconditioner matrix
 	PCStokes  pc;     // Stokes preconditioner
@@ -53,21 +51,13 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr);
 
 PetscErrorCode NLSolDestroy(SNES *p_snes);
 
-//---------------------------------------------------------------------------
-
 // compute residual vector
 PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx);
 
 // compute Jacobian matrix and preconditioner
 PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx);
 
-//---------------------------------------------------------------------------
-
 PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y);
-
-//---------------------------------------------------------------------------
-
-PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg);
 
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,
@@ -78,10 +68,9 @@ PetscErrorCode SNESCoupledTest(
 	SNESConvergedReason *reason,
 	void                *cctx);
 
-//---------------------------------------------------------------------------
+PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg);
 
 PetscErrorCode DisplaySolverOptions(PCStokes pc, SNES snes);
 
 //---------------------------------------------------------------------------
-
 #endif
