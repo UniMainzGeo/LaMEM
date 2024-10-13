@@ -28,20 +28,19 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	PC              ipc;
 	SNESLineSearch  ls;
 	DOFIndex       *dof;
-	PetscBool       flg;
 	SNESType        type;
 	NLSol          *nl;
 
-    PetscErrorCode ierr;
-    PetscFunctionBeginUser;
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
 
-    // allocate nonlinear solver context
+	// allocate nonlinear solver context
 	ierr = PetscMalloc(sizeof(NLSol), &nl); CHKERRQ(ierr);
 
 	// clear object
 	ierr = PetscMemzero(nl, sizeof(NLSol)); CHKERRQ(ierr);
 
- 	// access context
+	// access context
 	dof = &(jr->fs->dof);
 
 	// create matrix-free Jacobian operator
@@ -67,12 +66,12 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 
 	// setup nonlinear solver
 	ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                      CHKERRQ(ierr);
+	ierr = SNESSetApplicationContext(snes, (void*)nl);               CHKERRQ(ierr);
 	ierr = SNESSetType(snes, SNESNEWTONLS);                          CHKERRQ(ierr);
 	ierr = SNESGetLineSearch(snes, &ls);                             CHKERRQ(ierr);
 	ierr = SNESLineSearchSetType(ls, SNESLINESEARCHBASIC);           CHKERRQ(ierr);
 	ierr = SNESSetFunction(snes, jr->gres,     &FormResidual, NULL); CHKERRQ(ierr);
 	ierr = SNESSetJacobian(snes, nl->J, nl->P, &FormJacobian, NULL); CHKERRQ(ierr);
-	ierr = SNESSetApplicationContext(snes, (void*)nl);               CHKERRQ(ierr);
 	ierr = SNESSetConvergenceTest(snes, &SNESCoupledTest, nl, NULL); CHKERRQ(ierr);
 	ierr = SNESSetFromOptions(snes);                                 CHKERRQ(ierr);
 
@@ -83,23 +82,6 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	ierr = KSPGetPC(ksp, &ipc);            CHKERRQ(ierr);
 	ierr = PCSetType(ipc, PCMAT);          CHKERRQ(ierr);
 
-
-
-/*
-	JacType     jtype;        // actual type of Jacobian operator
-	PetscInt    it;           // iteration counter
-	PetscInt    it_Nwt;       // newton iteration counter
-	PetscScalar refRes;       // reference residual norm
-	PetscInt    nPicIt;       // number of Picard iteraions before switch to Newton
-	PetscScalar rtolPic;      // relative Picard residual reduction tolerance
-	PetscInt    nNwtIt;       // number of Newton iterations before switch to Picard
-	PetscScalar rtolNwt;      // Newton divergence tolerance
-	PetscBool   ksp_mat_free; // ksp solve matrix-free flag
-*/
-
-
-
-
 	// initialize Jacobian controls
 	nl->jtype   = _PICARD_;
 	nl->nPicIt  = 5;
@@ -108,17 +90,11 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	nl->rtolNwt = 1.1;
 
 	// override from command line
-	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_Picard_max_it",             &nl->nPicIt, &flg); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic,&flg); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt, &flg); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, &flg); CHKERRQ(ierr);
-
-
-
-
-//	ierr = PetscOptionsHasName(NULL, NULL, "-js_mat_free ", &ksp_mat_free); CHKERRQ(ierr);
-
-
+	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_Picard_max_it",             &nl->nPicIt,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free ",                   &nl->ksp_mat_free);  CHKERRQ(ierr);
 
 	// return solver
 	(*p_snes) = snes;
@@ -145,11 +121,11 @@ PetscErrorCode NLSolDestroy(SNES *p_snes)
 	NLSol *nl;
 
 	PetscErrorCode ierr;
- 	PetscFunctionBeginUser;
+	PetscFunctionBeginUser;
 
 	ierr = SNESGetApplicationContext((*p_snes), &nl); CHKERRQ(ierr);
 
- 	ierr = MatDestroy(&nl->J);      CHKERRQ(ierr);
+	ierr = MatDestroy(&nl->J);      CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->P);      CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->MFFD);   CHKERRQ(ierr);
 	ierr = PMatDestroy(nl->pm);     CHKERRQ(ierr);
@@ -198,6 +174,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// USE Amat and Pmat !!!
 
 
+
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
@@ -208,7 +185,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	jr   =  pm->jr;
 	ctrl = &jr->ctrl;
 
-    //========================
+	//========================
 	// Jacobian type selection
 	//========================
 
@@ -216,17 +193,17 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = SNESGetIterationNumber(snes, &it);     CHKERRQ(ierr);
 	ierr = SNESGetFunction(snes, &r, NULL, NULL); CHKERRQ(ierr);
 	ierr = VecNorm(r, NORM_2, &nrm);              CHKERRQ(ierr);
-    
+
 	if(!nrm) nrm = 1.0;
 
-    // initialize
+	// initialize
 	if(!it)
 	{
 		nl->it     = 0;
 		nl->refRes = nrm;
 		nl->jtype  = _PICARD_;
 		nl->it_Nwt = 0;
-  	}
+	}
 	else if(nl->jtype == _PICARD_)
 	{
 		// Picard case, check to switch to Newton
@@ -273,9 +250,9 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// count iterations
 	nl->it++;
 
-	//====================
+	//=====================
 	// setup preconditioner
-	//====================
+	//=====================
 	ierr = PMatAssemble(pm);                                                  CHKERRQ(ierr);
 	ierr = PCStokesSetup(pc);                                                 CHKERRQ(ierr);
 	ierr = MatShellSetOperation(nl->P, MATOP_MULT, (void(*)(void))pc->Apply); CHKERRQ(ierr);
@@ -461,11 +438,8 @@ PetscErrorCode SNESCoupledTest(
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-
-
 	// clear unused parameters
 	if(cctx) cctx = NULL;
-
 
 	// access context
 	nl = (NLSol*)cctx;
@@ -495,150 +469,173 @@ PetscErrorCode SNESCoupledTest(
 //---------------------------------------------------------------------------
 PetscErrorCode DisplaySolverOptions(PCStokes pc, SNES snes)
 {
-	PetscErrorCode 	ierr;
-	KSP 			ksp_coarse, ksp_levels, ksp;
-	PC 				pc_coarse, pc_levels;
-	char      		pname[_str_len_];
-	PCStokesMG 		*mg;
-	FDSTAG          *fs;
-	PCType 			pc_type;
-	KSPType 	    ksp_type;
-	PCStokesUser 	*user;
-	PetscScalar 	scalar;
-	PetscInt 		integer, refine_y;
-	PetscBool		found;
-	MatSolverType   solver_type;
+	KSP            ksp_coarse, ksp_levels, ksp;
+	PC             pc_coarse, pc_levels;
+	char           pname[_str_len_];
+	PCStokesMG    *mg;
+	PCStokesUser  *user;
+	FDSTAG        *fs;
+	PCType         pc_type;
+	KSPType        ksp_type;
+	PetscScalar    scalar;
+	PetscInt       integer, refine_y;
+	PetscBool      found;
+	MatSolverType  solver_type;
 
- 	PetscFunctionBeginUser;
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
 
-	/* 	This routine prints the solver options that are specified on the command-line or in the PetscOptions of the LaMEM input script
-	 	More complete options can be displayed with the command-line options
-		-js_ksp_view
-		and -in case of multigrid-
-		-gmg_pc_view
-		This however clutters the output a bit
-	*/
-
-
+	// This routine prints the solver options that are specified on the command-line or in the PetscOptions of the LaMEM input file
+	// More complete options can be displayed with the command-line options:
+	//    -js_ksp_view
+	// In case that multigrid solver is activated:
+	//    -gmg_pc_view
+	// WARNING! This function is incomplete and requires extensive changes every time solver configuration is modified
+	// The output cannot possibly cover all solver settings in user mode, and it is a repetition of standard option output
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
-
-	// Report (linear and  nonlinear) solver options currently used
-	// get solver context
-	user = (PCStokesUser*)pc->data;
+	// report (linear and  nonlinear) solver options currently used
 
 	PetscPrintf(PETSC_COMM_WORLD, "Solver parameters specified: \n");
-	ierr = SNESGetKSP(snes, &ksp);         CHKERRQ(ierr);
+	ierr = SNESGetKSP(snes, &ksp); CHKERRQ(ierr);
 	KSPGetType(ksp, &ksp_type);
 	PetscPrintf(PETSC_COMM_WORLD, "   Outermost Krylov solver       : %s \n", ksp_type);
-	if (pc->type == _STOKES_MG_){
+	if(pc->type == _STOKES_MG_)
+	{
+		mg   = (PCStokesMG*)pc->data; // retrieve MG object
+		ierr = PCMGGetSmoother(mg->mg.pc, 1, &ksp_levels); CHKERRQ(ierr);
+		ierr = KSPGetPC(ksp_levels, &pc_levels);           CHKERRQ(ierr);
 
-		mg 		= 	(PCStokesMG*)pc->data; // retrieve MG object
-		ierr 	= 	PCMGGetSmoother(mg->mg.pc, 1, &ksp_levels); 	CHKERRQ(ierr);
-		ierr 	= 	KSPGetPC(ksp_levels, &pc_levels);        	CHKERRQ(ierr);
-
-		// Multigrid solver
+		// multigrid solver
 		PetscPrintf(PETSC_COMM_WORLD, "   Solver type                   : multigrid \n");
 
-		/* Do we have a 2D setup & only refine in x/z direction? */
-		fs  = pc->pm->jr->fs;
+		// do we have a 2D setup & only refine in x/z direction?
+		fs   = pc->pm->jr->fs;
 		ierr = DMDAGetRefinementFactor(fs->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
-		if (refine_y==1){
+		if(refine_y == 1)
+		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid refinement in x/z \n");
 		}
 
-		/* Multigrid parameters for the smootheners at the various levels */
+		// Multigrid parameters for the smoother at the various levels
 		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_ksp_type", pname, _str_len_, &found); CHKERRQ(ierr);
-		if (found){
+		if(found)
+		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels KSP : %s \n", pname);
 		}
-		else{ // default
+		else
+		{
+			// default
 			ierr = KSPGetType(ksp_levels, &ksp_type); CHKERRQ(ierr);
 			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels KSP : %s \n", ksp_type);
 		}
 
 		// depending on the smoother, there may be more options
-		if (!strcmp(pname, "richardson")){
+		if(!strcmp(pname, "richardson"))
+		{
 			// Options that go with the Richardson solver
 			ierr = PetscOptionsGetScalar(NULL, NULL,"-gmg_mg_levels_ksp_richardson_scale", &scalar, &found); CHKERRQ(ierr);
-			if (found){PetscPrintf(PETSC_COMM_WORLD, "   Multigrid dampening parameter : %f \n", scalar); }
+			if(found)
+			{
+				PetscPrintf(PETSC_COMM_WORLD, "   Multigrid dampening parameter : %f \n", scalar);
+			}
 		}
 
 		// preconditioner
 		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_pc_type", pname, _str_len_, &found); CHKERRQ(ierr);
-		if (found){
+		if(found)
+		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels PC  : %s \n", pname);
 		}
-		else{
+		else
+		{
 			ierr = PCGetType(pc_levels, &pc_type); CHKERRQ(ierr);
 			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels PC  : %s \n", pc_type);
 		}
 
 		ierr = PetscOptionsGetInt(NULL, NULL,"-gmg_mg_levels_ksp_max_it", &integer, &found); CHKERRQ(ierr);
-		if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of smoothening steps   : %lld \n", (LLD) integer); }
-		/* ----- */
+		if(found)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "   Number of smoothening steps   : %lld \n", (LLD) integer);
+		}
 
-		/* Coarse grid parameters */
+		// Coarse grid parameters
 
-		// Extract PETSc default parameters
+		// extract PETSc default parameters
 		ierr = PCMGGetCoarseSolve(mg->mg.pc, &ksp_coarse); CHKERRQ(ierr);
-		ierr = KSPGetPC(ksp_coarse, &pc_coarse);               CHKERRQ(ierr);
-
+		ierr = KSPGetPC(ksp_coarse, &pc_coarse);           CHKERRQ(ierr);
 		ierr = PetscOptionsGetString(NULL, NULL,"-crs_ksp_type", pname, _str_len_, &found); CHKERRQ(ierr);
-		if (found){
+		if(found)
+		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level KSP              : %s \n", pname);
 		}
-		else{ // default
+		else
+		{
+			// default
 			ierr = KSPGetType(ksp_coarse, &ksp_type); CHKERRQ(ierr);
 			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level KSP              : %s \n", ksp_type);
 		}
 
 		ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_type", pname, _str_len_, &found); CHKERRQ(ierr);
-		if (found){
+		if(found)
+		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level PC               : %s \n", pname);
 		}
-		else{ // default
+		else
+		{	// default
 			ierr = PCGetType(pc_coarse, &pc_type); CHKERRQ(ierr);
 			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level PC               : %s \n", pc_type);
 		}
 
-		if (!strcmp(pname, PCLU)){
+		if(!strcmp(pname, PCLU))
+		{
 			// direct solver @ coarse level
 			ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_factor_mat_solver_type", pname, _str_len_, &found); CHKERRQ(ierr);
-			if (found){
+			if(found)
+			{
 				PetscPrintf(PETSC_COMM_WORLD, "   Coarse level solver package   : %s \n", pname);
 			}
-			else{ // default
+			else
+			{	// default
 				ierr = PCFactorGetMatSolverType(pc_coarse, &solver_type); CHKERRQ(ierr);
 				PetscPrintf(PETSC_COMM_WORLD, "   Coarse level solver package   : %s \n", solver_type);
 			}
 		}
-		else if (!strcmp(pname, PCREDUNDANT))
+		else if(!strcmp(pname, PCREDUNDANT))
 		{
 			//redundant solver @ coarse level
 			ierr = PetscOptionsGetInt(NULL, NULL,"-crs_pc_redundant_number", &integer, &found); CHKERRQ(ierr);
-			if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of redundant solvers   : %lld \n", (LLD) integer); }
+			if(found)
+			{
+				PetscPrintf(PETSC_COMM_WORLD, "   Number of redundant solvers   : %lld \n", (LLD) integer);
+			}
 			ierr = PetscOptionsGetString(NULL, NULL,"-crs_redundant_pc_factor_mat_solver_type", pname, _str_len_, &found); CHKERRQ(ierr);
-			if (found){
+			if(found)
+			{
 				PetscPrintf(PETSC_COMM_WORLD, "   Redundant solver package      : %s \n", pname);
 			}
 
 		}
 		// we can add more options here if interested [e.g. for telescope]
-		/* ----- */
-
 	}
-	else if (pc->type == _STOKES_USER_){
+	else if(pc->type == _STOKES_USER_)
+	{
+		// get solver context
+		user = (PCStokesUser*)pc->data;
 
-		// Direct solver
+		// direct solver
 		ierr = PetscOptionsGetString(NULL, NULL,"-jp_pc_type", pname, _str_len_, &found); CHKERRQ(ierr);
-		if (found){
-			if(!strcmp(pname, "lu")){
-				if (ISParallel(PETSC_COMM_WORLD)){
+		if(found)
+		{
+			if(!strcmp(pname, "lu"))
+			{
+				if(ISParallel(PETSC_COMM_WORLD))
+				{
 					PetscPrintf(PETSC_COMM_WORLD, "   Solver type                   : parallel direct/lu \n");
 				}
-				else{
+				else
+				{
 					PetscPrintf(PETSC_COMM_WORLD, "   Solver type                   : serial direct/lu \n");
 				}
 			}
@@ -655,12 +652,9 @@ PetscErrorCode DisplaySolverOptions(PCStokes pc, SNES snes)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Solver package                : %s \n", solver_type);
 		}
-
 	}
 
-
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
-
 
 	PetscFunctionReturn(0);
 }
