@@ -21,7 +21,9 @@ struct FreeSurf;
 struct BCCtx;
 struct DBMat;
 struct DBPropDike;
+struct DBPropHeatZone;
 struct Dike;
+struct HeatZone;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
@@ -164,10 +166,14 @@ struct Controls
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
+	PetscInt	var_M;          // Flag to activate M controlled by bulk viscosity and stress-field (This is globally on now. Could be interesting to have it be dike dependent *djking)
+	PetscInt	sol_track;      // Flag to activate solidus tracking (Currently piggy-backs on diking code and dike default values. Needs to be separated *djking)
 
-  PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
-
-  PetscInt  dikeHeat;   // activation flag for using Behn & Ito heat source in dike
+	PetscInt	actHeatZone;    // Flag to activate user defined heat zones	
+  	PetscInt    useTk;			// activation flag for using temperature-dependent conductivity
+  	PetscInt    useTDk;			// activation flag for using temperature and depth-dependent conductivity
+  	PetscInt    useDk;			// activation flag for using depth-dependent conductivity
+  	PetscInt 	dikeHeat;		// activation flag for using Behn & Ito heat source in dike
 };
 
 //---------------------------------------------------------------------------
@@ -183,6 +189,7 @@ struct JacRes
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
     DBPropDike *dbdike; // dike database
+	DBPropHeatZone *dbheatzone; // heatzone database
 	DBMat    *dbm;   // material database
   
 	// parameters and controls
@@ -224,6 +231,7 @@ struct JacRes
 
 	// continuity residual
 	Vec gc; // global
+	Vec dc; // dike contribution to residual (source term RHS)
 
 	// corner buffer
 	Vec lbcor; // local (ghosted)
@@ -252,6 +260,7 @@ struct JacRes
 	Mat Att;  // temperature preconditioner matrix
 	Vec dT;   // temperature increment (global)
 	Vec ge;   // energy residual (global)
+	Vec hs;   // source heat added via rho_A (global)
 	KSP tksp; // temperature diffusion solver
 
 	//==========================
@@ -326,6 +335,9 @@ PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f);
 // copy continuity residuals from global to local vectors for output
 PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
 
+// copy dikeRHS continuity from global to local vectors for output // *djking
+PetscErrorCode JacResCopyDikeRHS(JacRes *jr, Vec f);
+
 PetscErrorCode JacResViewRes(JacRes *jr);
 
 //---------------------------------------------------------------------------
@@ -361,8 +373,11 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *rho_Cp_, // volumetric heat capacity
 	PetscScalar *rho_A_,  // volumetric radiogenic heat   
 	PetscScalar Tc,       // temperature of cell
-    PetscScalar y_c,
-    PetscInt J);     // coordinate of cell
+    PetscScalar y_c,      // center of cell in y-direction
+    PetscScalar x_c,      // center of cell in x-direction
+    PetscScalar z_c,      // center of cell in z-direction
+    PetscInt J,           // coordinate of cell
+    PetscScalar sxx_eff_ave_cell); // lithospheric effective average sxx
 
 // check whether thermal material parameters are properly defined
 PetscErrorCode JacResCheckTempParam(JacRes *jr);

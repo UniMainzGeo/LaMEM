@@ -32,6 +32,7 @@ struct Dike
 public:
   PetscInt ID;        // dike ID
   PetscInt dyndike_start;  //starting timestep for dynamic diking if 0 then no dynamic diking
+
   PetscInt PhaseID, PhaseTransID, nPtr;      // associated material phase and phase transition IDs
   PetscInt istep_count, nD, j1, j2;
   PetscInt istep_nave;       //number of timesteps for time averaging
@@ -47,15 +48,32 @@ public:
   PetscScalar Tsol;
   PetscScalar filtx; 
   PetscScalar filty;
-  PetscScalar drhomagma;
-  PetscScalar zmax_magma;
-  PetscScalar magPfac;
-  PetscScalar magPwidth;
   //PetscScalar ymindyn;
   //PetscScalar ymaxdyn;
   Vec sxx_eff_ave;
   Vec magPressure;
   Vec sxx_eff_ave_hist;
+  Vec raw_sxx;
+  Vec raw_sxx_ave;
+  Vec raw_sxx_ave_hist;
+  Vec smooth_sxx;
+  Vec smooth_sxx_ave;
+  Vec smooth_sxx_ave_hist;
+  Vec magPressure;
+  Vec focused_magPressure; // *djking
+
+  Vec solidus;
+  Vec magPresence; // *djking
+
+  PetscScalar drhomagma;
+  PetscScalar zmax_magma;
+  PetscScalar magPfac;
+  PetscScalar magPwidth;
+
+  PetscScalar A;      // Smoothing parameter for variable M calculation
+	PetscScalar Ts;     // Tensile strength of rock for variable M calculation (Pa)
+  PetscScalar zeta_0; // Initial bulk viscosity for variable M calculation (Pa*s)
+  PetscInt const_M;   // Flag to turn off var_M on per-dike basis
 };
       
 struct DBPropDike
@@ -71,21 +89,29 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput);
 
 // compute the added RHS of the dike for the continuity equation
-PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscInt &Airphase, PetscScalar &dikeRHS, PetscScalar &y_c, PetscInt J);
+PetscErrorCode GetDikeContr(JacRes *jr,                                                                                                                                
+                            PetscScalar *phRat, // phase ratios in the control volume   
+                            PetscInt &AirPhase,
+                            PetscScalar &dikeRHS,
+                            PetscScalar &y_c,
+                            PetscInt J,
+                            PetscScalar sxx_eff_ave_cell);
 
 // compute dike heat after Behn & Ito, 2008
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 Material_t *phases,
                                 PetscScalar &Tc,
-                                PetscScalar *phRat,          // phase ratios in the control volume
+                                PetscScalar *phRat, // phase ratios in the control volume
                                 PetscScalar &k,
                                 PetscScalar &rho_A,
                                 PetscScalar &y_c,
-                                PetscInt J); 
+                                PetscInt J,
+                                PetscScalar sxx_eff_ave_cell); 
 
 PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD);
 PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
 PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
+PetscErrorCode Set_dike_base(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
 PetscErrorCode Locate_Dike_Zones(AdvCtx *actx);
 PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp);
 PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp);

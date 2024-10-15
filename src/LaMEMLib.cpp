@@ -13,6 +13,7 @@
 #include "LaMEM.h"
 #include "phase.h"
 #include "dike.h"
+#include "heatzone.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
@@ -58,11 +59,11 @@ PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 	ierr = PetscTime(&cputime_start); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
+	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                  \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
 	PetscPrintf(PETSC_COMM_WORLD,"     Version : 2.1.4 \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
+	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION          \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 
 	// read run mode
@@ -179,6 +180,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// create dike database
 	ierr = DBDikeCreate(&lm->dbdike, &lm->dbm, fb, &lm->jr, PETSC_TRUE);   CHKERRQ(ierr);
+
+	// create heatzone database
+	ierr = DBHeatZoneCreate(&lm->dbheatzone, &lm->dbm, fb, &lm->jr, PETSC_TRUE);   CHKERRQ(ierr);
 
 	// initialize arrays for dynamic phase transition
 	ierr = DynamicPhTr_Init(&lm->jr);			CHKERRQ(ierr);
@@ -518,6 +522,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->jr.bc       = &lm->bc;
 	lm->jr.dbm      = &lm->dbm;
 	lm->jr.dbdike   = &lm->dbdike;
+	lm->jr.dbheatzone   = &lm->dbheatzone;
 	// AdvCtx
 	lm->actx.fs     = &lm->fs;
 	lm->actx.jr     = &lm->jr;

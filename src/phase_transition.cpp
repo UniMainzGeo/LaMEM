@@ -65,6 +65,7 @@
 #include "surf.h"
 #include "tssolve.h"
 #include "dike.h"
+#include "heatzone.h"
 
 //-----------------------------------------------------------------------------
 
@@ -164,7 +165,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		if (ph->number_phases>0){
 			
 			if (ph->PhaseOutside[0]>=0){
-				PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
+				PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :  ");
 				for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %lld ", (LLD)(ph->PhaseOutside[i])); }
 				PetscPrintf(PETSC_COMM_WORLD," \n");
 			}
@@ -1236,10 +1237,10 @@ PetscInt Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,Pe
   	{
   		xboundL = PhaseTrans->celly_xboundL[J];
        	xboundR = PhaseTrans->celly_xboundR[J];
-       }
+	}
        
   	if 	( (xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
-       	(PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )
+       	(PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) ) // *djking
     	{
         	// We are within the box
 		ph = PH1;

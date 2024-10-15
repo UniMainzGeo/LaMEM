@@ -116,6 +116,9 @@
 // maximum number of dikes
 #define _max_num_dike_ 12
 
+// maximum number of heating zones
+#define _max_num_heatzone_ 2
+
 // maximum number of equation parameter
 #define _max_num_eq_ 2
 

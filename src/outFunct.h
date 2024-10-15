@@ -86,6 +86,8 @@ PetscErrorCode PVOutWriteMomentRes   (OutVec*);
 PetscErrorCode PVOutWriteContRes     (OutVec*);
 PetscErrorCode PVOutWritEnergRes     (OutVec*);
 PetscErrorCode PVOutWriteVelocityGr  (OutVec*);
+PetscErrorCode PVOutWriteHeatSource  (OutVec*); // *djking
+PetscErrorCode PVOutWriteDikeRHS     (OutVec*); // *djking
 // ... add more output functions here
 
 //---------------------------------------------------------------------------

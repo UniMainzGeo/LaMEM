@@ -25,3 +25,7 @@
 Manifest.toml  
 docs/build/
 
+src/temp_compare/heatzone.cpp
+src/temp_compare/JacRes.cpp
+src/temp_compare/JacRes.h
+src/temp_compare/JacResTemp.cpp

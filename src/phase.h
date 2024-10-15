@@ -96,7 +96,7 @@ public:
 	// Box-like condition
 	PetscScalar     bounds[6];                      //  left, right etc. of box
 	PetscInt        TempType;                       //  Temp condition [0=none, 1=constant; 2=linear; 3=halfspace]
-	PetscInt 		  BoxVicinity;					  //  0-check all particles; 1-only apply PT to particles in the vicinity of the box (*2 of bounds)
+	PetscInt 		BoxVicinity;					  //  0-check all particles; 1-only apply PT to particles in the vicinity of the box (*2 of bounds)
 
 	PetscInt        number_phases;
 	PetscInt        PhaseBelow[_max_tr_];
@@ -201,6 +201,7 @@ public:
 	PetscScalar  T;                 // optional temperature to set within the phase
 	PetscScalar  nu_k;              // optional multiplication factor that is used to compute the higher conductivtiy below the conductivity boundary temperature
 	PetscScalar  T_Nu;              // optional definition of conductivity boundary temperature  gito
+	PetscScalar  z_Nu;              // optional definition of conductivity boundary depth  *mcr
 	PetscScalar  T_liq;             // optional magma liquidus temperature for Behn & Ito [2005] dike heating model
 	PetscScalar  T_sol;             // optional magma solidus temperature for Behn & Ito [2005] dike heating model
 	PetscScalar  Latent_hx;          // optional magma latent heat of crystalization for Behn & Ito [2005] dike heating model
