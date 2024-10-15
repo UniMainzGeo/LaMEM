@@ -27,7 +27,6 @@ struct HeatZone;
 struct Tensor2RN;
 struct PData;
 struct AdvCtx;
-//struct ConstEqCtx;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -322,10 +321,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x);
 PetscErrorCode JacResCopyPres(JacRes *jr, Vec x);
 
 // initialize pressure
-PetscErrorCode JacResInitPres(JacRes *jr);
+PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts);
 
 // initialize pressure to lithostatic pressure
-PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx);
+PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx, TSSol *ts);
 
 // copy residuals from local to global vectors, enforce boundary constraints
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);

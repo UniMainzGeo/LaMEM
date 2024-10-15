@@ -1,9 +1,18 @@
 using Documenter
 
+
+pushfirst!(LOAD_PATH, joinpath(@__DIR__, "..")) # add LaMEM to environment stack
+using Pkg
+Pkg.activate(joinpath(@__DIR__, ".."))
+Pkg.instantiate()
+Pkg.activate(@__DIR__)
+Pkg.instantiate()
+
+using LaMEM_C
+
 makedocs(;
     authors="Anton Popov, Boris Kaus",
     sitename="LaMEM",
-    root="docs",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
     ),
@@ -24,7 +33,6 @@ makedocs(;
 )
 
 deploydocs(;
-    root = "docs",
     repo="github.com/UniMainzGeo/LaMEM.git",
     branch = "gh-pages",
     target = "build",

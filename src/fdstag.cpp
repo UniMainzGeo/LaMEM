@@ -1024,9 +1024,9 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	Pz = fs->dsz.nproc;
 
 	// get number cells per processor
-	lx = PETSC_NULL;
-	ly = PETSC_NULL;
-	lz = PETSC_NULL;
+	lx = NULL;
+	ly = NULL;
+	lz = NULL;
 	
 	ierr = Discret1DGetNumCells(&fs->dsx, &lx); CHKERRQ(ierr);
 	ierr = Discret1DGetNumCells(&fs->dsy, &ly); CHKERRQ(ierr);

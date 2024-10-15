@@ -751,7 +751,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	    PhaseTrans = jr->dbm->matPhtr+nPtr;
 
 	    // Is the phase transition changing the phase, or other properites?
-	    if((PhaseTrans->PhaseInside[0]>0 && PhaseTrans->PhaseOutside[0]>0) || (PhaseTrans->PhaseAbove[0]>0 && PhaseTrans->PhaseBelow[0]>0))
+	    if((PhaseTrans->PhaseInside[0]>=0 && PhaseTrans->PhaseOutside[0]>=0) || (PhaseTrans->PhaseAbove[0]>=0 && PhaseTrans->PhaseBelow[0]>=0))
 	    {
               nphc = 1;
 	    }

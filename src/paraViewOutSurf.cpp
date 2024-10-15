@@ -233,7 +233,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	fs   = pvsurf->surf->jr->fs;
 	scal = pvsurf->surf->jr->scal;
 
-	fp = PETSC_NULL;
+	fp = NULL;
 	// only ranks zero in z direction generate this file
 	if(!fs->dsz.rank)
 	{

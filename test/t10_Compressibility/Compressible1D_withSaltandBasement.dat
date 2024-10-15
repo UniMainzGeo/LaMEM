@@ -33,7 +33,7 @@
 #===============================================================================
 # Number of cells for all segments
 
-	nel_x = 2
+	nel_x = 4
 	nel_y = 2
 	nel_z = 64
 
@@ -95,7 +95,7 @@
 # Solver options
 #===============================================================================
 	SolverType 			=	direct 		# solver [direct or multigrid]
-	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
+	DirectSolver 		=	superlu_dist		# mumps/superlu_dist/pastix	
 	DirectPenalty 		=	1e4			# penalty parameter [employed if we use a direct solver]
 	
 #===============================================================================

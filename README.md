@@ -1,11 +1,13 @@
 # LaMEM
+[![Build Status](https://github.com/UniMainzGeo/LaMEM/workflows/CI/badge.svg)](https://github.com/UniMainzGeo/LaMEM/actions)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://unimainzgeo.github.io/LaMEM/dev)
+[![DOI](https://zenodo.org/badge/641438500.svg)](https://zenodo.org/doi/10.5281/zenodo.10211634)
 
 LaMEM (Lithosphere and Mantle Evolution Model) is a parallel 3D numerical code that can be used to simulate various thermo-mechanical 
 geodynamical processes such as mantle-lithosphere interaction for rocks 
 that have visco-elasto-plastic rheologies. It was developed to better understand geological 
 processes, particularly related to the dynamics of the crust and  lithosphere and their 
-interaction with the mantle. It can, however, also be used to solve geomechanical problems, includes (compressible) poroelasticity, can be used to compute gravity anomalies and has an (adjoint) inversion framework. The code uses a marker-in-cell approach with a staggered finite difference discretization and is build on top of [PETSc](https://petsc.org) such that it can run on anything from a laptop to a massively parallel machine. 
+interaction with the mantle. It can also be used to solve geomechanical problems, includes (compressible) poroelasticity, has a gravity solver and an (adjoint) inversion framework. The code uses a marker-in-cell approach with a staggered finite difference discretization and is built on top of [PETSc](https://petsc.org) such that it can run on anything from a laptop to a massively parallel machine. 
 
 A range of (Galerkin) multigrid and iterative solvers are 
 available, for both linear and non-linear rheologies, using Picard and 

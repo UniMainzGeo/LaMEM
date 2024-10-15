@@ -69,7 +69,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm);
 
 PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm, PetscInt dirInd);
 
-PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param);
+PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4]);
 
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm);
 

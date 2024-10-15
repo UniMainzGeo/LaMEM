@@ -253,7 +253,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, healID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, Kb, G, E, Vp, Vs, eta_st, nu;
+	PetscScalar eta, eta0, e0, Kb, G, E, Vp, Vs, eta_st, eta_vp, nu;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
@@ -275,6 +275,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Vp       =  0.0;
 	Vs       =  0.0;
 	eta_st   =  0.0;
+	eta_vp   =  0.0;
+	
 	chSoftID = -1;
 	frSoftID = -1;
 	healID   = -1;
@@ -432,6 +434,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "ch",       &m->ch,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "fr",       &m->fr,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_st",   &eta_st,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_vp",   &eta_vp,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,     1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID,  1, MSN); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID,  1, MSN); CHKERRQ(ierr);
@@ -458,8 +461,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
 
 	if (PrintOutput)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"- Melt factor mfc = %f", m->mfc);
+	{	
+		if (m->mfc>0){
+			PetscPrintf(PETSC_COMM_WORLD,"- Melt factor mfc = %f", m->mfc);
+		}
 	}
 
 	// check energy parameters
@@ -506,8 +511,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 
-	m->eta_st   = eta_st;
-   
+	m->eta_st = eta_st;
+	m->eta_vp = eta_vp;
+	
 	// set softening law IDs
 	m->chSoftID = chSoftID;
 	m->frSoftID = frSoftID;
@@ -711,6 +717,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->ch,     "ch",     "[Pa]",   scal, title, &print_title);
 		MatPrintScalParam(m->fr,     "fr",     "[deg]",  scal, title, &print_title);
 		MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
+		MatPrintScalParam(m->eta_vp, "eta_vp", "[Pa*s]", scal, title, &print_title);
 		MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);		
 		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
 		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
@@ -778,7 +785,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->fr     /= scal->angle;      
 
 	m->eta_st /= scal->viscosity;
-    
+	m->eta_vp /= scal->viscosity;
+	
 	// temperature
 	m->alpha  /= scal->expansivity;
 	m->Cp     /= scal->cpecific_heat;
@@ -1648,10 +1656,11 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	PetscPrintf(PETSC_COMM_WORLD,">>> Dislocation Cr.:  Bn    = %1.7e,  n     = %1.7e,    Vn    = %1.7e,    En  = %1.7e \n", MatProp->Bn, MatProp->n, MatProp->Vn, MatProp->En);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Peierls Cr.:      Bp    = %1.7e,  Ep    = %1.7e,    Vp    = %1.7e,    taup= %1.7e,    gamma  = %1.7e,     q        = %1.7e \n", MatProp->Bp, MatProp->Ep, MatProp->Vp, MatProp->taup, MatProp->gamma, MatProp->q);
 	PetscPrintf(PETSC_COMM_WORLD,">>> dc Cr.:           Bdc   = %1.7e,  Edc   = %1.7e,    Rdc   = %1.7e,    mu  = %1.7e \n", MatProp->Bdc, MatProp->Edc, MatProp->Rdc, MatProp->mu);
-    PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
+  PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
     
-    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_st= %1.7e,    rp= %1.7e,    frSoftID = %i,  chSoftID = %i,   healID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
-	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
+
+  PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_vp= %1.7e,    eta_st= %1.7e, rp= %1.7e,    frSoftID = %i,  chSoftID = %i,   healID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->eta_vp, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
+  PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
 	PetscPrintf(PETSC_COMM_WORLD,"          			nu_k  = %1.7e,  T_Nu  = %1.7e,  z_Nu  = %1.7e, \n", MatProp->nu_k, MatProp->T_Nu, MatProp->z_Nu); // *mcr
 	PetscPrintf(PETSC_COMM_WORLD,"          			T_sol = %1.7e, T_liq  = %1.7e,   Latent_hx= %1.7e,    \n", MatProp->T_sol, MatProp->T_liq, MatProp->Latent_hx);
 

@@ -25,7 +25,7 @@ unit_stress      = 1e9
 	CFLMAX    = 0.8		# CFL criterion for elasticity
 	nstep_ini = 0		# save output for n initial steps
 	nstep_max = 1		# maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 1		# save output every n steps
+	nstep_out = -1		# save output every n steps
 
 #===============================================================================
 # Grid & discretization parameters
@@ -38,7 +38,7 @@ unit_stress      = 1e9
 # Number of cells for all segments 
 	nel_x	=   128
 	nel_y	=   128 
-	nel_z	=   64   
+	nel_z	=   128   
 
 # Coordinates of all segments (including start and end points)
 	coord_x = 	-5  	15
@@ -64,8 +64,8 @@ unit_stress      = 1e9
 
 #	noslip   = 0 0 0 0 0 0
 
-	temp_top	=   0			# Temperature @ top
-	temp_bot	=   800     	# Temperature @ bottom; side BC's are flux-free
+	temp_top	    =   0			# Temperature @ top
+	temp_bot		=   800     	# Temperature @ bottom; side BC's are flux-free
 
 	# Background strain rate parameters
 #	exx_num_periods  = 1      # number intervals of constant strain rate (x-axis)
@@ -79,10 +79,10 @@ unit_stress      = 1e9
 #===============================================================================
 
 	gravity         = 0.0 0.0 -9.81  # gravity vector
-	act_temp_diff   = 1		 		 # temperature diffusion activation flag
-	act_steady_temp = 1              # steady-state temperature initial guess activation flag
+	act_temp_diff   = 0		 		 # temperature diffusion activation flag
+	act_steady_temp = 0              # steady-state temperature initial guess activation flag
 	steady_temp_t   = 0.1            # time for (quasi-)steady-state temperature initial guess
-	nstep_steady    = 150             # number of steps for (quasi-)steady-state temperature initial guess (default = 1)
+	nstep_steady    = 10             # number of steps for (quasi-)steady-state temperature initial guess (default = 1)
 	act_heat_rech   = 0              # heat recharge activation flag
 	init_lith_pres  = 1              # initial pressure with lithostatic pressure
 	init_guess      = 1              # initial guess flag
@@ -91,20 +91,22 @@ unit_stress      = 1e9
 	eta_ref         = 1e22           # reference viscosity (initial guess)
 	T_ref           = 20             # reference temperature
 	p_lim_plast		= 1
-     	min_cohes       = 1e6            # cohesion lower bound  [Pa]
-   	min_fric        = 1.0            # friction lower bound  [degree]
-    	tau_ult         = 1e9            # ultimate yield stress [Pa]
-    
+   
+    min_cohes       = 1e6            # cohesion lower bound  [Pa]
+    min_fric        = 1.0            # friction lower bound  [degree]
+    tau_ult         = 1e9            # ultimate yield stress [Pa]
+  
+   
 #===============================================================================
 # Solver options
 #===============================================================================
 
 	SolverType 	 =	multigrid	# solver [direct or multigrid]
-	MGLevels 	 =	3			# number of MG levels
-	MGSweeps 	 =	25			# number of MG smoothening steps per level
-	MGSmoother 	 =	jacobi 		# type of smoothener used [chebyshev or jacobi]
-	MGJacobiDamp     =	0.5			# Dampening parameter [only employed for Jacobi smoothener; default=0.6]
-
+	#MGLevels 	 =	3			# number of MG levels 
+    MGSweeps 	 =	25			# number of MG smoothening steps per level 
+    MGSmoother 	 =	jacobi 		# type of smoothener used [chebyshev or jacobi]
+    MGJacobiDamp =	0.5			# Dampening parameter [only employed for Jacobi smoothener; default=0.6]
+	DirectSolver =	superlu_dist			# mumps/superlu_dist/pastix/umfpack
 
 #===============================================================================
 # Model setup & advection
@@ -127,56 +129,30 @@ unit_stress      = 1e9
         center      = 6.0 -2.0 2.0
     <EllipsoidEnd>
 
-
     <EllipsoidStart>
         phase       = 1
         axes        = 14.0 14.0 1.0  # semi-axes of ellipsoid in x, y and z
         center      = 0.0 0.0 -4.0
         Temperature = constant     # optional: Temperature of the sphere. possibilities: [constant]
-        cstTemp     = 1000         # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+        cstTemp     = 1200         # required in case of [constant]: temperature value [in Celcius in case of GEO units]
     <EllipsoidEnd>
+
 #===============================================================================
 # Output
 #===============================================================================
 
 # Grid output options (output is always active)
 	out_file_name       = Volcano_test  # output file name
-	out_pvd             = 1         # activate writing .pvd file
-	out_phase           = 1
-	out_density         = 1
-	out_visc_total      = 1
-	out_visc_creep      = 1
-	out_visc_plast      = 1
-	out_velocity        = 1
-	out_pressure        = 1
-	out_over_press      = 1
-	out_litho_press     = 1
-	out_temperature     = 1
-#	out_dev_stress      = 1
-	out_j2_dev_stress   = 1
-#	out_strain_rate     = 1
-	out_j2_strain_rate  = 1
-	out_plast_strain    = 1
-	out_plast_dissip    = 1
-	out_tot_displ       = 1
-	out_moment_res      = 1
-	out_cont_res        = 1
-	out_yield           = 1
-  	out_fluid_density   = 1
-	out_pore_press      = 1
-  	out_eff_press       = 1
+	out_pvd             = 0         # activate writing .pvd file
 
 # AVD phase viewer output options (requires activation)
-	out_avd     = 1 # activate AVD phase output
-	out_avd_pvd = 1 # activate writing .pvd file
-	out_avd_ref = 1 # AVD grid refinement factor
+	out_avd     = 0 # activate AVD phase output
+	out_avd_pvd = 0 # activate writing .pvd file
+	out_avd_ref = 0 # AVD grid refinement factor
 	
 # free surface output
-	out_surf            = 1 # activate surface output
-	out_surf_pvd        = 1 # activate writing .pvd file
-	out_surf_velocity   = 1
-	out_surf_topography = 1
-	out_surf_amplitude  = 1
+	out_surf            = 0# activate surface output
+	out_surf_pvd        = 0 # activate writing .pvd file
 
 
 #===============================================================================
@@ -228,7 +204,7 @@ unit_stress      = 1e9
 	# Plastic parameters
 		ch 		   =  5e6
 		fr 		   =  10
-	  	eta_st     	   =  5e20   # stabilization viscosity (default is eta_min)
+	  	eta_st     =  5e20   # stabilization viscosity (default is eta_min)
 
 	<MaterialEnd>
 	
@@ -275,33 +251,36 @@ unit_stress      = 1e9
     -snes_ksp_ew_rtol0 1e-3
     -snes_ksp_ew_rtolmax 1e-2
 
-	#-snes_ksp_ew_rtol0 1e-2
-    #-snes_ksp_ew_rtolmax 1e-1
-
     -snes_ksp_ew_gamma 0.9
     -snes_ksp_ew_alpha 2.0
 
 
 	-snes_npicard 5
-	-snes_max_it 200
+	-snes_max_it 1
 	-snes_rtol 1e-5
 	-snes_atol 1e-6
 	-snes_PicardSwitchToNewton_rtol 1e-3 #-7
-	#-snes_NewtonSwitchToPicard_it   1       # number of Newton iterations after which we switch back to Picard
-#	-snes_monitor
 	-snes_linesearch_monitor	
 
-# Jacobian solver
-#	-js_ksp_type fgmres 
-#	-js_ksp_monitor	
-#	-js_ksp_max_it 30
-#	-js_ksp_rtol 1e-5
-#	-js_ksp_atol 1e-6
+	-gmg_pc_type mg
+	-gmg_pc_mg_galerkin
+	-gmg_pc_mg_type multiplicative
+	-gmg_pc_mg_cycle_type v
+#	-gmg_pc_view
 
+	-gmg_mg_levels_ksp_type richardson
+	-gmg_mg_levels_ksp_richardson_scale 0.5
+	-gmg_mg_levels_ksp_max_it 5
+	-gmg_mg_levels_pc_type jacobi
 
-
+	-gmg_pc_mg_levels 4
+	-crs_ksp_type preonly 
+	-crs_pc_type telescope
+	-crs_pc_telescope_reduction_factor 1
+	-crs_telescope_ksp_type gmres
+	-crs_telescope_ksp_rtol 1e-5
+	-crs_telescope_pc_type gamg
+	-crs_telescope_pc_gamg_threshold 0.05
+	-crs_telescope_pc_gamg_coarse_eq_limit 1000
+	
 <PetscOptionsEnd>
-
-
-
-

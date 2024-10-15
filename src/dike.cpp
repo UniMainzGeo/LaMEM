@@ -1,3 +1,4 @@
+
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
  **   Project      : LaMEM
@@ -119,6 +120,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 											0, 0, 0, &jr->DA_CELL_2D_tave));
 			}
 
+
 			// creating local vectors and inializing the history vector
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->magPressure));
 			PetscCall(DMCreateLocalVector(jr->DA_CELL_2D, &dike->focused_magPressure)); // *djking
@@ -143,6 +145,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 			PetscCall(DMDAGetCorners(jr->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave));
 
 			for (j = sy; j < sy + ny; j++)
+
 			{
 				for (i = sx; i < sx + nx; i++)
 				{
@@ -220,6 +223,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "Ts", &dike->Ts, 1, 1));
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "zeta_0", &dike->zeta_0, 1, 1));
 		PetscCall(getIntParam(fb, _OPTIONAL_, "const_M", &dike->const_M, 1, 1));
+
 
 		// scaling
 		dike->A /= scal->stress_si;
@@ -305,6 +309,7 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 			PetscPrintf(PETSC_COMM_WORLD, "     drhomagma = %1.0f %s, magPfac = %1.1f\n",
 						dike->drhomagma*scal->density, scal->lbl_density, dike->magPfac);
 		}
+
 	}
 
 	PetscFunctionReturn(0);
@@ -826,6 +831,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
           {
             dz  = SIZE_CELL(k, sz, (*dsz));
             sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn)*dz;  //integrating dz-weighted total stress
+
             Pmag[L][j][i]+=p_lith[k][j][i]*dz; // integrating lithostatic pressure
 
             liththick[L][j][i]+=dz; //integrating thickness
@@ -892,6 +898,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   ///// CALCULATE AVERAGE LITHOSPHERIC VALUES /////
 
   // (gdev is the array that shares data with devxx_mean and is indexed with global dimensions)
+
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->focused_magPressure, &focused_magPressure); CHKERRQ(ierr); // *djking
 
@@ -965,11 +972,13 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vPmag, &Pmag); CHKERRQ(ierr);
+
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vliththick, &liththick); CHKERRQ(ierr);
   ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr);
 
   ierr = VecRestoreArray(vsxx, &lsxx); CHKERRQ(ierr);
   ierr = VecRestoreArray(vPmag, &lPmag); CHKERRQ(ierr);
+
   ierr = VecRestoreArray(vliththick, &lliththick); CHKERRQ(ierr);
   ierr = VecRestoreArray(vzsol, &lzsol); CHKERRQ(ierr);
 
@@ -1068,6 +1077,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 
 	surf = jr->surf;
 
+
 // get communication buffer (Gets a PETSc vector, vycoors, that may be used with the DM global routines)
 //y node coords
 	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vycoors); CHKERRQ(ierr);
@@ -1078,6 +1088,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = VecZeroEntries(vycoors_prev); CHKERRQ(ierr);
 	ierr = VecZeroEntries(vycoors_next); CHKERRQ(ierr);
 
+
 //for dike center
 	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vxcenter); CHKERRQ(ierr);
 	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vxcenter_prev); CHKERRQ(ierr);
@@ -1086,6 +1097,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = VecZeroEntries(vxcenter); CHKERRQ(ierr);
 	ierr = VecZeroEntries(vxcenter_prev); CHKERRQ(ierr);
 	ierr = VecZeroEntries(vxcenter_next); CHKERRQ(ierr);
+
 
 //sxx_ave info
 	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vsxx); CHKERRQ(ierr);
@@ -1110,14 +1122,17 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vycoors, &ycoors); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vycoors_prev, &ycoors_prev); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vycoors_next, &ycoors_next); CHKERRQ(ierr);
+
 //dike center info
 	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vxcenter, &xcenter); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vxcenter_prev, &xcenter_prev); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vxcenter_next, &xcenter_next); CHKERRQ(ierr);
+
 //sxx_ave info
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx_prev, &sxx_prev); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx_next, &sxx_next); CHKERRQ(ierr);
+
 //magP info
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vmagP, &magP); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vmagP_prev, &magP_prev); CHKERRQ(ierr);
@@ -1132,10 +1147,12 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	ierr = VecGetArray(vxcenter, &lxcenter); CHKERRQ(ierr);
 	ierr = VecGetArray(vxcenter_prev, &lxcenter_prev); CHKERRQ(ierr);
 	ierr = VecGetArray(vxcenter_next, &lxcenter_next); CHKERRQ(ierr);
+
 //sxx_ave info
 	ierr = VecGetArray(vsxx, &lsxx); CHKERRQ(ierr);
 	ierr = VecGetArray(vsxx_prev, &lsxx_prev); CHKERRQ(ierr);
 	ierr = VecGetArray(vsxx_next, &lsxx_next); CHKERRQ(ierr);
+
 //magP info
 	ierr = VecGetArray(vmagP, &lmagP); CHKERRQ(ierr);
 	ierr = VecGetArray(vmagP_prev, &lmagP_prev); CHKERRQ(ierr);
@@ -1398,6 +1415,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 			for (ii = sx; ii < sx+nx; ii++)
 			{
 				xx = COORD_CELL(ii, sx, fs->dsx);
+
 				if (fabs(xx-xc) <= dx_tot)
 				{
 					ii1=min(ii1,ii);
@@ -2088,14 +2106,13 @@ PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *
 	for(nD = 0; nD < numDike; nD++)
 	{
 		dike = jr->dbdike->matDike+nD;
+
 		if (dike->dyndike_start > 0 || jr->ctrl.var_M)
 		{
 			// read mean stress history, 2D array (local vector created with DA_CELL_2D_tave in DBReadDike)
 			ierr = VecReadRestart(dike->sxx_eff_ave_hist, fp); CHKERRQ(ierr);
 		}
 	}
-
-	
 
 	PetscFunctionReturn(0);
 }

@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: LaMEM - Lithosphere and Mantle Evolution Model
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Anton
+    family-names: Popov
+    affiliation: Johannes Gutenberg University Mainz
+  - given-names: Boris
+    family-names: Kaus
+    orcid: 'https://orcid.org/0000-0002-0247-8660'
+    affiliation: Johannes Gutenberg University Mainz
+keywords:
+  - computational geosciences
+  - high-performance computing
+license: GPL-3.0
