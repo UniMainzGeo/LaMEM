@@ -51,7 +51,6 @@ public:
   //PetscScalar ymindyn;
   //PetscScalar ymaxdyn;
   Vec sxx_eff_ave;
-  Vec magPressure;
   Vec sxx_eff_ave_hist;
   Vec raw_sxx;
   Vec raw_sxx_ave;
