@@ -115,6 +115,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "trackSolidus",	 &ctrl->sol_track,       1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "useTDk",          &ctrl->useTDk,          1, 1);             CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "useDk",          &ctrl->useDk,            1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "dikeHeat",        &ctrl->dikeHeat,        1, 1);             CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "actHeatZone",	 &ctrl->actHeatZone,     1, 1);             CHKERRQ(ierr);
 
@@ -279,6 +280,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->Passive_Tracer) PetscPrintf(PETSC_COMM_WORLD, "   Passive Tracers are active              @ \n");
 	if(ctrl->useTk)          PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature-dependent conductivity  @ \n");
 	if(ctrl->useTDk)         PetscPrintf(PETSC_COMM_WORLD, "   Use Temperature and Depth-dependent conductivity  @ \n");
+	if(ctrl->useDk)         PetscPrintf(PETSC_COMM_WORLD, "    Use Depth-dependent conductivity  @ \n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
 	else if(ctrl->gwType == _GW_TOP_)   PetscPrintf(PETSC_COMM_WORLD, "top of the domain \n");

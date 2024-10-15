@@ -173,6 +173,7 @@ struct Controls
 	PetscInt	actHeatZone;    // Flag to activate user defined heat zones	
   	PetscInt    useTk;			// activation flag for using temperature-dependent conductivity
   	PetscInt    useTDk;			// activation flag for using temperature and depth-dependent conductivity
+  	PetscInt    useDk;			// activation flag for using depth-dependent conductivity
   	PetscInt 	dikeHeat;		// activation flag for using Behn & Ito heat source in dike
 };
 
