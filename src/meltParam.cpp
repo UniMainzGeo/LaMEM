@@ -254,7 +254,7 @@ PetscScalar FX_bal(PetscScalar x1,PetscScalar x2,PetscScalar T,PetscScalar P,Pet
 	fh = FZero(x2,T,P,X,Fcpx,mp);
 
 	if ( (fl>0.0 && fh<0.0) || (fl<0.0 && fh>0.0) ) {
-		xl=x1; xh=x2; ans=UNUSED;
+		xl=x1; xh=x2; ans=UNUSED_VAL;
 
 		for (j=1;j<=MAXITS;j++) {
 			xm=0.5*(xl+xh);
@@ -303,7 +303,7 @@ PetscScalar FT_bal(PetscScalar x1,PetscScalar x2,PetscScalar T,PetscScalar P,Pet
 	fh = HZero(x2,T,P,X,M,mp);
 
 	if ( (fl>0.0 && fh<0.0) || (fl<0.0 && fh>0.0) ) {
-		xl=x1; xh=x2; ans=UNUSED;
+		xl=x1; xh=x2; ans=UNUSED_VAL;
 
 		for (j=1;j<=MAXITS;j++) {
 			xm=0.5*(xl+xh);

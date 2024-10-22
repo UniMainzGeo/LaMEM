@@ -573,33 +573,27 @@ PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = 0;  CHKERRQ(ierr);
-	if(outvec) outvec = NULL;
+	UNUSED(outvec);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVorticity(OutVec* outvec)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = 0;  CHKERRQ(ierr);
-	if(outvec) outvec = NULL;
+	UNUSED(outvec);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteAngVelMag(OutVec* outvec)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = 0;  CHKERRQ(ierr);
-	if(outvec) outvec = NULL;
+	UNUSED(outvec);
 
 	PetscFunctionReturn(0);
 }
