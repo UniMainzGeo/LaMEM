@@ -94,10 +94,11 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
 
 struct PMatBlock
 {
-	Mat Avv, Avp;  // velocity sub-matrices
-	Mat Apv, App;  // pressure sub-matrices
-	Mat iS;        // inverse of pressure Schur complement preconditioner
-	Mat Cvv;       // clean velocity sub-matix
+	Mat       Avv, Avp;  // velocity sub-matrices
+	Mat       Apv, App;  // pressure sub-matrices
+	Mat       iS;        // inverse of pressure Schur complement preconditioner
+	Mat       Cvv;       // clean velocity sub-matix
+	PetscBool buildCvv;  // flag to build clean velocity sub-matix
 
 	Vec rv, rp;   // residual blocks
 	Vec xv, xp;   // solution blocks
