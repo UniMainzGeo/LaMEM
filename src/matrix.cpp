@@ -873,22 +873,33 @@ PetscErrorCode PMatMonoDestroy(PMat pm)
 PetscErrorCode PMatBlockSetFromOptions(PMat pm)
 {
 	PMatBlock   *P;
-	PetscScalar  pgamma;
+	PetscScalar pgamma;
+	PetscBool   ksp_mat_free;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
+	// set defaults
+	pgamma = 1.0;
+
 	P = (PMatBlock*)pm->data;
 
-	ierr = PetscOptionsHasName  (NULL, NULL, "-bf_schur_wbfbt", &P->wbfbt);     CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",      &pgamma, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-bf_schur_wbfbt", &P->wbfbt);      CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",      &pgamma, NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free ",   &ksp_mat_free);  CHKERRQ(ierr);
+
+	if(pgamma > 1.0 && !ksp_mat_free)
+	{
+		P->buildCvv = PETSC_TRUE;
+	}
 
 	if(P->wbfbt && pgamma != 1.0)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "wBFBT preconditioner is incompatible with matrix penalty (bf_schur_wbfbt, jp_pgamma)");
 	}
 
-	if(P->wbfbt) PetscPrintf(PETSC_COMM_WORLD, "   Using wBFBT preconditioner    @ \n");
+	if(P->wbfbt)    PetscPrintf(PETSC_COMM_WORLD, "   Using wBFBT preconditioner    @ \n");
+	if(P->buildCvv) PetscPrintf(PETSC_COMM_WORLD, "   Building clean velocity block @ \n");
 
 	PetscFunctionReturn(0);
 }
@@ -1119,11 +1130,15 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	// create matrices & vectors
 	ierr = MatAIJCreate(lnv, lnv, 0, Avv_d_nnz, 0, Avv_o_nnz, &P->Avv);  CHKERRQ(ierr);
-	ierr = MatAIJCreate(lnv, lnv, 0, Avv_d_nnz, 0, Avv_o_nnz, &P->Cvv);  CHKERRQ(ierr);
 	ierr = MatAIJCreate(lnv, lnp, 0, Avp_d_nnz, 0, Avp_o_nnz, &P->Avp);  CHKERRQ(ierr);
 	ierr = MatAIJCreate(lnp, lnv, 0, Apv_d_nnz, 0, Apv_o_nnz, &P->Apv);  CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->App);                       CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
+
+	if(P->buildCvv)
+	{
+		ierr = MatAIJCreate(lnv, lnv, 0, Avv_d_nnz, 0, Avv_o_nnz, &P->Cvv); CHKERRQ(ierr);
+	}
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);
@@ -1164,7 +1179,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	//
 	//    S = - 1/(K*dt) - 1/(pgamma*eta)
 	//
-	// Cvv matrix always contains a clean velocity block
+	// Cvv matrix contains a clean velocity block if necessary
 	//======================================================================
 
 	JacRes      *jr;
@@ -1207,9 +1222,13 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->Avv);  CHKERRQ(ierr);
-	ierr = MatZeroEntries(P->Cvv);  CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Avp);  CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Apv);  CHKERRQ(ierr);
+
+	if(P->buildCvv)
+	{
+		ierr = MatZeroEntries(P->Cvv); CHKERRQ(ierr);
+	}
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
@@ -1266,12 +1285,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		// compute density gradient stabilization terms
 		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
 
-		// copy clean stiffness matrix
-		ierr = PetscMemcpy(vc, v, sizeof(v)); CHKERRQ(ierr);
-
-		// compute velocity Schur complement
-		if(pm->pgamma != 1.0) getVelSchur(v, d, g);
-
 		// get global indices of the points:
 		// vx_(i), vx_(i+1), vy_(j), vy_(j+1), vz_(k), vz_(k+1), p
 		idx[0] = (PetscInt) ivx[k][j][i];
@@ -1291,17 +1304,32 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		pdofidx[5] = -1;   cf[5] = bcvz[k+1][j][i];
 		pdofidx[6] = -1;   cf[6] = bcp[k][j][i];
 
+		if(P->buildCvv)
+		{
+			// copy clean stiffness matrix
+			ierr = PetscMemcpy(vc, v, sizeof(v)); CHKERRQ(ierr);
+
+			// constrain local matrix
+			constrLocalMat(7, pdofidx, cf, vc);
+
+			// extract operators
+			getSubMat(vc, ac, d, g);
+
+			// update global matrix
+			ierr = MatSetValues(P->Cvv, 6, idx, 6, idx, ac, ADD_VALUES); CHKERRQ(ierr);
+		}
+
+		// compute velocity Schur complement
+		if(pm->pgamma != 1.0) getVelSchur(v, d, g);
+
 		// constrain local matrix
 		constrLocalMat(7, pdofidx, cf, v);
-		constrLocalMat(7, pdofidx, cf, vc);
 
 		// extract operators
 		getSubMat(v,  a,  d, g);
-		getSubMat(vc, ac, d, g);
 
 		// update global matrices
 		ierr = MatSetValues(P->Avv, 6, idx,   6, idx,   a,    ADD_VALUES);    CHKERRQ(ierr);
-		ierr = MatSetValues(P->Cvv, 6, idx,   6, idx,   ac,   ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValues(P->Avp, 6, idx,   1, idx+6, g,    ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValues(P->Apv, 1, idx+6, 6, idx,   d,    ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValue (P->App, idx[6], idx[6], -IKdt,    INSERT_VALUES); CHKERRQ(ierr);
@@ -1517,7 +1545,14 @@ PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec r)
 
 	ierr = MatMult(P->Avp,  P->xp, P->rv); CHKERRQ(ierr); // rv = Avp*xp
 
-	ierr = MatMult(P->Cvv,  P->xv, P->wv); CHKERRQ(ierr); // wv = Cvv*xv
+	if(P->buildCvv)
+	{
+		ierr = MatMult(P->Cvv,  P->xv, P->wv); CHKERRQ(ierr); // wv = Cvv*xv
+	}
+	else
+	{
+		ierr = MatMult(P->Avv,  P->xv, P->wv); CHKERRQ(ierr); // wv = Avv*xv
+	}
 
 	ierr = VecAXPY(P->rv,   1.0,   P->wv); CHKERRQ(ierr); // rv = rv + wv
 
@@ -1537,18 +1572,22 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	// get context
 	P = (PMatBlock*)pm->data;
 
-	ierr = MatDestroy (&P->Avv); CHKERRQ(ierr);
-	ierr = MatDestroy (&P->Cvv); CHKERRQ(ierr);
-	ierr = MatDestroy (&P->Avp); CHKERRQ(ierr);
-	ierr = MatDestroy (&P->Apv); CHKERRQ(ierr);
-	ierr = MatDestroy (&P->App); CHKERRQ(ierr);
-	ierr = MatDestroy (&P->iS);  CHKERRQ(ierr);
-	ierr = VecDestroy (&P->rv);  CHKERRQ(ierr);
-	ierr = VecDestroy (&P->rp);  CHKERRQ(ierr);
-	ierr = VecDestroy (&P->xv);  CHKERRQ(ierr);
-	ierr = VecDestroy (&P->xp);  CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wv);  CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wp);  CHKERRQ(ierr);
+	ierr = MatDestroy(&P->Avv); CHKERRQ(ierr);
+	ierr = MatDestroy(&P->Avp); CHKERRQ(ierr);
+	ierr = MatDestroy(&P->Apv); CHKERRQ(ierr);
+	ierr = MatDestroy(&P->App); CHKERRQ(ierr);
+	ierr = MatDestroy(&P->iS);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->rv);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->rp);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->xv);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->xp);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wv);  CHKERRQ(ierr);
+	ierr = VecDestroy(&P->wp);  CHKERRQ(ierr);
+
+	if(P->buildCvv)
+	{
+		ierr = MatDestroy(&P->Cvv); CHKERRQ(ierr);
+	}
 
 	// destroy BFBT preconditioner
 	ierr = PMatBFBTDestroy(pm); CHKERRQ(ierr);

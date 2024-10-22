@@ -257,8 +257,8 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = PCStokesSetup(pc);                                                CHKERRQ(ierr);
 	ierr = MatShellSetOperation(Pmat, MATOP_MULT, (void(*)(void))pc->Apply); CHKERRQ(ierr);
 	ierr = MatShellSetContext(Pmat, pc);                                     CHKERRQ(ierr);
-	ierr = MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-	ierr = MatAssemblyEnd  (Pmat, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY);                       CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (Pmat, MAT_FINAL_ASSEMBLY);                       CHKERRQ(ierr);
 
 	//===============
 	// setup Jacobian
