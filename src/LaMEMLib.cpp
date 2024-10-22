@@ -144,14 +144,14 @@ PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
+PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param)
 {
 	FB *fb;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	if(param) param = NULL;
+	UNUSED(param);
 
 	// load input file
 	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
