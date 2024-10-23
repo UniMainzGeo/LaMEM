@@ -73,12 +73,16 @@ PetscErrorCode MeshSeg1DReadParam(
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Less than two cells are specified in the %s - direction\n", dir);
 	}
 
-	// check ordering
+	// check ordering and bias factors
 	for(i = 0; i < ms->nsegs; i++)
 	{
 		if(ms->xstart[i] >= ms->xstart[i+1])
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unordered coordinates in parameter %s\n", coord);
+		}
+		if(ms->biases[i] != 1.0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Non-unit bias ratios are deprecated (%s)\n", bias);
 		}
 	}
 
