@@ -221,11 +221,11 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Geometric multigrid is incompatible with matrix penalty (bf_vs_type, jp_pgamma)");
 	}
 
-	if     (bf->ftype == _UPPER_)    PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
-	else if(bf->ftype == _LOWER_)    PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : lower \n");
+	if     (bf->ftype == _UPPER_)    PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type      : upper \n");
+	else if(bf->ftype == _LOWER_)    PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type      : lower \n");
 
-	if     (bf->vtype == _VEL_MG_)   PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : Galerkin geometric multigrid\n");
-	else if(bf->vtype == _VEL_USER_) PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
+	if     (bf->vtype == _VEL_MG_)   PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner       : Galerkin geometric multigrid\n");
+	else if(bf->vtype == _VEL_USER_) PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner       : user-defined\n");
 
 	PetscFunctionReturn(0);
 }
