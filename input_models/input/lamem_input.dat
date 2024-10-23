@@ -99,6 +99,9 @@
     bias_y = 1.0
     bias_z = 1.0
     
+# WARNING! Biased meshes perform terrible on practice. Therefore bias option is deprecated.
+# An attempt to specify a non-unit bias ratio will generate an error. 
+    
 # Periodic grid topology flags (currently only affects marker advection)
 # WARNING! only compatible wtih advect = basic
 
