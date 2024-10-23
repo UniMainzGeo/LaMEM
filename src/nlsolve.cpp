@@ -95,7 +95,7 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic, NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt,  NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free ",                   &nl->ksp_mat_free);  CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free",                    &nl->ksp_mat_free);  CHKERRQ(ierr);
 
 	// return solver
 	(*p_snes) = snes;

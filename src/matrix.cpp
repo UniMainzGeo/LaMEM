@@ -77,7 +77,6 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 //---------------------------------------------------------------------------
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag)
 {
-//	PetscInt    m, n;
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
@@ -886,11 +885,16 @@ PetscErrorCode PMatBlockSetFromOptions(PMat pm)
 
 	ierr = PetscOptionsHasName  (NULL, NULL, "-bf_schur_wbfbt", &P->wbfbt);      CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",      &pgamma, NULL);  CHKERRQ(ierr);
-	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free ",   &ksp_mat_free);  CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free",    &ksp_mat_free);  CHKERRQ(ierr);
 
-	if(pgamma > 1.0 && !ksp_mat_free)
+	if(ksp_mat_free)
 	{
-		P->buildCvv = PETSC_TRUE;
+		P->buildCvv = PETSC_FALSE;
+	}
+	else
+	{
+		if(pgamma > 1.0) P->buildCvv = PETSC_TRUE;
+		else             P->buildCvv = PETSC_FALSE;
 	}
 
 	if(P->wbfbt && pgamma != 1.0)
@@ -1269,7 +1273,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// get pressure diagonal element (with penalty)
-		diag = -IKdt -1.0/(pgamma*eta);
+		diag = -IKdt - 1.0/(pgamma*eta);
 
 		// set pressure two-point constraints
 		SET_PRES_TPC(bcp, i-1, j,   k,   i, 0,   cf[0])
@@ -1326,7 +1330,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		constrLocalMat(7, pdofidx, cf, v);
 
 		// extract operators
-		getSubMat(v,  a,  d, g);
+		getSubMat(v, a, d, g);
 
 		// update global matrices
 		ierr = MatSetValues(P->Avv, 6, idx,   6, idx,   a,    ADD_VALUES);    CHKERRQ(ierr);
@@ -1388,6 +1392,11 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 		// add to global matrix
 		ierr = MatSetValues(P->Avv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+		if(P->buildCvv)
+		{
+			ierr = MatSetValues(P->Cvv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
+		}
 	}
 	END_STD_LOOP
 
@@ -1439,6 +1448,11 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 		// add to global matrix
 		ierr = MatSetValues(P->Avv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+		if(P->buildCvv)
+		{
+			ierr = MatSetValues(P->Cvv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
+		}
 	}
 	END_STD_LOOP
 
@@ -1490,6 +1504,11 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 		// add to global matrix
 		ierr = MatSetValues(P->Avv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+		if(P->buildCvv)
+		{
+			ierr = MatSetValues(P->Cvv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
+		}
 	}
 	END_STD_LOOP
 
@@ -1510,6 +1529,11 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatAIJAssemble(P->Apv, bc->pNumSPC, bc->pSPCList, 0.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->App, bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->iS,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
+
+	if(P->buildCvv)
+	{
+		ierr = MatAIJAssemble(P->Cvv, bc->vNumSPC, bc->vSPCList, 1.0); CHKERRQ(ierr);
+	}
 
 	// assemble BFBT preconditioner
 	ierr = PMatBFBTAssemble(pm); CHKERRQ(ierr);
