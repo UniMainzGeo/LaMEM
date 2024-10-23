@@ -1,30 +1,35 @@
-﻿------------------------------------------------------------------
+
+------------------------------------------------------------------
 NOTE
 ------------------------------------------------------------------
 
 Replace X.Y.Z with the actual PETSC version number you want to install
 
 PETSc has changed policy on prefix installs (using root access is not recommended)
+
 Install petsc to:
-[1] local destinations e.g. /home/username/petsc
+
+[1] local destinations e.g. /home/USERNAME/SOFT/petsc
+
 [2] global destinations e.g. /opt/petsc (change directory ownership to a normal user)
     sudo mkdir /opt/petsc
     sudo chown user:group /opt/petsc
-The configure scripts below refer to the option [2]
+
+The configure scripts below refer to the option [1]
 
 ------------------------------------------------------------------
-PREREQUISITES (on non-Ubuntu/Debian systems update accordingly)
+PREREQUISITES
 ------------------------------------------------------------------
 
 WARNING!
 Don't apt install paraview (or any package that messes with MPI)
 Download paraview binaries instead (see etc.txt)
-You need to apt purge all MPI installations (if you have any)
 
 sudo apt update
 sudo apt install build-essential gfortran python-is-python3 python3-numpy
 sudo apt install bison flex cmake git-all valgrind
 sudo apt-get install libtool libtool-bin
+sudo apt-get install mpich
 
 ------------------------------------------------------------------
 ENVIRONMENT (This step is necessary for system-wide setting)
@@ -34,7 +39,6 @@ Access environment file (create if does not exist)
 sudo nano /etc/profile.d/environment.sh
 
 Add lines:
-export PATH=$PATH:/opt/mpich3/bin
 export PETSC_DEB=/opt/petsc/petsc-X.Y.Z-deb
 export PETSC_OPT=/opt/petsc/petsc-X.Y.Z-opt
 
@@ -52,57 +56,16 @@ To set it at the project level, do the folowing:
 	Select "Add to all configurations"
 This option is useful if multiple projects with different PETSc versions are developed 
 
-------------------------------------------------------------------
-MPICH 3
-------------------------------------------------------------------
-
-Download MPICH 3 (http://www.mpich.org/downloads/)
-
-./configure \
-CC=gcc \
-CXX=g++ \
-F77=gfortran \
-FC=gfortran \
---prefix=/opt/mpich3 \
---enable-f77 \
---enable-fc \
---enable-cxx \
---enable-g=none \
---enable-fast=O2 \
---with-pm=hydra \
---with-device=ch3
- 
-make all
-
-sudo make install
-
-CHECK AFTER INSTALLATION!
-
-which mpirun
-which mpiexec
-which mpicc
-which mpif90
-which mpicxx
-
-they all should point to /opt/mpich3/bin
-
 -----------------------------------------------------------------
-BLAS/LAPACK on AMD machines
+BLAS/LAPACK and optimization flags on AMD machines
 ------------------------------------------------------------------
 
-The configure scripts refer to Intel machines on which OpenBLAS works fine
-On AMD machines you can override it with platform-specific BLAS library
+=========
+AMD Ryzen
+=========
 
-On AMD Ryzen platform install BLIS library with these options:
 --download-f2cblaslapack \
 --download-blis \
-
-On AMD Bulldozer platform use ACML library if available:
---with-blas-lapack-lib=/path-to-acml-library/gfortran64_fma4/lib/libacml.a \
-
-Install optimized PETSc version with these options:
-
-AMD Ryzen:
 --COPTFLAGS="-O2 -march=znver1" \
 --FOPTFLAGS="-O2 -march=znver1" \
 --CXXOPTFLAGS="-O2 -march=znver1" \
@@ -111,24 +74,27 @@ Depending on gcc version and processor generation use different architecture opt
 -march=znver2
 -march=znver3
 
-AMD Bulldozer:
+=============
+AMD Bulldozer
+=============
+
+--with-blas-lapack-lib=/path-to-acml-library/gfortran64_fma4/lib/libacml.a \
 --COPTFLAGS="-mavx -mfma4 -O2" \
 --FOPTFLAGS="-mavx -mfma4 -O2" \
 --CXXOPTFLAGS="-mavx -mfma4 -O2" \
 
 ------------------------------------------------------------------
-PETSC DEBUG (for development, debugging and valgind runs)
+PETSC DEBUG (AMD Ryzen)
 ------------------------------------------------------------------
 
-Download PETSC (http://www.mcs.anl.gov/petsc/download/)
-
 ./configure \
---prefix=/opt/petsc/petsc-X.Y.Z-deb \
---download-openblas \
+--prefix=/home/USERNAME/SOFT/petsc/petsc-X.Y.Z-deb \
+--download-f2cblaslapack \
+--download-blis \
+--with-debugging=1 \
 --COPTFLAGS="-g -O0" \
 --FOPTFLAGS="-g -O0" \
 --CXXOPTFLAGS="-g -O0" \
---with-debugging=1 \
 --with-large-file-io=1 \
 --with-shared-libraries=0 \
 --with-c++-support=1 \
@@ -141,22 +107,20 @@ Download PETSC (http://www.mcs.anl.gov/petsc/download/)
 --download-scalapack=1 \
 --download-mumps=1 \
 --download-superlu_dist=1 \
---download-pastix=1 \
---download-hwloc \
---download-cmake \
 --with-clean
 
 ------------------------------------------------------------------
-PETSC OPTIMIZED (for production runs)
+PETSC OPTIMIZED (AMD Ryzen)
 ------------------------------------------------------------------
 
 ./configure \
---prefix=/opt/petsc/petsc-X.Y.Z-opt \
---download-openblas \
---COPTFLAGS="-O2" \
---FOPTFLAGS="-O2" \
---CXXOPTFLAGS="-O2" \
+--prefix=/home/USERNAME/SOFT/petsc/petsc-X.Y.Z-deb \
+--download-f2cblaslapack \
+--download-blis \
 --with-debugging=0 \
+--COPTFLAGS="-O2 -march=znver2" \
+--FOPTFLAGS="-O2 -march=znver2" \
+--CXXOPTFLAGS="-O2 -march=znver2" \
 --with-large-file-io=1 \
 --with-shared-libraries=0 \
 --with-c++-support=1 \
@@ -169,10 +133,64 @@ PETSC OPTIMIZED (for production runs)
 --download-scalapack=1 \
 --download-mumps=1 \
 --download-superlu_dist=1 \
---download-pastix=1 \
---download-hwloc \
---download-cmake \
 --with-clean
+
+------------------------------------------------------------------
+PETSC DEBUG (Intel)
+------------------------------------------------------------------
+
+./configure \
+--prefix=/home/USERNAME/SOFT/petsc/petsc-X.Y.Z-deb \
+--download-openblas \
+--with-debugging=1 \
+--COPTFLAGS="-g -O0" \
+--FOPTFLAGS="-g -O0" \
+--CXXOPTFLAGS="-g -O0" \
+--with-large-file-io=1 \
+--with-shared-libraries=0 \
+--with-c++-support=1 \
+--with-cc=mpicc \
+--with-cxx=mpicxx \
+--with-fc=mpif90 \
+--download-metis=1 \
+--download-parmetis=1 \
+--download-ptscotch=1 \
+--download-scalapack=1 \
+--download-mumps=1 \
+--download-superlu_dist=1 \
+--with-clean
+
+------------------------------------------------------------------
+PETSC OPTIMIZED (Intel)
+------------------------------------------------------------------
+
+./configure \
+--prefix=/home/USERNAME/SOFT/petsc/petsc-X.Y.Z-deb \
+--download-openblas \
+--with-debugging=0 \
+--COPTFLAGS="-O2" \
+--FOPTFLAGS="-O2" \
+--CXXOPTFLAGS="-O2" \
+--with-large-file-io=1 \
+--with-shared-libraries=0 \
+--with-c++-support=1 \
+--with-cc=mpicc \
+--with-cxx=mpicxx \
+--with-fc=mpif90 \
+--download-metis=1 \
+--download-parmetis=1 \
+--download-ptscotch=1 \
+--download-scalapack=1 \
+--download-mumps=1 \
+--download-superlu_dist=1 \
+--with-clean
+
+------------------------------------------------------------------
+Include directories (Eclipse projects):
+------------------------------------------------------------------
+
+/usr/include/x86_64-linux-gnu/mpich
+/home/USERNAME/SOFT/petsc/petsc-X.Y.Z-deb/include
 
 ------------------------------------------------------------------
 

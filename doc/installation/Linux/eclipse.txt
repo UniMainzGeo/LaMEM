@@ -13,23 +13,7 @@ Unpack and install to /opt simply by copying the whole directory:
 sudo cp -r eclipse /opt
 
 ------------------------------------------------------------------
-ENVIRONMENT (This step is necessary for system-wide setting)
-------------------------------------------------------------------
-
-Access environment file (create if does not exist)
-sudo nano /etc/profile.d/environment.sh
-
-Add line:
-export PATH=$PATH:/opt/eclipse
-
-Close and save file (ctrl+x, then y)
-
-Logout and login from Linux DESKTOP! or just restart.
-
-Check your environment with echo command (e.g. echo $PATH).
-
-------------------------------------------------------------------
-DESKTOP LAUNCHER (highly recommended)
+DESKTOP LAUNCHER
 ------------------------------------------------------------------
 
 You can create desktop launcher on most Linux desktops
@@ -40,7 +24,7 @@ As "command" type eclipse (should be in your PATH already, see above)
 On GNOME or Cinnamon desktops Eclipse may have an issue with blinking window during scrolling.
 This is cured by replacing the "command" field in the launcher like this:
 
-env SWT_GTK3=0 eclipse
+env SWT_GTK3=0 /opt/eclipse/eclipse
 
 Click on an icon button and select the icon file provided with eclipse installation:
 
@@ -70,8 +54,8 @@ CONFIGURE PROJECT
 7. Add full paths to header files used in your project.
 
    PETSc (version X.Y.Z) applications would require setting:
-      /opt/mpich3/include
-      /opt/petsc/petsc-X.Y.Z-deb/include
+	/usr/include/x86_64-linux-gnu/mpich
+	/home/USERNAME/SOFT/petsc/petsc-X.Y.Z-deb/include
 
     Each path can be added as follows:
     In the project properties select C/C++ General->Path and Symbols -> Includes -> Add
