@@ -1,12 +1,45 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   surf.c
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **         Adina Pusok
+ **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 //---------------------------------------------------------------------------
 //.............................. FREE SURFACE ...............................
 //---------------------------------------------------------------------------
@@ -152,7 +185,7 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 		fs->dsx.tnods, fs->dsy.tnods, fs->dsz.nproc,
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
 		1, 1, lx, ly, NULL, &surf->DA_SURF); CHKERRQ(ierr);
-
+	
 	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->ltopo);  CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->gtopo);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vx);     CHKERRQ(ierr);
@@ -243,7 +276,6 @@ PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 {
 	// advect topography of the free surface mesh
-
 	JacRes *jr;
 
 	PetscErrorCode ierr;
@@ -431,7 +463,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vx,    &vx);     CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vy,    &vy);     CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vz,    &vz);     CHKERRQ(ierr);
-
+        
 	// scan all free surface local points
 	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
 
@@ -862,6 +894,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 		level = surf->erLevels[jj];
 		
 		// get incremental thickness of the sediments
+		printf("dt: %f", dt);
 		dz = rate*dt;
 
 		// access topography
@@ -874,7 +907,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 		{
 			// get topography
 			z = topo[L][j][i];
-
+ 	//		printf("Z[%d][%d][%d]: %f            ",L,j,i, z); // (m)
 			if(z > level)
 			{
 				// uniformly advect
@@ -1351,7 +1384,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover western edge of the LaMEM box!");
 	}
 
-	if(X1+(PetscScalar (nxTopo-1))*DX < ex){
+	if(X1+(nxTopo-1)*DX < ex){
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover eastern edge of the LaMEM box!");
 	}
 
@@ -1359,7 +1392,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover southern edge of the LaMEM box!");
 	}
 
-	if(Y1+(PetscScalar (nyTopo-1))*DY < ey){
+	if(Y1+(nyTopo-1)*DY < ey){
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover northern edge of the LaMEM box!");
 	}
 
@@ -1380,8 +1413,8 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		if (Iy == nyTopo - 1) Iy = nyTopo - 2;
 
 		// get relative coordinates of the LaMEM node in relation to SW node of inout grid element
-		xpL = (PetscScalar)((xp-(X1+(((PetscScalar) Ix)*DX)))/DX);
-		ypL = (PetscScalar)((yp-(Y1+(((PetscScalar) Iy)*DY)))/DY);
+		xpL = (PetscScalar)((xp-(X1+(Ix*DX)))/DX);
+		ypL = (PetscScalar)((yp-(Y1+(Iy*DY)))/DY);
 
 		// interpolate topography from input grid onto LaMEM nodes
 		topo[level][j][i] = (

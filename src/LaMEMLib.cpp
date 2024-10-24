@@ -1,12 +1,45 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   LaMEMLib.c
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **         Adina Pusok
+ **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 //---------------------------------------------------------------------------
 // LAMEM LIBRARY MODE ROUTINE
 //---------------------------------------------------------------------------
@@ -41,8 +74,11 @@
 #include "phase_transition.h"
 #include "passive_tracer.h"
 
+// surface process
+#include "fastscape.h"
+
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
+PetscErrorCode LaMEMLibMain(void *param)
 {
 	LaMEMLib       lm;
 	RunMode        mode;
@@ -60,7 +96,7 @@ PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
-	PetscPrintf(PETSC_COMM_WORLD,"     Version : 2.1.4 \n");
+	PetscPrintf(PETSC_COMM_WORLD,"     Version : 2.0.0 \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
@@ -130,7 +166,7 @@ PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 	else if(mode == _NORMAL_ || mode == _RESTART_)
 	{
 		// solve coupled nonlinear equations
-		ierr = LaMEMLibSolve(&lm, param,stages); CHKERRQ(ierr);
+		ierr = LaMEMLibSolve(&lm, param); CHKERRQ(ierr);
 	}
 
 	// destroy library objects
@@ -300,8 +336,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
 
 	// read from input file, create arrays for dynamic diking, and read from restart file
-	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, &lm->ts, fp);  CHKERRQ(ierr);
- 
+	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, fb, fp);  CHKERRQ(ierr);
+
 	// close temporary restart file
 	fclose(fp);
 
@@ -604,7 +640,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
+PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
 	PMat           pm;     // preconditioner matrix    (to be removed!)
 	PCStokes       pc;     // Stokes preconditioner    (to be removed!)
@@ -613,7 +649,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
 	PetscLogDouble t;
-
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -626,12 +661,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	//==============
 	// INITIAL GUESS
 	//==============
-	PetscCall(PetscLogStagePush(stages[0])); /* Start profiling stage*/
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
-
-	PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
-
+    
 	if (param)
 	{
 		ierr = AdjointCreate(&aop, &lm->jr, (ModParam *)param); CHKERRQ(ierr);
@@ -653,7 +685,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
-	
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
@@ -663,11 +694,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
 
-		PetscCall(PetscLogStagePush(stages[1])); /* Start profiling stage*/
-
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
 
@@ -694,8 +722,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================
 
-		PetscCall(PetscLogStagePush(stages[2])); /* Start profiling stage*/
-
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
 		
@@ -717,14 +743,26 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// Advect Passive tracers
 		ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
+		int SurfaceMode = 2; // 1-LaMEM; 2-FastScape
 
+		if (SurfaceMode == 1)
+		// using LaMEM original code to calculate topography
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"\n Calculating surface process through LaMEM original code \n");
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
 		// apply sedimentation to the free surface
 		ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
+		}
 
+		if (SurfaceMode == 2)
+		// using FastScape to calculate topography
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"\n Calculating surface process through FastScape \n");
+			ierr = fastscape(&lm->surf,&lm->actx); CHKERRQ(ierr);
+			PetscPrintf(PETSC_COMM_WORLD,"\n FastScape Done \n");
+		}
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
 
@@ -737,13 +775,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	
 		// update time stamp and counter
 		ierr = TSSolStepForward(&lm->ts); CHKERRQ(ierr);
-
-		PetscCall(PetscLogStagePush(stages[3])); /* Start profiling stage*/
-
+		
 		// grid & marker output
 		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
-
-		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
@@ -822,10 +856,10 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	ierr = LaMEMLibDiffuseTemp(lm); CHKERRQ(ierr);
 
 	// initialize pressure
-	ierr = JacResInitPres(&lm->jr,&lm->ts); CHKERRQ(ierr);
+	ierr = JacResInitPres(&lm->jr); CHKERRQ(ierr);
 
 	// lithostatic pressure initializtaion
-	ierr = JacResInitLithPres(&lm->jr, &lm->actx, &lm->ts); CHKERRQ(ierr);
+	ierr = JacResInitLithPres(&lm->jr, &lm->actx); CHKERRQ(ierr);
 
 	// compute inverse elastic parameters (dependent on dt)
 	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
@@ -864,7 +898,6 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 {
 	JacRes         *jr;
-	TSSol          *ts;
 	Controls       *ctrl;
 	AdvCtx         *actx;
 	PetscLogDouble t;
@@ -875,13 +908,12 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	PetscFunctionBeginUser;
 
 	// access context
-	ts       = &lm->ts; 
 	jr      = &lm->jr;
 	ctrl    = &jr->ctrl;
 	actx    = &lm->actx;
 
 	// check for infinite diffusion
-	if (ctrl->actTemp && ctrl->actSteadyTemp && ts->istep==0)
+	if (ctrl->actTemp && ctrl->actSteadyTemp)
 	{
 		PrintStart(&t,"Computing steady-state temperature distribution", NULL);
 
@@ -905,7 +937,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	}
 
 	// check for additional limited diffusion
-	if (ctrl->actTemp && ctrl->steadyTempStep && ts->istep==0)
+	if (ctrl->actTemp && ctrl->steadyTempStep)
 	{
 		PrintStart(&t,"Diffusing temperature", NULL);
 
@@ -915,7 +947,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		if (ctrl->steadyNumStep)
 		{
 			num_steps = ctrl->steadyNumStep;
-			diff_step = diff_step/((PetscScalar) num_steps);
+			diff_step = diff_step/num_steps;
 		}
 		
 		for(i=0;i<num_steps;i++)
@@ -971,12 +1003,6 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	
 	// create temperature diffusion solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &tksp); CHKERRQ(ierr);
-
-	// enable geometric multigrid
-	PetscCall(KSPSetDM(tksp, jr->DA_T));
-	PetscCall(KSPSetDMActive(tksp, PETSC_FALSE));
-
-	// set options
 	ierr = KSPSetOptionsPrefix(tksp,"its_");   CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(tksp);            CHKERRQ(ierr);
 

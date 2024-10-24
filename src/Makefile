@@ -1,10 +1,42 @@
 #==============================================================================
 #
-#   Project      : LaMEM
-#   License      : MIT, see LICENSE file for details
-#   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
-#   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
-#   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+#     Copyright (c) 2011-2018, JGU Mainz, Anton Popov, Boris Kaus
+#     All rights reserved.
+#
+#     This software was developed at:
+#
+#          Institute of Geosciences
+#          Johannes-Gutenberg University, Mainz
+#          Johann-Joachim-Becherweg 21
+#          55128 Mainz, Germany
+#
+#     project:    LaMEM
+#     filename:   Makefile
+#
+#     LaMEM is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published
+#     by the Free Software Foundation, version 3 of the License.
+#
+#     LaMEM is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#     See the GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#     Contact:
+#         Boris Kaus       [kaus@uni-mainz.de]
+#         Anton Popov      [popov@uni-mainz.de]
+#
+#
+#     Main development team:
+#          Anton Popov      [popov@uni-mainz.de]
+#          Boris Kaus       [kaus@uni-mainz.de]
+#          Tobias Baumann
+#          Adina Pusok
+#          Arthur Bauville
 #
 #==============================================================================
 
@@ -38,6 +70,15 @@ PETSC_DIR = ${PETSC_OPT}
 else
 $(error Unknown compilation mode specified)
 endif
+
+# xtl
+XTL_INC = /Users/li/CodeLY/LaMEM/couple/fastscape_rely
+
+# xtensor
+XTENSOR_INC = /Users/li/CodeLY/LaMEM/couple/fastscape_rely
+
+# fastscapelib
+FASTSCAPE_INC = /Users/li/CodeLY/LaMEM/couple/fastscape_rely
 
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
@@ -136,7 +177,7 @@ ${LaMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 
 # Create a dynamic library
 dylib: ${COBJ}
-	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
+	$(CCOMPILER) -shared -fPIC -I${XTL_INC} -I${XTENSOR_INC} -I${FASTSCAPE_INC} -o -std=c++17  ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
 
 #====================================================
 
@@ -150,7 +191,7 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 	@echo "............................................."
 	@echo "......... Linking LaMEM Executable .........."
 	@echo "............................................."
-	${CXXLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o $@
+	${CXXLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -I${XTL_INC} -I${XTENSOR_INC} -I${FASTSCAPE_INC} -std=c++17 -o  $@
 
 #====================================================
 
@@ -159,11 +200,11 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 # NOTE: IBM XL compiler generates dependency as a by-product of compilation
 
 ../lib/${mode}/%.o : %.cpp
-	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@
+	${CCOMPILER} ${LAMEM_FLAGS} -I${XTL_INC} -I${XTENSOR_INC} -I${FASTSCAPE_INC} -std=c++17 -c $< -o $@
 ifeq ($(PLATFORM), ppc64)
 	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
 else
-	@${CCOMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} $< -o ../dep/${mode}/$*.d.tmp
+	@${CCOMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} -I${XTL_INC} -I${XTENSOR_INC} -I${FASTSCAPE_INC} -std=c++17 $< -o ../dep/${mode}/$*.d.tmp
 endif
 	@sed '1s,^,../lib/${mode}/,' < ../dep/${mode}/$*.d.tmp > ../dep/${mode}/$*.d
 	@rm -f ../dep/${mode}/$*.d.tmp
