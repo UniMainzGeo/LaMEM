@@ -1,17 +1,42 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
  **
- **   The current framework is developed by Georg Reuber (JGU Mainz)
+ **    This software was developed at:
  **
- **   If you think it is helpful, please cite the following paper:
- **   Georg S. Reuber, Anton A. Popov, Boris J.P. Kaus, (2018)
- **   Deriving scaling laws in geodynamics using adjoint gradients,
- **   Tectonophysics, Vol. 746, p. 352-363. doi:10.1016/j.tecto.2017.07.017
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   adjoint.h
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **         Adina Pusok
+ **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------

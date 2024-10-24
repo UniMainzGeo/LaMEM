@@ -1,10 +1,42 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   JacRes.c
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **         Adina Pusok
+ **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------
@@ -56,7 +88,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->pShiftAct    =  0;
 	ctrl->pLithoVisc   =  1;
 	ctrl->initGuess    =  1;
-	ctrl->mfmax        =  1.0;
+	ctrl->mfmax        =  0.15;
 	ctrl->lmaxit       =  25;
 	ctrl->lrtol        =  1e-6;
 	ctrl->actTemp	   =  0;			// diffusion is not active by default (otherwise we have to define thermal properties in all cases)
@@ -71,7 +103,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	// read from options
 	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",          ctrl->grav,           3, 1.0);            CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1);              CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1.0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "FSSA_allVel",     &ctrl->FSSA_allVel,    1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0);            CHKERRQ(ierr);
@@ -148,7 +180,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		||  (m->Kb || m->beta))       need_top_open  = 1;
 
 		// set default stabilization viscosity
-		if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
+		//if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
 
 	}
 
@@ -267,7 +299,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->tauUlt)         PetscPrintf(PETSC_COMM_WORLD, "   Ultimate yield stress                   : %g %s \n", ctrl->tauUlt,    scal->lbl_stress_si);
 	if(ctrl->rho_fluid)      PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid, scal->lbl_density);
 	if(ctrl->mfmax)          PetscPrintf(PETSC_COMM_WORLD, "   Max. melt fraction (viscosity, density) : %g    \n", ctrl->mfmax);
-	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %lld  \n", (LLD) ctrl->lmaxit);
+	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %d    \n", ctrl->lmaxit);
 	if(ctrl->lrtol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration tolerance            : %g    \n", ctrl->lrtol);
 	if(ctrl->Adiabatic_gr)   PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic gradient                      : %g    \n", ctrl->Adiabatic_gr);
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
@@ -1930,11 +1962,9 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts)
-
+PetscErrorCode JacResInitPres(JacRes *jr)
 {
 	FDSTAG            *fs;
-	
 	BCCtx             *bc;
 	SolVarCell        *svCell;
 	const PetscScalar *p;
@@ -1951,7 +1981,7 @@ PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts)
 	fixPhase = bc->fixPhase;
 
 	// check activation
-	if(!bc->initPres || ts->istep>0) PetscFunctionReturn(0);
+	if(!bc->initPres) PetscFunctionReturn(0);
 
 	// get grid coordinate bounds in z-direction
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
@@ -2001,7 +2031,7 @@ PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
+PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 {
 	FDSTAG            *fs;
 	SolVarCell        *svCell;
@@ -2017,7 +2047,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 	PetscFunctionBeginUser;
 
 	// check activation
-	if(!jr->ctrl.initLithPres || ts->istep >0) PetscFunctionReturn(0);
+	if(!jr->ctrl.initLithPres) PetscFunctionReturn(0);
 
 	// print
 	PrintStart(&t, "Initializing pressure with lithostatic pressure", NULL);

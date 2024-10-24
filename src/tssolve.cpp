@@ -1,12 +1,45 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   tssolve.c
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **         Adina Pusok
+ **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 //---------------------------------------------------------------------------
 //......................   TIME STEPPING PARAMETERS   .......................
 //---------------------------------------------------------------------------
@@ -205,19 +238,16 @@ PetscInt TSSolIsOutput(TSSol *ts)
 	time_out = ts->time_out + ts->dt_out - ts->tol*ts->dt_max;
 
 	// check output conditions
-	if ((!ts->istep
- 	  || (ts->nstep_ini &&   ts->istep <= ts->nstep_ini)
-	  || (ts->nstep_out && !(ts->istep %  ts->nstep_out))
-	  || (ts->dt_out    &&   ts->time  >= time_out))
-	  && (ts->nstep_out > 0) )							
+	if(!ts->istep
+	|| (ts->nstep_ini &&   ts->istep <= ts->nstep_ini)
+	|| (ts->nstep_out && !(ts->istep %  ts->nstep_out))
+	|| (ts->dt_out    &&   ts->time  >= time_out))
 	{
 		// update output time stamp
 		ts->time_out = ts->time;
 
 		return 1;
 	}
-
-
 
 	return 0;
 }
@@ -333,7 +363,7 @@ PetscErrorCode TSSolGetPeriodSteps(
 	n_try  = span / dt_avg;
 
 	// actual number of steps
-	n     = (PetscInt)max(1, (int)round(n_try));
+	n     = (PetscInt)max(1, (PetscInt)round(n_try));
 
 	// make proposal for steps
 	linSpace(dt_start,dt_end,n+1,dt);
@@ -347,7 +377,7 @@ PetscErrorCode TSSolGetPeriodSteps(
 	err    = span - sum;
 
 	// correction per step
-	corr   = err / ((PetscScalar) n);
+	corr   = err / n;
 
 	// add correction
 	for(i = 0; i < n; i++)
@@ -456,7 +486,7 @@ PetscErrorCode TSSolAdjustSchedule(TSSol *ts, PetscScalar dt_cfl, PetscInt istep
 	else
 	{
 		// squeeze in new time step to close the gap
-		for(i = min(maxSteps, (PetscInt)(_max_num_steps_)-1); i > istep; i--)
+		for(i = min(maxSteps, _max_num_steps_-1); i > istep; i--)
 		{
 			schedule[i+1] = schedule[i];
 		}

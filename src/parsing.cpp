@@ -1,10 +1,42 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   parsing.c
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **         Adina Pusok
+ **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------
@@ -121,7 +153,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	// print message
 	if(DisplayOutput)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file \n");
+		PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file : %s \n", filename);
 	}
 
 	// clean
@@ -130,7 +162,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	// return pointer
 	(*pfb) = fb;
 
-	if (DisplayOutput &&  ISRankZero(PETSC_COMM_WORLD)){
+	if (DisplayOutput){
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 
@@ -570,7 +602,7 @@ PetscErrorCode getIntParam(
 		}
 		else
 		{
-			asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
+			asprintf(&dbkey, "-%s[%i]", key,fb->ID);
 		}
 
 		nval = num;
@@ -636,7 +668,7 @@ PetscErrorCode getScalarParam(
 		}
 		else
 		{
-			asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
+			asprintf(&dbkey, "-%s[%i]", key,fb->ID);
 		}
 	
 		nval = num;
@@ -693,7 +725,7 @@ PetscErrorCode getStringParam(
 		}
 		else
 		{
-			asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
+			asprintf(&dbkey, "-%s[%i]", key,fb->ID);
 		}
 	
 		ierr = PetscOptionsGetCheckString(dbkey, str, &found); CHKERRQ(ierr);
@@ -943,13 +975,13 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 		ierr 	= getIntParam(fb, _OPTIONAL_, "MGLevels",       &integer,        1, 100);          CHKERRQ(ierr);
 		if (integer){
 			
- 			sprintf(str, "-gmg_pc_mg_levels %lld", (LLD) integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+ 			sprintf(str, "-gmg_pc_mg_levels %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 		}
 		
 		integer 	= 10;
 		ierr 	= getIntParam(fb, _OPTIONAL_, "MGSweeps",       &integer,        1, 100);          CHKERRQ(ierr);
 		if (integer){
- 			sprintf(str, "-gmg_mg_levels_ksp_max_it %lld", (LLD) integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+ 			sprintf(str, "-gmg_mg_levels_ksp_max_it %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 		}
 
 		/* Specify smoother type options */
@@ -990,7 +1022,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 			// define number of redundant solves
 			integer 	= 	4;
 			ierr 		= 	getIntParam(fb, _OPTIONAL_, "MGRedundantNum",       &integer,        1, 100);          CHKERRQ(ierr);
-			sprintf(str, "-crs_pc_redundant_number %lld", (LLD) integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+			sprintf(str, "-crs_pc_redundant_number %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 
 			ierr = getStringParam(fb, _OPTIONAL_, "MGRedundantSolver",          SolverType,         "superlu_dist");          CHKERRQ(ierr);
 			sprintf(str, "-crs_redundant_pc_factor_mat_solver_type %s", SolverType);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);

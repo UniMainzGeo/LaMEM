@@ -1,19 +1,3 @@
-/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
- **
- ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-
-/*
- *  Created on: Jul 28, 2020
- *      Author: piccolo
- */
-
-//---------------------------------------------------------------------------
 
 #include "LaMEM.h"
 #include "AVD.h"
@@ -41,6 +25,8 @@
 	// b. Select the marker that are effectively within the processor and put to zero all the quantity for the others and interpolate them
 	// c. Sum all the quantity in all the processors
 // 2. Communicate to the master processors all the data, and print the output
+
+
 
 //---------------------------------------------------------------------------
 
@@ -110,8 +96,8 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
      PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box x = [Left,Right] : %6f, %6f \n",passive_tr->box_passive_tracer[0],passive_tr->box_passive_tracer[1]);
      PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box y = [Front,Back] : %6f, %6f \n",passive_tr->box_passive_tracer[2],passive_tr->box_passive_tracer[3]);
      PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box z = [Bot, Top]   : %6f, %6f \n",passive_tr->box_passive_tracer[4],passive_tr->box_passive_tracer[5]);
-     PetscPrintf(PETSC_COMM_WORLD,"   # of tracers in [x,y,z] direction       : [%lld, %lld, %lld] \n",(LLD) passive_tr->passive_tracer_resolution[0], (LLD) passive_tr->passive_tracer_resolution[1], (LLD) passive_tr->passive_tracer_resolution[2]);
-     PetscPrintf(PETSC_COMM_WORLD,"   Total # of tracers                      : %lld \n",(LLD) nummark);
+     PetscPrintf(PETSC_COMM_WORLD,"   # of tracers in [x,y,z] direction       : [%d, %d, %d] \n",passive_tr->passive_tracer_resolution[0],passive_tr->passive_tracer_resolution[1],passive_tr->passive_tracer_resolution[2]);
+     PetscPrintf(PETSC_COMM_WORLD,"   Total # of tracers                      : %d \n",nummark);
      PetscPrintf(PETSC_COMM_WORLD,"   Tracer advection activation type        : ");
     
 	 if(passive_tr->Condition_pr==_Always_)
@@ -216,9 +202,9 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	nx = (PetscScalar) actx->Ptr->passive_tracer_resolution[0];
-	ny = (PetscScalar) actx->Ptr->passive_tracer_resolution[1];
-	nz = (PetscScalar) actx->Ptr->passive_tracer_resolution[2];
+	nx = actx->Ptr->passive_tracer_resolution[0];
+	ny = actx->Ptr->passive_tracer_resolution[1];
+	nz = actx->Ptr->passive_tracer_resolution[2];
 	dx = (actx->Ptr->box_passive_tracer[1]/(actx->dbm->scal->length)-actx->Ptr->box_passive_tracer[0]/(actx->dbm->scal->length))/nx;
 	dy = (actx->Ptr->box_passive_tracer[3]/(actx->dbm->scal->length)-actx->Ptr->box_passive_tracer[2]/(actx->dbm->scal->length))/ny;
 	dz = (actx->Ptr->box_passive_tracer[5]/(actx->dbm->scal->length)-actx->Ptr->box_passive_tracer[4]/(actx->dbm->scal->length))/nz;
@@ -250,7 +236,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				}
 				else
 				{
-					z = actx->Ptr->box_passive_tracer[4]/(actx->dbm->scal->length) + dz/2 + ((PetscScalar) k)*dz;
+					z = actx->Ptr->box_passive_tracer[4]/(actx->dbm->scal->length) + dz/2 + k*dz;
 				}
 				if(j==0)
 				{
@@ -258,7 +244,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				}
 				else
 				{
-					y = actx->Ptr->box_passive_tracer[2]/(actx->dbm->scal->length) + dy/2 + ((PetscScalar) j)*dy;
+					y = actx->Ptr->box_passive_tracer[2]/(actx->dbm->scal->length) + dy/2 + j*dy;
 				}
 				if(i==0)
 				{
@@ -266,7 +252,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				}
 				else
 				{
-					x = actx->Ptr->box_passive_tracer[0]/(actx->dbm->scal->length) + dx/2+ ((PetscScalar) i)*dx;
+					x = actx->Ptr->box_passive_tracer[0]/(actx->dbm->scal->length) + dx/2+i*dx;
 				}
 
 
@@ -274,7 +260,7 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 				Xp[imark] = x;
 				Yp[imark] = y;
 				Zp[imark] = z;
-				ID[imark] = ((PetscScalar) i) + ny*((PetscScalar) j) +ny*nx*((PetscScalar) k);
+				ID[imark] = i+ny*j+ny*nx*k;
 
 				if(actx->Ptr->Condition_pr == _Always_)
 				{
@@ -391,7 +377,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 			IP = &actx->markers[dist.begin()->second];
 
 			// clone closest marker
-			phase[imark]= ((PetscScalar) IP->phase);
+			phase[imark]= IP->phase;
 			T[imark]= IP->T;
 			Pr[imark]= IP->p;
 			}
@@ -452,7 +438,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	SolVarCell      *svCell;
 	Material_t      *mat;
 	PData           *Pd;
-	PetscInt        sx, sy, sz, nx, ny,nz;
+	PetscInt        sx, sy, sz, nx, ny,nz,rank;
 	PetscInt        jj, I, J, K, II, JJ, KK, AirPhase, num_part,ID, n, ii, numActTracers,*markind,id_m ;
 	PetscScalar     ex,bx,ey,by,ez,bz;
 	PetscScalar     *ncx, *ncy, *ncz;
@@ -463,7 +449,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	PetscScalar     pShift;
 	PetscScalar     Xm[3],X[3];
 	PetscLogDouble t;
-	PetscMPIInt 	rank;
 	vector <spair>    dist;
 	spair d;
 	PetscErrorCode ierr;
@@ -623,7 +608,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 						}
 					}
 					sort(dist.begin(), dist.end());
-					phase[jj] = (PetscScalar) actx->markers[dist.begin()->second].phase;
+					phase[jj] = actx->markers[dist.begin()->second].phase;
 
 					ierr = setDataPhaseDiagram(Pd, Pr[jj], T[jj], mat[PetscInt(phase[jj])].pdn); CHKERRQ(ierr);
 
@@ -643,7 +628,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			}
 
 			// override temperature of air phase
-			if(AirPhase != -1 && phase[jj] == ((PetscScalar) AirPhase)) T[jj] = Ttop;
+			if(AirPhase != -1 && phase[jj] == AirPhase) T[jj] = Ttop;
 
 			// advect marker
 
@@ -799,7 +784,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	}
 
     // print output
-    PetscPrintf(PETSC_COMM_WORLD,"\n Currently active tracers    :  %lld \n", (LLD) numActTracers);
+    PetscPrintf(PETSC_COMM_WORLD,"\n Currently active tracers    :  %i \n", numActTracers);
 
 
 	// Check whatever the marker are belonging to rocks phase or not
@@ -904,19 +889,19 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
 
 			// check whether rock marker is above the free surface
-            if(phaseptr[jj] != ((PetscScalar) AirPhase) && zp > topo)
+            if(phaseptr[jj] != AirPhase && zp > topo)
 			{
 				// erosion (physical or numerical) -> rock turns into air
-				phaseptr[jj]= ((PetscScalar) AirPhase);
+				phaseptr[jj]= AirPhase;
 			}
 
 			// check whether air marker is below the free surface
-			if(phaseptr[jj] == ((PetscScalar) AirPhase) && zp < topo)
+			if(phaseptr[jj] == AirPhase && zp < topo)
 			{
 				if(surf->SedimentModel > 0)
 				{
 				// sedimentation (physical) -> air turns into a prescribed rock
-					phaseptr[jj]= (PetscScalar) surf->phase;
+					phaseptr[jj]= surf->phase;
 				}
 				else
 				{
@@ -960,7 +945,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 					// copy phase from closest marker
 						IP = &actx->markers[dist.begin()->second];
 
-						phaseptr[jj] = (PetscScalar) IP->phase;
+						phaseptr[jj] = IP->phase;
 					}
 					else
 					{
@@ -972,7 +957,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 						SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
 						}
 
-						phaseptr[jj] = (PetscScalar) phaseID;
+						phaseptr[jj] = phaseID;
 					}
 				}
 				//=======================================================================
@@ -1078,7 +1063,7 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 
 		}
 		sort(dist.begin(), dist.end());
-		phase[jj]= (PetscScalar) actx->markers[dist.begin()->second].phase;
+		phase[jj]= actx->markers[dist.begin()->second].phase;
 		ierr = VecRestoreArray(actx->Ptr->phase, &phase); CHKERRQ(ierr);
 
 

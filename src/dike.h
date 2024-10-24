@@ -1,10 +1,42 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   dike.h
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **         Adina Pusok
+ **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------                                                                                                      
@@ -35,9 +67,6 @@ public:
   PetscInt PhaseID, PhaseTransID, nPtr;      // associated material phase and phase transition IDs
   PetscInt istep_count, nD, j1, j2;
   PetscInt istep_nave;       //number of timesteps for time averaging
-  PetscInt nstep_locate; // Locate dike every nstep_locate timestep to allow elastic stresses to settle down between relocations
-  PetscInt out_stress;  //option to output mean stresses to std out
-  PetscInt out_dikeloc;  //option to output dike location to std out
   PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
   PetscScalar Mb;        // amount of magma-accommodated extension in back of box
   PetscScalar Mc;        // amount of magma-accommodated extension in center of box
@@ -49,12 +78,7 @@ public:
   PetscScalar filty;
   PetscScalar drhomagma;
   PetscScalar zmax_magma;
-  PetscScalar magPfac;
-  PetscScalar magPwidth;
-  //PetscScalar ymindyn;
-  //PetscScalar ymaxdyn;
   Vec sxx_eff_ave;
-  Vec magPressure;
   Vec sxx_eff_ave_hist;
 };
       
@@ -83,11 +107,11 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
                                 PetscScalar &y_c,
                                 PetscInt J); 
 
-PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD);
-PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
+PetscErrorCode Compute_sxx_eff(JacRes *jr, PetscInt nD);
+PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt  j1, PetscInt j2);
 PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
 PetscErrorCode Locate_Dike_Zones(AdvCtx *actx);
-PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp);
+PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, FB *fb, FILE *fp);
 PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp);
 PetscErrorCode DynamicDike_Destroy(JacRes *jr);
 

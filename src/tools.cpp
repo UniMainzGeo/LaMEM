@@ -1,12 +1,45 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   tools.c
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **         Adina Pusok
+ **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 //---------------------------------------------------------------------------
 // ........................... UTILITY FUNCTIONS ............................
 //---------------------------------------------------------------------------
@@ -51,7 +84,7 @@ void PrintStep(PetscInt step)
 	char line[] = "==========================================================================";
 	char left[]  = " STEP ";
 	char right[] = " ";
-	asprintf(&number, "%lld", (LLD) step);
+	asprintf(&number, "%d", step);
 
 	p = line + (strlen(line) - strlen(left) - strlen(number) - strlen(right))/2;
 
@@ -665,8 +698,8 @@ void findCenterMass(
         sumX += x[i];
         sumY += y[i];
     }
-    meanX = sumX/ ((PetscScalar) nN);
-    meanY = sumY/ ((PetscScalar) nN);
+    meanX = sumX/nN;
+    meanY = sumY/nN;
 
     // shift nodes by mean for better precision
     for (i=0; i < nN; i++)
@@ -805,7 +838,7 @@ PetscInt solveBisect(
 		PetscScalar a,
 		PetscScalar b,
 		PetscScalar tol,
-		PetscInt    maxit,
+		PetscScalar maxit,
 		PetscScalar &x,
 		PetscInt    &it,
 		PetscScalar (*f) (PetscScalar x, void *pctx),
@@ -847,7 +880,7 @@ PetscInt solveBisect(
 	    // update iteration count
 	    it++;
 
-	} while( PetscAbsScalar(fx) > tol && it < maxit);
+	} while(PetscAbsScalar(fx) > tol && it < maxit);
 
 	// return convergence flag
 	return PetscAbsScalar(fx) <= tol;

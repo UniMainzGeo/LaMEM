@@ -1,27 +1,64 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **   Project      : LaMEM
- **   License      : MIT, see LICENSE file for details
- **   Contributors : Anton Popov, Boris Kaus, see AUTHORS file for complete list
- **   Organization : Institute of Geosciences, Johannes-Gutenberg University, Mainz
- **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
+ **    Copyright (c) 2011-2018, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   LaMEM.cpp
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **			Georg Reuber
+ **         Adina Pusok
+ **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 #include "LaMEM.h"
 #include "scaling.h"
 #include "objFunct.h"
 #include "parsing.h"
 #include "adjoint.h"
 #include "phase.h"
+
 //---------------------------------------------------------------------------
 static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 //---------------------------------------------------------------------------
+
 int main(int argc, char **argv)
 {
 	PetscErrorCode 	ierr;
 
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
+
 	ModParam IOparam;
 	char      str[_str_len_];
 
@@ -41,16 +78,10 @@ int main(int argc, char **argv)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown parameter for 'Adjoint_mode'. Possibilities are [None; GenericInversion; AdjointGradients; GradientDescent or SyntheticForwardRun]");
 	} 
 	
-	/* Name stages */
-	PetscCall(PetscLogStageRegister("Initial guess",  &IOparam.stages[0])); 
-	PetscCall(PetscLogStageRegister("SNES solve",     &IOparam.stages[1]));
-	PetscCall(PetscLogStageRegister("Advect markers", &IOparam.stages[2])); 
-	PetscCall(PetscLogStageRegister("I/O",            &IOparam.stages[3]));
-
 	if(IOparam.use == 0)
 	{
 		// Forward simulation	
-		ierr = LaMEMLibMain(NULL,IOparam.stages); CHKERRQ(ierr);
+		ierr = LaMEMLibMain(NULL); CHKERRQ(ierr);
 	}
 	else
 	{

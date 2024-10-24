@@ -1,0 +1,1857 @@
+AVD.cpp:		mv->xcoord[0] = fs->dsx.ncoor[0]; mv->xcoord[mv->M] = fs->dsx.ncoor[fs->dsx.ncels];
+AVD.cpp:		for(i = 1; i < mv->M; i++) mv->xcoord[i] = fs->dsx.ccoor[i-1];
+AVD.cpp:	else for(i = 0; i < mv->M+1; i++) mv->xcoord[i] = fs->dsx.ncoor[i];
+AVD.cpp:		mv->ycoord[0] = fs->dsy.ncoor[0]; mv->ycoord[mv->N] = fs->dsy.ncoor[fs->dsy.ncels];
+AVD.cpp:		for(i = 1; i < mv->N; i++) mv->ycoord[i] = fs->dsy.ccoor[i-1];
+AVD.cpp:	else for(i = 0; i < mv->N+1; i++) mv->ycoord[i] = fs->dsy.ncoor[i];
+AVD.cpp:		mv->zcoord[0] = fs->dsz.ncoor[0]; mv->zcoord[mv->P] = fs->dsz.ncoor[fs->dsz.ncels];
+AVD.cpp:		for(i = 1; i < mv->P; i++) mv->zcoord[i] = fs->dsz.ccoor[i-1];
+AVD.cpp:	else for(i = 0; i < mv->P+1; i++) mv->zcoord[i] = fs->dsz.ncoor[i];
+AVD.cpp:	if (dir == 0) mv->M = fs->dsx.ncels+1; else mv->M = fs->dsx.ncels;
+AVD.cpp:	if (dir == 1) mv->N = fs->dsy.ncels+1; else mv->N = fs->dsy.ncels;
+AVD.cpp:	if (dir == 2) mv->P = fs->dsz.ncels+1; else mv->P = fs->dsz.ncels;
+AVD.cpp:		I = FindPointInCell(fs->dsx.ncoor, 0, fs->dsx.ncels, actx->recvbuf[actx->cinj+i].X[0]);
+AVD.cpp:		J = FindPointInCell(fs->dsy.ncoor, 0, fs->dsy.ncels, actx->recvbuf[actx->cinj+i].X[1]);
+AVD.cpp:		K = FindPointInCell(fs->dsz.ncoor, 0, fs->dsz.ncels, actx->recvbuf[actx->cinj+i].X[2]);
+AVD.cpp:		GET_CELL_ID(cellID, I, J, K, fs->dsx.ncels, fs->dsy.ncels);
+JacRes.cpp:		ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->lgradfield);      CHKERRQ(ierr);
+JacRes.cpp:	dof       = &fs->dof;
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_X, &jr->gvx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_Y, &jr->gvy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_Z, &jr->gvz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_X, &jr->lvx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_Y, &jr->lvy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_Z, &jr->lvz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_X, &jr->gfx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_Y, &jr->gfy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_Z, &jr->gfz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_X, &jr->lfx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_Y, &jr->lfy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_Z, &jr->lfz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->ldxx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->ldyy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->ldzz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_XY,  &jr->ldxy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->ldxz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->ldyz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_XY,  &jr->gdxy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_XZ,  &jr->gdxz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_YZ,  &jr->gdyz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvxdx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvydy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvzdz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvxdy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvydx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvxdz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvzdx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvydz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvzdy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gp);      CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp);      CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_lith); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_pore); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMCreateLocalVector(fs->DA_COR,  &jr->lbcor); CHKERRQ(ierr);
+JacRes.cpp:	ierr = PetscMalloc(sizeof(SolVarCell)*(size_t)fs->nCells, &jr->svCell);   CHKERRQ(ierr);
+JacRes.cpp:	ierr = PetscMalloc(sizeof(SolVarEdge)*(size_t)fs->nXYEdg, &jr->svXYEdge); CHKERRQ(ierr);
+JacRes.cpp:	ierr = PetscMalloc(sizeof(SolVarEdge)*(size_t)fs->nXZEdg, &jr->svXZEdge); CHKERRQ(ierr);
+JacRes.cpp:	ierr = PetscMalloc(sizeof(SolVarEdge)*(size_t)fs->nYZEdg, &jr->svYZEdge); CHKERRQ(ierr);
+JacRes.cpp:	ierr = PetscMemzero(jr->svCell,   sizeof(SolVarCell)*(size_t)fs->nCells); CHKERRQ(ierr);
+JacRes.cpp:	ierr = PetscMemzero(jr->svXYEdge, sizeof(SolVarEdge)*(size_t)fs->nXYEdg); CHKERRQ(ierr);
+JacRes.cpp:	ierr = PetscMemzero(jr->svXZEdge, sizeof(SolVarEdge)*(size_t)fs->nXZEdg); CHKERRQ(ierr);
+JacRes.cpp:	ierr = PetscMemzero(jr->svYZEdge, sizeof(SolVarEdge)*(size_t)fs->nYZEdg); CHKERRQ(ierr);
+JacRes.cpp:	svBuffSz = numPhases*(fs->nCells + fs->nXYEdg + fs->nXZEdg + fs->nYZEdg);
+JacRes.cpp:	n = fs->nCells;
+JacRes.cpp:	n = fs->nXYEdg;
+JacRes.cpp:	n = fs->nXZEdg;
+JacRes.cpp:	n = fs->nYZEdg;
+JacRes.cpp:	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, NULL); CHKERRQ(ierr);
+JacRes.cpp:		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
+JacRes.cpp:		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+JacRes.cpp:	n = fs->nCells;
+JacRes.cpp:	n = fs->nXYEdg;
+JacRes.cpp:	n = fs->nXZEdg;
+JacRes.cpp:	n = fs->nYZEdg;
+JacRes.cpp:	mcz     = fs->dsz.tcels - 1;
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp, &p);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &p);  CHKERRQ(ierr);
+JacRes.cpp:	jr->ctrl.pShift = -gpShift/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels);		// minus as we need to reduce P @ the top by this amount
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
+JacRes.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+JacRes.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+JacRes.cpp:		dz = SIZE_CELL(k, sz, fs->dsz);
+JacRes.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dx = SIZE_NODE(i, sx, fs->dsx);
+JacRes.cpp:		dy = SIZE_NODE(j, sy, fs->dsy);
+JacRes.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dx = SIZE_NODE(i, sx, fs->dsx);
+JacRes.cpp:		dz = SIZE_NODE(k, sz, fs->dsz);
+JacRes.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dy = SIZE_NODE(j, sy, fs->dsy);
+JacRes.cpp:		dz = SIZE_NODE(k, sz, fs->dsz);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
+JacRes.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+JacRes.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+JacRes.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldzz);
+JacRes.cpp:	LOCAL_TO_LOCAL(fs->DA_XY,  jr->ldxy);
+JacRes.cpp:	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->ldxz);
+JacRes.cpp:	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->ldyz);
+JacRes.cpp:		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+JacRes.cpp:		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+JacRes.cpp:		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+JacRes.cpp:		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+JacRes.cpp:		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+JacRes.cpp:		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+JacRes.cpp:		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+JacRes.cpp:		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+JacRes.cpp:		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
+JacRes.cpp:		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvxdx);
+JacRes.cpp:		LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvxdy);
+JacRes.cpp:		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvxdz);
+JacRes.cpp:		LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvydx);
+JacRes.cpp:		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvydy);
+JacRes.cpp:		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvydz);
+JacRes.cpp:		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvzdx);
+JacRes.cpp:		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvzdy);
+JacRes.cpp:		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvzdz);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_X,  jr->lvx,  &lvx);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,  jr->lvy,  &lvy);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,  jr->lvz,  &lvz);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &gwz);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &gwy);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &gwx);  CHKERRQ(ierr);
+JacRes.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dvxdy = (lvx[k][j][i] - lvx[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
+JacRes.cpp:		dvydx = (lvy[k][j][i] - lvy[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
+JacRes.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dvxdz = (lvx[k][j][i] - lvx[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
+JacRes.cpp:		dvzdx = (lvz[k][j][i] - lvz[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
+JacRes.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dvydz = (lvy[k][j][i] - lvy[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
+JacRes.cpp:		dvzdy = (lvz[k][j][i] - lvz[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,  jr->lvx,  &lvx);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,  jr->lvy,  &lvy);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,  jr->lvz,  &lvz);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &gwz);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &gwy);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &gwx);  CHKERRQ(ierr);
+JacRes.cpp:	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+JacRes.cpp:	LOCAL_TO_LOCAL(fs->DA_XZ, jr->ldxz);
+JacRes.cpp:	LOCAL_TO_LOCAL(fs->DA_YZ, jr->ldyz);
+JacRes.cpp:	mcx = fs->dsx.tcels - 1;
+JacRes.cpp:	mcy = fs->dsy.tcels - 1;
+JacRes.cpp:	mcz = fs->dsz.tcels - 1;
+JacRes.cpp:	mx  = fs->dsx.tnods - 1;
+JacRes.cpp:	my  = fs->dsy.tnods - 1;
+JacRes.cpp:	mz  = fs->dsz.tnods - 1;
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+JacRes.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		  y_c = COORD_CELL(j,sy,fs->dsy);
+JacRes.cpp:		z = COORD_CELL(k, sz, fs->dsz);
+JacRes.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+JacRes.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+JacRes.cpp:		dz = SIZE_CELL(k, sz, fs->dsz);
+JacRes.cpp:		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+JacRes.cpp:		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+JacRes.cpp:		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+JacRes.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dx = SIZE_NODE(i, sx, fs->dsx);
+JacRes.cpp:		dy = SIZE_NODE(j, sy, fs->dsy);
+JacRes.cpp:		dz = SIZE_CELL(k, sz, fs->dsz);
+JacRes.cpp:		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+JacRes.cpp:		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+JacRes.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dx = SIZE_NODE(i, sx, fs->dsx);
+JacRes.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+JacRes.cpp:		dz = SIZE_NODE(k, sz, fs->dsz);
+JacRes.cpp:		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+JacRes.cpp:		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+JacRes.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+JacRes.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+JacRes.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+JacRes.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+JacRes.cpp:		dy = SIZE_NODE(j, sy, fs->dsy);
+JacRes.cpp:		dz = SIZE_NODE(k, sz, fs->dsz);
+JacRes.cpp:		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+JacRes.cpp:		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+JacRes.cpp:	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
+JacRes.cpp:	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
+JacRes.cpp:	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
+JacRes.cpp:	mcx = fs->dsx.tcels - 1;
+JacRes.cpp:	mcy = fs->dsy.tcels - 1;
+JacRes.cpp:	mcz = fs->dsz.tcels - 1;
+JacRes.cpp:	ierr  = PetscMemcpy(vx, iter, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	iter += fs->nXFace;
+JacRes.cpp:	ierr  = PetscMemcpy(vy, iter, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	iter += fs->nYFace;
+JacRes.cpp:	ierr  = PetscMemcpy(vz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	GLOBAL_TO_LOCAL(fs->DA_X,   jr->gvx, jr->lvx)
+JacRes.cpp:	GLOBAL_TO_LOCAL(fs->DA_Y,   jr->gvy, jr->lvy)
+JacRes.cpp:	GLOBAL_TO_LOCAL(fs->DA_Z,   jr->gvz, jr->lvz)
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+JacRes.cpp:	GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+JacRes.cpp:	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+JacRes.cpp:	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+JacRes.cpp:	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+JacRes.cpp:	GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
+JacRes.cpp:	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+JacRes.cpp:	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+JacRes.cpp:	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+JacRes.cpp:	GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+JacRes.cpp:	mcx = fs->dsx.tcels - 1;
+JacRes.cpp:	mcy = fs->dsy.tcels - 1;
+JacRes.cpp:	mcz = fs->dsz.tcels - 1;
+JacRes.cpp:	iter = sol + fs->nXFace + fs->nYFace + fs->nZFace;
+JacRes.cpp:	ierr = PetscMemcpy(p, iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &lp);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp); CHKERRQ(ierr);
+JacRes.cpp:	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+JacRes.cpp:	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+JacRes.cpp:	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp, &gp);  CHKERRQ(ierr);
+JacRes.cpp:			cz = COORD_CELL(k, sz, fs->dsz);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &gp);  CHKERRQ(ierr);
+JacRes.cpp:	psol = sol + fs->nXFace + fs->nYFace + fs->nZFace;
+JacRes.cpp:	ierr = PetscMemcpy(psol, p, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacRes.cpp:			z = COORD_CELL(k, sz, fs->dsz);
+JacRes.cpp:		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacRes.cpp:		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+JacRes.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+JacRes.cpp:	ierr  = PetscMemcpy(iter, fx, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	iter += fs->nXFace;
+JacRes.cpp:	ierr  = PetscMemcpy(iter, fy, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	iter += fs->nYFace;
+JacRes.cpp:	ierr  = PetscMemcpy(iter, fz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	iter += fs->nZFace;
+JacRes.cpp:	ierr  = PetscMemcpy(iter, c,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	ierr  = PetscMemcpy(fx, iter, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	iter += fs->nXFace;
+JacRes.cpp:	ierr  = PetscMemcpy(fy, iter, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	iter += fs->nYFace;
+JacRes.cpp:	ierr  = PetscMemcpy(fz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacRes.cpp:	iter += fs->nZFace;
+JacRes.cpp:	iter = res + fs->dof.lnv;
+JacRes.cpp:	ierr = PetscMemcpy(c,  iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+JacResAux.cpp:	dx = SIZE_CELL(i, sx, fs->dsx);   bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+JacResAux.cpp:	dy = SIZE_CELL(j, sy, fs->dsy);   bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+JacResAux.cpp:	dz = SIZE_CELL(k, sz, fs->dsz);   bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lsxy); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lsxy); CHKERRQ(ierr);
+JacResAux.cpp:	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &lsxy); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &lsxy); CHKERRQ(ierr);
+JacResAux.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+JacResAux.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &ldxy); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &ldxy); CHKERRQ(ierr);
+JacResAux.cpp:	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &ldxy); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &ldxy); CHKERRQ(ierr);
+JacResAux.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+JacResAux.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+JacResAux.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, lop,         &op);     CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, lop,         &op);     CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+JacResAux.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, lop)
+JacResAux.cpp:	dsz = &fs->dsz;
+JacResAux.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
+JacResAux.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lith)
+JacResAux.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
+JacResAux.cpp:		depth = gwLevel - COORD_CELL(k, sz, fs->dsz);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
+JacResAux.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_pore)
+JacResAux.cpp:	nZFace = (PetscScalar)(fs->dsx.tcels*fs->dsy.tcels*fs->dsz.tnods);
+JacResAux.cpp:	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &vz);  CHKERRQ(ierr);
+JacResAux.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &vz);  CHKERRQ(ierr);
+JacResTemp.cpp:  ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i], COORD_CELL(j,sy,fs->dsy),j-sy); CHKERRQ(ierr); \
+JacResTemp.cpp:	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
+JacResTemp.cpp:		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
+JacResTemp.cpp:		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT, &lT); CHKERRQ(ierr);
+JacResTemp.cpp:	mcx = fs->dsx.tcels - 1;
+JacResTemp.cpp:	mcy = fs->dsy.tcels - 1;
+JacResTemp.cpp:	mcz = fs->dsz.tcels - 1;
+JacResTemp.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lT)
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
+JacResTemp.cpp:	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+JacResTemp.cpp:	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+JacResTemp.cpp:	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
+JacResTemp.cpp:	mx = fs->dsx.tcels - 1;
+JacResTemp.cpp:	my = fs->dsy.tcels - 1;
+JacResTemp.cpp:	mz = fs->dsz.tcels - 1;
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+JacResTemp.cpp:	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, lT, GET_KC)
+JacResTemp.cpp:	SCATTER_FIELD(fs->DA_XY,  jr->ldxy, lT, GET_HRXY)
+JacResTemp.cpp:	SCATTER_FIELD(fs->DA_XZ,  jr->ldxz, lT, GET_HRXZ)
+JacResTemp.cpp:	SCATTER_FIELD(fs->DA_YZ,  jr->ldyz, lT, GET_HRYZ)
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &hxy); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &hxz); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &hyz); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx) ; CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy) ; CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz) ; CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &P );  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResTemp.cpp:		y_c = COORD_CELL(j,sy,fs->dsy);
+JacResTemp.cpp:		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
+JacResTemp.cpp:		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);
+JacResTemp.cpp:		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
+JacResTemp.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+JacResTemp.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+JacResTemp.cpp:		dz = SIZE_CELL(k, sz, fs->dsz);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &hxy); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &hxz); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &hyz); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx) ;  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy) ;  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz) ;  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &P)  ;  CHKERRQ(ierr);
+JacResTemp.cpp:	mx = fs->dsx.tcels - 1;
+JacResTemp.cpp:	my = fs->dsy.tcels - 1;
+JacResTemp.cpp:	mz = fs->dsz.tcels - 1;
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+JacResTemp.cpp:	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, lT, GET_KC)
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT,  &bcT); CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+JacResTemp.cpp:		y_c = COORD_CELL(j,sy,fs->dsy);
+JacResTemp.cpp:		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
+JacResTemp.cpp:		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);
+JacResTemp.cpp:		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
+JacResTemp.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+JacResTemp.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+JacResTemp.cpp:		dz = SIZE_CELL(k, sz, fs->dsz);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT);  CHKERRQ(ierr);
+JacResTemp.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &aop->gradfield);      CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_X, &gproX);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_Y, &gproY);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_Z, &gproZ);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_X, &lproX);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_Y, &lproY);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_Z, &lproZ);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_X, &gxiniX);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_Y, &gxiniY);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_Z, &gxiniZ);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_X, &lxiniX);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_Y, &lxiniY);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_Z, &lxiniZ);   CHKERRQ(ierr);
+adjoint.cpp:				sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+adjoint.cpp:				sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+adjoint.cpp:				sz = fs->dsz.pstart; nz = fs->dsz.ncels;
+adjoint.cpp:				ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+adjoint.cpp:				ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+adjoint.cpp:				ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
+adjoint.cpp:						ierr = DMDAVecGetArray(fs->DA_X, lxiniX, &llxiniX);      CHKERRQ(ierr);
+adjoint.cpp:						ierr = DMDAVecRestoreArray(fs->DA_X, lxiniX, &llxiniX);      CHKERRQ(ierr);
+adjoint.cpp:						ierr = DMDAVecGetArray(fs->DA_Y, lxiniY, &llxiniY);      CHKERRQ(ierr);
+adjoint.cpp:						ierr = DMDAVecRestoreArray(fs->DA_Y, lxiniY, &llxiniY);      CHKERRQ(ierr);
+adjoint.cpp:						ierr = DMDAVecGetArray(fs->DA_Z, lxiniZ, &llxiniZ);      CHKERRQ(ierr);
+adjoint.cpp:						ierr = DMDAVecRestoreArray(fs->DA_Z, lxiniZ, &llxiniZ);      CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
+adjoint.cpp:				dsz   = &fs->dsz;
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx);   CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
+adjoint.cpp:				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);            CHKERRQ(ierr);
+adjoint.cpp:				dsz   = &fs->dsz;
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy);   CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
+adjoint.cpp:				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY);            CHKERRQ(ierr);
+adjoint.cpp:				dsz   = &fs->dsz;
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz);   CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
+adjoint.cpp:				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Z, lproZ, &llproZ);            CHKERRQ(ierr);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_X, lproX, gproX);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_Y, lproY, gproY);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_Z, lproZ, gproZ);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_X, lxiniX, gxiniX);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_Y, lxiniY, gxiniY);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_Z, lxiniZ, gxiniZ);
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggproX, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nXFace;
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggproY, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nYFace;
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggproZ, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nZFace;
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggxiniX, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nXFace;
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggxiniY, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nYFace;
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggxiniZ, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nZFace;
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+adjoint.cpp:	mcx = fs->dsx.tcels - 1;
+adjoint.cpp:	mcy = fs->dsy.tcels - 1;
+adjoint.cpp:	mcz = fs->dsz.tcels - 1;
+adjoint.cpp:	mx  = fs->dsx.tnods - 1;
+adjoint.cpp:	my  = fs->dsy.tnods - 1;
+adjoint.cpp:	mz  = fs->dsz.tnods - 1;
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lgradfield,&llgradfield);      CHKERRQ(ierr);
+adjoint.cpp:	for(kk=0;kk<fs->dsx.tcels;kk++)
+adjoint.cpp:		for(jk=0;jk<fs->dsy.tcels;jk++)
+adjoint.cpp:			for(ik=0;ik<fs->dsz.tcels;ik++)
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+adjoint.cpp:				GET_CELL_RANGE(nx, sx, fs->dsx)
+adjoint.cpp:				GET_CELL_RANGE(ny, sy, fs->dsy)
+adjoint.cpp:				GET_CELL_RANGE(nz, sz, fs->dsz)
+adjoint.cpp:					z = COORD_CELL(k, sz, fs->dsz);
+adjoint.cpp:					dx = SIZE_CELL(i, sx, fs->dsx);
+adjoint.cpp:					dy = SIZE_CELL(j, sy, fs->dsy);
+adjoint.cpp:					dz = SIZE_CELL(k, sz, fs->dsz);
+adjoint.cpp:					bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+adjoint.cpp:					bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+adjoint.cpp:					bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+adjoint.cpp:				GET_NODE_RANGE(nx, sx, fs->dsx)
+adjoint.cpp:				GET_NODE_RANGE(ny, sy, fs->dsy)
+adjoint.cpp:				GET_CELL_RANGE(nz, sz, fs->dsz)
+adjoint.cpp:					dx = SIZE_NODE(i, sx, fs->dsx);
+adjoint.cpp:					dy = SIZE_NODE(j, sy, fs->dsy);
+adjoint.cpp:					dz = SIZE_CELL(k, sz, fs->dsz);
+adjoint.cpp:					bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+adjoint.cpp:					bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+adjoint.cpp:				GET_NODE_RANGE(nx, sx, fs->dsx)
+adjoint.cpp:				GET_CELL_RANGE(ny, sy, fs->dsy)
+adjoint.cpp:				GET_NODE_RANGE(nz, sz, fs->dsz)
+adjoint.cpp:					dx = SIZE_NODE(i, sx, fs->dsx);
+adjoint.cpp:					dy = SIZE_CELL(j, sy, fs->dsy);
+adjoint.cpp:					dz = SIZE_NODE(k, sz, fs->dsz);
+adjoint.cpp:					bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+adjoint.cpp:					bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+adjoint.cpp:				GET_CELL_RANGE(nx, sx, fs->dsx)
+adjoint.cpp:				GET_NODE_RANGE(ny, sy, fs->dsy)
+adjoint.cpp:				GET_NODE_RANGE(nz, sz, fs->dsz)
+adjoint.cpp:					dx = SIZE_CELL(i, sx, fs->dsx);
+adjoint.cpp:					dy = SIZE_NODE(j, sy, fs->dsy);
+adjoint.cpp:					dz = SIZE_NODE(k, sz, fs->dsz);
+adjoint.cpp:					bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+adjoint.cpp:					bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+adjoint.cpp:				ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+adjoint.cpp:				LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
+adjoint.cpp:				LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
+adjoint.cpp:				LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
+adjoint.cpp:				GET_CELL_RANGE(nx, sx, fs->dsx)
+adjoint.cpp:				GET_CELL_RANGE(ny, sy, fs->dsy)
+adjoint.cpp:				GET_CELL_RANGE(nz, sz, fs->dsz)
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lgradfield,&llgradfield);CHKERRQ(ierr);
+adjoint.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lgradfield);
+adjoint.cpp:			nx = fs->dsx.ncels;
+adjoint.cpp:			ny = fs->dsy.ncels;
+adjoint.cpp:			nz = fs->dsz.ncels;
+adjoint.cpp:			ncx = fs->dsx.ncoor;
+adjoint.cpp:			ncy = fs->dsy.ncoor;
+adjoint.cpp:			ncz = fs->dsz.ncoor;
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_X, &gxPar);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_Y, &gyPar);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_Z, &gzPar);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_X, &lxPar);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_Y, &lyPar);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_Z, &lzPar);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_X, &gxdPardu);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_Y, &gydPardu);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateGlobalVector(fs->DA_Z, &gzdPardu);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_X, &lxdPardu);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_Y, &lydPardu);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMCreateLocalVector (fs->DA_Z, &lzdPardu);   CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx); 		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy); 		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz); 		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_X, lxPar,    &xPar);    		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_Y, lyPar,    &yPar);    		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_Z, lzPar,    &zPar);    		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_X, lxdPardu, &xdPardu); 		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_Y, lydPardu, &ydPardu); 		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecGetArray(fs->DA_Z, lzdPardu, &zdPardu); 		CHKERRQ(ierr);
+adjoint.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+adjoint.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+adjoint.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+adjoint.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+adjoint.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+adjoint.cpp:		dz = SIZE_CELL(k, sz, fs->dsz);
+adjoint.cpp:		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+adjoint.cpp:		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+adjoint.cpp:		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz);    	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx);     	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy);     	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz);     	CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X, lxPar,    &xPar);    		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y, lyPar,    &yPar);    		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z, lzPar,    &zPar);    		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X, lxdPardu, &xdPardu); 		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y, lydPardu, &ydPardu); 		CHKERRQ(ierr);
+adjoint.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z, lzdPardu, &zdPardu); 		CHKERRQ(ierr);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_X, lxPar, gxPar);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_Y, lyPar, gyPar);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_Z, lzPar, gzPar);
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggxPar, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nXFace;
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggyPar, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nYFace;
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggzPar, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nZFace;
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_X, lxdPardu, gxdPardu);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_Y, lydPardu, gydPardu);
+adjoint.cpp:	LOCAL_TO_GLOBAL(fs->DA_Z, lzdPardu, gzdPardu);
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggxdPardu, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nXFace;
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggydPardu, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nYFace;
+adjoint.cpp:	ierr  = PetscMemcpy(iter, dggzdPardu, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+adjoint.cpp:	iter += fs->nZFace;
+advect.cpp: 	if((fs->dsx.periodic || fs->dsy.periodic || fs->dsz.periodic) && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
+advect.cpp:		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     : %lld %lld %lld \n",(LLD)fs->dsx.periodic,(LLD)fs->dsy.periodic,(LLD)fs->dsz.periodic);
+advect.cpp:	ierr = makeIntArray(&actx->markstart, NULL, fs->nCells + 1); CHKERRQ(ierr);
+advect.cpp:	svBuffSz = jr->dbm->numPhases*(fs->nCells + fs->nXYEdg + fs->nXZEdg + fs->nYZEdg);
+advect.cpp:	for(i = 0, n = fs->nCells; i < n; i++) jr->svCell  [i].phRat[bgPhase] = 1.0;
+advect.cpp:	for(i = 0, n = fs->nXYEdg; i < n; i++) jr->svXYEdge[i].phRat[bgPhase] = 1.0;
+advect.cpp:	for(i = 0, n = fs->nXZEdg; i < n; i++) jr->svXZEdge[i].phRat[bgPhase] = 1.0;
+advect.cpp:	for(i = 0, n = fs->nYZEdg; i < n; i++) jr->svYZEdge[i].phRat[bgPhase] = 1.0;
+advect.cpp:	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+advect.cpp:	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+advect.cpp:	sz = fs->dsz.pstart;
+advect.cpp:			for(jj = 0; jj < fs->nXYEdg; jj++) gxy[jj] = jr->svXYEdge[jj].s - jr->svXYEdge[jj].h;
+advect.cpp:			for(jj = 0; jj < fs->nXZEdg; jj++) gxz[jj] = jr->svXZEdge[jj].s - jr->svXZEdge[jj].h;
+advect.cpp:			for(jj = 0; jj < fs->nYZEdg; jj++) gyz[jj] = jr->svYZEdge[jj].s - jr->svYZEdge[jj].h;
+advect.cpp:			for(jj = 0; jj < fs->nXYEdg; jj++) gxy[jj] = jr->svXYEdge[jj].svDev.PSR;
+advect.cpp:			for(jj = 0; jj < fs->nXZEdg; jj++) gxz[jj] = jr->svXZEdge[jj].svDev.PSR;
+advect.cpp:			for(jj = 0; jj < fs->nYZEdg; jj++) gyz[jj] = jr->svYZEdge[jj].svDev.PSR;
+advect.cpp:			for(jj = 0; jj < fs->nXYEdg; jj++) { d = jr->svXYEdge[jj].d;  gxy[jj] = d*d; }
+advect.cpp:			for(jj = 0; jj < fs->nXZEdg; jj++) { d = jr->svXZEdge[jj].d;  gxz[jj] = d*d; }
+advect.cpp:			for(jj = 0; jj < fs->nYZEdg; jj++) { d = jr->svYZEdge[jj].d;  gyz[jj] = d*d; }
+advect.cpp:		GLOBAL_TO_LOCAL(fs->DA_XY, jr->gdxy, jr->ldxy);
+advect.cpp:		GLOBAL_TO_LOCAL(fs->DA_XZ, jr->gdxz, jr->ldxz);
+advect.cpp:		GLOBAL_TO_LOCAL(fs->DA_YZ, jr->gdyz, jr->ldyz);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
+advect.cpp:		xc = fs->dsx.ccoor[I];
+advect.cpp:		yc = fs->dsy.ccoor[J];
+advect.cpp:		zc = fs->dsz.ccoor[K];
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
+advect.cpp:	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+advect.cpp:	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+advect.cpp:	sz = fs->dsz.pstart;
+advect.cpp:	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+advect.cpp:	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+advect.cpp:	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+advect.cpp:		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
+advect.cpp:				fs->neighb[k], 100, actx->icomm, &srequest[scnt++]); CHKERRQ(ierr);
+advect.cpp:		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
+advect.cpp:				fs->neighb[k], 100, actx->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
+advect.cpp:	ptx = fs->dsx.periodic;
+advect.cpp:	pty = fs->dsy.periodic;
+advect.cpp:	ptz = fs->dsz.periodic;
+advect.cpp:				fs->neighb[k], 200, actx->icomm, &srequest[scnt++]); CHKERRQ(ierr);
+advect.cpp:				fs->neighb[k], 200, actx->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
+advect.cpp:	M  = fs->dsx.ncels;
+advect.cpp:	N  = fs->dsy.ncels;
+advect.cpp:		ierr = Discret1DFindPoint(&fs->dsx, X[0], I); CHKERRQ(ierr);
+advect.cpp:		ierr = Discret1DFindPoint(&fs->dsy, X[1], J); CHKERRQ(ierr);
+advect.cpp:		ierr = Discret1DFindPoint(&fs->dsz, X[2], K); CHKERRQ(ierr);
+advect.cpp:		if(ID < 0 || ID > fs->nCells-1)
+advect.cpp:	ierr = clearIntArray(actx->markstart, fs->nCells+1); CHKERRQ(ierr);
+advect.cpp:	nummark = getPtrCnt(fs->nCells, actx->markstart, actx->markstart);
+advect.cpp:	rewindPtr(fs->nCells, actx->markstart);
+advect.cpp:	actx->markstart[fs->nCells] = nummark;
+advect.cpp:	M = fs->dsx.ncels;
+advect.cpp:	N = fs->dsy.ncels;
+advect.cpp:	for(i = 0; i < fs->nCells; i++)
+advect.cpp:	for(ind = 0; ind < fs->nCells; ind++)
+advect.cpp:			xs[0] = fs->dsx.ncoor[i]; xe[0] = fs->dsx.ncoor[i+1];
+advect.cpp:			xs[1] = fs->dsy.ncoor[j]; xe[1] = fs->dsy.ncoor[j+1];
+advect.cpp:			xs[2] = fs->dsz.ncoor[k]; xe[2] = fs->dsz.ncoor[k+1];
+advect.cpp:	nx     = fs->dsx.ncels;
+advect.cpp:	ny     = fs->dsy.ncels;
+advect.cpp:	nz     = fs->dsz.ncels;
+advect.cpp:	ierr = PetscMalloc((size_t)fs->nCells*sizeof(NumCorner), &numcorner); CHKERRQ(ierr);
+advect.cpp:	ierr = PetscMemzero(numcorner, (size_t)fs->nCells*sizeof(NumCorner)); CHKERRQ(ierr);
+advect.cpp:	for(i = 0; i < fs->nCells; i++)
+advect.cpp:		xc[0] = fs->dsx.ccoor[I];
+advect.cpp:		xc[1] = fs->dsy.ccoor[J];
+advect.cpp:		xc[2] = fs->dsz.ccoor[K];
+advect.cpp:	for(i = 0; i < fs->nCells; i++)
+advect.cpp:	for(i = 0; i < fs->nCells; i++)
+advect.cpp:				xc[0] = fs->dsx.ccoor[I];
+advect.cpp:				xc[1] = fs->dsy.ccoor[J];
+advect.cpp:				xc[2] = fs->dsz.ccoor[K];
+advect.cpp:				xs[0] = fs->dsx.ncoor[I];
+advect.cpp:				xs[1] = fs->dsy.ncoor[J];
+advect.cpp:				xs[2] = fs->dsz.ncoor[K];
+advect.cpp:				xe[0] = fs->dsx.ncoor[I+1];
+advect.cpp:				xe[1] = fs->dsy.ncoor[J+1];
+advect.cpp:				xe[2] = fs->dsz.ncoor[K+1];
+advect.cpp:	for(jj = 0; jj < fs->nXYEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svXYEdge[jj].phRat, &jr->svXYEdge[jj].ws); CHKERRQ(ierr); }
+advect.cpp:	for(jj = 0; jj < fs->nXZEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svXZEdge[jj].phRat, &jr->svXZEdge[jj].ws); CHKERRQ(ierr); }
+advect.cpp:	for(jj = 0; jj < fs->nYZEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svYZEdge[jj].phRat, &jr->svYZEdge[jj].ws); CHKERRQ(ierr); }
+advect.cpp:	nx     = fs->dsx.ncels;
+advect.cpp:	ny     = fs->dsy.ncels;
+advect.cpp:	nCells = fs->nCells;
+advect.cpp:		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx);
+advect.cpp:		wyc = WEIGHT_POINT_CELL(J, yp, fs->dsy);
+advect.cpp:		wzc = WEIGHT_POINT_CELL(K, zp, fs->dsz);
+advect.cpp:	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+advect.cpp:	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+advect.cpp:	sz = fs->dsz.pstart;
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
+advect.cpp:		xc = fs->dsx.ccoor[I];
+advect.cpp:		yc = fs->dsy.ccoor[J];
+advect.cpp:		zc = fs->dsz.ccoor[K];
+advect.cpp:		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx);
+advect.cpp:		wyc = WEIGHT_POINT_CELL(J, yp, fs->dsy);
+advect.cpp:		wzc = WEIGHT_POINT_CELL(K, zp, fs->dsz);
+advect.cpp:		wxn = WEIGHT_POINT_NODE(II, xp, fs->dsx);
+advect.cpp:		wyn = WEIGHT_POINT_NODE(JJ, yp, fs->dsy);
+advect.cpp:		wzn = WEIGHT_POINT_NODE(KK, zp, fs->dsz);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
+advect.cpp:	LOCAL_TO_GLOBAL(fs->DA_XY, jr->ldxy, jr->gdxy)
+advect.cpp:	LOCAL_TO_GLOBAL(fs->DA_XZ, jr->ldxz, jr->gdxz)
+advect.cpp:	LOCAL_TO_GLOBAL(fs->DA_YZ, jr->ldyz, jr->gdyz)
+advect.cpp:		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].phRat[iphase] = gxy[jj];
+advect.cpp:		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].phRat[iphase] = gxz[jj];
+advect.cpp:		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].phRat[iphase] = gyz[jj];
+advect.cpp:		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].h = gxy[jj]/jr->svXYEdge[jj].ws;
+advect.cpp:		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].h = gxz[jj]/jr->svXZEdge[jj].ws;
+advect.cpp:		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].h = gyz[jj]/jr->svYZEdge[jj].ws;
+advect.cpp:		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.APS = gxy[jj]/jr->svXYEdge[jj].ws;
+advect.cpp:		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.APS = gxz[jj]/jr->svXZEdge[jj].ws;
+advect.cpp:		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.APS = gyz[jj]/jr->svYZEdge[jj].ws;
+advect.cpp:	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].h = jr->svXYEdge[jj].s;
+advect.cpp:	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].h = jr->svXZEdge[jj].s;
+advect.cpp:	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].h = jr->svYZEdge[jj].s;
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &lp); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp, &lp); CHKERRQ(ierr);
+advect.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT, &lT); CHKERRQ(ierr);
+advect.cpp:	ierr = Discret1DgetMaxInvStep(&fs->dsx, fs->DA_X, jr->gvx, 0, &lidtmax); CHKERRQ(ierr);
+advect.cpp:	ierr = Discret1DgetMaxInvStep(&fs->dsy, fs->DA_Y, jr->gvy, 1, &lidtmax); CHKERRQ(ierr);
+advect.cpp:	ierr = Discret1DgetMaxInvStep(&fs->dsz, fs->DA_Z, jr->gvz, 2, &lidtmax); CHKERRQ(ierr);
+advect.cpp:		Z_Top = actx->fs->dsz.gcrdend;
+bc.cpp:    nCells = bc->fs->nCells;
+bc.cpp:    nCells = bc->fs->nCells;
+bc.cpp:    dof = &fs->dof;
+bc.cpp:    ierr = DMCreateLocalVector(fs->DA_X,   &bc->bcvx);  CHKERRQ(ierr);
+bc.cpp:    ierr = DMCreateLocalVector(fs->DA_Y,   &bc->bcvy);  CHKERRQ(ierr);
+bc.cpp:    ierr = DMCreateLocalVector(fs->DA_Z,   &bc->bcvz);  CHKERRQ(ierr);
+bc.cpp:    ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcp);   CHKERRQ(ierr);
+bc.cpp:    ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcT);   CHKERRQ(ierr);
+bc.cpp:        ierr = PetscMalloc((size_t)fs->nCells, &bc->fixCellFlag); CHKERRQ(ierr);
+bc.cpp:    if((PetscInt)sb.st_size != bc->fs->nCells)
+bc.cpp:    fread(bc->fixCellFlag, (size_t)bc->fs->nCells, 1, fp);
+bc.cpp:    // LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcT)
+bc.cpp:    // LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
+bc.cpp:    LOCAL_TO_LOCAL(fs->DA_X,   bc->bcvx)
+bc.cpp:    LOCAL_TO_LOCAL(fs->DA_Y,   bc->bcvy)
+bc.cpp:    LOCAL_TO_LOCAL(fs->DA_Z,   bc->bcvz)
+bc.cpp:    dof      = &fs->dof;
+bc.cpp:    mcz = fs->dsz.tcels - 1;
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp);  CHKERRQ(ierr);
+bc.cpp:    mcz = fs->dsz.tcels - 1;
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT);  CHKERRQ(ierr);
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+bc.cpp:                x       = COORD_CELL(i, sx, fs->dsx);
+bc.cpp:                y       = COORD_CELL(j, sy, fs->dsy);
+bc.cpp:                x       = COORD_CELL_GHOST(i, fs->dsx);
+bc.cpp:                y       = COORD_CELL_GHOST(j, fs->dsy);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
+bc.cpp:    mnx = fs->dsx.tnods - 1;
+bc.cpp:    mny = fs->dsy.tnods - 1;
+bc.cpp:    mnz = fs->dsz.tnods - 1;
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
+bc.cpp:    GET_NODE_RANGE(nx, sx, fs->dsx)
+bc.cpp:    GET_CELL_RANGE(ny, sy, fs->dsy)
+bc.cpp:    GET_CELL_RANGE(nz, sz, fs->dsz)
+bc.cpp:        z       = COORD_CELL(k  , sz, fs->dsz);
+bc.cpp:        z_bot   = COORD_CELL(k-1, sz, fs->dsz);
+bc.cpp:        z_top   = COORD_CELL(k+1, sz, fs->dsz);
+bc.cpp:        y   	= COORD_CELL(j  , sy, fs->dsy);
+bc.cpp:        y_frt   = COORD_CELL(j-1, sy, fs->dsy);
+bc.cpp:        y_bck   = COORD_CELL(j+1, sy, fs->dsy);
+bc.cpp:    GET_CELL_RANGE(nx, sx, fs->dsx)
+bc.cpp:    GET_NODE_RANGE(ny, sy, fs->dsy)
+bc.cpp:    GET_CELL_RANGE(nz, sz, fs->dsz)
+bc.cpp:        z   	= COORD_CELL(k, sz, fs->dsz);
+bc.cpp:        z_bot   = COORD_CELL(k-1, sz, fs->dsz);
+bc.cpp:        z_top   = COORD_CELL(k+1, sz, fs->dsz);
+bc.cpp:    GET_CELL_RANGE(nx, sx, fs->dsx)
+bc.cpp:    GET_CELL_RANGE(ny, sy, fs->dsy)
+bc.cpp:    GET_NODE_RANGE(nz, sz, fs->dsz)
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
+bc.cpp:    mcx = fs->dsx.tcels - 1;
+bc.cpp:    mcy = fs->dsy.tcels - 1;
+bc.cpp:    mcz = fs->dsz.tcels - 1;
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:        GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+bc.cpp:        GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+bc.cpp:        GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+bc.cpp:        GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:        GET_NODE_RANGE(nx, sx, fs->dsx)
+bc.cpp:        GET_CELL_RANGE(ny, sy, fs->dsy)
+bc.cpp:        GET_CELL_RANGE(nz, sz, fs->dsz)
+bc.cpp:            xbeg[0] = COORD_NODE(i, sx, fs->dsx);
+bc.cpp:            xbeg[1] = COORD_CELL(j, sy, fs->dsy);
+bc.cpp:            xbeg[2] = COORD_CELL(k, sz, fs->dsz);
+bc.cpp:        GET_CELL_RANGE(nx, sx, fs->dsx)
+bc.cpp:        GET_NODE_RANGE(ny, sy, fs->dsy)
+bc.cpp:        GET_CELL_RANGE(nz, sz, fs->dsz)
+bc.cpp:            xbeg[0] = COORD_CELL(i, sx, fs->dsx);
+bc.cpp:            xbeg[1] = COORD_NODE(j, sy, fs->dsy);
+bc.cpp:            xbeg[2] = COORD_CELL(k, sz, fs->dsz);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    mnx = fs->dsx.tnods - 1;
+bc.cpp:    mny = fs->dsy.tnods - 1;
+bc.cpp:    mnz = fs->dsz.tnods - 1;
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    GET_NODE_RANGE(nx, sx, fs->dsx)
+bc.cpp:    GET_CELL_RANGE(ny, sy, fs->dsy)
+bc.cpp:    GET_CELL_RANGE(nz, sz, fs->dsz)
+bc.cpp:            z   = COORD_CELL(k, sz, fs->dsz);
+bc.cpp:            z   = COORD_CELL(k, sz, fs->dsz);
+bc.cpp:    GET_CELL_RANGE(nx, sx, fs->dsx)
+bc.cpp:    GET_NODE_RANGE(ny, sy, fs->dsy)
+bc.cpp:    GET_CELL_RANGE(nz, sz, fs->dsz)
+bc.cpp:            z   = COORD_CELL(k, sz, fs->dsz);
+bc.cpp:    GET_CELL_RANGE(nx, sx, fs->dsx)
+bc.cpp:    GET_CELL_RANGE(ny, sy, fs->dsy)
+bc.cpp:    GET_NODE_RANGE(nz, sz, fs->dsz)
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:        	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:				x = COORD_NODE(i, sx, fs->dsx);
+bc.cpp:				y = COORD_CELL(j, sy, fs->dsy);
+bc.cpp:				z = COORD_CELL(k, sz, fs->dsz);
+bc.cpp:        	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:				x = COORD_CELL(i, sx, fs->dsx);
+bc.cpp:				y = COORD_NODE(j, sy, fs->dsy);
+bc.cpp:				z = COORD_CELL(k, sz, fs->dsz);
+bc.cpp:        	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:				x = COORD_CELL(i, sx, fs->dsx);
+bc.cpp:				y = COORD_CELL(j, sy, fs->dsy);
+bc.cpp:				z = COORD_NODE(k, sz, fs->dsz);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:        	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:				x = COORD_NODE(i, sx, fs->dsx);
+bc.cpp:				y = COORD_CELL(j, sy, fs->dsy);
+bc.cpp:				z = COORD_CELL(k, sz, fs->dsz);
+bc.cpp:        	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:				x = COORD_CELL(i, sx, fs->dsx);
+bc.cpp:				y = COORD_NODE(j, sy, fs->dsy);
+bc.cpp:				z = COORD_CELL(k, sz, fs->dsz);
+bc.cpp:        	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:				x = COORD_CELL(i, sx, fs->dsx);
+bc.cpp:				y = COORD_CELL(j, sy, fs->dsy);
+bc.cpp:				z = COORD_NODE(k, sz, fs->dsz);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    dof     = &fs->dof;
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    if(Exx) { ierr = Discret1DStretch(&fs->dsx, Exx*ts->dt, Rxx); CHKERRQ(ierr); }
+bc.cpp:    if(Eyy) { ierr = Discret1DStretch(&fs->dsy, Eyy*ts->dt, Ryy); CHKERRQ(ierr); }
+bc.cpp:    if(Ezz) { ierr = Discret1DStretch(&fs->dsz, Ezz*ts->dt, Rzz); CHKERRQ(ierr); }
+bc.cpp:        M  = fs->dsx.ncels;
+bc.cpp:        N  = fs->dsy.ncels;
+bc.cpp:        sx = fs->dsx.pstart;
+bc.cpp:        sy = fs->dsy.pstart;
+bc.cpp:        sz = fs->dsz.pstart;
+bc.cpp:        mx = fs->dsx.tcels-1;
+bc.cpp:        my = fs->dsy.tcels-1;
+bc.cpp:                    Z_Top = bc->fs->dsz.gcrdend;
+bc.cpp:    ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+bc.cpp:    GET_CELL_RANGE(nx, sx, fs->dsx)
+bc.cpp:    GET_CELL_RANGE(ny, sy, fs->dsy)
+bc.cpp:    GET_NODE_RANGE(nz, sz, fs->dsz)
+bc.cpp:        x       = COORD_CELL(i, sx, fs->dsx);
+bc.cpp:                y       =   COORD_CELL(j, sy, fs->dsy);
+bc.cpp:                y   =   COORD_CELL(j, sy, fs->dsy);
+bc.cpp:    ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+cvi.cpp:	nx = fs->dsx.ncels;
+cvi.cpp:	ny = fs->dsy.ncels;
+cvi.cpp:	sx = fs->dsx.pstart;
+cvi.cpp:	sy = fs->dsy.pstart;
+cvi.cpp:	sz = fs->dsz.pstart;
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+cvi.cpp:	ierr = makeIntArray(&vi->markstart, NULL         , vi->fs->nCells+1); CHKERRQ(ierr);
+cvi.cpp:		if(fs->neighb[k] != vi->iproc && fs->neighb[k] != -1)
+cvi.cpp:					fs->neighb[k], 100, vi->icomm, &srequest[scnt++]); CHKERRQ(ierr);
+cvi.cpp:		if(fs->neighb[k] != vi->iproc && fs->neighb[k] != -1)
+cvi.cpp:					fs->neighb[k], 100, vi->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
+cvi.cpp:					fs->neighb[k], 200, vi->icomm, &srequest[scnt++]); CHKERRQ(ierr);
+cvi.cpp:					fs->neighb[k], 200, vi->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
+cvi.cpp:	M = fs->dsx.ncels;
+cvi.cpp:	N = fs->dsy.ncels;
+cvi.cpp:		ierr = Discret1DFindPoint(&fs->dsx, X[0], I); CHKERRQ(ierr);
+cvi.cpp:		ierr = Discret1DFindPoint(&fs->dsy, X[1], J); CHKERRQ(ierr);
+cvi.cpp:		ierr = Discret1DFindPoint(&fs->dsz, X[2], K); CHKERRQ(ierr);
+cvi.cpp:	ierr = makeIntArray(&numMarkCell, NULL, fs->nCells); CHKERRQ(ierr);
+cvi.cpp:	for(i = 1; i < fs->nCells+1; i++) vi->markstart[i] = vi->markstart[i-1]+numMarkCell[i-1];
+cvi.cpp:	ierr = makeIntArray(&m, NULL, fs->nCells); CHKERRQ(ierr);
+cvi.cpp:	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+cvi.cpp:	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+cvi.cpp:	sz = fs->dsz.pstart;
+cvi.cpp:	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+cvi.cpp:	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+cvi.cpp:	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+cvi.cpp:	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+cvi.cpp:	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+cvi.cpp:	sz = fs->dsz.pstart; nz = fs->dsz.ncels;
+cvi.cpp:	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+cvi.cpp:	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+cvi.cpp:	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+cvi.cpp:	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+cvi.cpp:	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+cvi.cpp:	sz = fs->dsz.pstart; nz = fs->dsz.ncels;
+cvi.cpp:	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+cvi.cpp:	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+cvi.cpp:	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+cvi.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+dike.cpp:				fs->dsy.tnods, fs->dsy.nproc, fs->dsz.nproc, 
+dike.cpp:				fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
+dike.cpp:				fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
+dike.cpp:            	fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
+dike.cpp:  ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+dike.cpp:  dsz = &fs->dsz;
+dike.cpp:  //dsy = &fs->dsy;
+dike.cpp:  //dsx = &fs->dsx;  //debugging
+dike.cpp:  //scal = fs->scal; //debugging
+dike.cpp:  ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+dike.cpp:  ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+dike.cpp:  ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+dike.cpp:        xcell=COORD_CELL(i, sx, fs->dsx);
+dike.cpp:        ycell=COORD_CELL(j, sy, fs->dsy);
+dike.cpp:  ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+dike.cpp:  ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+dike.cpp:  dsz = &fs->dsz;
+dike.cpp:  dsy = &fs->dsy;
+dike.cpp:  //dsx = &fs->dsx;
+dike.cpp:  //scal = fs->scal;  //debugging
+dike.cpp:  ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+dike.cpp:      ycoors[L][M][j]=COORD_NODE(j+sy,sy,fs->dsy);  //can put j in last entry because ny<nx
+dike.cpp:    yc = COORD_CELL(j, sy, fs->dsy);
+dike.cpp:      yy=COORD_CELL(jj, sy, fs->dsy);
+dike.cpp:      xc =  COORD_CELL(i, sx, fs->dsx);
+dike.cpp:        xx = COORD_CELL(ii, sx, fs->dsx);
+dike.cpp:           dx = SIZE_CELL(ii, sx, fs->dsx);
+dike.cpp:           xx = COORD_CELL(ii, sx, fs->dsx);
+dike.cpp:         dy=SIZE_CELL(jj,sy,fs->dsy);
+dike.cpp:         yy = COORD_CELL(jj,sy,fs->dsy);
+dike.cpp:           dx = SIZE_CELL(ii,sx,fs->dsx);
+dike.cpp:           xx = COORD_CELL(ii, sx, fs->dsx);
+dike.cpp:           dx = SIZE_CELL(ii,sx,fs->dsx);
+dike.cpp:           xx = COORD_CELL(ii, sx, fs->dsx);
+dike.cpp:      xc=COORD_CELL(i, sx, fs->dsx);
+dike.cpp:      yc=COORD_CELL(j, sy, fs->dsy);
+dike.cpp:  dsz = &fs->dsz;
+dike.cpp:  dsx = &fs->dsx;
+dike.cpp:  ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+dike.cpp:        xcell=COORD_CELL(i, sx, fs->dsx);
+dike.cpp:           //xshift=COORD_CELL(i, sx, fs->dsx)-xcenter;
+dike.cpp:     dsdx1=2*(sxx_max-sxxm)/(SIZE_CELL(ixmax-1, sx, fs->dsx)+SIZE_CELL(ixmax, sx, fs->dsx));  //slope left of max
+dike.cpp:     dsdx2=2*(sxxp-sxx_max)/(SIZE_CELL(ixmax+1, sx, fs->dsx)+SIZE_CELL(ixmax, sx, fs->dsx));  //slope right of max
+dike.cpp:     dx12=(COORD_CELL(ixmax+1, sx, fs->dsx)-COORD_CELL(ixmax-1, sx, fs->dsx))/2;
+dike.cpp:        x_maxsxx=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2-dsdx1/(dsdx2-dsdx1)*dx12;
+dike.cpp:        x_maxsxx=COORD_CELL(ixmax,sx,fs->dsx);
+dike.cpp:     //dx=SIZE_CELL(ixcenter,sx, fs->dsx);
+dike.cpp:     if (xshift>0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
+dike.cpp:        xshift=0.5*SIZE_CELL(ixcenter, sx, fs->dsx);
+dike.cpp:     else if (xshift<0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx)) //ensure its within the width of cell left of center
+dike.cpp:        xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
+dike.cpp:        ycell = COORD_CELL(j, sy, fs->dsy);  //debugging
+dike.cpp:        xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
+dike.cpp:        CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], x_maxsxx, xcell, COORD_CELL(ixmax, sx, fs->dsx),nD);  //debugging
+fastscape.cpp:    nx_fs = fs->dsx.tnods;
+fastscape.cpp:    ny_fs = fs->dsy.tnods;
+fastscape.cpp:    L    = (PetscInt)fs->dsz.rank;
+fastscape.cpp:    L    = (PetscInt)fs->dsz.rank;
+fastscape.cpp:    cx_end = fs_actx->dsx.ncoor[fs->dsx.ncels];
+fastscape.cpp:    cy_end = fs_actx->dsy.ncoor[fs->dsy.ncels];
+fastscape.cpp:        if(!(PetscInt)fs->dsz.rank)
+fastscape.cpp:        if(!(PetscInt)fs->dsz.rank)
+fastscape_2.cpp:    L    = (PetscInt)fs->dsz.rank;
+fastscape_2.cpp:    L    = (PetscInt)fs->dsz.rank;
+fastscape_2.cpp:    cx_end = fs_actx->dsx.ncoor[fs->dsx.ncels];
+fastscape_2.cpp:    cy_end = fs_actx->dsy.ncoor[fs->dsy.ncels];
+fastscape_2.cpp:        if(!(PetscInt)fs->dsz.rank)
+fastscape_2.cpp:        if(!(PetscInt)fs->dsz.rank)
+fdstag.cpp:	scal = fs->scal;
+fdstag.cpp:	fs->gtol = 1e-6;
+fdstag.cpp:	ierr = getScalarParam(fb, _OPTIONAL_, "gtol", &fs->gtol, 1, 1.0); CHKERRQ(ierr);
+fdstag.cpp:	ierr = MeshSeg1DReadParam(&msx, scal->length, fs->gtol, "x", fb); CHKERRQ(ierr);
+fdstag.cpp:	ierr = MeshSeg1DReadParam(&msy, scal->length, fs->gtol, "y", fb); CHKERRQ(ierr);
+fdstag.cpp:	ierr = MeshSeg1DReadParam(&msz, scal->length, fs->gtol, "z", fb); CHKERRQ(ierr);
+fdstag.cpp:		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDAGetInfo(fs->DA_CEN, 0, 0, 0, 0, &Px, &Py, &Pz, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &plx, &ply, &plz); CHKERRQ(ierr);
+fdstag.cpp:	ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DCreate(&fs->dsx, Px, rx, lx, cx,
+fdstag.cpp:			fs->gtol); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DCreate(&fs->dsy, Py, ry, ly, cy,
+fdstag.cpp:			fs->gtol); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DCreate(&fs->dsz, Pz, rz, lz, cz,
+fdstag.cpp:			fs->gtol); CHKERRQ(ierr);
+fdstag.cpp:	nnx = fs->dsx.nnods; ncx = fs->dsx.ncels;
+fdstag.cpp:	nny = fs->dsy.nnods; ncy = fs->dsy.ncels;
+fdstag.cpp:	nnz = fs->dsz.nnods; ncz = fs->dsz.ncels;
+fdstag.cpp:	fs->nCells = ncx*ncy*ncz;
+fdstag.cpp:	fs->nCorns = nnx*nny*nnz;
+fdstag.cpp:	fs->nXYEdg = nnx*nny*ncz;
+fdstag.cpp:	fs->nXZEdg = nnx*ncy*nnz;
+fdstag.cpp:	fs->nYZEdg = ncx*nny*nnz;
+fdstag.cpp:	fs->nXFace = nnx*ncy*ncz;
+fdstag.cpp:	fs->nYFace = ncx*nny*ncz;
+fdstag.cpp:	fs->nZFace = ncx*ncy*nnz;
+fdstag.cpp:	ierr = Discret1DGenCoord(&fs->dsx, &msx); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DGenCoord(&fs->dsy, &msy); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DGenCoord(&fs->dsz, &msz); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DReadRestart(&fs->dsx, fp); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DReadRestart(&fs->dsy, fp); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DReadRestart(&fs->dsz, fp); CHKERRQ(ierr);
+fdstag.cpp:	Nx = fs->dsx.tnods;
+fdstag.cpp:	Ny = fs->dsy.tnods;
+fdstag.cpp:	Nz = fs->dsz.tnods;
+fdstag.cpp:	Px = fs->dsx.nproc;
+fdstag.cpp:	Py = fs->dsy.nproc;
+fdstag.cpp:	Pz = fs->dsz.nproc;
+fdstag.cpp:	ierr = Discret1DGetNumCells(&fs->dsx, &lx); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DGetNumCells(&fs->dsy, &ly); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DGetNumCells(&fs->dsz, &lz); CHKERRQ(ierr);
+fdstag.cpp:		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_CEN); CHKERRQ(ierr);
+fdstag.cpp:	ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
+fdstag.cpp:	fs->dsx.comm = MPI_COMM_NULL;
+fdstag.cpp:	fs->dsy.comm = MPI_COMM_NULL;
+fdstag.cpp:	fs->dsz.comm = MPI_COMM_NULL;
+fdstag.cpp:	ierr = Discret1DWriteRestart(&fs->dsx, fp); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DWriteRestart(&fs->dsy, fp); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DWriteRestart(&fs->dsz, fp); CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDestroy(&fs->DA_CEN);     CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDestroy(&fs->DA_COR);     CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDestroy(&fs->DA_XY);      CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDestroy(&fs->DA_XZ);      CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDestroy(&fs->DA_YZ);      CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDestroy(&fs->DA_X);       CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDestroy(&fs->DA_Y);       CHKERRQ(ierr);
+fdstag.cpp:	ierr = DMDestroy(&fs->DA_Z);       CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DDestroy(&fs->dsx); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DDestroy(&fs->dsy); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DDestroy(&fs->dsz); CHKERRQ(ierr);
+fdstag.cpp:	ierr = DOFIndexDestroy(&fs->dof);  CHKERRQ(ierr);
+fdstag.cpp:		Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
+fdstag.cpp:		Nx, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
+fdstag.cpp:		Nx, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
+fdstag.cpp:		Nx-1, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_YZ); CHKERRQ(ierr);
+fdstag.cpp:		Nx, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
+fdstag.cpp:		Nx-1, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
+fdstag.cpp:		Nx-1, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
+fdstag.cpp:	rx = fs->dsx.rank;
+fdstag.cpp:	ry = fs->dsy.rank;
+fdstag.cpp:	rz = fs->dsz.rank;
+fdstag.cpp:	Px = fs->dsx.nproc;
+fdstag.cpp:	Py = fs->dsy.nproc;
+fdstag.cpp:	Pz = fs->dsz.nproc;
+fdstag.cpp:	ptx = fs->dsx.periodic;
+fdstag.cpp:	pty = fs->dsy.periodic;
+fdstag.cpp:	ptz = fs->dsz.periodic;
+fdstag.cpp:				fs->neighb[cnt++] = getGlobalRankPeriodic(rx+i, ry+j, rz+k, Px, Py, Pz, ptx, pty, ptz);
+fdstag.cpp:	(*grank) = fs->neighb[(*lrank)];
+fdstag.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+fdstag.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+fdstag.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+fdstag.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+fdstag.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+fdstag.cpp:		dz = SIZE_CELL(k, sz, fs->dsz);
+fdstag.cpp:	chLen = fs->scal->length;
+fdstag.cpp:	px = fs->dsx.nproc;  cx = fs->dsx.tcels;  nx = fs->dsx.tnods;
+fdstag.cpp:	py = fs->dsy.nproc;  cy = fs->dsy.tcels;  ny = fs->dsy.tnods;
+fdstag.cpp:	pz = fs->dsz.nproc;  cz = fs->dsz.tcels;  nz = fs->dsz.tnods;
+fdstag.cpp:	if(bx) (*bx) = fs->dsx.ncoor[0];
+fdstag.cpp:	if(by) (*by) = fs->dsy.ncoor[0];
+fdstag.cpp:	if(bz) (*bz) = fs->dsz.ncoor[0];
+fdstag.cpp:	if(ex) (*ex) = fs->dsx.ncoor[fs->dsx.ncels];
+fdstag.cpp:	if(ey) (*ey) = fs->dsy.ncoor[fs->dsy.ncels];
+fdstag.cpp:	if(ez) (*ez) = fs->dsz.ncoor[fs->dsz.ncels];
+fdstag.cpp:	if(bx) (*bx) = fs->dsx.gcrdbeg;
+fdstag.cpp:	if(by) (*by) = fs->dsy.gcrdbeg;
+fdstag.cpp:	if(bz) (*bz) = fs->dsz.gcrdbeg;
+fdstag.cpp:	if(ex) (*ex) = fs->dsx.gcrdend;
+fdstag.cpp:	if(ey) (*ey) = fs->dsy.gcrdend;
+fdstag.cpp:	if(ez) (*ez) = fs->dsz.gcrdend;
+fdstag.cpp:	chLen = fs->scal->length;
+fdstag.cpp:	ierr = Discret1DGatherCoord(&fs->dsx, &xc); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DGatherCoord(&fs->dsy, &yc); CHKERRQ(ierr);
+fdstag.cpp:	ierr = Discret1DGatherCoord(&fs->dsz, &zc); CHKERRQ(ierr);
+fdstag.cpp:			(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
+fdstag.cpp:			(LLD)fs->dsx.nproc, (LLD)fs->dsy.nproc, (LLD)fs->dsz.nproc);
+fdstag.cpp:		PetscBinaryWrite(fid, &fs->dsx.nproc, 1,               PETSC_INT);
+fdstag.cpp:		PetscBinaryWrite(fid, &fs->dsy.nproc, 1,               PETSC_INT);
+fdstag.cpp:		PetscBinaryWrite(fid, &fs->dsz.nproc, 1,               PETSC_INT);
+fdstag.cpp:		PetscBinaryWrite(fid, &fs->dsx.tnods, 1,               PETSC_INT);
+fdstag.cpp:		PetscBinaryWrite(fid, &fs->dsy.tnods, 1,               PETSC_INT);
+fdstag.cpp:		PetscBinaryWrite(fid, &fs->dsz.tnods, 1,               PETSC_INT);
+fdstag.cpp:		PetscBinaryWrite(fid, fs->dsx.starts, fs->dsx.nproc+1, PETSC_INT);
+fdstag.cpp:		PetscBinaryWrite(fid, fs->dsy.starts, fs->dsy.nproc+1, PETSC_INT);
+fdstag.cpp:		PetscBinaryWrite(fid, fs->dsz.starts, fs->dsz.nproc+1, PETSC_INT);
+fdstag.cpp:		PetscBinaryWrite(fid, xc,             fs->dsx.tnods,   PETSC_SCALAR);
+fdstag.cpp:		PetscBinaryWrite(fid, yc,             fs->dsy.tnods,   PETSC_SCALAR);
+fdstag.cpp:		PetscBinaryWrite(fid, zc,             fs->dsz.tnods,   PETSC_SCALAR);
+gravity.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+gravity.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+gravity.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+gravity.cpp:				x = fs->dsx.ccoor[iter];
+gravity.cpp:				y = fs->dsy.ccoor[iter];
+gravity.cpp:				z = fs->dsz.ccoor[iter];
+gravity.cpp:				dxh = SIZE_CELL(i, sx, fs->dsx)/2.0;
+gravity.cpp:				dyh = SIZE_CELL(j, sy, fs->dsy)/2.0;
+gravity.cpp:				dzh = SIZE_CELL(k, sz, fs->dsz)/2.0;
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   XFace,  &lXFace);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+interpolate.cpp:	my = fs->dsy.tnods - 1;
+interpolate.cpp:	mz = fs->dsz.tnods - 1;
+interpolate.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+interpolate.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+interpolate.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+interpolate.cpp:		E1 = WEIGHT_NODE(j, sy, fs->dsy); B1 = 1.0 - E1;
+interpolate.cpp:		E2 = WEIGHT_NODE(k, sz, fs->dsz); B2 = 1.0 - E2;
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   XFace,  &lXFace);   CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   YFace,  &lYFace);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+interpolate.cpp:	mx = fs->dsx.tnods - 1;
+interpolate.cpp:	mz = fs->dsz.tnods - 1;
+interpolate.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+interpolate.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+interpolate.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+interpolate.cpp:		E1 = WEIGHT_NODE(i, sx, fs->dsx); B1 = 1.0 - E1;
+interpolate.cpp:		E2 = WEIGHT_NODE(k, sz, fs->dsz); B2 = 1.0 - E2;
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   YFace,  &lYFace);   CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   ZFace,  &lZFace);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+interpolate.cpp:	mx = fs->dsx.tnods - 1;
+interpolate.cpp:	my = fs->dsy.tnods - 1;
+interpolate.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+interpolate.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+interpolate.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+interpolate.cpp:		E1 = WEIGHT_NODE(i, sx, fs->dsx); B1 = 1.0 - E1;
+interpolate.cpp:		E2 = WEIGHT_NODE(j, sy, fs->dsy); B2 = 1.0 - E2;
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   ZFace,  &lZFace);   CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, Center, &lCenter); CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+interpolate.cpp:	mx = fs->dsx.tnods - 1;
+interpolate.cpp:	my = fs->dsy.tnods - 1;
+interpolate.cpp:	mz = fs->dsz.tnods - 1;
+interpolate.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+interpolate.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+interpolate.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+interpolate.cpp:		E1 = WEIGHT_NODE(i, sx, fs->dsx); B1 = 1.0 - E1;
+interpolate.cpp:		E2 = WEIGHT_NODE(j, sy, fs->dsy); B2 = 1.0 - E2;
+interpolate.cpp:		E3 = WEIGHT_NODE(k, sz, fs->dsz); B3 = 1.0 - E3;
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, Center, &lCenter);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_XY,  XYEdge, &lXYEdge); CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+interpolate.cpp:	mz = fs->dsz.tnods - 1;
+interpolate.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+interpolate.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+interpolate.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+interpolate.cpp:		E1 = WEIGHT_NODE(k, sz, fs->dsz); B1 = 1.0 - E1;
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XY,  XYEdge, &lXYEdge);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_XZ,  XZEdge, &lXZEdge); CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+interpolate.cpp:	my = fs->dsy.tnods - 1;
+interpolate.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+interpolate.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+interpolate.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+interpolate.cpp:		E1 = WEIGHT_NODE(j, sy, fs->dsy); B1 = 1.0 - E1;
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_XZ,  XZEdge, &lXZEdge);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_YZ,  YZEdge, &lYZEdge); CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+interpolate.cpp:	mx = fs->dsx.tnods - 1;
+interpolate.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+interpolate.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+interpolate.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+interpolate.cpp:		E1 = WEIGHT_NODE(i, sx, fs->dsx); B1 = 1.0 - E1;
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_YZ,  YZEdge, &lYZEdge);  CHKERRQ(ierr);
+interpolate.cpp:	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+lsolve.cpp:	dof  = &jr->fs->dof;
+marker.cpp:		nmarkx  = fs->dsx.ncels * actx->NumPartX;
+marker.cpp:		nmarky  = fs->dsy.ncels * actx->NumPartY;
+marker.cpp:		nmarkz  = fs->dsz.ncels * actx->NumPartZ;
+marker.cpp:	for(k = 0; k < fs->dsz.ncels; k++)
+marker.cpp:		dz = (fs->dsz.ncoor[k+1]-fs->dsz.ncoor[k])/(PetscScalar)actx->NumPartZ;
+marker.cpp:		for(j = 0; j < fs->dsy.ncels; j++)
+marker.cpp:			dy = (fs->dsy.ncoor[j+1]-fs->dsy.ncoor[j])/(PetscScalar)actx->NumPartY;
+marker.cpp:			for(i = 0; i < fs->dsx.ncels; i++)
+marker.cpp:				dx = (fs->dsx.ncoor[i+1]-fs->dsx.ncoor[i])/(PetscScalar)actx->NumPartX;
+marker.cpp:					if(kk == 0) z = fs->dsz.ncoor[k] + dz*0.5;
+marker.cpp:					else        z = fs->dsz.ncoor[k] + dz*0.5 + (PetscScalar)kk*dz;
+marker.cpp:						if(jj == 0) y = fs->dsy.ncoor[j] + dy*0.5;
+marker.cpp:						else        y = fs->dsy.ncoor[j] + dy*0.5 + (PetscScalar)jj*dy;
+marker.cpp:							if(ii == 0) x = fs->dsx.ncoor[i] + dx*0.5;
+marker.cpp:							else        x = fs->dsx.ncoor[i] + dx*0.5 + (PetscScalar)ii*dx;
+marker.cpp:	nx = fs->dsx.ncels;
+marker.cpp:	ny = fs->dsy.ncels;
+marker.cpp:		dx = SIZE_CELL(I, 0, fs->dsx)/(PetscScalar)actx->NumPartX;
+marker.cpp:		dy = SIZE_CELL(J, 0, fs->dsy)/(PetscScalar)actx->NumPartY;
+marker.cpp:		dz = SIZE_CELL(K, 0, fs->dsz)/(PetscScalar)actx->NumPartZ;
+marker.cpp:	ierr = makeIntArray(&numMarkCell, NULL, fs->nCells); CHKERRQ(ierr);
+marker.cpp:	for(i = 0; i < fs->nCells; i++)
+marker.cpp:	nmarkx  = fs->dsx.ncels * actx->NumPartX;
+marker.cpp:	nmarky  = fs->dsy.ncels * actx->NumPartY;
+marker.cpp:	nmarkz  = fs->dsz.ncels * actx->NumPartZ;
+marker.cpp:	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+marker.cpp:	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+marker.cpp:	sz = fs->dsz.pstart;
+marker.cpp:	ccx = fs->dsx.ccoor;
+marker.cpp:	ccy = fs->dsy.ccoor;
+marker.cpp:	ccz = fs->dsz.ccoor;
+marker.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+marker.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+marker.cpp:	for(imarkz = 0; imarkz < fs->dsz.ncels*actx->NumPartZ; imarkz++)
+marker.cpp:			dz = (fs->dsz.ncoor[icellz+1] - fs->dsz.ncoor[icellz]) / (PetscScalar) (actx->NumPartZ);
+marker.cpp:			z  = fs->dsz.ncoor[icellz] + 0.5*dz;
+marker.cpp:		for(imarky = 0; imarky < fs->dsy.ncels*actx->NumPartY; imarky++)
+marker.cpp:				dy = (fs->dsy.ncoor[icelly+1] - fs->dsy.ncoor[icelly]) / (PetscScalar) (actx->NumPartY);
+marker.cpp:				y  = fs->dsy.ncoor[icelly] + 0.5*dy;
+marker.cpp:			for(imarkx = 0; imarkx < fs->dsx.ncels*actx->NumPartX; imarkx++)
+marker.cpp:					dx = (fs->dsx.ncoor[icellx+1] - fs->dsx.ncoor[icellx]) / (PetscScalar) (actx->NumPartX);
+marker.cpp:					x  = fs->dsx.ncoor[icellx] + 0.5*dx;
+marker.cpp:	tstart[0] = fs->dsx.pstart * actx->NumPartX;
+marker.cpp:	tstart[1] = fs->dsy.pstart * actx->NumPartY;
+marker.cpp:	tstart[2] = fs->dsz.pstart * actx->NumPartZ;
+marker.cpp:	nmark[0]  = fs->dsx.ncels * actx->NumPartX;
+marker.cpp:	nmark[1]  = fs->dsy.ncels * actx->NumPartY;
+marker.cpp:	nmark[2]  = fs->dsz.ncels * actx->NumPartZ;
+marker.cpp:	nmarkx  = fs->dsx.ncels * actx->NumPartX;
+marker.cpp:	nmarky  = fs->dsy.ncels * actx->NumPartY;
+marker.cpp:	nmarkz  = fs->dsz.ncels * actx->NumPartZ;
+matrix.cpp:	dof = &fs->dof;
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+matrix.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+matrix.cpp:	dof    = &fs->dof;
+matrix.cpp:	mcx = fs->dsx.tcels - 1;
+matrix.cpp:	mcy = fs->dsy.tcels - 1;
+matrix.cpp:	mcz = fs->dsz.tcels - 1;
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx,  &bcvx);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);   CHKERRQ(ierr);
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+matrix.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+matrix.cpp:		dz = SIZE_CELL(k, sz, fs->dsz);
+matrix.cpp:		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+matrix.cpp:		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+matrix.cpp:		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+matrix.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:		dx = SIZE_NODE(i, sx, fs->dsx);
+matrix.cpp:		dy = SIZE_NODE(j, sy, fs->dsy);
+matrix.cpp:		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+matrix.cpp:		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+matrix.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+matrix.cpp:		dx = SIZE_NODE(i, sx, fs->dsx);
+matrix.cpp:		dz = SIZE_NODE(k, sz, fs->dsz);
+matrix.cpp:		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+matrix.cpp:		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+matrix.cpp:		dy = SIZE_NODE(j, sy, fs->dsy);
+matrix.cpp:		dz = SIZE_NODE(k, sz, fs->dsz);
+matrix.cpp:		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+matrix.cpp:		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   dof->ivz,  &ivz); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, dof->ip,   &ip);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
+matrix.cpp:	dof = &fs->dof;
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+matrix.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+matrix.cpp:	dof = &fs->dof;
+matrix.cpp:	mcx = fs->dsx.tcels - 1;
+matrix.cpp:	mcy = fs->dsy.tcels - 1;
+matrix.cpp:	mcz = fs->dsz.tcels - 1;
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   dof->ivy,  &ivy); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   dof->ivz,  &ivz); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, dof->ip,   &ip);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+matrix.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+matrix.cpp:		dz = SIZE_CELL(k, sz, fs->dsz);
+matrix.cpp:		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+matrix.cpp:		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+matrix.cpp:		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+matrix.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_CELL_RANGE(nz, sz, fs->dsz)
+matrix.cpp:		dx = SIZE_NODE(i, sx, fs->dsx);
+matrix.cpp:		dy = SIZE_NODE(j, sy, fs->dsy);
+matrix.cpp:		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+matrix.cpp:		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+matrix.cpp:	GET_NODE_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_CELL_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+matrix.cpp:		dx = SIZE_NODE(i, sx, fs->dsx);
+matrix.cpp:		dz = SIZE_NODE(k, sz, fs->dsz);
+matrix.cpp:		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+matrix.cpp:		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+matrix.cpp:	GET_CELL_RANGE(nx, sx, fs->dsx)
+matrix.cpp:	GET_NODE_RANGE(ny, sy, fs->dsy)
+matrix.cpp:	GET_NODE_RANGE(nz, sz, fs->dsz)
+matrix.cpp:		dy = SIZE_NODE(j, sy, fs->dsy);
+matrix.cpp:		dz = SIZE_NODE(k, sz, fs->dsz);
+matrix.cpp:		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+matrix.cpp:		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   dof->ivz,  &ivz); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, dof->ip,   &ip);  CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
+matrix.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
+multigrid.cpp:		lvl->DA_CEN = fs->DA_CEN;
+multigrid.cpp:		lvl->DA_X   = fs->DA_X;
+multigrid.cpp:		lvl->DA_Y   = fs->DA_Y;
+multigrid.cpp:		lvl->DA_Z   = fs->DA_Z;
+multigrid.cpp:		lvl->dof    = fs->dof;
+multigrid.cpp:	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);                ncors = nx;
+multigrid.cpp:		ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
+multigrid.cpp:	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr); if(nz < ncors) ncors = nz;
+multigrid.cpp:	nx = fs->dsx.ncels >> ncors;
+multigrid.cpp:		ny = fs->dsy.ncels >> ncors;
+multigrid.cpp:		ny = fs->dsy.ncels;
+multigrid.cpp:	nz = fs->dsz.ncels >> ncors;
+multigrid.cpp:	Nx = nx*fs->dsx.nproc;
+multigrid.cpp:	Ny = ny*fs->dsy.nproc;
+multigrid.cpp:	Nz = nz*fs->dsz.nproc;
+nlsolve.cpp:	dof = &(jr->fs->dof);
+nlsolve.cpp:		ierr = DMDAGetRefinementFactor(fs->DA_CEN, PETSC_NULL, &refine_y,PETSC_NULL); CHKERRQ(ierr);
+objFunct.cpp:		gnx = fs->dsx.tnods;
+objFunct.cpp:		gny = fs->dsy.tnods;
+objFunct.cpp:		L=fs->dsz.rank;
+objFunct.cpp:	L=fs->dsz.rank;
+objFunct.cpp:	objf->errtot = sqrt( objf->errtot / (PetscScalar) (objf->ocN * surf->jr->fs->dsz.nproc) ) ;
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_PHASE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_PHASE_AGG, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DENSITY, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_TOTAL, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_CREEP, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_STANGLE, 1, 0)
+outFunct.cpp:        INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_COND_CENTER, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SXX, 9, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SXY, 9, 1)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SXZ, 9, 2)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SXY, 9, 3)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SYY, 9, 4)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SYZ, 9, 5)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SXZ, 9, 6)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SYZ, 9, 7)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SZZ, 9, 8)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRESS_CENTER,  1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRESS_XY_EDGE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_J2_STRESS_YZ_EDGE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRESS_XZ_EDGE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DXX, 9, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DXY, 9, 1)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 9, 2)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DXY, 9, 3)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DYY, 9, 4)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 9, 5)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 9, 6)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 9, 7)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DZZ, 9, 8)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRAIN_RATE_CENTER,  1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRAIN_RATE_XY_EDGE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_J2_STRAIN_RATE_YZ_EDGE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRAIN_RATE_XZ_EDGE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_RHOPF_CENTER,  1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MF_CENTER,  1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_ATS, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_APS, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SHEAR_HEATING_CENTER,  1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SHEAR_HEATING_XY_EDGE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SHEAR_HEATING_YZ_EDGE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SHEAR_HEATING_XZ_EDGE, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLX, 3, 0);
+outFunct.cpp:	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLY, 3, 1);
+outFunct.cpp:	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLZ, 3, 2);
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_YIELD, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIdif, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIdis, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIprl, 1, 0)
+outFunct.cpp:	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIpl, 1, 0)
+outFunct.cpp:	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
+outFunct.cpp:	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
+outFunct.cpp:	GLOBAL_TO_LOCAL(outbuf->fs->DA_Z, jr->gfz, jr->lfz)
+outFunct.cpp:	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->gc, outbuf->lbcen)
+outFunct.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+outFunct.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+outFunct.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+outFunct.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
+paraViewOutAVD.cpp:	nx = refine*fs->dsx.ncels;
+paraViewOutAVD.cpp:	ny = refine*fs->dsy.ncels;
+paraViewOutAVD.cpp:	nz = refine*fs->dsz.ncels;
+paraViewOutAVD.cpp:	ierr = AVD3DSetParallelExtent(avd3D, fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc); CHKERRQ(ierr);
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
+paraViewOutBin.cpp:	LOCAL_TO_LOCAL(fs->DA_COR, outbuf->lbcor)
+paraViewOutBin.cpp:	ierr = DMDAVecGetArray(fs->DA_COR, outbuf->lbcor, &arr); CHKERRQ(ierr);
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
+paraViewOutBin.cpp:	ierr = DMDAVecRestoreArray(fs->DA_COR, outbuf->lbcor, &arr); CHKERRQ(ierr);
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
+paraViewOutBin.cpp:		1LL, (LLD)fs->dsx.tnods,
+paraViewOutBin.cpp:		1LL, (LLD)fs->dsy.tnods,
+paraViewOutBin.cpp:		1LL, (LLD)fs->dsz.tnods);
+paraViewOutBin.cpp:		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
+paraViewOutBin.cpp:			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
+paraViewOutBin.cpp:			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1),
+paraViewOutBin.cpp:			(LLD)(fs->dsz.starts[rz] + 1), (LLD)(fs->dsz.starts[rz+1] + 1), pvout->outfile, (LLD)iproc);
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutBin.cpp:	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
+paraViewOutBin.cpp:		(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
+paraViewOutBin.cpp:		(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1),
+paraViewOutBin.cpp:		(LLD)(fs->dsz.starts[rz] + 1), (LLD)(fs->dsz.starts[rz+1] + 1));
+paraViewOutBin.cpp:		(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
+paraViewOutBin.cpp:		(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1),
+paraViewOutBin.cpp:		(LLD)(fs->dsz.starts[rz] + 1), (LLD)(fs->dsz.starts[rz+1] + 1));
+paraViewOutBin.cpp:	OutBufPutCoordVec(outbuf, &fs->dsx, jr->scal->length); OutBufDump(outbuf);
+paraViewOutBin.cpp:	OutBufPutCoordVec(outbuf, &fs->dsy, jr->scal->length); OutBufDump(outbuf);
+paraViewOutBin.cpp:	OutBufPutCoordVec(outbuf, &fs->dsz, jr->scal->length); OutBufDump(outbuf);
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutSurf.cpp:	if(!fs->dsz.rank)
+paraViewOutSurf.cpp:		(LLD)fs->dsx.tnods,
+paraViewOutSurf.cpp:		(LLD)fs->dsy.tnods);
+paraViewOutSurf.cpp:	nproc = fs->dsx.nproc*fs->dsy.nproc;
+paraViewOutSurf.cpp:		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
+paraViewOutSurf.cpp:			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
+paraViewOutSurf.cpp:			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1),
+paraViewOutSurf.cpp:	if(!fs->dsz.rank)
+paraViewOutSurf.cpp:		asprintf(&fname, "%s/%s_p%1.8lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
+paraViewOutSurf.cpp:		GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutSurf.cpp:		GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutSurf.cpp:			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
+paraViewOutSurf.cpp:			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1));
+paraViewOutSurf.cpp:			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
+paraViewOutSurf.cpp:			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1));
+paraViewOutSurf.cpp:	if(!fs->dsz.rank)
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutSurf.cpp:	if(!fs->dsz.rank)
+paraViewOutSurf.cpp:			buff[cn++] = (float)(cf*COORD_NODE(i, sx, fs->dsx));
+paraViewOutSurf.cpp:			buff[cn++] = (float)(cf*COORD_NODE(j, sy, fs->dsy));
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutSurf.cpp:	if(!fs->dsz.rank)
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutSurf.cpp:	if(!fs->dsz.rank)
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+paraViewOutSurf.cpp:	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+paraViewOutSurf.cpp:	if(!fs->dsz.rank)
+passive_tracer.cpp:	nx = fs->dsx.ncels;
+passive_tracer.cpp:	ny = fs->dsy.ncels;
+passive_tracer.cpp:			ierr = Discret1DFindPoint(&fs->dsx, X[0], I); CHKERRQ(ierr);
+passive_tracer.cpp:			ierr = Discret1DFindPoint(&fs->dsy, X[1], J); CHKERRQ(ierr);
+passive_tracer.cpp:			ierr = Discret1DFindPoint(&fs->dsz, X[2], K); CHKERRQ(ierr);
+passive_tracer.cpp:	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+passive_tracer.cpp:	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+passive_tracer.cpp:	sz = fs->dsz.pstart;
+passive_tracer.cpp:	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+passive_tracer.cpp:	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+passive_tracer.cpp:	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+passive_tracer.cpp:	begx = fs->dsx.gcrdbeg;
+passive_tracer.cpp:	endx = fs->dsx.gcrdend;
+passive_tracer.cpp:	begy = fs->dsy.gcrdbeg;
+passive_tracer.cpp:	endy = fs->dsy.gcrdend;
+passive_tracer.cpp:	begz = fs->dsz.gcrdbeg;
+passive_tracer.cpp:	endz = fs->dsz.gcrdend;
+passive_tracer.cpp:	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp) ; CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT) ; CHKERRQ(ierr);
+passive_tracer.cpp:			ierr = Discret1DFindPoint(&fs->dsx, xp, I); CHKERRQ(ierr);
+passive_tracer.cpp:			ierr = Discret1DFindPoint(&fs->dsy, yp, J); CHKERRQ(ierr);
+passive_tracer.cpp:			ierr = Discret1DFindPoint(&fs->dsz, zp, K); CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+passive_tracer.cpp:	L         = fs->dsz.rank;
+passive_tracer.cpp:	sx = fs->dsx.pstart;
+passive_tracer.cpp:	sy = fs->dsy.pstart;
+passive_tracer.cpp:	sz = fs->dsz.pstart;
+passive_tracer.cpp:	ncx = fs->dsx.ncoor;
+passive_tracer.cpp:	ncy = fs->dsy.ncoor;
+passive_tracer.cpp:	ierr = DMGetLocalVector(fs->DA_CEN, &vphase);
+passive_tracer.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN,    vphase,      &phase);  CHKERRQ(ierr);
+passive_tracer.cpp:			ierr = Discret1DFindPoint(&fs->dsx, xp, I); CHKERRQ(ierr);
+passive_tracer.cpp:			ierr = Discret1DFindPoint(&fs->dsy, yp, J); CHKERRQ(ierr);
+passive_tracer.cpp:			ierr = Discret1DFindPoint(&fs->dsz, zp, K); CHKERRQ(ierr);
+passive_tracer.cpp:			GET_CELL_ID(ID, I, J, K, fs->dsx.ncels, fs->dsy.ncels)
+passive_tracer.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN,    vphase,      &phase);  CHKERRQ(ierr);
+passive_tracer.cpp:	ierr = DMRestoreLocalVector(fs->DA_CEN, &vphase); CHKERRQ(ierr);
+phase_transition.cpp:	dsy = &fs->dsy;
+phase_transition.cpp:  ny = fs->dsy.ncels;
+phase_transition.cpp:  ny = fs->dsy.ncels;
+phase_transition.cpp:	dsy = &fs->dsy;  //dsy points to the address of jr->fs->dsy
+phase_transition.cpp:	nx = fs->dsx.ncels;
+phase_transition.cpp:	ny = fs->dsy.ncels;
+phase_transition.cpp:	dsy = &fs->dsy;
+phase_transition.cpp:	dsy = &fs->dsy;
+subgrid.cpp:	ncx   = fs->dsx.ncels;
+subgrid.cpp:	ncy   = fs->dsy.ncels;
+subgrid.cpp:	for(icell = 0; icell < fs->nCells; icell++)
+subgrid.cpp:		s[0] = COORD_NODE(I, 0, fs->dsx);
+subgrid.cpp:		s[1] = COORD_NODE(J, 0, fs->dsy);
+subgrid.cpp:		s[2] = COORD_NODE(K, 0, fs->dsz);
+subgrid.cpp:		h[0] = SIZE_CELL(I, 0, fs->dsx)/(PetscScalar)npx;
+subgrid.cpp:		h[1] = SIZE_CELL(J, 0, fs->dsy)/(PetscScalar)npy;
+subgrid.cpp:		h[2] = SIZE_CELL(K, 0, fs->dsz)/(PetscScalar)npz;
+subgrid.cpp:	L         = fs->dsz.rank;
+subgrid.cpp:	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+subgrid.cpp:	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+subgrid.cpp:	sz = fs->dsz.pstart;
+subgrid.cpp:	ncx = fs->dsx.ncoor;
+subgrid.cpp:	ncy = fs->dsy.ncoor;
+subgrid.cpp:	ierr = DMGetLocalVector(fs->DA_CEN, &vphase);
+subgrid.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN,    vphase,      &phase);  CHKERRQ(ierr);
+subgrid.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN,    vphase,      &phase);  CHKERRQ(ierr);
+subgrid.cpp:	ierr = DMRestoreLocalVector(fs->DA_CEN, &vphase); CHKERRQ(ierr);
+subgrid.cpp:	nCells = fs->nCells;
+subgrid.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+subgrid.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, vphase, &phase); CHKERRQ(ierr);
+subgrid.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, vphase, &phase); CHKERRQ(ierr);
+subgrid.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, vphase)
+subgrid.cpp:	ierr = DMDAVecGetArray(fs->DA_CEN, vphase, &phase); CHKERRQ(ierr);
+subgrid.cpp:	ierr = DMDAVecRestoreArray(fs->DA_CEN, vphase, &phase); CHKERRQ(ierr);
+subgrid.cpp:	LOCAL_TO_LOCAL(fs->DA_CEN, vphase)
+surf.cpp:	ierr = DMDAGetOwnershipRanges(fs->DA_COR, &lx, &ly, NULL); CHKERRQ(ierr);
+surf.cpp:		fs->dsx.tnods, fs->dsy.tnods, fs->dsz.nproc,
+surf.cpp:		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+surf.cpp:	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
+surf.cpp:	dsz   = &fs->dsz;
+surf.cpp:	LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+surf.cpp:	ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+surf.cpp:	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:			ierr = Discret1DFindPoint(&fs->dsz, z, K); CHKERRQ(ierr);
+surf.cpp:	ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+surf.cpp:	mx   = fs->dsx.tnods;
+surf.cpp:	my   = fs->dsy.tnods;
+surf.cpp:	L    = (PetscInt)fs->dsz.rank;
+surf.cpp:	gtol = fs->gtol;
+surf.cpp:	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:		X  = COORD_NODE(i,   sx, fs->dsx);
+surf.cpp:		X1 = COORD_NODE(i-1, sx, fs->dsx);
+surf.cpp:		X2 = COORD_NODE(i+1, sx, fs->dsx);
+surf.cpp:		Y  = COORD_NODE(j,   sy, fs->dsy);
+surf.cpp:		Y1 = COORD_NODE(j-1, sy, fs->dsy);
+surf.cpp:		Y2 = COORD_NODE(j+1, sy, fs->dsy);
+surf.cpp:	mx        = fs->dsx.tnods - 1;
+surf.cpp:	my        = fs->dsy.tnods - 1;
+surf.cpp:	L         = (PetscInt)fs->dsz.rank;
+surf.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:		dx = SIZE_CELL(i, sx, fs->dsx);
+surf.cpp:		dy = SIZE_CELL(j, sy, fs->dsy);
+surf.cpp:	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:	gtol      = fs->gtol;
+surf.cpp:	L         = (PetscInt)fs->dsz.rank;
+surf.cpp:	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+surf.cpp:		xleft  = COORD_NODE(i,   sx, fs->dsx);
+surf.cpp:		xright = COORD_NODE(i+1, sx, fs->dsx);
+surf.cpp:		yfront = COORD_NODE(j,   sy, fs->dsy);
+surf.cpp:		yback  = COORD_NODE(j+1, sy, fs->dsy);
+surf.cpp:		zbot   = COORD_NODE(k,   sz, fs->dsz);
+surf.cpp:		ztop   = COORD_NODE(k+1, sz, fs->dsz);
+surf.cpp:	L    = (PetscInt)fs->dsz.rank;
+surf.cpp:		ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:	L    = (PetscInt)fs->dsz.rank;
+surf.cpp:		ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:		ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:			x = COORD_NODE(i, sx, fs->dsx);
+surf.cpp:			y = COORD_NODE(j, sy, fs->dsy);
+surf.cpp:		ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:			x = COORD_NODE(i, sx, fs->dsx);
+surf.cpp:			y = COORD_NODE(j, sy, fs->dsy);
+surf.cpp:	level = fs->dsz.rank;
+surf.cpp:	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:		xp = COORD_NODE(i, sx, fs->dsx);
+surf.cpp:	level = fs->dsz.rank;
+surf.cpp:	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+surf.cpp:		xp = COORD_NODE(i, sx, fs->dsx);
+surf.cpp:		yp = COORD_NODE(j, sy, fs->dsy);
