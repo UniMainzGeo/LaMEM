@@ -45,7 +45,9 @@ OPTIONS & PREFIXES
  * Galerkin geometric multigrid option (both coupled and velocity) is -gmg_
 
  * Coarse solver prefix is -crs_
- 
+ 	
+ 	WARNING! use telescope instead of redundant solver
+ 	
 ================================================================================
 Examples
 ================================================================================
@@ -53,6 +55,7 @@ Examples
 [1] nonlinear & linear solver settings
 
 # SNES
+
 	-snes_npicard 3
 	-snes_monitor
 	-snes_atol 1e-12
@@ -62,44 +65,39 @@ Examples
 	-snes_max_funcs 50000
 	-snes_type ksponly
 
+# Eisenstatt-walker
+
+	-snes_ksp_ew
+    -snes_ksp_ew_version 3
+	-snes_ksp_ew_rtol0 1e-3
+	-snes_ksp_ew_rtolmax 1e-2
+	-snes_ksp_ew_gamma 0.9
+	-snes_ksp_ew_alpha 2.0
+
 # Jacobian solver
+
 	-js_ksp_type fgmres
 	-js_ksp_max_it 1000
 	-js_ksp_converged_reason
 	-js_ksp_monitor
 	-js_ksp_rtol 1e-6
-
+	-js_mat_free
+	
 ================================================================================
 
-[2] direct solver for coupled system with penalty
-	(play with -pcmat_pgamma to see the iteration count)
-
-	-pcmat_type mono
-	-pcmat_pgamma 1e3
-
-	-jp_type user
-	-jp_pc_type lu
-	-jp_pc_factor_mat_solver_type mumps
-
-================================================================================
-
-[3] multigrid for coupled system
+[1] Galerkin geometric multigrid for coupled system
     (see [7] for coupled multigrid settings)
-
-	-pcmat_type mono
 
 	-jp_type mg
 
 ================================================================================
 
-[4] block factorization with penalty and direct solver for velocity block (a-la Powell-Hesteness)
+[1] block factorization with penalty and direct solver for velocity block (a-la Powell-Hesteness)
 	(play with -pcmat_pgamma to see the iteration count)
 
-	-pcmat_type block
-	-pcmat_pgamma 1e3
-
 	-jp_type bf
-	
+	-jp_pgamma 1e3
+
 	-bf_vs_type user
 
 	-vs_ksp_type preonly
@@ -108,7 +106,7 @@ Examples
 
 ================================================================================
 
-[5] block factorization with multigrid for velocity block
+[2] block factorization with multigrid for velocity block
     (see [7] for velocity multigrid settings)
 
 	-pcmat_type block
@@ -157,9 +155,13 @@ Examples
 	-gmg_mg_levels_pc_type jacobi
 
 	-crs_ksp_type preonly
-	-crs_pc_type redundant
-	-crs_pc_redundant_number 1
-	-crs_redundant_pc_factor_mat_solver_type mumps
+	-crs_pc_type telescope
+	-crs_pc_telescope_reduction_factor 2
+	-crs_telescope_ksp_type gmres
+	-crs_telescope_ksp_rtol 1e-5
+	-crs_telescope_pc_type gamg
+	-crs_telescope_pc_gamg_threshold 0.05
+	-crs_telescope_pc_gamg_coarse_eq_limit 1000
 
 ================================================================================
 
@@ -172,4 +174,20 @@ Examples
 	-ks_pc_mg_cycle_type v
 
 ================================================================================
+
+[8] HYPRE options
+
+
+	-jp_pc_type hypre
+	-dm_mat_type hypre
+	-jp_pc_mg_galerkin_mat_product_algorithm hypre
+	-jp_pc_hypre_type boomeramg
+	-jp_pc_hypre_boomeramg_agg_nl 8
+	-jp_pc_hypre_boomeramg_max_iter 5
+	-jp_pc_hypre_boomeramg_relax_weight_all 0.8
+	-jp_pc_hypre_boomeramg_strong_threshold 0.9
+	-jp_pc_hypre_boomeramg_smooth_type Euclid
+	-jp_pc_hypre_boomeramg_eu_bj
+	-jp_pc_hypre_boomeramg_coarsen_type HMIS 
+
 
