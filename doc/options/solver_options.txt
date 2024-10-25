@@ -24,7 +24,7 @@ OPTIONS & PREFIXES
          
      -jp_pgamma [value] - penalty parameter (pgamma >= 1) (default - 1)
      
-         WARNING! Only use this option with direct solvers (block and coupled)
+         WARNING! Only use this option with direct solvers (block or coupled)
          WARNING! Avoid using coupled direct solvers (use block solvers instead)
 
 * Block factorization preconditioner is controlled with prefix -bf
@@ -58,14 +58,20 @@ Examples
 
 	-snes_npicard 3
 	-snes_monitor
-	-snes_atol 1e-12
+	-snes_atol 1e-8
 	-snes_rtol 1e-6
 	-snes_stol 1e-6
 	-snes_max_it 25
 	-snes_max_funcs 50000
-	-snes_type ksponly
 
-# Eisenstatt-walker
+# Line search	
+	
+	-snes_linesearch_minlambda 0.05
+	-snes_linesearch_maxstep 1.0
+	-snes_linesearch_type l2
+	-snes_linesearch_max_it 5
+
+# Eisenstatt-Walker
 
 	-snes_ksp_ew
     -snes_ksp_ew_version 3
@@ -86,14 +92,15 @@ Examples
 ================================================================================
 
 [1] Galerkin geometric multigrid for coupled system
-    (see [7] for coupled multigrid settings)
+    (see [5] for coupled multigrid settings)
 
 	-jp_type mg
 
 ================================================================================
 
-[1] block factorization with penalty and direct solver for velocity block (a-la Powell-Hesteness)
-	(play with -pcmat_pgamma to see the iteration count)
+[2] block factorization with penalty and direct solver for velocity block (a-la Powell-Hesteness)
+	
+	(-jp_pgamma controls balance between stability and iteration count)
 
 	-jp_type bf
 	-jp_pgamma 1e3
@@ -106,10 +113,9 @@ Examples
 
 ================================================================================
 
-[2] block factorization with multigrid for velocity block
-    (see [7] for velocity multigrid settings)
-
-	-pcmat_type block
+[3] block factorization with multigrid for velocity block
+    
+    (see [5] for velocity multigrid settings)
 
 	-jp_type bf
 
@@ -119,28 +125,24 @@ Examples
 
 ================================================================================
 
-[6] block factorization with wBFBT preconditioner and multigrid for velocity and pressure blocks
-    (see [7] for velocity multigrid settings)
-    (see [8] for pressure multigrid settings)
+[4] block factorization with wBFBT preconditioner and multigrid for velocity and pressure blocks
+    
+    (see [5] for velocity multigrid settings)
+    (see [6] for pressure multigrid settings)
 
-	-pcmat_type block
-	-pcmat_schur_type wbfbt
-	
 	-jp_type bf
 
 	-bf_vs_type mg
+	-bf_schur_wbfbt
 
-	-vs_ksp_type gmres
-	-vs_ksp_rtol 1e-2
-	-vs_ksp_max_it 10
-
-	-ks_ksp_type gmres
-	-ks_ksp_rtol 1e-2
-	-ks_ksp_max_it 10
+	-vs_ksp_type preonly
+	-ks_ksp_type preonly
 
 ================================================================================
 
-[7] multigrid & coarse solver settings (both coupled system & velocity block)
+[5] multigrid solver settings (both coupled system & velocity block)
+
+    (see [7] for coarse solver settings)
 
 	-gmg_pc_view
 	-gmg_pc_type mg
@@ -148,46 +150,110 @@ Examples
 	-gmg_pc_mg_galerkin
 	-gmg_pc_mg_type multiplicative
 	-gmg_pc_mg_cycle_type v
-
 	-gmg_mg_levels_ksp_type richardson
 	-gmg_mg_levels_ksp_richardson_scale 0.5
 	-gmg_mg_levels_ksp_max_it 20
 	-gmg_mg_levels_pc_type jacobi
 
-	-crs_ksp_type preonly
-	-crs_pc_type telescope
-	-crs_pc_telescope_reduction_factor 2
-	-crs_telescope_ksp_type gmres
-	-crs_telescope_ksp_rtol 1e-5
-	-crs_telescope_pc_type gamg
-	-crs_telescope_pc_gamg_threshold 0.05
-	-crs_telescope_pc_gamg_coarse_eq_limit 1000
-
 ================================================================================
 
-[8] multigrid settings for pressure block
+[6] multigrid settings for pressure block
 
+	(use default coarse solver settings or setup similar options as for -crs)
+	
 	-ks_pc_type mg
 	-ks_pc_mg_levels 3
 	-ks_pc_mg_galerkin
 	-ks_pc_mg_type multiplicative
 	-ks_pc_mg_cycle_type v
 
+
 ================================================================================
 
-[8] HYPRE options
+[7] coarse solver settings (telescope)
+	
+	-crs_ksp_type preonly
+	-crs_pc_type telescope
+	-crs_pc_telescope_reduction_factor 2
+	-crs_telescope_ksp_type preonly
+	
+	[A] direct solver
+
+	-crs_telescope_pc_type lu
+	-crs_telescope_pc_factor_mat_solver_type mumps
+
+	[B] hyper boomeramg
+
+	-crs_telescope_pc_type hypre
+	-crs_telescope_pc_hypre_type boomeramg
+	-crs_telescope_pc_hypre_boomeramg_agg_nl 5
+	-crs_telescope_pc_hypre_boomeramg_max_iter 3
+	-crs_telescope_pc_hypre_boomeramg_relax_weight_all 0.8
+	-crs_telescope_pc_hypre_boomeramg_strong_threshold 0.99
+	-crs_telescope_pc_hypre_boomeramg_smooth_type Euclid
+	-crs_telescope_pc_hypre_boomeramg_eu_bj
+	-crs_telescope_pc_hypre_boomeramg_coarsen_type HMIS 
+	-crs_telescope_pc_mg_galerkin_mat_product_algorithm hypre
+
+	[C] ASM
+
+	-crs_telescope_pc_type asm
+	-crs_telescope_pc_asm_local_blocks 1
+	-crs_telescope_pc_asm_overlap 2
+	-crs_telescope_pc_asm_type restrict
+	-crs_telescope_pc_asm_local_type additive
+
+	[D] block Jacobi
+
+	-crs_telescope_pc_type bjacobi
+	-crs_telescope_pc_bjacobi_local_blocks 1
+
+================================================================================
+
+[8] subdomain solver settings (ASM and block Jacobi)
+
+	-sub_ksp_type preonly
+	
+	[A] incomplete factorization
+	
+	-sub_pc_type ilu
+	-sub_pc_factor_levels 1
+
+	[B] direct solver
+
+	-sub_pc_type lu
+	-sub_pc_factor_mat_solver_type mumps
+
+================================================================================
+
+[8] Matrix options (required to scale on large number of MPI ranks)
+
+-mat_product_algorithm scalable
+-matmatmatmult_via scalable
+-matmatmult_via scalable
+
+================================================================================
+
+[9] Steady-state temperature solver settings (multigrid)
+
+	-its_ksp_type gmres
+	-its_ksp_rtol 1e-8
+	-its_pc_type mg
+	-its_pc_mg_levels 3
+	-its_pc_mg_galerkin
+	-its_pc_mg_type multiplicative
+	-its_pc_mg_cycle_type v
+
+================================================================================
+
+[10] Transient temperature solver settings (multigrid is not necessary)
+	
+	-ts_ksp_type gmres
+	-ts_ksp_rtol 1e-8
+	
+================================================================================
 
 
-	-jp_pc_type hypre
-	-dm_mat_type hypre
-	-jp_pc_mg_galerkin_mat_product_algorithm hypre
-	-jp_pc_hypre_type boomeramg
-	-jp_pc_hypre_boomeramg_agg_nl 8
-	-jp_pc_hypre_boomeramg_max_iter 5
-	-jp_pc_hypre_boomeramg_relax_weight_all 0.8
-	-jp_pc_hypre_boomeramg_strong_threshold 0.9
-	-jp_pc_hypre_boomeramg_smooth_type Euclid
-	-jp_pc_hypre_boomeramg_eu_bj
-	-jp_pc_hypre_boomeramg_coarsen_type HMIS 
+
 
 
