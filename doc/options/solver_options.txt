@@ -4,17 +4,18 @@ OPTIONS & PREFIXES
 
 * SNES uses standard prefix -snes_
 
-* MFFD Jacobian is activated after a fixed number of Picard iterations
-  
-     -snes_npicard [number] - set number of Picard iterations
+	Custom options:
+
+	-snes_PicardSwitchToNewton_rtol [value] - relative tolerance to switch to Newton (convergence)
+    -snes_NewtonSwitchToPicard_it  	[value] - number of Newton iterations to switch to Picard
+	-snes_NewtonSwitchToPicard_rtol [value] - relative tolerance to switch to Picard (divergence)
+	-snes_picard_mat_free                   - use matrix-free Picard operator
 
 * MFFD Jacobian options are set with prefix -fd_
 
 * Jacobian linear solver is controlled with prefix -js_ 
-  
-     -js_mat_free - do not use assembled matrices in ksp solve
-    
-* Jacobian preconditioner is controlled with prefix -jp
+     
+* Jacobian preconditioner is controlled with prefix -jp_
 
      -jp_type [bf, mg, user] - select preconditioner type (default user)
      
@@ -56,13 +57,17 @@ Examples
 
 # SNES
 
-	-snes_npicard 3
 	-snes_monitor
 	-snes_atol 1e-8
 	-snes_rtol 1e-6
 	-snes_stol 1e-6
 	-snes_max_it 25
 	-snes_max_funcs 50000
+	
+	-snes_PicardSwitchToNewton_rtol 1e-2
+    -snes_NewtonSwitchToPicard_it  	20
+	-snes_NewtonSwitchToPicard_rtol 1.2
+	-snes_picard_mat_free
 
 # Line search	
 	
@@ -80,6 +85,18 @@ Examples
 	-snes_ksp_ew_gamma 0.9
 	-snes_ksp_ew_alpha 2.0
 
+# MFFD DS (Dennis-Schnabel)
+
+	-fd_mat_mffd_type ds
+	-fd_mat_mffd_err 1e-8
+	-fd_mat_mffd_umin 1e-6 # "This parameter is a bit involved; its default is 1e−6"
+	
+# MFFD WP (Walker-Pernice)
+	
+	-fd_mat_mffd_type wp
+	-fd_mat_mffd_err 1e-8
+	-fd_mat_mffd_compute_normu false
+
 # Jacobian solver
 
 	-js_ksp_type fgmres
@@ -87,8 +104,7 @@ Examples
 	-js_ksp_converged_reason
 	-js_ksp_monitor
 	-js_ksp_rtol 1e-6
-	-js_mat_free
-	
+
 ================================================================================
 
 [1] Galerkin geometric multigrid for coupled system
@@ -226,7 +242,7 @@ Examples
 
 ================================================================================
 
-[8] Matrix options (required to scale on large number of MPI ranks)
+[8] Matrix options (required to scale Galerkin multigrid on large number of MPI ranks)
 
 -mat_product_algorithm scalable
 -matmatmatmult_via scalable
@@ -252,8 +268,3 @@ Examples
 	-ts_ksp_rtol 1e-8
 	
 ================================================================================
-
-
-
-
-

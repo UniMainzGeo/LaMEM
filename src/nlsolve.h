@@ -31,19 +31,17 @@ enum JacType
 
 struct NLSol
 {
-	Mat       MFFD;   // matrix-free finite difference Jacobian
-	PMat      pm;     // preconditioner matrix
-	PCStokes  pc;     // Stokes preconditioner
-
-	JacType     jtype;        // actual type of Jacobian operator
-	PetscInt    it;           // iteration counter
-	PetscInt    it_Nwt;       // newton iteration counter
-	PetscScalar refRes;       // reference residual norm
-	PetscInt    nPicIt;       // number of Picard iteraions before switch to Newton
-	PetscScalar rtolPic;      // relative Picard residual reduction tolerance
-	PetscInt    nNwtIt;       // number of Newton iterations before switch to Picard
-	PetscScalar rtolNwt;      // Newton divergence tolerance
-	PetscBool   ksp_mat_free; // ksp solve matrix-free flag
+	Mat         MFFD;       // matrix-free finite difference Jacobian
+	PMat        pm;         // preconditioner matrix
+	PCStokes    pc;         // Stokes preconditioner
+	JacType     jtype;      // actual type of Jacobian operator
+	PetscInt    it;         // iteration counter
+	PetscInt    it_Nwt;     // newton iteration counter
+	PetscScalar refRes;     // reference residual norm
+	PetscScalar rtolPic;    // relative Picard residual reduction tolerance
+	PetscInt    nNwtIt;     // number of Newton iterations before switch to Picard
+	PetscScalar rtolNwt;    // Newton divergence tolerance
+	PetscBool   matFreePic; // use matrix-free Picard operator
 };
 //---------------------------------------------------------------------------
 
