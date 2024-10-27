@@ -838,69 +838,7 @@
 
 <PetscOptionsStart>
 
-# SNES
-
-    -snes_npicard 3
-    -snes_monitor
-    -snes_atol 1e-12
-    -snes_rtol 1e-6
-    -snes_stol 1e-6
-    -snes_max_it 25
-    -snes_max_funcs 50000
-    -snes_type ksponly
-
-    -res_log
-
-# Switch Picard -> Newton	
-    -snes_PicardSwitchToNewton_rtol 1e-2   # relative tolerance to switch to Newton (1e-2)
-    -snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
-
-
-# Jacobian solver
-
-#   -js_ksp_type fgmres
-#   -js_ksp_max_it 1000
-#   -js_ksp_converged_reason
-     -js_ksp_monitor
-    -js_ksp_rtol 1e-6
-
-# Preconditioner
-
-#   -pcmat_type block
-#   -pcmat_pgamma 1e3
-#   -jp_type bf
-#   -bf_vs_type user
-#   -vs_ksp_type preonly
-#   -vs_pc_type lu
-#   -vs_pc_factor_mat_solver_type mumps
-
-#   -pcmat_type block
-#   -pcmat_no_dev_proj
-#   -jp_type bf
-#   -bf_vs_type mg
-#   -vs_ksp_type preonly
-
-    -pcmat_type mono
-    -jp_type mg
-
-#   -gmg_pc_view
-#   -gmg_dump
-    -gmg_pc_type mg
-    -gmg_pc_mg_levels 4
-    -gmg_pc_mg_galerkin
-    -gmg_pc_mg_type multiplicative
-    -gmg_pc_mg_cycle_type v
-
-    -gmg_mg_levels_ksp_type richardson
-    -gmg_mg_levels_ksp_richardson_scale 0.5
-    -gmg_mg_levels_ksp_max_it 20
-    -gmg_mg_levels_pc_type jacobi
-
-    -crs_ksp_type preonly
-    -crs_pc_type lu
-    -crs_pc_factor_mat_solver_type mumps
-
-    -objects_dump
+	# see solver_options.txt for details
 
 <PetscOptionsEnd>
 #===============================================================================

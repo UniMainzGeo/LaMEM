@@ -85,17 +85,15 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 
 	// initialize Jacobian controls
 	nl->jtype   = _PICARD_;
-	nl->nPicIt  = 5;
 	nl->rtolPic = 1e-2;
 	nl->nNwtIt  = 35;
 	nl->rtolNwt = 1.1;
 
 	// override from command line
-	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_Picard_max_it",             &nl->nPicIt,  NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic, NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt,  NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free",                    &nl->ksp_mat_free);  CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-snes_picard_mat_free",           &nl->matFreePic);    CHKERRQ(ierr);
 
 	// return solver
 	(*p_snes) = snes;
@@ -196,7 +194,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 
 	if(!nrm) nrm = 1.0;
 
-	// initialize
+	// initialize (always start with Picard)
 	if(!it)
 	{
 		nl->it     = 0;
@@ -220,14 +218,6 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		{
 			nl->jtype = _PICARD_;
 		}
-	}
-
-	if(jr->ts->istep < 2 && nl->it == 0)
-	{
-		// During the first and second timestep of a simulation, always start with picard iterations
-		// that is important as plasticity is only activated during the second timestep, whereas the code might have
-		// switched to MFFD already during the first timestep (and that solution is quite far off the plastic solution).
-		nl->jtype = _PICARD_;
 	}
 
 	// print info
@@ -265,7 +255,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	//===============
 	if(nl->jtype == _PICARD_)
 	{
-		if(nl->ksp_mat_free)
+		if(nl->matFreePic)
 		{
 			// ... matrix-free Picard operator
 			ierr = MatShellSetOperation(Amat, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
