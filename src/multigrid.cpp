@@ -57,7 +57,7 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 		ierr = DMDAGetInfo(fine->DA_CEN, 0, &Nx, &Ny, &Nz, &Px, &Py, &Pz, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
 
 		// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-		ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);
+		ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
 
 		// get number of cells per processor in fine grid
 		ierr = DMDAGetOwnershipRanges(fine->DA_CEN, &plx, &ply, &plz); CHKERRQ(ierr);
@@ -68,8 +68,10 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 
 		// coarsen uniformly in every direction
 		Nx /= 2;  for(i = 0; i < Px; i++) lx[i] /= 2;
-		if (refine_y==1){
-			Ny /= 1;  for(i = 0; i < Py; i++) ly[i] /= 1;		// don't refine in y-direction
+
+		if(refine_y == 1)
+		{
+			Ny /= 1;  for(i = 0; i < Py; i++) ly[i] /= 1; // don't refine in y-direction
 		}
 		else
 		{
@@ -312,7 +314,7 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	ierr = DMDAGetCorners(lvl->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);	// refinement in y
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);	// refinement in y
 
 	START_STD_LOOP
 	{
@@ -387,7 +389,7 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->bcp,      &cbcp);  CHKERRQ(ierr);
 
 	// Refinement factor in Y
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);	// refinement in y
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);	// refinement in y
 
 	//-----------------------
 	// X-points (coarse grid)
@@ -540,7 +542,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	R = lvl->R;
 
 	// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
 
 	// clear restriction matrix coefficients
 	ierr = MatZeroEntries(R); CHKERRQ(ierr);
@@ -898,7 +900,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	ierr = MatZeroEntries(P); CHKERRQ(ierr);
 
 	// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
 
 	// access index vectors in coarse grid
 	ierr = DMDAVecGetArray(lvl->DA_X,    lvl->dof.ivx, &ivx);   CHKERRQ(ierr);
@@ -1943,11 +1945,12 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 	fs = mg->jr->fs;
 
 	// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-	refine_y = 2;
-	ierr = PetscOptionsGetInt(NULL, NULL, "-da_refine_y", &refine_y, NULL); CHKERRQ(ierr);		// for cases where refinement is set to 1 (2D MG)
+	ierr = DMDAGetRefinementFactor(fs->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
 
 	// check discretization in all directions
-	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);                ncors = nx;
+	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);
+
+	ncors = nx;
 
 	if(refine_y > 1)
 	{
@@ -1955,7 +1958,9 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 		if(ny < ncors) ncors = ny;
 	}
 
-	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr); if(nz < ncors) ncors = nz;
+	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr);
+
+	if(nz < ncors) ncors = nz;
 
 	// check number of levels requested on the command line
 	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
@@ -1974,13 +1979,16 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 
 	// print grid statistics
 	nx = fs->dsx.ncels >> ncors;
-	if  (refine_y>1){
+
+	if(refine_y > 1)
+	{
 		ny = fs->dsy.ncels >> ncors;
 	}
 	else
 	{
 		ny = fs->dsy.ncels;
 	}
+
 	nz = fs->dsz.ncels >> ncors;
 
 	Nx = nx*fs->dsx.nproc;

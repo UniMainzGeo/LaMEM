@@ -109,8 +109,8 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	// remove command line options from database
 	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
 
-	// Set default solver options if defined in file
-	ierr = StokesSetDefaultSolverOptions(fb); CHKERRQ(ierr);
+	// set default solver options if defined in file
+	ierr = setDefaultSolverOptions(fb); CHKERRQ(ierr);
 
 	// load additional options from file
 	ierr = PetscOptionsReadFromFile(fb, DisplayOutput); CHKERRQ(ierr);
@@ -850,156 +850,93 @@ PetscErrorCode  PetscOptionsGetCheckString(
 
 	PetscFunctionReturn(0);
 }
-//-----------------------------------------------------------------------------
-
 //---------------------------------------------------------------------------
-PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
+PetscErrorCode setDefaultSolverOptions(FB *fb)
 {
-	PetscErrorCode ierr;
- 	char     		SolverType[_str_len_], DirectSolver[_str_len_], str[_str_len_+_str_len_], SmootherType[_str_len_];
-	PetscScalar 	scalar;
-	PetscInt 		integer, nel_y;
+	char        SolverType[_str_len_], DirectSolver[_str_len_], MGCoarseSolver[_str_len_];
+	PetscInt    ncy, nsweeps, rfactor, nlevels;
+	PetscScalar pgamma;
 	
+	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 	
-	// Set some 'best-guess' default solver paramaters to help the average user
-	// All options can be overridden by the usual PETSC options
+	// set 'best-guess' default solver options to help an inexperienced user
+	// all options can be overridden by the usual PETSC options
 
-	// Set default parameters for the outer iterations
-//	ierr = PetscOptionsInsertString(NULL, "-js_ksp_monitor"); 			CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-js_ksp_converged_reason"); 	CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-js_ksp_min_it 1"); 			CHKERRQ(ierr);
+	/*
+	    SolverType        = direct  # solver type [direct, multigrid, block, wbfbt]
+	    DirectSolver      = mumps   # direct solver package [mumps, superlu_dist]
+	    DirectPenalty     = 1e3     # penalty parameter for direct solver
+	    MGLevels          = 3       # number of MG levels [default=3]
+	    MGSweeps          = 10      # number of MG smoothing sweeps [default=10]
+	    MGCoarseSolver    = direct  # coarse grid solver [direct, hyper, asm, bjacobi]
+	    MGReductionFactor = 4       # pc-telescope reduction factor
+	*/
 
-	// Set default nonlinear (SNES) options	
-	ierr = PetscOptionsInsertString(NULL, "-snes_atol 1e-7");           		CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-snes_rtol 1e-4");           		CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-snes_stol 1e-16");          		CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-snes_max_linear_solve_fail 10000");	CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-snes_max_funcs 500000");			CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-snes_monitor");						CHKERRQ(ierr);
-	
-	ierr = PetscOptionsInsertString(NULL, "-snes_max_it 50");          			CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_type basic");       CHKERRQ(ierr);  // in many VEP cases, cp or l2 linesearch work more efficiently 
-	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_maxstep 1.0");      CHKERRQ(ierr);  // Limits the maximum stepsize to be no larger than 100% (important for some model setups - prevents blowup)
+	// set defaults
+	sprintf(SolverType,     "direct");
+	sprintf(DirectSolver,   "superlu_dist");
+	sprintf(MGCoarseSolver, "direct");
+	pgamma  = 1e3;
+	nlevels = 3;
+	nsweeps = 10;
+	rfactor = 1;
 
-	// Read input file to see if we set solver options 
-	ierr = getStringParam(fb, _OPTIONAL_, "SolverType",          SolverType,         NULL);          CHKERRQ(ierr);
+	// read simplified solver options
+	ierr = getStringParam(fb, _OPTIONAL_, "SolverType",        SolverType,     NULL);       CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",      DirectSolver,   NULL );      CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "DirectPenalty",     &pgamma,        1, 1.0);     CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "MGLevels",          &nlevels,       1, 32);      CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "MGSweeps",          &nsweeps,       1, 100);     CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "MGCoarseSolver",    MGCoarseSolver, NULL );      CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "MGReductionFactor", &rfactor,       1, 1000000); CHKERRQ(ierr);
 
-	// depending on what was chosen, set the command-line parameters accordingly
-	// These parameters can be overruled by parameters given in the PetscOptionsStart/PetscOptionsEnd block or on the command-line
-	if     		(!strcmp(SolverType, "direct")){
-		// Direct solver
-		ierr = PetscOptionsInsertString(NULL, "-pcmat_type mono"); 	CHKERRQ(ierr);
-		ierr = PetscOptionsInsertString(NULL, "-jp_type user"); 	CHKERRQ(ierr);
-		ierr = PetscOptionsInsertString(NULL, "-jp_pc_type lu"); 	CHKERRQ(ierr);
-		
-		// Set penalty parameter if specified
-		scalar 	= 0;
-		ierr 	= getScalarParam(fb, _OPTIONAL_, "DirectPenalty",       &scalar,        1, 1.0);          CHKERRQ(ierr);
-		if (scalar>0){
- 			sprintf(str, "-pcmat_pgamma %e", scalar);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
-		}
 
-		// if the type of direct solver is specified, use that
-		if (ISParallel(PETSC_COMM_WORLD)){
-			// Parallel simulation
-			ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",        DirectSolver,       NULL );          CHKERRQ(ierr);
-			if     		(!strcmp(DirectSolver, "mumps")){        ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type mumps"); 				CHKERRQ(ierr); }
-			else if     (!strcmp(DirectSolver, "superlu_dist")){ ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 		CHKERRQ(ierr); }
-			else if     (!strcmp(DirectSolver, "pastix"))	   { ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type pastix"); 			CHKERRQ(ierr); }
-			else if     (!strcmp(DirectSolver, "umfpack"))	   { ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type umfpack"); 			CHKERRQ(ierr); }		// (SuiteSparse) only on 1 core
-			else {
-						// We need to set one of the parallel solvers. Determine if we have one of them installed in the current PETSC version
-						ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 	CHKERRQ(ierr);
-			}
-		}
-		else {
-			// Serial simulation
-			ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type petsc"); 	CHKERRQ(ierr); // Set PETSc default factorization
-		}	
-			
+	// check and output specified options
 
+	// ...
+
+
+	// SNES
+	ierr = PetscOptionsInsertString(NULL, "-snes_monitor");                        CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_rtol 1e-3");                      CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_atol 1e-7");                      CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_stol 1e-8");                      CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_max_funcs 1000000");              CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_max_it 50");                      CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_type l2");             CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_max_it 5");            CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_maxstep 1.0");         CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_minlambda 0.05");      CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_PicardSwitchToNewton_rtol 1e-2"); CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_NewtonSwitchToPicard_it 20");     CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_NewtonSwitchToPicard_rtol 1.2");  CHKERRQ(ierr);
+
+	// KSP
+	ierr = PetscOptionsInsertString(NULL, "-js_ksp_type fgmres");      CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-js_ksp_rtol  1e-6");       CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-js_ksp_max_it 500");       CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-js_ksp_monitor");          CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-js_ksp_converged_reason"); CHKERRQ(ierr);
+
+	// MAT
+	ierr = PetscOptionsInsertString(NULL, "-mat_product_algorithm scalable"); CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-matmatmatmult_via scalable");     CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-matmatmult_via scalable");        CHKERRQ(ierr);
+
+	// DM
+	ierr = getIntParam(fb, _REQUIRED_, "nel_y", &ncy, 1, 10000); CHKERRQ(ierr);
+
+	if(ncy == 2)
+	{
+		// 2D grid - do not coarsen DMDA in y-direction
+		ierr = PetscOptionsInsertString(NULL, "-da_refine_y 1"); CHKERRQ(ierr);
 	}
-	else if 	(!strcmp(SolverType, "multigrid")){
-		// Multigrid solver
 
-		ierr = PetscOptionsInsertString(NULL, "-pcmat_type mono"); 					CHKERRQ(ierr);
-		ierr = PetscOptionsInsertString(NULL, "-jp_type mg"); 						CHKERRQ(ierr);
-		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_type mg"); 					CHKERRQ(ierr);
-		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_galerkin"); 				CHKERRQ(ierr);
-		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_type multiplicative"); 	CHKERRQ(ierr);
-		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_cycle_type v"); 			CHKERRQ(ierr);
-		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_log"); 					CHKERRQ(ierr);
 
-		// determine whether we are running a quasi-2D simulation
-		nel_y 	= 0;
-		ierr 	= getIntParam(fb, _OPTIONAL_, "nel_y", &nel_y, 1, 10000);          	CHKERRQ(ierr);
-		if (nel_y==2){ 
-			// quasi-2D - multgrid should only coarsen in x and z direction
-			ierr = PetscOptionsInsertString(NULL, "-da_refine_y 1"); 				CHKERRQ(ierr);
-		}
 
-		integer 	= 3;
-		ierr 	= getIntParam(fb, _OPTIONAL_, "MGLevels",       &integer,        1, 100);          CHKERRQ(ierr);
-		if (integer){
-			
- 			sprintf(str, "-gmg_pc_mg_levels %lld", (LLD) integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
-		}
-		
-		integer 	= 10;
-		ierr 	= getIntParam(fb, _OPTIONAL_, "MGSweeps",       &integer,        1, 100);          CHKERRQ(ierr);
-		if (integer){
- 			sprintf(str, "-gmg_mg_levels_ksp_max_it %lld", (LLD) integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
-		}
 
-		/* Specify smoother type options */
-		ierr = getStringParam(fb, _OPTIONAL_, "MGSmoother",          SmootherType,         "chebyshev");          CHKERRQ(ierr);
-		if 	(!strcmp(SmootherType, "jacobi")){
 
-			ierr = PetscOptionsInsertString(NULL, "-gmg_mg_levels_ksp_type richardson"); 		CHKERRQ(ierr);
-			ierr = PetscOptionsInsertString(NULL, "-gmg_mg_levels_pc_type jacobi"); 			CHKERRQ(ierr);
-
-			scalar 	= 0.6;
-			ierr 	= getScalarParam(fb, _OPTIONAL_, "MGJacobiDamp",       &scalar,        1, 1.0);          CHKERRQ(ierr);
-			if (scalar){
- 				sprintf(str, "-gmg_mg_levels_ksp_richardson_scale %f", scalar);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
-			}
-		}
-		else if (!strcmp(SmootherType, "chebyshev")){
-			ierr = PetscOptionsInsertString(NULL, "-gmg_mg_levels_ksp_type chebyshev"); 		CHKERRQ(ierr);
-
-		}
-
-		/* Specify coarse grid direct solver options */
-		ierr = getStringParam(fb, _OPTIONAL_, "MGCoarseSolver",          SolverType,         "direct");          CHKERRQ(ierr);
-		if 	( (!strcmp(SolverType, "direct")) || (!strcmp(SolverType, "mumps")) || (!strcmp(SolverType, "superlu_dist")) ){
-			ierr = PetscOptionsInsertString(NULL, "-crs_ksp_type preonly"); 		CHKERRQ(ierr);
-			ierr = PetscOptionsInsertString(NULL, "-crs_pc_type lu"); 		CHKERRQ(ierr);
-			if (!strcmp(SolverType, "superlu_dist")){
-				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_type superlu_dist"); 		CHKERRQ(ierr);
-			}
-			else if (!strcmp(SolverType, "mumps")){
-				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_type mumps"); 		CHKERRQ(ierr);
-			}
-		
-		}
-		else if (!strcmp(SolverType, "redundant")){
-			ierr = PetscOptionsInsertString(NULL, "-crs_ksp_type preonly"); 		CHKERRQ(ierr);
-			ierr = PetscOptionsInsertString(NULL, "-crs_pc_type redundant"); 		CHKERRQ(ierr);
-			
-			// define number of redundant solves
-			integer 	= 	4;
-			ierr 		= 	getIntParam(fb, _OPTIONAL_, "MGRedundantNum",       &integer,        1, 100);          CHKERRQ(ierr);
-			sprintf(str, "-crs_pc_redundant_number %lld", (LLD) integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
-
-			ierr = getStringParam(fb, _OPTIONAL_, "MGRedundantSolver",          SolverType,         "superlu_dist");          CHKERRQ(ierr);
-			sprintf(str, "-crs_redundant_pc_factor_mat_solver_type %s", SolverType);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
-			
-
-		}
-		// More can be added here later, such as telescope etc. (once we have a bit more experience with those solvers)
-
-	} 
 
 
 	PetscFunctionReturn(0);

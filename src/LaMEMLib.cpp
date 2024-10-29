@@ -593,7 +593,6 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	{
 		// save .dat files// binary of passive tracers
 		ierr = PVPtrWriteTimeStep(&lm->pvptr, dirName, time); CHKERRQ(ierr);
-
 	}
 	// clean up
 	free(dirName);
@@ -867,7 +866,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	actx    = &lm->actx;
 
 	// check for infinite diffusion
-	if (ctrl->actTemp && ctrl->actSteadyTemp && ts->istep==0)
+	if(ctrl->actTemp && ctrl->actSteadyTemp && ts->istep==0)
 	{
 		PrintStart(&t,"Computing steady-state temperature distribution", NULL);
 
@@ -891,7 +890,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	}
 
 	// check for additional limited diffusion
-	if (ctrl->actTemp && ctrl->steadyTempStep && ts->istep==0)
+	if(ctrl->actTemp && ctrl->steadyTempStep && ts->istep==0)
 	{
 		PrintStart(&t,"Diffusing temperature", NULL);
 
@@ -924,7 +923,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		}
 
 		// reset Temperature in anomalous phase
-		if (ctrl->actHeatRech)
+		if(ctrl->actHeatRech)
 		{
 			// overwrite markers where T(phase) is set
 			ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
@@ -993,10 +992,4 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-
-//	ObjFunct objf;   // objective function
-//	ierr = ObjFunctCreate(&objf, &IOparam, &lm->surf, fb); CHKERRQ(ierr);
-//	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
-
 //---------------------------------------------------------------------------
