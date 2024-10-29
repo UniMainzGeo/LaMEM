@@ -207,6 +207,11 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param)
 	// destroy file buffer
 	ierr = FBDestroy(&fb); CHKERRQ(ierr);
 
+	// list entire option database
+	PetscCall(PetscOptionsView(NULL, PETSC_VIEWER_STDOUT_WORLD));
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -326,7 +331,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	PrintDone(t);
 
 	PetscFunctionReturn(0);
-
 }
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
@@ -449,18 +453,16 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = FDSTAGDestroy  (&lm->fs);     CHKERRQ(ierr);
-	ierr = FreeSurfDestroy(&lm->surf);   CHKERRQ(ierr);
-	ierr = BCDestroy      (&lm->bc);     CHKERRQ(ierr);
-	ierr = JacResDestroy  (&lm->jr);     CHKERRQ(ierr);
-	ierr = ADVPtrDestroy  (&lm->actx);   CHKERRQ(ierr);
-	ierr = ADVDestroy     (&lm->actx);   CHKERRQ(ierr);
-	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
-	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
-
-	ierr = DynamicPhTrDestroy (&lm->dbm); CHKERRQ(ierr);
-	ierr = DynamicDike_Destroy(&lm->jr); CHKERRQ(ierr);
-
+	ierr = FDSTAGDestroy      (&lm->fs);     CHKERRQ(ierr);
+	ierr = FreeSurfDestroy    (&lm->surf);   CHKERRQ(ierr);
+	ierr = BCDestroy          (&lm->bc);     CHKERRQ(ierr);
+	ierr = JacResDestroy      (&lm->jr);     CHKERRQ(ierr);
+	ierr = ADVPtrDestroy      (&lm->actx);   CHKERRQ(ierr);
+	ierr = ADVDestroy         (&lm->actx);   CHKERRQ(ierr);
+	ierr = PVOutDestroy       (&lm->pvout);  CHKERRQ(ierr);
+	ierr = PVSurfDestroy      (&lm->pvsurf); CHKERRQ(ierr);
+	ierr = DynamicPhTrDestroy (&lm->dbm);    CHKERRQ(ierr);
+	ierr = DynamicDike_Destroy(&lm->jr);     CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -534,7 +536,6 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->pvptr.actx  = &lm->actx;
 	// PVAVD
 	lm->pvavd.actx  = &lm->actx;
-
 
 	PetscFunctionReturn(0);
 }

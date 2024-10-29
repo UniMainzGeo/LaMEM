@@ -68,7 +68,5 @@ PetscErrorCode SNESCoupledTest(
 
 PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg);
 
-PetscErrorCode DisplaySolverOptions(PCStokes pc, SNES snes);
-
 //---------------------------------------------------------------------------
 #endif
