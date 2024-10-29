@@ -58,32 +58,32 @@ Examples
 # SNES
 
 	-snes_monitor
-	-snes_atol 1e-8
-	-snes_rtol 1e-6
-	-snes_stol 1e-6
-	-snes_max_it 25
-	-snes_max_funcs 50000
+	-snes_atol 1e-7
+	-snes_rtol 1e-3
+	-snes_stol 1e-8
+	-snes_max_it 50
+	-snes_max_funcs 1000000
 	
 	-snes_PicardSwitchToNewton_rtol 1e-2
-    -snes_NewtonSwitchToPicard_it  	20
+	-snes_NewtonSwitchToPicard_it   20
 	-snes_NewtonSwitchToPicard_rtol 1.2
 	-snes_picard_mat_free
 
-# Line search	
-	
+# Line search
+
+	-snes_linesearch_type l2	
+	-snes_linesearch_max_it 5	
 	-snes_linesearch_minlambda 0.05
 	-snes_linesearch_maxstep 1.0
-	-snes_linesearch_type l2
-	-snes_linesearch_max_it 5
 
 # Eisenstatt-Walker
 
 	-snes_ksp_ew
-    -snes_ksp_ew_version 3
-	-snes_ksp_ew_rtol0 1e-3
+	-snes_ksp_ew_version 3
+	-snes_ksp_ew_rtol0   1e-2
 	-snes_ksp_ew_rtolmax 1e-2
-	-snes_ksp_ew_gamma 0.9
-	-snes_ksp_ew_alpha 2.0
+	-snes_ksp_ew_gamma   0.9
+	-snes_ksp_ew_alpha   2.0
 
 # MFFD DS (Dennis-Schnabel)
 
@@ -100,10 +100,20 @@ Examples
 # Jacobian solver
 
 	-js_ksp_type fgmres
-	-js_ksp_max_it 1000
-	-js_ksp_converged_reason
-	-js_ksp_monitor
 	-js_ksp_rtol 1e-6
+	-js_ksp_max_it 500
+	-js_ksp_monitor
+	-js_ksp_converged_reason
+
+# Matrix options (required to scale Galerkin multigrid on large number of MPI ranks)
+
+	-mat_product_algorithm scalable
+	-matmatmatmult_via scalable
+	-matmatmult_via scalable
+
+# DMDA settings
+
+	-da_refine_y 1 # 2D multigrid
 
 ================================================================================
 
@@ -125,7 +135,7 @@ Examples
 
 	-vs_ksp_type preonly
 	-vs_pc_type lu
-	-vs_pc_factor_mat_solver_type mumps
+	-vs_pc_factor_mat_solver_type superlu_dist
 
 ================================================================================
 
@@ -158,7 +168,7 @@ Examples
 
 [5] multigrid solver settings (both coupled system & velocity block)
 
-    (see [7] for coarse solver settings)
+	(see [7] and [8] for coarse solver settings)
 
 	-gmg_pc_view
 	-gmg_pc_type mg
@@ -168,7 +178,7 @@ Examples
 	-gmg_pc_mg_cycle_type v
 	-gmg_mg_levels_ksp_type richardson
 	-gmg_mg_levels_ksp_richardson_scale 0.5
-	-gmg_mg_levels_ksp_max_it 20
+	-gmg_mg_levels_ksp_max_it 10
 	-gmg_mg_levels_pc_type jacobi
 
 ================================================================================
@@ -196,7 +206,7 @@ Examples
 	[A] direct solver
 
 	-crs_telescope_pc_type lu
-	-crs_telescope_pc_factor_mat_solver_type mumps
+	-crs_telescope_pc_factor_mat_solver_type superlu_dist
 
 	[B] hyper boomeramg
 
@@ -223,6 +233,14 @@ Examples
 
 	-crs_telescope_pc_type bjacobi
 	-crs_telescope_pc_bjacobi_local_blocks 1
+	
+================================================================================
+
+[7] coarse solver settings (direct)
+
+	-crs_ksp_type preonly
+	-crs_pc_type lu
+	-crs_pc_factor_mat_solver_type superlu_dist
 
 ================================================================================
 
@@ -238,16 +256,7 @@ Examples
 	[B] direct solver
 
 	-sub_pc_type lu
-	-sub_pc_factor_mat_solver_type mumps
-
-================================================================================
-
-[8] Matrix options (required to scale Galerkin multigrid on large number of MPI ranks)
-
--mat_product_algorithm scalable
--matmatmatmult_via scalable
--matmatmult_via scalable
-
+		
 ================================================================================
 
 [9] Steady-state temperature solver settings (multigrid)
