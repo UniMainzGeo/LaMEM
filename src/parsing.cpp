@@ -563,22 +563,20 @@ PetscErrorCode getIntParam(
 
 	found = PETSC_FALSE;
 
-	// 
+	if(!fb->nblocks)
 	{
-		if(!fb->nblocks){
-			asprintf(&dbkey, "-%s", key);
-		}
-		else
-		{
-			asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
-		}
-
-		nval = num;
-
-		ierr = PetscOptionsGetIntArray(NULL, NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
-
-		free(dbkey);
+		asprintf(&dbkey, "-%s", key);
 	}
+	else
+	{
+		asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
+	}
+
+	nval = num;
+
+	ierr = PetscOptionsGetIntArray(NULL, NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
+
+	free(dbkey);
 
 	if(found != PETSC_TRUE && fb)
 	{
@@ -630,21 +628,22 @@ PetscErrorCode getScalarParam(
 	if(num < 1) PetscFunctionReturn(0);
 
 	found = PETSC_FALSE;
-	{
-		if(!fb->nblocks){
-			asprintf(&dbkey, "-%s", key);
-		}
-		else
-		{
-			asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
-		}
-	
-		nval = num;
 
-		ierr = PetscOptionsGetScalarArray(NULL, NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
-	
-		free(dbkey);
+	if(!fb->nblocks)
+	{
+		asprintf(&dbkey, "-%s", key);
 	}
+	else
+	{
+		asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
+	}
+	
+	nval = num;
+
+	ierr = PetscOptionsGetScalarArray(NULL, NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
+	
+	free(dbkey);
+
 	
 	if(found != PETSC_TRUE && fb)
 	{
@@ -686,20 +685,18 @@ PetscErrorCode getStringParam(
 	if(_default_) { ierr = PetscStrncpy(str, _default_, _str_len_); CHKERRQ(ierr); }
 	else          { ierr = PetscMemzero(str,            _str_len_); CHKERRQ(ierr); }
 
-	
+	if(!fb->nblocks)
 	{
-		if(!fb->nblocks){
-			asprintf(&dbkey, "-%s", key);
-		}
-		else
-		{
-			asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
-		}
-	
-		ierr = PetscOptionsGetCheckString(dbkey, str, &found); CHKERRQ(ierr);
-
-		free(dbkey);
+		asprintf(&dbkey, "-%s", key);
 	}
+	else
+	{
+		asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
+	}
+	
+	ierr = PetscOptionsGetCheckString(dbkey, str, &found); CHKERRQ(ierr);
+
+	free(dbkey);
 
 	if(found != PETSC_TRUE && fb)
 	{
@@ -853,9 +850,13 @@ PetscErrorCode  PetscOptionsGetCheckString(
 //---------------------------------------------------------------------------
 PetscErrorCode setDefaultSolverOptions(FB *fb)
 {
-	char        SolverType[_str_len_], DirectSolver[_str_len_], MGCoarseSolver[_str_len_];
-	PetscInt    ncy, nsweeps, rfactor, nlevels;
-	PetscScalar pgamma;
+	StokesSolverType solType;
+	DirectSolverType drsType;
+	CoarseSolverType crsType;
+	PetscMPIInt      size;
+	PetscScalar      pgamma;
+	PetscInt         ncy, nsweeps, rfactor, nlevels;
+	char             SolverType[_str_len_], DirectSolver[_str_len_], MGCoarseSolver[_str_len_];
 	
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -863,39 +864,45 @@ PetscErrorCode setDefaultSolverOptions(FB *fb)
 	// set 'best-guess' default solver options to help an inexperienced user
 	// all options can be overridden by the usual PETSC options
 
-	/*
-	    SolverType        = direct  # solver type [direct, multigrid, block, wbfbt]
-	    DirectSolver      = mumps   # direct solver package [mumps, superlu_dist]
-	    DirectPenalty     = 1e3     # penalty parameter for direct solver
-	    MGLevels          = 3       # number of MG levels [default=3]
-	    MGSweeps          = 10      # number of MG smoothing sweeps [default=10]
-	    MGCoarseSolver    = direct  # coarse grid solver [direct, hyper, asm, bjacobi]
-	    MGReductionFactor = 4       # pc-telescope reduction factor
-	*/
+	// get number of ranks
+	MPI_Comm_size(PETSC_COMM_WORLD, &size);
 
 	// set defaults
-	sprintf(SolverType,     "direct");
-	sprintf(DirectSolver,   "superlu_dist");
-	sprintf(MGCoarseSolver, "direct");
 	pgamma  = 1e3;
 	nlevels = 3;
 	nsweeps = 10;
 	rfactor = 1;
 
 	// read simplified solver options
-	ierr = getStringParam(fb, _OPTIONAL_, "SolverType",        SolverType,     NULL);       CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",      DirectSolver,   NULL );      CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "DirectPenalty",     &pgamma,        1, 1.0);     CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "MGLevels",          &nlevels,       1, 32);      CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "MGSweeps",          &nsweeps,       1, 100);     CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "MGCoarseSolver",    MGCoarseSolver, NULL );      CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "MGReductionFactor", &rfactor,       1, 1000000); CHKERRQ(ierr);
-
+	ierr = getStringParam(fb, _OPTIONAL_, "SolverType",        SolverType,     "direct");        CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",      DirectSolver,   "superlu_dist" ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "DirectPenalty",     &pgamma,        1, 1.0);          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "MGLevels",          &nlevels,       1, 32);           CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "MGSweeps",          &nsweeps,       1, 100);          CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "MGCoarseSolver",    MGCoarseSolver, "direct" );       CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "MGReductionFactor", &rfactor,       1, 1000000);      CHKERRQ(ierr);
 
 	// check and output specified options
+	if(rfactor > size)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PC-TELESCOPE reduction factor is larger than number of MPI ranks (MGReductionFactor)");
+	}
 
-	// ...
+	if     (!strcmp(SolverType, "direct"))    solType = _DIRECT_STOKES_;
+	else if(!strcmp(SolverType, "multigrid")) solType = _MULTIGRID_STOKES_;
+	else if(!strcmp(SolverType, "block"))     solType = _BLOCK_STOKES_;
+	else if(!strcmp(SolverType, "wbfbt"))     solType = _wBFBT_STOKES_;
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect solver type (SolverType): %s", SolverType);
 
+	if     (!strcmp(DirectSolver, "mumps"))        drsType = _MUMPS_;
+	else if(!strcmp(DirectSolver, "superlu_dist")) drsType = _SUPERLU_DIST_;
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect direct solver package (DirectSolver): %s", DirectSolver);
+
+	if     (!strcmp(MGCoarseSolver, "direct"))  crsType = _DIRECT_COARSE_;
+	else if(!strcmp(MGCoarseSolver, "hypre"))   crsType = _HYPRE_COARSE_;
+	else if(!strcmp(MGCoarseSolver, "asm"))     crsType = _ASM_COARSE_;
+	else if(!strcmp(MGCoarseSolver, "bjacobi")) crsType = _BJACOBI_COARSE_;
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect coarse solver type (MGCoarseSolver): %s", MGCoarseSolver);
 
 	// SNES
 	ierr = PetscOptionsInsertString(NULL, "-snes_monitor");                        CHKERRQ(ierr);

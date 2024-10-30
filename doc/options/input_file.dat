@@ -365,7 +365,7 @@
     DirectPenalty     = 1e3     # penalty parameter for direct solver
     MGLevels          = 3       # number of MG levels [default=3]
     MGSweeps          = 10      # number of MG smoothing sweeps [default=10]
-    MGCoarseSolver    = direct  # coarse grid solver [direct, hyper, asm, bjacobi]
+    MGCoarseSolver    = direct  # coarse grid solver [direct, hypre, asm, bjacobi]
     MGReductionFactor = 4       # pc-telescope reduction factor
 
 #===============================================================================
