@@ -168,7 +168,7 @@ Examples
 
 [5] multigrid solver settings (both coupled system & velocity block)
 
-	(see [7] and [8] for coarse solver settings)
+	(see [7] for coarse solver settings)
 
 	-gmg_pc_view
 	-gmg_pc_type mg
@@ -208,7 +208,7 @@ Examples
 	-crs_telescope_pc_type lu
 	-crs_telescope_pc_factor_mat_solver_type superlu_dist
 
-	[B] hyper boomeramg
+	[B] hypre boomeramg
 
 	-crs_telescope_pc_type hypre
 	-crs_telescope_pc_hypre_type boomeramg
@@ -234,14 +234,6 @@ Examples
 	-crs_telescope_pc_type bjacobi
 	-crs_telescope_pc_bjacobi_local_blocks 1
 	
-================================================================================
-
-[7] coarse solver settings (direct)
-
-	-crs_ksp_type preonly
-	-crs_pc_type lu
-	-crs_pc_factor_mat_solver_type superlu_dist
-
 ================================================================================
 
 [8] subdomain solver settings (ASM and block Jacobi)
