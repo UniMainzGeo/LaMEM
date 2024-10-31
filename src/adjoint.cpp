@@ -154,6 +154,8 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 	// Check if there is a command-line option & use that instead
 	asprintf(&dbkey, "-%s[%i]", par_str, (int)ID);
 	PetscOptionsGetScalar(NULL, NULL, dbkey, &val, &found);
+	free(dbkey);
+
 	if (found){
 		value = val;	// found a command-line option
 	}
@@ -707,6 +709,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 				PetscPrintf(PETSC_COMM_WORLD, "|   %-2lld: %s %s %6s[%-2lld] = %s; bnd=[%s; %s]   \n",(LLD) i+1,adjointstr,logstr,par_str, (LLD) ID,val_str,lb_str,ub_str);
 			}
 			
+			free(ub_str);
+			free(lb_str);
+			free(val_str);
+
 			i = i+1;
 		}
 
@@ -3507,6 +3513,9 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
         PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
     }
 
+    free(option);
+    free(option_value);
+
     PetscFunctionReturn(0);
 }
 
@@ -3562,6 +3571,8 @@ PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscIn
     	PetscPrintf(PETSC_COMM_WORLD,"| **** Deleted option %s from the database. **** \n",option);
        	PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
     }
+
+    free(option);
 
     PetscFunctionReturn(0);
 }
@@ -3784,6 +3795,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			char *Name;	
 			asprintf(&Name, "delta(%s)", CurName);	// w compute w.r.t. Reference Density
 			strcpy(CurName, Name);	// name
+			free(Name);
 		}
 		if (IOparam->par_log10[k]==1){strcpy(logstr, "log10"); }
 		else{strcpy(logstr, "     "); }
@@ -3886,6 +3898,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 				P = P - IOparam->ReferenceDensity;				// Compute with density difference
 				asprintf(&Name, "delta(%s)", CurName);			// clarify that we compute w.r.t. Reference Density
 				strcpy(CurName, Name);							// name
+				free(Name);
 			}	
 
 			if (IOparam->par_log10[k]==1){strcpy(logstr, "log10"); }
