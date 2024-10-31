@@ -357,18 +357,6 @@
 # gw_level_type = level # GW level is fixed (gw_level parameter must be specified)
 
 #===============================================================================
-# Solver options
-#===============================================================================
-
-    SolverType        = direct  # solver type [direct, multigrid, block, wbfbt]
-    DirectSolver      = mumps   # direct solver package [mumps, superlu_dist]
-    DirectPenalty     = 1e3     # penalty parameter for direct solver
-    MGLevels          = 3       # number of MG levels [default=3]
-    MGSweeps          = 10      # number of MG smoothing sweeps [default=10]
-    MGCoarseSolver    = direct  # coarse grid solver [direct, hypre, asm, bjacobi]
-    MGReductionFactor = 4       # pc-telescope reduction factor
-
-#===============================================================================
 # Model setup & advection
 #===============================================================================
     msetup          = geom              # setup type
@@ -829,6 +817,21 @@
         Value               =   -0.04248                            # values
     <AdjointObservationPointEnd>
 
+#===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+
+    SolverType        = direct  # solver type [direct, multigrid, block, wbfbt]
+    DirectSolver      = mumps   # direct solver package [mumps, superlu_dist]
+    DirectPenalty     = 1e3     # penalty parameter for direct solver
+    MGLevels          = 3       # number of MG levels [default=3]
+    MGSweeps          = 10      # number of MG smoothing sweeps [default=10]
+    MGCoarseSolver    = direct  # coarse grid solver [direct, hypre, asm, bjacobi]
+    MGReductionFactor = 4       # pc-telescope reduction factor
+
+<SolverOptionsEnd>
 
 #===============================================================================
 # PETSc options
@@ -839,4 +842,5 @@
 	# see solver_options.txt for details
 
 <PetscOptionsEnd>
+
 #===============================================================================

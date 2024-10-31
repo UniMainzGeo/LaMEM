@@ -369,7 +369,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
 
-
 	// read phase aggregates
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseAggStart>", "<PhaseAggEnd>"); CHKERRQ(ierr);
 
@@ -377,8 +376,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase aggregates specified! Max allowed: %lld", (LLD)_max_num_phase_agg_);
 	}
-
-
 
 	omask->num_agg = fb->nblocks;
 
@@ -392,7 +389,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 		omask->agg_num_phase[i] = np;
 
 		fb->blockID++;
-
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);

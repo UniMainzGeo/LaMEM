@@ -110,7 +110,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
 
 	// set default solver options if defined in file
-	ierr = setDefaultSolverOptions(fb); CHKERRQ(ierr);
+	ierr = solverOptionsReadFromFile(fb); CHKERRQ(ierr);
 
 	// load additional options from file
 	ierr = PetscOptionsReadFromFile(fb, DisplayOutput); CHKERRQ(ierr);
@@ -848,27 +848,98 @@ PetscErrorCode  PetscOptionsGetCheckString(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode setDefaultSolverOptions(FB *fb)
+PetscErrorCode set_integer_option(const char *key, const PetscInt val, const char *prefix = NULL)
 {
+	PetscFunctionBeginUser;
+	char *opt;
+	if(prefix) asprintf(&opt,"-%s_%s %lld", prefix, key, (LLD)val);
+	else       asprintf(&opt,"-%s %lld",            key, (LLD)val);
+	PetscCall(PetscOptionsInsertString(NULL, opt));
+	free(opt);
+	PetscFunctionReturn(0);
+
+}
+//---------------------------------------------------------------------------
+PetscErrorCode set_scalar_option(const char *key, const PetscScalar val, const char *prefix = NULL)
+{
+	PetscFunctionBeginUser;
+	char *opt;
+	if(prefix) asprintf(&opt,"-%s_%s %g", prefix, key, val);
+	else       asprintf(&opt,"-%s %g",            key, val);
+	PetscCall(PetscOptionsInsertString(NULL, opt));
+	free(opt);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode set_string_option(const char *key, const char *val, const char *prefix = NULL)
+{
+	PetscFunctionBeginUser;
+	char *opt;
+	if(prefix) asprintf(&opt,"-%s_%s %s", prefix, key, val);
+	else       asprintf(&opt,"-%s %s",            key, val);
+	PetscCall(PetscOptionsInsertString(NULL, opt));
+	free(opt);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode set_empty_option(const char *key, const char *prefix = NULL)
+{
+	PetscFunctionBeginUser;
+	char *opt;
+	if(prefix) asprintf(&opt,"-%s_%s", prefix, key);
+	else       asprintf(&opt,"-%s",            key);
+	PetscCall(PetscOptionsInsertString(NULL, opt));
+	free(opt);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode set_mg_options(const char *prefix, PetscInt nlevels, PetscInt nsweeps, PetscScalar damping)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(set_string_option ("pc_type", "mg", prefix));
+	PetscCall(set_integer_option("pc_mg_levels", nlevels, prefix));
+	PetscCall(set_empty_option  ("pc_mg_galerkin", prefix));
+	PetscCall(set_string_option ("pc_mg_type", "multiplicative", prefix));
+	PetscCall(set_string_option ("pc_mg_cycle_type", "v", prefix));
+	PetscCall(set_string_option ("mg_levels_ksp_type", "richardson", prefix));
+	PetscCall(set_scalar_option ("mg_levels_ksp_richardson_scale", damping, prefix));
+	PetscCall(set_integer_option("mg_levels_ksp_max_it", nsweeps, prefix));
+	PetscCall(set_string_option ("mg_levels_pc_type", "jacobi", prefix));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode solverOptionsReadFromFile(FB *fb)
+{
+	// set 'best-guess' default solver options to help an inexperienced user
+	// all options can be overridden by the usual PETSC options
+
 	StokesSolverType solType;
-	DirectSolverType drsType;
 	CoarseSolverType crsType;
 	PetscMPIInt      size;
-	PetscScalar      pgamma;
+	PetscScalar      pgamma, damping;
 	PetscInt         ncy, nsweeps, rfactor, nlevels;
 	char             SolverType[_str_len_], DirectSolver[_str_len_], MGCoarseSolver[_str_len_];
 	
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 	
-	// set 'best-guess' default solver options to help an inexperienced user
-	// all options can be overridden by the usual PETSC options
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SolverOptionsStart>", "<SolverOptionsEnd>"); CHKERRQ(ierr);
+
+	if(!fb->nblocks) PetscFunctionReturn(0);
+
+	if(fb->nblocks > 1)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many solver options blocks. Only one is allowed");
+	}
 
 	// get number of ranks
 	MPI_Comm_size(PETSC_COMM_WORLD, &size);
 
 	// set defaults
 	pgamma  = 1e3;
+	damping = 0.5;
 	nlevels = 3;
 	nsweeps = 10;
 	rfactor = 1;
@@ -894,9 +965,10 @@ PetscErrorCode setDefaultSolverOptions(FB *fb)
 	else if(!strcmp(SolverType, "wbfbt"))     solType = _wBFBT_STOKES_;
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect solver type (SolverType): %s", SolverType);
 
-	if     (!strcmp(DirectSolver, "mumps"))        drsType = _MUMPS_;
-	else if(!strcmp(DirectSolver, "superlu_dist")) drsType = _SUPERLU_DIST_;
-	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect direct solver package (DirectSolver): %s", DirectSolver);
+	if(!(!strcmp(DirectSolver, "mumps") || !strcmp(DirectSolver, "superlu_dist")))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect direct solver package (DirectSolver): %s", DirectSolver);
+	}
 
 	if     (!strcmp(MGCoarseSolver, "direct"))  crsType = _DIRECT_COARSE_;
 	else if(!strcmp(MGCoarseSolver, "hypre"))   crsType = _HYPRE_COARSE_;
@@ -940,11 +1012,48 @@ PetscErrorCode setDefaultSolverOptions(FB *fb)
 		ierr = PetscOptionsInsertString(NULL, "-da_refine_y 1"); CHKERRQ(ierr);
 	}
 
+	if(solType == _DIRECT_STOKES_)
+	{
+		PetscCall(set_string_option("jp_type", "bf"));
+		PetscCall(set_scalar_option("jp_pgamma", pgamma));
+		PetscCall(set_string_option("bf_vs_type", "user"));
+		PetscCall(set_string_option("vs_ksp_type", "preonly"));
+		PetscCall(set_string_option("vs_pc_type","lu"));
+		PetscCall(set_string_option("vs_pc_factor_mat_solver_type", DirectSolver));
+	}
+	else if(solType == _MULTIGRID_STOKES_)
+	{
+		PetscCall(set_string_option ("jp_type", "mg"));
+
+		// muligrid defaults
+		PetscCall(set_mg_options("gmg", nlevels, nsweeps, damping));
+	}
+	else if(solType == _BLOCK_STOKES_)
+	{
+		PetscCall(set_string_option("jp_type", "bf"));
+		PetscCall(set_string_option("bf_vs_type", "mg"));
+		PetscCall(set_string_option("vs_ksp_type", "preonly"));
+
+		// muligrid defaults
+		PetscCall(set_mg_options("gmg", nlevels, nsweeps, damping));
+	}
+	else if(solType == _wBFBT_STOKES_)
+	{
+		PetscCall(set_string_option("jp_type", "bf"));
+		PetscCall(set_string_option("bf_vs_type", "mg"));
+		PetscCall(set_string_option("bf_schur_wbfbt", NULL));
+		PetscCall(set_string_option("vs_ksp_type", "preonly"));
+		PetscCall(set_string_option("ks_ksp_type", "preonly"));
+
+		// muligrid defaults
+		PetscCall(set_mg_options("gmg", nlevels, nsweeps, damping));
+		PetscCall(set_mg_options("ks",  nlevels, nsweeps, damping));
+	}
 
 
 
 
-
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

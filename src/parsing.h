@@ -23,12 +23,6 @@ enum StokesSolverType
 	_wBFBT_STOKES_
 };
 
-enum DirectSolverType
-{
-	_MUMPS_,
-	_SUPERLU_DIST_,
-};
-
 enum CoarseSolverType
 {
 	_DIRECT_COARSE_,
@@ -168,7 +162,7 @@ PetscErrorCode  PetscOptionsGetCheckString(
 // Set default solver options
 //-----------------------------------------------------------------------------
 
-PetscErrorCode setDefaultSolverOptions(FB *fb);
+PetscErrorCode solverOptionsReadFromFile(FB *fb);
 
 //-----------------------------------------------------------------------------
 #endif
