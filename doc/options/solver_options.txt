@@ -193,7 +193,6 @@ Examples
 	-ks_pc_mg_type multiplicative
 	-ks_pc_mg_cycle_type v
 
-
 ================================================================================
 
 [7] coarse solver settings (telescope)

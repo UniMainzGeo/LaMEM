@@ -164,5 +164,7 @@ PetscErrorCode  PetscOptionsGetCheckString(
 
 PetscErrorCode solverOptionsReadFromFile(FB *fb);
 
+PetscErrorCode solverOptionsSetRequired(FB *fb);
+
 //-----------------------------------------------------------------------------
 #endif
