@@ -58,7 +58,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
 		}
 
-		if (DisplayOutput)
+		if(DisplayOutput)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "Parsing input file : %s \n", filename);
 		}
@@ -109,7 +109,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	// remove command line options from database
 	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
 
-	// set default solver options if defined in file
+	// set simplified solver options from the input file
 	ierr = solverOptionsReadFromFile(fb); CHKERRQ(ierr);
 
 	// load additional options from file
@@ -118,6 +118,9 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	// push command line options to the end of database (priority)
 	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
 	
+	// set required options (priority)
+	ierr = solverOptionsSetRequired(fb); CHKERRQ(ierr);
+
 	// print message
 	if(DisplayOutput)
 	{
@@ -857,7 +860,6 @@ PetscErrorCode set_integer_option(const char *key, const PetscInt val, const cha
 	PetscCall(PetscOptionsInsertString(NULL, opt));
 	free(opt);
 	PetscFunctionReturn(0);
-
 }
 //---------------------------------------------------------------------------
 PetscErrorCode set_scalar_option(const char *key, const PetscScalar val, const char *prefix = NULL)
@@ -919,7 +921,7 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	CoarseSolverType crsType;
 	PetscMPIInt      size;
 	PetscScalar      pgamma, damping;
-	PetscInt         ncy, nsweeps, rfactor, nlevels;
+	PetscInt         nsweeps, rfactor, nlevels;
 	char             SolverType[_str_len_], DirectSolver[_str_len_], MGCoarseSolver[_str_len_];
 	
 	PetscErrorCode ierr;
@@ -927,6 +929,7 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SolverOptionsStart>", "<SolverOptionsEnd>"); CHKERRQ(ierr);
 
+	// do not set defaults if options block is not defined
 	if(!fb->nblocks) PetscFunctionReturn(0);
 
 	if(fb->nblocks > 1)
@@ -954,9 +957,9 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "MGReductionFactor", &rfactor,       1, 1000000);      CHKERRQ(ierr);
 
 	// check and output specified options
-	if(rfactor > size)
+	if(rfactor > size || size%rfactor)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PC-TELESCOPE reduction factor is larger than number of MPI ranks (MGReductionFactor)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PC-TELESCOPE reduction factor is incompatible with number of MPI ranks (MGReductionFactor)");
 	}
 
 	if     (!strcmp(SolverType, "direct"))    solType = _DIRECT_STOKES_;
@@ -998,20 +1001,6 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_monitor");          CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_converged_reason"); CHKERRQ(ierr);
 
-	// MAT
-	ierr = PetscOptionsInsertString(NULL, "-mat_product_algorithm scalable"); CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-matmatmatmult_via scalable");     CHKERRQ(ierr);
-	ierr = PetscOptionsInsertString(NULL, "-matmatmult_via scalable");        CHKERRQ(ierr);
-
-	// DM
-	ierr = getIntParam(fb, _REQUIRED_, "nel_y", &ncy, 1, 10000); CHKERRQ(ierr);
-
-	if(ncy == 2)
-	{
-		// 2D grid - do not coarsen DMDA in y-direction
-		ierr = PetscOptionsInsertString(NULL, "-da_refine_y 1"); CHKERRQ(ierr);
-	}
-
 	if(solType == _DIRECT_STOKES_)
 	{
 		PetscCall(set_string_option("jp_type", "bf"));
@@ -1041,7 +1030,7 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	{
 		PetscCall(set_string_option("jp_type", "bf"));
 		PetscCall(set_string_option("bf_vs_type", "mg"));
-		PetscCall(set_string_option("bf_schur_wbfbt", NULL));
+		PetscCall(set_empty_option ("bf_schur_wbfbt"));
 		PetscCall(set_string_option("vs_ksp_type", "preonly"));
 		PetscCall(set_string_option("ks_ksp_type", "preonly"));
 
@@ -1058,3 +1047,26 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+PetscErrorCode solverOptionsSetRequired(FB *fb)
+{
+	PetscInt ncy;
+
+	PetscFunctionBeginUser;
+
+	// DM
+	PetscCall(getIntParam(fb, _REQUIRED_, "nel_y", &ncy, 1, 10000));
+
+	if(ncy == 2)
+	{
+		// quasi-2D-grid - do not coarsen DMDA in y-direction
+		PetscCall(PetscOptionsInsertString(NULL, "-da_refine_y 1"));
+	}
+
+	// MAT
+	PetscCall(PetscOptionsInsertString(NULL, "-mat_product_algorithm scalable"));
+	PetscCall(PetscOptionsInsertString(NULL, "-matmatmatmult_via scalable"));
+	PetscCall(PetscOptionsInsertString(NULL, "-matmatmult_via scalable"));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
