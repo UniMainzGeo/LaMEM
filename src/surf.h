@@ -32,6 +32,15 @@ struct FreeSurf
 	Vec     vx, vy, vz;     // velocity vectors                  (local)
 	Vec     vpatch, vmerge; // patch and merged velocity vectors (global)
 
+	Vec 	vz_fs, vz_collect;
+	Vec 	gtopo_fs;
+	DM		DA_SURF_REFINE;	 // free surface grid after refinement
+	Vec 	gtopo_refine;
+	VecScatter ctx;
+
+//	Vec vz_refine, gtopo_refine;
+
+
 	// flags/parameters
 	PetscInt    UseFreeSurf; // free surface activation flag
 	PetscInt    phaseCorr;   // free surface phase correction flag
@@ -40,6 +49,9 @@ struct FreeSurf
 	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
 
 	// erosion/sedimentation parameters
+	
+	PetscInt    SurfMode;               // [0-none, 1-original code, 2-FastScape...]
+	
 	PetscInt    ErosionModel;               // [0-none, 1-infinitely fast, 2-prescribed rate...]
 	PetscInt    SedimentModel;              // [0-none, 1-prescribed rate, 2-gaussian margin...]
 	PetscInt    numLayers;                  // number of sediment layers
@@ -57,6 +69,22 @@ struct FreeSurf
 	PetscScalar hUp;                        // up dip thickness of sediment cover
 	PetscScalar hDown;                      // down dip thickness of sediment cover
 	PetscScalar dTrans;                     // half of transition zone
+
+	PetscScalar kf;		// the bedrock river incision (SPL) rate parameter (or Kf) in meters (to the power 1-2m) per year
+	PetscScalar kfsed;  // sediment river incision (SPL) rate parameter (or Kf) in meters (to the power 1-2m) per year; note that when kfsed < 0, 
+						// its value is not used, i.e., kf for sediment and bedrock have the same value, regardless of sediment thickness
+	PetscScalar m;		// drainage area exponent in the SPL
+	PetscScalar n;		// slope exponent in the SPL
+	PetscScalar kd;		// the bedrock transport coefficient (or diffusivity) for hillslope processes in meter squared per year
+	PetscScalar kdsed;  // sediment transport coefficient (or diffusivity) for hillslope processes in meter squared per year, note that when kdsed < 0, 
+						// its value is not used, i.e., kd for sediment and bedrock have the same value, regardless of sediment thickness
+	PetscScalar g;		// bedrock dimensionless deposition/transport coefficient for the enriched SPL 
+	PetscScalar gsed;   //sediment dimensionless deposition/transport coefficient for the enriched SPL, note that when gsed < 0, 
+						//its value is not used, i.e., g for sediment and bedrock have the same value, regardless of sediment thickness   
+	PetscScalar p;		// slope exponent for multi-direction flow; the distribution of flow among potential receivers 
+						//(defined as the neighbouring nodes that define a negative slope)is proportional to local slope to power p
+	PetscInt    refine;	// whether refine the grid in FastScape
+	PetscScalar Max_dt; // max dt used in FastScape
 
 	// run-time parameters
 	PetscScalar avg_topo; // average topography (updated by all functions changing topography)
