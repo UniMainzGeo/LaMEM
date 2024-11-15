@@ -21,6 +21,7 @@
 #include "JacRes.h"
 #include "interpolate.h"
 #include "tools.h"
+#include "fastscape.h"
 //---------------------------------------------------------------------------
 // * stair-case type of free surface
 // ...
@@ -37,7 +38,6 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	surf->phaseCorr   =  1;
 	surf->AirPhase    = -1;
 	surf->SurfMode	  =  0;
-	surf->refine	  =  1;
 	
 	// check whether free surface is activated
 	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
@@ -102,22 +102,6 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		}
 	}
 
-	if(2 == surf->SurfMode)
-	{
-		// kf, kd, kfsed, kdsed, can be set as an array
-		ierr = getScalarParam(fb, _OPTIONAL_, "Max_dt",          &surf->Max_dt,   1,                 1.0);      				CHKERRQ(ierr); // m/yr
-		ierr = getScalarParam(fb, _OPTIONAL_, "SPL_kf",          &surf->kf,   	  1,                 1.0);      				CHKERRQ(ierr); // m/yr
-		ierr = getScalarParam(fb, _OPTIONAL_, "SPL_kfsed",       &surf->kfsed,    1,                 1.0);      				CHKERRQ(ierr); // m/yr
-		ierr = getScalarParam(fb, _OPTIONAL_, "SPL_m",           &surf->m,    	  1,                 1.0);      				CHKERRQ(ierr); // non-dimensional
-		ierr = getScalarParam(fb, _OPTIONAL_, "SPL_n",           &surf->n,        1,                 1.0);     				 	CHKERRQ(ierr); // non-dimensional
-		ierr = getScalarParam(fb, _OPTIONAL_, "hillslope_kd",    &surf->kd,       1,                 1.0);      				CHKERRQ(ierr); // m/yr
-		ierr = getScalarParam(fb, _OPTIONAL_, "hillslope_kdsed", &surf->kdsed,    1,                 1.0);      				CHKERRQ(ierr); // m/yr
-		ierr = getScalarParam(fb, _OPTIONAL_, "hillslope_g",     &surf->g,        1,                 1.0);   				 	CHKERRQ(ierr); // non-dimensional
-		ierr = getScalarParam(fb, _OPTIONAL_, "hillslope_gsed",  &surf->gsed,     1,                 1.0);     				 	CHKERRQ(ierr); // non-dimensional
-		ierr = getScalarParam(fb, _OPTIONAL_, "multiFlow_p",     &surf->p,     	  1,                 1.0);    				 	CHKERRQ(ierr); // non-dimensional
-		ierr = getIntParam   (fb, _OPTIONAL_, "fs_refine",       &surf->refine,   1,                 100);    				 	CHKERRQ(ierr); // non-dimensional
-	}
-
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Free surface parameters: \n");
 
@@ -137,13 +121,10 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		else if (surf->SedimentModel == 2) PetscPrintf(PETSC_COMM_WORLD, "directed sedimentation (continental margin) with prescribed rate\n");
 		else if (surf->SedimentModel == 3) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate\n");
 
-		PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
+	//	PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
 	}
 
-	if(2 == surf->SurfMode)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Using FastScape\n ");
-	}
+	if(surf->SurfMode == 2)	PetscPrintf(PETSC_COMM_WORLD, "   Using FastScape           : %s \n", surf->SurfMode==2 ? "yes":"no");
 
 	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %lld \n",  (LLD)surf->numLayers);
 	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
@@ -151,6 +132,14 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
+	if(SURFACE == 2 )
+	{
+		if(2 == surf->SurfMode)
+		{
+			ierr = FastScapeCreate(surf->FSLib, fb);	CHKERRQ(ierr);
+		}
+	}
+	
 	// create structures
 	ierr = FreeSurfCreateData(surf); CHKERRQ(ierr);
 
@@ -174,12 +163,13 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 {
 	FDSTAG         *fs;
 	const PetscInt *lx, *ly;
-
+	FastScapeLib   *FSLib;
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
 	fs = surf->jr->fs;
+	FSLib = surf->FSLib;
 
 	// get grid partitioning in X & Y directions
 	ierr = DMDAGetOwnershipRanges(fs->DA_COR, &lx, &ly, NULL); CHKERRQ(ierr);
@@ -192,13 +182,6 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
 		1, 1, lx, ly, NULL, &surf->DA_SURF); CHKERRQ(ierr);
 
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
-		DMDA_STENCIL_BOX,
-		fs->dsx.tnods * surf->refine - 1, fs->dsy.tnods * surf->refine - 1, fs->dsz.nproc,
-		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-		1, 1, NULL, NULL, NULL, &surf->DA_SURF_REFINE); CHKERRQ(ierr);
-
 	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->ltopo);  CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->gtopo);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vx);     CHKERRQ(ierr);
@@ -206,11 +189,9 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vz);     CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vpatch); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vmerge); CHKERRQ(ierr);
-
-	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vz_collect);  CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(surf->DA_SURF_REFINE, &surf->gtopo_refine);  CHKERRQ(ierr);	
-//	ierr = DMCreateGlobalVector(surf->DA_SURF_REFINE, &surf->vz_refine);  CHKERRQ(ierr);
-
+	
+ 	ierr = DMCreateGlobalVector(surf->DA_SURF, &FSLib->vz_collect);  CHKERRQ(ierr);
+	
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

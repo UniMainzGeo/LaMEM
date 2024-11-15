@@ -507,6 +507,12 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->fs.scal     = &lm->scal;
 	// FreeSurf
 	lm->surf.jr     = &lm->jr;
+	lm->surf.FSLib  = &lm->FSLib;
+	// FastScape
+	lm->FSLib.surf  = &lm->surf;
+	lm->FSLib.pvsurf= &lm->pvsurf;
+	lm->FSLib.jr    = &lm->jr;
+	lm->FSLib.dbm   = &lm->dbm;
 	// BCCtx
 	lm->bc.scal     = &lm->scal;
 	lm->bc.ts       = &lm->ts;
@@ -568,8 +574,6 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	time    = ts->time*scal->time;
 	step    = ts->istep;
 	bgPhase = lm->actx.bgPhase;
-
-
 
 	// create directory (encode current time & step number)
 	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
@@ -730,7 +734,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 
 		if( 1 == SurfaceMode) // compile without FastScape
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "\nCalculating surface process through LaMEM original code \n");
+//			PetscPrintf(PETSC_COMM_WORLD, "\nCalculating surface process through LaMEM code \n");
 			// apply erosion to the free surface
 			ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
@@ -743,7 +747,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 			if( 1 == surfmode->SurfMode )
 			// using LaMEM original code to calculate topography
 			{
-				PetscPrintf(PETSC_COMM_WORLD, "\nCalculating surface process through LaMEM original code \n");
+		//		PetscPrintf(PETSC_COMM_WORLD, "\nCalculating surface process through LaMEM code \n");
 				// apply erosion to the free surface
 				ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
@@ -754,9 +758,10 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 			if( 2 == surfmode->SurfMode)
 			// Using FastScape to calculate topography
 			{
-				PetscPrintf(PETSC_COMM_WORLD, "\nCalculating surface process through FastScape \n");
-				ierr = fastscape(&lm->surf); CHKERRQ(ierr);
-				PetscPrintf(PETSC_COMM_WORLD, "\n FastScape Done \n");
+		//		PetscPrintf(PETSC_COMM_WORLD, "\n-------------------------------------------------------------------\n");
+				PetscPrintf(PETSC_COMM_WORLD, "Begin FastScape \n");
+				PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+				ierr = fastscape(&lm->FSLib); CHKERRQ(ierr);
 			}
 		}
 
