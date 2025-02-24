@@ -640,7 +640,7 @@
         PhaseBelow              =   1 2 3
         clapeyron_slope         =   2.0                         # overwrite clapeyron_slope [MPa/K]
         P0_clapeyron            =   15e9                        # overwrite reference pressure [Pa]
-        T0_clapeyron            =   1600                        # overwrite intercept [C]
+        T0_clapeyron            =   1600                        # overwrite reference temperature [C]
     <PhaseTransitionEnd>
 
     # Box-like region with T-condition
