@@ -832,3 +832,58 @@ PetscErrorCode UpdatePVDFile(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode UpdatePVDFileRefine(
+		const char *dirName, const char *outfile, const char *ext,
+		long int *offset, PetscScalar ttime, PetscInt outpvd, PetscInt step)
+{
+	FILE        *fp;
+	char        *fname;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// check whether pvd is requested
+	if(!outpvd) PetscFunctionReturn(0);
+
+	// only first process generates this file (WARNING! Bottleneck!)
+	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
+
+	// open outfile.pvd file (write or update mode)
+	asprintf(&fname, "%s.pvd", outfile);
+	if(step == 1) fp = fopen(fname,"wb");
+	else       fp = fopen(fname,"r+b");
+	free(fname);
+
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+
+	if(step == 1)
+	{
+		// write header
+		WriteXMLHeader(fp, "Collection");
+
+		// open time step collection
+		fprintf(fp,"<Collection>\n");
+	}
+	else
+	{
+		// put the file pointer on the next entry
+		ierr = fseek(fp, (*offset), SEEK_SET); CHKERRQ(ierr);
+	}
+
+	// add entry to .pvd file
+	fprintf(fp,"\t<DataSet timestep=\"%1.6e\" file=\"%s/%s_%s\"/>\n",
+		ttime, dirName, outfile, ext);
+
+	// store current position in the file
+	(*offset) = ftell(fp);
+
+	// close time step collection
+	fprintf(fp,"</Collection>\n");
+	fprintf(fp,"</VTKFile>\n");
+
+	// close file
+	fclose(fp);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

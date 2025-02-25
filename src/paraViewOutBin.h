@@ -196,5 +196,9 @@ PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
 		long int *offset, PetscScalar ttime, PetscInt outpvd);
 
+PetscErrorCode UpdatePVDFileRefine(
+		const char *dirName, const char *outfile, const char *ext,
+		long int *offset, PetscScalar ttime, PetscInt outpvd, PetscInt step);
+
 //---------------------------------------------------------------------------
 #endif
