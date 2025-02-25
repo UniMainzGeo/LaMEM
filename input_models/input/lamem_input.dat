@@ -636,8 +636,11 @@
         Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
         Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
         number_phases           =   3
-        PhaseAbove              =   4 5 7
-        PhaseBelow              =   1 2 3
+        PhaseAbove              =   4 5 7                       # phase ID after transition
+        PhaseBelow              =   1 2 3                       # phase ID before transition
+        clapeyron_slope         =   2.0                         # overwrite clapeyron_slope [MPa/K]
+        P0_clapeyron            =   15e9                        # overwrite reference pressure [Pa]
+        T0_clapeyron            =   1600                        # overwrite reference temperature [C]
     <PhaseTransitionEnd>
 
     # Box-like region with T-condition
