@@ -1039,9 +1039,6 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 		PetscCall(set_mg_options("ks",  nlevels, nsweeps, damping));
 	}
 
-
-
-
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
