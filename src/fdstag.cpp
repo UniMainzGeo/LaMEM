@@ -193,6 +193,7 @@ PetscErrorCode Discret1DCreate(
 		PetscScalar gtol)      // geometric tolerance
 {
 	PetscInt       i, cnt;
+
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
@@ -265,7 +266,6 @@ PetscErrorCode Discret1DCreate(
 PetscErrorCode Discret1DDestroy(Discret1D *ds)
 {
 	PetscErrorCode ierr;
-
 	PetscFunctionBeginUser;
 
 	// free memory buffers
@@ -331,7 +331,7 @@ PetscErrorCode Discret1DGetNumCells(Discret1D *ds, PetscInt **ncelProc)
 PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 {
 	PetscInt     i, n, nl, pstart, istart;
-	PetscScalar *crd, A, B, C;
+	PetscScalar *crd;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -369,6 +369,53 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 		n      -= nl;
 	}
 
+	// generate ghost points and cell center coordinates
+	ierr = Discret1DCompleteCoord(ds); CHKERRQ(ierr);
+
+	// set uniform grid flag
+	ds->uniform = ms->uniform;
+
+	// set periodic periodic topology flag
+	ds->periodic = ms->periodic;
+
+	// set global grid coordinate bounds
+	ds->gcrdbeg = ms->xstart[0];
+	ds->gcrdend = ms->xstart[ms->nsegs];
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// copy data
+	coarse->uniform  = fine->uniform;  // uniform grid flag
+	coarse->periodic = fine->periodic; // periodic topology flag
+	coarse->gcrdbeg  = fine->gcrdbeg;  // global grid coordinate bound (begin)
+	coarse->gcrdend  = fine->gcrdend;  // global grid coordinate bound (end)
+
+
+	// coarsen nodal coordinates here ...
+	// NOTE MPI communication is necessary
+
+
+	// generate ghost points and cell center coordinates
+	ierr = Discret1DCompleteCoord(coarse); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode Discret1DCompleteCoord(Discret1D *ds)
+{
+	// generate ghost points and cell center coordinates
+
+	PetscInt    i;
+	PetscScalar A, B, C;
+
+	PetscFunctionBeginUser;
+
 	// set boundary ghost coordinates
 	if(ds->grprev == -1)
 	{
@@ -388,16 +435,6 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	// compute coordinates of the cell centers including ghosts
 	for(i = -1; i < ds->ncels+1; i++)
 		ds->ccoor[i] = (ds->ncoor[i] + ds->ncoor[i+1])/2.0;
-
-	// set uniform grid flag
-	ds->uniform = ms->uniform;
-
-	// set periodic periodic topology flag
-	ds->periodic = ms->periodic;
-
-	// set global grid coordinate bounds
-	ds->gcrdbeg = ms->xstart[0];
-	ds->gcrdend = ms->xstart[ms->nsegs];
 
 	PetscFunctionReturn(0);
 }
@@ -885,10 +922,8 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	// The idea is that velocity vectors should contain sufficient information
 	// to compute strain/rates/stresses/residuals including boundary conditions.
 
-	Scaling          *scal;
+	Scaling         *scal;
 	PetscMPIInt      rank;
-	PetscInt         nnx, nny, nnz;
-	PetscInt         ncx, ncy, ncz;
 	const PetscInt  *plx, *ply, *plz;
 	PetscInt        *lx,  *ly,  *lz;
 	PetscInt         rx,   ry,   rz;
@@ -982,19 +1017,8 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	ierr = PetscFree(ly); CHKERRQ(ierr);
 	ierr = PetscFree(lz); CHKERRQ(ierr);
 
-	// compute local number of grid points
-	nnx = fs->dsx.nnods; ncx = fs->dsx.ncels;
-	nny = fs->dsy.nnods; ncy = fs->dsy.ncels;
-	nnz = fs->dsz.nnods; ncz = fs->dsz.ncels;
-
-	fs->nCells = ncx*ncy*ncz;
-	fs->nCorns = nnx*nny*nnz;
-	fs->nXYEdg = nnx*nny*ncz;
-	fs->nXZEdg = nnx*ncy*nnz;
-	fs->nYZEdg = ncx*nny*nnz;
-	fs->nXFace = nnx*ncy*ncz;
-	fs->nYFace = ncx*nny*ncz;
-	fs->nZFace = ncx*ncy*nnz;
+	// set number of local grid points
+	ierr = FDSTAGSetNum(fs); CHKERRQ(ierr);
 
 	// get ranks of neighbor processes
 	ierr = FDSTAGGetNeighbProc(fs); CHKERRQ(ierr);
@@ -1076,6 +1100,83 @@ PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
 	ierr = Discret1DWriteRestart(&fs->dsx, fp); CHKERRQ(ierr);
 	ierr = Discret1DWriteRestart(&fs->dsy, fp); CHKERRQ(ierr);
 	ierr = Discret1DWriteRestart(&fs->dsz, fp); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
+{
+	PetscInt         i;
+	PetscInt         rx,    ry,    rz;
+	PetscInt         Nx,    Ny,    Nz;
+	PetscInt         Px,    Py,    Pz;
+	const PetscInt  *plx,  *ply,  *plz;
+	PetscInt        *lx,   *ly,   *lz;
+	Discret1D       *fdsx, *fdsy, *fdsz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// copy data
+	coarse->scal = fine->scal;
+	coarse->gtol = fine->gtol;
+	for(i = 0; i < _num_neighb_; i++) { coarse->neighb[i] = fine->neighb[i]; }
+
+	// get number of cells & processors in the fine grid
+	ierr = DMDAGetInfo(fine->DA_CEN, 0, &Nx, &Ny, &Nz, &Px, &Py, &Pz, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
+
+	// get refinement factors
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, &rx, &ry, &rz); CHKERRQ(ierr);
+
+	// get number of cells per processor in fine grid
+	ierr = DMDAGetOwnershipRanges(fine->DA_CEN, &plx, &ply, &plz); CHKERRQ(ierr);
+
+	ierr = makeIntArray(&lx, plx, Px); CHKERRQ(ierr);
+	ierr = makeIntArray(&ly, ply, Py); CHKERRQ(ierr);
+	ierr = makeIntArray(&lz, plz, Pz); CHKERRQ(ierr);
+
+	// coarsen uniformly in every direction
+	Nx /= rx;  for(i = 0; i < Px; i++) lx[i] /= rx;
+	Ny /= ry;  for(i = 0; i < Py; i++) ly[i] /= ry;
+	Nz /= rz;  for(i = 0; i < Pz; i++) lz[i] /= rz;
+
+	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &coarse->DA_CEN); CHKERRQ(ierr);
+
+	// create corner, face and edge DMDA objects
+	ierr = FDSTAGCreateDMDA(coarse, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+
+	// create index arrays
+	ierr = DOFIndexCreate(&coarse->dof, coarse->DA_CEN, coarse->DA_X, coarse->DA_Y, coarse->DA_Z); CHKERRQ(ierr);
+
+	// set discretization / domain decomposition data
+	fdsx = &fine->dsx;
+	fdsy = &fine->dsy;
+	fdsz = &fine->dsz;
+
+	ierr = Discret1DCreate(&coarse->dsx, Px, fdsx->rank, lx, fdsx->color,
+			fdsx->grprev, fdsx->grnext, coarse->gtol); CHKERRQ(ierr);
+
+	ierr = Discret1DCreate(&coarse->dsy, Py, fdsy->rank, ly, fdsy->color,
+			fdsy->grprev, fdsy->grnext, coarse->gtol); CHKERRQ(ierr);
+
+	ierr = Discret1DCreate(&coarse->dsz, Pz, fdsz->rank, lz, fdsz->color,
+			fdsz->grprev, fdsz->grnext, coarse->gtol); CHKERRQ(ierr);
+
+	// clear temporary storage
+	ierr = PetscFree(lx); CHKERRQ(ierr);
+	ierr = PetscFree(ly); CHKERRQ(ierr);
+	ierr = PetscFree(lz); CHKERRQ(ierr);
+
+	// set number of local grid points
+	ierr = FDSTAGSetNum(coarse); CHKERRQ(ierr);
+
+	// coarsen coordinates
+	ierr = Discret1DCoarsenCoord(&coarse->dsx, fdsx); CHKERRQ(ierr);
+	ierr = Discret1DCoarsenCoord(&coarse->dsy, fdsy); CHKERRQ(ierr);
+	ierr = Discret1DCoarsenCoord(&coarse->dsz, fdsz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1162,6 +1263,32 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
 	lx[Px-1]++; ly[Py-1]++;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGSetNum(FDSTAG *fs)
+{
+	// set number of local grid points
+
+	PetscInt nnx, nny, nnz;
+	PetscInt ncx, ncy, ncz;
+
+	PetscFunctionBeginUser;
+
+	// compute local number of grid points
+	nnx = fs->dsx.nnods; ncx = fs->dsx.ncels;
+	nny = fs->dsy.nnods; ncy = fs->dsy.ncels;
+	nnz = fs->dsz.nnods; ncz = fs->dsz.ncels;
+
+	fs->nCells = ncx*ncy*ncz;
+	fs->nCorns = nnx*nny*nnz;
+	fs->nXYEdg = nnx*nny*ncz;
+	fs->nXZEdg = nnx*ncy*nnz;
+	fs->nYZEdg = ncx*nny*nnz;
+	fs->nXFace = nnx*ncy*ncz;
+	fs->nYFace = ncx*nny*ncz;
+	fs->nZFace = ncx*ncy*nnz;
 
 	PetscFunctionReturn(0);
 }
