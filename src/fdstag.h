@@ -114,6 +114,12 @@ PetscErrorCode Discret1DGetNumCells(Discret1D  *ds, PetscInt **ncelProc);
 // generate local coordinates
 PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
 
+// coarsen fine grid coordinates
+PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine);
+
+// generate ghost points and cell center coordinates
+PetscErrorCode Discret1DCompleteCoord(Discret1D *ds);
+
 // stretch grid with constant stretch factor about reference point
 PetscErrorCode Discret1DStretch(Discret1D *ds,  PetscScalar eps, PetscScalar ref);
 
@@ -203,7 +209,6 @@ struct FDSTAG
 	PetscMPIInt neighb[_num_neighb_]; // global ranks of neighboring process
 
 	PetscScalar gtol; // relative geometry tolerance
-
 };
 
 //---------------------------------------------------------------------------
@@ -218,10 +223,15 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp);
 
 PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp);
 
+PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine);
+
 PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz);
+
+// set number of local grid points
+PetscErrorCode FDSTAGSetNum(FDSTAG *fs);
 
 // return an array with the global ranks of adjacent processes (including itself)
 PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs);

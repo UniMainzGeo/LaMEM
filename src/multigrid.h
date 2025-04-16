@@ -30,12 +30,10 @@ struct MGLevel
 	// and column of P-matrix to impose the constraints in a coarse grid operator
 	// automatically. The finest grid uses standard boundary condition vectors.
 
-	DM        DA_CEN;                   // central points array
-	DM        DA_X, DA_Y, DA_Z;         // face points arrays
-	DOFIndex  dof;                      // indexing vectors
-	Vec       bcvx, bcvy, bcvz, bcp;    // restricted boundary condition vectors
-	Vec       eta, etaxy, etaxz, etayz; // restricted viscosity vectors
-	Mat       R, P;                     // restriction & prolongation operators (not set on finest grid)
+	FDSTAG    *fs;                       // staggered grid
+	Vec        bcvx, bcvy, bcvz, bcp;    // restricted boundary condition vectors
+	Vec        eta, etaxy, etaxz, etayz; // restricted viscosity vectors
+	Mat        R, P;                     // restriction & prolongation operators (not set on finest grid)
 
 
 	// ******** fine level ************
