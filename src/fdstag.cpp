@@ -236,9 +236,7 @@ PetscErrorCode Discret1DCreate(
 	// coordinates of local nodes + 1 layer (left) & 2 layers (right) of ghost points
 	// NOTE: on the last processor there is only one ghost point from the right
 
-	if(grnext != -1) ds->bufsz = ds->nnods+3;
-	else             ds->bufsz = ds->nnods+2;
-	ierr = makeScalArray(&ds->nbuff, 0, ds->bufsz); CHKERRQ(ierr);
+	ierr = makeScalArray(&ds->nbuff, 0, ds->ncels+3); CHKERRQ(ierr);
 	ds->ncoor = ds->nbuff + 1;
 
 	// coordinates of local cells + 1 layer (both sides) of ghost points
@@ -283,11 +281,11 @@ PetscErrorCode Discret1DReadRestart(Discret1D *ds, FILE *fp)
 	PetscFunctionBeginUser;
 
 	ierr = makeIntArray (&ds->starts, NULL, ds->nproc + 1); CHKERRQ(ierr);
-	ierr = makeScalArray(&ds->nbuff,  NULL, ds->bufsz    ); CHKERRQ(ierr);
+	ierr = makeScalArray(&ds->nbuff,  NULL, ds->ncels + 3); CHKERRQ(ierr);
 	ierr = makeScalArray(&ds->cbuff,  NULL, ds->ncels + 2); CHKERRQ(ierr);
 
    	fread(ds->starts, sizeof(PetscInt   )*(size_t)(ds->nproc + 1), 1, fp);
-	fread(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->bufsz    ), 1, fp);
+	fread(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 3), 1, fp);
 	fread(ds->cbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 2), 1, fp);
 
 	ds->ncoor = ds->nbuff + 1;
@@ -301,7 +299,7 @@ PetscErrorCode Discret1DWriteRestart(Discret1D *ds, FILE *fp)
 	PetscFunctionBeginUser;
 
 	fwrite(ds->starts, sizeof(PetscInt   )*(size_t)(ds->nproc + 1), 1, fp);
-	fwrite(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->bufsz    ), 1, fp);
+	fwrite(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 3), 1, fp);
 	fwrite(ds->cbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 2), 1, fp);
 
 	PetscFunctionReturn(0);
@@ -397,9 +395,81 @@ PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine)
 	coarse->gcrdend  = fine->gcrdend;  // global grid coordinate bound (end)
 
 
+
+	PetscInt     i, n;
+
+
+	// coarsen internal coordinates of the nodes
+	for(i = 0, n = coarse->nnods; i < n; i++)
+		coarse->ncoor[i] = fine->ncoor[2*i];
+
 	// coarsen nodal coordinates here ...
 	// NOTE MPI communication is necessary
 
+
+/*
+
+
+	// communicate number of markers with neighbor processes
+	FDSTAG     *fs;
+	PetscInt    k;
+	PetscMPIInt scnt, rcnt;
+	MPI_Request srequest[_num_neighb_];
+	MPI_Request rrequest[_num_neighb_];
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	fs = actx->fs;
+
+	// zero out message counters
+	scnt = 0;
+	rcnt = 0;
+
+	// send number of markers to ALL neighbor processes (except self & non-existing)
+	for(k = 0; k < _num_neighb_; k++)
+	{
+		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
+		{
+			ierr = MPI_Isend(&actx->nsendm[k], 1, MPIU_INT,
+				fs->neighb[k], 100, actx->icomm, &srequest[scnt++]); CHKERRQ(ierr);
+		}
+	}
+
+	// receive number of markers from ALL neighbor processes (except self & non-existing)
+	for(k = 0; k < _num_neighb_; k++)
+	{
+		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
+		{
+			ierr = MPI_Irecv(&actx->nrecvm[k], 1, MPIU_INT,
+				fs->neighb[k], 100, actx->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
+		}
+		else actx->nrecvm[k] = 0;
+	}
+
+	// wait until all communication processes have been terminated
+	if(scnt) { ierr = MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
+	if(rcnt) { ierr = MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
+*/
+
+
+
+/*
+	PetscScalar  *ncoor;    // coordinates of local nodes (+ 1 layer of ghost points)
+	PetscScalar  *ccoor;    // coordinates of local cells (+ 1 layer of ghost points)
+	PetscScalar  *nbuff;    // memory buffer for node coordinates
+	PetscScalar  *cbuff;    // memory buffer for cells coordinates
+	PetscInt      bufsz;    // size of node buffer
+
+	if(grnext != -1) ds->bufsz = ds->nnods+3;
+	else             ds->bufsz = ds->nnods+2;
+	ierr = makeScalArray(&ds->nbuff, 0, ds->bufsz); CHKERRQ(ierr);
+	ds->ncoor = ds->nbuff + 1;
+
+	// coordinates of local cells + 1 layer (both sides) of ghost points
+	ierr = makeScalArray(&ds->cbuff, 0, ds->ncels+2); CHKERRQ(ierr);
+	ds->ccoor = ds->cbuff + 1;
+*/
 
 	// generate ghost points and cell center coordinates
 	ierr = Discret1DCompleteCoord(coarse); CHKERRQ(ierr);
@@ -449,7 +519,7 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, PetscScalar eps, PetscScalar ref)
 	PetscFunctionBeginUser;
 
 	// recompute (stretch) node coordinates in the buffer
-	for(i = 0; i < ds->bufsz; i++) ds->nbuff[i] += eps*(ds->nbuff[i] - ref);
+	for(i = 0; i < ds->ncels + 3; i++) ds->nbuff[i] += eps*(ds->nbuff[i] - ref);
 
 	// recompute cell coordinates
 	for(i = -1; i < ds->ncels+1; i++)

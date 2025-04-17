@@ -71,7 +71,6 @@ struct Discret1D
 	PetscScalar  *ccoor;    // coordinates of local cells (+ 1 layer of ghost points)
 	PetscScalar  *nbuff;    // memory buffer for node coordinates
 	PetscScalar  *cbuff;    // memory buffer for cells coordinates
-	PetscInt      bufsz;    // size of node buffer
 
 	PetscMPIInt   grprev;   // global rank of previous process (-1 for first processor)
 	PetscMPIInt   grnext;   // global rank of next process (-1 for last processor)

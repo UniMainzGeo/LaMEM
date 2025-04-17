@@ -71,9 +71,9 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 
 	// create viscosity vectors
 	ierr = DMCreateLocalVector(lvl->fs->DA_CEN, &lvl->eta);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(lvl->fs->DA_X,   &lvl->etaxy); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(lvl->fs->DA_Y,   &lvl->etaxz); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(lvl->fs->DA_Z,   &lvl->etayz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(lvl->fs->DA_XY,  &lvl->etaxy); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(lvl->fs->DA_XZ,  &lvl->etaxz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(lvl->fs->DA_YZ,  &lvl->etayz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
