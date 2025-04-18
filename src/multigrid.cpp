@@ -70,10 +70,10 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 	}
 
 	// create viscosity vectors
-	ierr = DMCreateLocalVector(lvl->fs->DA_CEN, &lvl->eta);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(lvl->fs->DA_XY,  &lvl->etaxy); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(lvl->fs->DA_XZ,  &lvl->etaxz); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(lvl->fs->DA_YZ,  &lvl->etayz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (lvl->fs->DA_CEN, &lvl->eta);   CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(lvl->fs->DA_XY,  &lvl->etaxy); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(lvl->fs->DA_XZ,  &lvl->etaxz); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(lvl->fs->DA_YZ,  &lvl->etayz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -106,7 +106,7 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 {
 	// initialize viscosity on fine grid
 
-	PetscScalar ***eta;
+	PetscScalar ***eta, ***etaxy, ***etaxz, ***etayz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
 	PetscErrorCode ierr;
@@ -115,12 +115,15 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 	// initialize viscosity
 	ierr = VecSet(lvl->eta, -1.0); CHKERRQ(ierr);
 
-	// access viscosity vector
-	ierr = DMDAVecGetArray(lvl->fs->DA_CEN, lvl->eta, &eta); CHKERRQ(ierr);
+	// access viscosity vectors
+	ierr = DMDAVecGetArray(lvl->fs->DA_CEN, lvl->eta,   &eta);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->fs->DA_XY,  lvl->etaxy, &etaxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->fs->DA_XZ,  lvl->etaxz, &etaxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->fs->DA_YZ,  lvl->etayz, &etayz); CHKERRQ(ierr);
 
-	//----------
-	// P-points
-	//----------
+	//-------------
+	// cell centers
+	//-------------
 	iter = 0;
 	ierr = DMDAGetCorners (lvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -130,97 +133,51 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 	}
 	END_STD_LOOP
 
+	//---------------
+	// xy edge points
+	//---------------
+	iter = 0;
+	ierr = DMDAGetCorners (lvl->fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		etaxy[k][j][i] = jr->svXYEdge[iter++].svDev.eta;
+	}
+	END_STD_LOOP
+
+	//---------------
+	// xz edge points
+	//---------------
+	iter = 0;
+	ierr = DMDAGetCorners (lvl->fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		etaxz[k][j][i] = jr->svXZEdge[iter++].svDev.eta;
+	}
+	END_STD_LOOP
+
+	//---------------
+	// yz edge points
+	//---------------
+	iter = 0;
+	ierr = DMDAGetCorners (lvl->fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		etayz[k][j][i] = jr->svYZEdge[iter++].svDev.eta;
+	}
+	END_STD_LOOP
+
 	// restore access
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_CEN, lvl->eta, &eta); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->fs->DA_CEN, lvl->eta,   &eta);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->fs->DA_XY,  lvl->etaxy, &etaxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->fs->DA_XZ,  lvl->etaxz, &etaxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->fs->DA_YZ,  lvl->etayz, &etayz); CHKERRQ(ierr);
 
 	// exchange ghost point values
 	LOCAL_TO_LOCAL(lvl->fs->DA_CEN, lvl->eta)
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode MGLevelAverageEta(MGLevel *lvl)
-{
-	PetscFunctionBeginUser;
-/*
-	// average viscosity from cell centers to velocity nodes
-
-	PetscScalar b_eta, f_eta, n;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***eta, ***etax, ***etay, ***etaz;
-
-	PetscErrorCode ierr;
-
-	// set viscosity
-	ierr = VecSet(lvl->etax, -1.0); CHKERRQ(ierr);
-	ierr = VecSet(lvl->etay, -1.0); CHKERRQ(ierr);
-	ierr = VecSet(lvl->etaz, -1.0); CHKERRQ(ierr);
-
-	// access viscosity vectors
-	ierr = DMDAVecGetArray(lvl->DA_CEN, lvl->eta,  &eta);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->DA_X,   lvl->etax, &etax); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->DA_Y,   lvl->etay, &etay); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->DA_Z,   lvl->etaz, &etaz); CHKERRQ(ierr);
-
-	//---------
-	// X-points
-	//---------
-
-	ierr = DMDAGetCorners(lvl->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		n     = 0.0;
-		b_eta = eta[k][j][i-1]; if(b_eta != -1.0) { n += 1.0; } else { b_eta = 0.0; }
-		f_eta = eta[k][j][i];   if(f_eta != -1.0) { n += 1.0; } else { f_eta = 0.0; }
-
-		etax[k][j][i] = (b_eta + f_eta)/n;
-	}
-	END_STD_LOOP
-
-	//---------
-	// Y-points
-	//---------
-	ierr = DMDAGetCorners(lvl->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		n     = 0.0;
-		b_eta = eta[k][j-1][i]; if(b_eta != -1.0) { n += 1.0; } else { b_eta = 0.0; }
-		f_eta = eta[k][j][i];   if(f_eta != -1.0) { n += 1.0; } else { f_eta = 0.0; }
-
-		etay[k][j][i] = (b_eta + f_eta)/n;
-	}
-	END_STD_LOOP
-
-	//---------
-	// Z-points
-	//---------
-	ierr = DMDAGetCorners(lvl->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		n     = 0.0;
-		b_eta = eta[k-1][j][i]; if(b_eta != -1.0) { n += 1.0; } else { b_eta = 0.0; }
-		f_eta = eta[k][j][i];   if(f_eta != -1.0) { n += 1.0; } else { f_eta = 0.0; }
-
-		etaz[k][j][i] = (b_eta + f_eta)/n;
-	}
-	END_STD_LOOP
-
-	// restore access
-	ierr = DMDAVecRestoreArray(lvl->DA_CEN, lvl->eta,  &eta);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->DA_X,   lvl->etax, &etax); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->DA_Y,   lvl->etay, &etay); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->DA_Z,   lvl->etaz, &etaz); CHKERRQ(ierr);
-
-	// exchange ghost point viscosity
-	LOCAL_TO_LOCAL(lvl->DA_X, lvl->etax)
-	LOCAL_TO_LOCAL(lvl->DA_Y, lvl->etay)
-	LOCAL_TO_LOCAL(lvl->DA_Z, lvl->etaz)
-
-
-	*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -244,9 +201,9 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	// access viscosity vector in fine grid
 	ierr = DMDAVecGetArray(fine->fs->DA_CEN, fine->eta, &feta); CHKERRQ(ierr);
 
-	//-----------------------
-	// P-points (coarse grid)
-	//-----------------------
+	//--------------------------
+	// cell centers(coarse grid)
+	//--------------------------
 	ierr = DMDAGetCorners(lvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -395,7 +352,6 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 
 	if(lvl->fs->dof.idxmod == IDXCOUPLED)
 	{
-
 		//-----------------------
 		// P-points (coarse grid)
 		//-----------------------
@@ -1240,13 +1196,11 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	PetscFunctionBeginUser;
 
 	ierr = MGLevelInitEta(mg->lvls, mg->jr); CHKERRQ(ierr);
-	ierr = MGLevelAverageEta(mg->lvls);      CHKERRQ(ierr);
 
 	for(i = 1; i < mg->nlvl; i++)
 	{
 		ierr = MGLevelRestrictBC   (&mg->lvls[i], &mg->lvls[i-1], mg->no_restric_bc); CHKERRQ(ierr);
 		ierr = MGLevelRestrictEta  (&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
-		ierr = MGLevelAverageEta   (&mg->lvls[i]);                                    CHKERRQ(ierr);
 		ierr = MGLevelSetupRestrict(&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
 		ierr = MGLevelSetupProlong (&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
 	}
