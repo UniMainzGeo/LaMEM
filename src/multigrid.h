@@ -55,8 +55,6 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr);
 
 PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine);
 
-PetscErrorCode MGLevelAverageEta(MGLevel *lvl);
-
 PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restric_bc);
 
 PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine);
