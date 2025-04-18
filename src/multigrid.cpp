@@ -141,6 +141,8 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 //---------------------------------------------------------------------------
 PetscErrorCode MGLevelAverageEta(MGLevel *lvl)
 {
+	PetscFunctionBeginUser;
+
 	// average viscosity from cell centers to velocity nodes
 /*
 	PetscScalar b_eta, f_eta, n;
@@ -148,7 +150,6 @@ PetscErrorCode MGLevelAverageEta(MGLevel *lvl)
 	PetscScalar ***eta, ***etax, ***etay, ***etaz;
 
 	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
 
 	// set viscosity
 	ierr = VecSet(lvl->etax, -1.0); CHKERRQ(ierr);
