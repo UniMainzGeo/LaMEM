@@ -42,7 +42,6 @@ struct MGLevel
 	//     |                   P-matrix
 	//     v                   |
 	// ******** this level ************
-
 } ;
 
 //---------------------------------------------------------------------------
@@ -109,7 +108,6 @@ struct MG
 
 	PetscBool crs_setup;     // coarse solver setup flag
 	PetscBool no_restric_bc; // boundary constraint restriction deactivation flag
-
 };
 
 //---------------------------------------------------------------------------

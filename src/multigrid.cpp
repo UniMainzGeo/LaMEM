@@ -112,8 +112,8 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// initialize viscosity
-	ierr = VecSet(lvl->eta, -1.0); CHKERRQ(ierr);
+	// initialize ghost points
+	ierr = VecZeroEntries(lvl->eta); CHKERRQ(ierr);
 
 	// access viscosity vectors
 	ierr = DMDAVecGetArray(lvl->fs->DA_CEN, lvl->eta,   &eta);   CHKERRQ(ierr);
@@ -175,35 +175,38 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 	ierr = DMDAVecRestoreArray(lvl->fs->DA_XZ,  lvl->etaxz, &etaxz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(lvl->fs->DA_YZ,  lvl->etayz, &etayz); CHKERRQ(ierr);
 
-	// exchange ghost point values
-	LOCAL_TO_LOCAL(lvl->fs->DA_CEN, lvl->eta)
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 {
-	// restrict inverse viscosity from fine to coarse level
+	// restrict viscosity from fine to coarse level
 
 	PetscInt    I, J, K;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar sum, ***ceta, ***feta;
+	PetscScalar sum, ***eta, ***etaxy, ***etaxz, ***etayz, ***feta;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// initialize viscosities
-	ierr = VecSet(lvl->eta, -1.0); CHKERRQ(ierr);
-
-	// access viscosity vector in coarse grid
-	ierr = DMDAVecGetArray(lvl->fs->DA_CEN,  lvl->eta,  &ceta); CHKERRQ(ierr);
+	// exchange ghost points in fine grid
+	LOCAL_TO_LOCAL(fine->fs->DA_CEN, fine->eta)
 
 	// access viscosity vector in fine grid
 	ierr = DMDAVecGetArray(fine->fs->DA_CEN, fine->eta, &feta); CHKERRQ(ierr);
 
-	//--------------------------
-	// cell centers(coarse grid)
-	//--------------------------
+	// initialize ghost points in coarse grid
+	ierr = VecZeroEntries(lvl->eta); CHKERRQ(ierr);
+
+	// access viscosity vectors in coarse grid
+	ierr = DMDAVecGetArray(lvl->fs->DA_CEN, lvl->eta,   &eta);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->fs->DA_XY,  lvl->etaxy, &etaxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->fs->DA_XZ,  lvl->etaxz, &etaxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->fs->DA_YZ,  lvl->etayz, &etayz); CHKERRQ(ierr);
+
+	//---------------------------
+	// cell centers (coarse grid)
+	//---------------------------
 	ierr = DMDAGetCorners(lvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -223,17 +226,58 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 		+     feta[K+1][J+1][I  ]
 		+     feta[K+1][J+1][I+1];
 
-		ceta[k][j][i] = sum/8.0;
+		eta[k][j][i] = sum/8.0;
 	}
 	END_STD_LOOP
 
-	// restore access
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_CEN,  lvl->eta,  &ceta); CHKERRQ(ierr);
+	//---------------
+	// xy edge points
+	//---------------
+	ierr = DMDAGetCorners (lvl->fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
+	START_STD_LOOP
+	{
+		/*
+		// check index bounds
+		I1 = i;   if(I1 == mx) I1--;
+		I2 = i-1; if(I2 == -1) I2++;
+		J1 = j;   if(J1 == my) J1--;
+		J2 = j-1; if(J2 == -1) J2++;
+		*/
+		etaxy[k][j][i] = 0;
+	}
+	END_STD_LOOP
+
+	//---------------
+	// xz edge points
+	//---------------
+	ierr = DMDAGetCorners (lvl->fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		etaxz[k][j][i] = 0;
+	}
+	END_STD_LOOP
+
+	//---------------
+	// yz edge points
+	//---------------
+	ierr = DMDAGetCorners (lvl->fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		etayz[k][j][i] = 0;
+	}
+	END_STD_LOOP
+
+	// restore access (fine grid)
 	ierr = DMDAVecRestoreArray(fine->fs->DA_CEN, fine->eta, &feta); CHKERRQ(ierr);
 
-	// exchange ghost points
-	LOCAL_TO_LOCAL(lvl->fs->DA_CEN, lvl->eta)
+	// restore access (coarse grid)
+	ierr = DMDAVecRestoreArray(lvl->fs->DA_CEN, lvl->eta,   &eta);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->fs->DA_XY,  lvl->etaxy, &etaxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->fs->DA_XZ,  lvl->etaxz, &etaxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->fs->DA_YZ,  lvl->etayz, &etayz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
