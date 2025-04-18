@@ -24,14 +24,6 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y);
 PetscErrorCode JacResPicardMatFree(JacRes *jr);
 
 //---------------------------------------------------------------------------
-/*
-PetscErrorCode JacApplyJacobian(Mat A, Vec x, Vec y);
-
-PetscErrorCode JacResGetJ2Derivatives(JacRes *jr);
-
-PetscErrorCode JacResJacobianMatFree(JacRes *jr);
-*/
-//---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------
 
