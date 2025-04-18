@@ -1175,6 +1175,12 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &coarse->DA_CEN); CHKERRQ(ierr);
 
+	// get total number of nodes
+	Nx++; Ny++; Nz++;
+
+	// get number of nodes per processor (only different on the last processor)
+	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
+
 	// create corner, face and edge DMDA objects
 	ierr = FDSTAGCreateDMDA(coarse, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
