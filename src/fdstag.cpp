@@ -1137,7 +1137,6 @@ PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
 PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 {
 	PetscInt         i;
-	PetscInt         rx,    ry,    rz;
 	PetscInt         Nx,    Ny,    Nz;
 	PetscInt         Px,    Py,    Pz;
 	const PetscInt  *plx,  *ply,  *plz;
@@ -1155,9 +1154,6 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	// get number of cells & processors in the fine grid
 	ierr = DMDAGetInfo(fine->DA_CEN, 0, &Nx, &Ny, &Nz, &Px, &Py, &Pz, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
 
-	// get refinement factors
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, &rx, &ry, &rz); CHKERRQ(ierr);
-
 	// get number of cells per processor in fine grid
 	ierr = DMDAGetOwnershipRanges(fine->DA_CEN, &plx, &ply, &plz); CHKERRQ(ierr);
 
@@ -1166,9 +1162,9 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	ierr = makeIntArray(&lz, plz, Pz); CHKERRQ(ierr);
 
 	// coarsen uniformly in every direction
-	Nx /= rx;  for(i = 0; i < Px; i++) lx[i] /= rx;
-	Ny /= ry;  for(i = 0; i < Py; i++) ly[i] /= ry;
-	Nz /= rz;  for(i = 0; i < Pz; i++) lz[i] /= rz;
+	Nx /= 2;  for(i = 0; i < Px; i++) lx[i] /= 2;
+	Ny /= 2;  for(i = 0; i < Py; i++) ly[i] /= 2;
+	Nz /= 2;  for(i = 0; i < Pz; i++) lz[i] /= 2;
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
