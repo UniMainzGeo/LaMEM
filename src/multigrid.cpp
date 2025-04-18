@@ -142,9 +142,9 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 PetscErrorCode MGLevelAverageEta(MGLevel *lvl)
 {
 	PetscFunctionBeginUser;
-
-	// average viscosity from cell centers to velocity nodes
 /*
+	// average viscosity from cell centers to velocity nodes
+
 	PetscScalar b_eta, f_eta, n;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***eta, ***etax, ***etay, ***etaz;
@@ -218,7 +218,9 @@ PetscErrorCode MGLevelAverageEta(MGLevel *lvl)
 	LOCAL_TO_LOCAL(lvl->DA_X, lvl->etax)
 	LOCAL_TO_LOCAL(lvl->DA_Y, lvl->etay)
 	LOCAL_TO_LOCAL(lvl->DA_Z, lvl->etaz)
-*/
+
+
+	*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -227,7 +229,7 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	// restrict inverse viscosity from fine to coarse level
 
 	PetscInt    I, J, K;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, refine_y;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar sum, ***ceta, ***feta;
 
 	PetscErrorCode ierr;
@@ -247,13 +249,11 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	ierr = DMDAGetCorners(lvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	ierr = DMDAGetRefinementFactor(fine->fs->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);	// refinement in y
-
 	START_STD_LOOP
 	{
 		// get fine grid indices
 		I = 2*i;
-		J = refine_y*j;
+		J = 2*j;
 		K = 2*k;
 
 		// compute average viscosity
@@ -285,7 +285,7 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 {
 	// restrict boundary condition vectors from fine to coarse level
 
-	PetscInt    I, J, K, refine_y;
+	PetscInt    I, J, K;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
@@ -321,9 +321,6 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 	ierr = DMDAVecGetArray(lvl->fs->DA_Z,    lvl->bcvz,     &cbcvz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(lvl->fs->DA_CEN,  lvl->bcp,      &cbcp);  CHKERRQ(ierr);
 
-	// Refinement factor in Y
-	ierr = DMDAGetRefinementFactor(fine->fs->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);	// refinement in y
-
 	//-----------------------
 	// X-points (coarse grid)
 	//-----------------------
@@ -333,7 +330,7 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 	{
 		// get fine grid indices
 		I = 2*i;
-		J = refine_y*j;
+		J = 2*j;
 		K = 2*k;
 
 		// restrict constraint
@@ -357,7 +354,7 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 	{
 		// get fine grid indices
 		I = 2*i;
-		J = refine_y*j;
+		J = 2*j;
 		K = 2*k;
 
 		// restrict constraint
@@ -381,7 +378,7 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 	{
 		// get fine grid indices
 		I = 2*i;
-		J = refine_y*j;
+		J = 2*j;
 		K = 2*k;
 
 		// restrict constraint
@@ -408,7 +405,7 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 		{
 			// get fine grid indices
 			I = 2*i;
-			J = refine_y*j;
+			J = 2*j;
 			K = 2*k;
 
 			// restrict constraint
@@ -453,35 +450,11 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restr
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
-
-	PetscScalar ***fetax, ***fetay, ***fetaz;
-	PetscScalar ***cetax, ***cetay, ***cetaz;
-
-// access viscosity vectors in fine grid
-ierr = DMDAVecGetArray(fine->DA_X,   fine->etax,    &fetax); CHKERRQ(ierr);
-ierr = DMDAVecGetArray(fine->DA_Y,   fine->etay,    &fetay); CHKERRQ(ierr);
-ierr = DMDAVecGetArray(fine->DA_Z,   fine->etaz,    &fetaz); CHKERRQ(ierr);
-
-// access viscosity vectors in coarse grid
-ierr = DMDAVecGetArray(lvl->DA_X,    lvl->etax,     &cetax); CHKERRQ(ierr);
-ierr = DMDAVecGetArray(lvl->DA_Y,    lvl->etay,     &cetay); CHKERRQ(ierr);
-ierr = DMDAVecGetArray(lvl->DA_Z,    lvl->etaz,     &cetaz); CHKERRQ(ierr);
-
-ierr = DMDAVecRestoreArray(fine->DA_X,   fine->etax,    &fetax); CHKERRQ(ierr);
-ierr = DMDAVecRestoreArray(fine->DA_Y,   fine->etay,    &fetay); CHKERRQ(ierr);
-ierr = DMDAVecRestoreArray(fine->DA_Z,   fine->etaz,    &fetaz); CHKERRQ(ierr);
-
-ierr = DMDAVecRestoreArray(lvl->DA_X,    lvl->etax,     &cetax); CHKERRQ(ierr);
-ierr = DMDAVecRestoreArray(lvl->DA_Y,    lvl->etay,     &cetay); CHKERRQ(ierr);
-ierr = DMDAVecRestoreArray(lvl->DA_Z,    lvl->etaz,     &cetaz); CHKERRQ(ierr);
-*/
-
 PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 {
 	Mat         R;
 	PetscScalar v[12], bc[12], vs[12];
-	PetscInt    idx[12], refine_y;
+	PetscInt    idx[12];
 	PetscInt    row, I, J, K;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
@@ -492,9 +465,6 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	PetscFunctionBeginUser;
 
 	R = lvl->R;
-
-	// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-	ierr = DMDAGetRefinementFactor(fine->fs->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
 
 	// clear restriction matrix coefficients
 	ierr = MatZeroEntries(R); CHKERRQ(ierr);
@@ -544,7 +514,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	{
 		// get fine grid indices
 		I = 2*i;
-		J = refine_y*j;
+		J = 2*j;
 		K = 2*k;
 
 		// get fine grid stencil
@@ -595,7 +565,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	{
 		// get fine grid indices
 		I = 2*i;
-		J = refine_y*j;
+		J = 2*j;
 		K = 2*k;
 
 		// get fine grid stencil
@@ -646,7 +616,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	{
 		// get fine grid indices
 		I = 2*i;
-		J = refine_y*j;
+		J = 2*j;
 		K = 2*k;
 
 		// get fine grid stencil
@@ -709,7 +679,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 		{
 			// get fine grid indices
 			I = 2*i;
-			J = refine_y*j;
+			J = 2*j;
 			K = 2*k;
 
 			// get fine grid stencil
@@ -770,7 +740,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 {
 	Mat P;
-	PetscInt    n, idx[8], refine_y;
+	PetscInt    n, idx[8];
 	PetscScalar v[8], bc[8], vsf[8], vsr[4], *vs;
 	PetscInt    row, I, J, K, I1, J1, K1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
@@ -785,9 +755,6 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 
 	// clear prolongation matrix coefficients
 	ierr = MatZeroEntries(P); CHKERRQ(ierr);
-
-	// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-	ierr = DMDAGetRefinementFactor(fine->fs->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
 
 	// access index vectors in coarse grid
 	ierr = DMDAVecGetArray(lvl->fs->DA_X,    lvl->fs->dof.ivx, &ivx);   CHKERRQ(ierr);
@@ -836,7 +803,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	{
 		// get coarse grid indices
 		I = i/2;
-		J = j/refine_y;
+		J = j/2;
 		K = k/2;
 
 		if(j % 2) J1 = J+1; else J1 = J-1;
@@ -891,7 +858,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	{
 		// get coarse grid indices
 		I = i/2;
-		J = j/refine_y;
+		J = j/2;
 		K = k/2;
 
 		if(i % 2) I1 = I+1; else I1 = I-1;
@@ -945,7 +912,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	{
 		// get coarse grid indices
 		I = i/2;
-		J = j/refine_y;
+		J = j/2;
 		K = k/2;
 
 		if(i % 2) I1 = I+1; else I1 = I-1;
@@ -1005,7 +972,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 		{
 			// get coarse grid indices
 			I = i/2;
-			J = j/refine_y;
+			J = j/2;
 			K = k/2;
 
 			idx[0] = (PetscInt)ip[K][J][I];
@@ -1368,29 +1335,20 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 
 	FDSTAG   *fs;
 	PetscBool opt_set;
-	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, refine_y;
+	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs = mg->jr->fs;
 
-	// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-	ierr = DMDAGetRefinementFactor(fs->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
-
 	// check discretization in all directions
 	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);
-
-	ncors = nx;
-
-	if(refine_y > 1)
-	{
-		ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
-		if(ny < ncors) ncors = ny;
-	}
-
+	ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
 	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr);
 
+	ncors = nx;
+	if(ny < ncors) ncors = ny;
 	if(nz < ncors) ncors = nz;
 
 	// check number of levels requested on the command line
@@ -1410,16 +1368,7 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 
 	// print grid statistics
 	nx = fs->dsx.ncels >> ncors;
-
-	if(refine_y > 1)
-	{
-		ny = fs->dsy.ncels >> ncors;
-	}
-	else
-	{
-		ny = fs->dsy.ncels;
-	}
-
+	ny = fs->dsy.ncels >> ncors;
 	nz = fs->dsz.ncels >> ncors;
 
 	Nx = nx*fs->dsx.nproc;
