@@ -181,13 +181,18 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 {
 	// restrict viscosity from fine to coarse level
-
-	PetscInt    I, J, K;
+	PetscInt    mnx, mny, mnz;
+	PetscInt    I, J, K, Im1, Jm1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar sum, ***eta, ***etaxy, ***etaxz, ***etayz, ***feta;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
+
+	// initialize index bounds in fine grid
+	mnx = fine->fs->dsx.tnods - 1;
+	mny = fine->fs->dsy.tnods - 1;
+	mnz = fine->fs->dsz.tnods - 1;
 
 	// exchange ghost points in fine grid
 	LOCAL_TO_LOCAL(fine->fs->DA_CEN, fine->eta)
@@ -237,14 +242,28 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 
 	START_STD_LOOP
 	{
-		/*
+		// get fine grid indices
+		I = 2*i; Im1 = I-1;
+		J = 2*j; Jm1 = J-1;
+		K = 2*k;
+
 		// check index bounds
-		I1 = i;   if(I1 == mx) I1--;
-		I2 = i-1; if(I2 == -1) I2++;
-		J1 = j;   if(J1 == my) J1--;
-		J2 = j-1; if(J2 == -1) J2++;
-		*/
-		etaxy[k][j][i] = 0;
+		if(I   > mnx) { I--;   }
+		if(J   > mny) { J--;   }
+		if(Im1 < 0)   { Im1++; }
+		if(Jm1 < 0)   { Jm1++; }
+
+		// compute average viscosity
+		sum = feta[K  ][Jm1][Im1]
+		+     feta[K  ][J  ][Im1]
+		+     feta[K  ][Jm1][I  ]
+		+     feta[K  ][J  ][I  ]
+		+     feta[K+1][Jm1][Im1]
+		+     feta[K+1][J  ][Im1]
+		+     feta[K+1][Jm1][I  ]
+		+     feta[K+1][J  ][I  ];
+
+		etaxy[k][j][i] = sum/8.0;
 	}
 	END_STD_LOOP
 
@@ -255,7 +274,28 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 
 	START_STD_LOOP
 	{
-		etaxz[k][j][i] = 0;
+		// get fine grid indices
+		I = 2*i; Im1 = I-1;
+		J = 2*j;
+		K = 2*k; Km1 = K-1;
+
+		// check index bounds
+		if(I   > mnx) { I--;   }
+		if(K   > mnz) { K--;   }
+		if(Im1 < 0)   { Im1++; }
+		if(Km1 < 0)   { Km1++; }
+
+		// compute average viscosity
+		sum = feta[Km1][J  ][Im1]
+		+     feta[K  ][J  ][Im1]
+		+     feta[Km1][J  ][I  ]
+		+     feta[K  ][J  ][I  ]
+		+     feta[Km1][J+1][Im1]
+		+     feta[K  ][J+1][Im1]
+		+     feta[Km1][J+1][I  ]
+		+     feta[K  ][J+1][I  ];
+
+		etaxz[k][j][i] = sum/8.0;
 	}
 	END_STD_LOOP
 
@@ -266,7 +306,28 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 
 	START_STD_LOOP
 	{
-		etayz[k][j][i] = 0;
+		// get fine grid indices
+		I = 2*i;
+		J = 2*j; Jm1 = J-1;
+		K = 2*k; Km1 = K-1;
+
+		// check index bounds
+		if(J   > mny) { J--;   }
+		if(K   > mnz) { K--;   }
+		if(Jm1 < 0)   { Jm1++; }
+		if(Km1 < 0)   { Km1++; }
+
+		// compute average viscosity
+		sum = feta[Km1][Jm1][I  ]
+		+     feta[K  ][Jm1][I  ]
+		+     feta[Km1][J  ][I  ]
+		+     feta[K  ][J  ][I  ]
+		+     feta[Km1][Jm1][I+1]
+		+     feta[K  ][Jm1][I+1]
+		+     feta[Km1][J  ][I+1]
+		+     feta[K  ][J  ][I+1];
+
+		etayz[k][j][i] = sum/8.0;
 	}
 	END_STD_LOOP
 
