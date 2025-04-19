@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 #ifndef __JacRes_h__
 #define __JacRes_h__
+//---------------------------------------------------------------------------
 
 struct FB;
 struct Scaling;
@@ -191,7 +192,8 @@ struct JacRes
 	// velocity	components
 	Vec gvx,  gvy, gvz;  // global
 	Vec lvx,  lvy, lvz;  // local (ghosted)
-	Vec dvxdx,dvxdy, dvxdz,dvydx,dvydy,dvydz,dvzdx,dvzdy,dvzdz;  // velocity tensor components
+
+	Vec dvxdx, dvxdy, dvxdz, dvydx, dvydy, dvydz, dvzdx, dvzdy, dvzdz;  // velocity gradient tensor components
 
 	// momentum residual components
 	Vec gfx,  gfy, gfz;  // global

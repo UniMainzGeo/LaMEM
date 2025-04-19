@@ -30,10 +30,20 @@ struct MGLevel
 	// and column of P-matrix to impose the constraints in a coarse grid operator
 	// automatically. The finest grid uses standard boundary condition vectors.
 
-	FDSTAG    *fs;                       // staggered grid
-	Vec        bcvx, bcvy, bcvz, bcp;    // restricted boundary condition vectors
-	Vec        eta, etaxy, etaxz, etayz; // restricted viscosity vectors
-	Mat        R, P;                     // restriction & prolongation operators (not set on finest grid)
+
+	FDSTAG     *fs;                               // staggered grid
+	Vec         bcvx, bcvy, bcvz, bcp;            // boundary condition vectors
+	PetscInt    numSPC,  *SPCList;                // single points constraints (SPC)
+	PetscInt    vNumSPC, *vSPCList;               // velocity SPC
+	PetscInt    pNumSPC, *pSPCList;               // pressure SPC
+	Vec         K, rho, eta, etaxy, etaxz, etayz; // parameter vectors
+	idxtype     idxmod;                           // indexing mode (coupled/uncoupled)
+	Vec         ivx, ivy, ivz, ip;                // index vectors
+	PetscScalar dt;                               // time step
+	PetscScalar fssa;                             // density gradient penalty parameter
+	PetscScalar grav[3];                          // global gravity components
+
+	Mat        R, P;                              // restriction & prolongation operators (not set on finest grid)
 
 
 	// ******** fine level ************
@@ -50,9 +60,9 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 
 PetscErrorCode MGLevelDestroy(MGLevel *lvl);
 
-PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr);
+PetscErrorCode MGLevelInitParam(MGLevel *lvl, JacRes *jr);
 
-PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine);
+PetscErrorCode MGLevelRestrictParam(MGLevel *lvl, MGLevel *fine);
 
 PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restric_bc);
 

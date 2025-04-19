@@ -133,7 +133,7 @@ struct BCCtx
 	// ghost point values). Internal ghost points should be synchronized
 	// after initializing the single-point constraints. Synchronization
 	// can be skipped if all ghost points are initialized redundantly
-	// on all the processes (DO THIS!).
+	// on all the processes.
 	//
 	// Single point constraints are additionally stored as lists
 	// for constraining matrices and vectors. Matrices require global

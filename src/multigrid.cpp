@@ -102,9 +102,9 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
+PetscErrorCode MGLevelInitParam(MGLevel *lvl, JacRes *jr)
 {
-	// initialize viscosity on fine grid
+	// initialize parameters on fine grid
 
 	PetscScalar ***eta, ***etaxy, ***etaxz, ***etayz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
@@ -178,9 +178,10 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
+PetscErrorCode MGLevelRestrictParam(MGLevel *lvl, MGLevel *fine)
 {
-	// restrict viscosity from fine to coarse level
+	// restrict parameters from fine to coarse grid
+
 	PetscInt    mnx, mny, mnz;
 	PetscInt    I, J, K, Im1, Jm1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
@@ -235,9 +236,10 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	}
 	END_STD_LOOP
 
-	//---------------
-	// xy edge points
-	//---------------
+	//-----------------------------
+	// xy edge points (coarse grid)
+	//-----------------------------
+
 	ierr = DMDAGetCorners (lvl->fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -267,9 +269,9 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	}
 	END_STD_LOOP
 
-	//---------------
-	// xz edge points
-	//---------------
+	//-----------------------------
+	// xz edge points (coarse grid)
+	//-----------------------------
 	ierr = DMDAGetCorners (lvl->fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -299,9 +301,9 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	}
 	END_STD_LOOP
 
-	//---------------
-	// yz edge points
-	//---------------
+	//-----------------------------
+	// yz edge points (coarse grid)
+	//-----------------------------
 	ierr = DMDAGetCorners (lvl->fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -1018,7 +1020,6 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	}
 	END_STD_LOOP
 
-
 	if(fine->fs->dof.idxmod == IDXCOUPLED)
 	{
 		// set pressure interpolation stencil (direct injection)
@@ -1300,12 +1301,12 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = MGLevelInitEta(mg->lvls, mg->jr); CHKERRQ(ierr);
+	ierr = MGLevelInitParam(mg->lvls, mg->jr); CHKERRQ(ierr);
 
 	for(i = 1; i < mg->nlvl; i++)
 	{
 		ierr = MGLevelRestrictBC   (&mg->lvls[i], &mg->lvls[i-1], mg->no_restric_bc); CHKERRQ(ierr);
-		ierr = MGLevelRestrictEta  (&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
+		ierr = MGLevelRestrictParam(&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
 		ierr = MGLevelSetupRestrict(&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
 		ierr = MGLevelSetupProlong (&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
 	}
