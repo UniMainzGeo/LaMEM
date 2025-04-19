@@ -881,7 +881,6 @@ PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod)
 	//---------
 	// X-points
 	//---------
-
 	ierr = DMDAGetCorners(dof->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -893,7 +892,6 @@ PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod)
 	//---------
 	// Y-points
 	//---------
-
 	ierr = DMDAGetCorners(dof->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
