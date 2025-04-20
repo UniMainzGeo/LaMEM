@@ -12,12 +12,9 @@
 //---------------------------------------------------------------------------
 #ifndef __multigrid_h__
 #define __multigrid_h__
-
 //---------------------------------------------------------------------------
 
-struct BCCtx;
-struct FDSTAG;
-struct JacRes;
+struct MatData;
 
 //---------------------------------------------------------------------------
 
@@ -31,19 +28,8 @@ struct MGLevel
 	// automatically. The finest grid uses standard boundary condition vectors.
 
 
-	FDSTAG     *fs;                               // staggered grid
-	Vec         bcvx, bcvy, bcvz, bcp;            // boundary condition vectors
-	PetscInt    numSPC,  *SPCList;                // single points constraints (SPC)
-	PetscInt    vNumSPC, *vSPCList;               // velocity SPC
-	PetscInt    pNumSPC, *pSPCList;               // pressure SPC
-	Vec         K, rho, eta, etaxy, etaxz, etayz; // parameter vectors
-	idxtype     idxmod;                           // indexing mode (coupled/uncoupled)
-	Vec         ivx, ivy, ivz, ip;                // index vectors
-	PetscScalar dt;                               // time step
-	PetscScalar fssa;                             // density gradient penalty parameter
-	PetscScalar grav[3];                          // global gravity components
-
-	Mat        R, P;                              // restriction & prolongation operators (not set on finest grid)
+	MatData *md;   // matrix evaluation context
+	Mat      R, P; // restriction & prolongation operators (not set on finest grid)
 
 
 	// ******** fine level ************
@@ -56,15 +42,9 @@ struct MGLevel
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc);
+PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md);
 
 PetscErrorCode MGLevelDestroy(MGLevel *lvl);
-
-PetscErrorCode MGLevelInitParam(MGLevel *lvl, JacRes *jr);
-
-PetscErrorCode MGLevelRestrictParam(MGLevel *lvl, MGLevel *fine);
-
-PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restric_bc);
 
 PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine);
 
@@ -110,19 +90,15 @@ struct MG
 	// R & P matrices connect with finer level (i.e. not set on finest grid).
 	// Coarsening step yields own operator. Fine level operator is prescribed.
 
-	PetscInt  nlvl; // number of levels
-	MGLevel  *lvls; // multigrid levles
-
-	PC        pc;   // internal preconditioner context
-	JacRes   *jr;   // finest level context
-
-	PetscBool crs_setup;     // coarse solver setup flag
-	PetscBool no_restric_bc; // boundary constraint restriction deactivation flag
+	PC        pc;        // internal preconditioner context
+	PetscInt  nlvl;      // number of levels
+	MGLevel  *lvls;      // multigrid levles
+	PetscInt  crs_setup; // coarse solver setup flag
 };
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode MGCreate(MG *mg, JacRes *jr);
+PetscErrorCode MGCreate(MG *mg, MatData *md);
 
 PetscErrorCode MGDestroy(MG *mg);
 

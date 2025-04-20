@@ -14,47 +14,80 @@
 #include "LaMEM.h"
 #include "matFree.h"
 #include "fdstag.h"
-#include "JacRes.h"
+#include "matData.h"
 #include "matrix.h"
-#include "bc.h"
-#include "tssolve.h"
 
 //---------------------------------------------------------------------------
-PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
+PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec f)
 {
-	JacRes *jr;
+	MatData *md;
+	FDSTAG  *fs;
+	Vec      lvx, lvy, lvz, gp;
+	Vec      lfx, lfy, lfz, gc;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(A, (void**)&jr); CHKERRQ(ierr);
+	ierr = MatShellGetContext(A, (void**)&md); CHKERRQ(ierr);
 
-	// copy solution from global to local vectors, do not enforce boundary constraints
-	ierr = JacResCopyVelNoBC(jr, x); CHKERRQ(ierr);
+	fs = md->fs;
 
-	// compute matrix-free matrix-vector product
-	ierr = JacResPicardMatFree(jr); CHKERRQ(ierr);
+	// get temporary local vectors
+	ierr = DMGetLocalVector(fs->DA_X, &lvx); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_Y, &lvy); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_Z, &lvz); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_X, &lfx); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_Y, &lfy); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_Z, &lfz); CHKERRQ(ierr);
 
-	// assemble residuals to global vector
-	ierr = JacResCopyRes(jr, y); CHKERRQ(ierr);
+	// get temporary global vectors
+	ierr = DMGetGlobalVector(fs->DA_CEN, &gp);  CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(fs->DA_CEN, &gc);  CHKERRQ(ierr);
+
+	// access solution vector
+	ierr = MatFreeGetSol(md, x, lvx, lvy, lvz, gp); CHKERRQ(ierr);
+
+	// compute matrix-vector product
+	ierr = MatFreeGetPicard(md, lvx, lvy, lvz, gp, lfx, lfy, lfz, gc); CHKERRQ(ierr);
+
+	// assemble residual
+	ierr = MatFreeAssembleRes(md, f, lfx, lfy, lfz, gc); CHKERRQ(ierr);
+
+	// restore temporary local vectors
+	ierr = DMRestoreLocalVector(fs->DA_X, &lvx); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_Y, &lvy); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_Z, &lvz); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_X, &lfx); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_Y, &lfy); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_Z, &lfz); CHKERRQ(ierr);
+
+	// restore temporary global vectors
+	ierr = DMRestoreGlobalVector(fs->DA_CEN, &gp);  CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(fs->DA_CEN, &gc);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-PetscErrorCode JacResPicardMatFree(JacRes *jr)
+PetscErrorCode MatFreeGetPicard(MatData *md,
+		Vec lvx, Vec lvy, Vec lvz, Vec gp,
+		Vec lfx, Vec lfy, Vec lfz, Vec gc)
 {
 	FDSTAG     *fs;
-	BCCtx      *bc;
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    mnx, mny, mnz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar dx, dy, dz, tx, ty, tz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar dxx, dyy, dzz, dvxdy, dvydx, dvxdz, dvzdx, dvydz, dvzdy;
-	PetscScalar eta, theta, tr, rho, IKdt, pc, dt, fssa, *grav;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***p;
+
+	PetscScalar eta, theta, tr, rho, Kb, IKdt, pc, dt, fssa, *grav;
+
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***c, ***p;
+
+	PetscScalar ***vKb,  ***vrho,  ***veta, ***vetaxy, ***vetaxz, ***vetayz;
+
 
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
 	PetscScalar cf[6];
@@ -64,11 +97,10 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	fs     = jr->fs;
-	bc     = jr->bc;
-	dt     = jr->ts->dt;      // time step
-	fssa   = jr->ctrl.FSSA;   // density gradient penalty parameter
-	grav   = jr->ctrl.grav;   // gravity acceleration
+	fs     = md->fs;   // grid context
+	dt     = md->dt;   // time step
+	fssa   = md->fssa; // density gradient penalty parameter
+	grav   = md->grav; // gravity acceleration
 //    rescal = jr->ctrl.rescal; // stencil rescaling flag
 
 	// initialize index bounds
@@ -79,41 +111,48 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	mny = fs->dsy.tnods - 1;
 	mnz = fs->dsz.tnods - 1;
 
-    // clear local residual vectors
-	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->lfy); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
+    // clear residual components
+	ierr = VecZeroEntries(lfx); CHKERRQ(ierr);
+	ierr = VecZeroEntries(lfy); CHKERRQ(ierr);
+	ierr = VecZeroEntries(lfz); CHKERRQ(ierr);
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   lfx,  &fx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   lfy,  &fy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   lfz,  &fz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, gc,   &c);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, gp,   &p);   CHKERRQ(ierr);
 
 	// access boundary constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx,  &bcvx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp);   CHKERRQ(ierr);
+
+	// access parameter vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
+
 
 	//-------------------------------
 	// central points
 	//-------------------------------
-	iter = 0;
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
 		// get density, shear & inverse bulk viscosities
-		eta  = jr->svCell[iter].svDev.eta;
-		IKdt = jr->svCell[iter].svBulk.IKdt;
-		rho  = jr->svCell[iter].svBulk.rho;
-		iter++;
+		Kb   = vKb [k][j][i];
+		rho  = vrho[k][j][i];
+		eta  = veta[k][j][i];
+		IKdt = 1.0/Kb/dt;
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -166,14 +205,13 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		fz[k][j][i] -= ((szz - cf[4]*pc) + vz[k][j][i]*tz)/bdz;   fz[k+1][j][i] += ((szz - cf[5]*pc) + vz[k+1][j][i]*tz)/fdz;
 
 		// mass
-		gc[k][j][i] = -IKdt*pc - theta;
+		c[k][j][i] = -IKdt*pc - theta;
 	}
 	END_STD_LOOP
 
 	//-------------------------------
 	// xy edge points
 	//-------------------------------
-	iter = 0;
 	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -191,7 +229,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		SET_VEL_TPC(bcvy, i,   j,   k, i, mnx, cf[2], cf[3])
 
 		// get effective viscosity
-		eta = jr->svXYEdge[iter++].svDev.eta;
+		eta = vetaxy[k][j][i];
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -218,7 +256,6 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	//-------------------------------
 	// xz edge points
 	//-------------------------------
-	iter = 0;
 	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -236,7 +273,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		SET_VEL_TPC(bcvz, i,   j,   k,   i, mnx, cf[2], cf[3])
 
 		// get effective viscosity
-		eta = jr->svXZEdge[iter++].svDev.eta;
+		eta = vetaxz[k][j][i];
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -262,7 +299,6 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	//-------------------------------
 	// yz edge points
 	//-------------------------------
-	iter = 0;
 	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -280,7 +316,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		SET_VEL_TPC(bcvz, i,   j,   k,   j, mny, cf[2], cf[3])
 
 		// get effective viscosity
-		eta = jr->svYZEdge[iter++].svDev.eta;
+		eta = vetayz[k][j][i];
 
 		// get mesh steps
 		dy = SIZE_NODE(j, sy, fs->dsy);
@@ -304,26 +340,157 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
-
-	// assemble global residuals from local contributions
-	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
-	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
-	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
+	ierr = DMDAVecGetArray(fs->DA_X,   lvx,       &vx);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   lvy,       &vy);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   lvz,       &vz);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   lfx,       &fx);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   lfy,       &fy);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   lfz,       &fz);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, gc,        &c);      CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, gp,        &p);      CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode MatFreeGetSol(MatData *md, Vec x, Vec lvx, Vec lvy, Vec lvz, Vec gp)
+{
+	// split coupled solution vector into components, do not enforce boundary constraints
 
+	FDSTAG            *fs;
+	PetscScalar       *vx, *vy, *vz, *p;
+	Vec                gvx, gvy, gvz;
+	const PetscScalar *sol, *iter;
 
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	fs = md->fs;
+
+	// get temporary vectors
+	ierr = DMGetGlobalVector(fs->DA_X, &gvx); CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(fs->DA_Y, &gvy); CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(fs->DA_Z, &gvz); CHKERRQ(ierr);
+
+	// access temporary vectors
+	ierr = VecGetArray    (gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecGetArray    (gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecGetArray    (gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecGetArray    (gp,  &p);   CHKERRQ(ierr);
+	ierr = VecGetArrayRead(x,   &sol); CHKERRQ(ierr);
+
+	// copy vectors component-wise
+	iter = sol;
+
+	ierr  = PetscMemcpy(vx, iter, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nXFace;
+
+	ierr  = PetscMemcpy(vy, iter, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nYFace;
+
+	ierr  = PetscMemcpy(vz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nZFace;
+
+	ierr = PetscMemcpy(p,   iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// restore access
+	ierr = VecRestoreArray    (gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (gp,  &p);   CHKERRQ(ierr);
+	ierr = VecRestoreArrayRead(x,   &sol); CHKERRQ(ierr);
+
+	// fill local (ghosted) version of solution vectors
+	GLOBAL_TO_LOCAL(fs->DA_X,   gvx, lvx)
+	GLOBAL_TO_LOCAL(fs->DA_Y,   gvy, lvy)
+	GLOBAL_TO_LOCAL(fs->DA_Z,   gvz, lvz)
+
+	// restore temporary global vectors
+	ierr = DMRestoreGlobalVector(fs->DA_X, &gvx); CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(fs->DA_Y, &gvy); CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(fs->DA_Z, &gvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MatFreeAssembleRes(MatData *md, Vec f, Vec lfx, Vec lfy, Vec lfz, Vec gc)
+{
+	// assemble residual components into coupled vector, enforce boundary constraints
+
+	FDSTAG      *fs;
+	PetscInt     i, num, *list;
+	PetscScalar *fx, *fy, *fz, *c, *res, *iter;
+	Vec          gfx, gfy, gfz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	fs = md->fs;
+
+	// get temporary global vectors
+	ierr = DMGetGlobalVector(fs->DA_X, &gfx); CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(fs->DA_Y, &gfy); CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(fs->DA_Z, &gfz); CHKERRQ(ierr);
+
+	// assemble residual components
+	LOCAL_TO_GLOBAL(fs->DA_X, lfx, gfx)
+	LOCAL_TO_GLOBAL(fs->DA_Y, lfy, gfy)
+	LOCAL_TO_GLOBAL(fs->DA_Z, lfz, gfz)
+
+	// access vectors
+	ierr = VecGetArray(gfx, &fx);  CHKERRQ(ierr);
+	ierr = VecGetArray(gfy, &fy);  CHKERRQ(ierr);
+	ierr = VecGetArray(gfz, &fz);  CHKERRQ(ierr);
+	ierr = VecGetArray(gc,  &c);   CHKERRQ(ierr);
+	ierr = VecGetArray(f,   &res); CHKERRQ(ierr);
+
+	// copy vectors component-wise
+	iter = res;
+
+	ierr  = PetscMemcpy(iter, fx, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nXFace;
+
+	ierr  = PetscMemcpy(iter, fy, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nYFace;
+
+	ierr  = PetscMemcpy(iter, fz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nZFace;
+
+	ierr  = PetscMemcpy(iter, c,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// zero out constrained residuals (velocity)
+	num   = md->vNumSPC;
+	list  = md->vSPCList;
+
+	for(i = 0; i < num; i++) res[list[i]] = 0.0;
+
+	// zero out constrained residuals (pressure)
+	num   = md->pNumSPC;
+	list  = md->pSPCList;
+
+	for(i = 0; i < num; i++) res[list[i]] = 0.0;
+
+	// restore access
+	ierr = VecRestoreArray(gfx, &fx);  CHKERRQ(ierr);
+	ierr = VecRestoreArray(gfy, &fy);  CHKERRQ(ierr);
+	ierr = VecRestoreArray(gfz, &fz);  CHKERRQ(ierr);
+	ierr = VecRestoreArray(gc,  &c);   CHKERRQ(ierr);
+	ierr = VecRestoreArray(f,   &res); CHKERRQ(ierr);
+
+	// restore temporary global vectors
+	ierr = DMRestoreGlobalVector(fs->DA_X, &gfx); CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(fs->DA_Y, &gfy); CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(fs->DA_Z, &gfz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

@@ -1084,51 +1084,7 @@ PetscErrorCode BCApplySPC(BCCtx *bc)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
-{
-	FDSTAG   *fs;
-	DOFIndex *dof;
-	PetscInt i, vShift=0, pShift=0;
-	PetscInt vNumSPC, pNumSPC, *vSPCList, *pSPCList;
 
-	PetscFunctionBeginUser;
-
-	// error checking
-	if(stype == bc->stype)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Cannot call same type of index shifting twice in a row");
-	}
-
-	// access context
-	fs       = bc->fs;
-	dof      = &fs->dof;
-	vNumSPC  = bc->vNumSPC;
-	vSPCList = bc->vSPCList;
-	pNumSPC  = bc->pNumSPC;
-	pSPCList = bc->pSPCList;
-
-	// get local-to-global index shifts
-	if(dof->idxmod == IDXCOUPLED)   { vShift = dof->st;  pShift = dof->st;             }
-	if(dof->idxmod == IDXUNCOUPLED) { vShift = dof->stv; pShift = dof->stp - dof->lnv; }
-
-	// shift constraint indices
-	if(stype == _LOCAL_TO_GLOBAL_)
-	{
-		for(i = 0; i < vNumSPC; i++) vSPCList[i] += vShift;
-		for(i = 0; i < pNumSPC; i++) pSPCList[i] += pShift;
-	}
-	else if(stype == _GLOBAL_TO_LOCAL_)
-	{
-		for(i = 0; i < vNumSPC; i++) vSPCList[i] -= vShift;
-		for(i = 0; i < pNumSPC; i++) pSPCList[i] -= pShift;
-	}
-
-	// switch shit type
-	bc->stype = stype;
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 // Specific constraints
 //---------------------------------------------------------------------------
@@ -2370,9 +2326,6 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 
 	// WARNING! primary temperature constraints are not implemented, otherwise compute here
 	bc->tNumSPC = 0;
-
-	// set index (shift) type
-	bc->stype = _GLOBAL_TO_LOCAL_;
 
 	// store total number of SPC constraints
 	bc->numSPC = numSPC;

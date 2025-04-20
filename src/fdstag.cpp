@@ -785,27 +785,12 @@ PetscErrorCode Discret1DFindPoint(Discret1D *ds, PetscScalar x, PetscInt &ID)
 //---------------------------------------------------------------------------
 PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z)
 {
-	// compute & set global indices of local & ghost nodes
-
-	// **********************************************************************
-	// NOTE:
-	// for the ghost points, store negative global index of the primary DOF
-	// instead of -1
-	// **********************************************************************
+	// compute number of local dof and starting indices
 
 	PetscInt nx, ny, nz, NUM[2], SUM[3];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-
-	// clear index mode
-	dof->idxmod = IDXNONE;
-
-	// store distributed arrays
-	dof->DA_X   = DA_X;
-	dof->DA_Y   = DA_Y;
-	dof->DA_Z   = DA_Z;
-	dof->DA_CEN = DA_CEN;
 
 	// get local number of dof
 	ierr = DMDAGetCorners(DA_X,   NULL, NULL, NULL, &nx, &ny, &nz); CHKERRQ(ierr); dof->lnvx = nx*ny*nz;
@@ -827,115 +812,6 @@ PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_
 
     dof->ln = dof->lnv + dof->lnp;
     dof->st = dof->stv + dof->stp;
-
-	// create index vectors (ghosted)
-	ierr = DMCreateLocalVector(DA_X,   &dof->ivx); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(DA_Y,   &dof->ivy); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(DA_Z,   &dof->ivz); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(DA_CEN, &dof->ip);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode DOFIndexDestroy(DOFIndex *dof)
-{
-	PetscErrorCode 	 ierr;
-	PetscFunctionBeginUser;
-
-	// destroy index vectors (ghosted)
-	ierr = VecDestroy(&dof->ivx); CHKERRQ(ierr);
-	ierr = VecDestroy(&dof->ivy); CHKERRQ(ierr);
-	ierr = VecDestroy(&dof->ivz); CHKERRQ(ierr);
-	ierr = VecDestroy(&dof->ip);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod)
-{
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, stv=0, stp=0;
-	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// set global indices of the local and ghost nodes (including boundary)
-	ierr = VecSet(dof->ivx, -1.0); CHKERRQ(ierr);
-	ierr = VecSet(dof->ivy, -1.0); CHKERRQ(ierr);
-	ierr = VecSet(dof->ivz, -1.0); CHKERRQ(ierr);
-	ierr = VecSet(dof->ip,  -1.0); CHKERRQ(ierr);
-
-	// access index vectors
-	ierr = DMDAVecGetArray(dof->DA_X,   dof->ivx, &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(dof->DA_Y,   dof->ivy, &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(dof->DA_Z,   dof->ivz, &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(dof->DA_CEN, dof->ip,  &ip);   CHKERRQ(ierr);
-
-	//=======================================================
-	// compute interlaced global numbering of the local nodes
-	//=======================================================
-
-	if     (idxmod == IDXCOUPLED)   { stv = dof->st;  stp = dof->st + dof->lnv; }
-	else if(idxmod == IDXUNCOUPLED) { stv = dof->stv; stp = dof->stp;           }
-
-	//---------
-	// X-points
-	//---------
-	ierr = DMDAGetCorners(dof->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		ivx[k][j][i] = (PetscScalar)stv; stv++;
-	}
-	END_STD_LOOP
-
-	//---------
-	// Y-points
-	//---------
-	ierr = DMDAGetCorners(dof->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		ivy[k][j][i] = (PetscScalar)stv; stv++;
-	}
-	END_STD_LOOP
-
-	//---------
-	// Z-points
-	//---------
-	ierr = DMDAGetCorners(dof->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		ivz[k][j][i] = (PetscScalar)stv; stv++;
-	}
-	END_STD_LOOP
-
-	//---------
-	// P-points
-	//---------
-	ierr = DMDAGetCorners(dof->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		ip[k][j][i] = (PetscScalar)stp; stp++;
-	}
-	END_STD_LOOP
-
-	// restore access
-	ierr = DMDAVecRestoreArray(dof->DA_X,   dof->ivx, &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(dof->DA_Y,   dof->ivy, &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(dof->DA_Z,   dof->ivz, &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(dof->DA_CEN, dof->ip,  &ip);   CHKERRQ(ierr);
-
-	// get ghost point indices
-	LOCAL_TO_LOCAL(dof->DA_X,   dof->ivx)
-	LOCAL_TO_LOCAL(dof->DA_Y,   dof->ivy)
-	LOCAL_TO_LOCAL(dof->DA_Z,   dof->ivz)
-	LOCAL_TO_LOCAL(dof->DA_CEN, dof->ip)
-
-	// store index mode
-	dof->idxmod = idxmod;
 
 	PetscFunctionReturn(0);
 }
@@ -1144,6 +1020,9 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
+	// clear memory
+	ierr = PetscMemzero(coarse, sizeof(FDSTAG)); CHKERRQ(ierr);
+
 	// copy data
 	coarse->scal = fine->scal;
 	coarse->gtol = fine->gtol;
@@ -1203,11 +1082,20 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	// set number of local grid points
 	ierr = FDSTAGSetNum(coarse); CHKERRQ(ierr);
 
-	// coarsen coordinates
-	ierr = Discret1DCoarsenCoord(&coarse->dsx, fdsx); CHKERRQ(ierr);
-	ierr = Discret1DCoarsenCoord(&coarse->dsy, fdsy); CHKERRQ(ierr);
-	ierr = Discret1DCoarsenCoord(&coarse->dsz, fdsz); CHKERRQ(ierr);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
 
+	// coarsen coordinates
+	ierr = Discret1DCoarsenCoord(&coarse->dsx, &fine->dsx); CHKERRQ(ierr);
+	ierr = Discret1DCoarsenCoord(&coarse->dsy, &fine->dsx); CHKERRQ(ierr);
+	ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsx); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1232,9 +1120,6 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	ierr = Discret1DDestroy(&fs->dsx); CHKERRQ(ierr);
 	ierr = Discret1DDestroy(&fs->dsy); CHKERRQ(ierr);
 	ierr = Discret1DDestroy(&fs->dsz); CHKERRQ(ierr);
-
-	// destroy indexing data
-	ierr = DOFIndexDestroy(&fs->dof);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

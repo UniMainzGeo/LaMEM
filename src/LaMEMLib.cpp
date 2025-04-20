@@ -25,6 +25,7 @@
 #include "paraViewOutBin.h"
 #include "paraViewOutSurf.h"
 #include "multigrid.h"
+#include "matData.h"
 #include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"

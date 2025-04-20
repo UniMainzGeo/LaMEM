@@ -17,6 +17,7 @@
 #include "fdstag.h"
 #include "tssolve.h"
 #include "bc.h"
+#include "matData.h"
 #include "matrix.h"
 #include "multigrid.h"
 #include "lsolve.h"
@@ -25,7 +26,7 @@
 PetscErrorCode PMatBFBTCreate(PMat pm)
 {
 	PMatBlock      *P;
-	JacRes         *jr;
+	MatData        *md;
 	FDSTAG         *fs;
 	DOFIndex       *dof;
 	PetscInt        lnv, stv;
@@ -40,8 +41,8 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	if(!P->wbfbt) PetscFunctionReturn(0);
 
 	// access context variables
-	jr  = pm->jr;
-	fs  = jr->fs;
+	md  = &pm->md;
+	fs  = md->fs;
 	dof = &fs->dof;
 	lnv = dof->lnv;
 	stv = dof->stv;
@@ -81,17 +82,15 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 PetscErrorCode PMatBFBTAssemble(PMat pm)
 {
 	PMatBlock  *P;
-	JacRes     *jr;
+	MatData    *md;
 	FDSTAG     *fs;
-	BCCtx      *bc;
-	Vec         lvEtaCen;
 	MatStencil  row[1], col[7];
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    mnx, mny, mnz, mcx, mcy, mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar v[7], d[6], g[6], cfe[6], cfp[6], cfv[6];
-	PetscScalar ***lEta, ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
+	PetscScalar ***eta, ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz;
 
 	PetscErrorCode ierr;
@@ -104,9 +103,8 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 
 	// access context variables
 	P 	 = (PMatBlock*)pm->data;
-	jr   = pm->jr;
-	fs   = jr->fs;
-	bc   = jr->bc;
+	md   = &pm->md;
+	fs   = md->fs;
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -118,33 +116,10 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	mnz  = fs->dsz.tnods - 1;
 
 	//===============
-	// CELL VISCOSITY
-	//===============
-
-	ierr = DMGetLocalVector(fs->DA_CEN, &lvEtaCen); CHKERRQ(ierr);
-
-	ierr = VecZeroEntries(lvEtaCen); CHKERRQ(ierr);
-
-	ierr = DMDAVecGetArray(fs->DA_CEN, lvEtaCen, &lEta); CHKERRQ(ierr);
-
-	iter = 0;
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		lEta[k][j][i] = jr->svCell[iter++].svDev.eta;
-	}
-	END_STD_LOOP
-
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvEtaCen, &lEta); CHKERRQ(ierr);
-
-	LOCAL_TO_LOCAL(fs->DA_CEN, lvEtaCen)
-
-	//===============
 	// SCALING MATRIX
 	//===============
 
-	ierr = DMDAVecGetArray(fs->DA_CEN, lvEtaCen, &lEta); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta, &eta); CHKERRQ(ierr);
 
 	// set iterator
 	iter = fs->dof.stv;
@@ -157,7 +132,7 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 		I1 = i;   if(I1 == mnx) I1--;
 		I2 = i-1; if(I2 == -1)  I2++;
 
-		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((lEta[k][j][I1] + lEta[k][j][I2])/2.0), INSERT_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[k][j][I1] + eta[k][j][I2])/2.0), INSERT_VALUES); CHKERRQ(ierr);
 
 		iter++;
 	}
@@ -171,7 +146,7 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 		J1 = j;   if(J1 == mny) J1--;
 		J2 = j-1; if(J2 == -1)  J2++;
 
-		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((lEta[k][J1][i] + lEta[k][J2][i])/2.0), INSERT_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[k][J1][i] + eta[k][J2][i])/2.0), INSERT_VALUES); CHKERRQ(ierr);
 
 		iter++;
 	}
@@ -185,14 +160,14 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 		K1 = k;   if(K1 == mnz) K1--;
 		K2 = k-1; if(K2 == -1)  K2++;
 
-		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((lEta[K1][j][i] + lEta[K2][j][i])/2.0), INSERT_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[K1][j][i] + eta[K2][j][i])/2.0), INSERT_VALUES); CHKERRQ(ierr);
 
 		iter++;
 	}
 	END_STD_LOOP
 
 	// assemble scaling matrix
-	ierr = MatAIJAssemble(P->C, bc->vNumSPC, bc->vSPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->C, md->vNumSPC, md->vSPCList, 1.0); CHKERRQ(ierr);
 
 	//=======================
 	// PRECONDITIONING MATRIX
@@ -202,10 +177,10 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
 
 	// access boundary constraints
-	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,  &bcp);  CHKERRQ(ierr);
 
 	iter = 0;
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -229,12 +204,12 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 		cfv[5] = 1.0; if(bcvz[k+1][j][i] != DBL_MAX) cfv[5] = 0.0;
 
 		// get viscosity scaling coefficients
-		cfe[0] = sqrt((lEta[k][j][i] + lEta[k][j][Im1])/2.0);
-		cfe[1] = sqrt((lEta[k][j][i] + lEta[k][j][Ip1])/2.0);
-		cfe[2] = sqrt((lEta[k][j][i] + lEta[k][Jm1][i])/2.0);
-		cfe[3] = sqrt((lEta[k][j][i] + lEta[k][Jp1][i])/2.0);
-		cfe[4] = sqrt((lEta[k][j][i] + lEta[Km1][j][i])/2.0);
-		cfe[5] = sqrt((lEta[k][j][i] + lEta[Kp1][j][i])/2.0);
+		cfe[0] = sqrt((eta[k][j][i] + eta[k][j][Im1])/2.0);
+		cfe[1] = sqrt((eta[k][j][i] + eta[k][j][Ip1])/2.0);
+		cfe[2] = sqrt((eta[k][j][i] + eta[k][Jm1][i])/2.0);
+		cfe[3] = sqrt((eta[k][j][i] + eta[k][Jp1][i])/2.0);
+		cfe[4] = sqrt((eta[k][j][i] + eta[Km1][j][i])/2.0);
+		cfe[5] = sqrt((eta[k][j][i] + eta[Kp1][j][i])/2.0);
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -283,17 +258,14 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	END_STD_LOOP
 
 	// assemble preconditioning matrix
-	ierr = MatAIJAssemble(P->K,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->K, md->pNumSPC, md->pSPCList, 1.0); CHKERRQ(ierr);
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, lvEtaCen, &lEta); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
-
-	// restore viscosity vector
-	ierr = DMRestoreLocalVector (fs->DA_CEN, &lvEtaCen); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->eta, &eta); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   md->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->bcp,  &bcp);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

@@ -17,6 +17,7 @@
 
 struct JacRes;
 struct DOFIndex;
+struct MatData;
 
 //---------------------------------------------------------------------------
 
@@ -31,20 +32,11 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof);
 
 //---------------------------------------------------------------------------
 
-// preconditioning matrix storage format
-enum PMatType
-{
-	_MONOLITHIC_,
-	_BLOCK_
-};
-
-//---------------------------------------------------------------------------
-
 typedef struct p_PMat *PMat;
 
 struct p_PMat
 {
-	JacRes     *jr;     // assembly context
+	MatData     md;     // assembly context
 	void       *data;   // type-specific context
 	PMatType    type;   // matrix type
 	PetscScalar pgamma; // penalty parameter
@@ -60,8 +52,6 @@ struct p_PMat
 // sizeof(p_PMat) - size of the opaque structure
 
 //---------------------------------------------------------------------------
-
-PetscErrorCode PMatSetFromOptions(PMat pm);
 
 PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr);
 

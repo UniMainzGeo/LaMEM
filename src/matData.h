@@ -20,7 +20,7 @@ struct FDSTAG;
 
 //---------------------------------------------------------------------------
 
-// preconditioning matrix storage format
+// matrix type
 enum PMatType
 {
 	_MONOLITHIC_,
@@ -31,19 +31,19 @@ enum PMatType
 
 struct MatData
 {
-	PMatType    type;                             // matrix type
-	FDSTAG     *fs;                               // staggered grid
-	Vec         ivx, ivy, ivz, ip;                // index vectors
-	Vec         bcvx, bcvy, bcvz, bcp;            // boundary condition vectors
-	PetscInt    numSPC,  *SPCList;                // single points constraints (SPC)
-	PetscInt    vNumSPC, *vSPCList;               // velocity SPC
-	PetscInt    pNumSPC, *pSPCList;               // pressure SPC
-	Vec         K, rho, eta, etaxy, etaxz, etayz; // parameter vectors
-	PetscScalar dt;                               // time step
-	PetscScalar fssa;                             // density gradient penalty parameter
-	PetscScalar grav[3];                          // global gravity components
-	PetscScalar pgamma;                           // penalty parameter
-	PetscInt    coarsened;                        // coarsening flag
+	FDSTAG     *fs;                                // staggered grid
+	Vec         ivx, ivy, ivz, ip;                 // index vectors
+	Vec         bcvx, bcvy, bcvz, bcp;             // boundary condition vectors
+	PetscInt    numSPC,  *SPCList;                 // single points constraints (SPC)
+	PetscInt    vNumSPC, *vSPCList;                // velocity SPC
+	PetscInt    pNumSPC, *pSPCList;                // pressure SPC
+	Vec         Kb, rho, eta, etaxy, etaxz, etayz; // parameter vectors
+	PetscScalar dt;                                // time step
+	PetscScalar fssa;                              // density gradient penalty parameter
+	PetscScalar grav[3];                           // global gravity components
+	PetscInt    coarse;                            // coarsening flag
+	PMatType    type;                              // matrix type
+	PetscScalar pgamma;                            // penalty parameter
 };
 
 //---------------------------------------------------------------------------
@@ -52,22 +52,30 @@ PetscErrorCode MatDataSetFromOptions(MatData *md);
 
 PetscErrorCode MatDataCreate(MatData *md, JacRes *jr);
 
-PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr);
+PetscErrorCode MatDataCreateData(MatData *md);
 
 PetscErrorCode MatDataDestroy(MatData *md);
 
-PetscErrorCode MatDataCreateIndex(MatData *md);
-
 PetscErrorCode MatDataCoarsen(MatData *coarse, MatData *fine);
+
+PetscErrorCode MatDataComputeIndex(MatData *md);
+
+PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr);
 
 PetscErrorCode MatDataRestricParam(MatData *coarse, MatData *fine);
 
 PetscErrorCode MatDataRestricBC(MatData *coarse, MatData *fine);
 
-
-
-
+PetscErrorCode MatDataListSPC(MatData *md);
 
 //---------------------------------------------------------------------------
+// MACROS
+//---------------------------------------------------------------------------
+
+#define LIST_SPC_IND(bc, list, cnt, iter) \
+	if(bc[k][j][i] != DBL_MAX) { list[cnt] = iter; cnt++; }
+
+//---------------------------------------------------------------------------
+
 
 #endif

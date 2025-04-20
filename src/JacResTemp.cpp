@@ -17,6 +17,7 @@
 #include "fdstag.h"
 #include "tssolve.h"
 #include "bc.h"
+#include "matData.h"
 #include "matrix.h"
 #include "surf.h"
 #include "dike.h"

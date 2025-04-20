@@ -856,7 +856,7 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PVOutWriteVelocityGr(OutVec* outvec)
+PetscErrorCode PVOutWriteVelGrad(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
 
@@ -864,16 +864,20 @@ PetscErrorCode PVOutWriteVelocityGr(OutVec* outvec)
 
 	cf = scal->strain_rate;
 
-	INTERPOLATE_ACCESS(jr->dvxdx, InterpCenterCorner, 9, 0,0.0)
-	INTERPOLATE_ACCESS(jr->dvxdy, InterpXYEdgeCorner, 9, 1,0.0)
-	INTERPOLATE_ACCESS(jr->dvxdz, InterpXZEdgeCorner, 9, 2,0.0)
-	INTERPOLATE_ACCESS(jr->dvydx, InterpXYEdgeCorner, 9, 3,0.0)
-	INTERPOLATE_ACCESS(jr->dvydy, InterpCenterCorner, 9, 4,0.0)
-	INTERPOLATE_ACCESS(jr->dvydz, InterpYZEdgeCorner, 9, 5,0.0)
-	INTERPOLATE_ACCESS(jr->dvzdx, InterpXZEdgeCorner, 9, 6,0.0)
-	INTERPOLATE_ACCESS(jr->dvzdy, InterpYZEdgeCorner, 9, 7,0.0)
-	INTERPOLATE_ACCESS(jr->dvzdz, InterpCenterCorner, 9, 8,0.0)
+	ierr = JacResGetVelGrad(jr); CHKERRQ(ierr);
 
+	// ACHTUNG!
+	/*
+	INTERPOLATE_ACCESS(jr->dvxdx, InterpCenterCorner, 9, 0, 0.0)
+	INTERPOLATE_ACCESS(jr->dvxdy, InterpXYEdgeCorner, 9, 1, 0.0)
+	INTERPOLATE_ACCESS(jr->dvxdz, InterpXZEdgeCorner, 9, 2, 0.0)
+	INTERPOLATE_ACCESS(jr->dvydx, InterpXYEdgeCorner, 9, 3, 0.0)
+	INTERPOLATE_ACCESS(jr->dvydy, InterpCenterCorner, 9, 4, 0.0)
+	INTERPOLATE_ACCESS(jr->dvydz, InterpYZEdgeCorner, 9, 5, 0.0)
+	INTERPOLATE_ACCESS(jr->dvzdx, InterpXZEdgeCorner, 9, 6, 0.0)
+	INTERPOLATE_ACCESS(jr->dvzdy, InterpYZEdgeCorner, 9, 7, 0.0)
+	INTERPOLATE_ACCESS(jr->dvzdz, InterpCenterCorner, 9, 8, 0.0)
+	*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
