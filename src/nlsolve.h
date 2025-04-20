@@ -31,6 +31,7 @@ enum JacType
 
 struct NLSol
 {
+	JacRes     *jr;         // Jacobian-residual context
 	Mat         MFFD;       // matrix-free finite difference Jacobian
 	PMat        pm;         // preconditioner matrix
 	PCStokes    pc;         // Stokes preconditioner

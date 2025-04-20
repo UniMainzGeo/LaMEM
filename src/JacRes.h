@@ -193,8 +193,6 @@ struct JacRes
 	Vec gvx,  gvy, gvz;  // global
 	Vec lvx,  lvy, lvz;  // local (ghosted)
 
-	Vec dvxdx, dvxdy, dvxdz, dvydx, dvydy, dvydz, dvzdx, dvzdy, dvzdz;  // velocity gradient tensor components
-
 	// momentum residual components
 	Vec gfx,  gfy, gfz;  // global
 	Vec lfx,  lfy, lfz;  // local (ghosted)
@@ -294,6 +292,9 @@ PetscErrorCode JacResGetPressShift(JacRes *jr);
 // evaluate effective strain rate components in basic nodes
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr);
 
+// compute velocity gradients for output
+PetscErrorCode JacResGetVelGrad(JacRes *jr);
+
 // compute components of vorticity vector
 PetscErrorCode JacResGetVorticity(JacRes *jr);
 
@@ -302,9 +303,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr);
 
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
-
-// copy solution from global to local vectors, do not enforce boundary constraints
-PetscErrorCode JacResCopyVelNoBC(JacRes *jr, Vec x);
 
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopyVel(JacRes *jr, Vec x);

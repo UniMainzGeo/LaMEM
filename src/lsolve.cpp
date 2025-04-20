@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "fdstag.h"
+#include "matData.h"
 #include "matrix.h"
 #include "multigrid.h"
 #include "lsolve.h"
@@ -136,7 +137,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	PC          vpc;
 	PCStokesBF *bf;
 	PMatBlock  *P;
-	JacRes     *jr;
+	MatData    *md;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -154,7 +155,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	ierr = PCStokesBFSetFromOptions(pc); CHKERRQ(ierr);
 
 	// access context
-	jr = pc->pm->jr;
+	md = &pc->pm->md;
 	P  = (PMatBlock*)pc->pm->data;
 
 	// create velocity solver
@@ -165,7 +166,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// create & set velocity multigrid preconditioner
 	if(bf->vtype == _VEL_MG_)
 	{
-		ierr = MGCreate(&bf->vmg, jr);           CHKERRQ(ierr);
+		ierr = MGCreate(&bf->vmg, md);           CHKERRQ(ierr);
 		ierr = KSPGetPC(bf->vksp, &vpc);         CHKERRQ(ierr);
 		ierr = PCSetType(vpc, PCSHELL);          CHKERRQ(ierr);
 		ierr = PCShellSetContext(vpc, &bf->vmg); CHKERRQ(ierr);
@@ -368,7 +369,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 PetscErrorCode PCStokesMGCreate(PCStokes pc)
 {
 	PCStokesMG *mg;
-	JacRes     *jr;
+	MatData    *md;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -380,10 +381,10 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 	pc->data = (void*)mg;
 
 	// access context
-	jr = pc->pm->jr;
+	md = &pc->pm->md;
 
 	// create context
-	ierr = MGCreate(&mg->mg, jr); CHKERRQ(ierr);
+	ierr = MGCreate(&mg->mg, md); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -468,7 +469,7 @@ PetscErrorCode PCStokesUserCreate(PCStokes pc)
 PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
 {
 	PCStokesUser *user;
-	JacRes       *jr;
+	MatData      *md;
 	DOFIndex     *dof;
 	PetscInt      st, lnv, lnp;
 
@@ -477,8 +478,8 @@ PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
 
 	// access context
 	user = (PCStokesUser*)pc->data;
-	jr   =  pc->pm->jr;
-	dof  = &jr->fs->dof;
+	md   = &pc->pm->md;
+	dof  = &md->fs->dof;
 	st   =  dof->st;
 	lnv  =  dof->lnv;
 	lnp  =  dof->lnp;

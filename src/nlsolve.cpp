@@ -44,6 +44,9 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	// access context
 	dof = &(jr->fs->dof);
 
+	// store context
+	nl->jr = jr;
+
 	// create matrix-free Jacobian operator
 	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
 		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &J); CHKERRQ(ierr);

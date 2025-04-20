@@ -89,6 +89,7 @@
 #include "interpolate.h"
 #include "surf.h"
 #include "multigrid.h"
+#include "matData.h"
 #include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
@@ -1573,7 +1574,7 @@ PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, ModParam *IOpar
 
 	ierr = SNESGetApplicationContext(snes, &nl); CHKERRQ(ierr);
 
-	jr   = nl->pm->jr;
+	jr   = nl->jr;
 	surf = jr->surf;
 
 	//========================================
@@ -2057,10 +2058,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB
-				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++)
+				for (i=0; i < nl->jr->dbm->numPhases; i++)
 				{
-					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
-					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
+					ierr =   PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
+					swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);
 				}
 
 				ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
@@ -2074,10 +2075,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB back
-				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++)
+				for (i=0; i < nl->jr->dbm->numPhases; i++)
 				{
-					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
-					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
+					ierr =   PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
+					swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);
 				}
 				
 				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
@@ -2859,7 +2860,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	PetscFunctionBeginUser;
 
 	// access context
-	jr = nl->pc->pm->jr;
+	jr = nl->jr;
 
 	// Create stuff
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);

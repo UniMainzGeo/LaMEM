@@ -23,15 +23,6 @@ struct DBMat;
 struct JacRes;
 
 //---------------------------------------------------------------------------
-// index shift type
-enum ShiftType
-{
-	_LOCAL_TO_GLOBAL_,
-	_GLOBAL_TO_LOCAL_
-
-};
-
-//---------------------------------------------------------------------------
 // Bezier block (rotating polygon moving along Bezier curve)
 //---------------------------------------------------------------------------
 
@@ -145,7 +136,6 @@ struct BCCtx
 	// NOTE! It may be worth storing TPC also as lists (for speedup).
 	//=====================================================================
 
-
 	FDSTAG   *fs;   // staggered grid
 	TSSol    *ts;   // time stepping parameters
 	Scaling  *scal; // scaling parameters
@@ -155,7 +145,6 @@ struct BCCtx
 	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
 
 	// single-point constraints
-	ShiftType    stype;   // current index shift type
 	PetscInt     numSPC;  // total number of constraints
 	PetscInt    *SPCList; // local indices of SPC
 	PetscScalar *SPCVals; // values of SPC
@@ -174,13 +163,6 @@ struct BCCtx
 	PetscInt     tNumSPC;
 	PetscInt    *tSPCList;
 	PetscScalar *tSPCVals;
-
-	// two-point constraints
-//	PetscInt     numTPC;       // number of two-point constraints (TPC)
-//	PetscInt    *TPCList;      // local indices of TPC (ghosted layout)
-//	PetscInt    *TPCPrimeDOF;  // local indices of primary DOF (ghosted layout)
-//	PetscScalar *TPCVals;      // values of TPC
-//	PetscScalar *TPCLinComPar; // linear combination parameters
 
 	//=====================
 	// VELOCITY CONSTRAINTS
@@ -305,9 +287,6 @@ PetscErrorCode BCApply(BCCtx *bc);
 
 // apply SPC to global solution vector
 PetscErrorCode BCApplySPC(BCCtx *bc);
-
-// shift indices of constrained nodes
-PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
 
 //---------------------------------------------------------------------------
 // Specific constraints

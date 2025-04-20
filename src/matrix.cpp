@@ -11,6 +11,7 @@
 //.....................   PRECONDITIONING MATRICES   ........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "matData.h"
 #include "matrix.h"
 #include "tssolve.h"
 #include "fdstag.h"
@@ -158,35 +159,6 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PMatSetFromOptions(PMat pm)
-{
-	char pname[_str_len_];
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// set defaults
-	sprintf(pname, "user");
-	pm->pgamma = 1.0;
-
-	// read options
-	ierr = PetscOptionsGetString(NULL, NULL, "-jp_type",    pname, _str_len_, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma", &pm->pgamma,       NULL); CHKERRQ(ierr);
-
-	if     (!strcmp(pname, "mg") || !strcmp(pname, "user")) pm->type = _MONOLITHIC_;
-	else if(!strcmp(pname, "bf"))                           pm->type = _BLOCK_;
-	else    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner type (jp_type): %s", pname);
-
-	if(pm->pgamma < 1.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Penalty parameter is less than unit (jp_pgamma)");
-
-	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
-	if     (pm->type == _MONOLITHIC_) PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
-	else if(pm->type == _BLOCK_)      PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
-	if     (pm->pgamma > 1.0)         PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", pm->pgamma);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 {
 	PetscErrorCode ierr;
@@ -204,11 +176,8 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 	// clear object
 	ierr = PetscMemzero(pm, sizeof(p_PMat)); CHKERRQ(ierr);
 
-	// set context
-	pm->jr = jr;
-
-	// read options
-	ierr = PMatSetFromOptions(pm); CHKERRQ(ierr);
+	// create context
+	ierr = MatDataCreate(&pm->md, jr);  CHKERRQ(ierr);
 
 	if(pm->type == _MONOLITHIC_)
 	{
@@ -238,20 +207,22 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 //---------------------------------------------------------------------------
 PetscErrorCode PMatAssemble(PMat pm)
 {
-	BCCtx  *bc;
+
+// ACHTUNG
+//	BCCtx  *bc;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	bc = pm->jr->bc;
+//	bc = pm->jr->bc;
 
 	// shift constrained node indices to global index space
-	ierr = BCShiftIndices(bc, _LOCAL_TO_GLOBAL_); CHKERRQ(ierr);
+//	ierr = BCShiftIndices(bc, _LOCAL_TO_GLOBAL_); CHKERRQ(ierr);
 
 	ierr = pm->Assemble(pm); CHKERRQ(ierr);
 
 	// shift constrained node indices back to local index space
-	ierr = BCShiftIndices(bc,  _GLOBAL_TO_LOCAL_); CHKERRQ(ierr);
+//	ierr = BCShiftIndices(bc,  _GLOBAL_TO_LOCAL_); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -261,8 +232,9 @@ PetscErrorCode PMatDestroy(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = pm->Destroy(pm); CHKERRQ(ierr);
-	ierr = PetscFree(pm);   CHKERRQ(ierr);
+	ierr = MatDataDestroy(&pm->md); CHKERRQ(ierr);
+	ierr = pm->Destroy(pm);         CHKERRQ(ierr);
+	ierr = PetscFree(pm);           CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -289,6 +261,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	//
 	//=========================================================================
 
+	MatData     *md;
 	FDSTAG      *fs;
 	DOFIndex    *dof;
 	PMatMono    *P;
@@ -300,7 +273,8 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	PetscFunctionBeginUser;
 
 	// access contexts
-	fs  = pm->jr->fs;
+	md  = &pm->md;
+	fs  = md->fs;
 	dof = &fs->dof;
 
 	// allocate space
@@ -308,9 +282,6 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 
 	// store context
 	pm->data = (void*)P;
-
-	// compute global indexing
-	ierr = DOFIndexCompute(dof, IDXCOUPLED); CHKERRQ(ierr);
 
 	// get number of local rows & global index of the first row
 	ln    = dof->ln;
@@ -321,10 +292,10 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	ierr = makeIntArray(&o_nnz, NULL, ln); CHKERRQ(ierr);
 
 	// access index vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   md->ivx,  &ivx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->ivy,  &ivy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->ivz,  &ivz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->ip,   &ip);   CHKERRQ(ierr);
 
 	// clear iterator
 	iter = 0;
@@ -475,15 +446,18 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   md->ivx,  &ivx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->ivy,  &ivy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->ivz,  &ivz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->ip,   &ip);   CHKERRQ(ierr);
 
 	// create matrices & vectors
 	ierr = MatAIJCreate(ln, ln, 0, d_nnz, 0, o_nnz, &P->A); CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(ln, start, &P->M);              CHKERRQ(ierr);
-	ierr = VecDuplicate(pm->jr->gsol, &P->w);               CHKERRQ(ierr);
+
+	// create work vector
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &P->w); CHKERRQ(ierr);
+	ierr = VecSetFromOptions(P->w);
 
 	// clear work arrays
 	ierr = PetscFree(d_nnz); CHKERRQ(ierr);

@@ -15,13 +15,21 @@
 
 //---------------------------------------------------------------------------
 
-struct JacRes;
+struct MatData;
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y);
+PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec f);
 
-PetscErrorCode JacResPicardMatFree(JacRes *jr);
+PetscErrorCode MatFreeGetPicard(MatData *md,
+		Vec lvx, Vec lvy, Vec lvz, Vec gp,
+		Vec lfx, Vec lfy, Vec lfz, Vec gc);
+
+// access solution vector
+PetscErrorCode MatFreeGetSol(MatData *md, Vec x, Vec lvx, Vec lvy, Vec lvz, Vec gp);
+
+// assemble residual
+PetscErrorCode MatFreeAssembleRes(MatData *md, Vec f, Vec lfx, Vec lfy, Vec lfz, Vec gc);
 
 //---------------------------------------------------------------------------
 // MACROS

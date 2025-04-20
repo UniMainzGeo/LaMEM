@@ -144,37 +144,19 @@ PetscErrorCode Discret1DFindPoint(Discret1D *ds, PetscScalar x, PetscInt &ID);
 
 //---------------------------------------------------------------------------
 
-enum idxtype { IDXNONE, IDXCOUPLED, IDXUNCOUPLED };
-
-// global indexing of the DOF
 struct DOFIndex
 {
-	//=====================================================================
-	//
-	// index vectors contain global DOF numbers
-	// boundary ghost points are marked by -1
-	//
-	//=====================================================================
-
-	idxtype  idxmod;            // indexing mode
-	DM       DA_CEN;            // central points
-	DM       DA_X, DA_Y, DA_Z;  // face points
-	PetscInt lnvx, lnvy, lnvz;  // local number of DOF
-	PetscInt lnv, lnp, ln;      // ...
+	PetscInt lnvx, lnvy, lnvz;  // local number of dof for each velocity component
+	PetscInt lnv, lnp, ln;      // local number of velocity, pressure, and total dof
 	PetscInt stv, stp, st;      // starting indices (stv & stp - decoupled layout)
-	Vec      ivx, ivy, ivz, ip; // index vectors (ghosted)
-
 };
 
 //---------------------------------------------------------------------------
 // DOFIndex functions
 //---------------------------------------------------------------------------
 
+// compute number of local dof and starting indices
 PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z);
-
-PetscErrorCode DOFIndexDestroy(DOFIndex *dof);
-
-PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod);
 
 //---------------------------------------------------------------------------
 // staggered grid data structure
@@ -223,6 +205,8 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp);
 PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp);
 
 PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine);
+
+PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine);
 
 PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,

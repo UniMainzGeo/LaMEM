@@ -589,3 +589,320 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode JacResGetVelGrad(JacRes *jr)
+{
+/*
+	// compute velocity gradients for output
+
+	// velocity gradient tensor components
+	Vec dvxdx, dvxdy, dvxdz, dvydx, dvydy, dvydz, dvzdx, dvzdy, dvzdz;
+
+	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	SolVarDev  *svDev;
+	SolVarBulk *svBulk;
+
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar dvxdy, dvydx, dvxdz, dvzdx, dvydz, dvzdy;
+	PetscScalar dx, dy, dz, xx, yy, zz, xy, xz, yz, theta, tr;
+	PetscScalar ***vx,  ***vy,  ***vz;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz;
+	PetscScalar ***vx_x,***vy_y,***vz_z;
+	PetscScalar ***vx_y,***vx_z,***vz_x;
+	PetscScalar ***vy_x,***vy_z,***vz_y;
+
+	// velocity gradient tensor components   // control structure to create and destroy them
+
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvxdx); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvydy); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvzdz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvxdy); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvydx); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvxdz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvzdx); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvydz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvzdy); CHKERRQ(ierr);
+
+
+		// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvxdx);
+	LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvxdy);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvxdz)
+//---------------------------------------------------------------------------;
+	LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvydx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvydy);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvydz);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvzdx);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvzdy);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvzdz);
+
+		// velocity gradient tensor components   // control structure to create and destroy them
+
+	ierr = VecDestroy(&jr->dvxdx); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvydy); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvzdz); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvxdy); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvydx); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvxdz); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvzdx); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvydz); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dvzdy); CHKERRQ(ierr);
+
+		PetscScalar ***vx_x,***vy_y,***vz_z;
+	PetscScalar ***vx_y,***vx_z,***vz_x;
+	PetscScalar ***vy_x,***vy_z,***vz_y;
+
+		// access velocity gradient tensor
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
+
+
+
+*/
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+/*
+	fs = jr->fs;
+
+	// access local (ghosted) velocity components
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+
+	// access global strain-rate components
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
+
+	// access velocity gradient tensor
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
+
+	//-------------------------------
+	// central points (dxx, dyy, dzz)
+	//-------------------------------
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svDev  = &svCell->svDev;
+		svBulk = &svCell->svBulk;
+
+		// get mesh steps
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+		dz = SIZE_CELL(k, sz, fs->dsz);
+
+		// compute velocity gradients
+		xx = (vx[k][j][i+1] - vx[k][j][i])/dx;
+		yy = (vy[k][j+1][i] - vy[k][j][i])/dy;
+		zz = (vz[k+1][j][i] - vz[k][j][i])/dz;
+
+		vx_x[k][j][i] = xx;
+		vy_y[k][j][i] = yy;
+		vz_z[k][j][i] = zz;
+
+		// compute & store volumetric strain rate
+		theta = xx + yy + zz;
+		svBulk->theta = theta;
+
+		// compute & store total deviatoric strain rates
+		tr  = theta/3.0;
+		xx -= tr;
+		yy -= tr;
+		zz -= tr;
+
+		svCell->dxx = xx;
+		svCell->dyy = yy;
+		svCell->dzz = zz;
+
+		// compute & store effective deviatoric strain rates
+		dxx[k][j][i] = xx + svCell->hxx*svDev->I2Gdt;
+		dyy[k][j][i] = yy + svCell->hyy*svDev->I2Gdt;
+		dzz[k][j][i] = zz + svCell->hzz*svDev->I2Gdt;
+
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// xy edge points (dxy)
+	//-------------------------------
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svXYEdge[iter++];
+		svDev  = &svEdge->svDev;
+
+		// get mesh steps
+		dx = SIZE_NODE(i, sx, fs->dsx);
+		dy = SIZE_NODE(j, sy, fs->dsy);
+
+		// compute velocity gradients
+		dvxdy = (vx[k][j][i] - vx[k][j-1][i])/dy;
+		dvydx = (vy[k][j][i] - vy[k][j][i-1])/dx;
+
+		vx_y[k][j][i] = dvxdy;
+		vy_x[k][j][i] = dvydx;
+
+		// compute & store total strain rate
+		xy = 0.5*(dvxdy + dvydx);
+		svEdge->d = xy;
+
+		// compute & store effective deviatoric strain rate
+		dxy[k][j][i] = xy + svEdge->h*svDev->I2Gdt;
+
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// xz edge points (dxz)
+	//-------------------------------
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svXZEdge[iter++];
+		svDev  = &svEdge->svDev;
+
+		// get mesh steps
+		dx = SIZE_NODE(i, sx, fs->dsx);
+		dz = SIZE_NODE(k, sz, fs->dsz);
+
+		// compute velocity gradients
+		dvxdz = (vx[k][j][i] - vx[k-1][j][i])/dz;
+		dvzdx = (vz[k][j][i] - vz[k][j][i-1])/dx;
+
+		vx_z[k][j][i] = dvxdz;
+		vz_x[k][j][i] = dvzdx;
+
+		// compute & store total strain rate
+		xz = 0.5*(dvxdz + dvzdx);
+		svEdge->d = xz;
+
+		// compute & store effective deviatoric strain rate
+		dxz[k][j][i] = xz + svEdge->h*svDev->I2Gdt;
+
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// yz edge points (dyz)
+	//-------------------------------
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svYZEdge[iter++];
+		svDev  = &svEdge->svDev;
+
+		// get mesh steps
+		dy = SIZE_NODE(j, sy, fs->dsy);
+		dz = SIZE_NODE(k, sz, fs->dsz);
+
+		// compute velocity gradients
+		dvydz = (vy[k][j][i] - vy[k-1][j][i])/dz;
+		dvzdy = (vz[k][j][i] - vz[k][j-1][i])/dy;
+
+		vy_z[k][j][i] = dvydz;
+		vz_y[k][j][i] = dvzdy;
+
+		// compute & store total strain rate
+		yz = 0.5*(dvydz + dvzdy);
+		svEdge->d = yz;
+
+		// compute & store effective deviatoric strain rate
+		dyz[k][j][i] = yz + svEdge->h*svDev->I2Gdt;
+
+	}
+	END_STD_LOOP
+
+	// restore vectors
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
+
+	// communicate boundary strain-rate values
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldzz);
+	LOCAL_TO_LOCAL(fs->DA_XY,  jr->ldxy);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->ldxz);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->ldyz);
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvxdx);
+	LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvxdy);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvxdz);
+	LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvydx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvydy);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvydz);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvzdx);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvzdy);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvzdz);
+*/
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
