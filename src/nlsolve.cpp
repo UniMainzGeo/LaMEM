@@ -11,6 +11,7 @@
 //.....................   NONLINEAR SOLVER ROUTINES   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "matData.h"
 #include "matrix.h"
 #include "fdstag.h"
 #include "tssolve.h"
@@ -151,7 +152,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	ierr = SNESGetApplicationContext(snes, &nl); CHKERRQ(ierr);
 
 	// access context
-	jr = nl->pm->jr;
+	jr = nl->jr;
 
 	ierr = JacResFormResidual(jr, x, f); CHKERRQ(ierr);
 
@@ -180,7 +181,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// access context
 	pc   =  nl->pc;
 	pm   =  pc->pm;
-	jr   =  pm->jr;
+	jr   =  nl->jr;
 	ctrl = &jr->ctrl;
 
 	//========================
@@ -243,7 +244,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	//=====================
 	// setup preconditioner
 	//=====================
-	ierr = PMatAssemble(pm);                                                 CHKERRQ(ierr);
+	ierr = PMatAssemble(pm, jr);                                             CHKERRQ(ierr);
 	ierr = PCStokesSetup(pc);                                                CHKERRQ(ierr);
 	ierr = MatShellSetOperation(Pmat, MATOP_MULT, (void(*)(void))pc->Apply); CHKERRQ(ierr);
 	ierr = MatShellSetContext(Pmat, pc);                                     CHKERRQ(ierr);
@@ -323,7 +324,7 @@ PetscErrorCode SNESCoupledTest(
 	ierr = SNESGetApplicationContext(snes, &nl); CHKERRQ(ierr);
 
 	// access context
-	jr = nl->pc->pm->jr;
+	jr = nl->jr;
 
 	// call default convergence test
 	ierr = SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);

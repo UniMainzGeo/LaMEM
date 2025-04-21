@@ -28,7 +28,7 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P);
 
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag);
 
-PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof);
+PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md);
 
 //---------------------------------------------------------------------------
 
@@ -38,8 +38,6 @@ struct p_PMat
 {
 	MatData     md;     // assembly context
 	void       *data;   // type-specific context
-	PMatType    type;   // matrix type
-	PetscScalar pgamma; // penalty parameter
 
 	// operations
 	PetscErrorCode (*Create)  (PMat pm);
@@ -55,7 +53,7 @@ struct p_PMat
 
 PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr);
 
-PetscErrorCode PMatAssemble(PMat pm);
+PetscErrorCode PMatAssemble(PMat pm, JacRes *jr);
 
 PetscErrorCode PMatDestroy(PMat pm);
 

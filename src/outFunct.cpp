@@ -860,14 +860,16 @@ PetscErrorCode PVOutWriteVelGrad(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
 
+	// ACHTUNG! Complete the implementation
+	UNUSED(outvec);
+/*
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->strain_rate;
 
 	ierr = JacResGetVelGrad(jr); CHKERRQ(ierr);
 
-	// ACHTUNG!
-	/*
+
 	INTERPOLATE_ACCESS(jr->dvxdx, InterpCenterCorner, 9, 0, 0.0)
 	INTERPOLATE_ACCESS(jr->dvxdy, InterpXYEdgeCorner, 9, 1, 0.0)
 	INTERPOLATE_ACCESS(jr->dvxdz, InterpXZEdgeCorner, 9, 2, 0.0)
@@ -877,7 +879,8 @@ PetscErrorCode PVOutWriteVelGrad(OutVec* outvec)
 	INTERPOLATE_ACCESS(jr->dvzdx, InterpXZEdgeCorner, 9, 6, 0.0)
 	INTERPOLATE_ACCESS(jr->dvzdy, InterpYZEdgeCorner, 9, 7, 0.0)
 	INTERPOLATE_ACCESS(jr->dvzdz, InterpCenterCorner, 9, 8, 0.0)
-	*/
+
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

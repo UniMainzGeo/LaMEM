@@ -52,7 +52,7 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec f)
 	ierr = MatFreeGetPicard(md, lvx, lvy, lvz, gp, lfx, lfy, lfz, gc); CHKERRQ(ierr);
 
 	// assemble residual
-	ierr = MatFreeAssembleRes(md, f, lfx, lfy, lfz, gc); CHKERRQ(ierr);
+	ierr = MatFreeGetRes(md, f, lfx, lfy, lfz, gc); CHKERRQ(ierr);
 
 	// restore temporary local vectors
 	ierr = DMRestoreLocalVector(fs->DA_X, &lvx); CHKERRQ(ierr);
@@ -81,27 +81,21 @@ PetscErrorCode MatFreeGetPicard(MatData *md,
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar dxx, dyy, dzz, dvxdy, dvydx, dvxdz, dvzdx, dvydz, dvzdy;
-
 	PetscScalar eta, theta, tr, rho, Kb, IKdt, pc, dt, fssa, *grav;
-
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***c, ***p;
-
 	PetscScalar ***vKb,  ***vrho,  ***veta, ***vetaxy, ***vetaxz, ***vetayz;
-
-
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
 	PetscScalar cf[6];
 //	PetscInt    rescal;
-//	PetscScalar dr;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	fs     = md->fs;   // grid context
-	dt     = md->dt;   // time step
-	fssa   = md->fssa; // density gradient penalty parameter
-	grav   = md->grav; // gravity acceleration
-//    rescal = jr->ctrl.rescal; // stencil rescaling flag
+	fs     = md->fs;     // grid context
+	dt     = md->dt;     // time step
+	fssa   = md->fssa;   // density gradient penalty parameter
+	grav   = md->grav;   // gravity acceleration
+//	rescal = md->rescal; // stencil rescaling flag
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -139,7 +133,6 @@ PetscErrorCode MatFreeGetPicard(MatData *md,
 	ierr = DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
-
 
 	//-------------------------------
 	// central points
@@ -340,24 +333,24 @@ PetscErrorCode MatFreeGetPicard(MatData *md,
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecGetArray(fs->DA_X,   lvx,       &vx);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   lvy,       &vy);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   lvz,       &vz);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   lfx,       &fx);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   lfy,       &fy);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   lfz,       &fz);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, gc,        &c);      CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, gp,        &p);      CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   lvx,       &vx);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   lvy,       &vy);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   lvz,       &vz);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   lfx,       &fx);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   lfy,       &fy);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   lfz,       &fz);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, gc,        &c);      CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, gp,        &p);      CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   md->bcvx,  &bcvx);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->bcvy,  &bcvy);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->bcvz,  &bcvz);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->bcp,   &bcp);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -422,7 +415,7 @@ PetscErrorCode MatFreeGetSol(MatData *md, Vec x, Vec lvx, Vec lvy, Vec lvz, Vec 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatFreeAssembleRes(MatData *md, Vec f, Vec lfx, Vec lfy, Vec lfz, Vec gc)
+PetscErrorCode MatFreeGetRes(MatData *md, Vec f, Vec lfx, Vec lfy, Vec lfz, Vec gc)
 {
 	// assemble residual components into coupled vector, enforce boundary constraints
 
@@ -469,13 +462,13 @@ PetscErrorCode MatFreeAssembleRes(MatData *md, Vec f, Vec lfx, Vec lfy, Vec lfz,
 
 	// zero out constrained residuals (velocity)
 	num   = md->vNumSPC;
-	list  = md->vSPCList;
+	list  = md->vSPCListVec;
 
 	for(i = 0; i < num; i++) res[list[i]] = 0.0;
 
 	// zero out constrained residuals (pressure)
 	num   = md->pNumSPC;
-	list  = md->pSPCList;
+	list  = md->pSPCListVec;
 
 	for(i = 0; i < num; i++) res[list[i]] = 0.0;
 

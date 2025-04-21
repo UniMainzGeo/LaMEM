@@ -31,19 +31,20 @@ enum PMatType
 
 struct MatData
 {
-	FDSTAG     *fs;                                // staggered grid
-	Vec         ivx, ivy, ivz, ip;                 // index vectors
-	Vec         bcvx, bcvy, bcvz, bcp;             // boundary condition vectors
-	PetscInt    numSPC,  *SPCList;                 // single points constraints (SPC)
-	PetscInt    vNumSPC, *vSPCList;                // velocity SPC
-	PetscInt    pNumSPC, *pSPCList;                // pressure SPC
-	Vec         Kb, rho, eta, etaxy, etaxz, etayz; // parameter vectors
-	PetscScalar dt;                                // time step
-	PetscScalar fssa;                              // density gradient penalty parameter
-	PetscScalar grav[3];                           // global gravity components
-	PetscInt    coarse;                            // coarsening flag
-	PMatType    type;                              // matrix type
-	PetscScalar pgamma;                            // penalty parameter
+	PMatType    type;                                // matrix type
+	PetscScalar pgamma;                              // penalty parameter
+	FDSTAG     *fs;                                  // staggered grid
+	Vec         ivx, ivy, ivz, ip;                   // index vectors
+	Vec         bcvx, bcvy, bcvz, bcp;               // boundary condition vectors
+	PetscInt    numSPC,  *SPCListMat,  *SPCListVec;  // single points constraints (SPC)
+	PetscInt    vNumSPC, *vSPCListMat, *vSPCListVec; // velocity SPC
+	PetscInt    pNumSPC, *pSPCListMat, *pSPCListVec; // pressure SPC
+	Vec         Kb, rho, eta, etaxy, etaxz, etayz;   // parameter vectors
+	PetscScalar dt;                                  // time step
+	PetscScalar fssa;                                // density gradient penalty parameter
+	PetscInt    rescal;                              // stencil rescaling flag
+	PetscScalar grav[3];                             // global gravity components
+	PetscInt    coarse;                              // coarsening flag
 };
 
 //---------------------------------------------------------------------------
@@ -59,6 +60,10 @@ PetscErrorCode MatDataDestroy(MatData *md);
 PetscErrorCode MatDataCoarsen(MatData *coarse, MatData *fine);
 
 PetscErrorCode MatDataComputeIndex(MatData *md);
+
+PetscErrorCode MatDataSetup(MatData *md, JacRes *jr);
+
+PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine);
 
 PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr);
 

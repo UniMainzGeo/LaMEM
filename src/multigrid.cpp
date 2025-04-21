@@ -23,7 +23,6 @@
 PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md)
 {
 	PetscInt ln=0, lnfine=0;
-	DOFIndex *dof;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -31,9 +30,9 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md)
 	if(!fine)
 	{
 		// setup top level
-		lvl->md     = md;
-		lvl->R      = NULL;
-		lvl->P      = NULL;
+		lvl->md = md;
+		lvl->R  = NULL;
+		lvl->P  = NULL;
 	}
 	else
 	{
@@ -80,6 +79,7 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 {
 	Mat         R;
+	MatData     *mdlvl, *mdfine;
 	PetscScalar v[12], bc[12], vs[12];
 	PetscInt    idx[12];
 	PetscInt    row, I, J, K;
@@ -91,32 +91,34 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	R = lvl->R;
+	R      = lvl->R;
+	mdlvl  = lvl->md;
+	mdfine = fine->md;
 
 	// clear restriction matrix coefficients
 	ierr = MatZeroEntries(R); CHKERRQ(ierr);
 
 	// access index vectors in fine grid
-	ierr = DMDAVecGetArray(fine->md->fs->DA_X,   fine->md->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->md->fs->DA_Y,   fine->md->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->md->fs->DA_Z,   fine->md->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->md->fs->DA_CEN, fine->md->ip,  &ip);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip);    CHKERRQ(ierr);
 
 	// access boundary condition vectors in fine grid
-	ierr = DMDAVecGetArray(fine->fs->DA_X,   fine->bcvx,    &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_Y,   fine->bcvy,    &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_Z,   fine->bcvz,    &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_CEN, fine->bcp,     &fbcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
 
 	// access boundary condition vectors in coarse grid
-	ierr = DMDAVecGetArray(lvl->fs->DA_X,    lvl->bcvx,     &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->fs->DA_Y,    lvl->bcvy,     &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->fs->DA_Z,    lvl->bcvz,     &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->fs->DA_CEN,  lvl->bcp,      &cbcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
 
 	// get global index of the first row in coarse grid
-	if     (lvl->fs->dof.idxmod == IDXCOUPLED)   { row = lvl->fs->dof.st;  }
-	else if(lvl->fs->dof.idxmod == IDXUNCOUPLED) { row = lvl->fs->dof.stv; }
+	if     (mdlvl->type == _MONOLITHIC_) { row = mdlvl->fs->dof.st;  }
+	else if(mdlvl->type == _BLOCK_)      { row = mdlvl->fs->dof.stv; }
 
 	// set velocity stencil weights
 	vs[0]  = 1.0/16.0;
@@ -135,7 +137,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	// X-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(lvl->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	ierr = DMDAGetCorners(mdlvl->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -186,7 +188,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	// Y-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(lvl->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	ierr = DMDAGetCorners(mdlvl->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -237,7 +239,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	// Z-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(lvl->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	ierr = DMDAGetCorners(mdlvl->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -285,7 +287,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	}
 	END_STD_LOOP
 
-	if(lvl->fs->dof.idxmod == IDXCOUPLED)
+	if(mdlvl->type == _MONOLITHIC_)
 	{
 		// set pressure weights
 		vs[0] = 1.0/8.0;
@@ -300,7 +302,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 		//-----------------------
 		// P-points (coarse grid)
 		//-----------------------
-		ierr = DMDAGetCorners(lvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		ierr = DMDAGetCorners(mdlvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 		START_STD_LOOP
 		{
@@ -343,20 +345,20 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fine->fs->DA_X,   fine->fs->dof.ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Y,   fine->fs->dof.ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Z,   fine->fs->dof.ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_CEN, fine->fs->dof.ip,  &ip);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip);    CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fine->fs->DA_X,   fine->bcvx,    &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Y,   fine->bcvy,    &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Z,   fine->bcvz,    &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_CEN, fine->bcp,     &fbcp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_X,    lvl->bcvx,     &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_Y,    lvl->bcvy,     &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_Z,    lvl->bcvz,     &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_CEN,  lvl->bcp,      &cbcp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,    mdlvl->bcvx, &cbcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,    mdlvl->bcvy, &cbcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,    mdlvl->bcvz, &cbcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN,  mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
 
 	// assemble restriction matrix
 	ierr = MatAIJAssemble(R, 0, NULL, 0.0); CHKERRQ(ierr);
@@ -366,7 +368,8 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 //---------------------------------------------------------------------------
 PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 {
-	Mat P;
+	Mat         P;
+	MatData     *mdlvl, *mdfine;
 	PetscInt    n, idx[8];
 	PetscScalar v[8], bc[8], vsf[8], vsr[4], *vs;
 	PetscInt    row, I, J, K, I1, J1, K1;
@@ -378,32 +381,34 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	P = lvl->P;
+	P      = lvl->P;
+	mdlvl  = lvl->md;
+	mdfine = fine->md;
 
 	// clear prolongation matrix coefficients
 	ierr = MatZeroEntries(P); CHKERRQ(ierr);
 
 	// access index vectors in coarse grid
-	ierr = DMDAVecGetArray(lvl->fs->DA_X,    lvl->fs->dof.ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->fs->DA_Y,    lvl->fs->dof.ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->fs->DA_Z,    lvl->fs->dof.ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->fs->DA_CEN,  lvl->fs->dof.ip,  &ip);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->ivx, &ivx);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->ivy, &ivy);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->ivz, &ivz);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->ip,  &ip);    CHKERRQ(ierr);
 
 	// access boundary condition vectors in fine grid
-	ierr = DMDAVecGetArray(fine->fs->DA_X,   fine->bcvx,   &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_Y,   fine->bcvy,   &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_Z,   fine->bcvz,   &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_CEN, fine->bcp,    &fbcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
 
 	// access boundary condition vectors in coarse grid
-	ierr = DMDAVecGetArray(lvl->fs->DA_X,    lvl->bcvx,    &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->fs->DA_Y,    lvl->bcvy,    &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->fs->DA_Z,    lvl->bcvz,    &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(lvl->fs->DA_CEN,  lvl->bcp,     &cbcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx,  &cbcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy,  &cbcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz,  &cbcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,   &cbcp);  CHKERRQ(ierr);
 
 	// get global index of the first row in the fine grid
-	if     (fine->fs->dof.idxmod == IDXCOUPLED)   { row = fine->fs->dof.st;  }
-	else if(fine->fs->dof.idxmod == IDXUNCOUPLED) { row = fine->fs->dof.stv; }
+	if     (mdfine->type == _MONOLITHIC_) { row = mdfine->fs->dof.st;  }
+	else if(mdfine->type == _BLOCK_)      { row = mdfine->fs->dof.stv; }
 
 	// set reduced velocity stencil coefficients (even)
 	vsr[0] = 9.0/16.0;
@@ -424,7 +429,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	//---------------------
 	// X-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(fine->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	ierr = DMDAGetCorners(mdfine->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -467,7 +472,6 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 		// setup row of prolongation matrix
 		getRowProlong(row, fbcvx[k][j][i], n, bc, v, vs);
 
-
 		// store full matrix row
 		ierr = MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES); CHKERRQ(ierr);
 
@@ -479,7 +483,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	//---------------------
 	// Y-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(fine->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	ierr = DMDAGetCorners(mdfine->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -533,7 +537,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	//---------------------
 	// Z-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(fine->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	ierr = DMDAGetCorners(mdfine->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -584,7 +588,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	}
 	END_STD_LOOP
 
-	if(fine->fs->dof.idxmod == IDXCOUPLED)
+	if(mdfine->type== _MONOLITHIC_)
 	{
 		// set pressure interpolation stencil (direct injection)
 		vsr[0] = 1.0;
@@ -592,7 +596,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 		//---------------------
 		// P-points (fine grid)
 		//---------------------
-		ierr = DMDAGetCorners(fine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		ierr = DMDAGetCorners(mdfine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 		START_STD_LOOP
 		{
@@ -618,20 +622,20 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_X,    lvl->fs->dof.ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_Y,    lvl->fs->dof.ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_Z,    lvl->fs->dof.ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_CEN,  lvl->fs->dof.ip,  &ip);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,  mdlvl->ivx, &ivx);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,  mdlvl->ivy, &ivy);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,  mdlvl->ivz, &ivz);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN,mdlvl->ip,  &ip);    CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fine->fs->DA_X,   fine->bcvx,   &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Y,   fine->bcvy,   &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Z,   fine->bcvz,   &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_CEN, fine->bcp,    &fbcp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_X,    lvl->bcvx,    &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_Y,    lvl->bcvy,    &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_Z,    lvl->bcvz,    &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(lvl->fs->DA_CEN,  lvl->bcp,     &cbcp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
 
 	// assemble prolongation matrix
 	ierr = MatAIJAssemble(P, 0, NULL, 0.0); CHKERRQ(ierr);
@@ -713,7 +717,7 @@ void getRowProlong(
 //---------------------------------------------------------------------------
 // MG -functions
 //---------------------------------------------------------------------------
-PetscErrorCode MGCreate(MG *mg, JacRes *jr)
+PetscErrorCode MGCreate(MG *mg, MatData *md)
 {
 	PetscInt  i, l;
 	MGLevel   *fine;
@@ -735,12 +739,8 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 	// clear object
 	ierr = PetscMemzero(mg, sizeof(MG)); CHKERRQ(ierr);
 
-	// store finest grid context
-	mg->jr = jr;
-
-
 	// check multigrid mesh restrictions & get actual number of levels
-	ierr = MGGetNumLevels(mg); CHKERRQ(ierr);
+	ierr = MGGetNumLevels(mg, md); CHKERRQ(ierr);
 
 	// allocate levels
 	ierr = PetscMalloc(sizeof(MGLevel)*(size_t)mg->nlvl, &mg->lvls); CHKERRQ(ierr);
@@ -750,7 +750,7 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 
 	for(i = 0; i < mg->nlvl; i++)
 	{
-		ierr = MGLevelCreate(&mg->lvls[i], fine, jr->fs, jr->bc); CHKERRQ(ierr);
+		ierr = MGLevelCreate(&mg->lvls[i], fine, md); CHKERRQ(ierr);
 
 		fine = &mg->lvls[i];
 	}
@@ -812,7 +812,6 @@ PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 	PC         pc;
 	Mat        mat;
 	MGLevel   *lvl;
-	DOFIndex  *dof;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -823,9 +822,8 @@ PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 		PetscFunctionReturn(0);
 	}
 
-	// get coarse level index object
+	// get coarse level
 	lvl = mg->lvls + mg->nlvl - 1;
-	dof = &lvl->fs->dof;
 
 	// set dummy coarse solver
 	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
@@ -839,7 +837,7 @@ PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 
 	// set near null space on coarse level matrix
 	ierr = KSPGetOperators(ksp, &mat, NULL); CHKERRQ(ierr);
-	ierr = MatAIJSetNullSpace(mat, dof);     CHKERRQ(ierr);
+	ierr = MatAIJSetNullSpace(mat, lvl->md); CHKERRQ(ierr);
 
 	// set actual coarse solver options
 	ierr = KSPSetOptionsPrefix(ksp, "crs_"); CHKERRQ(ierr);
@@ -858,24 +856,20 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	// Currently they depend only on boundary conditions,
 	// so changing boundary condition would also require re-assembly.
 
-	PetscInt  i;
+	MGLevel *lvl, *fine;
+	PetscInt i;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = MGLevelInitParam(mg->lvls, mg->jr); CHKERRQ(ierr);
-
 	for(i = 1; i < mg->nlvl; i++)
 	{
+		lvl =  &mg->lvls[i];
+		fine = &mg->lvls[i-1];
 
-		// PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine)
-		// PetscErrorCode MatDataListSPC(MatData *md);
-
-
-		ierr = MGLevelRestrictBC   (&mg->lvls[i], &mg->lvls[i-1], mg->no_restric_bc); CHKERRQ(ierr);
-		ierr = MGLevelRestrictParam(&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
-		ierr = MGLevelSetupRestrict(&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
-		ierr = MGLevelSetupProlong (&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
+		ierr = MatDataRestrict     (lvl->md, fine->md); CHKERRQ(ierr);
+		ierr = MGLevelSetupRestrict(lvl,     fine);     CHKERRQ(ierr);
+		ierr = MGLevelSetupProlong (lvl,     fine);     CHKERRQ(ierr);
 	}
 
 	// setup coarse grid solver if necessary
@@ -956,7 +950,7 @@ PetscErrorCode MGDumpMat(MG *mg)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MGGetNumLevels(MG *mg)
+PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 {
 	// check multigrid mesh restrictions, get actual number of coarsening steps
 
@@ -967,7 +961,7 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	fs = mg->jr->fs;
+	fs = md->fs;
 
 	// check discretization in all directions
 	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);

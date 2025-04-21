@@ -29,7 +29,7 @@ PetscErrorCode MatFreeGetPicard(MatData *md,
 PetscErrorCode MatFreeGetSol(MatData *md, Vec x, Vec lvx, Vec lvy, Vec lvz, Vec gp);
 
 // assemble residual
-PetscErrorCode MatFreeAssembleRes(MatData *md, Vec f, Vec lfx, Vec lfy, Vec lfz, Vec gc);
+PetscErrorCode MatFreeGetRes(MatData *md, Vec f, Vec lfx, Vec lfy, Vec lfz, Vec gc);
 
 //---------------------------------------------------------------------------
 // MACROS

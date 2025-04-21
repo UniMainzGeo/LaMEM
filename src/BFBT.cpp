@@ -167,7 +167,7 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	END_STD_LOOP
 
 	// assemble scaling matrix
-	ierr = MatAIJAssemble(P->C, md->vNumSPC, md->vSPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->C, md->vNumSPC, md->vSPCListMat, 1.0); CHKERRQ(ierr);
 
 	//=======================
 	// PRECONDITIONING MATRIX
@@ -258,7 +258,7 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	END_STD_LOOP
 
 	// assemble preconditioning matrix
-	ierr = MatAIJAssemble(P->K, md->pNumSPC, md->pSPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->K, md->pNumSPC, md->pSPCListMat, 1.0); CHKERRQ(ierr);
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->eta, &eta); CHKERRQ(ierr);

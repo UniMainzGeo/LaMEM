@@ -50,9 +50,9 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine);
 
 PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine);
 
-PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine);
+// PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine);
 
-PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine);
+// PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine);
 
 //---------------------------------------------------------------------------
 
@@ -110,7 +110,7 @@ PetscErrorCode MGApply(PC pc, Vec x, Vec y);
 
 PetscErrorCode MGDumpMat(MG *mg);
 
-PetscErrorCode MGGetNumLevels(MG *mg);
+PetscErrorCode MGGetNumLevels(MG *mg, MatData *md);
 
 //---------------------------------------------------------------------------
 #endif
