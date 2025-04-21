@@ -31,8 +31,6 @@ enum PMatType
 
 struct MatData
 {
-	PMatType    type;                                // matrix type
-	PetscScalar pgamma;                              // penalty parameter
 	FDSTAG     *fs;                                  // staggered grid
 	Vec         ivx, ivy, ivz, ip;                   // index vectors
 	Vec         bcvx, bcvy, bcvz, bcp;               // boundary condition vectors
@@ -45,13 +43,12 @@ struct MatData
 	PetscInt    rescal;                              // stencil rescaling flag
 	PetscScalar grav[3];                             // global gravity components
 	PetscInt    coarse;                              // coarsening flag
+	PMatType    type;                                // matrix type
 };
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode MatDataSetFromOptions(MatData *md);
-
-PetscErrorCode MatDataCreate(MatData *md, JacRes *jr);
+PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, PMatType type);
 
 PetscErrorCode MatDataCreateData(MatData *md);
 

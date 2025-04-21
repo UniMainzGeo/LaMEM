@@ -97,7 +97,7 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic, NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt,  NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName  (NULL, NULL, "-snes_picard_mat_free",           &nl->matFreePic);    CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free",                    &nl->matFree);       CHKERRQ(ierr);
 
 	// return solver
 	(*p_snes) = snes;
@@ -256,7 +256,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	//===============
 	if(nl->jtype == _PICARD_)
 	{
-		if(nl->matFreePic)
+		if(nl->matFree)
 		{
 			// ... matrix-free Picard operator
 			ierr = MatShellSetOperation(Amat, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
@@ -265,8 +265,8 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		else
 		{
 			// ... assembled Picard operator
-			ierr = MatShellSetOperation(Amat, MATOP_MULT, (void(*)(void))pm->Picard);     CHKERRQ(ierr);
-			ierr = MatShellSetContext(Amat, pm->data);                                    CHKERRQ(ierr);
+			ierr = MatShellSetOperation(Amat, MATOP_MULT, (void(*)(void))pm->Picard); CHKERRQ(ierr);
+			ierr = MatShellSetContext(Amat, pm);                                      CHKERRQ(ierr);
 		}
 	}
 	else if(nl->jtype == _MFFD_)

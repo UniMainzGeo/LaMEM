@@ -38,10 +38,10 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	P = (PMatBlock*)pm->data;
 
 	// BFBT cases only
-	if(!P->wbfbt) PetscFunctionReturn(0);
+	if(!pm->buildwBFBT) PetscFunctionReturn(0);
 
 	// access context variables
-	md  = &pm->md;
+	md  = pm->md;
 	fs  = md->fs;
 	dof = &fs->dof;
 	lnv = dof->lnv;
@@ -99,11 +99,11 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	P = (PMatBlock*)pm->data;
 
 	// BFBT cases only
-	if(!P->wbfbt) PetscFunctionReturn(0);
+	if(!pm->buildwBFBT) PetscFunctionReturn(0);
 
 	// access context variables
 	P 	 = (PMatBlock*)pm->data;
-	md   = &pm->md;
+	md   = pm->md;
 	fs   = md->fs;
 
 	// initialize index bounds
@@ -280,7 +280,7 @@ PetscErrorCode PMatBFBTDestroy(PMat pm)
 	P = (PMatBlock*)pm->data;
 
 	// BFBT cases only
-	if(!P->wbfbt) PetscFunctionReturn(0);
+	if(!pm->buildwBFBT) PetscFunctionReturn(0);
 
 	ierr = DMDestroy (&P->DA_P); CHKERRQ(ierr);
 	ierr = MatDestroy(&P->K); 	 CHKERRQ(ierr);

@@ -178,10 +178,19 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 	// clear object
 	ierr = PetscMemzero(pm, sizeof(p_PMat)); CHKERRQ(ierr);
 
+/*
 	// create context
 	ierr = MatDataCreate(&pm->md, jr);  CHKERRQ(ierr);
 
-	if(pm->md.type == _MONOLITHIC_)
+
+	// set matrix type
+	if     (pc->type == _STOKES_MG_)   pc->type = _MONOLITHIC_;
+	else if(pc->type == _STOKES_BF_)   pc->type = _BLOCK_;
+	else if(pc->type == _STOKES_USER_) pc->type = _MONOLITHIC_;
+
+*/
+
+	if(pm->md->type == _MONOLITHIC_)
 	{
 		// monolithic format
 		pm->Create   = PMatMonoCreate;
@@ -189,7 +198,7 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 		pm->Destroy  = PMatMonoDestroy;
 		pm->Picard   = PMatMonoPicard;
 	}
-	else if(pm->md.type == _BLOCK_)
+	else if(pm->md->type == _BLOCK_)
 	{
 		// block format
 		pm->Create   = PMatBlockCreate;
@@ -212,9 +221,6 @@ PetscErrorCode PMatAssemble(PMat pm, JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// update context
-	ierr = MatDataSetup(&pm->md, jr);  CHKERRQ(ierr);
-
 	ierr = pm->Assemble(pm); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -225,9 +231,9 @@ PetscErrorCode PMatDestroy(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = MatDataDestroy(&pm->md); CHKERRQ(ierr);
-	ierr = pm->Destroy(pm);         CHKERRQ(ierr);
-	ierr = PetscFree(pm);           CHKERRQ(ierr);
+	ierr = MatDataDestroy(pm->md); CHKERRQ(ierr);
+	ierr = pm->Destroy(pm);        CHKERRQ(ierr);
+	ierr = PetscFree(pm);          CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -266,7 +272,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	PetscFunctionBeginUser;
 
 	// access contexts
-	md  = &pm->md;
+	md  = pm->md;
 	fs  = md->fs;
 	dof = &fs->dof;
 
@@ -489,7 +495,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PetscFunctionBeginUser;
 
 	// access contexts
-	md  = &pm->md;
+	md  = pm->md;
 	fs  = md->fs;
 	P   = (PMatMono*)pm->data;
 
@@ -500,7 +506,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	rescal = md->rescal; // stencil rescaling flag
 
 	// get penalty parameter
-	pgamma = md->pgamma;
+	pgamma = pm->pgamma;
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -788,12 +794,15 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 {
 	// actual operation is: r = J*x = A*x - M*x
 
+	PMat      pm;
 	PMatMono *P;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
+	ierr = MatShellGetContext(J, (void**)&pm); CHKERRQ(ierr);
+
+	P = (PMatMono*)pm->data;
 
 	// compute action of preconditioner matrix
 	ierr = MatMult(P->A, x, r); CHKERRQ(ierr);
@@ -827,45 +836,6 @@ PetscErrorCode PMatMonoDestroy(PMat pm)
 //---------------------------------------------------------------------------
 //...........................   BLOCK MATRIX   ..............................
 //---------------------------------------------------------------------------
-PetscErrorCode PMatBlockSetFromOptions(PMat pm)
-{
-	PMatBlock   *P;
-	PetscScalar pgamma;
-	PetscBool   ksp_mat_free;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// set defaults
-	pgamma = 1.0;
-
-	P = (PMatBlock*)pm->data;
-
-	ierr = PetscOptionsHasName  (NULL, NULL, "-bf_schur_wbfbt", &P->wbfbt);      CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",      &pgamma, NULL);  CHKERRQ(ierr);
-	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free",    &ksp_mat_free);  CHKERRQ(ierr);
-
-	if(ksp_mat_free)
-	{
-		P->buildCvv = PETSC_FALSE;
-	}
-	else
-	{
-		if(pgamma > 1.0) P->buildCvv = PETSC_TRUE;
-		else             P->buildCvv = PETSC_FALSE;
-	}
-
-	if(P->wbfbt && pgamma != 1.0)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "wBFBT preconditioner is incompatible with matrix penalty (bf_schur_wbfbt, jp_pgamma)");
-	}
-
-	if(P->wbfbt)    PetscPrintf(PETSC_COMM_WORLD, "   Using wBFBT preconditioner    @ \n");
-	if(P->buildCvv) PetscPrintf(PETSC_COMM_WORLD, "   Building clean velocity block @ \n");
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 PetscErrorCode PMatBlockCreate(PMat pm)
 {
 	MatData     *md;
@@ -882,7 +852,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	md  = &pm->md;
+	md  = pm->md;
 	fs  = md->fs;
 	dof = &fs->dof;
 
@@ -891,9 +861,6 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	// store context
 	pm->data = (void*)P;
-
-	// read options
-	ierr = PMatBlockSetFromOptions(pm); CHKERRQ(ierr);
 
 	// get number of local rows & global index of the first row
 	lnv    = dof->lnv;
@@ -1086,7 +1053,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = MatAIJCreateDiag(lnp, startp, &P->App);                       CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
 
-	if(P->buildCvv)
+	if(pm->buildCvv)
 	{
 		ierr = MatAIJCreate(lnv, lnv, 0, Avv_d_nnz, 0, Avv_o_nnz, &P->Cvv); CHKERRQ(ierr);
 	}
@@ -1151,7 +1118,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	md  = &pm->md;
+	md  = pm->md;
 	fs  = md->fs;
 	P   = (PMatBlock*)pm->data;
 
@@ -1161,7 +1128,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	grav   = md->grav;   // gravity acceleration
 
 	// get penalty parameter
-	pgamma = md->pgamma;
+	pgamma = pm->pgamma;
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -1173,7 +1140,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatZeroEntries(P->Avp);  CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Apv);  CHKERRQ(ierr);
 
-	if(P->buildCvv)
+	if(pm->buildCvv)
 	{
 		ierr = MatZeroEntries(P->Cvv); CHKERRQ(ierr);
 	}
@@ -1258,7 +1225,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		pdofidx[5] = -1;   cf[5] = bcvz[k+1][j][i];
 		pdofidx[6] = -1;   cf[6] = bcp[k][j][i];
 
-		if(P->buildCvv)
+		if(pm->buildCvv)
 		{
 			// copy clean stiffness matrix
 			ierr = PetscMemcpy(vc, v, sizeof(v)); CHKERRQ(ierr);
@@ -1274,7 +1241,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		}
 
 		// compute velocity Schur complement
-		if(md->pgamma != 1.0) getVelSchur(v, d, g);
+		if(pm->pgamma != 1.0) getVelSchur(v, d, g);
 
 		// constrain local matrix
 		constrLocalMat(7, pdofidx, cf, v);
@@ -1337,7 +1304,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		// add to global matrix
 		ierr = MatSetValues(P->Avv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
 
-		if(P->buildCvv)
+		if(pm->buildCvv)
 		{
 			ierr = MatSetValues(P->Cvv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
 		}
@@ -1390,7 +1357,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		// add to global matrix
 		ierr = MatSetValues(P->Avv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
 
-		if(P->buildCvv)
+		if(pm->buildCvv)
 		{
 			ierr = MatSetValues(P->Cvv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
 		}
@@ -1443,7 +1410,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		// add to global matrix
 		ierr = MatSetValues(P->Avv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
 
-		if(P->buildCvv)
+		if(pm->buildCvv)
 		{
 			ierr = MatSetValues(P->Cvv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
 		}
@@ -1468,7 +1435,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatAIJAssemble(P->App, md->pNumSPC, md->pSPCListMat, 1.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->iS,  md->pNumSPC, md->pSPCListMat, 1.0); CHKERRQ(ierr);
 
-	if(P->buildCvv)
+	if(pm->buildCvv)
 	{
 		ierr = MatAIJAssemble(P->Cvv, md->vNumSPC, md->vSPCListMat, 1.0); CHKERRQ(ierr);
 	}
@@ -1488,13 +1455,16 @@ PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec r)
 	// rp = Apv*xv + App*xp
 	//=======================================================================
 
+	PMat      pm;
 	PMatBlock *P;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// get context
-	ierr = MatShellGetContext(J, (void**)&P); CHKERRQ(ierr);
+	ierr = MatShellGetContext(J, (void**)&pm); CHKERRQ(ierr);
+
+	P = (PMatBlock*)pm->data;
 
 	// extract solution blocks
 	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_REVERSE); CHKERRQ(ierr);
@@ -1507,7 +1477,7 @@ PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec r)
 
 	ierr = MatMult(P->Avp,  P->xp, P->rv); CHKERRQ(ierr); // rv = Avp*xp
 
-	if(P->buildCvv)
+	if(pm->buildCvv)
 	{
 		ierr = MatMult(P->Cvv,  P->xv, P->wv); CHKERRQ(ierr); // wv = Cvv*xv
 	}
@@ -1546,7 +1516,7 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = VecDestroy(&P->wv);  CHKERRQ(ierr);
 	ierr = VecDestroy(&P->wp);  CHKERRQ(ierr);
 
-	if(P->buildCvv)
+	if(pm->buildCvv)
 	{
 		ierr = MatDestroy(&P->Cvv); CHKERRQ(ierr);
 	}

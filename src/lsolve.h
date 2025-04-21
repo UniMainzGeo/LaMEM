@@ -42,15 +42,22 @@ enum PCVelType
 	_VEL_USER_ // user-defined
 
 };
+
 //---------------------------------------------------------------------------
 
 typedef struct _p_PCStokes *PCStokes;
 
 typedef struct _p_PCStokes
 {
-	PCStokesType  type; // preconditioner type
-	PMat          pm;   // preconditioner matrix
-	void         *data; // type-specific context
+	PCStokesType pctype;     // preconditioner type
+	PCBFType     ftype;      // factorization type
+	PCVelType    vtype;      // velocity solver type
+	PetscScalar  pgamma;     // penalty parameter
+	PetscInt     buildwBFBT; // flag to build wbfbt matrix
+	PetscInt     buildCvv;   // flag to build clean velocity sub-matix
+	PMat         pm;         // preconditioner matrix
+	MatData      *md;        // assembly context
+	void         *data;      // type-specific context
 
 	// operations
 	PetscErrorCode (*Create)  (PCStokes pc);
@@ -89,8 +96,6 @@ struct PCStokesBF
 
 PetscErrorCode PCStokesBFCreate(PCStokes pc);
 
-PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc);
-
 PetscErrorCode PCStokesBFDestroy(PCStokes pc);
 
 PetscErrorCode PCStokesBFSetup(PCStokes pc);
@@ -120,15 +125,12 @@ PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y);
 // User-defined
 struct PCStokesUser
 {
-	PC pc;       // general preconditioner object
-	IS isv, isp; // velocity and pressure index sets
+	PC pc; // general preconditioner object
 };
 
 //---------------------------------------------------------------------------
 
 PetscErrorCode PCStokesUserCreate(PCStokes pc);
-
-PetscErrorCode PCStokesUserAttachIS(PCStokes pc);
 
 PetscErrorCode PCStokesUserDestroy(PCStokes pc);
 

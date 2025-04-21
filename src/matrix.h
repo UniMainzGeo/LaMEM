@@ -36,8 +36,12 @@ typedef struct p_PMat *PMat;
 
 struct p_PMat
 {
-	MatData     md;     // assembly context
-	void       *data;   // type-specific context
+	PMatType    mtype;      // matrix type
+	PetscScalar pgamma;     // penalty parameter
+	PetscInt    buildwBFBT; // flag to build wbfbt matrix
+	PetscInt    buildCvv;   // flag to build clean velocity sub-matix
+	MatData     *md;        // assembly context
+	void        *data;      // type-specific context
 
 	// operations
 	PetscErrorCode (*Create)  (PMat pm);
@@ -51,9 +55,9 @@ struct p_PMat
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr);
+PetscErrorCode PMatCreate(PMat *p_pm, MatData *md);
 
-PetscErrorCode PMatAssemble(PMat pm, JacRes *jr);
+PetscErrorCode PMatAssemble(PMat pm);
 
 PetscErrorCode PMatDestroy(PMat pm);
 
@@ -82,27 +86,23 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
 
 struct PMatBlock
 {
-	Mat       Avv, Avp;  // velocity sub-matrices
-	Mat       Apv, App;  // pressure sub-matrices
-	Mat       iS;        // inverse of pressure Schur complement preconditioner
-	Mat       Cvv;       // clean velocity sub-matix
-	PetscBool buildCvv;  // flag to build clean velocity sub-matix
+	Mat Avv, Avp;  // velocity sub-matrices
+	Mat Apv, App;  // pressure sub-matrices
+	Mat iS;        // inverse of pressure Schur complement preconditioner
+	Mat Cvv;       // clean velocity sub-matix
 
 	Vec rv, rp;   // residual blocks
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
 
 	// wBFBT data
-	PetscBool wbfbt; // wbfbt preconditioner flag
-	DM        DA_P;  // cell-based grid
-	Mat       K;     // Schur complement preconditioner matrix
-	Mat       C;     // diagonal viscosity weighting matrix
-	Vec       w;     // working vector in velocity space
+	DM  DA_P;  // cell-based grid
+	Mat K;     // Schur complement preconditioner matrix
+	Mat C;     // diagonal viscosity weighting matrix
+	Vec w;     // working vector in velocity space
 };
 
 //---------------------------------------------------------------------------
-
-PetscErrorCode PMatBlockSetFromOptions(PMat pm);
 
 PetscErrorCode PMatBlockCreate(PMat pm);
 
