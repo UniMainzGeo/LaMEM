@@ -15,8 +15,6 @@
 #include "matrix.h"
 #include "tssolve.h"
 #include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
 #include "tools.h"
 #include "BFBT.h"
 
@@ -96,8 +94,9 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
+PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 {
+	DOFIndex     *dof;
 	MatNullSpace nullsp;                       // near null space
 	Vec          nullsp_vecs[_max_nullsp_sz_]; // near null space vectors
 	PetscScalar *v;
@@ -111,9 +110,12 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 
 	if(set_nullsp != PETSC_TRUE) PetscFunctionReturn(0);
 
+	// access context
+	dof = &md->fs->dof;
+
 	// get number of vectors
-	if     (dof->idxmod == IDXCOUPLED)   { nullsp_sz = 4; ln = dof->lnv + dof->lnp; }
-	else if(dof->idxmod == IDXUNCOUPLED) { nullsp_sz = 3; ln = dof->lnv; }
+	if     (md->type == _MONOLITHIC_) { nullsp_sz = 4; ln = dof->lnv + dof->lnp; }
+	else if(md->type == _BLOCK_)      { nullsp_sz = 3; ln = dof->lnv; }
 
 	// set local block sizes & iterator
 	iter    = 0;
@@ -179,7 +181,7 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 	// create context
 	ierr = MatDataCreate(&pm->md, jr);  CHKERRQ(ierr);
 
-	if(pm->type == _MONOLITHIC_)
+	if(pm->md.type == _MONOLITHIC_)
 	{
 		// monolithic format
 		pm->Create   = PMatMonoCreate;
@@ -187,7 +189,7 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 		pm->Destroy  = PMatMonoDestroy;
 		pm->Picard   = PMatMonoPicard;
 	}
-	else if(pm->type == _BLOCK_)
+	else if(pm->md.type == _BLOCK_)
 	{
 		// block format
 		pm->Create   = PMatBlockCreate;
@@ -205,24 +207,15 @@ PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 }
 
 //---------------------------------------------------------------------------
-PetscErrorCode PMatAssemble(PMat pm)
+PetscErrorCode PMatAssemble(PMat pm, JacRes *jr)
 {
-
-// ACHTUNG
-//	BCCtx  *bc;
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-//	bc = pm->jr->bc;
-
-	// shift constrained node indices to global index space
-//	ierr = BCShiftIndices(bc, _LOCAL_TO_GLOBAL_); CHKERRQ(ierr);
+	// update context
+	ierr = MatDataSetup(&pm->md, jr);  CHKERRQ(ierr);
 
 	ierr = pm->Assemble(pm); CHKERRQ(ierr);
-
-	// shift constrained node indices back to local index space
-//	ierr = BCShiftIndices(bc,  _GLOBAL_TO_LOCAL_); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -303,9 +296,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	//---------
 	// X-points
 	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -342,9 +333,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	//---------
 	// Y-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -381,9 +370,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	//---------
 	// Z-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -420,9 +407,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	//---------
 	// P-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -464,7 +449,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	ierr = PetscFree(o_nnz); CHKERRQ(ierr);
 
 	// attach near null space
-	ierr = MatAIJSetNullSpace(P->A, dof); CHKERRQ(ierr);
+	ierr = MatAIJSetNullSpace(P->A, md); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -484,20 +469,19 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// M - inverse viscosity matrix (computed in this function)
 	//======================================================================
 
-	JacRes      *jr;
+	MatData     *md;
 	FDSTAG      *fs;
-	BCCtx       *bc;
-	DOFIndex    *dof;
 	PMatMono    *P;
 	PetscInt    idx[7];
 	PetscScalar v[49];
 	PetscScalar dr;
 	PetscInt    mcx, mcy, mcz;
-	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz, rescal;
-	PetscScalar eta, rho, IKdt, diag, pgamma, pt, dt, fssa, *grav;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, rescal;
+	PetscScalar eta, rho, Kb, IKdt, diag, pgamma, pt, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
+	PetscScalar ***vKb,  ***vrho,  ***veta, ***vetaxy, ***vetaxz, ***vetayz;
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 
@@ -505,20 +489,18 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PetscFunctionBeginUser;
 
 	// access contexts
-	jr     = pm->jr;
-	fs     = jr->fs;
-	bc     = jr->bc;
-	dof    = &fs->dof;
-	P      = (PMatMono*)pm->data;
+	md  = &pm->md;
+	fs  = md->fs;
+	P   = (PMatMono*)pm->data;
 
 	// get density gradient stabilization parameters
-	dt     = jr->ts->dt;      // time step
-	fssa   = jr->ctrl.FSSA;   // density gradient penalty parameter
-	grav   = jr->ctrl.grav;   // gravity acceleration
-	rescal = jr->ctrl.rescal; // stencil rescaling flag
+	dt     = md->dt;     // time step
+	fssa   = md->fssa;   // density gradient penalty parameter
+	grav   = md->grav;   // gravity acceleration
+	rescal = md->rescal; // stencil rescaling flag
 
 	// get penalty parameter
-	pgamma = pm->pgamma;
+	pgamma = md->pgamma;
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -530,34 +512,38 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	ierr = MatZeroEntries(P->M); CHKERRQ(ierr);
 
 	// access index vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   md->ivx,  &ivx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->ivy,  &ivy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->ivz,  &ivz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->ip,   &ip);   CHKERRQ(ierr);
 
 	// access boundary constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx,  &bcvx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp);   CHKERRQ(ierr);
+
+	// access parameter vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
 
 	//---------------
 	// central points
 	//---------------
-
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
 		// get density, shear & inverse bulk viscosities
-		eta  = jr->svCell[iter].svDev.eta;
-		IKdt = jr->svCell[iter].svBulk.IKdt;
-		rho  = jr->svCell[iter].svBulk.rho;
+		Kb   = vKb [k][j][i];
+		rho  = vrho[k][j][i];
+		eta  = veta[k][j][i];
+		IKdt = 1.0/Kb/dt;
 
-		iter++;
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -620,15 +606,12 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	//---------------
 	// xy edge points
 	//---------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
-		// get viscosity
-		eta = jr->svXYEdge[iter++].svDev.eta;
+		// get effective viscosity
+		eta = vetaxy[k][j][i];
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -675,15 +658,12 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	//---------------
 	// xz edge points
 	//---------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
-		// get viscosity
-		eta = jr->svXZEdge[iter++].svDev.eta;
+		// get effective viscosity
+		eta = vetaxz[k][j][i];
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -730,15 +710,12 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	//---------------
 	// yz edge points
 	//---------------
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
-		// get viscosity
-		eta = jr->svYZEdge[iter++].svDev.eta;
+		// get effective viscosity
+		eta = vetayz[k][j][i];
 
 		// get mesh steps
 		dy = SIZE_NODE(j, sy, fs->dsy);
@@ -783,19 +760,26 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   dof->ivz,  &ivz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, dof->ip,   &ip);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   md->ivx,  &ivx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->ivy,  &ivy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->ivz,  &ivz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->ip,   &ip);  CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   md->bcvx,  &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->bcvy,  &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->bcvz,  &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->bcp,   &bcp);  CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
 
 	// assemble velocity-pressure matrix, remove constrained rows
-	ierr = MatAIJAssemble(P->A, bc->numSPC, bc->SPCList, 1.0); CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->M, bc->numSPC, bc->SPCList, 0.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->A, md->numSPC, md->SPCListMat, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->M, md->numSPC, md->SPCListMat, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -884,7 +868,7 @@ PetscErrorCode PMatBlockSetFromOptions(PMat pm)
 //---------------------------------------------------------------------------
 PetscErrorCode PMatBlockCreate(PMat pm)
 {
-	JacRes      *jr;
+	MatData     *md;
 	FDSTAG      *fs;
 	DOFIndex    *dof;
 	PMatBlock   *P;
@@ -898,8 +882,8 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	jr  = pm->jr;
-	fs  = jr->fs;
+	md  = &pm->md;
+	fs  = md->fs;
 	dof = &fs->dof;
 
 	// allocate space
@@ -910,9 +894,6 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	// read options
 	ierr = PMatBlockSetFromOptions(pm); CHKERRQ(ierr);
-
-	// compute global indexing
-	ierr = DOFIndexCompute(dof, IDXUNCOUPLED); CHKERRQ(ierr);
 
 	// get number of local rows & global index of the first row
 	lnv    = dof->lnv;
@@ -931,10 +912,10 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = makeIntArray(&Apv_o_nnz, NULL, lnp); CHKERRQ(ierr);
 
 	// access index vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   md->ivx,  &ivx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->ivy,  &ivy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->ivz,  &ivz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->ip,   &ip);   CHKERRQ(ierr);
 
 	// clear iterator (velocity matrices)
 	iter = 0;
@@ -942,9 +923,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	//---------
 	// X-points
 	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -985,9 +964,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	//---------
 	// Y-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1028,9 +1005,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	//---------
 	// Z-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1075,9 +1050,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	//---------
 	// P-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1101,10 +1074,10 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   md->ivx,  &ivx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->ivy,  &ivy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->ivz,  &ivz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->ip,   &ip);   CHKERRQ(ierr);
 
 	// create matrices & vectors
 	ierr = MatAIJCreate(lnv, lnv, 0, Avv_d_nnz, 0, Avv_o_nnz, &P->Avv);  CHKERRQ(ierr);
@@ -1136,7 +1109,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = PetscFree(Apv_o_nnz); CHKERRQ(ierr);
 
 	// attach near null space
-	ierr = MatAIJSetNullSpace(P->Avv, dof); CHKERRQ(ierr);
+	ierr = MatAIJSetNullSpace(P->Avv, md); CHKERRQ(ierr);
 
 	// create BFBT preconditioner
 	ierr = PMatBFBTCreate(pm); CHKERRQ(ierr);
@@ -1160,38 +1133,35 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	// Cvv matrix contains a clean velocity block if necessary
 	//======================================================================
 
-	JacRes      *jr;
+	MatData     *md;
 	FDSTAG      *fs;
-	BCCtx       *bc;
-	DOFIndex    *dof;
 	PMatBlock   *P;
 	PetscInt    idx[7];
 	PetscScalar v[49], vc[49], a[36], ac[36], d[6], g[6];
 	PetscInt    mcx, mcy, mcz;
-	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar eta, rho, IKdt, diag, pgamma, dt, fssa, *grav;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar eta, rho, Kb, IKdt, diag, pgamma, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
+	PetscScalar ***vKb,  ***vrho,  ***veta, ***vetaxy, ***vetaxz, ***vetayz;
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	jr  = pm->jr;
-	fs  = jr->fs;
-	bc  = jr->bc;
-	dof = &fs->dof;
+	md  = &pm->md;
+	fs  = md->fs;
 	P   = (PMatBlock*)pm->data;
 
 	// get density gradient stabilization parameters
-	dt   = jr->ts->dt; // time step
-	fssa = jr->ctrl.FSSA;   // density gradient penalty parameter
-	grav = jr->ctrl.grav;   // gravity acceleration
+	dt     = md->dt;     // time step
+	fssa   = md->fssa;   // density gradient penalty parameter
+	grav   = md->grav;   // gravity acceleration
 
 	// get penalty parameter
-	pgamma = pm->pgamma;
+	pgamma = md->pgamma;
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -1209,32 +1179,38 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	}
 
 	// access index vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   dof->ivy,  &ivy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   dof->ivz,  &ivz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, dof->ip,   &ip);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   md->ivx,  &ivx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->ivy,  &ivy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->ivz,  &ivz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->ip,   &ip);  CHKERRQ(ierr);
 
 	// access boundary constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp);  CHKERRQ(ierr);
+
+	// access parameter vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
 
 	//---------------
 	// central points
 	//---------------
 
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
 		// get density, shear & inverse bulk viscosities
-		eta  = jr->svCell[iter].svDev.eta;
-		IKdt = jr->svCell[iter].svBulk.IKdt;
-		rho  = jr->svCell[iter].svBulk.rho;
+		Kb   = vKb [k][j][i];
+		rho  = vrho[k][j][i];
+		eta  = veta[k][j][i];
+		IKdt = 1.0/Kb/dt;
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -1298,7 +1274,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		}
 
 		// compute velocity Schur complement
-		if(pm->pgamma != 1.0) getVelSchur(v, d, g);
+		if(md->pgamma != 1.0) getVelSchur(v, d, g);
 
 		// constrain local matrix
 		constrLocalMat(7, pdofidx, cf, v);
@@ -1312,24 +1288,18 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		ierr = MatSetValues(P->Apv, 1, idx+6, 6, idx,   d,    ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValue (P->App, idx[6], idx[6], -IKdt,    INSERT_VALUES); CHKERRQ(ierr);
 		ierr = MatSetValue (P->iS,  idx[6], idx[6], 1.0/diag, INSERT_VALUES); CHKERRQ(ierr);
-
-		// increment iterator
-		iter++;
 	}
 	END_STD_LOOP
 
 	//---------------
 	// xy edge points
 	//---------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
-		// get viscosity
-		eta = jr->svXYEdge[iter++].svDev.eta;
+		// get effective viscosity
+		eta = vetaxy[k][j][i];
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -1377,15 +1347,12 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	//---------------
 	// xz edge points
 	//---------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
-		// get viscosity
-		eta = jr->svXZEdge[iter++].svDev.eta;
+		// get effective viscosity
+		eta = vetaxz[k][j][i];
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -1433,15 +1400,12 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	//---------------
 	// yz edge points
 	//---------------
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
-		// get viscosity
-		eta = jr->svYZEdge[iter++].svDev.eta;
+		// get effective viscosity
+		eta = vetayz[k][j][i];
 
 		// get mesh steps
 		dy = SIZE_NODE(j, sy, fs->dsy);
@@ -1487,26 +1451,26 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   dof->ivz,  &ivz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, dof->ip,   &ip);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   md->ivx,  &ivx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->ivy,  &ivy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->ivz,  &ivz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->ip,   &ip);  CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   md->bcvx,  &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->bcvy,  &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->bcvz,  &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->bcp,   &bcp);  CHKERRQ(ierr);
 
 	// assemble velocity-pressure matrix blocks, remove constrained rows
-	ierr = MatAIJAssemble(P->Avv, bc->vNumSPC, bc->vSPCList, 1.0); CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->Avp, bc->vNumSPC, bc->vSPCList, 0.0); CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->Apv, bc->pNumSPC, bc->pSPCList, 0.0); CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->App, bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->iS,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->Avv, md->vNumSPC, md->vSPCListMat, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->Avp, md->vNumSPC, md->vSPCListMat, 0.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->Apv, md->pNumSPC, md->pSPCListMat, 0.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->App, md->pNumSPC, md->pSPCListMat, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->iS,  md->pNumSPC, md->pSPCListMat, 1.0); CHKERRQ(ierr);
 
 	if(P->buildCvv)
 	{
-		ierr = MatAIJAssemble(P->Cvv, bc->vNumSPC, bc->vSPCList, 1.0); CHKERRQ(ierr);
+		ierr = MatAIJAssemble(P->Cvv, md->vNumSPC, md->vSPCListMat, 1.0); CHKERRQ(ierr);
 	}
 
 	// assemble BFBT preconditioner

@@ -478,7 +478,7 @@ PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
 
 	// access context
 	user = (PCStokesUser*)pc->data;
-	md   = &pc->pm->md;
+	md   =  &pc->pm->md;
 	dof  = &md->fs->dof;
 	st   =  dof->st;
 	lnv  =  dof->lnv;

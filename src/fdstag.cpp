@@ -1092,8 +1092,8 @@ PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine)
 
 	// coarsen coordinates
 	ierr = Discret1DCoarsenCoord(&coarse->dsx, &fine->dsx); CHKERRQ(ierr);
-	ierr = Discret1DCoarsenCoord(&coarse->dsy, &fine->dsx); CHKERRQ(ierr);
-	ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsx); CHKERRQ(ierr);
+	ierr = Discret1DCoarsenCoord(&coarse->dsy, &fine->dsy); CHKERRQ(ierr);
+	ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 	PetscFunctionReturn(0);
