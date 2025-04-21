@@ -19,45 +19,13 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-PetscErrorCode MatDataSetFromOptions(MatData *md)
-{
-	char pname[_str_len_];
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// set defaults
-	sprintf(pname, "user");
-	md->pgamma = 1.0;
-
-	// read options
-	ierr = PetscOptionsGetString(NULL, NULL, "-jp_type",    pname, _str_len_, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma", &md->pgamma,       NULL); CHKERRQ(ierr);
-
-	if     (!strcmp(pname, "mg") || !strcmp(pname, "user")) md->type = _MONOLITHIC_;
-	else if(!strcmp(pname, "bf"))                           md->type = _BLOCK_;
-	else    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner type (jp_type): %s", pname);
-
-	if(md->pgamma < 1.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Penalty parameter is less than unit (jp_pgamma)");
-
-	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
-	if     (md->type == _MONOLITHIC_) PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
-	else if(md->type == _BLOCK_)      PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
-	if     (md->pgamma > 1.0)         PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", md->pgamma);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode MatDataCreate(MatData *md, JacRes *jr)
+PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, PMatType type)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// clear data
 	ierr = PetscMemzero(md, sizeof(MatData)); CHKERRQ(ierr);
-
-	// read options
-	ierr = MatDataSetFromOptions(md); CHKERRQ(ierr);
 
 	// set coarse grid flag
 	md->coarse = 0;
@@ -73,6 +41,7 @@ PetscErrorCode MatDataCreate(MatData *md, JacRes *jr)
 	md->grav[0]  = jr->ctrl.grav[0];
 	md->grav[1]  = jr->ctrl.grav[1];
 	md->grav[2]  = jr->ctrl.grav[2];
+	md->type     = type;
 
 	// allocate storage
 	ierr = MatDataCreateData(md);
@@ -171,7 +140,6 @@ PetscErrorCode MatDataCoarsen(MatData *coarse, MatData *fine)
 
 	// copy data
 	coarse->type    = fine->type;
-	coarse->pgamma  = fine->pgamma;
 	coarse->fssa    = fine->fssa;
 	coarse->grav[0] = fine->grav[0];
 	coarse->grav[1] = fine->grav[1];

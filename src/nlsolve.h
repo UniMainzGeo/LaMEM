@@ -42,7 +42,7 @@ struct NLSol
 	PetscScalar rtolPic;    // relative Picard residual reduction tolerance
 	PetscInt    nNwtIt;     // number of Newton iterations before switch to Picard
 	PetscScalar rtolNwt;    // Newton divergence tolerance
-	PetscBool   matFreePic; // use matrix-free Picard operator
+	PetscBool   matFree;    // use matrix-free Picard operator
 };
 //---------------------------------------------------------------------------
 
