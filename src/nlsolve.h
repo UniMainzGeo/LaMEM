@@ -31,18 +31,16 @@ enum JacType
 
 struct NLSol
 {
-	JacRes     *jr;         // Jacobian-residual context
-	Mat         MFFD;       // matrix-free finite difference Jacobian
-	PMat        pm;         // preconditioner matrix
-	PCStokes    pc;         // Stokes preconditioner
-	JacType     jtype;      // actual type of Jacobian operator
-	PetscInt    it;         // iteration counter
-	PetscInt    it_Nwt;     // newton iteration counter
-	PetscScalar refRes;     // reference residual norm
-	PetscScalar rtolPic;    // relative Picard residual reduction tolerance
-	PetscInt    nNwtIt;     // number of Newton iterations before switch to Picard
-	PetscScalar rtolNwt;    // Newton divergence tolerance
-	PetscBool   matFree;    // use matrix-free Picard operator
+	JacRes     *jr;      // Jacobian-residual context
+	PCData     *pc;      // preconditioner context
+	Mat         MFFD;    // matrix-free finite difference Jacobian
+	JacType     jtype;   // actual type of Jacobian operator
+	PetscInt    it;      // iteration counter
+	PetscInt    it_Nwt;  // newton iteration counter
+	PetscScalar refRes;  // reference residual norm
+	PetscScalar rtolPic; // relative Picard residual reduction tolerance
+	PetscInt    nNwtIt;  // number of Newton iterations before switch to Picard
+	PetscScalar rtolNwt; // Newton divergence tolerance
 };
 //---------------------------------------------------------------------------
 
@@ -55,6 +53,8 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx);
 
 // compute Jacobian matrix and preconditioner
 PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx);
+
+PetscErrorCode JacSetMFFD(SNES snes, NLSol *nl, Vec x, Mat Amat);
 
 PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y);
 

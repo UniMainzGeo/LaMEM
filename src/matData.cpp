@@ -19,7 +19,7 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, PMatType type)
+PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, idxtype idxmod)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -41,7 +41,7 @@ PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, PMatType type)
 	md->grav[0]  = jr->ctrl.grav[0];
 	md->grav[1]  = jr->ctrl.grav[1];
 	md->grav[2]  = jr->ctrl.grav[2];
-	md->type     = type;
+	md->idxmod   = idxmod;
 
 	// allocate storage
 	ierr = MatDataCreateData(md);
@@ -139,7 +139,7 @@ PetscErrorCode MatDataCoarsen(MatData *coarse, MatData *fine)
 	coarse->coarse = 1;
 
 	// copy data
-	coarse->type    = fine->type;
+	coarse->idxmod  = fine->idxmod;
 	coarse->fssa    = fine->fssa;
 	coarse->grav[0] = fine->grav[0];
 	coarse->grav[1] = fine->grav[1];
@@ -197,8 +197,8 @@ PetscErrorCode MatDataComputeIndex(MatData *md)
 	// compute interlaced global numbering of the local nodes
 	//=======================================================
 
-	if     (md->type == _MONOLITHIC_)  { stv = md->fs->dof.st;  stp = dof->st + dof->lnv; }
-	else if(md->type == _BLOCK_)       { stv = md->fs->dof.stv; stp = dof->stp;           }
+	if     (md->idxmod == _IDX_COUPLED_)  { stv = md->fs->dof.st;  stp = dof->st + dof->lnv; }
+	else if(md->idxmod == _IDX_BLOCK_)    { stv = md->fs->dof.stv; stp = dof->stp;           }
 
 	//---------
 	// X-points
@@ -712,7 +712,7 @@ PetscErrorCode MatDataRestricBC(MatData *coarse, MatData *fine)
 	}
 	END_STD_LOOP
 
-	if(coarse->type == _MONOLITHIC_)
+	if(coarse->idxmod == _IDX_COUPLED_)
 	{
 		//-----------------------
 		// P-points (coarse grid)
@@ -858,8 +858,8 @@ PetscErrorCode MatDataListSPC(MatData *md)
 	md->numSPC = numSPC;
 
 	// get index shift from local index space (vector) to global index space (matrix)
-	if(md->type == _MONOLITHIC_) { vShift = dof->st;  pShift = dof->st;             }
-	if(md->type == _BLOCK_)      { vShift = dof->stv; pShift = dof->stp - dof->lnv; }
+	if(md->idxmod == _IDX_COUPLED_) { vShift = dof->st;  pShift = dof->st;             }
+	if(md->idxmod == _IDX_BLOCK_)   { vShift = dof->stv; pShift = dof->stp - dof->lnv; }
 
 	for(i = 0; i < md->vNumSPC; i++) md->vSPCListMat[i] = md->vSPCListVec[i] + vShift;
 	for(i = 0; i < md->pNumSPC; i++) md->pSPCListMat[i] = md->pSPCListVec[i] + pShift;

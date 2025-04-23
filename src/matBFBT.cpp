@@ -8,7 +8,7 @@
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------
-//..........................   BFBT FUNCTIONS   .............................
+//...................   wBFBT PRECONDITIONER MATRIX   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "JacRes.h"
@@ -19,14 +19,9 @@
 #include "bc.h"
 #include "matData.h"
 #include "matrix.h"
-#include "multigrid.h"
-#include "lsolve.h"
-#include "BFBT.h"
 //---------------------------------------------------------------------------
-PetscErrorCode PMatBFBTCreate(PMat pm)
+PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 {
-	PMatBlock      *P;
-	MatData        *md;
 	FDSTAG         *fs;
 	DOFIndex       *dof;
 	PetscInt        lnv, stv;
@@ -35,13 +30,10 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	P = (PMatBlock*)pm->data;
-
-	// BFBT cases only
-	if(!pm->buildwBFBT) PetscFunctionReturn(0);
+	// store evaluation context
+	P->md = md;
 
 	// access context variables
-	md  = pm->md;
 	fs  = md->fs;
 	dof = &fs->dof;
 	lnv = dof->lnv;
@@ -73,15 +65,28 @@ PetscErrorCode PMatBFBTCreate(PMat pm)
 	// create scaling matrix
 	ierr = MatAIJCreateDiag(lnv, stv, &P->C); CHKERRQ(ierr);
 
-	// allocate work vectors
-	ierr = VecDuplicate(P->xv, &P->w);  CHKERRQ(ierr);
+	// allocate work vector
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->w); CHKERRQ(ierr);
+	ierr = VecSetFromOptions(P->w);                                     CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PMatBFBTAssemble(PMat pm)
+PetscErrorCode wBFBTDestroy(wBFBTData *P)
 {
-	PMatBlock  *P;
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = DMDestroy (&P->DA_P); CHKERRQ(ierr);
+	ierr = MatDestroy(&P->K); 	 CHKERRQ(ierr);
+	ierr = MatDestroy(&P->C); 	 CHKERRQ(ierr);
+	ierr = VecDestroy(&P->w);    CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode wBFBTAssemble(wBFBTData *P)
+{
 	MatData    *md;
 	FDSTAG     *fs;
 	MatStencil  row[1], col[7];
@@ -96,15 +101,9 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	P = (PMatBlock*)pm->data;
-
-	// BFBT cases only
-	if(!pm->buildwBFBT) PetscFunctionReturn(0);
-
 	// access context variables
-	P 	 = (PMatBlock*)pm->data;
-	md   = pm->md;
-	fs   = md->fs;
+	md = P->md;
+	fs = md->fs;
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -266,68 +265,6 @@ PetscErrorCode PMatBFBTAssemble(PMat pm)
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->bcvy, &bcvy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->bcvz, &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->bcp,  &bcp);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode PMatBFBTDestroy(PMat pm)
-{
-	PMatBlock *P;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	P = (PMatBlock*)pm->data;
-
-	// BFBT cases only
-	if(!pm->buildwBFBT) PetscFunctionReturn(0);
-
-	ierr = DMDestroy (&P->DA_P); CHKERRQ(ierr);
-	ierr = MatDestroy(&P->K); 	 CHKERRQ(ierr);
-	ierr = MatDestroy(&P->C); 	 CHKERRQ(ierr);
-	ierr = VecDestroy(&P->w);    CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesBFBTApply(Mat JP, Vec x, Vec y)
-{
-	//=============
-	// BLOCK w-BFBT
-	//=============
-
-	PCStokes    pc;
-	PCStokesBF *bf;
-	PMatBlock  *P;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// access context
-	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
-
-	bf = (PCStokesBF*)pc->data;
-	P  = (PMatBlock*) pc->pm->data;
-
-	// y   = -(S^⁻1)*x
-	// S⁻1 =  (K^⁻1)*B*C*A*C*B^T*(K^⁻1)
-	// K   =  B*C*B^T
-
-	ierr = KSPSolve(bf->pksp, x, P->wp);   CHKERRQ(ierr); // wp = (K^⁻1)*x
-
-	ierr = MatMult(P->Avp, P->wp, P->wv);  CHKERRQ(ierr); // wv = Avp*wp
-
-	ierr = MatMult(P->C, P->wv, P->w);     CHKERRQ(ierr); // w = C*wv
-
-	ierr = MatMult(P->Avv, P->w, P->wv);   CHKERRQ(ierr); // wv = Avv * w
-
-	ierr = MatMult(P->C, P->wv, P->w);     CHKERRQ(ierr); // w = C*wv
-
-	ierr = MatMult(P->Apv, P->w, P->wp);   CHKERRQ(ierr); // wp = Apv*w
-
-	ierr = KSPSolve(bf->pksp, P->wp, y);   CHKERRQ(ierr); // y = (K^⁻1)*wp
-
-	ierr = VecScale(y, -1.0);              CHKERRQ(ierr); // y = -y
 
 	PetscFunctionReturn(0);
 }

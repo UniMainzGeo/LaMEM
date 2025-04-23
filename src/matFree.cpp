@@ -18,7 +18,7 @@
 #include "matrix.h"
 
 //---------------------------------------------------------------------------
-PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec f)
+PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f)
 {
 	MatData *md;
 	FDSTAG  *fs;

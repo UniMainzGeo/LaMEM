@@ -15,10 +15,86 @@
 #define __matrix_h__
 //---------------------------------------------------------------------------
 
-struct JacRes;
-struct DOFIndex;
 struct MatData;
 
+//---------------------------------------------------------------------------
+//.........................   MONOLITHIC MATRIX   ...........................
+//---------------------------------------------------------------------------
+
+struct PMatMono
+{
+	MatData    *md;     // matrix assembly context
+	PetscScalar pgamma; // penalty parameter
+	Mat         A;      // monolithic matrix
+	Mat         M;      // penalty terms compensation matrix
+	Vec         w;      // work vector for computing Jacobian action
+};
+
+PetscErrorCode PMatMonoCreate(
+		PMatMono    *P,
+		MatData     *md,
+		PetscScalar  pgamma);
+
+PetscErrorCode PMatMonoAssemble(PMatMono *P);
+
+PetscErrorCode PMatMonoDestroy(PMatMono *P);
+
+PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r);
+
+//---------------------------------------------------------------------------
+//...................   wBFBT PRECONDITIONER MATRIX   .......................
+//---------------------------------------------------------------------------
+
+struct wBFBTData
+{
+	MatData *md;    // matrix assembly context
+	DM       DA_P;  // cell-based grid
+	Mat      K;     // Schur complement preconditioner matrix
+	Mat      C;     // diagonal viscosity weighting matrix
+	Vec      w;     // working vector in velocity space
+};
+
+PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md);
+
+PetscErrorCode wBFBTDestroy(wBFBTData *P);
+
+PetscErrorCode wBFBTAssemble(wBFBTData *P);
+
+//---------------------------------------------------------------------------
+//...........................   BLOCK MATRIX   ..............................
+//---------------------------------------------------------------------------
+
+struct PMatBlock
+{
+	MatData    *md;         // matrix assembly context
+	PetscScalar pgamma;     // penalty parameter
+	Mat         Avv, Avp;   // velocity sub-matrices
+	Mat         Apv, App;   // pressure sub-matrices
+	Mat         Bvv;        // clean velocity sub-matix
+	Vec         rv, rp;     // residual blocks
+	Vec         xv, xp;     // solution blocks
+	Vec         wv, wp;     // work vectors
+	Mat         iS;         // inverse viscosity preconditioner
+	wBFBTData  *wbfbt;      // wBFB preconditioner
+};
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode PMatBlockCreate(
+		PMatBlock   *P,
+		MatData     *md,
+		PetscScalar  pgamma,
+		PetscInt     buildwBFBT,
+		PetscInt     buildBvv);
+
+PetscErrorCode PMatBlockAssemble(PMatBlock *P);
+
+PetscErrorCode PMatBlockDestroy(PMatBlock *P);
+
+PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec r);
+
+//---------------------------------------------------------------------------
+// SERVICE FUNCTIONS
 //---------------------------------------------------------------------------
 
 PetscErrorCode MatAIJCreate(PetscInt m, PetscInt n, PetscInt d_nz,
@@ -29,92 +105,6 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P);
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag);
 
 PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md);
-
-//---------------------------------------------------------------------------
-
-typedef struct p_PMat *PMat;
-
-struct p_PMat
-{
-	PMatType    mtype;      // matrix type
-	PetscScalar pgamma;     // penalty parameter
-	PetscInt    buildwBFBT; // flag to build wbfbt matrix
-	PetscInt    buildCvv;   // flag to build clean velocity sub-matix
-	MatData     *md;        // assembly context
-	void        *data;      // type-specific context
-
-	// operations
-	PetscErrorCode (*Create)  (PMat pm);
-	PetscErrorCode (*Assemble)(PMat pm);
-	PetscErrorCode (*Destroy) (PMat pm);
-	PetscErrorCode (*Picard)  (Mat J, Vec x, Vec y);
-};
-
-// PMat - pointer to an opaque structure (to be used in declarations)
-// sizeof(p_PMat) - size of the opaque structure
-
-//---------------------------------------------------------------------------
-
-PetscErrorCode PMatCreate(PMat *p_pm, MatData *md);
-
-PetscErrorCode PMatAssemble(PMat pm);
-
-PetscErrorCode PMatDestroy(PMat pm);
-
-//---------------------------------------------------------------------------
-//.........................   MONOLITHIC MATRIX   ...........................
-//---------------------------------------------------------------------------
-
-struct PMatMono
-{
-	Mat A; // monolithic matrix
-	Mat M; // penalty terms compensation matrix
-	Vec w; // work vector for computing Jacobian action
-};
-
-PetscErrorCode PMatMonoCreate(PMat pm);
-
-PetscErrorCode PMatMonoAssemble(PMat pm);
-
-PetscErrorCode PMatMonoDestroy(PMat pm);
-
-PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
-
-//---------------------------------------------------------------------------
-//...........................   BLOCK MATRIX   ..............................
-//---------------------------------------------------------------------------
-
-struct PMatBlock
-{
-	Mat Avv, Avp;  // velocity sub-matrices
-	Mat Apv, App;  // pressure sub-matrices
-	Mat iS;        // inverse of pressure Schur complement preconditioner
-	Mat Cvv;       // clean velocity sub-matix
-
-	Vec rv, rp;   // residual blocks
-	Vec xv, xp;   // solution blocks
-	Vec wv, wp;   // work vectors
-
-	// wBFBT data
-	DM  DA_P;  // cell-based grid
-	Mat K;     // Schur complement preconditioner matrix
-	Mat C;     // diagonal viscosity weighting matrix
-	Vec w;     // working vector in velocity space
-};
-
-//---------------------------------------------------------------------------
-
-PetscErrorCode PMatBlockCreate(PMat pm);
-
-PetscErrorCode PMatBlockAssemble(PMat pm);
-
-PetscErrorCode PMatBlockDestroy(PMat pm);
-
-PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec y);
-
-//---------------------------------------------------------------------------
-// SERVICE FUNCTIONS
-//---------------------------------------------------------------------------
 
 // compute cell stiffness matrix with deviatoric projection
 void getStiffMat(
@@ -161,5 +151,4 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 #define RESCALE_STENCIL(rescal, d, df, db, cf, cb, dr) { dr = 0.0; if(rescal) { if(cf == DBL_MAX) { dr += df; } if(cb == DBL_MAX) { dr += db; } } if(dr) { d = dr/2.0; } }
 
 //---------------------------------------------------------------------------
-
 #endif

@@ -20,11 +20,10 @@ struct FDSTAG;
 
 //---------------------------------------------------------------------------
 
-// matrix type
-enum PMatType
+enum idxtype
 {
-	_MONOLITHIC_,
-	_BLOCK_
+	_IDX_COUPLED_,
+	_IDX_BLOCK_
 };
 
 //---------------------------------------------------------------------------
@@ -43,12 +42,12 @@ struct MatData
 	PetscInt    rescal;                              // stencil rescaling flag
 	PetscScalar grav[3];                             // global gravity components
 	PetscInt    coarse;                              // coarsening flag
-	PMatType    type;                                // matrix type
+	idxtype     idxmod;                              // indexing mode
 };
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, PMatType type);
+PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, idxtype idxmod);
 
 PetscErrorCode MatDataCreateData(MatData *md);
 
