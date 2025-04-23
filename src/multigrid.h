@@ -27,7 +27,6 @@ struct MGLevel
 	// and column of P-matrix to impose the constraints in a coarse grid operator
 	// automatically. The finest grid uses standard boundary condition vectors.
 
-
 	MatData *md;   // matrix evaluation context
 	Mat      R, P; // restriction & prolongation operators (not set on finest grid)
 

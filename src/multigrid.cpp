@@ -46,8 +46,8 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md)
 		ierr = MatDataCoarsen(lvl->md, fine->md); CHKERRQ(ierr);
 
 		// get matrix sizes
-		if     (lvl->md->type == _MONOLITHIC_) { ln = lvl->md->fs->dof.ln;  lnfine = fine->md->fs->dof.ln;  }
-		else if(lvl->md->type == _BLOCK_)      { ln = lvl->md->fs->dof.lnv; lnfine = fine->md->fs->dof.lnv; }
+		if     (lvl->md->idxmod == _IDX_COUPLED_) { ln = lvl->md->fs->dof.ln;  lnfine = fine->md->fs->dof.ln;  }
+		else if(lvl->md->idxmod == _IDX_BLOCK_)   { ln = lvl->md->fs->dof.lnv; lnfine = fine->md->fs->dof.lnv; }
 
 		// WARNING! CONSTANT SIZE PREALLOCATION (ADD VARIABLE PREALLOCATION)
 
@@ -117,8 +117,8 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
 
 	// get global index of the first row in coarse grid
-	if     (mdlvl->type == _MONOLITHIC_) { row = mdlvl->fs->dof.st;  }
-	else if(mdlvl->type == _BLOCK_)      { row = mdlvl->fs->dof.stv; }
+	if     (mdlvl->idxmod == _IDX_COUPLED_) { row = mdlvl->fs->dof.st;  }
+	else if(mdlvl->idxmod == _IDX_BLOCK_)   { row = mdlvl->fs->dof.stv; }
 
 	// set velocity stencil weights
 	vs[0]  = 1.0/16.0;
@@ -287,7 +287,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	}
 	END_STD_LOOP
 
-	if(mdlvl->type == _MONOLITHIC_)
+	if(mdlvl->idxmod == _IDX_COUPLED_)
 	{
 		// set pressure weights
 		vs[0] = 1.0/8.0;
@@ -407,8 +407,8 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,   &cbcp);  CHKERRQ(ierr);
 
 	// get global index of the first row in the fine grid
-	if     (mdfine->type == _MONOLITHIC_) { row = mdfine->fs->dof.st;  }
-	else if(mdfine->type == _BLOCK_)      { row = mdfine->fs->dof.stv; }
+	if     (mdfine->idxmod == _IDX_COUPLED_) { row = mdfine->fs->dof.st;  }
+	else if(mdfine->idxmod == _IDX_BLOCK_)   { row = mdfine->fs->dof.stv; }
 
 	// set reduced velocity stencil coefficients (even)
 	vsr[0] = 9.0/16.0;
@@ -588,7 +588,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	}
 	END_STD_LOOP
 
-	if(mdfine->type== _MONOLITHIC_)
+	if(mdfine->idxmod== _IDX_COUPLED_)
 	{
 		// set pressure interpolation stencil (direct injection)
 		vsr[0] = 1.0;

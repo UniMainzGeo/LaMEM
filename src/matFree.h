@@ -19,7 +19,7 @@ struct MatData;
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec f);
+PetscErrorCode  MatFreeApplyPicard(Mat A, Vec x, Vec f);
 
 PetscErrorCode MatFreeGetPicard(MatData *md,
 		Vec lvx, Vec lvy, Vec lvz, Vec gp,
