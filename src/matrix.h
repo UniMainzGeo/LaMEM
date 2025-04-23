@@ -37,6 +37,10 @@ PetscErrorCode PMatMonoCreate(
 
 PetscErrorCode PMatMonoAssemble(PMatMono *P);
 
+
+PetscErrorCode PMatMonoGetDiag(PMatMono *P, Mat D);
+
+
 PetscErrorCode PMatMonoDestroy(PMatMono *P);
 
 PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r);
@@ -114,7 +118,20 @@ void getStiffMat(
 	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
 
+void getStiffMatDiag(
+	PetscScalar eta, PetscScalar diag,
+	PetscScalar *v,  PetscScalar *cf,
+	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
+	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
+	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
+
 void addDensGradStabil(
+	PetscScalar fssa, PetscScalar *v,
+	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
+	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
+	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz);
+
+void addDensGradStabilDiag(
 	PetscScalar fssa, PetscScalar *v,
 	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
 	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,

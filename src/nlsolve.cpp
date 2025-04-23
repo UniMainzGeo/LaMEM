@@ -273,7 +273,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		ierr = MatAssemblyBegin(nl->MFFD, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 		ierr = MatAssemblyEnd  (nl->MFFD, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
-		// set matrix-free finite-difference operator (MMFD)
+		// set MMFD operator
 		ierr = MatShellSetContext(Amat, (void*)&nl->MFFD); CHKERRQ(ierr);
 	}
 

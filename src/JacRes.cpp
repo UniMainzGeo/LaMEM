@@ -351,9 +351,9 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 
 	// coupled solution vectors
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gsol); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(jr->gsol); 									 	CHKERRQ(ierr);
+	ierr = VecSetFromOptions(jr->gsol);                                         CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gres); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(jr->gres); 									 	CHKERRQ(ierr);
+	ierr = VecSetFromOptions(jr->gres);                                         CHKERRQ(ierr);
 	
 	// zero out global vectors
 	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);

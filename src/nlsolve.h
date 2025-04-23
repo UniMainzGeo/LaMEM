@@ -34,7 +34,7 @@ struct NLSol
 	JacRes     *jr;      // Jacobian-residual context
 	PCData      pc;      // preconditioner context
 	Mat         MFFD;    // matrix-free finite difference Jacobian
-	Mat         PICARD;  // matrix-free finite difference Jacobian
+	Mat         PICARD;  // Picard Jacobian
 	JacType     jtype;   // actual type of Jacobian operator
 	PetscInt    it;      // iteration counter
 	PetscInt    it_Nwt;  // newton iteration counter
