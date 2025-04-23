@@ -24,9 +24,6 @@ PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, idxtype idxmod)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// clear data
-	ierr = PetscMemzero(md, sizeof(MatData)); CHKERRQ(ierr);
-
 	// set coarse grid flag
 	md->coarse = 0;
 
@@ -131,9 +128,6 @@ PetscErrorCode MatDataCoarsen(MatData *coarse, MatData *fine)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-
-	// clear data
-	ierr = PetscMemzero(coarse, sizeof(MatData)); CHKERRQ(ierr);
 
 	// set coarse grid flag
 	coarse->coarse = 1;
@@ -336,10 +330,12 @@ PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr)
 
 	START_STD_LOOP
 	{
-		IKdt         = jr->svCell[iter++].svBulk.IKdt;
-		rho[k][j][i] = jr->svCell[iter++].svBulk.rho;
-		eta[k][j][i] = jr->svCell[iter++].svDev.eta;
+		IKdt         = jr->svCell[iter].svBulk.IKdt;
+		rho[k][j][i] = jr->svCell[iter].svBulk.rho;
+		eta[k][j][i] = jr->svCell[iter].svDev.eta;
 		Kb [k][j][i] = 1.0/(IKdt*dt);
+
+		iter++;
 	}
 	END_STD_LOOP
 
@@ -380,7 +376,7 @@ PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->Kb,   &Kb);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->Kb,    &Kb);    CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->rho,   &rho);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->eta,   &eta);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &etaxy); CHKERRQ(ierr);
@@ -850,6 +846,7 @@ PetscErrorCode MatDataListSPC(MatData *md)
 	// store velocity list
 	md->vNumSPC     = numSPC;
 	md->vSPCListVec = SPCListVec;
+	md->vSPCListMat = SPCListMat;
 
 	// WARNING! primary pressure constraints are not implemented, otherwise compute here
 	md->pNumSPC = 0;

@@ -32,8 +32,9 @@ enum JacType
 struct NLSol
 {
 	JacRes     *jr;      // Jacobian-residual context
-	PCData     *pc;      // preconditioner context
+	PCData      pc;      // preconditioner context
 	Mat         MFFD;    // matrix-free finite difference Jacobian
+	Mat         PICARD;  // matrix-free finite difference Jacobian
 	JacType     jtype;   // actual type of Jacobian operator
 	PetscInt    it;      // iteration counter
 	PetscInt    it_Nwt;  // newton iteration counter
@@ -54,9 +55,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx);
 // compute Jacobian matrix and preconditioner
 PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx);
 
-PetscErrorCode JacSetMFFD(SNES snes, NLSol *nl, Vec x, Mat Amat);
-
-PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y);
+PetscErrorCode JacApply(Mat A, Vec x, Vec y);
 
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,
