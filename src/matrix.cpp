@@ -576,9 +576,7 @@ PetscErrorCode PMatMonoAssemble(PMatMono *P)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
-
 PetscErrorCode PMatMonoGetDiag(PMatMono *P, Mat D)
 {
 	//======================================================================
@@ -897,8 +895,6 @@ PetscErrorCode PMatMonoGetDiag(PMatMono *P, Mat D)
 
 	PetscFunctionReturn(0);
 }
-
-
 //---------------------------------------------------------------------------
 PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 {

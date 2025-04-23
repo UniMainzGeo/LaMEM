@@ -277,52 +277,6 @@ PetscErrorCode PCDataMGSetup(PCDataMG *pc, JacRes *jr)
 
 	ierr = PMatMonoAssemble(P); CHKERRQ(ierr);
 
-
-
-
-
-
-
-	Mat D;
-	Vec vda, vdd, diff;
-
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, pc->md.fs->dof.ln, PETSC_DETERMINE, &vda); CHKERRQ(ierr);
-
-	ierr = VecDuplicate(vda, &vdd);  CHKERRQ(ierr);
-	ierr = VecDuplicate(vda, &diff); CHKERRQ(ierr);
-
-
-	ierr = MatDuplicate(P->M, MAT_DO_NOT_COPY_VALUES, &D); CHKERRQ(ierr);
-
-	ierr = PMatMonoGetDiag(P, D); CHKERRQ(ierr);
-
-	ierr = MatGetDiagonal(P->A, vda); CHKERRQ(ierr);
-	ierr = MatGetDiagonal(D,    vdd); CHKERRQ(ierr);
-
-	 ierr = VecWAXPY(diff, -1.0, vda, vdd); // w = alpha x + y
-
-	 PetscReal nrm;
-
-	 ierr = VecNorm(diff, NORM_2, &nrm); CHKERRQ(ierr);
-
-
-	 PetscPrintf(PETSC_COMM_WORLD, "   *** \n");
-	 PetscPrintf(PETSC_COMM_WORLD, "   *** \n");
-	 PetscPrintf(PETSC_COMM_WORLD, "   *** \n");
-
-	 PetscPrintf(PETSC_COMM_WORLD, "   Difference            :  %g\n", nrm);
-
-
-
-
-	ierr = MatDestroy(&D);     CHKERRQ(ierr);
-	ierr = VecDestroy(&vda);   CHKERRQ(ierr);
-	ierr = VecDestroy(&vdd);   CHKERRQ(ierr);
-	ierr = VecDestroy(&diff);  CHKERRQ(ierr);
-
-
-
-
 	ierr = MGSetup(&pc->mg, P->A); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
