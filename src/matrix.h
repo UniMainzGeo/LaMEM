@@ -37,9 +37,7 @@ PetscErrorCode PMatMonoCreate(
 
 PetscErrorCode PMatMonoAssemble(PMatMono *P);
 
-
 PetscErrorCode PMatMonoGetDiag(PMatMono *P, Mat D);
-
 
 PetscErrorCode PMatMonoDestroy(PMatMono *P);
 

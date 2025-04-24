@@ -55,6 +55,24 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine);
 
 //---------------------------------------------------------------------------
 
+// matrix-free interpolation context between the levels
+
+struct MGInterp
+{
+	MatData *coarse; // coarse level evaluation context
+	MatData *fine;   // fine level evaluation context
+	Vec      wc;     // coarse grid work vector
+	Vec      wf;     // fine grid work vector
+};
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine);
+
+PetscErrorCode MGInterpDestroy(MGInterp *mgi);
+
+//---------------------------------------------------------------------------
+
 // setup row of restriction matrix
 void getRowRestrict(
 		PetscScalar parent,
@@ -110,6 +128,15 @@ PetscErrorCode MGApply(PC pc, Vec x, Vec y);
 PetscErrorCode MGDumpMat(MG *mg);
 
 PetscErrorCode MGGetNumLevels(MG *mg, MatData *md);
+
+//---------------------------------------------------------------------------
+
+// test codes
+PetscErrorCode comareVecs(Vec va, Vec vb);
+PetscErrorCode genRandVec(MatData *md, Vec *v);
+PetscErrorCode VecSetBC(MatData *md, Vec v);
+PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P);
+PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat R, Mat P);
 
 //---------------------------------------------------------------------------
 #endif

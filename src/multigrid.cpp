@@ -15,11 +15,11 @@
 #include "multigrid.h"
 #include "matData.h"
 #include "matrix.h"
+#include "matFree.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-// MG -functions
+// MG Level functions
 //---------------------------------------------------------------------------
-
 PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md)
 {
 	PetscInt ln=0, lnfine=0;
@@ -715,6 +715,38 @@ void getRowProlong(
 	}
 }
 //---------------------------------------------------------------------------
+// MG interpolation context functions
+//---------------------------------------------------------------------------
+PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// set evaluation context
+	mgi->coarse = coarse;
+	mgi->fine   = fine;
+
+	// create work vectors
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, coarse->fs->dof.ln, PETSC_DETERMINE, &mgi->wc); CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, fine->fs->dof.ln,   PETSC_DETERMINE, &mgi->wf); CHKERRQ(ierr);
+
+	ierr = VecSetFromOptions(mgi->wc); CHKERRQ(ierr);
+	ierr = VecSetFromOptions(mgi->wf); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MGInterpDestroy(MGInterp *mgi)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = VecDestroy(&mgi->wc); CHKERRQ(ierr);
+	ierr = VecDestroy(&mgi->wf); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // MG -functions
 //---------------------------------------------------------------------------
 PetscErrorCode MGCreate(MG *mg, MatData *md)
@@ -870,6 +902,13 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 		ierr = MatDataRestrict     (lvl->md, fine->md); CHKERRQ(ierr);
 		ierr = MGLevelSetupRestrict(lvl,     fine);     CHKERRQ(ierr);
 		ierr = MGLevelSetupProlong (lvl,     fine);     CHKERRQ(ierr);
+
+		if(i == 2)
+		{
+			ierr = TestInterp(lvl->md, fine->md, lvl->R, lvl->P);  CHKERRQ(ierr);
+		}
+
+
 	}
 
 	// setup coarse grid solver if necessary
@@ -886,6 +925,39 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 
 	PetscFunctionReturn(0);
 
+
+
+	/*
+
+	https://petsc.org/release/src/dm/impls/stag/tutorials/ex4.c.html
+	  PetscCall(PCSetType(pc_faces, PCMG));
+258:     PetscCall(PCMGSetLevels(pc_faces, ctx->n_levels, NULL));
+259:     for (PetscInt level = 0; level < ctx->n_levels; ++level) {
+260:       KSP ksp_level;
+261:       PC  pc_level;
+
+263:       // Smoothers
+264:       PetscCall(PCMGGetSmoother(pc_faces, level, &ksp_level));
+265:       PetscCall(KSPGetPC(ksp_level, &pc_level));
+266:       PetscCall(KSPSetOperators(ksp_level, A_faces[level], A_faces[level]));
+267:       if (level > 0) PetscCall(PCSetType(pc_level, PCJACOBI));
+
+269:       // Transfer Operators
+270:       if (level > 0) {
+271:         Mat restriction, interpolation;
+272:         DM  dm_level   = ctx->levels[level]->dm_faces;
+273:         DM  dm_coarser = ctx->levels[level - 1]->dm_faces;
+
+275:         PetscCall(DMCreateInterpolation(dm_coarser, dm_level, &interpolation, NULL));
+276:         PetscCall(PCMGSetInterpolation(pc_faces, level, interpolation));
+277:         PetscCall(MatDestroy(&interpolation));
+278:         PetscCall(DMCreateRestriction(dm_coarser, dm_level, &restriction));
+279:         PetscCall(PCMGSetRestriction(pc_faces, level, restriction));
+280:         PetscCall(MatDestroy(&restriction));
+281:       }
+282:     }
+283:   }
+	 */
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MGApply(PC pc, Vec x, Vec y)
@@ -1005,3 +1077,214 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
+// test functions
+
+PetscErrorCode comareVecs(Vec va, Vec vb)
+{
+	Vec       diff;
+	PetscReal nrm;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = VecDuplicate(va, &diff); CHKERRQ(ierr);
+
+	ierr = VecWAXPY(diff, -1.0, va, vb);
+
+	ierr = VecNorm(diff, NORM_2, &nrm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "   *** \n");
+	PetscPrintf(PETSC_COMM_WORLD, "   *** \n");
+	PetscPrintf(PETSC_COMM_WORLD, "   *** \n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Difference            :  %g\n", nrm);
+
+	ierr = VecDestroy(&diff); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode genRandVec(MatData *md, Vec *v)
+{
+	PetscRandom  rctx;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
+
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, md->fs->dof.ln, PETSC_DETERMINE, v); CHKERRQ(ierr);
+
+	ierr = VecSetRandom((*v), rctx); CHKERRQ(ierr);
+
+	ierr = PetscRandomDestroy(&rctx);CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+PetscErrorCode VecSetBC(MatData *md, Vec v)
+{
+	PetscInt     i, num, *list;
+	PetscScalar  *va;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = VecGetArray(v, &va); CHKERRQ(ierr);
+
+	// zero out constrained residuals (velocity)
+	num   = md->vNumSPC;
+	list  = md->vSPCListVec;
+
+	for(i = 0; i < num; i++) va[list[i]] = 0.0;
+
+	// zero out constrained residuals (pressure)
+	num   = md->pNumSPC;
+	list  = md->pSPCListVec;
+
+	for(i = 0; i < num; i++) va[list[i]] = 0.0;
+
+	ierr = VecRestoreArray(v, &va); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P)
+{
+	Vec zc, zf;
+	Vec rc, rf;
+	Vec wc, wf;
+	Vec wcmf, wfmf;
+	Mat RMF, PMF;
+	PetscInt nc, nf;
+	MGInterp mgi;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	nc = coarse->fs->dof.ln;
+	nf = fine->fs->dof.ln;
+
+	ierr = MGInterpCreate(&mgi, coarse, fine); CHKERRQ(ierr);
+
+	// create restriction operator
+	ierr = MatCreateShell(PETSC_COMM_WORLD, nc, nf, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &RMF); CHKERRQ(ierr);
+	ierr = MatSetUp(RMF); CHKERRQ(ierr);
+
+	ierr = MatShellSetOperation(RMF, MATOP_MULT_ADD, (void(*)(void))MatFreeApplyRestrict); CHKERRQ(ierr);
+	ierr = MatShellSetContext(RMF, (void*)&mgi); CHKERRQ(ierr);
+
+	ierr = MatAssemblyBegin(RMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (RMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+	// create prolongation operator
+	ierr = MatCreateShell(PETSC_COMM_WORLD, nf, nc, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &PMF); CHKERRQ(ierr);
+	ierr = MatSetUp(PMF); CHKERRQ(ierr);
+
+	ierr = MatShellSetOperation(PMF, MATOP_MULT_ADD, (void(*)(void))MatFreeApplyProlong); CHKERRQ(ierr);
+	ierr = MatShellSetContext(PMF, (void*)&mgi); CHKERRQ(ierr);
+
+	ierr = MatAssemblyBegin(PMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (PMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+	// zero
+	ierr = VecDuplicate(mgi.wc, &zc); CHKERRQ(ierr);
+	ierr = VecDuplicate(mgi.wf, &zf); CHKERRQ(ierr);
+
+	ierr = VecZeroEntries(zc); CHKERRQ(ierr);
+	ierr = VecZeroEntries(zf); CHKERRQ(ierr);
+
+	// random
+	ierr = VecDuplicate(mgi.wc, &rc); CHKERRQ(ierr);
+	ierr = VecDuplicate(mgi.wf, &rf); CHKERRQ(ierr);
+
+	ierr = genRandVec(coarse, &rc); CHKERRQ(ierr);
+	ierr = genRandVec(fine  , &rf); CHKERRQ(ierr);
+
+	ierr = VecSetBC(coarse, rc); CHKERRQ(ierr);
+	ierr = VecSetBC(fine,   rf); CHKERRQ(ierr);
+
+	// work
+	ierr = VecDuplicate(mgi.wc, &wc); CHKERRQ(ierr);
+	ierr = VecDuplicate(mgi.wf, &wf); CHKERRQ(ierr);
+
+	ierr = VecDuplicate(mgi.wc, &wcmf); CHKERRQ(ierr);
+	ierr = VecDuplicate(mgi.wf, &wfmf); CHKERRQ(ierr);
+
+	// restriction
+	ierr = MatMult   (R,   rf,     wc);   CHKERRQ(ierr);
+	ierr = MatMultAdd(RMF, rf, zc, wcmf); CHKERRQ(ierr);
+
+	// prolongation
+	ierr = MatMult   (P,   rc,     wf);   CHKERRQ(ierr);
+	ierr = MatMultAdd(PMF, rc, zf, wfmf); CHKERRQ(ierr);
+
+	// comparison
+	ierr = comareVecs(wc, wcmf); CHKERRQ(ierr);
+	ierr = comareVecs(wf, wfmf); CHKERRQ(ierr);
+
+	ierr = MGInterpDestroy(&mgi); CHKERRQ(ierr);
+
+	ierr = MatDestroy(&RMF); CHKERRQ(ierr);
+	ierr = MatDestroy(&PMF); CHKERRQ(ierr);
+
+	ierr = VecDestroy(&zc);   CHKERRQ(ierr);
+	ierr = VecDestroy(&zf);   CHKERRQ(ierr);
+	ierr = VecDestroy(&rc);   CHKERRQ(ierr);
+	ierr = VecDestroy(&rf);   CHKERRQ(ierr);
+	ierr = VecDestroy(&wc);   CHKERRQ(ierr);
+	ierr = VecDestroy(&wf);   CHKERRQ(ierr);
+	ierr = VecDestroy(&wcmf); CHKERRQ(ierr);
+	ierr = VecDestroy(&wfmf); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat R, Mat P)
+{
+	MGInterp mgi;
+
+	Vec rc, rcbc;
+	Vec wf, wfbc;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = MGInterpCreate(&mgi, coarse, fine); CHKERRQ(ierr);
+
+	ierr = genRandVec(coarse, &rc); CHKERRQ(ierr);
+
+	ierr = VecDuplicate(rc, &rcbc); CHKERRQ(ierr);
+
+	ierr = VecCopy(rc, rcbc); CHKERRQ(ierr);
+
+	ierr = VecSetBC(coarse, rcbc); CHKERRQ(ierr);
+
+	ierr = VecDuplicate(mgi.wf, &wf); CHKERRQ(ierr);
+	ierr = VecDuplicate(mgi.wf, &wfbc); CHKERRQ(ierr);
+
+
+	ierr = MatMult(P, rc,   wf);   CHKERRQ(ierr);
+	ierr = MatMult(P, rcbc, wfbc); CHKERRQ(ierr);
+
+	ierr = VecSetBC(fine, wf);   CHKERRQ(ierr);
+	ierr = VecSetBC(fine, wfbc); CHKERRQ(ierr);
+
+	ierr = comareVecs(wf, wfbc); CHKERRQ(ierr);
+
+	ierr = VecDestroy(&rc);   CHKERRQ(ierr);
+	ierr = VecDestroy(&rcbc); CHKERRQ(ierr);
+	ierr = VecDestroy(&wf);    CHKERRQ(ierr);
+	ierr = VecDestroy(&wfbc); CHKERRQ(ierr);
+
+	ierr = MGInterpDestroy(&mgi); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
