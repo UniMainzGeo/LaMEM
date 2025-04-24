@@ -890,7 +890,7 @@ PetscErrorCode PMatMonoGetDiag(PMatMono *P, Mat D)
 	ierr = DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
 
-	// assemble velocity-pressure matrix, remove constrained rows
+	// assemble diagonal preconditioner matrix, remove constrained rows
 	ierr = MatAIJAssemble(D, md->numSPC, md->SPCListMat, 1.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
