@@ -21,6 +21,10 @@ struct MatData;
 
 PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f);
 
+PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f);
+
+PetscErrorCode MatFreeApplyLinearOperator(MatData *md, Vec x, Vec f, PetscScalar cfInvEta);
+
 PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vcb, Vec vc);
 
 PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vfb, Vec vf);
@@ -34,9 +38,14 @@ PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz,
 // combine blocks into a vector, enforce boundary conditions
 PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, Vec gvp);
 
-PetscErrorCode MatFreeGetPicard(MatData *md,
+PetscErrorCode MatFreeGetLinearOperator(MatData *md,
 		Vec lvx, Vec lvy, Vec lvz, Vec gp,
-		Vec lfx, Vec lfy, Vec lfz, Vec gc);
+		Vec lfx, Vec lfy, Vec lfz, Vec gc,
+		PetscScalar cfInvEta);
+
+// cfInvEta - inverse viscosity term prefactor
+// 0.0      - Picard operator
+// 1.0      - preconditioner operator
 
 PetscErrorCode MatFreeGetRestrict(
 		MatData *coarse, MatData *fine,
@@ -47,6 +56,7 @@ PetscErrorCode MatFreeGetProlong(
 		MatData *coarse, MatData *fine,
 		Vec fx, Vec fy, Vec fz, Vec fp,
 		Vec cx, Vec cy, Vec cz, Vec cp);
+
 //---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------
@@ -57,33 +67,3 @@ PetscErrorCode MatFreeGetProlong(
 //---------------------------------------------------------------------------
 #endif
 
-/*
-1. Set PC_MG_GALERKIN_NONE
-
-2. Call PCMGSetRestriction and PCMGSetInterpolation to set restriction/interpolation matrices
-
-    a. On the top levels set the shell matrices equipped with MATOP_MULT_ADD
-
-    b. On the bottom levels set assembled matrices
-
-3. Call PCMGGetSmoother and KSPSetOperators to set linear operators
-
-    a. On the top levels set the shell matrices equipped with MATOP_GET_DIAGONAL and MATOP_MULT
-
-    b. On the bottom levels generate the operators by explicitly calling MatMatMatMult (R is not the same as P)
-
-        Use MAT_INITIAL_MATRIX for the first time
-
-        Use MAT_REUSE_MATRIX for the subsequent calls
-
-PetscErrorCode MatMult(Mat mat, Vec x, Vec y); // y = A*x
-
-PetscErrorCode MatMultAdd(Mat mat, Vec v1, Vec v2, Vec v3); // v3 = v2 + A∗v1
-
-PetscErrorCode MatGetDiagonal(Mat mat,  Vec v); // v = diag(A)
-
-PetscCall(MatShellSetOperation(A, MATOP_GET_DIAGONAL ,(void(*)(void))MatGetDiagonal_Laplacian2D))
-
-PetscErrorCode MatGetDiagonal_Laplacian2D(Mat A, Vec diag)
-
-*/

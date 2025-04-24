@@ -1028,7 +1028,7 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 
 	FDSTAG   *fs;
 	PetscBool opt_set;
-	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels;
+	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, nlmf;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1056,6 +1056,21 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
 	}
 
+	// check number of matrix-free levels requested on the command line
+	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_mat_free_levels", &nlmf, &opt_set); CHKERRQ(ierr);
+
+	if(opt_set == PETSC_TRUE)
+	{
+		if(nlmf > nlevels-1)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of matrix-free levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlmf, (LLD)(nlevels-1));
+		}
+	}
+	else
+	{
+		nlmf = 0;
+	}
+
 	// set actual number of coarsening steps
 	ncors = nlevels-1;
 
@@ -1069,10 +1084,13 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	Nz = nz*fs->dsz.nproc;
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);                            CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);                           CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	// store number of levels
 	mg->nlvl = nlevels;
+	mg->nlmf = nlmf;
 
 	PetscFunctionReturn(0);
 }

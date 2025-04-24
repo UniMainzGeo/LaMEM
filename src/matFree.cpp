@@ -23,7 +23,46 @@ PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f)
 {
 	// this function corresponds to MATOP_MULT operation
 
-	MatData *md;
+	MatData     *md;
+	PetscScalar  cfInvEta;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// access context
+	ierr = MatShellGetContext(A, (void**)&md); CHKERRQ(ierr);
+
+	// do not add inverse viscosity term to pressure diagonal matrix (Picard operator)
+	cfInvEta = 0.0;
+
+	ierr = MatFreeApplyLinearOperator(md, x, f, cfInvEta); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f)
+{
+	// this function corresponds to MATOP_MULT operation
+
+	MatData     *md;
+	PetscScalar  cfInvEta;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// access context
+	ierr = MatShellGetContext(A, (void**)&md); CHKERRQ(ierr);
+
+	// add inverse viscosity term to pressure diagonal matrix (preconditioner operator)
+	cfInvEta = 1.0;
+
+	ierr = MatFreeApplyLinearOperator(md, x, f, cfInvEta); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MatFreeApplyLinearOperator(MatData *md, Vec x, Vec f, PetscScalar cfInvEta)
+{
 	FDSTAG  *fs;
 	Vec      vx, vy, vz, p;
 	Vec      fx, fy, fz, c;
@@ -32,8 +71,6 @@ PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f)
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(A, (void**)&md); CHKERRQ(ierr);
-
 	fs = md->fs;
 
 	// get temporary solution vectors
@@ -52,7 +89,7 @@ PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f)
 	ierr = MatFreeSplitVec(md, x, vx, vy, vz, p); CHKERRQ(ierr);
 
 	// compute matrix-vector product
-	ierr = MatFreeGetPicard(md, vx, vy, vz, p, fx, fy, fz, c); CHKERRQ(ierr);
+	ierr = MatFreeGetLinearOperator(md, vx, vy, vz, p, fx, fy, fz, c, cfInvEta); CHKERRQ(ierr);
 
 	// assemble residual
 	ierr = MatFreeAssembleVec(md, f, fx, fy, fz, c); CHKERRQ(ierr);
@@ -335,10 +372,15 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-PetscErrorCode MatFreeGetPicard(MatData *md,
+PetscErrorCode MatFreeGetLinearOperator(MatData *md,
 		Vec lvx, Vec lvy, Vec lvz, Vec gp,
-		Vec lfx, Vec lfy, Vec lfz, Vec gc)
+		Vec lfx, Vec lfy, Vec lfz, Vec gc,
+		PetscScalar cfInvEta)
 {
+	// cfInvEta - inverse viscosity term prefactor
+	// 0.0      - Picard operator
+	// 1.0      - preconditioner operator
+
 	FDSTAG     *fs;
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    mnx, mny, mnz;
@@ -464,7 +506,7 @@ PetscErrorCode MatFreeGetPicard(MatData *md,
 		fz[k][j][i] -= ((szz - cf[4]*pc) + vz[k][j][i]*tz)/bdz;   fz[k+1][j][i] += ((szz - cf[5]*pc) + vz[k+1][j][i]*tz)/fdz;
 
 		// mass
-		c[k][j][i] = -IKdt*pc - theta;
+		c[k][j][i] = -(IKdt + cfInvEta/eta)*pc - theta;
 	}
 	END_STD_LOOP
 

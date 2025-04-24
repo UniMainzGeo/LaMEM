@@ -84,21 +84,21 @@ PetscErrorCode PCParamSetFromOptions(PCParam *p)
 
 	// print parameters
 	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
-	if     (p->ps_type == _PICARD_ASSEMBLED_) PetscPrintf(PETSC_COMM_WORLD, "   Picard operator type       : assembled\n");
-	else if(p->ps_type == _PICARD_MAT_FREE_)  PetscPrintf(PETSC_COMM_WORLD, "   Picard operator type       : matrix-free\n");
-	if     (p->pc_type == _STOKES_MG_)        PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type        : coupled Galerkin geometric multigrid\n");
-	else if(p->pc_type == _STOKES_BF_)        PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type        : block factorization\n");
-	else if(p->pc_type == _STOKES_USER_)      PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type        : user-defined\n");
+	if     (p->ps_type == _PICARD_ASSEMBLED_) PetscPrintf(PETSC_COMM_WORLD, "   Picard operator type          : assembled\n");
+	else if(p->ps_type == _PICARD_MAT_FREE_)  PetscPrintf(PETSC_COMM_WORLD, "   Picard operator type          : matrix-free\n");
+	if     (p->pc_type == _STOKES_MG_)        PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : coupled Galerkin geometric multigrid\n");
+	else if(p->pc_type == _STOKES_BF_)        PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : block factorization\n");
+	else if(p->pc_type == _STOKES_USER_)      PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
 	if     (p->pc_type == _STOKES_BF_)
 	{
-		if     (p->bf_type == _BF_UPPER_)         PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type   : upper \n");
-		else if(p->bf_type == _BF_LOWER_)         PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type   : lower \n");
-		if     (p->vs_type == _VEL_MG_)           PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner    : Galerkin geometric multigrid\n");
-		else if(p->vs_type == _VEL_USER_)         PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner    : user-defined\n");
-		if     (p->sp_type == _SCHUR_INV_ETA_)    PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner       : inverse viscosity\n");
-		else if(p->sp_type == _SCHUR_WBFBT_)      PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner       : wBFBT\n");
+		if     (p->bf_type == _BF_UPPER_)         PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type      : upper \n");
+		else if(p->bf_type == _BF_LOWER_)         PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type      : lower \n");
+		if     (p->vs_type == _VEL_MG_)           PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner       : Galerkin geometric multigrid\n");
+		else if(p->vs_type == _VEL_USER_)         PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner       : user-defined\n");
+		if     (p->sp_type == _SCHUR_INV_ETA_)    PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner          : inverse viscosity\n");
+		else if(p->sp_type == _SCHUR_WBFBT_)      PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner          : wBFBT\n");
 	}
-	if     (p->pgamma > 1.0)                  PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma) : %e\n", p->pgamma);
+	if     (p->pgamma > 1.0)                  PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", p->pgamma);
 
 	PetscFunctionReturn(0);
 }
