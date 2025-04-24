@@ -109,6 +109,7 @@ struct MG
 
 	PC        pc;        // internal preconditioner context
 	PetscInt  nlvl;      // number of levels
+	PetscInt  nlmf;      // number of matrix-free levels
 	MGLevel  *lvls;      // multigrid levles
 	PetscInt  crs_setup; // coarse solver setup flag
 };
@@ -138,5 +139,36 @@ PetscErrorCode VecSetBC(MatData *md, Vec v);
 PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P);
 PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat R, Mat P);
 
+//---------------------------------------------------------------------------
+/*
+1. Set PC_MG_GALERKIN_NONE
+
+2. Call PCMGSetRestriction and PCMGSetInterpolation to set restriction/interpolation matrices
+
+    a. On the top levels set the shell matrices equipped with MATOP_MULT_ADD
+
+    b. On the bottom levels set assembled matrices
+
+3. Call PCMGGetSmoother and KSPSetOperators to set linear operators
+
+    a. On the top levels set the shell matrices equipped with MATOP_GET_DIAGONAL and MATOP_MULT
+
+    b. On the bottom levels generate the operators by explicitly calling MatMatMatMult (R is not the same as P)
+
+        Use MAT_INITIAL_MATRIX for the first time
+
+        Use MAT_REUSE_MATRIX for the subsequent calls
+
+PetscErrorCode MatMult(Mat mat, Vec x, Vec y); // y = A*x
+
+PetscErrorCode MatMultAdd(Mat mat, Vec v1, Vec v2, Vec v3); // v3 = v2 + A∗v1
+
+PetscErrorCode MatGetDiagonal(Mat mat,  Vec v); // v = diag(A)
+
+PetscCall(MatShellSetOperation(A, MATOP_GET_DIAGONAL ,(void(*)(void))MatGetDiagonal_Laplacian2D))
+
+PetscErrorCode MatGetDiagonal_Laplacian2D(Mat A, Vec diag)
+
+*/
 //---------------------------------------------------------------------------
 #endif
