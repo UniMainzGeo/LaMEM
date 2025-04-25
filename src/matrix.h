@@ -18,6 +18,14 @@
 struct MatData;
 
 //---------------------------------------------------------------------------
+
+PetscErrorCode PMatCreate(MatData *md, Mat *A);
+
+PetscErrorCode PMatAssemble(MatData *md, PetscScalar pgamma, Mat A);
+
+PetscErrorCode PMatGetDiag(MatData *md, PetscScalar pgamma, Mat D);
+
+//---------------------------------------------------------------------------
 //.........................   MONOLITHIC MATRIX   ...........................
 //---------------------------------------------------------------------------
 
@@ -28,6 +36,7 @@ struct PMatMono
 	Mat         A;      // monolithic matrix
 	Mat         M;      // penalty terms compensation matrix
 	Vec         w;      // work vector for computing Jacobian action
+	Mat         D;      // matrix diagonal
 };
 
 PetscErrorCode PMatMonoCreate(
@@ -36,8 +45,6 @@ PetscErrorCode PMatMonoCreate(
 		PetscScalar  pgamma);
 
 PetscErrorCode PMatMonoAssemble(PMatMono *P);
-
-PetscErrorCode PMatMonoGetDiag(PMatMono *P, Mat D);
 
 PetscErrorCode PMatMonoDestroy(PMatMono *P);
 

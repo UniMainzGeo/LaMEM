@@ -52,6 +52,11 @@ struct MGLevel
 
 	Mat      RMF, PMF;
 	MGInterp mgi;
+	Mat      AMF;  // linear operator
+
+	//PMatMono *P;   // assembled operator
+
+	//ierr  PMatMonoGetDiag(PMatMono *P, Mat D);
 
 
 	// ******** fine level ************
@@ -75,8 +80,6 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine);
 // PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine);
 
 // PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine);
-
-//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 
@@ -123,7 +126,7 @@ struct MG
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode MGCreate(MG *mg, MatData *md);
+PetscErrorCode MGCreate(MG *mg, MatData *md, Mat A);
 
 PetscErrorCode MGDestroy(MG *mg);
 
@@ -140,11 +143,11 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md);
 //---------------------------------------------------------------------------
 
 // test codes
-PetscErrorCode comareVecs(Vec va, Vec vb);
+PetscErrorCode compareVecs(Vec va, Vec vb);
 PetscErrorCode genRandVec(MatData *md, Vec *v);
 PetscErrorCode VecSetBC(MatData *md, Vec v);
 PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P);
-PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat R, Mat P);
+PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat P);
 
 //---------------------------------------------------------------------------
 /*

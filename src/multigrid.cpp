@@ -54,8 +54,12 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md)
 		ierr = MatAIJCreate(lnfine, ln,     8,  NULL, 7, NULL, &lvl->P); CHKERRQ(ierr);
 
 
+
 		// create interpolation contex
 		ierr = MGInterpCreate(&lvl->mgi, lvl->md, fine->md); CHKERRQ(ierr);
+
+
+
 
 		// create restriction operator
 		ierr = MatCreateShell(PETSC_COMM_WORLD, ln, lnfine, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->RMF); CHKERRQ(ierr);
@@ -68,6 +72,8 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md)
 		ierr = MatAssemblyBegin(lvl->RMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 		ierr = MatAssemblyEnd  (lvl->RMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
+
+
 		// create prolongation operator
 		ierr = MatCreateShell(PETSC_COMM_WORLD, lnfine, ln, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->PMF); CHKERRQ(ierr);
 		ierr = MatSetUp(lvl->PMF); CHKERRQ(ierr);
@@ -78,6 +84,44 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md)
 
 		ierr = MatAssemblyBegin(lvl->PMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 		ierr = MatAssemblyEnd  (lvl->PMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+
+
+
+
+
+		ierr = MatCreateShell(PETSC_COMM_WORLD, lnfine, ln, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->AMF); CHKERRQ(ierr);
+		ierr = MatSetUp(lvl->AMF); CHKERRQ(ierr);
+
+
+
+		// PetscErrorCode MatGetDiagonal(Mat mat,  Vec v); // v = diag(A)
+
+		// PetscCall(MatShellSetOperation(A, MATOP_GET_DIAGONAL ,(void(*)(void))MatGetDiagonal_Laplacian2D))
+
+
+/*
+
+PetscErrorCode PMatCreate(MatData *md, Mat *A);
+
+PetscErrorCode PMatAssemble(MatData *md, PetscScalar pgamma, Mat A);
+
+PetscErrorCode PMatGetDiag(MatData *md, PetscScalar pgamma, Mat D);
+
+
+	ierr = MatDestroy (&P->A); CHKERRQ(ierr);
+	ierr = MatDestroy (&P->M); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->w); CHKERRQ(ierr);
+
+		// create matrices & vectors
+		ierr = MatAIJCreateDiag(ln, start, &P->M); CHKERRQ(ierr);
+
+		// create work vector
+		ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &P->w); CHKERRQ(ierr);
+		ierr = VecSetFromOptions(P->w);
+
+		ierr = MatAIJAssemble(P->M, md->numSPC, md->SPCListMat, 0.0); CHKERRQ(ierr);
+*/
 
 	}
 
@@ -106,6 +150,377 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+// MG interpolation context functions
+//---------------------------------------------------------------------------
+PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// set evaluation context
+	mgi->coarse = coarse;
+	mgi->fine   = fine;
+
+	// create work vectors
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, coarse->fs->dof.ln, PETSC_DETERMINE, &mgi->wc); CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, fine->fs->dof.ln,   PETSC_DETERMINE, &mgi->wf); CHKERRQ(ierr);
+
+	ierr = VecSetFromOptions(mgi->wc); CHKERRQ(ierr);
+	ierr = VecSetFromOptions(mgi->wf); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MGInterpDestroy(MGInterp *mgi)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = VecDestroy(&mgi->wc); CHKERRQ(ierr);
+	ierr = VecDestroy(&mgi->wf); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// MG -functions
+//---------------------------------------------------------------------------
+PetscErrorCode MGCreate(MG *mg, MatData *md, Mat A)
+{
+	PetscInt  i, l;
+	MGLevel   *fine;
+	char      pc_type[_str_len_];
+	PetscBool opt_set;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// get preconditioner type
+	ierr = PetscOptionsGetString(NULL, NULL, "-gmg_pc_type", pc_type, _str_len_, &opt_set); CHKERRQ(ierr);
+
+	// check whether multigrid is requested
+	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg"))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "-gmg_pc_type option is not defined of specified incorrectly (use -gmg_pc_type mg)");
+	}
+
+	// clear object
+	ierr = PetscMemzero(mg, sizeof(MG)); CHKERRQ(ierr);
+
+	// check multigrid mesh restrictions & get actual number of levels
+	ierr = MGGetNumLevels(mg, md); CHKERRQ(ierr);
+
+	// allocate levels
+	ierr = PetscMalloc(sizeof(MGLevel)*(size_t)mg->nlvl, &mg->lvls); CHKERRQ(ierr);
+
+	// create levels
+	fine = NULL;
+
+	for(i = 0; i < mg->nlvl; i++)
+	{
+		ierr = MGLevelCreate(&mg->lvls[i], fine, md); CHKERRQ(ierr);
+
+		fine = &mg->lvls[i];
+	}
+
+	// create Galerkin multigrid preconditioner
+	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc);          CHKERRQ(ierr);
+	ierr = PCSetOptionsPrefix(mg->pc, "gmg_");           CHKERRQ(ierr);
+	ierr = PCSetType(mg->pc, PCMG);                      CHKERRQ(ierr);
+	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);        CHKERRQ(ierr);
+	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE);    CHKERRQ(ierr);
+	ierr = PCSetFromOptions(mg->pc);                     CHKERRQ(ierr);
+	ierr = PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_NONE); CHKERRQ(ierr);
+
+	// attach restriction/prolongation matrices to the preconditioner
+	for(i = 1, l = mg->nlvl-1; i < mg->nlvl; i++, l--)
+	{
+//		ierr = PCMGSetRestriction  (mg->pc, l, mg->lvls[i].R); CHKERRQ(ierr);
+//		ierr = PCMGSetInterpolation(mg->pc, l, mg->lvls[i].P); CHKERRQ(ierr);
+
+		ierr = PCMGSetRestriction  (mg->pc, l, mg->lvls[i].RMF); CHKERRQ(ierr);
+		ierr = PCMGSetInterpolation(mg->pc, l, mg->lvls[i].PMF); CHKERRQ(ierr);
+
+	}
+
+	// set coarse solver setup flag
+	mg->crs_setup = PETSC_FALSE;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MGDestroy(MG *mg)
+{
+	PetscInt  i;
+	PetscBool flg;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// view preconditioner if required
+	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		ierr = PCView(mg->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
+	}
+
+	for(i = 0; i < mg->nlvl; i++)
+	{
+		ierr = MGLevelDestroy(&mg->lvls[i]); CHKERRQ(ierr);
+	}
+
+	ierr = PetscFree(mg->lvls); CHKERRQ(ierr);
+
+	ierr = PCDestroy(&mg->pc); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
+{
+	KSP        ksp;
+	PC         pc;
+	Mat        mat;
+	MGLevel   *lvl;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// skip already configured solver
+	if(mg->crs_setup == PETSC_TRUE)
+	{
+		PetscFunctionReturn(0);
+	}
+
+	// get coarse level
+	lvl = mg->lvls + mg->nlvl - 1;
+
+	// set dummy coarse solver
+	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
+	ierr = KSPSetType(ksp, KSPPREONLY);      CHKERRQ(ierr);
+	ierr = KSPGetPC(ksp, &pc);               CHKERRQ(ierr);
+	ierr = PCSetType(pc, PCNONE);            CHKERRQ(ierr);
+
+	// force setup operators
+	ierr = PCSetOperators(mg->pc, A, A);     CHKERRQ(ierr);
+	ierr = PCSetUp(mg->pc);                  CHKERRQ(ierr);
+
+	// set near null space on coarse level matrix
+	ierr = KSPGetOperators(ksp, &mat, NULL); CHKERRQ(ierr);
+	ierr = MatAIJSetNullSpace(mat, lvl->md); CHKERRQ(ierr);
+
+	// set actual coarse solver options
+	ierr = KSPSetOptionsPrefix(ksp, "crs_"); CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(ksp);           CHKERRQ(ierr);
+
+	// set setup flag
+	mg->crs_setup = PETSC_TRUE;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MGSetup(MG *mg, Mat A)
+{
+	// Matrices are re-assembled here, just in case
+	// they will be made matrix- distance- dependent.
+	// Currently they depend only on boundary conditions,
+	// so changing boundary condition would also require re-assembly.
+
+	KSP      ksp;
+	MGLevel *lvl, *fine;
+	PetscInt i, l;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	l = mg->nlvl-1;
+
+	ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
+	ierr = KSPSetOperators(ksp, A, A);       CHKERRQ(ierr);
+
+	l--;
+
+	mg->lvls[0].A = A;
+
+	for(i = 1; i < mg->nlvl; i++)
+	{
+		lvl =  &mg->lvls[i];
+		fine = &mg->lvls[i-1];
+
+		ierr = MatDataRestrict(lvl->md, fine->md); CHKERRQ(ierr);
+
+		ierr = MGLevelSetupRestrict(lvl, fine); CHKERRQ(ierr);
+		ierr = MGLevelSetupProlong (lvl, fine); CHKERRQ(ierr);
+
+//		if(i == 2) { ierr = TestInterp(lvl->md, fine->md, lvl->R, lvl->P);  CHKERRQ(ierr); }
+
+		if(lvl->A)
+		{
+			ierr = MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_INITIAL_MATRIX, PETSC_DETERMINE, &lvl->A); CHKERRQ(ierr);
+		}
+		else
+		{
+			// WARNING!!! replace PETSC_DETERMINE with PETSC_CURRENT in new version
+			ierr = MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_REUSE_MATRIX, PETSC_DETERMINE, &lvl->A); CHKERRQ(ierr);
+		}
+
+		ierr = PCMGGetSmoother(mg->pc, l, &ksp);     CHKERRQ(ierr);
+		ierr = KSPSetOperators(ksp, lvl->A, lvl->A); CHKERRQ(ierr);
+
+		l--;
+
+	}
+
+	// setup coarse grid solver if necessary
+	ierr = MGSetupCoarse(mg, A); CHKERRQ(ierr);
+
+
+
+	// store matrices in the file if requested
+	ierr = MGDumpMat(mg); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MGApply(PC pc, Vec x, Vec y)
+{
+	MG *mg;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = PCShellGetContext(pc, (void**)&mg); CHKERRQ(ierr);
+
+	// apply multigrid preconditioner
+	ierr = PCApply(mg->pc, x, y); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MGDumpMat(MG *mg)
+{
+	Mat         A;
+	KSP         ksp;
+	PetscBool   flg;
+	PetscInt    l;
+	PetscViewer viewer;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// view multigrid matrices if required
+	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_dump", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Dumping multigrid matrices to MATLAB\n"); CHKERRQ(ierr);
+
+		viewer = PETSC_VIEWER_BINARY_(PETSC_COMM_WORLD);
+
+		//===================================
+		// OUTPUT IN THE ORDER FINE -> COARSE
+		//===================================
+
+		for(l = mg->nlvl-1; l >= 0; l--)
+		{
+			// level matrix
+			ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
+			ierr = KSPGetOperators(ksp, &A, NULL);   CHKERRQ(ierr);
+			ierr = MatView(A, viewer);               CHKERRQ(ierr);
+
+			if(l != 0)
+			{
+				// restriction
+				ierr = PCMGGetRestriction(mg->pc, l, &A); CHKERRQ(ierr);
+				ierr = MatView(A, viewer);                CHKERRQ(ierr);
+
+				// prolongation
+				ierr = PCMGGetInterpolation(mg->pc, l, &A); CHKERRQ(ierr);
+				ierr = MatView(A, viewer);                  CHKERRQ(ierr);
+			}
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
+{
+	// check multigrid mesh restrictions, get actual number of coarsening steps
+
+	FDSTAG   *fs;
+	PetscBool opt_set;
+	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, nlmf;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	fs = md->fs;
+
+	// check discretization in all directions
+	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);
+	ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
+	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr);
+
+	ncors = nx;
+	if(ny < ncors) ncors = ny;
+	if(nz < ncors) ncors = nz;
+
+	// check number of levels requested on the command line
+	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
+
+	if(opt_set != PETSC_TRUE)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
+	}
+	else if(nlevels < 2 || nlevels > ncors+1)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
+	}
+
+	// check number of matrix-free levels requested on the command line
+	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_mat_free_levels", &nlmf, &opt_set); CHKERRQ(ierr);
+
+	if(opt_set == PETSC_TRUE)
+	{
+		if(nlmf > nlevels-1)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of matrix-free levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlmf, (LLD)(nlevels-1));
+		}
+	}
+	else
+	{
+		nlmf = 0;
+	}
+
+	// set actual number of coarsening steps
+	ncors = nlevels-1;
+
+	// print grid statistics
+	nx = fs->dsx.ncels >> ncors;
+	ny = fs->dsy.ncels >> ncors;
+	nz = fs->dsz.ncels >> ncors;
+
+	Nx = nx*fs->dsx.nproc;
+	Ny = ny*fs->dsy.nproc;
+	Nz = nz*fs->dsz.nproc;
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);                           CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of matrix-free levels  :  %lld\n", (LLD)nlmf);                              CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+	// store number of levels
+	mg->nlvl = nlevels;
+	mg->nlmf = nlmf;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// low-level functions
 //---------------------------------------------------------------------------
 PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 {
@@ -673,7 +1088,6 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
 void getRowRestrict(
 		PetscScalar parent,
 		PetscInt    n,
@@ -746,416 +1160,9 @@ void getRowProlong(
 	}
 }
 //---------------------------------------------------------------------------
-// MG interpolation context functions
-//---------------------------------------------------------------------------
-PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// set evaluation context
-	mgi->coarse = coarse;
-	mgi->fine   = fine;
-
-	// create work vectors
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, coarse->fs->dof.ln, PETSC_DETERMINE, &mgi->wc); CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, fine->fs->dof.ln,   PETSC_DETERMINE, &mgi->wf); CHKERRQ(ierr);
-
-	ierr = VecSetFromOptions(mgi->wc); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(mgi->wf); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode MGInterpDestroy(MGInterp *mgi)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	ierr = VecDestroy(&mgi->wc); CHKERRQ(ierr);
-	ierr = VecDestroy(&mgi->wf); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// MG -functions
-//---------------------------------------------------------------------------
-PetscErrorCode MGCreate(MG *mg, MatData *md)
-{
-	PetscInt  i, l;
-	MGLevel   *fine;
-	char      pc_type[_str_len_];
-	PetscBool opt_set;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// get preconditioner type
-	ierr = PetscOptionsGetString(NULL, NULL, "-gmg_pc_type", pc_type, _str_len_, &opt_set); CHKERRQ(ierr);
-
-	// check whether multigrid is requested
-	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg"))
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "-gmg_pc_type option is not defined of specified incorrectly (use -gmg_pc_type mg)");
-	}
-
-	// clear object
-	ierr = PetscMemzero(mg, sizeof(MG)); CHKERRQ(ierr);
-
-	// check multigrid mesh restrictions & get actual number of levels
-	ierr = MGGetNumLevels(mg, md); CHKERRQ(ierr);
-
-	// allocate levels
-	ierr = PetscMalloc(sizeof(MGLevel)*(size_t)mg->nlvl, &mg->lvls); CHKERRQ(ierr);
-
-	// create levels
-	fine = NULL;
-
-	for(i = 0; i < mg->nlvl; i++)
-	{
-		ierr = MGLevelCreate(&mg->lvls[i], fine, md); CHKERRQ(ierr);
-
-		fine = &mg->lvls[i];
-	}
-
-	// create Galerkin multigrid preconditioner
-	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc);          CHKERRQ(ierr);
-	ierr = PCSetOptionsPrefix(mg->pc, "gmg_");           CHKERRQ(ierr);
-	ierr = PCSetType(mg->pc, PCMG);                      CHKERRQ(ierr);
-	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);        CHKERRQ(ierr);
-	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE);    CHKERRQ(ierr);
-	ierr = PCSetFromOptions(mg->pc);                     CHKERRQ(ierr);
-	ierr = PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_NONE); CHKERRQ(ierr);
-
-	// attach restriction/prolongation matrices to the preconditioner
-	for(i = 1, l = mg->nlvl-1; i < mg->nlvl; i++, l--)
-	{
-//		ierr = PCMGSetRestriction  (mg->pc, l, mg->lvls[i].R); CHKERRQ(ierr);
-//		ierr = PCMGSetInterpolation(mg->pc, l, mg->lvls[i].P); CHKERRQ(ierr);
-
-		ierr = PCMGSetRestriction  (mg->pc, l, mg->lvls[i].RMF); CHKERRQ(ierr);
-		ierr = PCMGSetInterpolation(mg->pc, l, mg->lvls[i].PMF); CHKERRQ(ierr);
-
-	}
-
-	// set coarse solver setup flag
-	mg->crs_setup = PETSC_FALSE;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode MGDestroy(MG *mg)
-{
-	PetscInt  i;
-	PetscBool flg;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// view preconditioner if required
-	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		ierr = PCView(mg->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
-	}
-
-	for(i = 0; i < mg->nlvl; i++)
-	{
-		ierr = MGLevelDestroy(&mg->lvls[i]); CHKERRQ(ierr);
-	}
-
-	ierr = PetscFree(mg->lvls); CHKERRQ(ierr);
-
-	ierr = PCDestroy(&mg->pc); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-
-//---------------------------------------------------------------------------
-PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
-{
-	KSP        ksp;
-	PC         pc;
-	Mat        mat;
-	MGLevel   *lvl;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// skip already configured solver
-	if(mg->crs_setup == PETSC_TRUE)
-	{
-		PetscFunctionReturn(0);
-	}
-
-	// get coarse level
-	lvl = mg->lvls + mg->nlvl - 1;
-
-	// set dummy coarse solver
-	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
-	ierr = KSPSetType(ksp, KSPPREONLY);      CHKERRQ(ierr);
-	ierr = KSPGetPC(ksp, &pc);               CHKERRQ(ierr);
-	ierr = PCSetType(pc, PCNONE);            CHKERRQ(ierr);
-
-	// force setup operators
-	ierr = PCSetOperators(mg->pc, A, A);     CHKERRQ(ierr);
-	ierr = PCSetUp(mg->pc);                  CHKERRQ(ierr);
-
-	// set near null space on coarse level matrix
-	ierr = KSPGetOperators(ksp, &mat, NULL); CHKERRQ(ierr);
-	ierr = MatAIJSetNullSpace(mat, lvl->md); CHKERRQ(ierr);
-
-	// set actual coarse solver options
-	ierr = KSPSetOptionsPrefix(ksp, "crs_"); CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(ksp);           CHKERRQ(ierr);
-
-	// set setup flag
-	mg->crs_setup = PETSC_TRUE;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode MGSetup(MG *mg, Mat A)
-{
-	// Matrices are re-assembled here, just in case
-	// they will be made matrix- distance- dependent.
-	// Currently they depend only on boundary conditions,
-	// so changing boundary condition would also require re-assembly.
-
-	KSP      ksp;
-	MGLevel *lvl, *fine;
-	PetscInt i, l;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	l = mg->nlvl-1;
-
-	ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
-	ierr = KSPSetOperators(ksp, A, A);       CHKERRQ(ierr);
-
-	l--;
-
-	mg->lvls[0].A = A;
-
-	for(i = 1; i < mg->nlvl; i++)
-	{
-		lvl =  &mg->lvls[i];
-		fine = &mg->lvls[i-1];
-
-		ierr = MatDataRestrict(lvl->md, fine->md); CHKERRQ(ierr);
-
-		ierr = MGLevelSetupRestrict(lvl, fine); CHKERRQ(ierr);
-		ierr = MGLevelSetupProlong (lvl, fine); CHKERRQ(ierr);
-
-		if(i == 2)
-		{
-			ierr = TestInterp(lvl->md, fine->md, lvl->R, lvl->P);  CHKERRQ(ierr);
-		}
-
-		if(lvl->A)
-		{
-			ierr = MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_INITIAL_MATRIX, PETSC_DETERMINE, &lvl->A); CHKERRQ(ierr);
-		}
-		else
-		{
-			// WARNING!!! replace PETSC_DETERMINE with PETSC_CURRENT in new version
-			ierr = MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_REUSE_MATRIX, PETSC_DETERMINE, &lvl->A); CHKERRQ(ierr);
-		}
-
-		ierr = PCMGGetSmoother(mg->pc, l, &ksp);     CHKERRQ(ierr);
-		ierr = KSPSetOperators(ksp, lvl->A, lvl->A); CHKERRQ(ierr);
-
-		l--;
-
-	}
-
-	// setup coarse grid solver if necessary
-	ierr = MGSetupCoarse(mg, A); CHKERRQ(ierr);
-
-
-
-	// store matrices in the file if requested
-	ierr = MGDumpMat(mg); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-
-
-
-	/*
-
-	https://petsc.org/release/src/dm/impls/stag/tutorials/ex4.c.html
-	  PetscCall(PCSetType(pc_faces, PCMG));
-258:     PetscCall(PCMGSetLevels(pc_faces, ctx->n_levels, NULL));
-259:     for (PetscInt level = 0; level < ctx->n_levels; ++level) {
-260:       KSP ksp_level;
-261:       PC  pc_level;
-
-263:       // Smoothers
-264:       PetscCall(PCMGGetSmoother(pc_faces, level, &ksp_level));
-265:       PetscCall(KSPGetPC(ksp_level, &pc_level));
-266:       PetscCall(KSPSetOperators(ksp_level, A_faces[level], A_faces[level]));
-267:       if (level > 0) PetscCall(PCSetType(pc_level, PCJACOBI));
-
-269:       // Transfer Operators
-270:       if (level > 0) {
-271:         Mat restriction, interpolation;
-272:         DM  dm_level   = ctx->levels[level]->dm_faces;
-273:         DM  dm_coarser = ctx->levels[level - 1]->dm_faces;
-
-275:         PetscCall(DMCreateInterpolation(dm_coarser, dm_level, &interpolation, NULL));
-276:         PetscCall(PCMGSetInterpolation(pc_faces, level, interpolation));
-277:         PetscCall(MatDestroy(&interpolation));
-278:         PetscCall(DMCreateRestriction(dm_coarser, dm_level, &restriction));
-279:         PetscCall(PCMGSetRestriction(pc_faces, level, restriction));
-280:         PetscCall(MatDestroy(&restriction));
-281:       }
-282:     }
-283:   }
-	 */
-}
-//---------------------------------------------------------------------------
-PetscErrorCode MGApply(PC pc, Vec x, Vec y)
-{
-	MG *mg;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	ierr = PCShellGetContext(pc, (void**)&mg); CHKERRQ(ierr);
-
-	// apply multigrid preconditioner
-	ierr = PCApply(mg->pc, x, y); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode MGDumpMat(MG *mg)
-{
-	Mat         A;
-	KSP         ksp;
-	PetscBool   flg;
-	PetscInt    l;
-	PetscViewer viewer;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// view multigrid matrices if required
-	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_dump", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Dumping multigrid matrices to MATLAB\n"); CHKERRQ(ierr);
-
-		viewer = PETSC_VIEWER_BINARY_(PETSC_COMM_WORLD);
-
-		//===================================
-		// OUTPUT IN THE ORDER FINE -> COARSE
-		//===================================
-
-		for(l = mg->nlvl-1; l >= 0; l--)
-		{
-			// level matrix
-			ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
-			ierr = KSPGetOperators(ksp, &A, NULL);   CHKERRQ(ierr);
-			ierr = MatView(A, viewer);               CHKERRQ(ierr);
-
-			if(l != 0)
-			{
-				// restriction
-				ierr = PCMGGetRestriction(mg->pc, l, &A); CHKERRQ(ierr);
-				ierr = MatView(A, viewer);                CHKERRQ(ierr);
-
-				// prolongation
-				ierr = PCMGGetInterpolation(mg->pc, l, &A); CHKERRQ(ierr);
-				ierr = MatView(A, viewer);                  CHKERRQ(ierr);
-			}
-		}
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
-{
-	// check multigrid mesh restrictions, get actual number of coarsening steps
-
-	FDSTAG   *fs;
-	PetscBool opt_set;
-	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, nlmf;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	fs = md->fs;
-
-	// check discretization in all directions
-	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);
-	ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
-	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr);
-
-	ncors = nx;
-	if(ny < ncors) ncors = ny;
-	if(nz < ncors) ncors = nz;
-
-	// check number of levels requested on the command line
-	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
-
-	if(opt_set != PETSC_TRUE)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
-	}
-	else if(nlevels < 2 || nlevels > ncors+1)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
-	}
-
-	// check number of matrix-free levels requested on the command line
-	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_mat_free_levels", &nlmf, &opt_set); CHKERRQ(ierr);
-
-	if(opt_set == PETSC_TRUE)
-	{
-		if(nlmf > nlevels-1)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of matrix-free levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlmf, (LLD)(nlevels-1));
-		}
-	}
-	else
-	{
-		nlmf = 0;
-	}
-
-	// set actual number of coarsening steps
-	ncors = nlevels-1;
-
-	// print grid statistics
-	nx = fs->dsx.ncels >> ncors;
-	ny = fs->dsy.ncels >> ncors;
-	nz = fs->dsz.ncels >> ncors;
-
-	Nx = nx*fs->dsx.nproc;
-	Ny = ny*fs->dsy.nproc;
-	Nz = nz*fs->dsz.nproc;
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);                           CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of matrix-free levels  :  %lld\n", (LLD)nlmf);                              CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
-	// store number of levels
-	mg->nlvl = nlevels;
-	mg->nlmf = nlmf;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-
 // test functions
-
-PetscErrorCode comareVecs(Vec va, Vec vb)
+//---------------------------------------------------------------------------
+PetscErrorCode compareVecs(Vec va, Vec vb)
 {
 	Vec       diff;
 	PetscReal nrm;
@@ -1179,9 +1186,7 @@ PetscErrorCode comareVecs(Vec va, Vec vb)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
-
 PetscErrorCode genRandVec(MatData *md, Vec *v)
 {
 	PetscRandom  rctx;
@@ -1200,7 +1205,6 @@ PetscErrorCode genRandVec(MatData *md, Vec *v)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
 PetscErrorCode VecSetBC(MatData *md, Vec v)
 {
 	PetscInt     i, num, *list;
@@ -1228,7 +1232,6 @@ PetscErrorCode VecSetBC(MatData *md, Vec v)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
 PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P)
 {
 	Vec zc, zf;
@@ -1300,8 +1303,8 @@ PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P)
 	ierr = MatMultAdd(PMF, rc, zf, wfmf); CHKERRQ(ierr);
 
 	// comparison
-	ierr = comareVecs(wc, wcmf); CHKERRQ(ierr);
-	ierr = comareVecs(wf, wfmf); CHKERRQ(ierr);
+	ierr = compareVecs(wc, wcmf); CHKERRQ(ierr);
+	ierr = compareVecs(wf, wfmf); CHKERRQ(ierr);
 
 	ierr = MGInterpDestroy(&mgi); CHKERRQ(ierr);
 
@@ -1320,7 +1323,7 @@ PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat R, Mat P)
+PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat P)
 {
 	MGInterp mgi;
 
@@ -1350,7 +1353,7 @@ PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat R, Mat P)
 	ierr = VecSetBC(fine, wf);   CHKERRQ(ierr);
 	ierr = VecSetBC(fine, wfbc); CHKERRQ(ierr);
 
-	ierr = comareVecs(wf, wfbc); CHKERRQ(ierr);
+	ierr = compareVecs(wf, wfbc); CHKERRQ(ierr);
 
 	ierr = VecDestroy(&rc);   CHKERRQ(ierr);
 	ierr = VecDestroy(&rcbc); CHKERRQ(ierr);
@@ -1362,4 +1365,5 @@ PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat R, Mat P)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
 
