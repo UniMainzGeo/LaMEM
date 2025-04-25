@@ -16,18 +16,37 @@
 //---------------------------------------------------------------------------
 
 struct MatData;
+struct MGInterp;
 
+//---------------------------------------------------------------------------
+// interface functions
 //---------------------------------------------------------------------------
 
 PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f);
 
 PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f);
 
-PetscErrorCode MatFreeApplyLinearOperator(MatData *md, Vec x, Vec f, PetscScalar cfInvEta);
+PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vc);
 
-PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vcb, Vec vc);
+PetscErrorCode MatFreeUpdateRestrict(Mat R, Vec vf, Vec vcb, Vec vc);
 
-PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vfb, Vec vf);
+PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vf);
+
+PetscErrorCode MatFreeUpdateProlong(Mat P, Vec vc, Vec vfb, Vec vf);
+
+//---------------------------------------------------------------------------
+// main computation functions
+//---------------------------------------------------------------------------
+
+PetscErrorCode MatFreeComputeLinearOperator(MatData *md, Vec x, Vec f, PetscScalar cfInvEta);
+
+PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc);
+
+PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf);
+
+//---------------------------------------------------------------------------
+// helper functions
+//---------------------------------------------------------------------------
 
 // split vector into blocks, assign ghost points
 PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Vec gvp);
@@ -37,6 +56,10 @@ PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz,
 
 // combine blocks into a vector, enforce boundary conditions
 PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, Vec gvp);
+
+//---------------------------------------------------------------------------
+// low-level functions
+//---------------------------------------------------------------------------
 
 PetscErrorCode MatFreeGetLinearOperator(MatData *md,
 		Vec lvx, Vec lvy, Vec lvz, Vec gp,
