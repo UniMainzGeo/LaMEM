@@ -230,10 +230,13 @@ PetscErrorCode PCDataMGCreate(PCDataMG *pc, PCParam *param, JacRes *jr, Mat J, M
 	ierr = MatDataCreate(&pc->md, jr, _IDX_COUPLED_); CHKERRQ(ierr);
 
 	// create matrix
-	ierr = PMatMonoCreate(&pc->pm, &pc->md, param->pgamma); CHKERRQ(ierr);
+	if(param->ps_type == _PICARD_ASSEMBLED_)
+	{
+		ierr = PMatMonoCreate(&pc->pm, &pc->md, param->pgamma); CHKERRQ(ierr);
+	}
 
 	// create multigrid context
-	ierr = MGCreate(&pc->mg, &pc->md); CHKERRQ(ierr);
+	ierr = MGCreate(&pc->mg, &pc->md, pc->pm.A); CHKERRQ(ierr);
 
 	// set Picard operator
 	if(param->ps_type == _PICARD_MAT_FREE_)
@@ -260,7 +263,13 @@ PetscErrorCode PCDataMGDestroy(PCDataMG *pc)
 	PetscFunctionBeginUser;
 
 	ierr = MatDataDestroy (&pc->md); CHKERRQ(ierr);
+
+	if(pc->param->ps_type == _PICARD_ASSEMBLED_)
+	{
+		ierr = PMatMonoDestroy(&pc->pm); CHKERRQ(ierr);
+	}
 	ierr = PMatMonoDestroy(&pc->pm); CHKERRQ(ierr);
+
 	ierr = MGDestroy      (&pc->mg); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -275,7 +284,10 @@ PetscErrorCode PCDataMGSetup(PCDataMG *pc, JacRes *jr)
 
 	ierr = MatDataSetup(&pc->md, jr); CHKERRQ(ierr);
 
-	ierr = PMatMonoAssemble(P); CHKERRQ(ierr);
+	if(pc->param->ps_type == _PICARD_ASSEMBLED_)
+	{
+		ierr = PMatMonoAssemble(P); CHKERRQ(ierr);
+	}
 
 	ierr = MGSetup(&pc->mg, P->A); CHKERRQ(ierr);
 

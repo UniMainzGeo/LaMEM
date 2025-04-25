@@ -110,7 +110,7 @@ PetscErrorCode MatFreeUpdateRestrict(Mat R, Vec vf, Vec vcb, Vec vc)
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vf)
 {
-	// this function corresponds to MATOP_MULT_ADD operation (vf = P*vc)
+	// this function corresponds to MATOP_MULT operation (vf = P*vc)
 
 	MGInterp *mgi;
 
