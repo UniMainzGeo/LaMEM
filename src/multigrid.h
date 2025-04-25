@@ -18,6 +18,25 @@ struct MatData;
 
 //---------------------------------------------------------------------------
 
+
+// matrix-free interpolation context between the levels
+
+struct MGInterp
+{
+	MatData *coarse; // coarse level evaluation context
+	MatData *fine;   // fine level evaluation context
+	Vec      wc;     // coarse grid work vector
+	Vec      wf;     // fine grid work vector
+};
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine);
+
+PetscErrorCode MGInterpDestroy(MGInterp *mgi);
+
+//---------------------------------------------------------------------------
+
 // Galerkin multigrid level data structure
 
 struct MGLevel
@@ -29,6 +48,10 @@ struct MGLevel
 
 	MatData *md;   // matrix evaluation context
 	Mat      R, P; // restriction & prolongation operators (not set on finest grid)
+	Mat      A;    // linear operator
+
+	Mat      RMF, PMF;
+	MGInterp mgi;
 
 
 	// ******** fine level ************
@@ -54,22 +77,6 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine);
 // PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine);
 
 //---------------------------------------------------------------------------
-
-// matrix-free interpolation context between the levels
-
-struct MGInterp
-{
-	MatData *coarse; // coarse level evaluation context
-	MatData *fine;   // fine level evaluation context
-	Vec      wc;     // coarse grid work vector
-	Vec      wf;     // fine grid work vector
-};
-
-//---------------------------------------------------------------------------
-
-PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine);
-
-PetscErrorCode MGInterpDestroy(MGInterp *mgi);
 
 //---------------------------------------------------------------------------
 
@@ -110,7 +117,7 @@ struct MG
 	PC        pc;        // internal preconditioner context
 	PetscInt  nlvl;      // number of levels
 	PetscInt  nlmf;      // number of matrix-free levels
-	MGLevel  *lvls;      // multigrid levles
+	MGLevel  *lvls;      // multigrid levels
 	PetscInt  crs_setup; // coarse solver setup flag
 };
 

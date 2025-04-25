@@ -19,9 +19,12 @@
 #include "multigrid.h"
 
 //---------------------------------------------------------------------------
+// interface functions
+//---------------------------------------------------------------------------
+
 PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f)
 {
-	// this function corresponds to MATOP_MULT operation
+	// this function corresponds to MATOP_MULT operation (f = A*x)
 
 	MatData     *md;
 	PetscScalar  cfInvEta;
@@ -35,14 +38,14 @@ PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f)
 	// do not add inverse viscosity term to pressure diagonal matrix (Picard operator)
 	cfInvEta = 0.0;
 
-	ierr = MatFreeApplyLinearOperator(md, x, f, cfInvEta); CHKERRQ(ierr);
+	ierr = MatFreeComputeLinearOperator(md, x, f, cfInvEta); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f)
 {
-	// this function corresponds to MATOP_MULT operation
+	// this function corresponds to MATOP_MULT operation (f = A*x)
 
 	MatData     *md;
 	PetscScalar  cfInvEta;
@@ -56,12 +59,104 @@ PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f)
 	// add inverse viscosity term to pressure diagonal matrix (preconditioner operator)
 	cfInvEta = 1.0;
 
-	ierr = MatFreeApplyLinearOperator(md, x, f, cfInvEta); CHKERRQ(ierr);
+	ierr = MatFreeComputeLinearOperator(md, x, f, cfInvEta); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatFreeApplyLinearOperator(MatData *md, Vec x, Vec f, PetscScalar cfInvEta)
+PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vc)
+{
+	// this function corresponds to MATOP_MULT operation (vc = R*vf)
+
+	MGInterp *mgi;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// access context
+	ierr = MatShellGetContext(R, (void**)&mgi); CHKERRQ(ierr);
+
+	ierr = MatFreeComputeRestrict(mgi, vf, vc); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MatFreeUpdateRestrict(Mat R, Vec vf, Vec vcb, Vec vc)
+{
+	// this function corresponds to MATOP_MULT_ADD operation (vc = vcb + R*vf)
+
+	MGInterp *mgi;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// access context
+	ierr = MatShellGetContext(R, (void**)&mgi); CHKERRQ(ierr);
+
+	ierr = MatFreeComputeRestrict(mgi, vf, mgi->wc); CHKERRQ(ierr);
+
+	// update coarse grid base vector
+	if(vcb == vc)
+	{
+		ierr = VecAXPY(vc, 1.0, mgi->wc); CHKERRQ(ierr);
+	}
+	else
+	{
+		ierr = VecWAXPY(vc, 1.0, vcb, mgi->wc); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vf)
+{
+	// this function corresponds to MATOP_MULT_ADD operation (vf = P*vc)
+
+	MGInterp *mgi;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// access context
+	ierr = MatShellGetContext(P, (void**)&mgi); CHKERRQ(ierr);
+
+	ierr = MatFreeComputeProlong(mgi, vc, vf);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MatFreeUpdateProlong(Mat P, Vec vc, Vec vfb, Vec vf)
+{
+	// this function corresponds to MATOP_MULT_ADD operation (vf = vfb + P*vc)
+
+	MGInterp *mgi;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// access context
+	ierr = MatShellGetContext(P, (void**)&mgi); CHKERRQ(ierr);
+
+	ierr = MatFreeComputeProlong(mgi, vc, mgi->wf);
+
+	// update fine grid base vector
+	if(vfb == vf)
+	{
+		ierr = VecAXPY(vf, 1.0, mgi->wf); CHKERRQ(ierr);
+	}
+	else
+	{
+		ierr = VecWAXPY(vf, 1.0, vfb, mgi->wf); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+// main computation functions
+//---------------------------------------------------------------------------
+
+PetscErrorCode MatFreeComputeLinearOperator(MatData *md, Vec x, Vec f, PetscScalar cfInvEta)
 {
 	FDSTAG  *fs;
 	Vec      vx, vy, vz, p;
@@ -107,14 +202,8 @@ PetscErrorCode MatFreeApplyLinearOperator(MatData *md, Vec x, Vec f, PetscScalar
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vcb, Vec vc)
+PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc)
 {
-	//======================================================
-	// this function corresponds to MATOP_MULT_ADD operation
-	// vc = vcb + R*vf;
-	//==================================================
-
-	MGInterp *mgi;
 	MatData  *coarse, *fine;
 	Vec       fx, fy, fz, fp;
 	Vec       cx, cy, cz, cp;
@@ -123,8 +212,6 @@ PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vcb, Vec vc)
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(R, (void**)&mgi); CHKERRQ(ierr);
-
 	coarse = mgi->coarse;
 	fine   = mgi->fine;
 
@@ -147,10 +234,7 @@ PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vcb, Vec vc)
 	ierr =  MatFreeGetRestrict(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp); CHKERRQ(ierr);
 
 	// combine coarse grid vector
-	ierr = MatFreeCombineVec(coarse, mgi->wc, cx, cy, cz, cp); CHKERRQ(ierr);
-
-	// update coarse grid base vector
-	ierr = VecWAXPY(vc, 1.0, vcb, mgi->wc); CHKERRQ(ierr);
+	ierr = MatFreeCombineVec(coarse, vc, cx, cy, cz, cp); CHKERRQ(ierr);
 
 	// restore temporary vectors
 	ierr = DMRestoreLocalVector (fine->fs->DA_X,     &fx); CHKERRQ(ierr);
@@ -165,14 +249,8 @@ PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vcb, Vec vc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vfb, Vec vf)
+PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf)
 {
-	//======================================================
-	// this function corresponds to MATOP_MULT_ADD operation
-	// vf = vfb + P*vc;
-	//======================================================
-
-	MGInterp *mgi;
 	MatData  *coarse, *fine;
 	Vec       fx, fy, fz, fp;
 	Vec       cx, cy, cz, cp;
@@ -181,8 +259,6 @@ PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vfb, Vec vf)
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(P, (void**)&mgi); CHKERRQ(ierr);
-
 	coarse = mgi->coarse;
 	fine   = mgi->fine;
 
@@ -205,10 +281,7 @@ PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vfb, Vec vf)
 	ierr = MatFreeGetProlong(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp); CHKERRQ(ierr);
 
 	// combine fine grid vector
-	ierr = MatFreeCombineVec(fine, mgi->wf, fx, fy, fz, fp); CHKERRQ(ierr);
-
-	// update fine grid base vector
-	ierr = VecWAXPY(vf, 1.0, vfb, mgi->wf); CHKERRQ(ierr);
+	ierr = MatFreeCombineVec(fine, vf, fx, fy, fz, fp); CHKERRQ(ierr);
 
 	// restore temporary vectors
 	ierr = DMRestoreGlobalVector(fine->fs->DA_X,     &fx); CHKERRQ(ierr);
@@ -222,7 +295,11 @@ PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vfb, Vec vf)
 
 	PetscFunctionReturn(0);
 }
+
 //---------------------------------------------------------------------------
+// helper functions
+//---------------------------------------------------------------------------
+
 PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Vec gvp)
 {
 	// split vector into blocks, assign ghost points
@@ -371,7 +448,11 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 
 	PetscFunctionReturn(0);
 }
-//-----------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+// low-level functions
+//---------------------------------------------------------------------------
+
 PetscErrorCode MatFreeGetLinearOperator(MatData *md,
 		Vec lvx, Vec lvy, Vec lvz, Vec gp,
 		Vec lfx, Vec lfy, Vec lfz, Vec gc,

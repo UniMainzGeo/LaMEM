@@ -31,8 +31,6 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md)
 	{
 		// setup top level
 		lvl->md = md;
-		lvl->R  = NULL;
-		lvl->P  = NULL;
 	}
 	else
 	{
@@ -54,6 +52,33 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md)
 		// preallocate restriction & prolongation matrices
 		ierr = MatAIJCreate(ln,     lnfine, 12, NULL, 4, NULL, &lvl->R); CHKERRQ(ierr);
 		ierr = MatAIJCreate(lnfine, ln,     8,  NULL, 7, NULL, &lvl->P); CHKERRQ(ierr);
+
+
+		// create interpolation contex
+		ierr = MGInterpCreate(&lvl->mgi, lvl->md, fine->md); CHKERRQ(ierr);
+
+		// create restriction operator
+		ierr = MatCreateShell(PETSC_COMM_WORLD, ln, lnfine, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->RMF); CHKERRQ(ierr);
+		ierr = MatSetUp(lvl->RMF); CHKERRQ(ierr);
+
+		ierr = MatShellSetOperation(lvl->RMF, MATOP_MULT,     (void(*)(void))MatFreeApplyRestrict); CHKERRQ(ierr);
+		ierr = MatShellSetOperation(lvl->RMF, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateRestrict); CHKERRQ(ierr);
+		ierr = MatShellSetContext(lvl->RMF, (void*)&lvl->mgi); CHKERRQ(ierr);
+
+		ierr = MatAssemblyBegin(lvl->RMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+		ierr = MatAssemblyEnd  (lvl->RMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+		// create prolongation operator
+		ierr = MatCreateShell(PETSC_COMM_WORLD, lnfine, ln, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->PMF); CHKERRQ(ierr);
+		ierr = MatSetUp(lvl->PMF); CHKERRQ(ierr);
+
+		ierr = MatShellSetOperation(lvl->PMF, MATOP_MULT,     (void(*)(void))MatFreeApplyProlong); CHKERRQ(ierr);
+		ierr = MatShellSetOperation(lvl->PMF, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateProlong); CHKERRQ(ierr);
+		ierr = MatShellSetContext(lvl->PMF, (void*)&lvl->mgi); CHKERRQ(ierr);
+
+		ierr = MatAssemblyBegin(lvl->PMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+		ierr = MatAssemblyEnd  (lvl->PMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
 	}
 
 	PetscFunctionReturn(0);
@@ -71,6 +96,12 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 
 		ierr = MatDestroy(&lvl->R); CHKERRQ(ierr);
 		ierr = MatDestroy(&lvl->P); CHKERRQ(ierr);
+
+		ierr = MatDestroy(&lvl->RMF); CHKERRQ(ierr);
+		ierr = MatDestroy(&lvl->PMF); CHKERRQ(ierr);
+
+		ierr = MGInterpDestroy(&lvl->mgi); CHKERRQ(ierr);
+
 	}
 
 	PetscFunctionReturn(0);
@@ -793,14 +824,18 @@ PetscErrorCode MGCreate(MG *mg, MatData *md)
 	ierr = PCSetType(mg->pc, PCMG);                      CHKERRQ(ierr);
 	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);        CHKERRQ(ierr);
 	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE);    CHKERRQ(ierr);
-	ierr = PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_BOTH); CHKERRQ(ierr);
 	ierr = PCSetFromOptions(mg->pc);                     CHKERRQ(ierr);
+	ierr = PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_NONE); CHKERRQ(ierr);
 
 	// attach restriction/prolongation matrices to the preconditioner
 	for(i = 1, l = mg->nlvl-1; i < mg->nlvl; i++, l--)
 	{
-		ierr = PCMGSetRestriction  (mg->pc, l, mg->lvls[i].R); CHKERRQ(ierr);
-		ierr = PCMGSetInterpolation(mg->pc, l, mg->lvls[i].P); CHKERRQ(ierr);
+//		ierr = PCMGSetRestriction  (mg->pc, l, mg->lvls[i].R); CHKERRQ(ierr);
+//		ierr = PCMGSetInterpolation(mg->pc, l, mg->lvls[i].P); CHKERRQ(ierr);
+
+		ierr = PCMGSetRestriction  (mg->pc, l, mg->lvls[i].RMF); CHKERRQ(ierr);
+		ierr = PCMGSetInterpolation(mg->pc, l, mg->lvls[i].PMF); CHKERRQ(ierr);
+
 	}
 
 	// set coarse solver setup flag
@@ -888,37 +923,58 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	// Currently they depend only on boundary conditions,
 	// so changing boundary condition would also require re-assembly.
 
+	KSP      ksp;
 	MGLevel *lvl, *fine;
-	PetscInt i;
+	PetscInt i, l;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
+
+	l = mg->nlvl-1;
+
+	ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
+	ierr = KSPSetOperators(ksp, A, A);       CHKERRQ(ierr);
+
+	l--;
+
+	mg->lvls[0].A = A;
 
 	for(i = 1; i < mg->nlvl; i++)
 	{
 		lvl =  &mg->lvls[i];
 		fine = &mg->lvls[i-1];
 
-		ierr = MatDataRestrict     (lvl->md, fine->md); CHKERRQ(ierr);
-		ierr = MGLevelSetupRestrict(lvl,     fine);     CHKERRQ(ierr);
-		ierr = MGLevelSetupProlong (lvl,     fine);     CHKERRQ(ierr);
+		ierr = MatDataRestrict(lvl->md, fine->md); CHKERRQ(ierr);
+
+		ierr = MGLevelSetupRestrict(lvl, fine); CHKERRQ(ierr);
+		ierr = MGLevelSetupProlong (lvl, fine); CHKERRQ(ierr);
 
 		if(i == 2)
 		{
 			ierr = TestInterp(lvl->md, fine->md, lvl->R, lvl->P);  CHKERRQ(ierr);
 		}
 
+		if(lvl->A)
+		{
+			ierr = MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_INITIAL_MATRIX, PETSC_DETERMINE, &lvl->A); CHKERRQ(ierr);
+		}
+		else
+		{
+			// WARNING!!! replace PETSC_DETERMINE with PETSC_CURRENT in new version
+			ierr = MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_REUSE_MATRIX, PETSC_DETERMINE, &lvl->A); CHKERRQ(ierr);
+		}
+
+		ierr = PCMGGetSmoother(mg->pc, l, &ksp);     CHKERRQ(ierr);
+		ierr = KSPSetOperators(ksp, lvl->A, lvl->A); CHKERRQ(ierr);
+
+		l--;
 
 	}
 
 	// setup coarse grid solver if necessary
 	ierr = MGSetupCoarse(mg, A); CHKERRQ(ierr);
 
-	// tell to recompute preconditioner
-	ierr = PCSetOperators(mg->pc, A, A); CHKERRQ(ierr);
 
-	// force setup operators
-	ierr = PCSetUp(mg->pc); CHKERRQ(ierr);
 
 	// store matrices in the file if requested
 	ierr = MGDumpMat(mg); CHKERRQ(ierr);
@@ -1085,6 +1141,7 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);                           CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of matrix-free levels  :  %lld\n", (LLD)nlmf);                              CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
@@ -1194,7 +1251,7 @@ PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P)
 	ierr = MatCreateShell(PETSC_COMM_WORLD, nc, nf, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &RMF); CHKERRQ(ierr);
 	ierr = MatSetUp(RMF); CHKERRQ(ierr);
 
-	ierr = MatShellSetOperation(RMF, MATOP_MULT_ADD, (void(*)(void))MatFreeApplyRestrict); CHKERRQ(ierr);
+	ierr = MatShellSetOperation(RMF, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateRestrict); CHKERRQ(ierr);
 	ierr = MatShellSetContext(RMF, (void*)&mgi); CHKERRQ(ierr);
 
 	ierr = MatAssemblyBegin(RMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
@@ -1204,7 +1261,7 @@ PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P)
 	ierr = MatCreateShell(PETSC_COMM_WORLD, nf, nc, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &PMF); CHKERRQ(ierr);
 	ierr = MatSetUp(PMF); CHKERRQ(ierr);
 
-	ierr = MatShellSetOperation(PMF, MATOP_MULT_ADD, (void(*)(void))MatFreeApplyProlong); CHKERRQ(ierr);
+	ierr = MatShellSetOperation(PMF, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateProlong); CHKERRQ(ierr);
 	ierr = MatShellSetContext(PMF, (void*)&mgi); CHKERRQ(ierr);
 
 	ierr = MatAssemblyBegin(PMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
