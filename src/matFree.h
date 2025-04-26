@@ -26,6 +26,8 @@ PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f);
 
 PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f);
 
+PetscErrorCode MatFreeGetDiagonal(Mat mat, Vec v);
+
 PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vc);
 
 PetscErrorCode MatFreeUpdateRestrict(Mat R, Vec vf, Vec vcb, Vec vc);

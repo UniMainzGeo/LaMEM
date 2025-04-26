@@ -25,7 +25,7 @@ PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, idxtype idxmod)
 	PetscFunctionBeginUser;
 
 	// set coarse grid flag
-	md->coarse = 0;
+	md->coarsened = 0;
 
 	// copy data
 	md->fs       = jr->fs;
@@ -78,7 +78,7 @@ PetscErrorCode MatDataCreateData(MatData *md)
 	ierr = makeIntArray(&md->SPCListMat, NULL, dof->ln); CHKERRQ(ierr);
 	ierr = makeIntArray(&md->SPCListVec, NULL, dof->ln); CHKERRQ(ierr);
 
-	if(md->coarse)
+	if(md->coarsened)
 	{
 		// create boundary condition vectors
 		ierr = DMCreateLocalVector(fs->DA_X,   &md->bcvx); CHKERRQ(ierr);
@@ -110,7 +110,7 @@ PetscErrorCode MatDataDestroy(MatData *md)
 	ierr = PetscFree(md->SPCListMat); CHKERRQ(ierr);
 	ierr = PetscFree(md->SPCListVec); CHKERRQ(ierr);
 
-	if(md->coarse)
+	if(md->coarsened)
 	{
 		ierr = FDSTAGDestroy(md->fs); CHKERRQ(ierr);
 		ierr = PetscFree    (md->fs); CHKERRQ(ierr);
@@ -130,7 +130,7 @@ PetscErrorCode MatDataCoarsen(MatData *coarse, MatData *fine)
 	PetscFunctionBeginUser;
 
 	// set coarse grid flag
-	coarse->coarse = 1;
+	coarse->coarsened = 1;
 
 	// copy data
 	coarse->idxmod  = fine->idxmod;
@@ -602,6 +602,11 @@ PetscErrorCode MatDataRestricBC(MatData *coarse, MatData *fine)
 	// ACHTUNG CHECK THIS ROUTINE! BOUNDARY PRESURE?
 
 	// restrict boundary condition vectors from fine grid to coarse grid
+
+	// Constrained DOF stores parent DOF index in the boundary condition vector.
+	// Parent DOF index is the only nonzero that is set in the row of R-matrix
+	// and column of P-matrix to impose the constraints in a coarse grid operator
+	// automatically. The finest grid uses standard boundary condition vectors.
 
 	PetscInt    I, J, K;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;

@@ -16,15 +16,8 @@
 // Jacobian type
 enum JacType
 {
-	//===================
-	// assembled matrices
-	//===================
-	_PICARD_,   // constant effective coefficients approximation (viscosity, conductivity, stress)
-
-	//============
-	// matrix-free
-	//============
-	_MFFD_ // built-in finite difference approximation
+	_PICARD_, // constant effective coefficients approximation (viscosity, conductivity, stress)
+	_MFFD_    // built-in finite difference approximation
 
 };
 //---------------------------------------------------------------------------

@@ -41,7 +41,7 @@ struct MatData
 	PetscScalar fssa;                                // density gradient penalty parameter
 	PetscInt    rescal;                              // stencil rescaling flag
 	PetscScalar grav[3];                             // global gravity components
-	PetscInt    coarse;                              // coarsening flag
+	PetscInt    coarsened;                           // coarsening flag
 	idxtype     idxmod;                              // indexing mode
 };
 

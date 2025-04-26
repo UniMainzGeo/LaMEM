@@ -536,7 +536,7 @@ PetscErrorCode PMatAssemble(MatData *md, PetscScalar pgamma, Mat A)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PMatGetDiag(MatData *md, PetscScalar pgamma, Mat D)
+PetscErrorCode PMatComputeDiag(MatData *md, PetscScalar pgamma, Mat D)
 {
 	//======================================================================
 	// get preconditioning matrix diagonal
