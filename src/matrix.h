@@ -23,7 +23,7 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A);
 
 PetscErrorCode PMatAssemble(MatData *md, PetscScalar pgamma, Mat A);
 
-PetscErrorCode PMatGetDiag(MatData *md, PetscScalar pgamma, Mat D);
+PetscErrorCode PMatComputeDiag(MatData *md, PetscScalar pgamma, Mat D);
 
 //---------------------------------------------------------------------------
 //.........................   MONOLITHIC MATRIX   ...........................
@@ -36,7 +36,6 @@ struct PMatMono
 	Mat         A;      // monolithic matrix
 	Mat         M;      // penalty terms compensation matrix
 	Vec         w;      // work vector for computing Jacobian action
-	Mat         D;      // matrix diagonal
 };
 
 PetscErrorCode PMatMonoCreate(

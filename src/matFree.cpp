@@ -47,19 +47,35 @@ PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f)
 {
 	// this function corresponds to MATOP_MULT operation (f = A*x)
 
-	MatData     *md;
+	MatDataPC   *mdpc;
 	PetscScalar  cfInvEta;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(A, (void**)&md); CHKERRQ(ierr);
+	ierr = MatShellGetContext(A, (void**)&mdpc); CHKERRQ(ierr);
 
 	// add inverse viscosity term to pressure diagonal matrix (preconditioner operator)
 	cfInvEta = 1.0;
 
-	ierr = MatFreeComputeLinearOperator(md, x, f, cfInvEta); CHKERRQ(ierr);
+	ierr = MatFreeComputeLinearOperator(mdpc->md, x, f, cfInvEta); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MatFreeGetDiagonal(Mat A, Vec v)
+{
+	// this function corresponds to MATOP_GET_DIAGONAL operation (v = diag(A))
+
+	MatDataPC *mdpc;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = MatShellGetContext(A, (void**)&mdpc); CHKERRQ(ierr);
+
+	ierr = MatGetDiagonal(mdpc->D, v); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
