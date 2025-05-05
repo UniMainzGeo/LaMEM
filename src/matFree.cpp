@@ -75,7 +75,9 @@ PetscErrorCode MatFreeGetDiagonal(Mat A, Vec v)
 
 	ierr = MatShellGetContext(A, (void**)&mdpc); CHKERRQ(ierr);
 
-	ierr = MatGetDiagonal(mdpc->D, v); CHKERRQ(ierr);
+//	ierr = MatGetDiagonal(mdpc->D, v); CHKERRQ(ierr);
+
+	ierr = VecCopy(mdpc->d, v); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -167,11 +169,9 @@ PetscErrorCode MatFreeUpdateProlong(Mat P, Vec vc, Vec vfb, Vec vf)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 // main computation functions
 //---------------------------------------------------------------------------
-
 PetscErrorCode MatFreeComputeLinearOperator(MatData *md, Vec x, Vec f, PetscScalar cfInvEta)
 {
 	FDSTAG  *fs;
@@ -200,7 +200,7 @@ PetscErrorCode MatFreeComputeLinearOperator(MatData *md, Vec x, Vec f, PetscScal
 	ierr = MatFreeSplitVec(md, x, vx, vy, vz, p); CHKERRQ(ierr);
 
 	// compute matrix-vector product
-	ierr = MatFreeGetLinearOperator(md, vx, vy, vz, p, fx, fy, fz, c, cfInvEta); CHKERRQ(ierr);
+	ierr = MatFreeEvaluateLinearOperator(md, vx, vy, vz, p, fx, fy, fz, c, cfInvEta); CHKERRQ(ierr);
 
 	// assemble residual
 	ierr = MatFreeAssembleVec(md, f, fx, fy, fz, c); CHKERRQ(ierr);
@@ -247,7 +247,7 @@ PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc)
 	ierr = MatFreeSplitVec(fine, vf, fx, fy, fz, fp); CHKERRQ(ierr);
 
 	// compute restriction to coarse grid
-	ierr =  MatFreeGetRestrict(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp); CHKERRQ(ierr);
+	ierr =  MatFreeEvaluateRestrict(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp); CHKERRQ(ierr);
 
 	// combine coarse grid vector
 	ierr = MatFreeCombineVec(coarse, vc, cx, cy, cz, cp); CHKERRQ(ierr);
@@ -294,7 +294,7 @@ PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf)
 	ierr = MatFreeSplitVec(coarse, vc, cx, cy, cz, cp); CHKERRQ(ierr);
 
 	// compute prolongation on fine grid
-	ierr = MatFreeGetProlong(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp); CHKERRQ(ierr);
+	ierr = MatFreeEvaluateProlong(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp); CHKERRQ(ierr);
 
 	// combine fine grid vector
 	ierr = MatFreeCombineVec(fine, vf, fx, fy, fz, fp); CHKERRQ(ierr);
@@ -311,11 +311,41 @@ PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------
+PetscErrorCode MatFreeComputeDiagonal(MatData *md, Vec d)
+{
+	FDSTAG  *fs;
+	Vec      dx, dy, dz, dp;
 
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// access context
+	fs = md->fs;
+
+	// get temporary diagoanal vectors
+	ierr = DMGetLocalVector (fs->DA_X,   &dx); CHKERRQ(ierr);
+	ierr = DMGetLocalVector (fs->DA_Y,   &dy); CHKERRQ(ierr);
+	ierr = DMGetLocalVector (fs->DA_Z,   &dz); CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(fs->DA_CEN, &dp);  CHKERRQ(ierr);
+
+	// compute diagonal entries
+	ierr = MatFreeEvaluateDiagonal(md, dx, dy, dz, dp); CHKERRQ(ierr);
+
+	// assemble diagonal
+	ierr = MatFreeAssembleVec(md, d, dx, dy, dz, dp, 1.0); CHKERRQ(ierr);
+
+	// restore temporary vectors
+	ierr = DMRestoreLocalVector (fs->DA_X,   &dx); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector (fs->DA_Y,   &dy); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector (fs->DA_Z,   &dz); CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(fs->DA_CEN, &dp); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 // helper functions
 //---------------------------------------------------------------------------
-
 PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Vec gvp)
 {
 	// split vector into blocks, assign ghost points
@@ -363,6 +393,10 @@ PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Ve
 	ierr = VecRestoreArray    (gvp, &vp);  CHKERRQ(ierr);
 	ierr = VecRestoreArrayRead(v,   &va);  CHKERRQ(ierr);
 
+	ierr = VecZeroEntries(lvx); CHKERRQ(ierr);
+	ierr = VecZeroEntries(lvy); CHKERRQ(ierr);
+	ierr = VecZeroEntries(lvz); CHKERRQ(ierr);
+
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_X, gvx, lvx)
 	GLOBAL_TO_LOCAL(fs->DA_Y, gvy, lvy)
@@ -376,7 +410,7 @@ PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Ve
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Vec gvp)
+PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Vec gvp, PetscScalar setVal)
 {
 	// assemble ghost point contributions, combine blocks into a vector, enforce boundary conditions
 
@@ -399,7 +433,7 @@ PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz,
 	LOCAL_TO_GLOBAL(fs->DA_Z, lvz, gvz)
 
 	// combine vector blocks
-	ierr = MatFreeCombineVec(md, v, gvx, gvy, gvz, gvp); CHKERRQ(ierr);
+	ierr = MatFreeCombineVec(md, v, gvx, gvy, gvz, gvp, setVal); CHKERRQ(ierr);
 
 	// restore temporary global vectors
 	ierr = DMRestoreGlobalVector(fs->DA_X, &gvx); CHKERRQ(ierr);
@@ -409,7 +443,7 @@ PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz,
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, Vec gvp)
+PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, Vec gvp, PetscScalar setVal)
 {
 	// assemble ghost point contributions, combine blocks into a vector, enforce boundary conditions
 
@@ -447,13 +481,13 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 	num   = md->vNumSPC;
 	list  = md->vSPCListVec;
 
-	for(i = 0; i < num; i++) va[list[i]] = 0.0;
+	for(i = 0; i < num; i++) va[list[i]] = setVal;
 
 	// zero out constrained residuals (pressure)
 	num   = md->pNumSPC;
 	list  = md->pSPCListVec;
 
-	for(i = 0; i < num; i++) va[list[i]] = 0.0;
+	for(i = 0; i < num; i++) va[list[i]] = setVal;
 
 	// restore access
 	ierr = VecRestoreArray(gvx, &vx); CHKERRQ(ierr);
@@ -464,12 +498,10 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 // low-level functions
 //---------------------------------------------------------------------------
-
-PetscErrorCode MatFreeGetLinearOperator(MatData *md,
+PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 		Vec lvx, Vec lvy, Vec lvz, Vec gp,
 		Vec lfx, Vec lfy, Vec lfz, Vec gc,
 		PetscScalar cfInvEta)
@@ -760,7 +792,7 @@ PetscErrorCode MatFreeGetLinearOperator(MatData *md,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatFreeGetRestrict(
+PetscErrorCode MatFreeEvaluateRestrict(
 		MatData *coarse, MatData *fine,
 		Vec fx, Vec fy, Vec fz, Vec fp,
 		Vec cx, Vec cy, Vec cz, Vec cp)
@@ -947,7 +979,7 @@ PetscErrorCode MatFreeGetRestrict(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatFreeGetProlong(
+PetscErrorCode MatFreeEvaluateProlong(
 		MatData *coarse, MatData *fine,
 		Vec fx, Vec fy, Vec fz, Vec fp,
 		Vec cx, Vec cy, Vec cz, Vec cp)
@@ -1146,6 +1178,308 @@ PetscErrorCode MatFreeGetProlong(
 	ierr = DMDAVecRestoreArray(coarse->fs->DA_Y,   cy, &cya); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(coarse->fs->DA_Z,   cz, &cza); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(coarse->fs->DA_CEN, cp, &cpa); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
+		Vec ldx, Vec ldy, Vec ldz, Vec gdp)
+{
+	// get diagonal of the preconditioner matrix
+
+	FDSTAG      *fs;
+	PetscInt    idx[7];
+	PetscScalar v[16];
+	PetscScalar dr;
+	PetscInt    mcx, mcy, mcz;
+	PetscInt    mnx, mny, mnz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, rescal;
+	PetscScalar eta, rho, Kb, IKdt, diag, dt, fssa, *grav;
+	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar ***vdx,  ***vdy,  ***vdz,  ***vdp;
+	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
+	PetscScalar ***vKb,  ***vrho,  ***veta, ***vetaxy, ***vetaxz, ***vetayz;
+	PetscInt    pdofidx[7];
+	PetscScalar cf[7];
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// access context
+	fs = md->fs;
+
+	// get density gradient stabilization parameters
+	dt     = md->dt;     // time step
+	fssa   = md->fssa;   // density gradient penalty parameter
+	grav   = md->grav;   // gravity acceleration
+	rescal = md->rescal; // stencil rescaling flag
+
+	// initialize index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+	mnx = fs->dsx.tnods - 1;
+	mny = fs->dsy.tnods - 1;
+	mnz = fs->dsz.tnods - 1;
+
+    // clear diagonal components
+	ierr = VecZeroEntries(ldx); CHKERRQ(ierr);
+	ierr = VecZeroEntries(ldy); CHKERRQ(ierr);
+	ierr = VecZeroEntries(ldz); CHKERRQ(ierr);
+
+	// access work vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   ldx,  &vdx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   ldy,  &vdy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   ldz,  &vdz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, gdp,  &vdp);  CHKERRQ(ierr);
+
+	// access boundary constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp);   CHKERRQ(ierr);
+
+	// access parameter vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
+
+	//---------------
+	// central points
+	//---------------
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get density, shear & inverse bulk viscosities
+		Kb   = vKb [k][j][i];
+		rho  = vrho[k][j][i];
+		eta  = veta[k][j][i];
+		IKdt = 1.0/Kb/dt;
+
+		// get mesh steps
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+		dz = SIZE_CELL(k, sz, fs->dsz);
+
+		// get mesh steps for the backward and forward derivatives
+		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+
+		// get pressure diagonal element with inverse viscosity term
+		diag = -IKdt - 1.0/eta;
+
+		// set pressure two-point constraints
+		SET_PRES_TPC(bcp, i-1, j,   k,   i, 0,   cf[0])
+		SET_PRES_TPC(bcp, i+1, j,   k,   i, mcx, cf[1])
+		SET_PRES_TPC(bcp, i,   j-1, k,   j, 0,   cf[2])
+		SET_PRES_TPC(bcp, i,   j+1, k,   j, mcy, cf[3])
+		SET_PRES_TPC(bcp, i,   j,   k-1, k, 0,   cf[4])
+		SET_PRES_TPC(bcp, i,   j,   k+1, k, mcz, cf[5])
+
+		// compute local matrix
+		getStiffMatDiag(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+
+		// compute density gradient stabilization terms
+		addDensGradStabilDiag(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
+
+		// update diagonal entries
+		vdx[k  ][j  ][i  ] += v[0];
+		vdx[k  ][j  ][i+1] += v[1];
+		vdy[k  ][j  ][i  ] += v[2];
+		vdy[k  ][j+1][i  ] += v[3];
+		vdz[k  ][j  ][i  ] += v[4];
+		vdz[k+1][j  ][i  ] += v[5];
+		vdp[k  ][j  ][i  ]  = v[6];
+	}
+	END_STD_LOOP
+
+	//---------------
+	// xy edge points
+	//---------------
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get effective viscosity
+		eta = vetaxy[k][j][i];
+
+		// get mesh steps
+		dx = SIZE_NODE(i, sx, fs->dsx);
+		dy = SIZE_NODE(j, sy, fs->dsy);
+
+		// get mesh steps for the backward and forward derivatives
+		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+
+		// get boundary constraints
+		pdofidx[0] = 1;   cf[0] = bcvx[k][j-1][i];
+		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
+		pdofidx[2] = 3;   cf[2] = bcvy[k][j][i-1];
+		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
+
+		// stencil rescaling
+		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[1], cf[0], dr);
+
+		// compute local matrix
+		//       vx_(j-1)             vx_(j)               vy_(i-1)             vy_(i)
+		v[0]  =  eta/dy/bdy; v[1]  = -eta/dy/bdy; v[2]  =  eta/dx/bdy; v[3]  = -eta/dx/bdy; // fx_(j-1) [sxy]
+		v[4]  = -eta/dy/fdy; v[5]  =  eta/dy/fdy; v[6]  = -eta/dx/fdy; v[7]  =  eta/dx/fdy; // fx_(j)   [sxy]
+		v[8]  =  eta/dy/bdx; v[9]  = -eta/dy/bdx; v[10] =  eta/dx/bdx; v[11] = -eta/dx/bdx; // fy_(i-1) [sxy]
+		v[12] = -eta/dy/fdx; v[13] =  eta/dy/fdx; v[14] = -eta/dx/fdx; v[15] =  eta/dx/fdx; // fy_(i)   [sxy]
+
+		// set ghost point flags
+		idx[0] = 0; if(j == 0)   { idx[0] = -1; }
+		idx[1] = 0; if(j == mny) { idx[1] = -1; }
+		idx[2] = 0; if(i == 0)   { idx[2] = -1; }
+		idx[3] = 0; if(i == mnx) { idx[3] = -1; }
+
+		// apply two-point constraints on the ghost nodes
+		getTwoPointConstr(4, idx, pdofidx, cf);
+
+		// constrain local matrix
+		constrLocalMat(4, pdofidx, cf, v);
+
+		// update diagonal
+		vdx[k][j-1][i  ] += v[0];
+		vdx[k][j  ][i  ] += v[5];
+		vdy[k][j  ][i-1] += v[10];
+		vdy[k][j  ][i  ] += v[15];
+	}
+	END_STD_LOOP
+
+	//---------------
+	// xz edge points
+	//---------------
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get effective viscosity
+		eta = vetaxz[k][j][i];
+
+		// get mesh steps
+		dx = SIZE_NODE(i, sx, fs->dsx);
+		dz = SIZE_NODE(k, sz, fs->dsz);
+
+		// get mesh steps for the backward and forward derivatives
+		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+
+		// get boundary constraints
+		pdofidx[0] = 1;   cf[0] = bcvx[k-1][j][i];
+		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
+		pdofidx[2] = 3;   cf[2] = bcvz[k][j][i-1];
+		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
+
+		// stencil rescaling
+		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[1], cf[0], dr);
+
+		// compute local matrix
+		//       vx_(k-1)             vx_(k)               vz_(i-1)             vz_(i)
+		v[0]  =  eta/dz/bdz; v[1]  = -eta/dz/bdz; v[2]  =  eta/dx/bdz; v[3]  = -eta/dx/bdz; // fx_(k-1) [sxz]
+		v[4]  = -eta/dz/fdz; v[5]  =  eta/dz/fdz; v[6]  = -eta/dx/fdz; v[7]  =  eta/dx/fdz; // fx_(k)   [sxz]
+		v[8]  =  eta/dz/bdx; v[9]  = -eta/dz/bdx; v[10] =  eta/dx/bdx; v[11] = -eta/dx/bdx; // fz_(i-1) [sxz]
+		v[12] = -eta/dz/fdx; v[13] =  eta/dz/fdx; v[14] = -eta/dx/fdx; v[15] =  eta/dx/fdx; // fz_(i)   [sxz]
+
+		// set ghost point flags
+		idx[0] = 0; if(k == 0)   { idx[0] = -1; }
+		idx[1] = 0; if(k == mnz) { idx[1] = -1; }
+		idx[2] = 0; if(i == 0)   { idx[2] = -1; }
+		idx[3] = 0; if(i == mnx) { idx[3] = -1; }
+
+		// apply two-point constraints on the ghost nodes
+		getTwoPointConstr(4, idx, pdofidx, cf);
+
+		// constrain local matrix
+		constrLocalMat(4, pdofidx, cf, v);
+
+		// update diagonal
+		vdx[k-1][j][i  ] += v[0];
+		vdx[k  ][j][i  ] += v[5];
+		vdz[k  ][j][i-1] += v[10];
+		vdz[k  ][j][i  ] += v[15];
+	}
+	END_STD_LOOP
+
+	//---------------
+	// yz edge points
+	//---------------
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get effective viscosity
+		eta = vetayz[k][j][i];
+
+		// get mesh steps
+		dy = SIZE_NODE(j, sy, fs->dsy);
+		dz = SIZE_NODE(k, sz, fs->dsz);
+
+		// get mesh steps for the backward and forward derivatives
+		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+
+		// get boundary constraints
+		pdofidx[0] = 1;   cf[0] = bcvy[k-1][j][i];
+		pdofidx[1] = 0;   cf[1] = bcvy[k][j][i];
+		pdofidx[2] = 3;   cf[2] = bcvz[k][j-1][i];
+		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
+
+		// stencil rescaling
+		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[1], cf[0], dr);
+
+		// compute local matrix
+		//       vy_(k-1)             vy_(k)               vz_(j-1)             vz_(j)
+		v[0]  =  eta/dz/bdz; v[1]  = -eta/dz/bdz; v[2]  =  eta/dy/bdz; v[3]  = -eta/dy/bdz; // fy_(k-1) [syz]
+		v[4]  = -eta/dz/fdz; v[5]  =  eta/dz/fdz; v[6]  = -eta/dy/fdz; v[7]  =  eta/dy/fdz; // fy_(k)   [syz]
+		v[8]  =  eta/dz/bdy; v[9]  = -eta/dz/bdy; v[10] =  eta/dy/bdy; v[11] = -eta/dy/bdy; // fz_(j-1) [syz]
+		v[12] = -eta/dz/fdy; v[13] =  eta/dz/fdy; v[14] = -eta/dy/fdy; v[15] =  eta/dy/fdy; // fz_(j)   [syz]
+
+		// set ghost point flags
+		idx[0] = 0; if(k == 0)   { idx[0] = -1; }
+		idx[1] = 0; if(k == mnz) { idx[1] = -1; }
+		idx[2] = 0; if(j == 0)   { idx[2] = -1; }
+		idx[3] = 0; if(j == mny) { idx[3] = -1; }
+
+		// apply two-point constraints on the ghost nodes
+		getTwoPointConstr(4, idx, pdofidx, cf);
+
+		// constrain local matrix
+		constrLocalMat(4, pdofidx, cf, v);
+
+		// update diagonal
+		vdy[k-1][j  ][i] += v[0];
+		vdy[k  ][j  ][i] += v[5];
+		vdz[k  ][j-1][i] += v[10];
+		vdz[k  ][j  ][i] += v[15];
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   ldx,  &vdx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   ldy,  &vdy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   ldz,  &vdz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, gdp,  &vdp);  CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(fs->DA_X,   md->bcvx,  &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->bcvy,  &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->bcvz,  &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->bcp,   &bcp);  CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

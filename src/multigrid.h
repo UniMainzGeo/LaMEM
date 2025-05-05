@@ -51,6 +51,7 @@ struct MatDataPC
 {
 	MatData *md; // matrix evaluation context
 	Mat      D;  // diagonal of assembled preconditioner matrix
+	Vec      d;  // diagonal of assembled preconditioner matrix
 };
 //---------------------------------------------------------------------------
 

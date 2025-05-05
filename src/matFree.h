@@ -46,6 +46,8 @@ PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc);
 
 PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf);
 
+PetscErrorCode MatFreeComputeDiagonal(MatData *md, Vec d);
+
 //---------------------------------------------------------------------------
 // helper functions
 //---------------------------------------------------------------------------
@@ -54,16 +56,16 @@ PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf);
 PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Vec gvp);
 
 // assemble ghost point contributions, combine blocks into a vector, enforce boundary conditions
-PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Vec gvp);
+PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Vec gvp, PetscScalar setVal = 0.0);
 
 // combine blocks into a vector, enforce boundary conditions
-PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, Vec gvp);
+PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, Vec gvp, PetscScalar setVal = 0.0);
 
 //---------------------------------------------------------------------------
 // low-level functions
 //---------------------------------------------------------------------------
 
-PetscErrorCode MatFreeGetLinearOperator(MatData *md,
+PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 		Vec lvx, Vec lvy, Vec lvz, Vec gp,
 		Vec lfx, Vec lfy, Vec lfz, Vec gc,
 		PetscScalar cfInvEta);
@@ -72,15 +74,19 @@ PetscErrorCode MatFreeGetLinearOperator(MatData *md,
 // 0.0      - Picard operator
 // 1.0      - preconditioner operator
 
-PetscErrorCode MatFreeGetRestrict(
+PetscErrorCode MatFreeEvaluateRestrict(
 		MatData *coarse, MatData *fine,
 		Vec fx, Vec fy, Vec fz, Vec fp,
 		Vec cx, Vec cy, Vec cz, Vec cp);
 
-PetscErrorCode MatFreeGetProlong(
+PetscErrorCode MatFreeEvaluateProlong(
 		MatData *coarse, MatData *fine,
 		Vec fx, Vec fy, Vec fz, Vec fp,
 		Vec cx, Vec cy, Vec cz, Vec cp);
+
+PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
+		Vec vx, Vec vy, Vec vz, Vec vp);
+
 
 //---------------------------------------------------------------------------
 // MACROS
