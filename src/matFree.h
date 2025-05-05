@@ -87,7 +87,6 @@ PetscErrorCode MatFreeEvaluateProlong(
 PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 		Vec vx, Vec vy, Vec vz, Vec vp);
 
-
 //---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------

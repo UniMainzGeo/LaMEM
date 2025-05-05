@@ -75,9 +75,7 @@ PetscErrorCode MatFreeGetDiagonal(Mat A, Vec v)
 
 	ierr = MatShellGetContext(A, (void**)&mdpc); CHKERRQ(ierr);
 
-//	ierr = MatGetDiagonal(mdpc->D, v); CHKERRQ(ierr);
-
-	ierr = VecCopy(mdpc->d, v); CHKERRQ(ierr);
+	ierr = VecCopy(mdpc->D, v); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
