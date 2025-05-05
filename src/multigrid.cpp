@@ -231,11 +231,9 @@ PetscErrorCode MatDataPCCreate(MatDataPC *mdpc, MatData *md)
 	// set evaluation context
 	mdpc->md = md;
 
-	// create diagonal matrix
-	ierr = MatAIJCreateDiag(md->fs->dof.ln, md->fs->dof.st, &mdpc->D); CHKERRQ(ierr);
-
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, md->fs->dof.ln, PETSC_DETERMINE, &mdpc->d); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(mdpc->d);                                                CHKERRQ(ierr);
+	// reserve storage for matrix diagonal
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, md->fs->dof.ln, PETSC_DETERMINE, &mdpc->D); CHKERRQ(ierr);
+	ierr = VecSetFromOptions(mdpc->D);                                                CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -245,8 +243,7 @@ PetscErrorCode MatDataPCDestroy(MatDataPC *mdpc)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = MatDestroy(&mdpc->D); CHKERRQ(ierr);
-	ierr = VecDestroy(&mdpc->d); CHKERRQ(ierr);
+	ierr = VecDestroy(&mdpc->D); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -420,25 +417,7 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 		if(lvl->type == _LVL_MAT_FREE_)
 		{
 			// compute matrix diagonal on matrix-free levels
-
-			ierr = MatFreeComputeDiagonal(lvl->md, lvl->mdpc->d); CHKERRQ(ierr);
-
-			ierr = PMatComputeDiag(lvl->md, 1.0, lvl->mdpc->D); CHKERRQ(ierr);
-
-			Vec d;
-
-			ierr = VecDuplicate(lvl->mdpc->d, &d); CHKERRQ(ierr);
-
-			ierr = MatGetDiagonal(lvl->mdpc->D, d); CHKERRQ(ierr);
-
-			PetscReal nrm1, nrm2;
-
-			ierr = VecNorm(lvl->mdpc->d, NORM_2, &nrm1); CHKERRQ(ierr);
-
-			ierr = VecNorm(d, NORM_2, &nrm2); CHKERRQ(ierr);
-
-			ierr = compareVecs(lvl->mdpc->d, d); CHKERRQ(ierr);
-
+			ierr = MatFreeComputeDiagonal(lvl->md, lvl->mdpc->D); CHKERRQ(ierr);
 		}
 		else if(lvl->type == _LVL_ASSEMBLED_ && !lvl->ext_op)
 		{
