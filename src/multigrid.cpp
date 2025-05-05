@@ -234,6 +234,9 @@ PetscErrorCode MatDataPCCreate(MatDataPC *mdpc, MatData *md)
 	// create diagonal matrix
 	ierr = MatAIJCreateDiag(md->fs->dof.ln, md->fs->dof.st, &mdpc->D); CHKERRQ(ierr);
 
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, md->fs->dof.ln, PETSC_DETERMINE, &mdpc->d); CHKERRQ(ierr);
+	ierr = VecSetFromOptions(mdpc->d);                                                CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -243,6 +246,7 @@ PetscErrorCode MatDataPCDestroy(MatDataPC *mdpc)
 	PetscFunctionBeginUser;
 
 	ierr = MatDestroy(&mdpc->D); CHKERRQ(ierr);
+	ierr = VecDestroy(&mdpc->d); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -292,14 +296,6 @@ PetscErrorCode MGCreate(MG *mg, MatData *md)
 	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE);    CHKERRQ(ierr);
 	ierr = PCSetFromOptions(mg->pc);                     CHKERRQ(ierr);
 	ierr = PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_NONE); CHKERRQ(ierr);
-/*
-	// attach restriction/prolongation matrices to the preconditioner
-	for(i = 1, petsc_mg_level = mg->nlvl-1; i < mg->nlvl; i++, petsc_mg_level--)
-	{
-		ierr = PCMGSetRestriction  (mg->pc, petsc_mg_level, mg->lvls[i].R); CHKERRQ(ierr);
-		ierr = PCMGSetInterpolation(mg->pc, petsc_mg_level, mg->lvls[i].P); CHKERRQ(ierr);
-	}
-*/
 
 	// set coarse solver setup flag
 	mg->crs_setup = 0;
@@ -424,7 +420,25 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 		if(lvl->type == _LVL_MAT_FREE_)
 		{
 			// compute matrix diagonal on matrix-free levels
+
+			ierr = MatFreeComputeDiagonal(lvl->md, lvl->mdpc->d); CHKERRQ(ierr);
+
 			ierr = PMatComputeDiag(lvl->md, 1.0, lvl->mdpc->D); CHKERRQ(ierr);
+
+			Vec d;
+
+			ierr = VecDuplicate(lvl->mdpc->d, &d); CHKERRQ(ierr);
+
+			ierr = MatGetDiagonal(lvl->mdpc->D, d); CHKERRQ(ierr);
+
+			PetscReal nrm1, nrm2;
+
+			ierr = VecNorm(lvl->mdpc->d, NORM_2, &nrm1); CHKERRQ(ierr);
+
+			ierr = VecNorm(d, NORM_2, &nrm2); CHKERRQ(ierr);
+
+			ierr = compareVecs(lvl->mdpc->d, d); CHKERRQ(ierr);
+
 		}
 		else if(lvl->type == _LVL_ASSEMBLED_ && !lvl->ext_op)
 		{
