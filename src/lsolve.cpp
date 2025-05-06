@@ -236,7 +236,7 @@ PetscErrorCode PCDataMGCreate(PCDataMG *pc, PCParam *param, JacRes *jr, Mat J, M
 	}
 
 	// create multigrid context
-	ierr = MGCreate(&pc->mg, &pc->md); CHKERRQ(ierr);
+	ierr = MGCreate(&pc->mg, &pc->md, pc->pm.A); CHKERRQ(ierr);
 
 	// set Picard operator
 	if(param->ps_type == _PICARD_MAT_FREE_)
