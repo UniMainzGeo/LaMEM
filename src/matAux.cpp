@@ -181,26 +181,6 @@ void getStiffMat(
 	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;      // g
 }
 //---------------------------------------------------------------------------
-void getStiffMatDiag(
-	PetscScalar eta, PetscScalar diag,
-	PetscScalar *v,  PetscScalar *cf,
-	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz)
-{
-	// compute cell stiffness matrix with deviatoric projection
-
-	PetscScalar E43 = 4.0*eta/3.0;
-
-	v[0] =  E43/dx/bdx;
-	v[1] =  E43/dx/fdx;
-	v[2] =  E43/dy/bdy;
-	v[3] =  E43/dy/fdy;
-	v[4] =  E43/dz/bdz;
-	v[5] =  E43/dz/fdz;
-	v[6] =  diag;
-}
-//---------------------------------------------------------------------------
 void addDensGradStabil(
 	PetscScalar fssa, PetscScalar *v,
 	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
@@ -216,23 +196,6 @@ void addDensGradStabil(
 	v[24] += cf*(rho*grav[1])/fdy;
 	v[32] -= cf*(rho*grav[2])/bdz;
 	v[40] += cf*(rho*grav[2])/fdz;
-}
-//---------------------------------------------------------------------------
-void addDensGradStabilDiag(
-	PetscScalar fssa, PetscScalar *v,
-	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
-	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz)
-{
-	PetscScalar cf = -fssa*dt;
-
-	// add stabilization terms
-	v[0] -= cf*(rho*grav[0])/bdx;
-	v[1] += cf*(rho*grav[0])/fdx;
-	v[2] -= cf*(rho*grav[1])/bdy;
-	v[3] += cf*(rho*grav[1])/fdy;
-	v[4] -= cf*(rho*grav[2])/bdz;
-	v[5] += cf*(rho*grav[2])/fdz;
 }
 //---------------------------------------------------------------------------
 void getVelSchur(PetscScalar v[], PetscScalar d[], PetscScalar g[])

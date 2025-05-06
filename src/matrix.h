@@ -23,7 +23,7 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A);
 
 PetscErrorCode PMatAssemble(MatData *md, PetscScalar pgamma, Mat A);
 
-PetscErrorCode PMatComputeDiag(MatData *md, PetscScalar pgamma, Mat D);
+PetscErrorCode PMatDiagComp(MatData *md, PetscScalar pgamma, Mat M);
 
 //---------------------------------------------------------------------------
 //.........................   MONOLITHIC MATRIX   ...........................
@@ -55,11 +55,11 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r);
 
 struct wBFBTData
 {
-	MatData *md;    // matrix assembly context
-	DM       DA_P;  // cell-based grid
-	Mat      K;     // Schur complement preconditioner matrix
-	Mat      C;     // diagonal viscosity weighting matrix
-	Vec      w;     // working vector in velocity space
+	MatData *md;   // matrix assembly context
+	DM       DA_P; // cell-based grid
+	Mat      K;    // Schur complement preconditioner matrix
+	Mat      C;    // diagonal viscosity weighting matrix
+	Vec      w;    // working vector in velocity space
 };
 
 PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md);
@@ -122,20 +122,7 @@ void getStiffMat(
 	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
 
-void getStiffMatDiag(
-	PetscScalar eta, PetscScalar diag,
-	PetscScalar *v,  PetscScalar *cf,
-	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
-
 void addDensGradStabil(
-	PetscScalar fssa, PetscScalar *v,
-	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
-	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz);
-
-void addDensGradStabilDiag(
 	PetscScalar fssa, PetscScalar *v,
 	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
 	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,

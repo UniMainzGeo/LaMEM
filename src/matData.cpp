@@ -713,36 +713,33 @@ PetscErrorCode MatDataRestricBC(MatData *coarse, MatData *fine)
 	}
 	END_STD_LOOP
 
-	if(coarse->idxmod == _IDX_COUPLED_)
+	//-----------------------
+	// P-points (coarse grid)
+	//-----------------------
+	ierr = DMDAGetCorners(coarse->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
 	{
-		//-----------------------
-		// P-points (coarse grid)
-		//-----------------------
-		ierr = DMDAGetCorners(coarse->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		// get fine grid indices
+		I = 2*i;
+		J = 2*j;
+		K = 2*k;
 
-		START_STD_LOOP
+		// restrict constraint
+		if(fbcp[K  ][J  ][I  ] != DBL_MAX
+		&& fbcp[K  ][J  ][I+1] != DBL_MAX
+		&& fbcp[K  ][J+1][I  ] != DBL_MAX
+		&& fbcp[K  ][J+1][I+1] != DBL_MAX
+		&& fbcp[K+1][J  ][I  ] != DBL_MAX
+		&& fbcp[K+1][J  ][I+1] != DBL_MAX
+		&& fbcp[K+1][J+1][I  ] != DBL_MAX
+		&& fbcp[K+1][J+1][I+1] != DBL_MAX)
 		{
-			// get fine grid indices
-			I = 2*i;
-			J = 2*j;
-			K = 2*k;
-
-			// restrict constraint
-			if(fbcp[K  ][J  ][I  ] != DBL_MAX
-			&& fbcp[K  ][J  ][I+1] != DBL_MAX
-			&& fbcp[K  ][J+1][I  ] != DBL_MAX
-			&& fbcp[K  ][J+1][I+1] != DBL_MAX
-			&& fbcp[K+1][J  ][I  ] != DBL_MAX
-			&& fbcp[K+1][J  ][I+1] != DBL_MAX
-			&& fbcp[K+1][J+1][I  ] != DBL_MAX
-			&& fbcp[K+1][J+1][I+1] != DBL_MAX)
-			{
-				// store parent DOF index
-				cbcp[k][j][i] = ip[K][J][I];
-			}
+			// store parent DOF index
+			cbcp[k][j][i] = ip[K][J][I];
 		}
-		END_STD_LOOP
 	}
+	END_STD_LOOP
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fine->fs->DA_X,   fine->ivx, &ivx);   CHKERRQ(ierr);

@@ -923,45 +923,43 @@ PetscErrorCode MatFreeEvaluateRestrict(
 	}
 	END_STD_LOOP
 
-	if(coarse->idxmod == _IDX_COUPLED_)
+	//-----------------------
+	// P-points (coarse grid)
+	//-----------------------
+
+	// set pressure weights
+	vs[0] = 1.0/8.0;
+	vs[1] = 1.0/8.0;
+	vs[2] = 1.0/8.0;
+	vs[3] = 1.0/8.0;
+	vs[4] = 1.0/8.0;
+	vs[5] = 1.0/8.0;
+	vs[6] = 1.0/8.0;
+	vs[7] = 1.0/8.0;
+
+	ierr = DMDAGetCorners(coarse->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
 	{
-		// set pressure weights
-		vs[0] = 1.0/8.0;
-		vs[1] = 1.0/8.0;
-		vs[2] = 1.0/8.0;
-		vs[3] = 1.0/8.0;
-		vs[4] = 1.0/8.0;
-		vs[5] = 1.0/8.0;
-		vs[6] = 1.0/8.0;
-		vs[7] = 1.0/8.0;
+		// get fine grid indices
+		I = 2*i;
+		J = 2*j;
+		K = 2*k;
 
-		//-----------------------
-		// P-points (coarse grid)
-		//-----------------------
-		ierr = DMDAGetCorners(coarse->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		// restrict from fine grid stencil
+		sum = fpa[K  ][J  ][I  ]*vs[0]
+		+     fpa[K  ][J  ][I+1]*vs[1]
+		+     fpa[K  ][J+1][I  ]*vs[2]
+		+     fpa[K  ][J+1][I+1]*vs[3]
+		+     fpa[K+1][J  ][I  ]*vs[4]
+		+     fpa[K+1][J  ][I+1]*vs[5]
+		+     fpa[K+1][J+1][I  ]*vs[6]
+		+     fpa[K+1][J+1][I+1]*vs[7];
 
-		START_STD_LOOP
-		{
-			// get fine grid indices
-			I = 2*i;
-			J = 2*j;
-			K = 2*k;
-
-			// restrict from fine grid stencil
-			sum = fpa[K  ][J  ][I  ]*vs[0]
-			+     fpa[K  ][J  ][I+1]*vs[1]
-			+     fpa[K  ][J+1][I  ]*vs[2]
-			+     fpa[K  ][J+1][I+1]*vs[3]
-			+     fpa[K+1][J  ][I  ]*vs[4]
-			+     fpa[K+1][J  ][I+1]*vs[5]
-			+     fpa[K+1][J+1][I  ]*vs[6]
-			+     fpa[K+1][J+1][I+1]*vs[7];
-
-			// store coarse grid value
-			cpa[k][j][i] = sum;
-		}
-		END_STD_LOOP
+		// store coarse grid value
+		cpa[k][j][i] = sum;
 	}
+	END_STD_LOOP
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fine->fs->DA_X,   fx, &fxa);   CHKERRQ(ierr);
@@ -1146,25 +1144,23 @@ PetscErrorCode MatFreeEvaluateProlong(
 	}
 	END_STD_LOOP
 
-	if(fine->idxmod== _IDX_COUPLED_)
+	//---------------------
+	// P-points (fine grid)
+	//---------------------
+	ierr = DMDAGetCorners(fine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
 	{
-		//---------------------
-		// P-points (fine grid)
-		//---------------------
-		ierr = DMDAGetCorners(fine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		// get coarse grid indices
+		I = i/2;
+		J = j/2;
+		K = k/2;
 
-		START_STD_LOOP
-		{
-			// get coarse grid indices
-			I = i/2;
-			J = j/2;
-			K = k/2;
-
-			// store fine grid value (direct injection)
-			fpa[k][j][i] = cpa[K][J][I];
-		}
-		END_STD_LOOP
+		// store fine grid value (direct injection)
+		fpa[k][j][i] = cpa[K][J][I];
 	}
+	END_STD_LOOP
+
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fine->fs->DA_X,   fx, &fxa);   CHKERRQ(ierr);
@@ -1187,7 +1183,7 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 
 	FDSTAG      *fs;
 	PetscInt    idx[7];
-	PetscScalar v[16];
+	PetscScalar v[49];
 	PetscScalar dr;
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    mnx, mny, mnz;
@@ -1280,19 +1276,19 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 		SET_PRES_TPC(bcp, i,   j,   k+1, k, mcz, cf[5])
 
 		// compute local matrix
-		getStiffMatDiag(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+		getStiffMat(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// compute density gradient stabilization terms
-		addDensGradStabilDiag(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
+		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// update diagonal entries
-		vdx[k  ][j  ][i  ] += v[0];
-		vdx[k  ][j  ][i+1] += v[1];
-		vdy[k  ][j  ][i  ] += v[2];
-		vdy[k  ][j+1][i  ] += v[3];
-		vdz[k  ][j  ][i  ] += v[4];
-		vdz[k+1][j  ][i  ] += v[5];
-		vdp[k  ][j  ][i  ]  = v[6];
+		vdx[k  ][j  ][i  ] += v[0 ];
+		vdx[k  ][j  ][i+1] += v[8 ];
+		vdy[k  ][j  ][i  ] += v[16];
+		vdy[k  ][j+1][i  ] += v[24];
+		vdz[k  ][j  ][i  ] += v[32];
+		vdz[k+1][j  ][i  ] += v[40];
+		vdp[k  ][j  ][i  ]  = v[48];
 	}
 	END_STD_LOOP
 
