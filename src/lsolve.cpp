@@ -262,15 +262,14 @@ PetscErrorCode PCDataMGDestroy(PCDataMG *pc)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = MatDataDestroy (&pc->md); CHKERRQ(ierr);
+	ierr = MatDataDestroy(&pc->md); CHKERRQ(ierr);
 
 	if(pc->param->ps_type == _PICARD_ASSEMBLED_)
 	{
 		ierr = PMatMonoDestroy(&pc->pm); CHKERRQ(ierr);
 	}
-	ierr = PMatMonoDestroy(&pc->pm); CHKERRQ(ierr);
 
-	ierr = MGDestroy      (&pc->mg); CHKERRQ(ierr);
+	ierr = MGDestroy(&pc->mg); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -289,7 +288,7 @@ PetscErrorCode PCDataMGSetup(PCDataMG *pc, JacRes *jr)
 		ierr = PMatMonoAssemble(P); CHKERRQ(ierr);
 	}
 
-	ierr = MGSetup(&pc->mg, P->A); CHKERRQ(ierr);
+	ierr = MGSetup(&pc->mg); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
