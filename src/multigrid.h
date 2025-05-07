@@ -143,8 +143,6 @@ PetscErrorCode MGCreate(MG *mg, MatData *md, Mat A);
 
 PetscErrorCode MGDestroy(MG *mg);
 
-PetscErrorCode MGSetupCoarse(MG *mg, Mat A);
-
 PetscErrorCode MGSetup(MG *mg, Mat A);
 
 PetscErrorCode MGApply(PC pc, Vec x, Vec y);
