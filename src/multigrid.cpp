@@ -323,49 +323,6 @@ PetscErrorCode MGDestroy(MG *mg)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
-{
-	KSP        ksp;
-	PC         pc;
-	Mat        mat;
-	MGLevel   *lvl;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// skip already configured solver
-	if(mg->crs_setup == PETSC_TRUE)
-	{
-		PetscFunctionReturn(0);
-	}
-
-	// get coarse level
-	lvl = mg->lvls + mg->nlvl - 1;
-
-	// set dummy coarse solver
-	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
-	ierr = KSPSetType(ksp, KSPPREONLY);      CHKERRQ(ierr);
-	ierr = KSPGetPC(ksp, &pc);               CHKERRQ(ierr);
-	ierr = PCSetType(pc, PCNONE);            CHKERRQ(ierr);
-
-	// force setup operators
-	ierr = PCSetOperators(mg->pc, A, A);     CHKERRQ(ierr);
-	ierr = PCSetUp(mg->pc);                  CHKERRQ(ierr);
-
-	// set near null space on coarse level matrix
-	ierr = KSPGetOperators(ksp, &mat, NULL); CHKERRQ(ierr);
-	ierr = MatAIJSetNullSpace(mat, lvl->md); CHKERRQ(ierr);
-
-	// set actual coarse solver options
-	ierr = KSPSetOptionsPrefix(ksp, "crs_"); CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(ksp);           CHKERRQ(ierr);
-
-	// set setup flag
-	mg->crs_setup = PETSC_TRUE;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 PetscErrorCode MGSetup(MG *mg, Mat A)
 {
 	KSP      ksp;
@@ -420,13 +377,24 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 			ierr = PMatAssemble(lvl->md, 1.0, lvl->A); CHKERRQ(ierr);
 		}
 
+		// attach near null space to coarse grid operator
+		if(mg->crs_setup == PETSC_FALSE && i == mg->nlvl-1)
+		{
+			ierr = MatAIJSetNullSpace(lvl->A, lvl->md); CHKERRQ(ierr);
+
+			mg->crs_setup = PETSC_TRUE;
+		}
+
 		// set operators in PCMG
 		ierr = PCMGGetSmoother(mg->pc, petsc_mg_level, &ksp);  CHKERRQ(ierr);
 		ierr = KSPSetOperators(ksp,lvl->A, lvl->A);            CHKERRQ(ierr);
 	}
 
+	// set top-level operators
+	ierr = PCSetOperators(mg->pc, mg->lvls[0].A, mg->lvls[0].A); CHKERRQ(ierr);
+
 	// setup coarse grid solver if necessary
-	ierr = MGSetupCoarse(mg, mg->lvls[0].A); CHKERRQ(ierr);
+//	ierr = MGSetupCoarse(mg, mg->lvls[0].A); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
