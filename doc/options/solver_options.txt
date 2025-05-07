@@ -7,9 +7,8 @@ OPTIONS & PREFIXES
 	Custom options:
 
 	-snes_PicardSwitchToNewton_rtol [value] - relative tolerance to switch to Newton (convergence)
-    -snes_NewtonSwitchToPicard_it  	[value] - number of Newton iterations to switch to Picard
+     -snes_NewtonSwitchToPicard_it   [value] - number of Newton iterations to switch to Picard
 	-snes_NewtonSwitchToPicard_rtol [value] - relative tolerance to switch to Picard (divergence)
-	-snes_picard_mat_free                   - use matrix-free Picard operator
 
 * MFFD Jacobian options are set with prefix -fd_
 
@@ -224,6 +223,7 @@ Examples
 
 	-crs_telescope_pc_type asm
 	-crs_telescope_pc_asm_local_blocks 1
+	-crs_telescope_pc_asm_blocks 32
 	-crs_telescope_pc_asm_overlap 2
 	-crs_telescope_pc_asm_type restrict
 	-crs_telescope_pc_asm_local_type additive
