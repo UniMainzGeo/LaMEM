@@ -323,7 +323,7 @@ PetscErrorCode MGDestroy(MG *mg)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MGSetup(MG *mg, Mat A)
+PetscErrorCode MGSetup(MG *mg)
 {
 	KSP      ksp;
 	MGLevel *lvl, *fine;
@@ -377,11 +377,12 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 			ierr = PMatAssemble(lvl->md, 1.0, lvl->A); CHKERRQ(ierr);
 		}
 
-		// attach near null space to coarse grid operator
 		if(mg->crs_setup == PETSC_FALSE && i == mg->nlvl-1)
 		{
+			// attach near null space to coarse grid operator
 			ierr = MatAIJSetNullSpace(lvl->A, lvl->md); CHKERRQ(ierr);
 
+			// set coarse solver setup flag
 			mg->crs_setup = PETSC_TRUE;
 		}
 
@@ -392,9 +393,6 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 
 	// set top-level operators
 	ierr = PCSetOperators(mg->pc, mg->lvls[0].A, mg->lvls[0].A); CHKERRQ(ierr);
-
-	// setup coarse grid solver if necessary
-//	ierr = MGSetupCoarse(mg, mg->lvls[0].A); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
