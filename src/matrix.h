@@ -59,7 +59,7 @@ struct wBFBTData
 	DM       DA_P; // cell-based grid
 	Mat      K;    // Schur complement preconditioner matrix
 	Mat      C;    // diagonal viscosity weighting matrix
-	Vec      w;    // working vector in velocity space
+	Vec      w;    // work vector in velocity space
 };
 
 PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md);
