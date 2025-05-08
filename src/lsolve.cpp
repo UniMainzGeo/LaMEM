@@ -41,7 +41,7 @@ PetscErrorCode PCParamSetFromOptions(PCParam *p)
 	ierr = PetscOptionsGetString(NULL, NULL, "-bf_type",       bf_type, _str_len_, NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetString(NULL, NULL, "-bf_vs_type",    vs_type, _str_len_, NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetString(NULL, NULL, "-bf_schur_type", sp_type, _str_len_, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",     &p->pgamma,        NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",     &p->pgamma,        NULL);  CHKERRQ(ierr);
 
 	if     (!strcmp(pc_type, "mg"))   p->pc_type = _STOKES_MG_;
 	else if(!strcmp(pc_type, "bf"))   p->pc_type = _STOKES_BF_;
@@ -285,7 +285,7 @@ PetscErrorCode PCDataMGSetup(PCDataMG *pc, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCDataMGApply(Mat P, Vec x, Vec y)
+PetscErrorCode PCDataMGApply(Mat P, Vec r, Vec x)
 {
 	PCDataMG *pc;
 
@@ -296,7 +296,7 @@ PetscErrorCode PCDataMGApply(Mat P, Vec x, Vec y)
 
 	MG *mg = &pc->mg;
 
-	ierr = PCApply(mg->pc, x, y); CHKERRQ(ierr);
+	ierr = PCApply(mg->pc, r, x); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -345,7 +345,7 @@ PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, M
 	}
 
 	// create & set pressure Schur complement solver
-	if(buildwBFBT)
+	if(param->sp_type == _SCHUR_WBFBT_)
 	{
 		// create pressure solver
 		ierr = KSPCreate(PETSC_COMM_WORLD, &pc->pksp); CHKERRQ(ierr);
@@ -391,7 +391,7 @@ PetscErrorCode PCDataBFDestroy(PCDataBF *pc)
 
 	if(pc->param->sp_type == _SCHUR_WBFBT_)
 	{
-		ierr = KSPDestroy(&pc->pksp);  CHKERRQ(ierr);
+		ierr = KSPDestroy(&pc->pksp); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -399,130 +399,105 @@ PetscErrorCode PCDataBFDestroy(PCDataBF *pc)
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataBFSetup(PCDataBF *pc, JacRes *jr)
 {
-
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-/*
-	// access context
-	bf = (PCStokesBF*)pc->data;
-	P  = (PMatBlock*) pc->pm->data;
 
-	ierr = KSPSetOperators(bf->vksp, P->Avv, P->Avv); CHKERRQ(ierr);
-
-	if(bf->vtype == _VEL_MG_)
-	{
-		ierr = MGSetup(&bf->vmg, P->Avv); CHKERRQ(ierr);
-	}
-
-	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
-
-	if(pc->pm->buildwBFBT)
-	{
-		ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
-		ierr = KSPSetUp(bf->pksp);                    CHKERRQ(ierr);
-	}
-
-
-	PMatMono *P = &pc->pm;
+	PMatBlock *pm = &pc->pm;
 
 	ierr = MatDataSetup(&pc->md, jr); CHKERRQ(ierr);
 
-	if(pc->param->ps_type == _PICARD_ASSEMBLED_)
+	ierr = PMatBlockAssemble(pm); CHKERRQ(ierr);
+
+	ierr = KSPSetOperators(pc->vksp, pm->Avv, pm->Avv); CHKERRQ(ierr);
+
+	if(pc->param->vs_type == _VEL_MG_)
 	{
-		ierr = PMatMonoAssemble(P); CHKERRQ(ierr);
+		ierr = MGSetup(&pc->vmg); CHKERRQ(ierr);
 	}
 
-	ierr = MGSetup(&pc->mg); CHKERRQ(ierr);
-*/
+	ierr = KSPSetUp(pc->vksp); CHKERRQ(ierr);
+
+	if(pc->param->sp_type == _SCHUR_WBFBT_)
+	{
+		ierr = KSPSetOperators(pc->pksp, pm->wbfbt->K, pm->wbfbt->K); CHKERRQ(ierr);
+		ierr = KSPSetUp(pc->pksp);                                    CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCDataBFApply(Mat P, Vec x, Vec y)
+PetscErrorCode PCDataBFApply(Mat P, Vec r, Vec x)
 {
 	//======================================================================
 	// r - residual vector      (input)
 	// x - approximate solution (output)
 	//======================================================================
 
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-/*
- 	PCDataMG *pc;
+	PCDataBF *pc;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	ierr = MatShellGetContext(P, (void**)&pc); CHKERRQ(ierr);
 
-	MG *mg = &pc->mg;
-
-	ierr = PCApply(mg->pc, x, y); CHKERRQ(ierr);
-
-
-	// access context
-	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
-
-	bf = (PCStokesBF*)pc->data;
-	P  = (PMatBlock*) pc->pm->data;
+	PMatBlock *pm = &pc->pm;
 
 	// extract residual blocks
-	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
+	ierr = VecScatterBlockToMonolithic(pm->rv, pm->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
-	if(bf->ftype == _UPPER_)
+	if(pc->param->bf_type == _BF_UPPER_)
 	{
 		//=======================
 		// BLOCK UPPER TRIANGULAR
 		//=======================
 
 		// Schur complement applies negative sign internally (no negative sign here)
-		if(pc->pm->buildwBFBT)
+		if(pc->param->sp_type == _SCHUR_WBFBT_)
 		{
-			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+			ierr = PCDataBFBTApply(pc, pm->rp, pm->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
-		else
+		else if(pc->param->sp_type == _SCHUR_INV_ETA_)
 		{
-			ierr = MatMult(P->iS, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+			ierr = MatMult(pm->iS, pm->rp, pm->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
 
-		ierr = MatMult(P->Avp, P->xp, P->wv);    CHKERRQ(ierr); // wv = Avp*xp
+		ierr = MatMult(pm->Avp, pm->xp, pm->wv);    CHKERRQ(ierr); // wv = Avp*xp
 
-		ierr = VecAXPY(P->rv, -1.0, P->wv);      CHKERRQ(ierr); // rv = rv - wv
+		ierr = VecAXPY(pm->rv, -1.0, pm->wv);      CHKERRQ(ierr); // rv = rv - wv
 
-		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+		ierr = KSPSolve(pc->vksp, pm->rv, pm->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
 	}
-	else if(bf->ftype == _LOWER_)
+
+	else if(pc->param->bf_type == _BF_LOWER_)
 	{
 		//=======================
 		// BLOCK LOWER TRIANGULAR
 		//=======================
 
-		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+		ierr = KSPSolve(pc->vksp, pm->rv, pm->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
 
-		ierr = MatMult(P->Apv, P->xv, P->wp);    CHKERRQ(ierr); // wp = Apv*xv
+		ierr = MatMult(pm->Apv, pm->xv, pm->wp);    CHKERRQ(ierr); // wp = Apv*xv
 
-		ierr = VecAXPY(P->rp, -1.0, P->wp);      CHKERRQ(ierr); // rp = rp - wp
+		ierr = VecAXPY(pm->rp, -1.0, pm->wp);      CHKERRQ(ierr); // rp = rp - wp
 
 		// Schur complement applies negative sign internally (no negative sign here)
-		if(pc->pm->buildwBFBT)
+		if(pc->param->sp_type == _SCHUR_WBFBT_)
 		{
-			ierr = PCStokesBFBTApply(JP, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+			ierr = PCDataBFBTApply(pc, pm->rp, pm->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
-		else
+		else if(pc->param->sp_type == _SCHUR_INV_ETA_)
 		{
-			ierr = MatMult(P->iS, P->rp, P->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+			ierr = MatMult(pm->iS, pm->rp, pm->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
 		}
 	}
 
 	// compose approximate solution
-	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
-*/
+	ierr = VecScatterBlockToMonolithic(pm->xv, pm->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
-/*
-PetscErrorCode wBFBTApply(wBFBTData *sp, Vec x, Vec y)
+//---------------------------------------------------------------------------
+PetscErrorCode PCDataBFBTApply(PCDataBF *pc, Vec x, Vec y)
 {
 	//============================
 	// wBFBT preconditioner action
@@ -531,29 +506,31 @@ PetscErrorCode wBFBTApply(wBFBTData *sp, Vec x, Vec y)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
+	PMatBlock *pm = &pc->pm;
+	wBFBTData *sp = pm->wbfbt;
+
 	// y   = -(S^⁻1)*x
 	// S⁻1 =  (K^⁻1)*B*C*A*C*B^T*(K^⁻1)
 	// K   =  B*C*B^T
 
-	ierr = KSPSolve(bf->pksp, x, P->wp);   CHKERRQ(ierr); // wp = (K^⁻1)*x
+	ierr = KSPSolve(pc->pksp, x, pm->wp);    CHKERRQ(ierr); // wp = (K^⁻1)*x
 
-	ierr = MatMult(P->Avp, P->wp, P->wv);  CHKERRQ(ierr); // wv = Avp*wp
+	ierr = MatMult(pm->Avp, pm->wp, pm->wv); CHKERRQ(ierr); // wv = Avp*wp
 
-	ierr = MatMult(P->C, P->wv, P->w);     CHKERRQ(ierr); // w = C*wv
+	ierr = MatMult(sp->C, pm->wv, sp->w);    CHKERRQ(ierr); // w = C*wv
 
-	ierr = MatMult(P->Avv, P->w, P->wv);   CHKERRQ(ierr); // wv = Avv * w
+	ierr = MatMult(pm->Avv, sp->w, pm->wv);  CHKERRQ(ierr); // wv = Avv * w
 
-	ierr = MatMult(P->C, P->wv, P->w);     CHKERRQ(ierr); // w = C*wv
+	ierr = MatMult(sp->C, pm->wv, sp->w);    CHKERRQ(ierr); // w = C*wv
 
-	ierr = MatMult(P->Apv, P->w, P->wp);   CHKERRQ(ierr); // wp = Apv*w
+	ierr = MatMult(pm->Apv, sp->w, pm->wp);  CHKERRQ(ierr); // wp = Apv*w
 
-	ierr = KSPSolve(bf->pksp, P->wp, y);   CHKERRQ(ierr); // y = (K^⁻1)*wp
+	ierr = KSPSolve(pc->pksp, pm->wp, y);    CHKERRQ(ierr); // y = (K^⁻1)*wp
 
-	ierr = VecScale(y, -1.0);              CHKERRQ(ierr); // y = -y
+	ierr = VecScale(y, -1.0);                CHKERRQ(ierr); // y = -y
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------
 //............................. USER-DEFINED ................................
 //---------------------------------------------------------------------------
@@ -666,7 +643,7 @@ PetscErrorCode PCDataUserSetup(PCDataUser *pc, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCDataUserApply(Mat P, Vec x, Vec y)
+PetscErrorCode PCDataUserApply(Mat P, Vec r, Vec x)
 {
 	PCDataUser *pc;
 
@@ -675,7 +652,7 @@ PetscErrorCode PCDataUserApply(Mat P, Vec x, Vec y)
 
 	ierr = MatShellGetContext(P, (void**)&pc); CHKERRQ(ierr);
 
-	ierr = PCApply(pc->pc, x, y); CHKERRQ(ierr);
+	ierr = PCApply(pc->pc, r, x); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

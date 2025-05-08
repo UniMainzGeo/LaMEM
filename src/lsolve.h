@@ -98,7 +98,7 @@ PetscErrorCode PCDataMGDestroy(PCDataMG *pc);
 
 PetscErrorCode PCDataMGSetup(PCDataMG *pc, JacRes *jr);
 
-PetscErrorCode PCDataMGApply(Mat P, Vec x, Vec y);
+PetscErrorCode PCDataMGApply(Mat P, Vec r, Vec x);
 
 //---------------------------------------------------------------------------
 //........................... BLOCK FACTORIZATION ...........................
@@ -120,7 +120,10 @@ PetscErrorCode PCDataBFDestroy(PCDataBF *pc);
 
 PetscErrorCode PCDataBFSetup(PCDataBF *pc, JacRes *jr);
 
-PetscErrorCode PCDataBFApply(Mat P, Vec x, Vec y);
+PetscErrorCode PCDataBFApply(Mat P, Vec r, Vec x);
+
+PetscErrorCode PCDataBFBTApply(PCDataBF *pc, Vec x, Vec y);
+
 
 //---------------------------------------------------------------------------
 //............................. USER-DEFINED ................................
@@ -140,7 +143,7 @@ PetscErrorCode PCDataUserDestroy(PCDataUser *pc);
 
 PetscErrorCode PCDataUserSetup(PCDataUser *pc, JacRes *jr);
 
-PetscErrorCode PCDataUserApply(Mat P, Vec x, Vec y);
+PetscErrorCode PCDataUserApply(Mat P, Vec r, Vec x);
 
 //--------------------------------------------------------------------------
 #endif

@@ -889,7 +889,6 @@ PetscErrorCode PMatBlockCreate(
 	ierr = MatAIJCreate(lnv, lnp, 0, Avp_d_nnz, 0, Avp_o_nnz, &P->Avp);  CHKERRQ(ierr);
 	ierr = MatAIJCreate(lnp, lnv, 0, Apv_d_nnz, 0, Apv_o_nnz, &P->Apv);  CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->App);                       CHKERRQ(ierr);
-	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
 
 	if(buildBvv)
 	{
@@ -928,6 +927,10 @@ PetscErrorCode PMatBlockCreate(
 		// setup data
 		ierr = wBFBTCreate(P->wbfbt, md); CHKERRQ(ierr);
 	}
+	else
+	{
+		ierr = MatAIJCreateDiag(lnp, startp, &P->iS); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -947,21 +950,25 @@ PetscErrorCode PMatBlockDestroy(PMatBlock *P)
 	ierr = VecDestroy(&P->xp);  CHKERRQ(ierr);
 	ierr = VecDestroy(&P->wv);  CHKERRQ(ierr);
 	ierr = VecDestroy(&P->wp);  CHKERRQ(ierr);
-	ierr = MatDestroy(&P->iS);  CHKERRQ(ierr);
 
 	if(P->Bvv)
 	{
 		ierr = MatDestroy(&P->Bvv); CHKERRQ(ierr);
 	}
+
 	if(P->wbfbt)
 	{
 		ierr = wBFBTDestroy(P->wbfbt); CHKERRQ(ierr);
 		ierr = PetscFree   (P->wbfbt); CHKERRQ(ierr);
 	}
 
+	if(P->iS)
+	{
+		ierr = MatDestroy(&P->iS); CHKERRQ(ierr);
+	}
+
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 PetscErrorCode PMatBlockAssemble(PMatBlock *P)
 {
@@ -1132,7 +1139,11 @@ PetscErrorCode PMatBlockAssemble(PMatBlock *P)
 		ierr = MatSetValues(P->Avp, 6, idx,   1, idx+6, g,    ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValues(P->Apv, 1, idx+6, 6, idx,   d,    ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValue (P->App, idx[6], idx[6], -IKdt,    INSERT_VALUES); CHKERRQ(ierr);
-		ierr = MatSetValue (P->iS,  idx[6], idx[6], 1.0/diag, INSERT_VALUES); CHKERRQ(ierr);
+
+		if(P->iS)
+		{
+			ierr = MatSetValue (P->iS,  idx[6], idx[6], 1.0/diag, INSERT_VALUES); CHKERRQ(ierr);
+		}
 	}
 	END_STD_LOOP
 
@@ -1311,7 +1322,6 @@ PetscErrorCode PMatBlockAssemble(PMatBlock *P)
 	ierr = MatAIJAssemble(P->Avp, md->vNumSPC, md->vSPCListMat, 0.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->Apv, md->pNumSPC, md->pSPCListMat, 0.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->App, md->pNumSPC, md->pSPCListMat, 1.0); CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->iS,  md->pNumSPC, md->pSPCListMat, 1.0); CHKERRQ(ierr);
 
 	if(P->Bvv)
 	{
@@ -1322,6 +1332,12 @@ PetscErrorCode PMatBlockAssemble(PMatBlock *P)
 	if(P->wbfbt)
 	{
 		ierr = wBFBTAssemble(P->wbfbt); CHKERRQ(ierr);
+	}
+
+	// assemble inverse viscosity preconditioner
+	if(P->iS)
+	{
+		ierr = MatAIJAssemble(P->iS,  md->pNumSPC, md->pSPCListMat, 1.0); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
