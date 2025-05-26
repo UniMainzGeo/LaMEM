@@ -881,7 +881,12 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	ierr = PetscOptionsInsertString(NULL, "-snes_max_it 50");          			CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_type basic");       CHKERRQ(ierr);  // in many VEP cases, cp or l2 linesearch work more efficiently 
 	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_maxstep 1.0");      CHKERRQ(ierr);  // Limits the maximum stepsize to be no larger than 100% (important for some model setups - prevents blowup)
-
+	
+	// Update choice for PETSc solvers
+	ierr = PetscOptionsInsertString(NULL, "-mat_product_algorithm scalable");     CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-matmatmatmult_via scalable");         CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-matmatmult_via scalable");            CHKERRQ(ierr);
+	
 	// Read input file to see if we set solver options 
 	ierr = getStringParam(fb, _OPTIONAL_, "SolverType",          SolverType,         NULL);          CHKERRQ(ierr);
 
