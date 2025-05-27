@@ -973,7 +973,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 			{
 				// uniformly advect
 				z += dz;
-				PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%lld) to internal free surface.\n", (LLD)surf->SedimentModel);
+				//PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%lld) to internal free surface.\n", (LLD)surf->SedimentModel);
 			}
 
 			// check if internal free surface goes outside the model domain
