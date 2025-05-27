@@ -459,6 +459,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,   1, 1.0);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
 
+	//=================================================================================
+	// Fastscape parametrization
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "kf",      &m->kf,   1, 1.0);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "kd",      &m->kd,   1, 1.0);  CHKERRQ(ierr);
+ 
 	if (PrintOutput)
 	{	
 		if (m->mfc>0){
@@ -733,6 +739,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->T_liq,  "T_liq",  "[C]",      scal, title, &print_title);
 		MatPrintScalParam(m->T_sol,  "T_sol",  "[C]",      scal, title, &print_title);
 		MatPrintScalParam(m->Latent_hx,  "Latent_hx",  "[J/kg]",      scal, title, &print_title);
+
+		sprintf(title, "   (fs)     : "); print_title = 1;
+		MatPrintScalParam(m->kf, "kf", "[m/yr]",    scal, title, &print_title);
+		MatPrintScalParam(m->kd, "kd", "[m/yr]",    scal, title, &print_title);
 
 		PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 

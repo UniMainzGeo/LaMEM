@@ -26,14 +26,18 @@ struct PVSurf
 {
 	FreeSurf  *surf;               // free surface object
 	char       outfile[_str_len_+20]; // output file name
+	char       outfile_refine[_str_len_+20]; // output file name
 	float     *buff;               // direct output buffer
+	float     *buff_refine;        // direct output buffer
 	long int   offset;             // pvd file offset
+	long int   offset_refine;             // pvd file offset
 	PetscInt   outsurf;            // free surface output flag
+	PetscInt   outsurf_refine;            // free surface output flag
 	PetscInt   outpvd;             // pvd file output flag
 	PetscInt   velocity;           // velocity output flag
 	PetscInt   topography;         // surface topography output flag
 	PetscInt   amplitude;          // topography amplitude output flag
-
+	PetscInt   topoRefine;         // refined topography output flag
 };
 
 //---------------------------------------------------------------------------
@@ -56,6 +60,10 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName);
 // sequential output file .vts
 PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName);
 
+// sequential output file .vts
+PetscErrorCode PVSurfWriteVTSRefine(PVSurf *pvsurf, const char *dirName, PetscInt nx_refine, PetscInt ny_refine, 
+    PetscScalar rangeX, PetscScalar rangeY, PetscScalar *topo);
+
 //---------------------------------------------------------------------------
 
 void OutputBufferWrite(
@@ -65,9 +73,14 @@ void OutputBufferWrite(
 
 PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp);
 
+PetscErrorCode PVSurfWriteCoordRefine(PVSurf *pvsurf, FILE *fp, PetscInt nx_refine, PetscInt ny_refine, 
+    PetscScalar rangeX, PetscScalar rangeY, PetscScalar *topo);
+
 PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp);
 
 PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteTopoRefine(PVSurf *pvsurf, FILE *fp, PetscInt nx_refine, PetscInt ny_refine, PetscScalar *topo);
 
 PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp);
 

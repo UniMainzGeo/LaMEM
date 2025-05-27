@@ -96,6 +96,11 @@ struct Scaling
 	PetscScalar heat_production;    // power / mass
 	PetscScalar expansivity;        // 1 / temperature
 
+	// units in FastScape
+	PetscScalar time_fs;
+	PetscScalar length_fs;
+	PetscScalar velocity_fs;
+
 	// output labels
 	char lbl_unit             [_lbl_sz_];
 	char lbl_angle            [_lbl_sz_];
@@ -113,6 +118,10 @@ struct Scaling
 	char lbl_dissipation_rate [_lbl_sz_];
 	char lbl_angular_velocity [_lbl_sz_];
 	char lbl_volumetric_force [_lbl_sz_];
+
+	char lbl_time_fs          [_lbl_sz_];
+	char lbl_length_fs        [_lbl_sz_];
+	char lbl_velocity_fs      [_lbl_sz_];
 
 	// material parameters labels
 	char lbl_density          [_lbl_sz_];

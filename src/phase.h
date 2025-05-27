@@ -211,6 +211,9 @@ public:
 	PetscScalar  mfc;               // melt fraction viscosity correction
 	PetscScalar  rho_melt;          // rho melt
 	PetscInt     Phase_Diagram_melt;// flag that allows only to consider the melt quantity from a phase diagram
+	//FastScape parameters
+	PetscScalar  kd;				// 
+	PetscScalar  kf; 				// 
 };
 
 //---------------------------------------------------------------------------

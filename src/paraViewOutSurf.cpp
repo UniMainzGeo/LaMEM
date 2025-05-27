@@ -32,6 +32,7 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 
 	// check activation
 	ierr = getIntParam(fb, _OPTIONAL_, "out_surf", &pvsurf->outsurf, 1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_refine", &pvsurf->outsurf_refine, 1, 1); CHKERRQ(ierr);	
 
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
@@ -45,23 +46,28 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	// read
 	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       filename,        "output"); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_pvd",        &pvsurf->outpvd,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_refine",     &pvsurf->outsurf_refine, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_velocity",   &pvsurf->velocity,   1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_topography", &pvsurf->topography, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_amplitude",  &pvsurf->amplitude,  1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_topoRefine", &pvsurf->topoRefine, 1, 1); CHKERRQ(ierr);
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Surface output parameters:\n");
-	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file : %s \n", pvsurf->outpvd ? "yes" : "no");
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file         : %s\n", pvsurf->outpvd ? "yes" : "no");
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd refined file : %s \n", pvsurf->outsurf_refine ? "yes" : "no");
 
-	if(pvsurf->velocity)   PetscPrintf(PETSC_COMM_WORLD, "   Velocity        @ \n");
-	if(pvsurf->topography) PetscPrintf(PETSC_COMM_WORLD, "   Topography      @ \n");
-	if(pvsurf->amplitude)  PetscPrintf(PETSC_COMM_WORLD, "   Amplitude       @ \n");
+	if(pvsurf->velocity)   PetscPrintf(PETSC_COMM_WORLD, "   Velocity                @ \n");
+	if(pvsurf->topography) PetscPrintf(PETSC_COMM_WORLD, "   Topography              @ \n");
+	if(pvsurf->amplitude)  PetscPrintf(PETSC_COMM_WORLD, "   Amplitude               @ \n");
+	if(pvsurf->topoRefine) PetscPrintf(PETSC_COMM_WORLD, "   Topo_refine             @ \n");
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// set file name
 	sprintf(pvsurf->outfile, "%s_surf", filename);
-
+	sprintf(pvsurf->outfile_refine, "%s_refine", filename);
+	
 	// create output buffer
 	ierr = PVSurfCreateData(pvsurf); CHKERRQ(ierr);
 
@@ -104,6 +110,7 @@ PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
 	PetscFree(pvsurf->buff);
+	PetscFree(pvsurf->buff_refine);
 
 	PetscFunctionReturn(0);
 }
@@ -124,6 +131,100 @@ PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscSca
 
 	// write sub-domain data .vts files
 	ierr = PVSurfWriteVTS(pvsurf, dirName); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode PVSurfWriteVTSRefine(PVSurf *pvsurf, const char *dirName, PetscInt nx_refine, PetscInt ny_refine, 
+    PetscScalar rangeX, PetscScalar rangeY, PetscScalar *topo)
+{
+	FILE      *fp;
+	Scaling   *scal;
+	char      *fname;
+	FreeSurf  *surf;
+	size_t     offset = 0;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// access context
+	surf = pvsurf->surf;
+	scal = surf->jr->scal;
+	
+	// only processor 0 run the code
+	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
+
+	fp = NULL;
+	// open outfile_p_XXXXXX.vts file in the output directory (write mode)
+	asprintf(&fname, "%s/%s_p0.vts", dirName, pvsurf->outfile_refine);
+	fp = fopen(fname,"wb");
+	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	free(fname);
+
+	// write header
+	WriteXMLHeader(fp, "StructuredGrid");
+
+	// open structured grid data block (write total grid size)
+	fprintf(fp, "\t<StructuredGrid WholeExtent=\"%lld %lld %lld %lld 1 1\">\n",
+			(LLD)(1), (LLD)(nx_refine),
+			(LLD)(1), (LLD)(ny_refine));
+
+	// open sub-domain (piece) description block
+	fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld 1 1\">\n",
+			(LLD)(1), (LLD)(nx_refine),
+			(LLD)(1), (LLD)(ny_refine));
+
+	// write cell data block (empty)
+	fprintf(fp, "\t\t\t<CellData>\n");
+	fprintf(fp, "\t\t\t</CellData>\n");
+
+	// write coordinate block
+	fprintf(fp, "\t\t<Points>\n");
+
+	fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\"/>\n",
+			(LLD)offset);
+
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx_refine * ny_refine * 3);
+
+	fprintf(fp, "\t\t</Points>\n");
+
+	// write description of output vectors
+	fprintf(fp, "\t\t<PointData>\n");
+
+	if(pvsurf->topography)
+	{
+		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"topoRefine %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
+			scal->lbl_length, (LLD)offset);
+
+		offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx_refine * ny_refine);
+	}
+
+	fprintf(fp, "\t\t</PointData>\n");
+
+	// close sub-domain and grid blocks
+	fprintf(fp, "\t\t</Piece>\n");
+	fprintf(fp, "\t</StructuredGrid>\n");
+
+	// write appended data section
+	fprintf(fp, "\t<AppendedData encoding=\"raw\">\n");
+	fprintf(fp,"_");
+	
+	// write point coordinates
+
+	// allocate output buffer
+	ierr = PetscMalloc((size_t)(_max_num_comp_surf_* nx_refine* ny_refine)*sizeof(float), &pvsurf->buff_refine); CHKERRQ(ierr);
+
+	ierr = PVSurfWriteCoordRefine (pvsurf, fp, nx_refine, ny_refine, rangeX, rangeY, topo); CHKERRQ(ierr);
+
+	// write output vectors
+	if(pvsurf->topoRefine) { ierr = PVSurfWriteTopoRefine     (pvsurf, fp, nx_refine, ny_refine, topo); CHKERRQ(ierr); }
+
+	// close appended data section and file
+	fprintf(fp, "\n\t</AppendedData>\n");
+	fprintf(fp, "</VTKFile>\n");
+
+	// close file
+	fclose(fp);
 
 	PetscFunctionReturn(0);
 }
@@ -395,6 +496,49 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode PVSurfWriteCoordRefine(PVSurf *pvsurf, FILE *fp, PetscInt nx_refine, PetscInt ny_refine, 
+    PetscScalar rangeX, PetscScalar rangeY, PetscScalar *topo)
+{
+	float       *buff;
+	PetscInt    i, j, ind, cn;
+
+	PetscFunctionBeginUser;
+
+	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
+
+	cn   = 0;
+	buff = pvsurf->buff_refine;
+
+	PetscScalar coordX[nx_refine], coordY[ny_refine];
+
+	// create a refined grid
+	for(i = 0; i < nx_refine; i++)
+	{
+		coordX[i] = (rangeX /(nx_refine-1) /1e3) * i; // km
+	}
+
+	for(i = 0; i < ny_refine; i++)
+	{
+		coordY[i] = (rangeY /(ny_refine-1) /1e3) * i; // km
+	}
+
+	for(j = 0; j < ny_refine; j++)
+	{
+		for(i = 0; i < nx_refine; i++)
+		{
+			ind = j * nx_refine + i;
+			// store node coordinates
+			buff[cn++] = (float)(coordX[i]); 
+			buff[cn++] = (float)(coordY[j]);
+			buff[cn++] = (float)(topo[ind]/1e3);
+		}
+	}
+
+	OutputBufferWrite(fp, buff, cn);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 {
 	FreeSurf    *surf;
@@ -478,6 +622,35 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 
 	OutputBufferWrite(fp, buff, cn);
 
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode PVSurfWriteTopoRefine(PVSurf *pvsurf, FILE *fp, PetscInt nx_refine, PetscInt ny_refine, PetscScalar *topo)
+{
+	float       *buff;
+	PetscInt    i, j, ind, cn;
+
+	PetscFunctionBeginUser;
+
+	cn   = 0;
+	buff = pvsurf->buff_refine;
+
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+
+		for(j = 0; j < ny_refine; j++)
+		{
+			for(i = 0; i < nx_refine; i++)
+			{
+				ind = j * nx_refine + i;
+				// store node coordinates
+				buff[cn++] = (float)(topo[ind]/1e3);
+		//		printf("topo[%d]:%f\n",ind,topo[ind]);
+			}
+		}
+
+		OutputBufferWrite(fp, buff, cn);
+	}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
