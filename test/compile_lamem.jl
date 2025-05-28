@@ -28,6 +28,9 @@ else
                 )
 end
 
+@show pkgversion(PETSc_jll)
+@show pkgversion(MPICH_jll)
+
 println("---- Compiling LaMEM opt version ----")
 compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
 run(compile_lamem)
