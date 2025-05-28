@@ -1,9 +1,10 @@
 # These are tools that help perform the LaMEM tests, which run LaMEM locally
 using LinearAlgebra, Glob
-import LaMEM.Run: deactivate_multithreading
+#import LaMEM.Run: deactivate_multithreading
 
 if use_dynamic_lib
-    using LaMEM.LaMEM_jll.PETSc_jll
+    #using LaMEM.LaMEM_jll.PETSc_jll
+    using PETSc_jll
 end
 
 export run_lamem_local_test, perform_lamem_test, clean_test_directory, run_lamem_save_grid_local, mpiexec
@@ -57,7 +58,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             # add dynamic libraries to the path (if specified)
             perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
 
-            perform_run = deactivate_multithreading(perform_run)
+           ## perform_run = deactivate_multithreading(perform_run)
 
             #perform_run = addenv(perform_run,"PATH"=>mpipath)
 
@@ -81,7 +82,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             # add dynamic libraries to the path (if specified)
             perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
 
-            perform_run = deactivate_multithreading(perform_run)
+       ##     perform_run = deactivate_multithreading(perform_run)
 
            # perform_run = addenv(perform_run,"PATH"=>mpipath)
   
