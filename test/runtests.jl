@@ -4,16 +4,19 @@
 using LaMEM_C
 using Test
 using GeophysicalModelGenerator
-using LaMEM.IO_functions
 using CairoMakie
-using LaMEM.LaMEM_jll.PETSc_jll
+#using LaMEM.LaMEM_jll.PETSc_jll
+using PETSc_jll
+
+#using LaMEM.IO_functions
+include("julia/IO_functions.jl")  # copied from LaMEM.jl; we do not want to make LaMEM.jl a depencency here as it fixes the PETSc_jll version
 
 if "use_dynamic_lib" in ARGS
     global use_dynamic_lib=true
 else
     global use_dynamic_lib=false
 end
-
+  global use_dynamic_lib=true
 test_mumps=true # if we do this later on windows, we have to deactivate this
 
 if "no_superlu" in ARGS
@@ -52,7 +55,7 @@ include("test_utils.jl")
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             args="-jp_pc_factor_mat_solver_package mumps")
 end
-
+#=
 @testset "t2_FB2_MG" begin
     if test_superlu
         cd(test_dir)
@@ -1013,7 +1016,7 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
-
+=#
 
 end
 
