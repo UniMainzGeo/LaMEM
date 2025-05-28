@@ -8,7 +8,6 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
-LaMEM = "2e889f3d-35ce-4a77-8ea2-858aecb630f7"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
