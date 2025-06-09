@@ -55,7 +55,7 @@ include("test_utils.jl")
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             args="-jp_pc_factor_mat_solver_package mumps")
 end
-#=
+
 @testset "t2_FB2_MG" begin
     if test_superlu
         cd(test_dir)
@@ -1016,7 +1016,6 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
-=#
 
 end
 
