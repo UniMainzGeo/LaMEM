@@ -1,5 +1,6 @@
 # this compiles LaMEM using the PETSc_jll libraries
 using PETSc_jll
+using MPICH_jll
 
 # Compile LaMEM
 println("Compiling LaMEM")
