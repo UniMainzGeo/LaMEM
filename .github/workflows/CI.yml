@@ -101,12 +101,12 @@ jobs:
         julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 
         
   build_docs:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@latest
         with:
-          version: '1.6'
+          version: '1.10'
       - name: Install dependencies 1
         run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev        
       - name: Install dependencies 2
