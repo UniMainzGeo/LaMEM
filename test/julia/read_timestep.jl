@@ -276,9 +276,9 @@ end
 function piece(vtk_file::ReadVTK.PVTKFile)
     return ReadVTK.LightXML.root(vtk_file.xml_file)[vtk_file.file_type][1]["Piece"][1]
 end
-function piece(vtk_file::ReadVTK.VTKFile)
-    return ReadVTK.LightXML.root(vtk_file.xml_file)[vtk_file.file_type][1]["Piece"][1]
-end
+#function piece(vtk_file::ReadVTK.VTKFile)
+#    return ReadVTK.LightXML.root(vtk_file.xml_file)[vtk_file.file_type][1]["Piece"][1]
+#end
 
 """
     data_output = read_LaMEM_VTR_file(DirName, FileName; fields=nothing, verbose=false)

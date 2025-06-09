@@ -16,7 +16,7 @@ if "use_dynamic_lib" in ARGS
 else
     global use_dynamic_lib=false
 end
-  global use_dynamic_lib=true
+  #global use_dynamic_lib=true
 test_mumps=true # if we do this later on windows, we have to deactivate this
 
 if "no_superlu" in ARGS
