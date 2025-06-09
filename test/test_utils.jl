@@ -1,6 +1,7 @@
 # These are tools that help perform the LaMEM tests, which run LaMEM locally
 using LinearAlgebra, Glob
 #import LaMEM.Run: deactivate_multithreading
+include("julia/IO_functions.jl")
 
 if use_dynamic_lib
     #using LaMEM.LaMEM_jll.PETSc_jll
@@ -344,7 +345,7 @@ function clean_test_directory(dir)
     
     cur_dir = pwd();
 
-    clean_directory(dir)
+    IO_functions.clean_directory(dir)
         
     cd(dir)
     for f in glob("*.out")
