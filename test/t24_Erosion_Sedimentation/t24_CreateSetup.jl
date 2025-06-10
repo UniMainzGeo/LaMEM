@@ -1,5 +1,5 @@
 # Load package that contains LaMEM I/O routines
-using GeophysicalModelGenerator, SpecialFunctions, LaMEM  
+using GeophysicalModelGenerator, SpecialFunctions  
 
 function t24_CreateMarkers(dir="./", ParamFile="test.dat"; NumberCores=1, is64bit=false, mpiexec="mpiexec")
 
@@ -124,7 +124,7 @@ function t24_CreateMarkers(dir="./", ParamFile="test.dat"; NumberCores=1, is64bi
         #PartFile = CreatePartitioningFile_local(ParamFile, NumberCores; LaMEM_dir="../../bin", mpiexec=mpiexec)
         #save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile,  directory="./markers_p$NumberCores", verbose=false, is64bit=is64bit)     
 
-        PartFile = run_lamem_save_grid(ParamFile, NumberCores, verbose=false)
+        PartFile = Run.run_lamem_save_grid(ParamFile, NumberCores, verbose=false)
         save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile, directory="./markers_p$NumberCores", verbose=false, is64bit=is64bit)
 
     end
