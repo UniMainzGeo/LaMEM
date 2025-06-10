@@ -8,7 +8,7 @@ using Glob, ReadVTK, WriteVTK, LightXML
 import ReadVTK: piece
 
 export read_LaMEM_PVTR_file, read_LaMEM_PVTS_file, read_LaMEM_PVTU_file, read_LaMEM_VTR_file
-export read_LaMEM_simulation, read_LaMEM_timestep, read_LaMEM_fieldnames
+export IO_functions.read_LaMEM_simulation, read_LaMEM_timestep, read_LaMEM_fieldnames
 export passivetracer_time
 export compress_vtr_file, compress_pvd, has_point_data, has_cell_data
 
@@ -547,7 +547,7 @@ Output:
 """
 function read_LaMEM_timestep(FileName::String, TimeStep::Int64=0, DirName::String=pwd(); fields=nothing, phase=false, surf=false, passive_tracers=false, last=false)
 
-    Timestep, FileNames, Time  = read_LaMEM_simulation(FileName, DirName; phase=phase, surf=surf, passive_tracers=passive_tracers);
+    Timestep, FileNames, Time  = IO_functions.read_LaMEM_simulation(FileName, DirName; phase=phase, surf=surf, passive_tracers=passive_tracers);
     
     ind = findall(Timestep.==TimeStep)
     
@@ -574,11 +574,11 @@ end
 
 
 """ 
-    Timestep, FileNames, Time = read_LaMEM_simulation(FileName::String, DirName::String=""; phase=false, surf=false, passive_tracers=false)
+    Timestep, FileNames, Time = IO_functions.read_LaMEM_simulation(FileName::String, DirName::String=""; phase=false, surf=false, passive_tracers=false)
 
 Reads a LaMEM simulation `FileName` in directory `DirName` and returns the timesteps, times and filenames of that simulation.
 """
-function read_LaMEM_simulation(FileName::String, DirName::String=""; phase=false, surf=false, passive_tracers=false)
+function IO_functions.read_LaMEM_simulation(FileName::String, DirName::String=""; phase=false, surf=false, passive_tracers=false)
 
     if phase==true
         pvd_file=FileName*"_phase.pvd"
@@ -602,7 +602,7 @@ Returns the names of the datasets stored in `FileName`
 """
 function read_LaMEM_fieldnames(FileName::String, DirName_base::String=""; phase=false, surf=false, tracers=false)
 
-    _, FileNames, _  = read_LaMEM_simulation(FileName, DirName_base; phase=phase, surf=surf);
+    _, FileNames, _  = IO_functions.read_LaMEM_simulation(FileName, DirName_base; phase=phase, surf=surf);
     
     # Read file
     DirName, File = split_path_name(DirName_base, FileNames[1])
@@ -638,7 +638,7 @@ evolution of these passive tracers. We return `x`,`y`,`z` coordinates and all fi
 
 """
 function passivetracer_time(ID::Union{Vector{Int64},Int64}, FileName::String, DirName::String="")
-    Timestep, _, Time_Myrs  = read_LaMEM_simulation(FileName, DirName,passive_tracers=true)
+    Timestep, _, Time_Myrs  = IO_functions.read_LaMEM_simulation(FileName, DirName,passive_tracers=true)
 
     # read first timestep
     data0, _ = read_LaMEM_timestep(FileName, Timestep[1], DirName,  passive_tracers=true)

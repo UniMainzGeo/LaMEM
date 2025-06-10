@@ -1,14 +1,14 @@
 #using Glob, DelimitedFiles, WriteVTK, Interpolations, GeophysicalModelGenerator, LaMEM
 
-export clean_directory #, changefolder, read_phase_diagram, project_onto_crosssection
+export IO_functions.clean_directory #, changefolder, read_phase_diagram, project_onto_crosssection
 
 """ 
-    clean_directory(DirName)
+    IO_functions.clean_directory(DirName)
 
 Removes all LaMEM timesteps & `*.pvd` files from the directory `DirName`
 
 """
-function clean_directory(DirName="./")
+function IO_functions.clean_directory(DirName="./")
     
     CurDir = pwd();
 
@@ -145,7 +145,7 @@ Reads the output of a LaMEM simulation and projects it onto a 2D cross-section `
 function project_onto_crosssection(simulation_name::String, Cross::CartData)
 
     # read LaMEM simulation
-    Timestep, FileNames, _   = read_LaMEM_simulation(simulation_name)
+    Timestep, FileNames, _   = IO_functions.read_LaMEM_simulation(simulation_name)
 
     pvd_filename = simulation_name*"_project.pvd"
 

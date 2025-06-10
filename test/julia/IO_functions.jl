@@ -6,7 +6,7 @@ export read_LaMEM_PVTR_file, read_LaMEM_PVTS_file, field_names, readPVD, read_La
 
 
 include("utils_IO.jl")
-export clean_directory #, changefolder, project_onto_crosssection
+export IO_functions.clean_directory #, changefolder, project_onto_crosssection
 
 
 end

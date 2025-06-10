@@ -380,7 +380,7 @@ end
 
     # Create plot with stress & analytical solution
     Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_1Core.png")
-    clean_directory(dir)
+    IO_functions.clean_directory(dir)
     # --------------
 
     if test_superlu & 1==0
@@ -453,7 +453,7 @@ end
     @test norm(T_a5 - T5)/length(T5) ≈ 0.03356719876721563
 
     Plot_Analytics_vs_Numerics(z,T_a5, T5, dir, "T_anal3.png")
-    clean_directory(dir)
+    IO_functions.clean_directory(dir)
     # ---
    
     # halfspace cooling test ----
@@ -494,7 +494,7 @@ end
     τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal)
     Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastic0D.png")
     
-    clean_directory(dir)
+    IO_functions.clean_directory(dir)
     # ---
 
     # ---
@@ -514,7 +514,7 @@ end
     τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal, YieldStress)
     Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastoplastic0D.png")
 
-    clean_directory(dir)
+    IO_functions.clean_directory(dir)
     # ---
 
     # ---
@@ -532,7 +532,7 @@ end
     ε = 1e-15;
     t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec))
     Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
-    clean_directory(dir)
+    IO_functions.clean_directory(dir)
     # ---
     
     # ---
@@ -549,7 +549,7 @@ end
     # Create plot
     t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec), YieldStress)
     Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastoplastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
-    clean_directory(dir)
+    IO_functions.clean_directory(dir)
     # ---
 
     # ---
@@ -562,7 +562,7 @@ end
     
     τ_anal = -2*ε[:]*1e21/1e6
     Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_linearViscous.png")
-    clean_directory(dir)
+    IO_functions.clean_directory(dir)
     # ---
 
     # ---
