@@ -1,5 +1,5 @@
 # Load package that contains LaMEM I/O routines
-using GeophysicalModelGenerator, SpecialFunctions, LaMEM  
+using GeophysicalModelGenerator, SpecialFunctions #, LaMEM  
 
 function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1,  mpiexec="mpiexec", is64bit=false)
 
