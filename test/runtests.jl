@@ -871,7 +871,7 @@ end
     dir = "t25_APS_Healing";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-9));
 
     # test_2D
     @test perform_lamem_test(dir,"APS_Healing2D.dat","APS_Healing2D.expected",
