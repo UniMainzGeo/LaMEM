@@ -117,11 +117,11 @@ function CreateMarkers_SubductionVEP(dir="./", ParamFile="Subduction_VEP.dat"; N
         save_LaMEM_markers_parallel(Model3D, directory="./markers", verbose=false)                      # Create LaMEM marker input on 1 core
     else
         #> 1 cores; create partitioning file first
-        #PartFile = CreatePartitioningFile_local(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/", verbose=false);
+        PartFile = CreatePartitioningFile_local(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/", verbose=false);
         #PartFile = create_partitioning_file(ParamFile, NumberCores; LaMEM_dir="../../bin/")
         #save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false, is64bit=is64bit) 
         
-        PartFile =  Run.run_lamem_save_grid(ParamFile, NumberCores, verbose=false)
+        #PartFile =  Run.run_lamem_save_grid(ParamFile, NumberCores, verbose=false)
         save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile, directory="./markers", verbose=false, is64bit=is64bit)
 
     end
