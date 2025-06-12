@@ -69,7 +69,8 @@ function CreateMarkers_Subduction(dir="./", ParamFile="test.dat"; NumberCores=1,
         #PartFile = create_partitioning_file(ParamFile, NumberCores; LaMEM_dir="../../bin/", mpiexec=mpiexec)
         #PartFile = run_lamem_save_grid_local(ParamFile, NumberCores, verbose=true)
         
-        save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false)     
+        save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile, directory="./markers", verbose=false, is64bit=is64bit)
+
     end
 
     cd(cur_dir)
