@@ -345,7 +345,7 @@ function clean_test_directory(dir)
     
     cur_dir = pwd();
 
-    IO_functions.IO_functions.clean_directory(dir)
+    clean_directory(dir)
         
     cd(dir)
     for f in glob("*.out")
