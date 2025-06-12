@@ -11,7 +11,7 @@ Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
-GeophysicalModelGenerator = "0.4,0.5"
+GeophysicalModelGenerator = "0.4, 0.5, 0.6, 0.7"
 julia = "1.9"
 
 [extras]
