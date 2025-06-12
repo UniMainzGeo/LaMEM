@@ -1,6 +1,6 @@
 using LinearAlgebra
 using Statistics
-using CairoMakie
+#using CairoMakie
 
     
 """
@@ -74,6 +74,7 @@ function extract_1D_profiles(data, dir)
     return phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec
 end
 
+#=
 function Plot_vs_analyticalSolution(data, dir, filename="Analytics_vs_LaMEM.png")
 
     # extract 1D profiles
@@ -106,3 +107,4 @@ function Plot_vs_analyticalSolution(data, dir, filename="Analytics_vs_LaMEM.png"
 
     return f 
 end
+=#

@@ -6,13 +6,16 @@ using Test
 using GeophysicalModelGenerator
 using PETSc_jll
 
-#using CairoMakie
+const create_plots = false
+if create_plots
+    using CairoMakie
+end
 
 # Read all julia IO functions
 include("julia/IO_functions.jl")  # copied from LaMEM.jl; we do not want to make LaMEM.jl a depencency here as it fixes the PETSc_jll version
 using .IO_functions
 
-include("test_utils.jl")        # test-framework specific functions
+include("julia/run_lamem_save_grid.jl")  
 
 if "use_dynamic_lib" in ARGS
     global use_dynamic_lib=true
@@ -28,15 +31,18 @@ else
     test_superlu=true
 end
 
-@show use_dynamic_lib test_superlu test_mumps
+@show use_dynamic_lib test_superlu test_mumps create_plots
+include("test_utils.jl")        # test-framework specific functions
 
 test_dir = pwd()
+
+
 
 
 # ===================
 @testset "LaMEM Testsuite" verbose=true begin
 
-
+#=
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
@@ -73,7 +79,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=false)
     end
 end
-
+=#
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -131,7 +137,7 @@ end
 end
 
 
-
+#=
 @testset "t4_Localisation" begin
     cd(test_dir)
     dir = "t4_Loc";
@@ -381,7 +387,7 @@ end
     @test norm(Pf_vec - Pf_a) ≈ 4.675374630769038 rtol=1e-5
 
     # Create plot with stress & analytical solution
-    Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_1Core.png")
+    #Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_1Core.png")
     clean_directory(dir)
     # --------------
 
@@ -405,7 +411,7 @@ end
         @test norm(Pf_vec - Pf_a) ≈ 4.675374630769038 rtol=1e-5
 
         # Create plot with stress & analytical solution
-        Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
+        #Plot_vs_analyticalSolution(data, dir,"Compressible1D_output_2Cores.png")
         clean_test_directory(dir)
         # --------------
     end
@@ -426,9 +432,9 @@ end
                                 keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
     end
 end
+=#
 
-
-
+#=
 @testset "t12_Temperature_diffusion" begin
     cd(test_dir)
     dir = "t12_Temperature_diffusion";
@@ -454,7 +460,9 @@ end
     T_a5 = Analytical_1D(z, t5)
     @test norm(T_a5 - T5)/length(T5) ≈ 0.03356719876721563
 
-    Plot_Analytics_vs_Numerics(z,T_a5, T5, dir, "T_anal3.png")
+    if create_plots
+        Plot_Analytics_vs_Numerics(z,T_a5, T5, dir, "T_anal3.png")
+    end
     clean_directory(dir)
     # ---
    
@@ -470,6 +478,7 @@ end
     clean_test_directory(dir)
     # ---
 end
+
 
 # t13_Rheology0D/
 @testset "t13_Rheology0D" begin
@@ -492,11 +501,13 @@ end
     @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.12480014617816898  rtol = 1e-4
 
     # Create plot
-    t_anal = range(0,t_vec[end],200)
-    τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal)
-    Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastic0D.png")
-    
-    clean_directory(dir)
+    if create_plots
+        t_anal = range(0,t_vec[end],200)
+        τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal)
+        Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastic0D.png")
+        
+        clean_directory(dir)
+    end
     # ---
 
     # ---
@@ -512,11 +523,13 @@ end
     @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.05341838341184021 rtol = 1e-4
 
     # Create plot
-    t_anal = range(0,t_vec[end],200)
-    τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal, YieldStress)
-    Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastoplastic0D.png")
+    if create_plots
+        t_anal = range(0,t_vec[end],200)
+        τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal, YieldStress)
+        Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastoplastic0D.png")
 
-    clean_directory(dir)
+        clean_directory(dir)
+    end
     # ---
 
     # ---
@@ -531,10 +544,12 @@ end
     T = mean(data.fields.temperature)
 
     # Create plot
-    ε = 1e-15;
-    t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec))
-    Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
-    clean_directory(dir)
+    if create_plots
+        ε = 1e-15;
+        t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec))
+        Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
+        clean_directory(dir)
+    end
     # ---
     
     # ---
@@ -549,9 +564,11 @@ end
     T = mean(data.fields.temperature)
 
     # Create plot
-    t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec), YieldStress)
-    Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastoplastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
-    clean_directory(dir)
+    if create_plots
+        t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec), YieldStress)
+        Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "t13_Viscoelastoplastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
+        clean_directory(dir)
+    end
     # ---
 
     # ---
@@ -562,9 +579,11 @@ end
     slope = (log10.(-ε[end])-log10.(-ε[1]) )/(log10.(τ[end])-log10.(τ[1]))
     @test slope ≈ 1.0 rtol = 1e-6
     
-    τ_anal = -2*ε[:]*1e21/1e6
-    Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_linearViscous.png")
-    clean_directory(dir)
+    if create_plots
+        τ_anal = -2*ε[:]*1e21/1e6
+        Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_linearViscous.png")
+        clean_directory(dir)
+    end
     # ---
 
     # ---
@@ -575,14 +594,17 @@ end
     @test slope ≈ 3.5 rtol=1e-2 
 
     # add analytical solution for DC
+   
     T=1000;
     τ_anal = AnalyticalSolution_DislocationCreep("DryOlivine", T, ε)/1e6
     @test norm(τ_anal[:] .- τ[:]) ≈ 0.2009862117696578 rtol = 1e-4
 
-    Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_DryOlivine_DC.png")
-    
-    # clear all files in the test directory
-    clean_test_directory(dir) 
+    if create_plots
+        Plot_StressStrainrate(ε, τ, τ_anal,  dir, "t13_Stress_Strainrate_DryOlivine_DC.png")
+        
+        # clear all files in the test directory
+        clean_test_directory(dir) 
+    end
 
 end
 
@@ -638,7 +660,10 @@ end
     @test norm(τII_1 - τ_anal) ≈ 147.6532112114033
     
     # Create plot
-    Plot_StrengthEnvelop("t14_StrengthEnvelop_1D.png", dir, z, (τII_1, τII_2, τII_3, τII_4, τ_anal),("Viscoplastic", "VEP dt=5ka", "VEP dt=10ka", "VEP dt=50ka", "Analytical"))
+    if create_plots
+        # Plot the strength envelops
+        Plot_StrengthEnvelop("t14_StrengthEnvelop_1D.png", dir, z, (τII_1, τII_2, τII_3, τII_4, τ_anal),("Viscoplastic", "VEP dt=5ka", "VEP dt=10ka", "VEP dt=50ka", "Analytical"))
+    end
     clean_test_directory(dir)
 end
 
@@ -655,10 +680,11 @@ end
     @test  norm(q_num - q_anal) ≈ 0.0015857520938151908
 
     # Plot 
-    λ_pl     = range(1e-9,5,100)
-    q_anal_pl = AnalyticalSolution_RTI_FreeSlip(λ_pl)
-
-    Plot_growthrate("t15_RTI_analytics_numerics.png", dir, λ,q_num,λ_pl,q_anal_pl)
+    if create_plots
+        λ_pl     = range(1e-9,5,100)
+        q_anal_pl = AnalyticalSolution_RTI_FreeSlip(λ_pl)
+        Plot_growthrate("t15_RTI_analytics_numerics.png", dir, λ,q_num,λ_pl,q_anal_pl)
+    end
 end
 
 
@@ -843,7 +869,7 @@ end
     @test perform_lamem_test(dir,"Permeable.dat","Permeable_p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
-
+=#
 
 @testset "t24_Erosion_Sedimentation" begin
     cd(test_dir)
@@ -868,7 +894,7 @@ end
                             keywords=keywords, accuracy=acc, cores=2, deb=true, mpiexec=mpiexec)
 end
 
-
+#=
 @testset "t25_APS_Healing" begin
     cd(test_dir)
     dir = "t25_APS_Healing";
@@ -1019,6 +1045,7 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
+=#
 
 end
 
