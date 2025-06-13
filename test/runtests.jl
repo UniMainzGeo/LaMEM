@@ -48,7 +48,6 @@ test_dir = pwd()
 # ===================
 @testset "LaMEM Testsuite" verbose=true begin
 
-
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
@@ -144,7 +143,6 @@ end
  
 end
 
-
 @testset "t4_Localisation" begin
     cd(test_dir)
     dir = "t4_Loc";
@@ -155,10 +153,14 @@ end
     acc      = ((rtol=1e-7,atol=1e-10), (rtol=1e-5,atol=2e-9), (rtol=1e-4,atol=1e-7));
     
     # Perform tests
-    # t4_Loc1_a_MUMPS_VEP_opt
-    @test perform_lamem_test(dir,"localization.dat","Loc1_a_MUMPS_VEP_opt-p4.expected",
-                            args="-nstep_max 20", 
-                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+    if test_mumps & !is64bit
+        # This test has issues on github actions with 64bit but works fine on our machines and with 32bit.
+
+        # t4_Loc1_a_MUMPS_VEP_opt
+        @test perform_lamem_test(dir,"localization.dat","Loc1_a_MUMPS_VEP_opt-p4.expected",
+                                args="-nstep_max 20", 
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+    end
 
     # t4_Loc1_b_MUMPS_VEP_Reg_opt
     @test perform_lamem_test(dir,"localization_eta_min_reg.dat","Loc1_b_MUMPS_VEP_Reg_opt-p4.expected",
