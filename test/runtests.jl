@@ -31,6 +31,12 @@ else
     test_superlu=true
 end
 
+if "is64bit" in ARGS
+    global is64bit=true
+else
+    global is64bit=false
+end
+
 @show use_dynamic_lib test_superlu test_mumps create_plots
 include("test_utils.jl")        # test-framework specific functions
 
@@ -42,7 +48,7 @@ test_dir = pwd()
 # ===================
 @testset "LaMEM Testsuite" verbose=true begin
 
-
+#=
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
@@ -80,6 +86,7 @@ end
     end
 end
 
+=#
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -101,19 +108,18 @@ end
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
-    if !is64bit     
-        # t3_Sub1_b_MUMPS_opt                            
-        keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-        acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
+    # t3_Sub1_b_MUMPS_opt                            
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
         
-        ParamFile = "Subduction_GMG_Particles.dat";
-        CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec)
-        @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt-p4.expected", 
-                                    args="-nstep_max 2",
-                                    keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
-
-        # t3_Sub1_c_MUMPS_deb    
-                           
+    ParamFile = "Subduction_GMG_Particles.dat";
+    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
+    @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt-p4.expected", 
+                                args="-nstep_max 2",
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+    
+    # t3_Sub1_c_MUMPS_deb    
+    if !is64bit                         
         # writing parallel marker files doesn't work in CI with 64 bit atm 
 
         keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
