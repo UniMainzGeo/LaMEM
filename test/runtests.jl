@@ -42,7 +42,7 @@ test_dir = pwd()
 # ===================
 @testset "LaMEM Testsuite" verbose=true begin
 
-#=
+
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
@@ -79,7 +79,7 @@ end
                                 keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=false)
     end
 end
-=#
+
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -101,43 +101,46 @@ end
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 
+    if !is64bit     
+        # t3_Sub1_b_MUMPS_opt                            
+        keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+        acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
+        
+        ParamFile = "Subduction_GMG_Particles.dat";
+        CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec)
+        @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt-p4.expected", 
+                                    args="-nstep_max 2",
+                                    keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
 
-    # t3_Sub1_b_MUMPS_opt                            
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
-    
-    ParamFile = "Subduction_GMG_Particles.dat";
-    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec)
-    @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt-p4.expected", 
-                                args="-nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+        # t3_Sub1_c_MUMPS_deb    
+                           
+        # writing parallel marker files doesn't work in CI with 64 bit atm 
 
-    # t3_Sub1_c_MUMPS_deb                                 
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=2e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=3e-4));
-    
-    ParamFile = "Subduction_GMG_Particles4.dat";
-    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec)
-    @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb-p4.expected", 
-                                args="-jp_pc_factor_mat_solver_type mumps  -nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
-                        
-    # t3_Sub1_d_MUMPS_MG_VEP_opt                                 
-    # NOTE: This employs 1D grid refinement
-    include(joinpath(dir,"CreateMarkers_SubductionVEP_parallel.jl"));      
+        keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+        acc      = ((rtol=1e-6,atol=2e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=3e-4));
+        
+        ParamFile = "Subduction_GMG_Particles4.dat";
+        CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec)
+        @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb-p4.expected", 
+                                    args="-jp_pc_factor_mat_solver_type mumps  -nstep_max 2",
+                                    keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
 
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
-    
-    ParamFile = "Subduction_VEP.dat";
-    CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=2, mpiexec=mpiexec)
-    @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
-                                args="-nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)       
+        # t3_Sub1_d_MUMPS_MG_VEP_opt                                 
+        # NOTE: This employs 1D grid refinement
+        include(joinpath(dir,"CreateMarkers_SubductionVEP_parallel.jl"));      
+
+        keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+        acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
+        
+        ParamFile = "Subduction_VEP.dat";
+        CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=2, mpiexec=mpiexec)
+        @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
+                                    args="-nstep_max 2",
+                                keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)  
+    end     
 end
 
 
-#=
 @testset "t4_Localisation" begin
     cd(test_dir)
     dir = "t4_Loc";
@@ -230,6 +233,8 @@ end
 end
 
 
+
+#=
 @testset "t7_AdjointGradientInversion" begin
     cd(test_dir)
     dir = "t7_AdjointGradientInversion";
