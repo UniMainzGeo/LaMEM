@@ -2,10 +2,11 @@
 
 # Add PETSc with required version
 using Pkg
-Pkg.add(name="PETSc_jll", version="3.19.6")
+Pkg.add(name="PETSc_jll", version="3.22.0")
+Pkg.add(name="MPICH_jll", version="4.2.3")
 
 # Copy the relevant directories over
-using PETSc_jll
+using PETSc_jll, MPICH_jll
 
 # copy the contents of all directories in a single one
 for path in PETSc_jll.PATH_list
