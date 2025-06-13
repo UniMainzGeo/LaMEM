@@ -122,13 +122,7 @@ function t24_CreateMarkers(dir="./", ParamFile="test.dat"; NumberCores=1, is64bi
     else
         #> 1 cores; create partitioning file first
         PartFile = CreatePartitioningFile_local(ParamFile, NumberCores; LaMEM_dir="../../bin", mpiexec=mpiexec)
-        #save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile,  directory="./markers_p$NumberCores", verbose=false, is64bit=is64bit)     
-
-        #PartFile = run_lamem_save_grid_local(ParamFile, NumberCores, verbose=false)
-        #PartFile = CreatePartitioningFile_local()
-
         save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile, directory="./markers_p$NumberCores", verbose=false, is64bit=is64bit)
-
     end
 
     cd(cur_dir)
