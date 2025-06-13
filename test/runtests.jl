@@ -48,7 +48,7 @@ test_dir = pwd()
 # ===================
 @testset "LaMEM Testsuite" verbose=true begin
 
-#=
+
 @testset "t1_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t1_FB1_Direct";
@@ -85,8 +85,6 @@ end
                                 keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=false)
     end
 end
-
-=#
 
 @testset "t3_Subduction" begin
     cd(test_dir)
@@ -240,7 +238,6 @@ end
 
 
 
-#=
 @testset "t7_AdjointGradientInversion" begin
     cd(test_dir)
     dir = "t7_AdjointGradientInversion";
@@ -443,9 +440,8 @@ end
                                 keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
     end
 end
-=#
 
-#=
+
 @testset "t12_Temperature_diffusion" begin
     cd(test_dir)
     dir = "t12_Temperature_diffusion";
@@ -880,7 +876,6 @@ end
     @test perform_lamem_test(dir,"Permeable.dat","Permeable_p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
-=#
 
 @testset "t24_Erosion_Sedimentation" begin
     cd(test_dir)
@@ -899,13 +894,13 @@ end
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 
     # test_b
-    t24_CreateMarkers(dir, ParamFile, NumberCores=2, mpiexec=mpiexec)
+    t24_CreateMarkers(dir, ParamFile, NumberCores=2, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_deb-p8.expected",
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=2, deb=true, mpiexec=mpiexec)
 end
 
-#=
+
 @testset "t25_APS_Healing" begin
     cd(test_dir)
     dir = "t25_APS_Healing";
@@ -1056,7 +1051,6 @@ end
     @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1.expected",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
-=#
 
 end
 
