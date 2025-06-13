@@ -78,15 +78,15 @@ jobs:
         sudo -E mv -f opt opt64
         sudo -E mv -f deb deb64
         cd ..
-#
-#    - name: 'Test LaMEM | Int32'
-#      run: |
-#        cd bin
-#        sudo -E cp -r opt32 opt
-#        sudo -E cp -r deb32 deb
-#        cd ..
-#        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl  
-#
+
+    - name: 'Test LaMEM | Int32'
+      run: |
+        cd bin
+        sudo -E cp -r opt32 opt
+        sudo -E cp -r deb32 deb
+        cd ..
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl  
+
     - name: 'Test LaMEM | Int64'
       run: |
         cd bin
