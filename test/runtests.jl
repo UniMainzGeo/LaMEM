@@ -117,33 +117,33 @@ end
     @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt-p4.expected", 
                                 args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
-    
+
     # t3_Sub1_c_MUMPS_deb    
-    if !is64bit                         
-        # writing parallel marker files doesn't work in CI with 64 bit atm 
-
-        keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-        acc      = ((rtol=1e-6,atol=2e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=3e-4));
+                     
+    # writing parallel marker files doesn't work in CI with 64 bit atm 
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-6,atol=2e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=3e-4));
         
-        ParamFile = "Subduction_GMG_Particles4.dat";
-        CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec)
-        @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb-p4.expected", 
-                                    args="-jp_pc_factor_mat_solver_type mumps  -nstep_max 2",
-                                    keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+    ParamFile = "Subduction_GMG_Particles4.dat";
+    CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
+    @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb-p4.expected", 
+                                args="-jp_pc_factor_mat_solver_type mumps  -nstep_max 2",
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
 
-        # t3_Sub1_d_MUMPS_MG_VEP_opt                                 
-        # NOTE: This employs 1D grid refinement
-        include(joinpath(dir,"CreateMarkers_SubductionVEP_parallel.jl"));      
+    # t3_Sub1_d_MUMPS_MG_VEP_opt                                 
+    # NOTE: This employs 1D grid refinement
+    include(joinpath(dir,"CreateMarkers_SubductionVEP_parallel.jl"));      
 
-        keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-        acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
         
-        ParamFile = "Subduction_VEP.dat";
-        CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=2, mpiexec=mpiexec)
-        @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
-                                    args="-nstep_max 2",
+    ParamFile = "Subduction_VEP.dat";
+    CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=2, mpiexec=mpiexec,  is64bit=is64bit)
+    @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
+                                args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)  
-    end     
+ 
 end
 
 
@@ -893,7 +893,7 @@ end
     ParamFile = "Erosion_Sedimentation_2D.dat"
 
     # test_a
-    t24_CreateMarkers(dir, ParamFile, NumberCores=2, mpiexec=mpiexec)
+    t24_CreateMarkers(dir, ParamFile, NumberCores=2, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_opt-p8.expected",
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
