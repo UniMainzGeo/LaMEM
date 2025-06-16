@@ -1,5 +1,6 @@
 # this compiles LaMEM using the PETSc_jll libraries
 using PETSc_jll
+using MPICH_jll
 
 # Compile LaMEM
 println("Compiling LaMEM")
@@ -27,6 +28,9 @@ else
                     "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int32",
                 )
 end
+
+@show pkgversion(PETSc_jll)
+#@show pkgversion(MPICH_jll)
 
 println("---- Compiling LaMEM opt version ----")
 compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)

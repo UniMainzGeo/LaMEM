@@ -1,12 +1,15 @@
 # These are tools that help perform the LaMEM tests, which run LaMEM locally
 using LinearAlgebra, Glob
-import LaMEM.Run: deactivate_multithreading
+#import LaMEM.Run: deactivate_multithreading
+#include("julia/IO_functions.jl")
 
 if use_dynamic_lib
-    using LaMEM.LaMEM_jll.PETSc_jll
+    #using LaMEM.LaMEM_jll.PETSc_jll
+    using PETSc_jll
 end
 
 export run_lamem_local_test, perform_lamem_test, clean_test_directory, run_lamem_save_grid_local, mpiexec
+export CreatePartitioningFile_local
 
 
 if use_dynamic_lib
@@ -57,7 +60,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             # add dynamic libraries to the path (if specified)
             perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
 
-            perform_run = deactivate_multithreading(perform_run)
+           ## perform_run = deactivate_multithreading(perform_run)
 
             #perform_run = addenv(perform_run,"PATH"=>mpipath)
 
@@ -81,7 +84,7 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
             # add dynamic libraries to the path (if specified)
             perform_run = addenv(perform_run,"DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
 
-            perform_run = deactivate_multithreading(perform_run)
+       ##     perform_run = deactivate_multithreading(perform_run)
 
            # perform_run = addenv(perform_run,"PATH"=>mpipath)
   
@@ -107,6 +110,13 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
 end
 
 
+function JuliaStringToArray(input)
+
+
+    arr = split(input,"\n")
+	return arr
+end
+
 function get_line_containing(stringarray::Vector{SubString{String}}, lookfor::String)
 
 	for line in stringarray
@@ -125,11 +135,13 @@ Create a processor partitioning file with a locally build version of LaMEM (pote
 function CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; 
                 LaMEM_dir="../../bin", opt=true, deb=false,
                 mpiexec="mpiexec", verbose=false)
+    
 
 	if cores==1	& verbose==true
 		return print("No partitioning file required for 1 core model setup \n")	
 	end
-
+    
+    cur_dir = pwd()
 	ParamFile    = abspath(ParamFile)
 	args         = args*"-mode save_grid"
 
@@ -140,6 +152,22 @@ function CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::S
             
     logoutput = String(read("savegrid.log"))
 
+    arr          = JuliaStringToArray(logoutput)
+	foundline    = get_line_containing(arr,"Processor grid  [nx, ny, nz]         : ")
+	foundline    = join(map(x -> isspace(foundline[x]) ? "" : foundline[x], 1:length(foundline)))
+	
+	sprtlftbrkt  = split(foundline,"[")
+	sprtrghtbrkt = split(sprtlftbrkt[3],"]")
+	separatecoma = split(sprtrghtbrkt[1],",")
+	procnumbers  = parse.(Int, separatecoma)
+	Procpartname = "ProcessorPartitioning_$(cores)cpu_$(procnumbers[1]).$(procnumbers[2]).$(procnumbers[3]).bin" 
+	if !isfile(joinpath((splitdir(ParamFile)[1]),Procpartname))
+		Procpartname = nothing
+	end
+	cd(cur_dir)
+    return Procpartname
+
+    #=
 	arr          = split(logoutput,"\n")
 	foundline    = get_line_containing(arr,"Processor grid  [nx, ny, nz]         : ")
 	foundline    = join(map(x -> isspace(foundline[x]) ? "" : foundline[x], 1:length(foundline)))
@@ -153,6 +181,7 @@ function CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::S
 	else
 	return Nothing
 	end
+    =#
 end
 
 
