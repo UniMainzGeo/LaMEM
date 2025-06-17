@@ -1055,8 +1055,9 @@ PetscErrorCode solverOptionsSetRequired(FB *fb)
 
 	if(ncy == 2)
 	{
-		// quasi-2D-grid - do not coarsen DMDA in y-direction
+		// quasi-2D-grid - do not coarsen DMDA, and only use 1 CPU in y-direction
 		PetscCall(PetscOptionsInsertString(NULL, "-da_refine_y 1"));
+		PetscCall(PetscOptionsInsertString(NULL, "-cpu_y 1"));
 	}
 
 	// MAT

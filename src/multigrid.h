@@ -89,9 +89,13 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md);
 
 PetscErrorCode MGLevelDestroy(MGLevel *lvl);
 
-PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine);
+PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine);
 
-PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine);
+PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine);
+
+PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine);
+
+PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine);
 
 //---------------------------------------------------------------------------
 
@@ -134,7 +138,7 @@ struct MG
 	PetscInt  nlmf;      // number of matrix-free levels
 	MGLevel  *lvls;      // multigrid levels
 	PetscInt  crs_setup; // coarse solver setup flag
-
+	PetscInt  MG2D;      // 2D multigrid flag
 };
 
 //---------------------------------------------------------------------------
