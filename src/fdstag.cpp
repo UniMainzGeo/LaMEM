@@ -437,6 +437,29 @@ PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode Discret1DCopyCoord(Discret1D *coarse, Discret1D *fine)
+{
+	PetscInt i, nn;
+
+	PetscFunctionBeginUser;
+
+	// copy data
+	coarse->uniform  = fine->uniform;  // uniform grid flag
+	coarse->periodic = fine->periodic; // periodic topology flag
+	coarse->gcrdbeg  = fine->gcrdbeg;  // global grid coordinate bound (begin)
+	coarse->gcrdend  = fine->gcrdend;  // global grid coordinate bound (end)
+
+	// copy node coordinate buffer
+	for(i = 0, nn = fine->ncels+3; i < nn; i++)
+		coarse->nbuff[i] = fine->nbuff[i];
+
+	// copy cell coordinate buffer
+	for(i = 0, nn = fine->ncels+2; i < nn; i++)
+		coarse->cbuff[i] = fine->cbuff[i];
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode Discret1DCompleteCoord(Discret1D *ds)
 {
 	// generate ghost points and cell center coordinates
@@ -1010,7 +1033,7 @@ PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 {
-	PetscInt         i;
+	PetscInt         i,     ry;
 	PetscInt         Nx,    Ny,    Nz;
 	PetscInt         Px,    Py,    Pz;
 	const PetscInt  *plx,  *ply,  *plz;
@@ -1038,10 +1061,22 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	ierr = makeIntArray(&ly, ply, Py); CHKERRQ(ierr);
 	ierr = makeIntArray(&lz, plz, Pz); CHKERRQ(ierr);
 
-	// coarsen uniformly in every direction
-	Nx /= 2;  for(i = 0; i < Px; i++) lx[i] /= 2;
-	Ny /= 2;  for(i = 0; i < Py; i++) ly[i] /= 2;
-	Nz /= 2;  for(i = 0; i < Pz; i++) lz[i] /= 2;
+	// get refinement factor in y-direction
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &ry, NULL); CHKERRQ(ierr);
+
+	if(ry == 1)
+	{
+		// 2D coarsening
+		Nx /= 2;  for(i = 0; i < Px; i++) lx[i] /= 2;
+		Nz /= 2;  for(i = 0; i < Pz; i++) lz[i] /= 2;
+	}
+	else
+	{
+		// 3D coarsening
+		Nx /= 2;  for(i = 0; i < Px; i++) lx[i] /= 2;
+		Ny /= 2;  for(i = 0; i < Py; i++) ly[i] /= 2;
+		Nz /= 2;  for(i = 0; i < Pz; i++) lz[i] /= 2;
+	}
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
@@ -1087,13 +1122,29 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine)
 {
+	PetscInt ry;
+
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
+	// get refinement factor in y-direction
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &ry, NULL); CHKERRQ(ierr);
+
 	// coarsen coordinates
-	ierr = Discret1DCoarsenCoord(&coarse->dsx, &fine->dsx); CHKERRQ(ierr);
-	ierr = Discret1DCoarsenCoord(&coarse->dsy, &fine->dsy); CHKERRQ(ierr);
-	ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsz); CHKERRQ(ierr);
+	if(ry == 1)
+	{
+		// 2D coarsening
+		ierr = Discret1DCoarsenCoord(&coarse->dsx, &fine->dsx); CHKERRQ(ierr);
+		ierr = Discret1DCopyCoord   (&coarse->dsy, &fine->dsy); CHKERRQ(ierr);
+		ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsz); CHKERRQ(ierr);
+	}
+	else
+	{
+		// 3D coarsening
+		ierr = Discret1DCoarsenCoord(&coarse->dsx, &fine->dsx); CHKERRQ(ierr);
+		ierr = Discret1DCoarsenCoord(&coarse->dsy, &fine->dsy); CHKERRQ(ierr);
+		ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsz); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 	PetscFunctionReturn(0);

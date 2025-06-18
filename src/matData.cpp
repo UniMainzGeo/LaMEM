@@ -282,10 +282,10 @@ PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine)
 	ierr = FDSTAGCoarsenCoord(coarse->fs, fine->fs); CHKERRQ(ierr);
 
 	// coarsen material parameters
-	ierr = MatDataRestricParam(coarse, fine); CHKERRQ(ierr);
+	ierr = MatDataRestrictParam(coarse, fine); CHKERRQ(ierr);
 
 	// coarsen boundary conditions
-	ierr = MatDataRestricBC(coarse, fine); CHKERRQ(ierr);
+	ierr = MatDataRestrictBC(coarse, fine); CHKERRQ(ierr);
 
 	// update SPC constraints on coarse grid
 	ierr = MatDataListSPC(coarse); CHKERRQ(ierr);
@@ -391,7 +391,7 @@ PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatDataRestricParam(MatData *coarse, MatData *fine)
+PetscErrorCode MatDataRestrictParam(MatData *coarse, MatData *fine)
 {
 	// restrict parameters from fine to coarse grid
 
@@ -596,9 +596,8 @@ PetscErrorCode MatDataRestricParam(MatData *coarse, MatData *fine)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatDataRestricBC(MatData *coarse, MatData *fine)
+PetscErrorCode MatDataRestrictBC(MatData *coarse, MatData *fine)
 {
-
 	// ACHTUNG CHECK THIS ROUTINE! BOUNDARY PRESURE?
 
 	// restrict boundary condition vectors from fine grid to coarse grid

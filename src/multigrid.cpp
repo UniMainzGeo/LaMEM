@@ -426,7 +426,7 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 
 	FDSTAG   *fs;
 	PetscBool opt_set;
-	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, nlmf, refine_y;
+	PetscInt  nx, ny, nz, Nx, Ny, Nz, n, ncors, nlevels, nlmf, ry, Py;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -434,25 +434,30 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	fs = md->fs;
 
 	// check if 2D multigrid is requested
-	ierr = DMDAGetRefinementFactor(fs->DA_CEN, NULL, &refine_y, NULL); CHKERRQ(ierr);
+	ierr = DMDAGetRefinementFactor(fs->DA_CEN, NULL, &ry, NULL); CHKERRQ(ierr);
 
-	// check discretization in all directions
-	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);
-	ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
-	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr);
+	// set 2D multigrid flag
+	if(ry == 1) { mg->MG2D = 1; }
+
+	// get number of CPUs
+	ierr = DMDAGetInfo(fs->DA_CEN, 0, 0, 0, 0, 0, &Py, 0, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
+
+	if(mg->MG2D && Py != 1)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "2D multigrid must use one processor in y-direction (-da_refine_y, cpu_y)");
+	}
 
 	// get maximum possible number of coarsening steps
-	ncors = nx;
-	if(nz < ncors) ncors = nz;
-
-	if(refine_y == 1)
+	if(mg->MG2D)
 	{
-		// set flag
-		mg->MG2D = 1;
+		ierr = Discret1DCheckMG(&fs->dsx, "x", &n); CHKERRQ(ierr);               ncors = n;
+		ierr = Discret1DCheckMG(&fs->dsz, "z", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
 	}
 	else
 	{
-		if(ny < ncors) ncors = ny;
+		ierr = Discret1DCheckMG(&fs->dsx, "x", &n); CHKERRQ(ierr);               ncors = n;
+		ierr = Discret1DCheckMG(&fs->dsy, "y", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
+		ierr = Discret1DCheckMG(&fs->dsz, "z", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
 	}
 
 	// check number of levels requested on the command line
@@ -497,16 +502,8 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 
 	// print grid statistics
 	nx = fs->dsx.ncels >> ncors;
+	ny = fs->dsy.ncels >> ncors*(1 - mg->MG2D);
 	nz = fs->dsz.ncels >> ncors;
-
-	if(mg->MG2D)
-	{
-		ny = fs->dsy.ncels;
-	}
-	else
-	{
-		ny = fs->dsy.ncels >> ncors;
-	}
 
 	Nx = nx*fs->dsx.nproc;
 	Ny = ny*fs->dsy.nproc;
@@ -1309,14 +1306,10 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 	if(mdlvl->idxmod == _IDX_COUPLED_)
 	{
 		// set pressure weights
-		vs[0] = 1.0/8.0;
-		vs[1] = 1.0/8.0;
-		vs[2] = 1.0/8.0;
-		vs[3] = 1.0/8.0;
-		vs[4] = 1.0/8.0;
-		vs[5] = 1.0/8.0;
-		vs[6] = 1.0/8.0;
-		vs[7] = 1.0/8.0;
+		vs[0] = 1.0/4.0;
+		vs[1] = 1.0/4.0;
+		vs[2] = 1.0/4.0;
+		vs[3] = 1.0/4.0;
 
 		//-----------------------
 		// P-points (coarse grid)
@@ -1327,34 +1320,26 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 		{
 			// get fine grid indices
 			I = 2*i;
-			J = 2*j;
+			J = j;
 			K = 2*k;
 
 			// get fine grid stencil
-			idx[0] = (PetscInt)ip[K  ][J  ][I  ];
-			idx[1] = (PetscInt)ip[K  ][J  ][I+1];
-			idx[2] = (PetscInt)ip[K  ][J+1][I  ];
-			idx[3] = (PetscInt)ip[K  ][J+1][I+1];
-			idx[4] = (PetscInt)ip[K+1][J  ][I  ];
-			idx[5] = (PetscInt)ip[K+1][J  ][I+1];
-			idx[6] = (PetscInt)ip[K+1][J+1][I  ];
-			idx[7] = (PetscInt)ip[K+1][J+1][I+1];
+			idx[0] = (PetscInt)ip[K  ][J][I  ];
+			idx[1] = (PetscInt)ip[K  ][J][I+1];
+			idx[2] = (PetscInt)ip[K+1][J][I  ];
+			idx[3] = (PetscInt)ip[K+1][J][I+1];
 
 			// get fine grid boundary conditions
-			bc[0]  =         fbcp[K  ][J  ][I  ];
-			bc[1]  =         fbcp[K  ][J  ][I+1];
-			bc[2]  =         fbcp[K  ][J+1][I  ];
-			bc[3]  =         fbcp[K  ][J+1][I+1];
-			bc[4]  =         fbcp[K+1][J  ][I  ];
-			bc[5]  =         fbcp[K+1][J  ][I+1];
-			bc[6]  =         fbcp[K+1][J+1][I  ];
-			bc[7]  =         fbcp[K+1][J+1][I+1];
+			bc[0]  =         fbcp[K  ][J][I  ];
+			bc[1]  =         fbcp[K  ][J][I+1];
+			bc[2]  =         fbcp[K+1][J][I  ];
+			bc[3]  =         fbcp[K+1][J][I+1];
 
 			// setup row of restriction matrix
-			getRowRestrict(cbcp[k][j][i], 8, idx, bc, v, vs);
+			getRowRestrict(cbcp[k][j][i], 4, idx, bc, v, vs);
 
 			// store full matrix row
-			ierr = MatSetValues(R, 1, &row, 8, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+			ierr = MatSetValues(R, 1, &row, 4, idx, v, INSERT_VALUES); CHKERRQ(ierr);
 
 			// increment row number
 			row++;
@@ -1621,7 +1606,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 		{
 			// get coarse grid indices
 			I = i/2;
-			J = j/2;
+			J = j;
 			K = k/2;
 
 			idx[0] = (PetscInt)ip[K][J][I];
@@ -1641,10 +1626,10 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,  mdlvl->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,  mdlvl->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,  mdlvl->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN,mdlvl->ip,  &ip);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,   mdlvl->ivx, &ivx);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,   mdlvl->ivy, &ivy);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,   mdlvl->ivz, &ivz);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN, mdlvl->ip,  &ip);    CHKERRQ(ierr);
 
 	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
