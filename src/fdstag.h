@@ -116,6 +116,9 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
 // coarsen fine grid coordinates
 PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine);
 
+// copy fine grid coordinates
+PetscErrorCode Discret1DCopyCoord(Discret1D *coarse, Discret1D *fine);
+
 // generate ghost points and cell center coordinates
 PetscErrorCode Discret1DCompleteCoord(Discret1D *ds);
 
