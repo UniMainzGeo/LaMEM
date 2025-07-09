@@ -20,6 +20,11 @@ mode = opt
 
 PLATFORM = $(shell uname -m)
 
+# C wrapper configuration  
+LAMEM_FLAGS += -IC_headers/
+
+# C wrapper sources - make sure both files are included
+C_WRAPPER_SOURCES = C_headers/LaMEMLib_C.cpp C_headers/LaMEMAdjoint_C.cpp  C_headers/LaMEMAdvect_C.cpp
 
 # IBM machine (XLC compiler assumed)
 ifeq ($(PLATFORM), ppc64)
@@ -109,6 +114,26 @@ ifneq ($(filter MSYS%,$(UNAME)),)
 CLIB_FLAGS = -lssp
 endif
 
+# Add after your existing source file definitions
+#C_WRAPPER_SOURCES = C_headers/LaMEMLib_C.cpp
+#C_WRAPPER_OBJECTS = $(C_WRAPPER_SOURCES:.cpp=.o)
+#
+## Add to main sources
+#SOURCES += $(C_WRAPPER_SOURCES)
+#OBJECTS += $(C_WRAPPER_OBJECTS)
+#
+#
+## Library-specific source files (update your existing library section)
+#LIB_SOURCES = LaMEMLib.cpp $(C_WRAPPER_SOURCES)
+#LIB_OBJECTS = $(LIB_SOURCES:.cpp=.o)
+
+# This is CORRECT (uses tabs):
+$(SHARED_LIB): $(LIB_OBJECTS)
+	$(CXX) $(SHARED_FLAGS) -o $@ $^ $(PETSC_LIB)
+
+# Static library target  
+$(STATIC_LIB): $(LIB_OBJECTS)
+	$(AR) rcs $@ $^
 #====================================================
 
 # Environment required for documentation 
