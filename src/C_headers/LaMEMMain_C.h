@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 // Thin wrapper for LaMEM's main logic
-PetscErrorCode LaMEMMain(int argc, char **argv);
+PetscErrorCode LaMEMMain_main(int argc, char **argv);
 
 #ifdef __cplusplus
 }

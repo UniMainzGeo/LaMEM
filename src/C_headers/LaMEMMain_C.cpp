@@ -1,7 +1,3 @@
-#ifndef LAMEMMAIN_C_H
-#define LAMEMMAIN_C_H
-
-#include <petsc.h>
 #include "LaMEMMain_C.h"
 #include "../LaMEM.h"
 #include "../scaling.h"
@@ -10,16 +6,13 @@
 #include "../adjoint.h"
 #include "../phase.h"
 
-
-#ifdef __cplusplus
 extern "C" {
-#endif
 
-// Thin wrapper for LaMEMLibMain
-PetscErrorCode LaMEMMain_LibMain(void *fb, PetscLogStage *stages);
-
-#ifdef __cplusplus
+// Thin wrapper for LaMEM's main logic
+PetscErrorCode LaMEMMain_main(int argc, char **argv)
+{
+    // Call the main function in LaMEM.cpp
+    return LaMEM_main(argc, argv);
 }
-#endif
 
-#endif
+}

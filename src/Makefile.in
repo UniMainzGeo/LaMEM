@@ -21,7 +21,7 @@ mode = opt
 PLATFORM = $(shell uname -m)
 
 # C wrapper configuration  
-LAMEM_FLAGS += -IC_headers/
+LAMEM_FLAGS += -IC_headers/ -fvisibility=default
 						 
 # Add C headers to C_WRAPPER_SOURCES (to simplify calling LaMEM functions in the from other codes)
 C_WRAPPER_SOURCES = $(wildcard C_headers/*.cpp)
