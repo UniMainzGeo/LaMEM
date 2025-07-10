@@ -7,9 +7,8 @@
 extern "C" {
 #endif
 
-// Thin wrappers around actual LaMEM functions from the source
-PetscErrorCode LaMEMMain_LibMain(void *fb, PetscLogStage *stages);
-PetscErrorCode LaMEMMain_AdjointMain(void *IOparam);
+// Thin wrapper for LaMEM's main logic
+PetscErrorCode LaMEMMain(int argc, char **argv);
 
 #ifdef __cplusplus
 }

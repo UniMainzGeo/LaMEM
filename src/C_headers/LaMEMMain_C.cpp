@@ -1,3 +1,7 @@
+#ifndef LAMEMMAIN_C_H
+#define LAMEMMAIN_C_H
+
+#include <petsc.h>
 #include "LaMEMMain_C.h"
 #include "../LaMEM.h"
 #include "../scaling.h"
@@ -6,11 +10,16 @@
 #include "../adjoint.h"
 #include "../phase.h"
 
+
+#ifdef __cplusplus
 extern "C" {
+#endif
 
-// Thin wrappers - just cast and call the actual existing functions
-PetscErrorCode LaMEMMain_LibMain(void *fb, PetscLogStage *stages) {
-    return LaMEMLibMain((FB*)fb, stages);
-}
+// Thin wrapper for LaMEMLibMain
+PetscErrorCode LaMEMMain_LibMain(void *fb, PetscLogStage *stages);
 
+#ifdef __cplusplus
 }
+#endif
+
+#endif
