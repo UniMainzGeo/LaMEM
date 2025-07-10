@@ -52,18 +52,16 @@ CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
 CSRC = $(filter-out LaMEM.cpp LaMEM_C.cpp, $(wildcard *.cpp))
 
 # Add C wrapper source
-CSRC += $(C_WRAPPER_SOURCES)
+#CSRC += $(C_WRAPPER_SOURCES)
+
+# Objects generated from C_headers/*.cpp
+#C_HEADERS_OBJ := $(addprefix ../lib/${mode}/, $(notdir $(wildcard C_headers/*.cpp:.cpp=.o)))
+C_HEADERS_OBJ := $(patsubst C_headers/%.cpp, ../lib/${mode}/%.o, $(wildcard C_headers/*.cpp))
 
 #====================================================
 
-## Generate lists of library object files:
-#COBJ := $(addprefix ../lib/${mode}/, $(notdir $(CSRC:.cpp=.o)))
-#
-## Generate lists of library dependency files:
-#CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.cpp=.d)))
-
-# Generate lists of library object files:
-COBJ := $(addprefix ../lib/${mode}/, $(notdir $(CSRC:.cpp=.o)))
+# Generate lists of library object files (exclude C_HEADERS_OBJ):
+COBJ := $(addprefix ../lib/${mode}/, $(notdir $(filter-out C_headers/*.cpp, $(CSRC:.cpp=.o))))
 
 # Generate lists of library dependency files:
 CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.cpp=.o:.o=.d)))
@@ -144,17 +142,14 @@ ${LaMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 	ranlib $@
 
 # Create a dynamic library
-#dylib: ${COBJ}
-#	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
-# Create a dynamic library
-dylib: ${COBJ}
+dylib: ${COBJ} ${C_HEADERS_OBJ}
 	@echo "............................................."
 	@echo ".......... Building Dynamic Library ........"
 	@echo "............................................."
 ifeq ($(shell uname), Darwin)
-	$(CCOMPILER) -dynamiclib -undefined dynamic_lookup -o ../lib/$(mode)/liblamem.dylib ${COBJ} ${PETSC_LIB}
+	$(CCOMPILER) -dynamiclib -undefined dynamic_lookup -o ../lib/$(mode)/liblamem.dylib ${COBJ} ${C_HEADERS_OBJ} ${PETSC_LIB}
 else
-	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/liblamem.so ${COBJ} ${PETSC_LIB}
+	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/liblamem.so ${COBJ} ${C_HEADERS_OBJ} ${PETSC_LIB}
 endif
 #====================================================
 
@@ -251,17 +246,20 @@ clean_all :
 	@rm -rf ../lib/$(mode)/*
 	@rm -rf ../bin/$(mode)/*
 	@rm -rf ../dep/$(mode)/*
+	@rm -f $(C_HEADERS_OBJ)
 
-# Clean C wrapper objects specifically
-clean_headers:
-	@rm -f ../lib/$(mode)/LaMEMLib_C.o
-	@rm -f ../dep/$(mode)/LaMEMLib_C.d
 #====================================================
 
 debug_sources:
 	@echo "C_WRAPPER_SOURCES: $(C_WRAPPER_SOURCES)"
 	@echo "CSRC: $(CSRC)"
 	@echo "COBJ: $(COBJ)"
+
+debug_headers:
+	@echo "C_HEADERS_OBJ: $(C_HEADERS_OBJ)"
+
+debug_wildcard:
+	@echo "C_headers/*.cpp: $(wildcard C_headers/*.cpp)"
 
 # Create automatic documentation
 
