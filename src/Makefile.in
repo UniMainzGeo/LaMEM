@@ -23,42 +23,8 @@ PLATFORM = $(shell uname -m)
 # C wrapper configuration  
 LAMEM_FLAGS += -IC_headers/
 						 
-# Add to C_WRAPPER_SOURCES
-C_WRAPPER_SOURCES = C_headers/LaMEMLib_C.cpp \
-                   C_headers/LaMEMAdjoint_C.cpp \
-                   C_headers/LaMEMAdvect_C.cpp \
-                   C_headers/LaMEMAVD_C.cpp \
-                   C_headers/LaMEMBC_C.cpp \
-                   C_headers/LaMEMConstEq_C.cpp \
-                   C_headers/LaMEMCVI_C.cpp \
-                   C_headers/LaMEMDike_C.cpp \
-                   C_headers/LaMEMFDSTAG_C.cpp \
-                   C_headers/LaMEMInterpolate_C.cpp \
-                   C_headers/LaMEMJacRes_C.cpp \
-                   C_headers/LaMEMJacResAux_C.cpp \
-                   C_headers/LaMEMMain_C.cpp \
-                   C_headers/LaMEMLSolve_C.cpp \
-                   C_headers/LaMEMMarker_C.cpp \
-                   C_headers/LaMEMMatrix_C.cpp \
-                   C_headers/LaMEMMeltParam_C.cpp \
-                   C_headers/LaMEMMultigrid_C.cpp \
-                   C_headers/LaMEMNLSolve_C.cpp \
-                   C_headers/LaMEMObjFunct_C.cpp \
-                   C_headers/LaMEMParaViewOutAVD_C.cpp \
-                   C_headers/LaMEMParaViewOutBin_C.cpp \
-                   C_headers/LaMEMParaViewOutMark_C.cpp \
-                   C_headers/LaMEMParaViewOutPassiveTracers_C.cpp \
-                   C_headers/LaMEMParaViewOutSurf_C.cpp \
-                   C_headers/LaMEMParsing_C.cpp \
-                   C_headers/LaMEMPassiveTracer_C.cpp \
-                   C_headers/LaMEMPhaseTransition_C.cpp \
-                   C_headers/LaMEMPhase_C.cpp \
-                   C_headers/LaMEMScaling_C.cpp \
-                   C_headers/LaMEMSubgrid_C.cpp \
-                   C_headers/LaMEMSurf_C.cpp \
-                   C_headers/LaMEMTensor_C.cpp \
-                   C_headers/LaMEMTools_C.cpp \
-                   C_headers/LaMEMTSSolve_C.cpp
+# Add C headers to C_WRAPPER_SOURCES (to simplify calling LaMEM functions in the from other codes)
+C_WRAPPER_SOURCES = $(wildcard C_headers/*.cpp)
 
 # IBM machine (XLC compiler assumed)
 ifeq ($(PLATFORM), ppc64)
@@ -147,19 +113,6 @@ UNAME := $(shell uname)
 ifneq ($(filter MSYS%,$(UNAME)),)
 CLIB_FLAGS = -lssp
 endif
-
-# Add after your existing source file definitions
-#C_WRAPPER_SOURCES = C_headers/LaMEMLib_C.cpp
-#C_WRAPPER_OBJECTS = $(C_WRAPPER_SOURCES:.cpp=.o)
-#
-## Add to main sources
-#SOURCES += $(C_WRAPPER_SOURCES)
-#OBJECTS += $(C_WRAPPER_OBJECTS)
-#
-#
-## Library-specific source files (update your existing library section)
-#LIB_SOURCES = LaMEMLib.cpp $(C_WRAPPER_SOURCES)
-#LIB_OBJECTS = $(LIB_SOURCES:.cpp=.o)
 
 # This is CORRECT (uses tabs):
 $(SHARED_LIB): $(LIB_OBJECTS)
