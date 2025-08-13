@@ -1046,19 +1046,7 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 //-----------------------------------------------------------------------------
 PetscErrorCode solverOptionsSetRequired(FB *fb)
 {
-	PetscInt ncy;
-
 	PetscFunctionBeginUser;
-
-	// DM
-	PetscCall(getIntParam(fb, _REQUIRED_, "nel_y", &ncy, 1, 10000));
-
-	if(ncy == 2)
-	{
-		// quasi-2D-grid - do not coarsen DMDA, and only use 1 CPU in y-direction
-		PetscCall(PetscOptionsInsertString(NULL, "-da_refine_y 1"));
-		PetscCall(PetscOptionsInsertString(NULL, "-cpu_y 1"));
-	}
 
 	// MAT
 	PetscCall(PetscOptionsInsertString(NULL, "-mat_product_algorithm scalable"));

@@ -190,9 +190,10 @@ PetscErrorCode Discret1DCreate(
 		PetscInt    color,     // column color
 		PetscMPIInt grprev,    // global rank of previous process
 		PetscMPIInt grnext,    // global rank of next process
-		PetscScalar gtol)      // geometric tolerance
+		PetscScalar gtol,      // geometric tolerance
+		const char *dir)       // direction label
 {
-	PetscInt       i, cnt;
+	PetscInt i, cnt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -232,6 +233,12 @@ PetscErrorCode Discret1DCreate(
 	// number of local cells
 	if(grnext != -1) ds->ncels = nnodProc[rank];
 	else             ds->ncels = nnodProc[rank] - 1;
+
+	// check number of cells in local grid
+	if(ds->ncels < 2)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Less than two local cells in the %s - direction\n", dir);
+	}
 
 	// coordinates of local nodes + 1 layer (left) & 2 layers (right) of ghost points
 	// NOTE: on the last processor there is only one ghost point from the right
@@ -399,63 +406,54 @@ PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine)
 	coarse->gcrdbeg  = fine->gcrdbeg;  // global grid coordinate bound (begin)
 	coarse->gcrdend  = fine->gcrdend;  // global grid coordinate bound (end)
 
-	// get number of coarse local nodes
-	nn = coarse->ncels + 1;
-
-	// store coarse local node coordinates
-	for(i = 0; i < nn; i++)
-		coarse->ncoor[i] = fine->ncoor[2*i];
-
-	// exchange ghost point coordinates
-	cnt = 0;
-
-	if(fine->grprev != -1)
+	// check whether mesh is coarsened
+	if(coarse->ncels == fine->ncels)
 	{
-		sprev = fine->ncoor[2];
+		// copy node coordinate buffer
+		for(i = 0, nn = fine->ncels+3; i < nn; i++)
+			coarse->nbuff[i] = fine->nbuff[i];
 
-		ierr = MPI_Isend(&sprev, 1, MPIU_SCALAR, fine->grprev, 700, PETSC_COMM_WORLD, &request[cnt++]); CHKERRQ(ierr);
-		ierr = MPI_Irecv(&rprev, 1, MPIU_SCALAR, fine->grprev, 700, PETSC_COMM_WORLD, &request[cnt++]); CHKERRQ(ierr);
+		// copy cell coordinate buffer
+		for(i = 0, nn = fine->ncels+2; i < nn; i++)
+			coarse->cbuff[i] = fine->cbuff[i];
 	}
-
-	if(fine->grnext != -1)
+	else
 	{
-		snext = fine->ncoor[fine->ncels-2];
+		// get number of coarse local nodes
+		nn = coarse->ncels + 1;
 
-		ierr = MPI_Isend(&snext, 1, MPIU_SCALAR, fine->grnext, 700, PETSC_COMM_WORLD, &request[cnt++]); CHKERRQ(ierr);
-		ierr = MPI_Irecv(&rnext, 1, MPIU_SCALAR, fine->grnext, 700, PETSC_COMM_WORLD, &request[cnt++]); CHKERRQ(ierr);
+		// store coarse local node coordinates
+		for(i = 0; i < nn; i++)
+			coarse->ncoor[i] = fine->ncoor[2*i];
+
+		// exchange ghost point coordinates
+		cnt = 0;
+
+		if(fine->grprev != -1)
+		{
+			sprev = fine->ncoor[2];
+
+			ierr = MPI_Isend(&sprev, 1, MPIU_SCALAR, fine->grprev, 700, PETSC_COMM_WORLD, &request[cnt++]); CHKERRQ(ierr);
+			ierr = MPI_Irecv(&rprev, 1, MPIU_SCALAR, fine->grprev, 700, PETSC_COMM_WORLD, &request[cnt++]); CHKERRQ(ierr);
+		}
+
+		if(fine->grnext != -1)
+		{
+			snext = fine->ncoor[fine->ncels-2];
+
+			ierr = MPI_Isend(&snext, 1, MPIU_SCALAR, fine->grnext, 700, PETSC_COMM_WORLD, &request[cnt++]); CHKERRQ(ierr);
+			ierr = MPI_Irecv(&rnext, 1, MPIU_SCALAR, fine->grnext, 700, PETSC_COMM_WORLD, &request[cnt++]); CHKERRQ(ierr);
+		}
+
+		// wait until all communication processes have been terminated
+		if(cnt) { ierr = MPI_Waitall(cnt, request, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
+
+		if(fine->grprev != -1) { coarse->ncoor[-1] = rprev; }
+		if(fine->grnext != -1) { coarse->ncoor[nn] = rnext; }
+
+		// generate ghost points and cell center coordinates
+		ierr = Discret1DCompleteCoord(coarse); CHKERRQ(ierr);
 	}
-
-	// wait until all communication processes have been terminated
-	if(cnt) { ierr = MPI_Waitall(cnt, request, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
-
-	if(fine->grprev != -1) { coarse->ncoor[-1] = rprev; }
-	if(fine->grnext != -1) { coarse->ncoor[nn] = rnext; }
-
-	// generate ghost points and cell center coordinates
-	ierr = Discret1DCompleteCoord(coarse); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode Discret1DCopyCoord(Discret1D *coarse, Discret1D *fine)
-{
-	PetscInt i, nn;
-
-	PetscFunctionBeginUser;
-
-	// copy data
-	coarse->uniform  = fine->uniform;  // uniform grid flag
-	coarse->periodic = fine->periodic; // periodic topology flag
-	coarse->gcrdbeg  = fine->gcrdbeg;  // global grid coordinate bound (begin)
-	coarse->gcrdend  = fine->gcrdend;  // global grid coordinate bound (end)
-
-	// copy node coordinate buffer
-	for(i = 0, nn = fine->ncels+3; i < nn; i++)
-		coarse->nbuff[i] = fine->nbuff[i];
-
-	// copy cell coordinate buffer
-	for(i = 0, nn = fine->ncels+2; i < nn; i++)
-		coarse->cbuff[i] = fine->cbuff[i];
 
 	PetscFunctionReturn(0);
 }
@@ -645,10 +643,10 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Local grid size is not constant on all processors in %s-direction", dir);
 	}
 
-	// determine maximum number of coarsening steps
+	// determine maximum number of coarsening steps (enforce at least two coarse grid cells per processor)
 	sz    = ds->ncels;
 	ncors = 0;
-	while(!(sz % 2)) { sz /= 2; ncors++; }
+	while(!(sz % 2) && sz > 2) { sz /= 2; ncors++; }
 
 	// return
 	(*_ncors) = ncors;
@@ -889,7 +887,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	Nz = msz.tcels + 1;
 
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
 
@@ -927,17 +925,17 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	ierr = Discret1DCreate(&fs->dsx, Px, rx, lx, cx,
 			getGlobalRank(rx-1, ry, rz, Px, Py, Pz),
 			getGlobalRank(rx+1, ry, rz, Px, Py, Pz),
-			fs->gtol); CHKERRQ(ierr);
+			fs->gtol, "x"); CHKERRQ(ierr);
 
 	ierr = Discret1DCreate(&fs->dsy, Py, ry, ly, cy,
 			getGlobalRank(rx, ry-1, rz, Px, Py, Pz),
 			getGlobalRank(rx, ry+1, rz, Px, Py, Pz),
-			fs->gtol); CHKERRQ(ierr);
+			fs->gtol, "y"); CHKERRQ(ierr);
 
 	ierr = Discret1DCreate(&fs->dsz, Pz, rz, lz, cz,
 			getGlobalRank(rx, ry, rz-1, Px, Py, Pz),
 			getGlobalRank(rx, ry, rz+1, Px, Py, Pz),
-			fs->gtol); CHKERRQ(ierr);
+			fs->gtol, "z"); CHKERRQ(ierr);
 
 	// delete temporary arrays
 	ierr = PetscFree(lx); CHKERRQ(ierr);
@@ -994,7 +992,7 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	ierr = Discret1DGetNumCells(&fs->dsz, &lz); CHKERRQ(ierr);
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_CEN); CHKERRQ(ierr);
 
@@ -1033,7 +1031,7 @@ PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 {
-	PetscInt         i,     ry;
+	PetscInt         i;
 	PetscInt         Nx,    Ny,    Nz;
 	PetscInt         Px,    Py,    Pz;
 	const PetscInt  *plx,  *ply,  *plz;
@@ -1061,25 +1059,12 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	ierr = makeIntArray(&ly, ply, Py); CHKERRQ(ierr);
 	ierr = makeIntArray(&lz, plz, Pz); CHKERRQ(ierr);
 
-	// get refinement factor in y-direction
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &ry, NULL); CHKERRQ(ierr);
-
-	if(ry == 1)
-	{
-		// 2D coarsening
-		Nx /= 2;  for(i = 0; i < Px; i++) lx[i] /= 2;
-		Nz /= 2;  for(i = 0; i < Pz; i++) lz[i] /= 2;
-	}
-	else
-	{
-		// 3D coarsening
-		Nx /= 2;  for(i = 0; i < Px; i++) lx[i] /= 2;
-		Ny /= 2;  for(i = 0; i < Py; i++) ly[i] /= 2;
-		Nz /= 2;  for(i = 0; i < Pz; i++) lz[i] /= 2;
-	}
+	if(Nx > 2) { Nx /= 2;  for(i = 0; i < Px; i++) { lx[i] /= 2; } }
+	if(Ny > 2) { Ny /= 2;  for(i = 0; i < Py; i++) { ly[i] /= 2; } }
+	if(Nz > 2) { Nz /= 2;  for(i = 0; i < Pz; i++) { lz[i] /= 2; } }
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &coarse->DA_CEN); CHKERRQ(ierr);
 
@@ -1101,13 +1086,13 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	fdsz = &fine->dsz;
 
 	ierr = Discret1DCreate(&coarse->dsx, Px, fdsx->rank, lx, fdsx->color,
-			fdsx->grprev, fdsx->grnext, coarse->gtol); CHKERRQ(ierr);
+			fdsx->grprev, fdsx->grnext, coarse->gtol, "x"); CHKERRQ(ierr);
 
 	ierr = Discret1DCreate(&coarse->dsy, Py, fdsy->rank, ly, fdsy->color,
-			fdsy->grprev, fdsy->grnext, coarse->gtol); CHKERRQ(ierr);
+			fdsy->grprev, fdsy->grnext, coarse->gtol, "y"); CHKERRQ(ierr);
 
 	ierr = Discret1DCreate(&coarse->dsz, Pz, fdsz->rank, lz, fdsz->color,
-			fdsz->grprev, fdsz->grnext, coarse->gtol); CHKERRQ(ierr);
+			fdsz->grprev, fdsz->grnext, coarse->gtol, "z"); CHKERRQ(ierr);
 
 	// clear temporary storage
 	ierr = PetscFree(lx); CHKERRQ(ierr);
@@ -1122,29 +1107,13 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine)
 {
-	PetscInt ry;
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// get refinement factor in y-direction
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &ry, NULL); CHKERRQ(ierr);
-
 	// coarsen coordinates
-	if(ry == 1)
-	{
-		// 2D coarsening
-		ierr = Discret1DCoarsenCoord(&coarse->dsx, &fine->dsx); CHKERRQ(ierr);
-		ierr = Discret1DCopyCoord   (&coarse->dsy, &fine->dsy); CHKERRQ(ierr);
-		ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsz); CHKERRQ(ierr);
-	}
-	else
-	{
-		// 3D coarsening
-		ierr = Discret1DCoarsenCoord(&coarse->dsx, &fine->dsx); CHKERRQ(ierr);
-		ierr = Discret1DCoarsenCoord(&coarse->dsy, &fine->dsy); CHKERRQ(ierr);
-		ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsz); CHKERRQ(ierr);
-	}
+	ierr = Discret1DCoarsenCoord(&coarse->dsx, &fine->dsx); CHKERRQ(ierr);
+	ierr = Discret1DCoarsenCoord(&coarse->dsy, &fine->dsy); CHKERRQ(ierr);
+	ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 	PetscFunctionReturn(0);
@@ -1184,48 +1153,48 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
 	PetscFunctionBeginUser;
 
 	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
 
 	// XY edges (DA_XY) no boundary ghost points (1-layer stencil box)
 	lz[Pz-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
 	lz[Pz-1]++;
 
 	// XZ edges (DA_XZ) no boundary ghost points (1-layer stencil box)
 	ly[Py-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
 	ly[Py-1]++;
 
 	// YZ edges (DA_YZ) no boundary ghost points (1-layer stencil box)
 	lx[Px-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx-1, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_YZ); CHKERRQ(ierr);
 	lx[Px-1]++;
 
 	// X face (DA_X) with boundary ghost points (1-layer stencil box)
 	ly[Py-1]--; lz[Pz-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
 	ly[Py-1]++; lz[Pz-1]++;
 
 	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; lz[Pz-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
 	lx[Px-1]++; lz[Pz-1]++;
 
 	// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; ly[Py-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
 	lx[Px-1]++; ly[Py-1]++;
@@ -1520,7 +1489,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode DMDACreate3dSetUp(MPI_Comm comm,
+PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
 	DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,
 	PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,
 	PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da)

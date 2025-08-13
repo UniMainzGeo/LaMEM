@@ -146,7 +146,7 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	ierr = DMDAGetOwnershipRanges(fs->DA_COR, &lx, &ly, NULL); CHKERRQ(ierr);
 
 	// create redundant free surface DMDA
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_BOX,
 		fs->dsx.tnods, fs->dsy.tnods, fs->dsz.nproc,

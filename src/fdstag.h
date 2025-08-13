@@ -92,14 +92,15 @@ struct Discret1D
 //---------------------------------------------------------------------------
 
 PetscErrorCode Discret1DCreate(
-	Discret1D  *ds,
-	PetscInt    nproc,     // number of processors
-	PetscInt    rank,      // processor rank
-	PetscInt   *nnodProc,  // number of nodes per processor
-	PetscInt    color,     // column color
-	PetscMPIInt grprev,    // global rank of previous process
-	PetscMPIInt grnext,    // global rank of next process
-	PetscScalar gtol);     // geometric tolerance
+		Discret1D  *ds,
+		PetscInt    nproc,     // number of processors
+		PetscInt    rank,      // processor rank
+		PetscInt   *nnodProc,  // number of nodes per processor
+		PetscInt    color,     // column color
+		PetscMPIInt grprev,    // global rank of previous process
+		PetscMPIInt grnext,    // global rank of next process
+		PetscScalar gtol,      // geometric tolerance
+		const char *dir);      // direction label
 
 PetscErrorCode Discret1DDestroy(Discret1D *ds);
 
@@ -115,9 +116,6 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
 
 // coarsen fine grid coordinates
 PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine);
-
-// copy fine grid coordinates
-PetscErrorCode Discret1DCopyCoord(Discret1D *coarse, Discret1D *fine);
 
 // generate ghost points and cell center coordinates
 PetscErrorCode Discret1DCompleteCoord(Discret1D *ds);
@@ -361,7 +359,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 // WRAPPERS
 //-----------------------------------------------------------------------------
 
-PetscErrorCode DMDACreate3dSetUp(MPI_Comm comm,
+PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
 	DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,
 	PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,
 	PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da);

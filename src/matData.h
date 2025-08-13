@@ -63,9 +63,11 @@ PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine);
 
 PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr);
 
-PetscErrorCode MatDataRestrictParam(MatData *coarse, MatData *fine);
+PetscErrorCode MatDataRestrictParam3D(MatData *coarse, MatData *fine);
 
-PetscErrorCode MatDataRestrictBC(MatData *coarse, MatData *fine);
+PetscErrorCode MatDataRestrictBC3D(MatData *coarse, MatData *fine);
+
+PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine);
 
 PetscErrorCode MatDataListSPC(MatData *md);
 

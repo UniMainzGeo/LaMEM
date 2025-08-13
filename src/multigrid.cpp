@@ -426,26 +426,15 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 
 	FDSTAG   *fs;
 	PetscBool opt_set;
-	PetscInt  nx, ny, nz, Nx, Ny, Nz, n, ncors, nlevels, nlmf, ry, Py;
+	PetscInt  nx, ny, nz, Nx, Ny, Nz, n, ncors, nlevels, nlmf;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
 
-	// check if 2D multigrid is requested
-	ierr = DMDAGetRefinementFactor(fs->DA_CEN, NULL, &ry, NULL); CHKERRQ(ierr);
-
-	// set 2D multigrid flag
-	if(ry == 1) { mg->MG2D = 1; }
-
-	// get number of CPUs
-	ierr = DMDAGetInfo(fs->DA_CEN, 0, 0, 0, 0, 0, &Py, 0, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
-
-	if(mg->MG2D && Py != 1)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "2D multigrid must use one processor in y-direction (-da_refine_y, cpu_y)");
-	}
+	// set 2D coarsening flag
+	if(fs->dsy.tcels == 2) { mg->MG2D = 1; }
 
 	// get maximum possible number of coarsening steps
 	if(mg->MG2D)
@@ -494,22 +483,31 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 
 	if(nlmf && mg->MG2D)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Matrix-free multigrid is not supported for 2D grids (-gmg_mat_free_levels, -da_refine_y)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Matrix-free multigrid is not supported for 2D grids (-gmg_mat_free_levels)");
 	}
 
 	// set actual number of coarsening steps
 	ncors = nlevels-1;
 
 	// print grid statistics
-	nx = fs->dsx.ncels >> ncors;
-	ny = fs->dsy.ncels >> ncors*(1 - mg->MG2D);
-	nz = fs->dsz.ncels >> ncors;
+	if(mg->MG2D)
+	{
+		nx = fs->dsx.ncels >> ncors;
+		ny = fs->dsy.ncels;
+		nz = fs->dsz.ncels >> ncors;
+	}
+	else
+	{
+		nx = fs->dsx.ncels >> ncors;
+		ny = fs->dsy.ncels >> ncors;
+		nz = fs->dsz.ncels >> ncors;
+	}
 
 	Nx = nx*fs->dsx.nproc;
 	Ny = ny*fs->dsy.nproc;
 	Nz = nz*fs->dsz.nproc;
 
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [Nx,Ny,Nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);                           CHKERRQ(ierr);
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of matrix-free levels  :  %lld\n", (LLD)nlmf);                              CHKERRQ(ierr);

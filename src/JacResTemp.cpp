@@ -187,7 +187,7 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	PetscCall(DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz));
 
 	// create temperature DMDA
-	PetscCall(DMDACreate3dSetUp(PETSC_COMM_WORLD,
+	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_STAR,
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,

@@ -98,13 +98,13 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 			{
 				// DM for 1D cell center vector. vector is ny+1 long, but for whatever reason that must appear in the first,
 				// not second entry on line 2 below 
-				ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
+				ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
 				fs->dsy.tnods, fs->dsy.nproc, fs->dsz.nproc, 
 				fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
 				0, 0, 0, &jr->DA_CELL_1D); CHKERRQ(ierr);
 
 				//DM for 2D cell center vector, with istep_nave planes for time averaging
-				ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
+				ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
 				fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
             	fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
 				0, 0, 0, &jr->DA_CELL_2D_tave); CHKERRQ(ierr);
