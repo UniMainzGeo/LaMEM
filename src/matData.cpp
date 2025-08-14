@@ -288,8 +288,8 @@ PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine)
 
 	if(MG2D)
 	{
-		// material parameters are not accessed on coarse grids in 2D case
-		// WARNING! implement 2D material parameter coarsening if needed
+		// coarsen material parameters
+		ierr = MatDataRestrictParam2D(coarse, fine); CHKERRQ(ierr);
 
 		// coarsen boundary conditions
 		ierr = MatDataRestrictBC2D(coarse, fine); CHKERRQ(ierr);
@@ -608,6 +608,30 @@ PetscErrorCode MatDataRestrictParam3D(MatData *coarse, MatData *fine)
 	LOCAL_TO_LOCAL(coarse->fs->DA_CEN, coarse->Kb)
 	LOCAL_TO_LOCAL(coarse->fs->DA_CEN, coarse->rho)
 	LOCAL_TO_LOCAL(coarse->fs->DA_CEN, coarse->eta)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode MatDataRestrictParam2D(MatData *coarse, MatData *fine)
+{
+	// restrict parameters from fine to coarse grid
+	//
+	// WARNING!
+	//
+	// material parameters are not accessed on coarse grids in 2D case
+	// implement 2D material parameter coarsening if this changes
+
+	UNUSED(fine);
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = VecZeroEntries(coarse->Kb);    CHKERRQ(ierr);
+	ierr = VecZeroEntries(coarse->rho);   CHKERRQ(ierr);
+	ierr = VecZeroEntries(coarse->eta);   CHKERRQ(ierr);
+	ierr = VecZeroEntries(coarse->etaxy); CHKERRQ(ierr);
+	ierr = VecZeroEntries(coarse->etaxz); CHKERRQ(ierr);
+	ierr = VecZeroEntries(coarse->etayz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
