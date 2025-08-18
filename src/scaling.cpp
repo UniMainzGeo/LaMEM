@@ -250,6 +250,16 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		sprintf(scal->lbl_gas_constant,      "[J/mol/K]");
 	}
 
+	if(2 == SURFACE)
+	{
+		time   = 1.0;
+		length = 1.0;
+		yr     = 3600.0*24.0*365.25;	
+		scal->time_fs 			  = time/yr; 				   sprintf(scal->lbl_time_fs,         "[yr]");   
+		scal->length_fs			  = length;					   sprintf(scal->lbl_length_fs,       "[m]");  	
+		scal->velocity_fs   	  = length/time/yr;			   sprintf(scal->lbl_velocity_fs,     "[m/yr]");  
+	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

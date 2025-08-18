@@ -28,15 +28,17 @@ enum RunMode
 };
 
 //---------------------------------------------------------------------------
+#include "fastscape.h"
 
 struct LaMEMLib
 {
 	Scaling  scal;   // scaling
 	TSSol    ts;     // time-stepping controls
 	DBMat    dbm;    // material database
-    DBPropDike dbdike;   // dike database
+	DBPropDike dbdike;   // dike database
 	FDSTAG   fs;     // staggered-grid layout
 	FreeSurf surf;   // free-surface grid
+	FastScapeLib FSLib; // fastscape grid
 	BCCtx    bc;     // boundary condition context
 	AdvCtx   actx;   // advection context
 	JacRes   jr;     // Jacobian & residual context
@@ -47,6 +49,8 @@ struct LaMEMLib
 	PVAVD    pvavd;  // paraview output driver for AVD
 	PVPtr    pvptr;  // paraview out passive tracers
 };
+
+
 
 //---------------------------------------------------------------------------
 // LAMEM LIBRARY FUNCTIONS
