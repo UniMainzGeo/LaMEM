@@ -119,7 +119,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
 	
 	// set required options (priority)
-	ierr = solverOptionsSetRequired(fb); CHKERRQ(ierr);
+	ierr = solverOptionsSetRequired(); CHKERRQ(ierr);
 
 	// print message
 	if(DisplayOutput)
@@ -911,25 +911,22 @@ PetscErrorCode set_mg_options(const char *prefix, PetscInt nlevels, PetscInt nsw
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 PetscErrorCode solverOptionsReadFromFile(FB *fb)
 {
-	// set 'best-guess' default solver options to help an inexperienced user
+	// set "best-guess" solver options to help an inexperienced user
 	// all options can be overridden by the usual PETSC options
 
-	StokesSolverType solType;
-	CoarseSolverType crsType;
+
 	PetscMPIInt      size;
-	PetscScalar      pgamma, damping;
-	PetscInt         nsweeps, rfactor, nlevels;
-	char             SolverType[_str_len_], DirectSolver[_str_len_], MGCoarseSolver[_str_len_];
+
 	
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 	
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SolverOptionsStart>", "<SolverOptionsEnd>"); CHKERRQ(ierr);
 
-	// do not set defaults if options block is not defined
+	// do not set options if not requested explicitly
 	if(!fb->nblocks) PetscFunctionReturn(0);
 
 	if(fb->nblocks > 1)
@@ -940,27 +937,62 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	// get number of ranks
 	MPI_Comm_size(PETSC_COMM_WORLD, &size);
 
+
 	// set defaults
-	pgamma  = 1e3;
-	damping = 0.5;
-	nlevels = 3;
-	nsweeps = 10;
-	rfactor = 1;
+	PetscScalar snes_param[ ]                  =  { 1e-5, -1.0, 50.0  }; // rtol, atol, maxit (-1 = automatic setting)
+	PetscScalar ksp_param [ ]                  =  { 1e-6, -1.0, 200.0 }; // rtol, atol, maxit (-1 = automatic setting)
+	PetscScalar picard_to_newton[ ]            =  { 1e-2,  1.2, 20.0  }; // picard-newton-rtol, newton-picard-rtol, picard-newton-maxit
+	PetscInt    use_line_search                =  1;
+	PetscInt    use_eisenstat_walker           =  0;
+	PetscInt    use_mat_free_jac               =  0;
+	PetscInt    mat_free_levels                =  0;
+	char        stokes_solver[_str_len_];      // powell_hestenes        // [powell_hestenes, coupled_mg, block_mg, wbfbt];
+	char        direct_solver_type[_str_len_]; // superlu_dist           // [mumps, superlu_dist, lu]
+	PetscScalar penalty                        =  1e3;                   // only for powell_hestenes
+	PetscInt    num_levels                     = -1;                     // -1 = automatic setting
+	char        smoother_ksp[_str_len_];       // richardson             // [richardson, chebyshev, gmres];
+	char        smoother_pc[_str_len_];        // jacobi                 // [jacobi, bjacobi, asm]
+	PetscScalar smoother_damping               =  0.5;                   // only for richardson
+	PetscInt    smoother_num_sweeps            =  10;                    // maxit
+	PetscInt    coarse_num_cpu                 = -1;                     // -1 = automatic setting
+	PetscInt    coarse_cells_per_cpu           =  2048;                  // required to set automatic value for coarse_num_cpu
+	char        coarse_ksp[_str_len_];         // preonly                // [preonly, gmres];
+	char        coarse_pc[_str_len_];          // direct                 // [direct, hypre, bjacobi, asm];
+	PetscScalar coarse_param[]                 = { 1e-3, 100 } ;         // rtol, maxit
+	PetscInt    subdomain_overlap              =  1  ;                   // only for asm
+	PetscInt    subdomain_ilu_levels           =  0 ;                    // only for bjacobi and asm
+	PetscInt    subdomain_num_cells            = -1 ;                    // -1 = all cells of cpu are assigned to one subdomain
+	PetscScalar steady_thermal_param[ ]        = { 1e-8, 500.0 };        // tol, maxit
+	char        steady_thermal_pc[_str_len_]; // mg                      // [mg, default]
+
 
 	// read simplified solver options
-	ierr = getStringParam(fb, _OPTIONAL_, "SolverType",        SolverType,     "direct");        CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",      DirectSolver,   "superlu_dist" ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "DirectPenalty",     &pgamma,        1, 1.0);          CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "MGLevels",          &nlevels,       1, 32);           CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "MGSweeps",          &nsweeps,       1, 100);          CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "MGCoarseSolver",    MGCoarseSolver, "direct" );       CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "MGReductionFactor", &rfactor,       1, 1000000);      CHKERRQ(ierr);
-
-	// check and output specified options
-	if(rfactor > size || size%rfactor)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PC-TELESCOPE reduction factor is incompatible with number of MPI ranks (MGReductionFactor)");
-	}
+	ierr = getScalarParam(fb, _OPTIONAL_, "snes_param",            snes_param,            3, 1.0);             CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "ksp_param",             ksp_param,             3, 1.0);             CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "picard_to_newton",      picard_to_newton,      3, 1.0);             CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "use_line_search",      &use_line_search,       1, 1);               CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "use_eisenstat_walker", &use_eisenstat_walker,  1, 1);               CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "use_mat_free_jac",     &use_mat_free_jac,      1, 1);               CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "mat_free_levels",      &mat_free_levels,       1, 16);              CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "stokes_solver",         stokes_solver,         "powell_hestenes" ); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "direct_solver_type",    direct_solver_type,    "superlu_dist" );    CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "penalty",              &penalty,               1, 1.0);             CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "num_levels",           &num_levels,            1, 32);              CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "smoother_ksp",          smoother_ksp,          "richardson");       CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "smoother_pc",           smoother_pc,           "jacobi");           CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "smoother_damping",     &smoother_damping,      1, 1.0);             CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "smoother_num_sweeps",  &smoother_num_sweeps,   1, 1000);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "coarse_num_cpu",       &coarse_num_cpu,        1, 2096);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "coarse_cells_per_cpu", &coarse_cells_per_cpu,  1, 32768);           CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "coarse_ksp",            coarse_ksp,            "preonly");          CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "coarse_pc",             coarse_pc,             "direct");           CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "coarse_param",          coarse_param,          2, 1.0);             CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "subdomain_overlap",     &subdomain_overlap,    1, 10);              CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "subdomain_ilu_levels",  &subdomain_ilu_levels, 1, 8);               CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "subdomain_num_cells",   &subdomain_num_cells,  1, 65536);           CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "steady_thermal_param",  steady_thermal_param,  2, 1.0);             CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "steady_thermal_pc",     steady_thermal_pc,     "mg");               CHKERRQ(ierr);
+/*
 
 	if     (!strcmp(SolverType, "direct"))    solType = _DIRECT_STOKES_;
 	else if(!strcmp(SolverType, "multigrid")) solType = _MULTIGRID_STOKES_;
@@ -1038,13 +1070,13 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 		PetscCall(set_mg_options("gmg", nlevels, nsweeps, damping));
 		PetscCall(set_mg_options("ks",  nlevels, nsweeps, damping));
 	}
-
+*/
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-PetscErrorCode solverOptionsSetRequired(FB *fb)
+PetscErrorCode solverOptionsSetRequired()
 {
 	PetscFunctionBeginUser;
 

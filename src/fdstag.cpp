@@ -1116,7 +1116,6 @@ PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine)
 	ierr = Discret1DCoarsenCoord(&coarse->dsz, &fine->dsz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
-	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGDestroy(FDSTAG * fs)

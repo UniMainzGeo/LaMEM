@@ -286,6 +286,7 @@ PetscErrorCode MGCreate(MG *mg, MatData *md, Mat A)
 	ierr = PCSetType(mg->pc, PCMG);                      CHKERRQ(ierr);
 	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);        CHKERRQ(ierr);
 	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE);    CHKERRQ(ierr);
+	ierr = PCMGSetCycleType(mg->pc, PC_MG_CYCLE_V);      CHKERRQ(ierr);
 	ierr = PCSetFromOptions(mg->pc);                     CHKERRQ(ierr);
 	ierr = PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_NONE); CHKERRQ(ierr);
 

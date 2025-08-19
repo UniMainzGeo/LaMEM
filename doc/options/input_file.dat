@@ -826,13 +826,55 @@
 
 <SolverOptionsStart>
 
-    SolverType        = direct  # solver type [direct, multigrid, block, wbfbt]
-    DirectSolver      = mumps   # direct solver package [mumps, superlu_dist]
-    DirectPenalty     = 1e3     # penalty parameter for direct solver
-    MGLevels          = 3       # number of MG levels [default=3]
-    MGSweeps          = 10      # number of MG smoothing sweeps [default=10]
-    MGCoarseSolver    = direct  # coarse grid solver [direct, hypre, asm, bjacobi]
-    MGReductionFactor = 4       # pc-telescope reduction factor
+	snes_param           =  1e-5 -1   50          # rtol, atol, maxit (-1 = automatic setting)
+		
+	ksp_param            =  1e-6 -1   200         # rtol, atol, maxit (-1 = automatic setting)
+
+	picard_to_newton     =  1e-2  1.2 20          # picard-newton-rtol, newton-picard-rtol, picard-newton-maxit
+	
+	use_line_search      =  1
+		
+	use_eisenstat_walker =  0
+
+	use_mat_free_jac     =  0
+	
+	mat_free_levels      =  0
+	
+	stokes_solver        =  powell_hestenes      # [powell_hestenes, coupled_mg, block_mg, wbfbt]
+	
+	direct_solver_type   =  superlu_dist         # [mumps, superlu_dist, lu]
+	
+	penalty              =  1e3                  # only for powell_hestenes
+	
+	num_levels           = -1                    # -1 = automatic setting
+				
+	smoother_ksp         =  richardson           # [richardson, chebyshev, gmres]
+	
+	smoother_pc          =  jacobi               # [jacobi, bjacobi, asm]
+	
+	smoother_damping     =  0.5                  # only for richardson
+	
+	smoother_num_sweeps  =  10
+	
+	coarse_num_cpu       = -1                    # -1 = automatic setting
+	
+	coarse_cells_per_cpu =  2048                 # required to set automatic value for coarse_num_cpu
+	
+	coarse_ksp           =  preonly              # [preonly, gmres]
+	
+	coarse_pc            =  direct               # [direct, hypre, bjacobi, asm]
+
+	coarse_param         =  1e-3 100             # rtol, maxit      
+			
+	subdomain_overlap    =  1                    # only for asm
+
+	subdomain_ilu_levels =  0                    # only for bjacobi and asm
+	
+	subdomain_num_cells  = -1                    # -1 = all cells of cpu are assigned to one subdomain
+		
+	steady_thermal_param = 1e-8 500              # rtol, maxit
+	
+	steady_thermal_pc    = mg                    # [mg, default]
 
 <SolverOptionsEnd>
 
