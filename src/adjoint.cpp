@@ -435,7 +435,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	
     // Create scaling object
 	ierr = PetscMemzero (&scal, sizeof(Scaling)); CHKERRQ(ierr);
-	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
 
 	// Some general Adjoint Gradient parameters:
     ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_GradientCalculation", str, NULL); CHKERRQ(ierr);  // must have component
@@ -2165,7 +2165,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 
 	// retrieve some of the required data
 	ierr = PetscMemzero (&scal, sizeof(Scaling));          CHKERRQ(ierr);
-	ierr = ScalingCreate(&scal, IOparam->fb, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = ScalingCreate(&scal, IOparam->fb); CHKERRQ(ierr);
 
 	if (!(IOparam->use==_inversion_)){
 		// if use==_inversion_, we only compute the misfit & not the gradients	
@@ -3597,7 +3597,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 
     // Create scaling object
     ierr = PetscMemzero (&scal, sizeof(Scaling)); CHKERRQ(ierr);
-	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
     
     // Call material database with modified parameters
     ierr = PetscMemzero(&IOparam->dbm_modified, sizeof(DBMat));   CHKERRQ(ierr);

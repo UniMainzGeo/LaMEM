@@ -9,6 +9,7 @@ OPTIONS & PREFIXES
 	-snes_PicardSwitchToNewton_rtol [value] - relative tolerance to switch to Newton (convergence)
 	-snes_NewtonSwitchToPicard_it   [value] - number of Newton iterations to switch to Picard
 	-snes_NewtonSwitchToPicard_rtol [value] - relative tolerance to switch to Picard (divergence)
+	-snes_atol_auto                         - automatic selection of absolute tolerance
 
 * MFFD Jacobian options prefix: -fd_
 
@@ -16,7 +17,8 @@ OPTIONS & PREFIXES
 	
 	Custom options:
 	
-	-js_mat_free - matrix-free Jacobian activation flag
+	-js_mat_free      - matrix-free Jacobian activation flag
+    -js_ksp_atol_auto - automatic selection of absolute tolerance
 
 * Jacobian preconditioner prefix: -jp_
 
@@ -65,6 +67,16 @@ OPTIONS & PREFIXES
 	WARNING! 2D coarsening does not support matrix-free multigrid
 	WARNING! use telescope instead of redundant coarse solver
 
+* Temperature initialization (steady state) solver prefix: -its
+	
+	WARNING! it is recommended to use multigrid for large models
+
+* Transient temperature solver prefix: -ts
+
+	Custom options:
+
+	-ts_ksp_atol_auto - automatic selection of absolute tolerance
+
 ================================================================================
 Examples
 ================================================================================
@@ -74,7 +86,7 @@ Examples
 # SNES
 
 	-snes_monitor
-	-snes_atol 1e-7
+	-snes_atol_auto
 	-snes_rtol 1e-3
 	-snes_stol 1e-8
 	-snes_max_it 50
@@ -117,6 +129,7 @@ Examples
 	-js_mat_free
 	-js_ksp_type fgmres
 	-js_ksp_rtol 1e-6
+	-js_ksp_atol_auto
 	-js_ksp_max_it 500
 	-js_ksp_monitor
 	-js_ksp_converged_reason
@@ -197,11 +210,17 @@ Examples
 	-gmg_mg_levels_ksp_max_it 10
 	-gmg_mg_levels_pc_type jacobi
 
-	[B] heavy smoother
+	[B] intermediate smoother
+	
+	-gmg_mg_levels_ksp_type chebyshev
+	-gmg_mg_levels_ksp_max_it 30
+	-gmg_mg_levels_pc_type bjacobi
+	
+	[C] heavy smoother
 	
 	-gmg_mg_levels_ksp_type gmres
-	-gmg_mg_levels_ksp_max_it 10
-	-gmg_mg_levels_ksp_gmres_restart 10
+	-gmg_mg_levels_ksp_max_it 30
+	-gmg_mg_levels_ksp_gmres_restart 30
 	-gmg_mg_levels_pc_type bjacobi
 	
 ================================================================================
@@ -273,7 +292,7 @@ Examples
 		
 ================================================================================
 
-[9] Steady-state temperature solver settings (multigrid)
+[9] Steady-state (initial) temperature solver settings (multigrid)
 
 	-its_ksp_type gmres
 	-its_ksp_rtol 1e-8
@@ -289,5 +308,6 @@ Examples
 	
 	-ts_ksp_type gmres
 	-ts_ksp_rtol 1e-8
+	-ts_ksp_atol_auto
 	
 ================================================================================

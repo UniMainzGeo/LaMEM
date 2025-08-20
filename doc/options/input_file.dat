@@ -825,56 +825,60 @@
 #===============================================================================
 
 <SolverOptionsStart>
-
-	snes_param           =  1e-5 -1   50          # rtol, atol, maxit (-1 = automatic setting)
+	
+	skip_defaults         = 0                     # specify solver options explicitly
+	
+	set_linear_problem    = 0                     # linear problem activation flag (skip nonlinear iteration)
+	
+	nonlinear_tolerances  =  1e-5 -1   50         # rtol, atol, maxit (-1 = automatic setting)
 		
-	ksp_param            =  1e-6 -1   200         # rtol, atol, maxit (-1 = automatic setting)
+	linear_tolerances     =  1e-6 -1   200        # rtol, atol, maxit (-1 = automatic setting)
 
-	picard_to_newton     =  1e-2  1.2 20          # picard-newton-rtol, newton-picard-rtol, picard-newton-maxit
+	thermal_tolerances    =  1e-8 -1   500        # rtol, atol, maxit (-1 = automatic setting)
 	
-	use_line_search      =  1
+	picard_to_newton      =  1e-2  1.2 20         # picard-newton-rtol, newton-picard-rtol, picard-newton-maxit
 		
-	use_eisenstat_walker =  0
+	use_line_search       =  1
+		
+	use_eisenstat_walker  =  0
 
-	use_mat_free_jac     =  0
+	use_mat_free_jac      =  0
 	
-	mat_free_levels      =  0
+	num_mat_free_levels   =  0
 	
-	stokes_solver        =  powell_hestenes      # [powell_hestenes, coupled_mg, block_mg, wbfbt]
+	stokes_solver         =  block_direct         # [block_direct, coupled_mg, block_mg, wbfbt]
 	
-	direct_solver_type   =  superlu_dist         # [mumps, superlu_dist, lu]
+	direct_solver_type    =  superlu_dist         # [mumps, superlu_dist, lu]
 	
-	penalty              =  1e3                  # only for powell_hestenes
+	penalty               =  1e3                  # (only for block_direct)
 	
-	num_levels           = -1                    # -1 = automatic setting
+	num_mg_levels         = -1                    # (-1 = automatic setting)
 				
-	smoother_ksp         =  richardson           # [richardson, chebyshev, gmres]
+	smoother_type         =  heavy                # [light, intermediate, heavy]
 	
-	smoother_pc          =  jacobi               # [jacobi, bjacobi, asm]
+	smoother_ksp          =  gmres                # [richardson, chebyshev, gmres]
 	
-	smoother_damping     =  0.5                  # only for richardson
+	smoother_pc           =  bjacobi              # [jacobi, bjacobi, asm]
 	
-	smoother_num_sweeps  =  10
+	smoother_damping      =  0.5                  # (only for richardson)
 	
-	coarse_num_cpu       = -1                    # -1 = automatic setting
+	smoother_num_sweeps   =  30
 	
-	coarse_cells_per_cpu =  2048                 # required to set automatic value for coarse_num_cpu
+	coarse_num_cpu        = -1                    # (-1 = automatic setting) (-2 = all cpus are used by coarse solve)
 	
-	coarse_ksp           =  preonly              # [preonly, gmres]
+	coarse_cells_per_cpu  =  2048                 # (only required for automatic setting of coarse_num_cpu parameter)
 	
-	coarse_pc            =  direct               # [direct, hypre, bjacobi, asm]
-
-	coarse_param         =  1e-3 100             # rtol, maxit      
+	coarse_solver         =  direct               # [direct, hypre, bjacobi, asm]
+	
+	coarse_tolerances     =  1e-3 100             # rtol, maxit (only for bjacobi and asm, since they use gmres)      
 			
-	subdomain_overlap    =  1                    # only for asm
+	subdomain_overlap     =  1                    # (only for asm)
 
-	subdomain_ilu_levels =  0                    # only for bjacobi and asm
+	subdomain_ilu_levels  =  0                    # (only for bjacobi and asm)
 	
-	subdomain_num_cells  = -1                    # -1 = all cells of cpu are assigned to one subdomain
-		
-	steady_thermal_param = 1e-8 500              # rtol, maxit
+	subdomain_num_cells   = -1                    # (-1 = automatic setting) (one subdomain per cpu)
 	
-	steady_thermal_pc    = mg                    # [mg, default]
+	init_thermal_solver   =  mg                   # [mg, default]
 
 <SolverOptionsEnd>
 

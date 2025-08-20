@@ -197,7 +197,7 @@ struct FDSTAG
 // FDSTAG functions
 //---------------------------------------------------------------------------
 
-PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb);
+PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build = 1);
 
 PetscErrorCode FDSTAGDestroy(FDSTAG *fs);
 
@@ -239,6 +239,9 @@ PetscErrorCode FDSTAGGetGlobalBox(FDSTAG *fs,
 
 // save grid coordinates and processor partitioning to disk
 PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
+
+// get maximum possible number of coarsening steps, set 2D coarsening flag
+PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors, PetscInt &MG2D);
 
 //---------------------------------------------------------------------------
 // MACROS

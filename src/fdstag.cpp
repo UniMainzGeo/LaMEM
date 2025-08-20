@@ -839,7 +839,7 @@ PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_
 //---------------------------------------------------------------------------
 // FDSTAG functions
 //---------------------------------------------------------------------------
-PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
+PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 {
 	// Create object with all necessary arrays to handle FDSTAG discretization.
 
@@ -904,11 +904,14 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	// get number of nodes per processor (only different on the last processor)
 	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
 
-	// create corner, face and edge DMDA objects
-	ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+	if(complete_build)
+	{
+		// create corner, face and edge DMDA objects
+		ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
-	// setup indexing data
-	ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
+		// setup indexing data
+		ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
+	}
 
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -954,7 +957,10 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	ierr = Discret1DGenCoord(&fs->dsz, &msz); CHKERRQ(ierr);
 
 	// print essential grid details
-	ierr = FDSTAGView(fs); CHKERRQ(ierr);
+	if(complete_build)
+	{
+		ierr = FDSTAGView(fs); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -1001,9 +1007,6 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 
 	// create corner, face and edge DMDA objects
 	ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
-
-	// setup indexing data
-	ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
 
 	// delete temporary arrays
 	ierr = PetscFree(lx); CHKERRQ(ierr);
@@ -1123,17 +1126,15 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// destroy distributed arrays
-	ierr = DMDestroy(&fs->DA_CEN);     CHKERRQ(ierr);
-	ierr = DMDestroy(&fs->DA_COR);     CHKERRQ(ierr);
-
-	ierr = DMDestroy(&fs->DA_XY);      CHKERRQ(ierr);
-	ierr = DMDestroy(&fs->DA_XZ);      CHKERRQ(ierr);
-	ierr = DMDestroy(&fs->DA_YZ);      CHKERRQ(ierr);
-
-	ierr = DMDestroy(&fs->DA_X);       CHKERRQ(ierr);
-	ierr = DMDestroy(&fs->DA_Y);       CHKERRQ(ierr);
-	ierr = DMDestroy(&fs->DA_Z);       CHKERRQ(ierr);
+	// destroy DMDA objects
+	if(fs->DA_CEN) { ierr = DMDestroy(&fs->DA_CEN); CHKERRQ(ierr); }
+	if(fs->DA_COR) { ierr = DMDestroy(&fs->DA_COR); CHKERRQ(ierr); }
+	if(fs->DA_XY)  { ierr = DMDestroy(&fs->DA_XY);  CHKERRQ(ierr); }
+	if(fs->DA_XZ)  { ierr = DMDestroy(&fs->DA_XZ);  CHKERRQ(ierr); }
+	if(fs->DA_YZ)  { ierr = DMDestroy(&fs->DA_YZ);  CHKERRQ(ierr); }
+	if(fs->DA_X)   { ierr = DMDestroy(&fs->DA_X);   CHKERRQ(ierr); }
+	if(fs->DA_Y)   { ierr = DMDestroy(&fs->DA_Y);   CHKERRQ(ierr); }
+	if(fs->DA_Z)   { ierr = DMDestroy(&fs->DA_Z);   CHKERRQ(ierr); }
 
 	// destroy discretization data
 	ierr = Discret1DDestroy(&fs->dsx); CHKERRQ(ierr);
@@ -1484,6 +1485,34 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	}
 
 	PrintDone(t);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors, PetscInt &MG2D)
+{
+	// get maximum possible number of coarsening steps, set 2D coarsening flag
+
+	PetscInt n;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// set 2D coarsening flag
+	if(fs->dsy.tcels == 2) { MG2D = 1; }
+
+	// get maximum possible number of coarsening steps
+	if(MG2D)
+	{
+		ierr = Discret1DCheckMG(&fs->dsx, "x", &n); CHKERRQ(ierr);               ncors = n;
+		ierr = Discret1DCheckMG(&fs->dsz, "z", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
+	}
+	else
+	{
+		ierr = Discret1DCheckMG(&fs->dsx, "x", &n); CHKERRQ(ierr);               ncors = n;
+		ierr = Discret1DCheckMG(&fs->dsy, "y", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
+		ierr = Discret1DCheckMG(&fs->dsz, "z", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
+	}
 
 	PetscFunctionReturn(0);
 }

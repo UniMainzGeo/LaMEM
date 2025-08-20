@@ -427,28 +427,15 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 
 	FDSTAG   *fs;
 	PetscBool opt_set;
-	PetscInt  nx, ny, nz, Nx, Ny, Nz, n, ncors, nlevels, nlmf;
+	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, nlmf;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
 
-	// set 2D coarsening flag
-	if(fs->dsy.tcels == 2) { mg->MG2D = 1; }
-
-	// get maximum possible number of coarsening steps
-	if(mg->MG2D)
-	{
-		ierr = Discret1DCheckMG(&fs->dsx, "x", &n); CHKERRQ(ierr);               ncors = n;
-		ierr = Discret1DCheckMG(&fs->dsz, "z", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
-	}
-	else
-	{
-		ierr = Discret1DCheckMG(&fs->dsx, "x", &n); CHKERRQ(ierr);               ncors = n;
-		ierr = Discret1DCheckMG(&fs->dsy, "y", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
-		ierr = Discret1DCheckMG(&fs->dsz, "z", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
-	}
+	// get maximum possible number of coarsening steps, set 2D coarsening flag
+	ierr = FDSTAGCheckMG(fs, ncors, mg->MG2D); CHKERRQ(ierr);
 
 	// check number of levels requested on the command line
 	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);

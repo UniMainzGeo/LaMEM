@@ -15,22 +15,6 @@
 
 //-----------------------------------------------------------------------------
 
-enum StokesSolverType
-{
-	_DIRECT_STOKES_,
-	_MULTIGRID_STOKES_,
-	_BLOCK_STOKES_,
-	_wBFBT_STOKES_
-};
-
-enum CoarseSolverType
-{
-	_DIRECT_COARSE_,
-	_HYPRE_COARSE_,
-	_ASM_COARSE_,
-	_BJACOBI_COARSE_
-};
-
 enum ParamType
 {
 	_REQUIRED_,
