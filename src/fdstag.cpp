@@ -1489,17 +1489,17 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors, PetscInt &MG2D)
+PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors)
 {
-	// get maximum possible number of coarsening steps, set 2D coarsening flag
+	// get maximum possible number of coarsening steps
 
-	PetscInt n;
+	PetscInt n, MG2D;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// set 2D coarsening flag
-	if(fs->dsy.tcels == 2) { MG2D = 1; }
+	ierr = FDSTAGCheckMG2D(fs, MG2D); CHKERRQ(ierr);
 
 	// get maximum possible number of coarsening steps
 	if(MG2D)
@@ -1513,6 +1513,54 @@ PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors, PetscInt &MG2D)
 		ierr = Discret1DCheckMG(&fs->dsy, "y", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
 		ierr = Discret1DCheckMG(&fs->dsz, "z", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
 	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGCheckMG2D(FDSTAG *fs, PetscInt &MG2D)
+{
+	// set 2D coarsening flag
+
+	PetscFunctionBeginUser;
+
+	// set 2D coarsening flag
+	if(fs->dsy.tcels == 2) { MG2D = 1; }
+	else                   { MG2D = 0; }
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGGetCoarseGridSize(
+		FDSTAG   *fs,
+		PetscInt ncors,
+		PetscInt &nx, PetscInt &ny, PetscInt &nz,
+		PetscInt &Nx, PetscInt &Ny, PetscInt &Nz)
+{
+	// compute global and local sizes of the coarse grid
+
+	PetscInt n, MG2D;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = FDSTAGCheckMG2D(fs, MG2D); CHKERRQ(ierr);
+
+	if(MG2D)
+	{
+		nx = fs->dsx.ncels >> ncors;
+		ny = fs->dsy.ncels;
+		nz = fs->dsz.ncels >> ncors;
+	}
+	else
+	{
+		nx = fs->dsx.ncels >> ncors;
+		ny = fs->dsy.ncels >> ncors;
+		nz = fs->dsz.ncels >> ncors;
+	}
+
+	Nx = nx*fs->dsx.nproc;
+	Ny = ny*fs->dsy.nproc;
+	Nz = nz*fs->dsz.nproc;
 
 	PetscFunctionReturn(0);
 }

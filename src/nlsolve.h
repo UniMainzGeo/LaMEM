@@ -24,17 +24,20 @@ enum JacType
 
 struct NLSol
 {
-	JacRes     *jr;      // Jacobian-residual context
-	PCData      pc;      // preconditioner context
-	Mat         MFFD;    // matrix-free finite difference Jacobian
-	Mat         PICARD;  // Picard Jacobian
-	JacType     jtype;   // actual type of Jacobian operator
-	PetscInt    it;      // iteration counter
-	PetscInt    it_Nwt;  // newton iteration counter
-	PetscScalar refRes;  // reference residual norm
-	PetscScalar rtolPic; // relative Picard residual reduction tolerance
-	PetscInt    nNwtIt;  // number of Newton iterations before switch to Picard
-	PetscScalar rtolNwt; // Newton divergence tolerance
+	JacRes     *jr;       // Jacobian-residual context
+	PCData      pc;       // preconditioner context
+	Mat         MFFD;     // matrix-free finite difference Jacobian
+	Mat         PICARD;   // Picard Jacobian
+
+	PetscInt    it;       // iteration counter
+	PetscInt    itNwt;    // Newton iteration counter
+	PetscScalar refRes;   // reference residual norm
+	JacType     jtype;    // actual type of Jacobian operator
+
+	PetscScalar rtolPic;  // relative tolerance to switch to Newton (convergence)
+	PetscInt    minItPic; // minimum number Picard iterations forced at every step
+	PetscScalar rtolNwt;  // relative tolerance to switch to Picard (divergence)
+	PetscInt    maxItNwt; // maximum number Newton iterations to switch to Picard (divergence)
 };
 //---------------------------------------------------------------------------
 

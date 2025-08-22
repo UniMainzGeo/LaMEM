@@ -109,7 +109,6 @@
 	periodic_y = 1
 	periodic_z = 1
 	
-
 # EXAMPLE:
 # segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)
 # segment 2: [0.7 0.8), 4 cells,  uniform spacing
@@ -480,6 +479,7 @@
 #===========================================================================
 # Passive Tracers 
 #===========================================================================
+
     Passive_Tracer              = 1                               # Activate passive tracers?
     PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
     PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
@@ -493,8 +493,7 @@
         #	PassiveTracer_ActiveType = Temperature         
         #	PassiveTracer_ActiveType = Pressure             
         #	PassiveTracer_ActiveType = Time                
-    
-    
+ 
 #===============================================================================
 # Output
 #===============================================================================
@@ -826,59 +825,59 @@
 
 <SolverOptionsStart>
 	
-	skip_defaults         = 0                     # specify solver options explicitly
+	skip_defaults           = 0                     # specify solver options explicitly
 	
-	set_linear_problem    = 0                     # linear problem activation flag (skip nonlinear iteration)
+	set_linear_problem      = 0                     # linear problem activation flag (skip nonlinear iteration)
 	
-	nonlinear_tolerances  =  1e-5 -1   50         # rtol, atol, maxit (-1 = automatic setting)
+	nonlinear_tolerances    =  1e-5 -1   50         # rtol, atol, maxit (-1 = automatic setting, only for atol)
 		
-	linear_tolerances     =  1e-6 -1   200        # rtol, atol, maxit (-1 = automatic setting)
+	linear_tolerances       =  1e-6 -1   200        # rtol, atol, maxit (-1 = automatic setting, only for atol)
 
-	thermal_tolerances    =  1e-8 -1   500        # rtol, atol, maxit (-1 = automatic setting)
+	thermal_tolerances      =  1e-8 -1   500        # rtol, atol, maxit (-1 = automatic setting, only for atol)
 	
-	picard_to_newton      =  1e-2  1.2 20         # picard-newton-rtol, newton-picard-rtol, picard-newton-maxit
+	picard_to_newton        =  1e-2  5  1.2  20     # picard rtol, picard minit, newton rtol, newton maxit
 		
-	use_line_search       =  1
+	use_line_search         =  1
 		
-	use_eisenstat_walker  =  0
+	use_eisenstat_walker    =  0
 
-	use_mat_free_jac      =  0
+	use_mat_free_jac        =  0
 	
-	num_mat_free_levels   =  0
+	stokes_solver           =  block_direct         # [block_direct, coupled_mg, block_mg, wbfbt]
 	
-	stokes_solver         =  block_direct         # [block_direct, coupled_mg, block_mg, wbfbt]
+	direct_solver_type      =  superlu_dist         # [mumps, superlu_dist, lu]
 	
-	direct_solver_type    =  superlu_dist         # [mumps, superlu_dist, lu]
+	penalty                 =  1e3                  # (only for block_direct)
 	
-	penalty               =  1e3                  # (only for block_direct)
+	num_mg_levels           = -1                    # (-1 = automatic setting)
 	
-	num_mg_levels         = -1                    # (-1 = automatic setting)
-				
-	smoother_type         =  heavy                # [light, intermediate, heavy]
-	
-	smoother_ksp          =  gmres                # [richardson, chebyshev, gmres]
-	
-	smoother_pc           =  bjacobi              # [jacobi, bjacobi, asm]
-	
-	smoother_damping      =  0.5                  # (only for richardson)
-	
-	smoother_num_sweeps   =  30
-	
-	coarse_num_cpu        = -1                    # (-1 = automatic setting) (-2 = all cpus are used by coarse solve)
-	
-	coarse_cells_per_cpu  =  2048                 # (only required for automatic setting of coarse_num_cpu parameter)
-	
-	coarse_solver         =  direct               # [direct, hypre, bjacobi, asm]
-	
-	coarse_tolerances     =  1e-3 100             # rtol, maxit (only for bjacobi and asm, since they use gmres)      
+	num_mat_free_levels     =  0                    # (only for coupled_mg)
 			
-	subdomain_overlap     =  1                    # (only for asm)
+	smoother_type           =  heavy                # [light, intermediate, heavy]
+	
+	smoother_ksp            =  gmres                # [richardson, chebyshev, gmres]
+	
+	smoother_pc             =  bjacobi              # [jacobi, sor, bjacobi, asm]
+	
+	smoother_damping        =  0.5                  # (only for richardson)
+	
+	smoother_num_sweeps     =  20
+	
+	coarse_reduction_factor = -1                    # (-1 = automatic setting)
+	
+	coarse_cells_per_cpu    =  2048                 # (-1 = all cpus are used by coarse solve)
+	
+	coarse_solver           =  direct               # [direct, hypre, bjacobi, asm]
+	
+	coarse_tolerances       =  1e-3 100             # rtol, maxit (only for bjacobi and asm, since they use gmres)      
+			
+	subdomain_overlap       =  1                    # (only for asm)
 
-	subdomain_ilu_levels  =  0                    # (only for bjacobi and asm)
+	subdomain_num_cells     = -1                    # (only for bjacobi and asm) (-1 = automatic setting) 
+
+	subdomain_ilu_levels    =  0                    # (only for bjacobi and asm)
 	
-	subdomain_num_cells   = -1                    # (-1 = automatic setting) (one subdomain per cpu)
-	
-	init_thermal_solver   =  mg                   # [mg, default]
+	init_thermal_solver     =  mg                   # [mg, default]
 
 <SolverOptionsEnd>
 

@@ -240,8 +240,18 @@ PetscErrorCode FDSTAGGetGlobalBox(FDSTAG *fs,
 // save grid coordinates and processor partitioning to disk
 PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 
-// get maximum possible number of coarsening steps, set 2D coarsening flag
-PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors, PetscInt &MG2D);
+// get maximum possible number of coarsening steps
+PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors);
+
+// get 2D coarsening flag
+PetscErrorCode FDSTAGCheckMG2D(FDSTAG *fs, PetscInt &MG2D);
+
+// compute global and local sizes of the coarse grid
+PetscErrorCode FDSTAGGetCoarseGridSize(
+		FDSTAG   *fs,
+		PetscInt ncors,
+		PetscInt &nx, PetscInt &ny, PetscInt &nz,
+		PetscInt &Nx, PetscInt &Ny, PetscInt &Nz);
 
 //---------------------------------------------------------------------------
 // MACROS

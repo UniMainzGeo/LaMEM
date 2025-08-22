@@ -6,10 +6,11 @@ OPTIONS & PREFIXES
 
 	Custom options:
 
-	-snes_PicardSwitchToNewton_rtol [value] - relative tolerance to switch to Newton (convergence)
-	-snes_NewtonSwitchToPicard_it   [value] - number of Newton iterations to switch to Picard
-	-snes_NewtonSwitchToPicard_rtol [value] - relative tolerance to switch to Picard (divergence)
-	-snes_atol_auto                         - automatic selection of absolute tolerance
+	-snes_picard_rtol  [value] - relative tolerance to switch to Newton (convergence)
+	-snes_picard_minit [value] - minimum number of Picard iterations forced at every step
+	-snes_newton_rtol  [value] - relative tolerance to switch to Picard (divergence)
+	-snes_newton_maxit [value] - maximum number of Newton iterations to switch to Picard (divergence)
+	-snes_atol_auto            - automatic selection of absolute tolerance
 
 * MFFD Jacobian options prefix: -fd_
 
@@ -199,7 +200,7 @@ Examples
 
 	-gmg_pc_view
 	-gmg_pc_mg_levels 3
-	-gmg_mat_free_levels 2
+	-gmg_mat_free_levels 1
 	-gmg_pc_mg_type multiplicative
 	-gmg_pc_mg_cycle_type v
 	
@@ -242,7 +243,6 @@ Examples
 	-gmg_mg_coarse_ksp_type preonly
 	-gmg_mg_coarse_pc_type telescope
 	-gmg_mg_coarse_pc_telescope_reduction_factor 2
-
 	
 	[A] direct solver
 	-gmg_mg_coarse_telescope_ksp_type preonly
@@ -254,13 +254,12 @@ Examples
 	-gmg_mg_coarse_telescope_pc_type hypre
 	-gmg_mg_coarse_telescope_pc_hypre_type boomeramg
 	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_agg_nl 5
-	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_max_iter 3
+	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_max_iter 1
 	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_relax_weight_all 0.8
-	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_strong_threshold 0.99
+	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_strong_threshold 0.9
 	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_smooth_type Euclid
 	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_eu_bj
 	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_coarsen_type HMIS 
-	-gmg_mg_coarse_telescope_pc_mg_galerkin_mat_product_algorithm hypre
 
 	[C] ASM
 	-gmg_mg_coarse_telescope_ksp_type gmres

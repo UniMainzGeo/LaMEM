@@ -434,8 +434,11 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 
 	fs = md->fs;
 
-	// get maximum possible number of coarsening steps, set 2D coarsening flag
-	ierr = FDSTAGCheckMG(fs, ncors, mg->MG2D); CHKERRQ(ierr);
+	// get maximum possible number of coarsening steps
+	ierr = FDSTAGCheckMG(fs, ncors); CHKERRQ(ierr);
+
+	// set 2D coarsening flag
+	ierr = FDSTAGCheckMG2D(fs, mg->MG2D); CHKERRQ(ierr);
 
 	// check number of levels requested on the command line
 	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
@@ -444,7 +447,7 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
 	}
-	else if(nlevels < 2 || nlevels > ncors+1)
+	else if(nlevels < 2 || nlevels > ncors + 1)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
 	}
@@ -477,24 +480,10 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	// set actual number of coarsening steps
 	ncors = nlevels-1;
 
+	// get coarse grid size
+	ierr = FDSTAGGetCoarseGridSize(fs, ncors, nx, ny, nz, Nx, Ny, Nz); CHKERRQ(ierr);
+
 	// print grid statistics
-	if(mg->MG2D)
-	{
-		nx = fs->dsx.ncels >> ncors;
-		ny = fs->dsy.ncels;
-		nz = fs->dsz.ncels >> ncors;
-	}
-	else
-	{
-		nx = fs->dsx.ncels >> ncors;
-		ny = fs->dsy.ncels >> ncors;
-		nz = fs->dsz.ncels >> ncors;
-	}
-
-	Nx = nx*fs->dsx.nproc;
-	Ny = ny*fs->dsy.nproc;
-	Nz = nz*fs->dsz.nproc;
-
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [Nx,Ny,Nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);                           CHKERRQ(ierr);

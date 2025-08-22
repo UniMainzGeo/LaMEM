@@ -93,15 +93,17 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	ierr = PCDataCreate(&nl->pc, jr, nl->PICARD, P); CHKERRQ(ierr);
 
 	// initialize Jacobian controls
-	nl->jtype   = _PICARD_;
-	nl->rtolPic = 1e-2;
-	nl->nNwtIt  = 35;
-	nl->rtolNwt = 1.1;
+	nl->jtype    = _PICARD_;
+	nl->rtolPic  = 1e-2;
+	nl->minItPic = 5;
+	nl->rtolNwt  = 1.2;
+	nl->maxItNwt = 20;
 
 	// override from command line
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt,  NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_picard_rtol",  &nl->rtolPic,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_picard_minit", &nl->minItPic, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_newton_rtol",  &nl->rtolNwt,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_newton_maxit", &nl->maxItNwt, NULL); CHKERRQ(ierr);
 
 	// return solver
 	(*p_snes) = snes;
@@ -201,24 +203,30 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		nl->it     = 0;
 		nl->refRes = nrm;
 		nl->jtype  = _PICARD_;
-		nl->it_Nwt = 0;
+		nl->itNwt  = 0;
 	}
 	else if(nl->jtype == _PICARD_)
 	{
-		// Picard case, check to switch to Newton
+		// Picard case, check to switch to Newton (convergence)
 		if(nrm < nl->refRes*nl->rtolPic)
 		{
-			nl->jtype  = _MFFD_;
-			nl->it_Nwt = 0;
+			nl->jtype = _MFFD_;
+			nl->itNwt = 0;
 		}
 	}
 	else if(nl->jtype == _MFFD_)
 	{
-		// Newton case, check to switch to Picard
-		if(nrm > nl->refRes*nl->rtolNwt || nl->it_Nwt > (nl->nNwtIt-1))
+		// Newton case, check to switch to Picard (divergence)
+		if(nrm > nl->refRes*nl->rtolNwt || nl->itNwt > (nl->maxItNwt-1))
 		{
 			nl->jtype = _PICARD_;
 		}
+	}
+
+	// force minimum number of Picard iterations
+	if(nl->it < nl->minItPic)
+	{
+		nl->jtype = _PICARD_;
 	}
 
 	// print info
@@ -229,7 +237,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	else if(nl->jtype == _MFFD_)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"%3lld MMFD   ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
-		nl->it_Nwt++;
+		nl->itNwt++;
 	}
 
 	// switch off pressure limit for plasticity after first iteration

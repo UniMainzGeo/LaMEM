@@ -24,7 +24,7 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 {
 	FDSTAG         *fs;
 	DOFIndex       *dof;
-	PetscInt        lnv, stv;
+	PetscInt        lnv, stv, MG2D;
 	const PetscInt *lx, *ly, *lz;
 
 	PetscErrorCode ierr;
@@ -49,6 +49,15 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
 		1, 1, lx, ly, lz, &P->DA_P); CHKERRQ(ierr);
+
+	// set 2D coarsening flag
+	PetscCall(FDSTAGCheckMG2D(fs, MG2D));
+
+	// update refinement factor
+	if(MG2D)
+	{
+		PetscCall(DMDASetRefinementFactor(P->DA_P, 2, 1, 2));
+	}
 
 	// set proper interpolation type for multigrid
 	ierr = DMDASetInterpolationType(P->DA_P, DMDA_Q0); CHKERRQ(ierr);
