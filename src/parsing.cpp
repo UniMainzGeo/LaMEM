@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "parsing.h"
+#include "options.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
@@ -109,7 +110,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
 
 	// set simplified solver options from the input file
-	ierr = solverOptionsReadFromFile(fb); CHKERRQ(ierr);
+	ierr = solverOptionsSetDefaults(fb); CHKERRQ(ierr);
 
 	// load additional options from file
 	ierr = PetscOptionsReadFromFile(fb, DisplayOutput); CHKERRQ(ierr);

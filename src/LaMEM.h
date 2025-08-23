@@ -152,6 +152,12 @@
 // maximum number of control polygons
 #define _max_ctrl_poly_ 20
 
+// maximum number of multigrid levels
+#define _max_num_mg_levels_ 16
+
+// maximum number of matrix-free levels
+#define _max_num_mat_free_levels_ 8
+
 // cast macros
 #define LLD long long int
 

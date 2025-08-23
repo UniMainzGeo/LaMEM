@@ -246,12 +246,18 @@ PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors);
 // get 2D coarsening flag
 PetscErrorCode FDSTAGCheckMG2D(FDSTAG *fs, PetscInt &MG2D);
 
-// compute global and local sizes of the coarse grid
+// compute global and local size of the coarse grid
 PetscErrorCode FDSTAGGetCoarseGridSize(
 		FDSTAG   *fs,
-		PetscInt ncors,
+		PetscInt nlevels,
 		PetscInt &nx, PetscInt &ny, PetscInt &nz,
 		PetscInt &Nx, PetscInt &Ny, PetscInt &Nz);
+
+// compute local grid size on all levels except the coarse
+PetscErrorCode FDSTAGGetLevelsLocalGridSize(
+		FDSTAG   *fs,
+		PetscInt nlevels,
+		PetscInt levels_num_local_cells[]);
 
 //---------------------------------------------------------------------------
 // MACROS

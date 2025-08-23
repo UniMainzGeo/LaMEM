@@ -457,9 +457,9 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 
 	if(opt_set == PETSC_TRUE)
 	{
-		if(nlmf > nlevels-1)
+		if(nlmf > nlevels-2)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of matrix-free levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlmf, (LLD)(nlevels-1));
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of matrix-free levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlmf, (LLD)(nlevels-2));
 		}
 	}
 	else
@@ -477,11 +477,8 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Matrix-free multigrid is not supported for 2D grids (-gmg_mat_free_levels)");
 	}
 
-	// set actual number of coarsening steps
-	ncors = nlevels-1;
-
 	// get coarse grid size
-	ierr = FDSTAGGetCoarseGridSize(fs, ncors, nx, ny, nz, Nx, Ny, Nz); CHKERRQ(ierr);
+	ierr = FDSTAGGetCoarseGridSize(fs, nlevels, nx, ny, nz, Nx, Ny, Nz); CHKERRQ(ierr);
 
 	// print grid statistics
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [Nx,Ny,Nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);

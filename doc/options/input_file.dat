@@ -833,8 +833,6 @@
 		
 	linear_tolerances       =  1e-6 -1   200        # rtol, atol, maxit (-1 = automatic setting, only for atol)
 
-	thermal_tolerances      =  1e-8 -1   500        # rtol, atol, maxit (-1 = automatic setting, only for atol)
-	
 	picard_to_newton        =  1e-2  5  1.2  20     # picard rtol, picard minit, newton rtol, newton maxit
 		
 	use_line_search         =  1
@@ -853,7 +851,7 @@
 	
 	num_mat_free_levels     =  0                    # (only for coupled_mg)
 			
-	smoother_type           =  heavy                # [light, intermediate, heavy]
+	smoother_type           =  heavy                # [light (richardson + jacobi), intermediate (chebyshev + sor), heavy (gmres + bjacobi)]
 	
 	smoother_ksp            =  gmres                # [richardson, chebyshev, gmres]
 	
@@ -867,17 +865,19 @@
 	
 	coarse_cells_per_cpu    =  2048                 # (-1 = all cpus are used by coarse solve)
 	
-	coarse_solver           =  direct               # [direct, hypre, bjacobi, asm]
+	coarse_solver           =  direct               # [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use gmres)
 	
-	coarse_tolerances       =  1e-3 100             # rtol, maxit (only for bjacobi and asm, since they use gmres)      
+	coarse_tolerances       =  1e-2 30              # rtol, maxit (gmres settings for hypre, bjacobi and asm)
 			
 	subdomain_overlap       =  1                    # (only for asm)
 
-	subdomain_num_cells     = -1                    # (only for bjacobi and asm) (-1 = automatic setting) 
+	subdomain_num_cells     = -1                    # (only for bjacobi and asm) (-1 = one subdomain per cpu) 
 
 	subdomain_ilu_levels    =  0                    # (only for bjacobi and asm)
 	
 	init_thermal_solver     =  mg                   # [mg, default]
+	
+	thermal_tolerances      =  1e-8 -1   500        # rtol, atol, maxit (-1 = automatic setting, only for atol)
 
 <SolverOptionsEnd>
 

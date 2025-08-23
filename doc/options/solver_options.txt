@@ -6,11 +6,11 @@ OPTIONS & PREFIXES
 
 	Custom options:
 
-	-snes_picard_rtol  [value] - relative tolerance to switch to Newton (convergence)
-	-snes_picard_minit [value] - minimum number of Picard iterations forced at every step
-	-snes_newton_rtol  [value] - relative tolerance to switch to Picard (divergence)
-	-snes_newton_maxit [value] - maximum number of Newton iterations to switch to Picard (divergence)
-	-snes_atol_auto            - automatic selection of absolute tolerance
+	-snes_picard_rtol [value] - relative tolerance to switch to Newton (convergence)
+	-snes_picard_minit[value] - minimum number of Picard iterations forced at every step
+	-snes_newton_rtol [value] - relative tolerance to switch to Picard (divergence)
+	-snes_newton_maxit[value] - maximum number of Newton iterations to switch to Picard (divergence)
+	-snes_atol_auto           - automatic selection of absolute tolerance
 
 * MFFD Jacobian options prefix: -fd_
 
@@ -284,6 +284,8 @@ Examples
 	
 	-sub_pc_type ilu
 	-sub_pc_factor_levels 1
+	-sub_pc_factor_mat_ordering_type nd
+	-sub_pc_factor_reuse_ordering
 
 	[B] direct solver
 
@@ -310,3 +312,6 @@ Examples
 	-ts_ksp_atol_auto
 	
 ================================================================================
+
+
+-pc_factor_mat_ordering_type <natural,nd,1wd,rcm,qmd> 

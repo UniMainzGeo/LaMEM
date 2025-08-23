@@ -11,18 +11,19 @@
 //......................   Default solver options   .........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "options.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "fdstag.h"
 //-----------------------------------------------------------------------------
-PetscErrorCode solverOptionsReadFromFile(FB *fb)
+PetscErrorCode solverOptionsSetDefaults(FB *fb)
 {
 	// set "best-guess" solver options to help an inexperienced user
 	// all options can be overridden by the usual PETSC options
 
-	Scaling     scal_, *scal(&scal_);
-	FDSTAG      fs_,   *fs  (&fs_);
-	PetscInt    complete_build, skip_defaults, ncors;
+	Scaling  scal_obj, *scal(&scal_obj);
+	FDSTAG   fs_obj,   *fs  (&fs_obj);
+	PetscInt complete_build, skip_defaults;
 
 	PetscFunctionBeginUser;
 
@@ -50,65 +51,65 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	}
 
 	// set defaults
-	PetscInt    set_linear_problem               =  0;                         // linear problem flag (skip nonlinear iteration)
-	PetscScalar nonlinear_tolerances[ ]          =  { 1e-5, -1.0, 50.0  };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
-	PetscScalar linear_tolerances [ ]            =  { 1e-6, -1.0, 200.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
-	PetscScalar thermal_tolerances[ ]            =  { 1e-8, -1.0, 500.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
-	PetscScalar picard_to_newton[ ]              =  { 1e-2,  5.0, 1.2, 20.0 }; // picard rtol, picard minit, newton rtol, newton maxit
-	PetscInt    use_line_search                  =  1;
-	PetscInt    use_eisenstat_walker             =  0;
-	PetscInt    use_mat_free_jac                 =  0;
-	char        stokes_solver[_str_len_]         = "block_direct";             // [block_direct, coupled_mg, block_mg, wbfbt]
-	char        direct_solver_type[_str_len_]    = "superlu_dist";             // [mumps, superlu_dist, lu]
-	PetscScalar penalty                          =  1e3;                       // (only for block_direct)
-	PetscInt    num_mg_levels                    = -1;                         // (-1 = automatic setting)
-	PetscInt    num_mat_free_levels              =  0;                         // (only for coupled_mg)
-	char        smoother_type[_str_len_]         = "heavy";                    // [light (richardson + jacobi), intermediate (chebyshev + sor), heavy (gmres + bjacobi)]
-	char        smoother_ksp[_str_len_]          = {'\0'};                     // [richardson, chebyshev, gmres]
-	char        smoother_pc[_str_len_]           = {'\0'};                     // [jacobi, sor, bjacobi, asm]
-	PetscScalar smoother_damping                 =  0.5;                       // (only for richardson)
-	PetscScalar smoother_omega                   =  1.0;                       // (only for sor)
-	PetscInt    smoother_num_sweeps              =  20;                        // maxit
-	PetscInt    coarse_reduction_factor          = -1;                         // (-1 = automatic setting)
-	PetscInt    coarse_cells_per_cpu             =  2048;                      // (-1 = all cpus are used by coarse solve)
-	char        coarse_solver[_str_len_]         = "direct";                   // [direct, hypre, bjacobi, asm] (bjacobi and asm use gmres)
-	PetscScalar coarse_tolerances[]              = { 1e-3, 100 } ;             // rtol, maxit (gmres settings for bjacobi and asm)
-	PetscInt    subdomain_overlap                =  1;                         // (only for asm)
-	PetscInt    subdomain_ilu_levels             =  0;                         // (only for bjacobi and asm)
-	PetscInt    subdomain_num_cells              = -1;                         // (-1 = automatic setting) (one subdomain per cpu)
-	char        init_thermal_solver[_str_len_]   = "mg";                       // [mg, default]
+	PetscInt    set_linear_problem             =  0;                         // linear problem flag (skip nonlinear iteration)
+	PetscScalar nonlinear_tolerances[ ]        =  { 1e-5, -1.0, 50.0  };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
+	PetscScalar linear_tolerances [ ]          =  { 1e-6, -1.0, 200.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
+	PetscScalar picard_to_newton[ ]            =  { 1e-2,  5.0, 1.2, 20.0 }; // picard rtol, picard minit, newton rtol, newton maxit
+	PetscInt    use_line_search                =  1;
+	PetscInt    use_eisenstat_walker           =  0;
+	PetscInt    use_mat_free_jac               =  0;
+	char        stokes_solver[_str_len_]       = "block_direct";             // [block_direct, coupled_mg, block_mg, wbfbt]
+	char        direct_solver_type[_str_len_]  = "superlu_dist";             // [mumps, superlu_dist, lu]
+	PetscScalar penalty                        =  1e3;                       // (only for block_direct)
+	PetscInt    num_mg_levels                  = -1;                         // (-1 = automatic setting)
+	PetscInt    num_mat_free_levels            =  0;                         // (only for coupled_mg)
+	char        smoother_type[_str_len_]       = "heavy";                    // [light (richardson + jacobi), intermediate (chebyshev + sor), heavy (gmres + bjacobi)]
+	char        smoother_ksp[_str_len_]        = {'\0'};                     // [richardson, chebyshev, gmres]
+	char        smoother_pc[_str_len_]         = {'\0'};                     // [jacobi, sor, bjacobi, asm]
+	PetscScalar smoother_damping               =  0.5;                       // (only for richardson)
+	PetscScalar smoother_omega                 =  1.0;                       // (only for sor)
+	PetscInt    smoother_num_sweeps            =  20;                        // maxit
+	PetscInt    coarse_reduction_factor        = -1;                         // (-1 = automatic setting)
+	PetscInt    coarse_cells_per_cpu           =  2048;                      // (-1 = all cpus are used by coarse solve)
+	char        coarse_solver[_str_len_]       = "direct";                   // [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use gmres)
+	PetscScalar coarse_tolerances[]            = { 1e-3, 100 } ;             // rtol, maxit (gmres settings for hypre, bjacobi and asm)
+	PetscInt    subdomain_overlap              =  1;                         // (only for asm)
+	PetscInt    subdomain_ilu_levels           =  0;                         // (only for bjacobi and asm)
+	PetscInt    subdomain_num_cells            = -1;                         // (-1 = automatic setting) (one subdomain per cpu)
+	char        init_thermal_solver[_str_len_] = "mg";                       // [mg, default]
+	PetscScalar thermal_tolerances[ ]          =  { 1e-8, -1.0, 500.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
 
 	// read solver options block
 	if(fb->nblocks)
 	{
 		// read simplified solver options
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "set_linear_problem",      &set_linear_problem,    1, 1));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "nonlinear_tolerances",     nonlinear_tolerances,  3, 1.0));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "linear_tolerances",        linear_tolerances,     3, 1.0));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "thermal_tolerances",       thermal_tolerances,    3, 1.0));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "picard_to_newton",         picard_to_newton,      4, 1.0));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "use_line_search",         &use_line_search,       1, 1));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "use_eisenstat_walker",    &use_eisenstat_walker,  1, 1));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "use_mat_free_jac",        &use_mat_free_jac,      1, 1));
-		PetscCall(getStringParam(fb, _OPTIONAL_, "stokes_solver",            stokes_solver,         NULL));
-		PetscCall(getStringParam(fb, _OPTIONAL_, "direct_solver_type",       direct_solver_type,    NULL));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "penalty",                 &penalty,               1, 1.0));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "num_mg_levels",           &num_mg_levels,         1, 32));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "num_mat_free_levels",     &num_mat_free_levels,   1, 16));
-		PetscCall(getStringParam(fb, _OPTIONAL_, "smoother_type",            smoother_type,         NULL));
-		PetscCall(getStringParam(fb, _OPTIONAL_, "smoother_ksp",             smoother_ksp,          NULL));
-		PetscCall(getStringParam(fb, _OPTIONAL_, "smoother_pc",              smoother_pc,           NULL));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "smoother_damping",        &smoother_damping,      1, 1.0));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "smoother_omega",          &smoother_omega,        1, 1.0));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "smoother_num_sweeps",     &smoother_num_sweeps,   1, 1000));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "coarse_reduction_factor", &coarse_reduction_factor,        1, 1024));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "coarse_cells_per_cpu",    &coarse_cells_per_cpu,  1, 32768));
-		PetscCall(getStringParam(fb, _OPTIONAL_, "coarse_solver",            coarse_solver,         NULL));
-		PetscCall(getScalarParam(fb, _OPTIONAL_, "coarse_tolerances",        coarse_tolerances,     2, 1.0));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "subdomain_overlap",       &subdomain_overlap,    1, 10));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "subdomain_ilu_levels",    &subdomain_ilu_levels, 1, 8));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "subdomain_num_cells",     &subdomain_num_cells,  1, 65536));
-		PetscCall(getStringParam(fb, _OPTIONAL_, "init_thermal_solver",      init_thermal_solver,  NULL));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "set_linear_problem",      &set_linear_problem,      1, 1));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "nonlinear_tolerances",     nonlinear_tolerances,    3, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "linear_tolerances",        linear_tolerances,       3, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "picard_to_newton",         picard_to_newton,        4, 1.0));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "use_line_search",         &use_line_search,         1, 1));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "use_eisenstat_walker",    &use_eisenstat_walker,    1, 1));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "use_mat_free_jac",        &use_mat_free_jac,        1, 1));
+		PetscCall(getStringParam(fb, _OPTIONAL_, "stokes_solver",            stokes_solver,           NULL));
+		PetscCall(getStringParam(fb, _OPTIONAL_, "direct_solver_type",       direct_solver_type,      NULL));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "penalty",                 &penalty,                 1, 1.0));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "num_mg_levels",           &num_mg_levels,           1, _max_num_mg_levels_));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "num_mat_free_levels",     &num_mat_free_levels,     1, _max_num_mat_free_levels_));
+		PetscCall(getStringParam(fb, _OPTIONAL_, "smoother_type",            smoother_type,           NULL));
+		PetscCall(getStringParam(fb, _OPTIONAL_, "smoother_ksp",             smoother_ksp,            NULL));
+		PetscCall(getStringParam(fb, _OPTIONAL_, "smoother_pc",              smoother_pc,             NULL));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "smoother_damping",        &smoother_damping,        1, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "smoother_omega",          &smoother_omega,          1, 1.0));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "smoother_num_sweeps",     &smoother_num_sweeps,     1, 1000));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "coarse_reduction_factor", &coarse_reduction_factor, 1, 1024));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "coarse_cells_per_cpu",    &coarse_cells_per_cpu,    1, 32768));
+		PetscCall(getStringParam(fb, _OPTIONAL_, "coarse_solver",            coarse_solver,           NULL));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "coarse_tolerances",        coarse_tolerances,       2, 1.0));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "subdomain_overlap",       &subdomain_overlap,       1, 10));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "subdomain_ilu_levels",    &subdomain_ilu_levels,    1, 8));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "subdomain_num_cells",     &subdomain_num_cells,     1, 32768));
+		PetscCall(getStringParam(fb, _OPTIONAL_, "init_thermal_solver",      init_thermal_solver,     NULL));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "thermal_tolerances",       thermal_tolerances,      3, 1.0));
 	}
 
 	// clear options block
@@ -229,7 +230,6 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	// MULTIGRID
 	//==========
 
-
 	// set multigrid flag
 	if((!strcmp(stokes_solver,       "coupled_mg")
 	||  !strcmp(stokes_solver,       "block_mg")
@@ -246,19 +246,24 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 		// set link
 		fs->scal = scal;
 
-
-		// build parallel grid (incomplete)
+		// create grid (incomplete)
 		PetscCall(FDSTAGCreate(fs, fb, complete_build = 0));
 
 		// select number of multigrid levels
-		PetscCall(get_num_mg_levles(fs, num_mg_levels));
+		PetscCall(get_num_mg_levels(fs, num_mg_levels));
 
-
-		//	select coarse solve reduction factor
+		// select coarse solve reduction factor
 		PetscCall(get_coarse_reduction_factor(fs, num_mg_levels, coarse_cells_per_cpu, coarse_reduction_factor));
+/*
+
+		subdomain_num_cells
 
 
+		smoother_pc      bjacobi, asm
+		coarse_solver    bjacobi, asm
 
+
+*/
 
 		// destroy grid object
 		PetscCall(FDSTAGDestroy(fs));
@@ -319,8 +324,12 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 //		PetscCall(set_mg_options("ks",  nlevels, nsweeps, damping));
 	}
 
-
-
+/*
+	-sub_pc_type ilu
+	-sub_pc_factor_levels 1
+	-sub_pc_factor_mat_ordering_type nd
+	-sub_pc_factor_reuse_ordering
+*/
 
 
 
@@ -337,7 +346,6 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-
 PetscErrorCode solverOptionsSetRequired()
 {
 	PetscFunctionBeginUser;
@@ -349,11 +357,7 @@ PetscErrorCode solverOptionsSetRequired()
 
 	PetscFunctionReturn(0);
 }
-
-
 //-----------------------------------------------------------------------------
-
-
 PetscErrorCode set_tolerances(const char *prefix, PetscScalar tolerances[3])
 {
 	PetscFunctionBeginUser;
@@ -373,13 +377,7 @@ PetscErrorCode set_tolerances(const char *prefix, PetscScalar tolerances[3])
 
 	PetscFunctionReturn(0);
 }
-
-
-
 //-----------------------------------------------------------------------------
-
-
-
 PetscErrorCode set_default_smoother(
 		const char *smoother_type,
 		char       *smoother_ksp,
@@ -411,8 +409,6 @@ PetscErrorCode set_default_smoother(
 
 	PetscFunctionReturn(0);
 }
-
-
 //-----------------------------------------------------------------------------
 PetscErrorCode set_smoother_options(
 		const char *prefix,
@@ -461,9 +457,7 @@ PetscErrorCode set_smoother_options(
 
 	PetscFunctionReturn(0);
 }
-
 //-----------------------------------------------------------------------------
-
 PetscErrorCode set_subdomain_options(
 		const char *prefix,
 		const char *smoother_pc,
@@ -471,7 +465,10 @@ PetscErrorCode set_subdomain_options(
 		PetscInt    subdomain_num_cells,
 		PetscInt    num_local_cells)
 {
+
 	PetscInt num_local_blocks;
+
+	PetscFunctionBeginUser;
 
 	// compute number of local blocks
 	if(subdomain_num_cells != 1)
@@ -498,9 +495,7 @@ PetscErrorCode set_subdomain_options(
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-
-
-PetscErrorCode get_num_mg_levles(
+PetscErrorCode get_num_mg_levels(
 		FDSTAG  *fs,
 		PetscInt &num_mg_levels)
 {
@@ -528,20 +523,7 @@ PetscErrorCode get_num_mg_levles(
 
 	PetscFunctionReturn(0);
 }
-
 //-----------------------------------------------------------------------------
-/*
-PetscErrorCode get_num_local_blocks(
-		FDSTAG  *fs)
-{
-	PetscFunctionBeginUser;
-	PetscFunctionReturn(0);
-
-}
-*/
-//-----------------------------------------------------------------------------
-
-
 PetscErrorCode get_coarse_reduction_factor(
 		FDSTAG  *fs,
 		PetscInt num_mg_levels,
@@ -551,13 +533,10 @@ PetscErrorCode get_coarse_reduction_factor(
 	// get number of processors for coarse grid solve
 
 	PetscMPIInt size;
-	PetscInt    nx, ny, nz, Nx, Ny, Nz, ncells, ncors;
+	PetscInt    nx, ny, nz, Nx, Ny, Nz, ncells;
 	PetscInt    total_num_cpu, coarse_num_cpu, targer_factor, lower_factor, upper_factor;
 
 	PetscFunctionBeginUser;
-
-	// get number of coarsening steps
-	ncors =  num_mg_levels - 1;
 
 	// get number of ranks
 	MPI_Comm_size(PETSC_COMM_WORLD, &size);
@@ -585,7 +564,7 @@ PetscErrorCode get_coarse_reduction_factor(
 	else
 	{
 		// get coarse grid size
-		PetscCall(FDSTAGGetCoarseGridSize(fs, ncors, nx, ny, nz, Nx, Ny, Nz));
+		PetscCall(FDSTAGGetCoarseGridSize(fs, num_mg_levels, nx, ny, nz, Nx, Ny, Nz));
 
 		// get total number of cells in the coarse grid
 		ncells = Nx*Ny*Nz;
@@ -618,18 +597,32 @@ PetscErrorCode get_coarse_reduction_factor(
 
 	PetscFunctionReturn(0);
 }
-
-
 //-----------------------------------------------------------------------------
 
+
+
+
+
+
+
+	// compute local grid size on all levels except the coarse
+
+
+//	PetscInt levels_num_local_cells[num_mg_levels];
+
+//	PetscCall(FDSTAGGetLevelsLocalGridSize(fs, num_mg_levels, levels_num_local_cells));
+
+
+
+
 /*
+
 PetscErrorCode set_coarse_options(
 		const char *prefix,
 		char        coarse_solver[],
 		char        direct_solver_type[],
 		PetscScalar coarse_tolerances[],
-		PetscInt    coarse_num_cpu,
-		PetscInt    coarse_cells_per_cpu,
+		PetscInt    coarse_reduction_factor,
 		PetscInt    subdomain_overlap,
 		PetscInt    subdomain_num_cells,
 		PetscInt    num_local_cells)
@@ -641,6 +634,9 @@ PetscErrorCode set_coarse_options(
 	PetscCall(set_scalar_option("ksp_gmres_restart", smoother_num_sweeps, prefix));
 	PetscCall(set_integer_option("ksp_gmres_restart", smoother_num_sweeps, prefix));
 	PetscCall(set_string_option ("pc_type", smoother_pc, prefix));
+
+
+	//	ierr = FDSTAGGetCoarseGridSize(fs, nlevels, nx, ny, nz, Nx, Ny, Nz); CHKERRQ(ierr);
 
 
 //===
@@ -734,6 +730,7 @@ PetscErrorCode set_mg_options(const char *prefix, PetscInt nlevels, PetscInt nsw
 
 	PetscFunctionReturn(0);
 }
+
 
 
 */

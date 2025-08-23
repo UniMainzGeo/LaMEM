@@ -1495,23 +1495,22 @@ PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors)
 
 	PetscInt n, MG2D;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// set 2D coarsening flag
-	ierr = FDSTAGCheckMG2D(fs, MG2D); CHKERRQ(ierr);
+	PetscCall(FDSTAGCheckMG2D(fs, MG2D));
 
 	// get maximum possible number of coarsening steps
 	if(MG2D)
 	{
-		ierr = Discret1DCheckMG(&fs->dsx, "x", &n); CHKERRQ(ierr);               ncors = n;
-		ierr = Discret1DCheckMG(&fs->dsz, "z", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
+		PetscCall(Discret1DCheckMG(&fs->dsx, "x", &n));               ncors = n;
+		PetscCall(Discret1DCheckMG(&fs->dsz, "z", &n)); if(n < ncors) ncors = n;
 	}
 	else
 	{
-		ierr = Discret1DCheckMG(&fs->dsx, "x", &n); CHKERRQ(ierr);               ncors = n;
-		ierr = Discret1DCheckMG(&fs->dsy, "y", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
-		ierr = Discret1DCheckMG(&fs->dsz, "z", &n); CHKERRQ(ierr); if(n < ncors) ncors = n;
+		PetscCall(Discret1DCheckMG(&fs->dsx, "x", &n));               ncors = n;
+		PetscCall(Discret1DCheckMG(&fs->dsy, "y", &n)); if(n < ncors) ncors = n;
+		PetscCall(Discret1DCheckMG(&fs->dsz, "z", &n)); if(n < ncors) ncors = n;
 	}
 
 	PetscFunctionReturn(0);
@@ -1532,18 +1531,21 @@ PetscErrorCode FDSTAGCheckMG2D(FDSTAG *fs, PetscInt &MG2D)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGGetCoarseGridSize(
 		FDSTAG   *fs,
-		PetscInt ncors,
+		PetscInt nlevels,
 		PetscInt &nx, PetscInt &ny, PetscInt &nz,
 		PetscInt &Nx, PetscInt &Ny, PetscInt &Nz)
 {
-	// compute global and local sizes of the coarse grid
+	// compute global and local size of the coarse grid
 
-	PetscInt n, MG2D;
+	PetscInt ncors, MG2D;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = FDSTAGCheckMG2D(fs, MG2D); CHKERRQ(ierr);
+	// get number of coarsening steps
+	ncors = nlevels - 1;
+
+	// set 2D coarsening flag
+	PetscCall(FDSTAGCheckMG2D(fs, MG2D));
 
 	if(MG2D)
 	{
@@ -1561,6 +1563,51 @@ PetscErrorCode FDSTAGGetCoarseGridSize(
 	Nx = nx*fs->dsx.nproc;
 	Ny = ny*fs->dsy.nproc;
 	Nz = nz*fs->dsz.nproc;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGGetLevelsLocalGridSize(
+		FDSTAG   *fs,
+		PetscInt nlevels,
+		PetscInt levels_num_local_cells[])
+{
+	// compute local grid size on all levels except the coarse
+
+	PetscInt i, nx, ny, nz, ncors, MG2D;
+
+	PetscFunctionBeginUser;
+
+	// get number of coarsening steps
+	ncors = nlevels - 1;
+
+	// set 2D coarsening flag
+	PetscCall(FDSTAGCheckMG2D(fs, MG2D));
+
+	// get fine grid size
+	nx = fs->dsx.ncels;
+	ny = fs->dsy.ncels;
+	nz = fs->dsz.ncels;
+
+	// perform coarsening steps
+	for(i = 0; i < ncors; i++)
+	{
+		// get number of local cells
+		levels_num_local_cells[i] = nx*ny*nz;
+
+		// coarsen to the next level
+		if(MG2D)
+		{
+			nx /= 2;
+			nz /= 2;
+		}
+		else
+		{
+			nx /= 2;
+			ny /= 2;
+			nz /= 2;
+		}
+	}
 
 	PetscFunctionReturn(0);
 }
