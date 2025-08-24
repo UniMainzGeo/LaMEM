@@ -1570,13 +1570,17 @@ PetscErrorCode FDSTAGGetCoarseGridSize(
 PetscErrorCode FDSTAGGetLevelsLocalGridSize(
 		FDSTAG   *fs,
 		PetscInt nlevels,
-		PetscInt levels_num_local_cells[])
+		PetscInt levels_num_local_cells[],
+		PetscInt &coarse_num_local_cells)
 {
-	// compute local grid size on all levels except the coarse
+	// compute local grid size on all levels
 
 	PetscInt i, nx, ny, nz, ncors, MG2D;
 
 	PetscFunctionBeginUser;
+
+	// clear array
+	PetscCall(clearIntArray(levels_num_local_cells, _max_num_mg_levels_));
 
 	// get number of coarsening steps
 	ncors = nlevels - 1;
@@ -1592,7 +1596,7 @@ PetscErrorCode FDSTAGGetLevelsLocalGridSize(
 	// perform coarsening steps
 	for(i = 0; i < ncors; i++)
 	{
-		// get number of local cells
+		// get number of local cells on current level
 		levels_num_local_cells[i] = nx*ny*nz;
 
 		// coarsen to the next level
@@ -1608,6 +1612,9 @@ PetscErrorCode FDSTAGGetLevelsLocalGridSize(
 			nz /= 2;
 		}
 	}
+
+	// store coarse grid size
+	coarse_num_local_cells = nx*ny*nz;
 
 	PetscFunctionReturn(0);
 }

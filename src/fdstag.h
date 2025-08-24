@@ -253,11 +253,12 @@ PetscErrorCode FDSTAGGetCoarseGridSize(
 		PetscInt &nx, PetscInt &ny, PetscInt &nz,
 		PetscInt &Nx, PetscInt &Ny, PetscInt &Nz);
 
-// compute local grid size on all levels except the coarse
+// compute local grid size on all levels
 PetscErrorCode FDSTAGGetLevelsLocalGridSize(
 		FDSTAG   *fs,
 		PetscInt nlevels,
-		PetscInt levels_num_local_cells[]);
+		PetscInt levels_num_local_cells[],
+		PetscInt &coarse_num_local_cells);
 
 //---------------------------------------------------------------------------
 // MACROS

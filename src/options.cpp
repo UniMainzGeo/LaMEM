@@ -24,6 +24,7 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 	Scaling  scal_obj, *scal(&scal_obj);
 	FDSTAG   fs_obj,   *fs  (&fs_obj);
 	PetscInt complete_build, skip_defaults;
+	PetscInt levels_num_local_cells[_max_num_mg_levels_], coarse_num_local_cells;
 
 	PetscFunctionBeginUser;
 
@@ -252,18 +253,16 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 		// select number of multigrid levels
 		PetscCall(get_num_mg_levels(fs, num_mg_levels));
 
+		// compute local grid size on all levels
+		PetscCall(FDSTAGGetLevelsLocalGridSize(fs, num_mg_levels,
+				levels_num_local_cells, coarse_num_local_cells));
+
 		// select coarse solve reduction factor
-		PetscCall(get_coarse_reduction_factor(fs, num_mg_levels, coarse_cells_per_cpu, coarse_reduction_factor));
-/*
-
-		subdomain_num_cells
-
-
-		smoother_pc      bjacobi, asm
-		coarse_solver    bjacobi, asm
+		PetscCall(get_coarse_reduction_factor(num_mg_levels,
+				coarse_num_local_cells, coarse_cells_per_cpu,
+				coarse_reduction_factor));
 
 
-*/
 
 		// destroy grid object
 		PetscCall(FDSTAGDestroy(fs));
@@ -358,25 +357,102 @@ PetscErrorCode solverOptionsSetRequired()
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-PetscErrorCode set_tolerances(const char *prefix, PetscScalar tolerances[3])
+PetscErrorCode get_num_mg_levels(
+		FDSTAG  *fs,
+		PetscInt &num_mg_levels)
 {
+	// select number of multigrid levels
+
+	PetscInt ncors;
+
 	PetscFunctionBeginUser;
 
-	PetscCall(set_scalar_option ("rtol", tolerances[0], prefix));
+	// get maximum possible number of coarsening steps
+	PetscCall(FDSTAGCheckMG(fs, ncors));
 
-	if(tolerances[1] != -1.0)
+	if(num_mg_levels != -1)
 	{
-		PetscCall(set_scalar_option ("atol", tolerances[1], prefix));
+		// check user-specified number of levels
+		if(num_mg_levels < 2 || num_mg_levels > ncors + 1)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)num_mg_levels, (LLD)(ncors + 1));
+		}
 	}
 	else
 	{
-		PetscCall(set_empty_option ("atol_auto", prefix));
+		num_mg_levels = ncors + 1;
 	}
-
-	PetscCall(set_integer_option("max_it", (PetscInt)tolerances[2], prefix));
 
 	PetscFunctionReturn(0);
 }
+//-----------------------------------------------------------------------------
+PetscErrorCode get_coarse_reduction_factor(
+		PetscInt num_mg_levels,
+		PetscInt coarse_num_local_cells,
+		PetscInt coarse_cells_per_cpu,
+		PetscInt &coarse_reduction_factor)
+{
+	// get number of processors for coarse grid solve
+
+	PetscMPIInt size;
+	PetscInt    total_num_cpu, coarse_num_cpu, targer_factor, lower_factor, upper_factor;
+
+	PetscFunctionBeginUser;
+
+	// get number of ranks
+	MPI_Comm_size(PETSC_COMM_WORLD, &size);
+
+	total_num_cpu = (PetscInt)size;
+
+	if(coarse_reduction_factor != -1)
+	{
+		// check user-specified reduction factor
+		if(total_num_cpu % coarse_reduction_factor)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect reduction factor specified (coarse_reduction_factor): %lld", (LLD)coarse_reduction_factor);
+		}
+	}
+	else if(total_num_cpu == 1)
+	{
+		// sequential case
+		coarse_reduction_factor = 1;
+	}
+	else if(coarse_cells_per_cpu == -1)
+	{
+		// all processors are used for coarse solve
+		coarse_reduction_factor = 1;
+	}
+	else
+	{
+		// compute target number of processors
+		coarse_num_cpu = PetscCeilInt(coarse_num_local_cells, coarse_cells_per_cpu);
+
+		// correct target number of processors
+		if(coarse_num_cpu > total_num_cpu) { coarse_num_cpu = total_num_cpu; }
+
+		// compute target reduction factor
+		targer_factor = PetscCeilInt(total_num_cpu, coarse_num_cpu);
+
+		// get lower estimate
+		lower_factor = targer_factor; while(total_num_cpu % lower_factor) { lower_factor--; }
+
+		// get upper estimate
+		upper_factor = targer_factor; while(total_num_cpu % upper_factor) { upper_factor++; }
+
+		// select optimal
+		if((targer_factor - lower_factor) <= (upper_factor - targer_factor))
+		{
+			coarse_reduction_factor = lower_factor;
+		}
+		else
+		{
+			coarse_reduction_factor = upper_factor;
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+
 //-----------------------------------------------------------------------------
 PetscErrorCode set_default_smoother(
 		const char *smoother_type,
@@ -495,127 +571,6 @@ PetscErrorCode set_subdomain_options(
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-PetscErrorCode get_num_mg_levels(
-		FDSTAG  *fs,
-		PetscInt &num_mg_levels)
-{
-	// select number of multigrid levels
-
-	PetscInt ncors;
-
-	PetscFunctionBeginUser;
-
-	// get maximum possible number of coarsening steps
-	PetscCall(FDSTAGCheckMG(fs, ncors));
-
-	if(num_mg_levels != -1)
-	{
-		// check user-specified number of levels
-		if(num_mg_levels < 2 || num_mg_levels > ncors + 1)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)num_mg_levels, (LLD)(ncors + 1));
-		}
-	}
-	else
-	{
-		num_mg_levels = ncors + 1;
-	}
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
-PetscErrorCode get_coarse_reduction_factor(
-		FDSTAG  *fs,
-		PetscInt num_mg_levels,
-		PetscInt coarse_cells_per_cpu,
-		PetscInt &coarse_reduction_factor)
-{
-	// get number of processors for coarse grid solve
-
-	PetscMPIInt size;
-	PetscInt    nx, ny, nz, Nx, Ny, Nz, ncells;
-	PetscInt    total_num_cpu, coarse_num_cpu, targer_factor, lower_factor, upper_factor;
-
-	PetscFunctionBeginUser;
-
-	// get number of ranks
-	MPI_Comm_size(PETSC_COMM_WORLD, &size);
-
-	total_num_cpu = (PetscInt)size;
-
-	if(coarse_reduction_factor != -1)
-	{
-		// check user-specified reduction factor
-		if(total_num_cpu % coarse_reduction_factor)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect reduction factor specified (coarse_reduction_factor): %lld", (LLD)coarse_reduction_factor);
-		}
-	}
-	else if(total_num_cpu == 1)
-	{
-		// sequential case
-		coarse_reduction_factor = 1;
-	}
-	else if(coarse_cells_per_cpu == -1)
-	{
-		// all processors are used for coarse solve
-		coarse_reduction_factor = 1;
-	}
-	else
-	{
-		// get coarse grid size
-		PetscCall(FDSTAGGetCoarseGridSize(fs, num_mg_levels, nx, ny, nz, Nx, Ny, Nz));
-
-		// get total number of cells in the coarse grid
-		ncells = Nx*Ny*Nz;
-
-		// compute target number of processors
-		coarse_num_cpu = PetscCeilInt(ncells, coarse_cells_per_cpu);
-
-		// correct target number of processors
-		if(coarse_num_cpu > total_num_cpu) { coarse_num_cpu = total_num_cpu; }
-
-		// compute target reduction factor
-		targer_factor = PetscCeilInt(total_num_cpu, coarse_num_cpu);
-
-		// get lower estimate
-		lower_factor = targer_factor; while(total_num_cpu % lower_factor) { lower_factor--; }
-
-		// get upper estimate
-		upper_factor = targer_factor; while(total_num_cpu % upper_factor) { upper_factor++; }
-
-		// select optimal
-		if((targer_factor - lower_factor) <= (upper_factor - targer_factor))
-		{
-			coarse_reduction_factor = lower_factor;
-		}
-		else
-		{
-			coarse_reduction_factor = upper_factor;
-		}
-	}
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
-
-
-
-
-
-
-
-	// compute local grid size on all levels except the coarse
-
-
-//	PetscInt levels_num_local_cells[num_mg_levels];
-
-//	PetscCall(FDSTAGGetLevelsLocalGridSize(fs, num_mg_levels, levels_num_local_cells));
-
-
-
-
-/*
 
 PetscErrorCode set_coarse_options(
 		const char *prefix,
@@ -623,95 +578,91 @@ PetscErrorCode set_coarse_options(
 		char        direct_solver_type[],
 		PetscScalar coarse_tolerances[],
 		PetscInt    coarse_reduction_factor,
+		PetscInt    coarse_num_local_cells,
 		PetscInt    subdomain_overlap,
-		PetscInt    subdomain_num_cells,
-		PetscInt    num_local_cells)
+		PetscInt    subdomain_num_cells)
 {
-
 	PetscFunctionBeginUser;
 
+	if(coarse_reduction_factor > 1)
+	{
+		PetscCall(set_string_option("ksp_type",                      "preonly",                prefix));
+		PetscCall(set_string_option("pc_type",                       "telescope",              prefix));
+		PetscCall(set_integer_option("pc_telescope_reduction_factor", coarse_reduction_factor, prefix));
+	}
 
-	PetscCall(set_scalar_option("ksp_gmres_restart", smoother_num_sweeps, prefix));
-	PetscCall(set_integer_option("ksp_gmres_restart", smoother_num_sweeps, prefix));
-	PetscCall(set_string_option ("pc_type", smoother_pc, prefix));
-
-
-	//	ierr = FDSTAGGetCoarseGridSize(fs, nlevels, nx, ny, nz, Nx, Ny, Nz); CHKERRQ(ierr);
-
-
-//===
-// PC
-//===
-
-	coarse_num_cpu        = -1                    # (-1 = automatic setting) (-2 = all cpus are used by coarse solve)
-
-	coarse_cells_per_cpu  =  2048                 # (only required for automatic setting of coarse_num_cpu parameter)
-
-	coarse_solver         =  direct               # [direct, hypre, bjacobi, asm]
-
-	coarse_tolerances     =  1e-3 100             # rtol, maxit (only for bjacobi and asm, since they use gmres)
-PetscCall(set_string_option ("pc_type", smoother_pc, prefix));
-
-if(!strcmp(smoother_pc, "sor"))
-{
-	PetscCall(set_scalar_option("pc_sor_omega", smoother_omega, prefix));
-}
-else if(!strcmp(smoother_pc, "bjacobi")
-
-
-		PetscCall(set_integer_option("pc_asm_overlap",      subdomain_overlap, prefix));
-		PetscCall(set_string_option ("pc_asm_type",         "restrict",        prefix));
-
-
+/*
 	-gmg_mg_coarse_ksp_type preonly
 	-gmg_mg_coarse_pc_type telescope
 	-gmg_mg_coarse_pc_telescope_reduction_factor 2
 
-	[A] direct solver
 	-gmg_mg_coarse_telescope_ksp_type preonly
 	-gmg_mg_coarse_telescope_pc_type lu
 	-gmg_mg_coarse_telescope_pc_factor_mat_solver_type superlu_dist
 
 
 
-	[B] hypre boomeramg
-	-gmg_mg_coarse_telescope_ksp_type preonly
+	-gmg_mg_coarse_ksp_type preonly
+	-gmg_mg_coarse_pc_type telescope
+	-gmg_mg_coarse_pc_telescope_reduction_factor 2
 
+	-gmg_mg_coarse_ksp_type gmres
+	-gmg_mg_coarse_telescope_pc_type lu
+	-gmg_mg_coarse_telescope_pc_factor_mat_solver_type superlu_dist
+*/
 
-	pc_type hypre
-	pc_hypre_type boomeramg
-	pc_hypre_boomeramg_agg_nl             5
-	pc_hypre_boomeramg_max_iter           1
-	pc_hypre_boomeramg_relax_weight_all   0.8
-	pc_hypre_boomeramg_strong_threshold   0.9
-	pc_hypre_boomeramg_smooth_type        Euclid
-	pc_hypre_boomeramg_eu_bj
-	pc_hypre_boomeramg_coarsen_type       HMIS
-	pc_mg_galerkin_mat_product_algorithm  hypre
-	pc_hypre_boomeramg_coarsen_type       HMIS
-	pc_mg_galerkin_mat_product_algorithm  hypre
+	//====
+	// KSP
+	//====
 
+	if(!strcmp(coarse_solver, "direct"))
+	{
+		PetscCall(set_string_option("ksp_type", "preonly", prefix));
+	}
+	else if((!strcmp(coarse_solver, "hypre")
+	||       !strcmp(coarse_solver, "bjacobi")
+	||       !strcmp(coarse_solver, "asm")))
+	{
+		PetscCall(set_string_option ("ksp_type",             "gmres",              prefix));
+		PetscCall(set_scalar_option ("ksp_rtol",             coarse_tolerances[0], prefix));
+		PetscCall(set_integer_option("ksp_max_it", (PetscInt)coarse_tolerances[1], prefix));
+	}
 
+	//===
+	// PC
+	//===
 
-
-	PetscCall(set_string_option ("pc_type",                             "hypre",     prefix));
-	PetscCall(set_string_option ("pc_hypre_type",                       "boomeramg", prefix));
-	PetscCall(set_integer_option("pc_hypre_boomeramg_agg_nl",           5,           prefix));
-	PetscCall(set_integer_option("pc_hypre_boomeramg_max_iter",         1,           prefix));
-	PetscCall(set_scalar_option ("pc_hypre_boomeramg_relax_weight_all", 0.8,         prefix));
-	PetscCall(set_integer_option("pc_hypre_boomeramg_grid_sweeps_all",  10,          prefix));
-	PetscCall(set_scalar_option ("pc_hypre_boomeramg_strong_threshold", 0.9,         prefix));
-	PetscCall(set_string_option ("pc_hypre_boomeramg_smooth_type",      "Euclid",    prefix));
-	PetscCall(set_empty_option  ("pc_hypre_boomeramg_eu_bj",                         prefix));
-	PetscCall(set_string_option ("pc_hypre_boomeramg_coarsen_type",     "HMIS",      prefix));
-
+	if(!strcmp(coarse_solver, "direct"))
+	{
+		PetscCall(set_string_option("pc_type ",                  "lu",                prefix));
+		PetscCall(set_string_option("pc_factor_mat_solver_type ", direct_solver_type, prefix));
+	}
+	else if(!strcmp(coarse_solver, "hypre"))
+	{
+		PetscCall(set_string_option ("pc_type",                             "hypre",     prefix));
+		PetscCall(set_string_option ("pc_hypre_type",                       "boomeramg", prefix));
+		PetscCall(set_integer_option("pc_hypre_boomeramg_agg_nl",           5,           prefix));
+		PetscCall(set_integer_option("pc_hypre_boomeramg_max_iter",         1,           prefix));
+		PetscCall(set_scalar_option ("pc_hypre_boomeramg_relax_weight_all", 0.8,         prefix));
+		PetscCall(set_integer_option("pc_hypre_boomeramg_grid_sweeps_all",  10,          prefix));
+		PetscCall(set_scalar_option ("pc_hypre_boomeramg_strong_threshold", 0.9,         prefix));
+		PetscCall(set_string_option ("pc_hypre_boomeramg_smooth_type",      "Euclid",    prefix));
+		PetscCall(set_empty_option  ("pc_hypre_boomeramg_eu_bj",                         prefix));
+		PetscCall(set_string_option ("pc_hypre_boomeramg_coarsen_type",     "HMIS",      prefix));
+	}
+	else if(!strcmp(coarse_solver, "bjacobi")
+	||      !strcmp(coarse_solver, "asm"))
+	{
+		PetscCall(set_subdomain_options(prefix, coarse_solver, subdomain_overlap, subdomain_num_cells, coarse_num_local_cells));
+	}
 
 	PetscFunctionReturn(0);
-
 }
 
+
+
 //-----------------------------------------------------------------------------
-PetscErrorCode set_mg_options(const char *prefix, PetscInt nlevels, PetscInt nsweeps, PetscScalar damping)
+PetscErrorCode set_levels_options(const char *prefix, PetscInt nlevels, PetscInt nsweeps, PetscScalar damping)
 {
 	PetscFunctionBeginUser;
 
@@ -723,6 +674,16 @@ PetscErrorCode set_mg_options(const char *prefix, PetscInt nlevels, PetscInt nsw
 
 
 
+	/*
+
+			subdomain_num_cells
+
+
+			smoother_pc      bjacobi, asm
+			coarse_solver    bjacobi, asm
+
+
+	*/
 
 
 
@@ -731,13 +692,32 @@ PetscErrorCode set_mg_options(const char *prefix, PetscInt nlevels, PetscInt nsw
 	PetscFunctionReturn(0);
 }
 
-
-
-*/
+//-----------------------------------------------------------------------------
 
 
 
 
+//-----------------------------------------------------------------------------
+PetscErrorCode set_tolerances(const char *prefix, PetscScalar tolerances[3])
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(set_scalar_option ("rtol", tolerances[0], prefix));
+
+	if(tolerances[1] != -1.0)
+	{
+		PetscCall(set_scalar_option ("atol", tolerances[1], prefix));
+	}
+	else
+	{
+		PetscCall(set_empty_option ("atol_auto", prefix));
+	}
+
+	PetscCall(set_integer_option("max_it", (PetscInt)tolerances[2], prefix));
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
 PetscErrorCode set_integer_option(const char *key, const PetscInt val, const char *prefix)
 {
 	PetscFunctionBeginUser;
