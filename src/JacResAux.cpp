@@ -176,6 +176,7 @@ PetscErrorCode JacResGetSHmax(JacRes *jr)
 //---------------------------------------------------------------------------
 PetscErrorCode JacResGetEHmax(JacRes *jr)
 {
+
 	// compute maximum horizontal extension rate (EHmax) orientation
 
 	FDSTAG      *fs;
@@ -589,9 +590,9 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
 PetscErrorCode JacResGetVelGrad(JacRes *jr)
 {
-/*
 	// compute velocity gradients for output
 
 	// velocity gradient tensor components
@@ -674,12 +675,9 @@ PetscErrorCode JacResGetVelGrad(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
 
-
-
-*/
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-/*
+
 	fs = jr->fs;
 
 	// access local (ghosted) velocity components
@@ -901,8 +899,9 @@ PetscErrorCode JacResGetVelGrad(JacRes *jr)
 	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvzdx);
 	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvzdy);
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvzdz);
-*/
+
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 

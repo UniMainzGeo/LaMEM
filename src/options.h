@@ -19,67 +19,89 @@ struct FB;
 struct FDSTAG;
 
 //-----------------------------------------------------------------------------
+
+struct SolOptDB
+{
+	PetscInt    skip_defaults                  =  0;                         // specify solver options explicitly
+	PetscInt    view_solvers                   =  0;                         // show linear solver congfiguration
+	PetscInt    monitor_solvers                =  0;                         // show linear iteration convergence
+	PetscInt    set_linear_problem             =  0;                         // linear problem flag (skip nonlinear iteration)
+	PetscScalar nonlinear_tolerances[3]        =  { 1e-5, -1.0, 50.0  };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
+	PetscScalar linear_tolerances[3]           =  { 1e-6, -1.0, 200.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
+	PetscScalar picard_to_newton[4]            =  { 1e-2,  5.0, 1.2, 20.0 }; // picard rtol, picard minit, newton rtol, newton maxit
+	PetscInt    use_line_search                =  1;
+	PetscInt    use_eisenstat_walker           =  0;
+	PetscInt    use_mat_free_jac               =  0;
+	char        stokes_solver[_str_len_]       = "block_direct";             // [block_direct, coupled_mg, block_mg, wbfbt]
+	char        direct_solver_type[_str_len_]  = "superlu_dist";             // [mumps, superlu_dist, lu]
+	PetscScalar penalty                        =  1e3;                       // (only for block_direct)
+	PetscInt    num_mg_levels                  = -1;                         // (-1 = automatic setting)
+	PetscInt    num_mat_free_levels            =  0;                         // (only for coupled_mg)
+	char        smoother_type[_str_len_]       = "heavy";                    // [light (richardson + jacobi), intermediate (chebyshev + sor), heavy (gmres + bjacobi)]
+	char        smoother_ksp[_str_len_]        = {'\0'};                     // [richardson, chebyshev, gmres]
+	char        smoother_pc[_str_len_]         = {'\0'};                     // [jacobi, sor, bjacobi, asm]
+	PetscScalar smoother_damping               =  0.5;                       // (only for richardson)
+	PetscScalar smoother_omega                 =  1.0;                       // (only for sor)
+	PetscInt    smoother_num_sweeps            =  20;                        // maxit
+	PetscInt    coarse_reduction_factor        = -1;                         // (-1 = automatic setting)
+	PetscInt    coarse_cells_per_cpu           =  2048;                      // (-1 = all cpus are used by coarse solve)
+	char        coarse_solver[_str_len_]       = "direct";                   // [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use gmres)
+	PetscScalar coarse_tolerances[2]           = { 1e-3, 100 } ;             // rtol, maxit (gmres settings for hypre, bjacobi and asm)
+	PetscInt    subdomain_overlap              =  1;                         // (only for asm)
+	PetscInt    subdomain_ilu_levels           =  0;                         // (only for bjacobi and asm)
+	PetscInt    subdomain_num_cells            = -1;                         // (-1 = automatic setting) (one subdomain per cpu)
+	char        init_thermal_solver[_str_len_] = "mg";                       // [mg, default]
+	PetscScalar thermal_tolerances[3]          =  { 1e-8, -1.0, 500.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
+};
+
+//-----------------------------------------------------------------------------
 // Default solver options
 //-----------------------------------------------------------------------------
 
 PetscErrorCode solverOptionsSetDefaults(FB *fb);
 
+PetscErrorCode solverOptionsReadFromFile(FB *fb, SolOptDB &opt);
+
+PetscErrorCode solverOptionsCheck(SolOptDB &opt);
+
 PetscErrorCode solverOptionsSetRequired();
 
-PetscErrorCode get_num_mg_levels(
-		FDSTAG  *fs,
-		PetscInt &num_mg_levels);
+PetscErrorCode get_num_mg_levels(SolOptDB &opt, FDSTAG *fs);
 
 PetscErrorCode get_coarse_reduction_factor(
-		PetscInt num_mg_levels,
-		PetscInt coarse_num_local_cells,
-		PetscInt coarse_cells_per_cpu,
-		PetscInt &coarse_reduction_factor);
+		SolOptDB &opt,
+		PetscInt  coarse_num_local_cells);
 
-/*
-PetscErrorCode get_num_local_blocks(
-		PetscInt num_mg_levels,
-		PetscInt levels_num_local_cells[],
-		PetscInt coarse_num_local_cells,
-		PetscInt coarse_reduction_factor,
-		PetscInt subdomain_num_cells,
-		PetscInt levels_num_local_blocks[],
-		PetscInt &coarse_num_local_blocks);
-*/
-
-
-PetscErrorCode set_default_smoother(
-		const char *smoother_type,
-		char       *smoother_ksp,
-		char       *smoother_pc);
+PetscErrorCode set_default_smoother(SolOptDB &opt);
 
 PetscErrorCode set_smoother_options(
+		SolOptDB   &opt,
 		const char *prefix,
-		const char *smoother_ksp,
-		const char *smoother_pc,
-		PetscScalar smoother_damping,
-		PetscScalar smoother_omega,
-		PetscInt    smoother_num_sweeps,
-		PetscInt    subdomain_overlap,
-		PetscInt    subdomain_num_cells,
-		PetscInt    num_local_cells);
+		PetscInt    num_local_cells = 0);
 
 PetscErrorCode set_subdomain_options(
+		SolOptDB   &opt,
 		const char *prefix,
-		const char *smoother_pc,
-		PetscInt    subdomain_overlap,
-		PetscInt    subdomain_num_cells,
+		const char *pc_type,
 		PetscInt    num_local_cells);
 
 PetscErrorCode set_coarse_options(
+		SolOptDB   &opt,
+		const char *mg_prefix,
+		PetscInt    coarse_num_local_cells);
+
+PetscErrorCode set_levels_options(
+		SolOptDB   &opt,
+		const char *mg_prefix,
+		PetscInt    levels_num_local_cells[]);
+
+PetscErrorCode set_custom_mg_options(
+		SolOptDB   &opt,
 		const char *prefix,
-		char        coarse_solver[],
-		char        direct_solver_type[],
-		PetscScalar coarse_tolerances[],
-		PetscInt    coarse_reduction_factor,
 		PetscInt    coarse_num_local_cells,
-		PetscInt    subdomain_overlap,
-		PetscInt    subdomain_num_cells);
+		PetscInt    levels_num_local_cells[]);
+
+PetscErrorCode set_standard_mg_options(SolOptDB &opt, const char *prefix);
 
 PetscErrorCode set_tolerances(const char *prefix, PetscScalar tolerances[3]);
 

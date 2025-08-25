@@ -312,6 +312,3 @@ Examples
 	-ts_ksp_atol_auto
 	
 ================================================================================
-
-
--pc_factor_mat_ordering_type <natural,nd,1wd,rcm,qmd> 

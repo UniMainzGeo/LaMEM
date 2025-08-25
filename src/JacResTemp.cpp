@@ -172,7 +172,6 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	FDSTAG *fs;
 	const PetscInt *lx, *ly, *lz;
-	PetscInt       MG2D;
 
 	PetscFunctionBeginUser;
 
@@ -194,15 +193,6 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
 		1, 1, lx, ly, lz, &jr->DA_T));
-
-	// set 2D coarsening flag
-	PetscCall(FDSTAGCheckMG2D(fs, MG2D));
-
-	// update refinement factor
-	if(MG2D)
-	{
-		PetscCall(DMDASetRefinementFactor(jr->DA_T, 2, 1, 2));
-	}
 
 	// set proper interpolation type for multigrid
 	PetscCall(DMDASetInterpolationType(jr->DA_T, DMDA_Q0));

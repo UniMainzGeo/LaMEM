@@ -827,6 +827,10 @@
 	
 	skip_defaults           = 0                     # specify solver options explicitly
 	
+	view_solvers            = 0                     # show linear solver congfiguration
+	
+	monitor_solvers         = 0                     # show linear iteration convergence
+		
 	set_linear_problem      = 0                     # linear problem activation flag (skip nonlinear iteration)
 	
 	nonlinear_tolerances    =  1e-5 -1   50         # rtol, atol, maxit (-1 = automatic setting, only for atol)
@@ -859,6 +863,8 @@
 	
 	smoother_damping        =  0.5                  # (only for richardson)
 	
+	smoother_omega          =  1.0                  # (only for sor)
+		
 	smoother_num_sweeps     =  20
 	
 	coarse_reduction_factor = -1                    # (-1 = automatic setting)
