@@ -43,7 +43,7 @@
 #include "passive_tracer.h"
 
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
+PetscErrorCode LaMEMLibMain(void *param, FB *fb)
 {
 	LaMEMLib       lm;
 	RunMode        mode;
@@ -104,19 +104,19 @@ PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 	if(mode == _SAVE_GRID_)
 	{
 		// save grid & exit
-		ierr = LaMEMLibSaveGrid(&lm); CHKERRQ(ierr);
+		ierr = LaMEMLibSaveGrid(&lm, fb); CHKERRQ(ierr);
 
 		PetscFunctionReturn(0);
 	}
 	if(mode == _NORMAL_ || mode == _DRY_RUN_)
 	{
 		// create library objects
-		ierr = LaMEMLibCreate(&lm, param); CHKERRQ(ierr);
+		ierr = LaMEMLibCreate(&lm, param, fb); CHKERRQ(ierr);
 	}
 	else if(mode == _RESTART_)
 	{
 		// open restart database
-		ierr = LaMEMLibLoadRestart(&lm); CHKERRQ(ierr);
+		ierr = LaMEMLibLoadRestart(&lm, fb); CHKERRQ(ierr);
 	}
 
 	//======
@@ -131,7 +131,7 @@ PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 	else if(mode == _NORMAL_ || mode == _RESTART_)
 	{
 		// solve coupled nonlinear equations
-		ierr = LaMEMLibSolve(&lm, param,stages); CHKERRQ(ierr);
+		ierr = LaMEMLibSolve(&lm, param); CHKERRQ(ierr);
 	}
 
 	// destroy library objects
@@ -145,17 +145,12 @@ PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param)
+PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param, FB *fb)
 {
-	FB *fb;
+	UNUSED(param);
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-
-	UNUSED(param);
-
-	// load input file
-	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create scaling object
 	ierr = ScalingCreate(&lm->scal, fb, PETSC_TRUE);CHKERRQ(ierr);
@@ -205,26 +200,15 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param)
 	// AVD output driver
 	ierr = PVAVDCreate(&lm->pvavd, fb); 			CHKERRQ(ierr);
 
-	// destroy file buffer
-	ierr = FBDestroy(&fb); CHKERRQ(ierr);
-
-	// list entire option database
-	PetscCall(PetscOptionsView(NULL, PETSC_VIEWER_STDOUT_WORLD));
-
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
+PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm, FB *fb)
 {
-	FB *fb;
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-
-	// load input file
-	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create scaling object
 	ierr = ScalingCreate(&lm->scal, fb, PETSC_TRUE); CHKERRQ(ierr);
@@ -238,20 +222,15 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 	// destroy parallel grid
 	ierr = FDSTAGDestroy(&lm->fs); CHKERRQ(ierr);
 
-	// destroy file buffer
-	ierr = FBDestroy(&fb); CHKERRQ(ierr);
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
+PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 {
-	FB              *fb;
 	FILE            *fp;
 	PetscLogDouble  t;
 	PetscMPIInt     rank;
-	PetscBool       found;
-	char            restartFileName[_str_len_], *fileName;
+	char            *fileName;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -306,28 +285,16 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
 
 	// read from input file, create arrays for dynamic diking, and read from restart file
-	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, &lm->ts, fp);  CHKERRQ(ierr);
+	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, &lm->ts, fp, fb);  CHKERRQ(ierr);
  
+	// override material database
+	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); CHKERRQ(ierr);
+
 	// close temporary restart file
 	fclose(fp);
 
 	// free space
 	free(fileName);
-
-	// check whether restart input file is specified
-	ierr = PetscOptionsGetCheckString("-RestartParamFile", restartFileName, &found); CHKERRQ(ierr);
-
-	if(found == PETSC_TRUE)
-	{
-		// load restart input file
-		ierr = FBLoad(&fb, PETSC_TRUE, restartFileName); CHKERRQ(ierr);
-
-		// override material database
-		ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
-
-		// destroy file buffer
-		ierr = FBDestroy(&fb); CHKERRQ(ierr);
-	}
 
 	PrintDone(t);
 
@@ -603,12 +570,19 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
+PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
 	SNES           snes;   // PETSc nonlinear solver
  	AdjGrad        aop;    // Adjoint options
 	PetscInt       restart;
 	PetscLogDouble t;
+	PetscLogStage  stages[4];
+
+	// name computational stages
+	PetscCall(PetscLogStageRegister("Initial guess",  &stages[0]));
+	PetscCall(PetscLogStageRegister("SNES solve",     &stages[1]));
+	PetscCall(PetscLogStageRegister("Advect markers", &stages[2]));
+	PetscCall(PetscLogStageRegister("I/O",            &stages[3]));
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -619,11 +593,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 	//==============
 	// INITIAL GUESS
 	//==============
-	PetscCall(PetscLogStagePush(stages[0])); /* Start profiling stage*/
+
+	PetscCall(PetscLogStagePush(stages[0]));
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
 
-	PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
+	PetscCall(PetscLogStagePop());
 
 	if(param)
 	{
@@ -646,7 +621,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
-	
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
@@ -656,11 +630,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
 
-		PetscCall(PetscLogStagePush(stages[1])); /* Start profiling stage*/
+		PetscCall(PetscLogStagePush(stages[1]));
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
+		PetscCall(PetscLogStagePop());
+
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
 
@@ -673,11 +648,14 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 			ModParam *IOparam = (ModParam *)param;
 			
 			if(IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ || IOparam->use == _inversion_ )
-			{	/* 	Compute the adjoint gradients 
-				 	
-					This is done here, as the adjoint should be cmputed with the current residual that does not take advection etc.
-					into account. It does compute it every dt; one can perhaps only activate it for the last dt.
-				*/
+			{
+				//================================================================================================================
+				// Compute the adjoint gradients
+				//
+				//  This is done here, as the adjoint should be cmputed with the current residual that does not take advection etc.
+				//  into account. It does compute it every dt; one can perhaps only activate it for the last dt.
+				//================================================================================================================
+
 				ierr = AdjointObjectiveAndGradientFunction(&aop, (ModParam*)param, snes); CHKERRQ(ierr);
 			}
 		}
@@ -686,7 +664,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================
 
-		PetscCall(PetscLogStagePush(stages[2])); /* Start profiling stage*/
+		PetscCall(PetscLogStagePush(stages[2]));
 
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
@@ -709,7 +687,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// Advect Passive tracers
 		ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
+		PetscCall(PetscLogStagePop());
 
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
@@ -730,12 +708,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// update time stamp and counter
 		ierr = TSSolStepForward(&lm->ts); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePush(stages[3])); /* Start profiling stage*/
+		PetscCall(PetscLogStagePush(stages[3]));
 
 		// grid & marker output
 		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
+		PetscCall(PetscLogStagePop());
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
@@ -751,9 +729,10 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		ModParam *IOparam = (ModParam *)param;
 
 		if(IOparam->use == _syntheticforwardrun_)
-		{	// Assume this as a forward simulation and save the solution vector
-	 		//VecDuplicate(lm->jr.gsol, &IOparam->xini);
-			//VecCopy(lm->jr.gsol, IOparam->xini);
+		{
+			// Assume this as a forward simulation and save the solution vector
+			// VecDuplicate(lm->jr.gsol, &IOparam->xini);
+			// VecCopy(lm->jr.gsol, IOparam->xini);
 		}
 
 		ierr = AdjointDestroy(&aop, IOparam); CHKERRQ(ierr);

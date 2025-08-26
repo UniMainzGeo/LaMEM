@@ -827,7 +827,7 @@
 	
 	skip_defaults           = 0                     # specify solver options explicitly
 	
-	view_solvers            = 0                     # show linear solver congfiguration
+	view_solvers            = 0                     # show linear solver configuration
 	
 	monitor_solvers         = 0                     # show linear iteration convergence
 		
@@ -877,9 +877,9 @@
 			
 	subdomain_overlap       =  1                    # (only for asm)
 
-	subdomain_num_cells     = -1                    # (only for bjacobi and asm) (-1 = one subdomain per cpu) 
-
 	subdomain_ilu_levels    =  0                    # (only for bjacobi and asm)
+	
+	subdomain_num_cells     = -1                    # (only for bjacobi and asm) (-1 = one subdomain per cpu) 
 	
 	init_thermal_solver     =  mg                   # [mg, default]
 	

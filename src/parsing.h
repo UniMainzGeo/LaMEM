@@ -68,7 +68,7 @@ struct FB
 
 //-----------------------------------------------------------------------------
 
-PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName = NULL);
+PetscErrorCode FBLoad(FB **pfb);
 
 PetscErrorCode FBDestroy(FB **pfb);
 
@@ -130,20 +130,10 @@ PetscErrorCode getStringParam(
 		char        *str,         // output string
 		const char  *_default_);  // default value (optional)
 
-//-----------------------------------------------------------------------------
-// PETSc options parsing functions
-//-----------------------------------------------------------------------------
-
-PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput);
-
-PetscErrorCode PetscOptionsReadRestart(FILE *fp);
-
-PetscErrorCode PetscOptionsWriteRestart(FILE *fp);
-
 PetscErrorCode  PetscOptionsGetCheckString(
-	const char   key[],
-	char         str[],
-	PetscBool   *set);
+		const char   key[],
+		char         str[],
+		PetscBool   *set);
 
 //-----------------------------------------------------------------------------
 #endif

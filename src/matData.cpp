@@ -270,15 +270,10 @@ PetscErrorCode MatDataSetup(MatData *md, JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine)
+PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine, PetscInt MG2D)
 {
-	PetscInt MG2D;
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-
-	// set 2D coarsening flag
-	if(fine->fs->dsy.tcels == 2) { MG2D = 1; }
 
 	// update time step
 	coarse->dt = fine->dt;

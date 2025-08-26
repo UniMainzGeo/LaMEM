@@ -24,7 +24,7 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 {
 	FDSTAG         *fs;
 	DOFIndex       *dof;
-	PetscInt        lnv, stv, MG2D;
+	PetscInt        lnv, stv;
 	const PetscInt *lx, *ly, *lz;
 
 	PetscErrorCode ierr;

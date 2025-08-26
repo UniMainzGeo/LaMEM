@@ -991,7 +991,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 		// Only compute a forward model and the corresponding misfit 
 
 		IOparam->BruteForce_FD = PETSC_TRUE;		// to return early w/out cmomputing FD gradients
-		ierr = LaMEMLibMain(IOparam,IOparam->stages); 															CHKERRQ(ierr);
+		ierr = LaMEMLibMain(IOparam, IOparam->fb); 															CHKERRQ(ierr);
 
 		// Print overview of cost function & gradients 
 		ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
@@ -1086,7 +1086,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  	else if(IOparam->use == _syntheticforwardrun_)
  	{
  		// call LaMEM main library function
- 		ierr = LaMEMLibMain(IOparam,IOparam->stages); CHKERRQ(ierr);
+ 		ierr = LaMEMLibMain(IOparam, IOparam->fb); CHKERRQ(ierr);
 
  		// Save output
  		PetscViewer     viewerVel;
@@ -1219,7 +1219,7 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 
 	// Adjoint gradients: Call LaMEM main library function once (computes gradients @ the end)
  	IOparam->BruteForce_FD = PETSC_FALSE;
-	ierr = LaMEMLibMain(IOparam,IOparam->stages); 															CHKERRQ(ierr);
+	ierr = LaMEMLibMain(IOparam, IOparam->fb); 															CHKERRQ(ierr);
 
 	// Print overview of cost function & gradients 
 	ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
@@ -1843,7 +1843,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 	if (FD_Adjoint){
 
 		// Call LaMEM
-		ierr 		= 	LaMEMLibMain(IOparam,IOparam->stages); CHKERRQ(ierr);		// call LaMEM
+		ierr 		= 	LaMEMLibMain(IOparam, IOparam->fb); CHKERRQ(ierr);		// call LaMEM
 		Misfit_ref	=	IOparam->mfit;
 		
 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
@@ -1879,7 +1879,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 				ierr		=	CopyParameterToLaMEMCommandLine(IOparam, CurVal + Perturb, j);		CHKERRQ(ierr);
 			
 				// Compute solution with updated parameter
-				ierr 		= 	LaMEMLibMain(IOparam,IOparam->stages); 												CHKERRQ(ierr);
+				ierr 		= 	LaMEMLibMain(IOparam, IOparam->fb); 												CHKERRQ(ierr);
 				Misfit_pert = 	IOparam->mfit;
 
 				// FD gradient

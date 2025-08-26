@@ -22,8 +22,9 @@ struct FDSTAG;
 
 struct SolOptDB
 {
+	// option database
 	PetscInt    skip_defaults                  =  0;                         // specify solver options explicitly
-	PetscInt    view_solvers                   =  0;                         // show linear solver congfiguration
+	PetscInt    view_solvers                   =  0;                         // show linear solver configuration
 	PetscInt    monitor_solvers                =  0;                         // show linear iteration convergence
 	PetscInt    set_linear_problem             =  0;                         // linear problem flag (skip nonlinear iteration)
 	PetscScalar nonlinear_tolerances[3]        =  { 1e-5, -1.0, 50.0  };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
@@ -49,14 +50,18 @@ struct SolOptDB
 	PetscScalar coarse_tolerances[2]           = { 1e-3, 100 } ;             // rtol, maxit (gmres settings for hypre, bjacobi and asm)
 	PetscInt    subdomain_overlap              =  1;                         // (only for asm)
 	PetscInt    subdomain_ilu_levels           =  0;                         // (only for bjacobi and asm)
-	PetscInt    subdomain_num_cells            = -1;                         // (-1 = automatic setting) (one subdomain per cpu)
+	PetscInt    subdomain_num_cells            = -1;                         // (only for bjacobi and asm) (-1 = one subdomain per cpu)
 	char        init_thermal_solver[_str_len_] = "mg";                       // [mg, default]
 	PetscScalar thermal_tolerances[3]          =  { 1e-8, -1.0, 500.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
+	// computational parameters
+	PetscInt    coarse_num_local_blocks                      =  0;
+	PetscInt    levels_num_local_blocks[_max_num_mg_levels_] = {0};
+	PetscInt    levels_num_blocks_constant                   =  0;
 };
 
 //-----------------------------------------------------------------------------
-// Default solver options
-//-----------------------------------------------------------------------------
+
+PetscErrorCode setSolverOptions(FB *fb);
 
 PetscErrorCode solverOptionsSetDefaults(FB *fb);
 
@@ -64,9 +69,12 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb, SolOptDB &opt);
 
 PetscErrorCode solverOptionsCheck(SolOptDB &opt);
 
-PetscErrorCode solverOptionsSetRequired();
-
 PetscErrorCode get_num_mg_levels(SolOptDB &opt, FDSTAG *fs);
+
+PetscErrorCode get_num_local_blocks(
+		SolOptDB &opt,
+		PetscInt  levels_num_local_cells[],
+		PetscInt  coarse_num_local_cells);
 
 PetscErrorCode get_coarse_reduction_factor(
 		SolOptDB &opt,
@@ -77,29 +85,25 @@ PetscErrorCode set_default_smoother(SolOptDB &opt);
 PetscErrorCode set_smoother_options(
 		SolOptDB   &opt,
 		const char *prefix,
-		PetscInt    num_local_cells = 0);
+		PetscInt    num_local_blocks);
 
 PetscErrorCode set_subdomain_options(
 		SolOptDB   &opt,
 		const char *prefix,
 		const char *pc_type,
-		PetscInt    num_local_cells);
+		PetscInt    num_local_blocks);
 
 PetscErrorCode set_coarse_options(
 		SolOptDB   &opt,
-		const char *mg_prefix,
-		PetscInt    coarse_num_local_cells);
+		const char *mg_prefix);
 
 PetscErrorCode set_levels_options(
 		SolOptDB   &opt,
-		const char *mg_prefix,
-		PetscInt    levels_num_local_cells[]);
+		const char *mg_prefix);
 
 PetscErrorCode set_custom_mg_options(
 		SolOptDB   &opt,
-		const char *prefix,
-		PetscInt    coarse_num_local_cells,
-		PetscInt    levels_num_local_cells[]);
+		const char *prefix);
 
 PetscErrorCode set_standard_mg_options(SolOptDB &opt, const char *prefix);
 
@@ -113,5 +117,8 @@ PetscErrorCode set_string_option(const char *key, const char *val, const char *p
 
 PetscErrorCode set_empty_option(const char *key, const char *prefix = NULL);
 
+PetscErrorCode PetscOptionsReadFromFile(FB *fb);
+
 //-----------------------------------------------------------------------------
+
 #endif

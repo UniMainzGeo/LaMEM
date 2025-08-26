@@ -1418,9 +1418,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 }
 
 //---------------------------------------------------------------------------
-PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp)
+PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp, FB *fb)
 {
-	FB              *fb;
 	Controls    *ctrl;
 	Dike        *dike;
 	PetscInt   nD, numDike;
@@ -1431,14 +1430,12 @@ PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *
 	ctrl = &jr->ctrl;
 	if (!ctrl->actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
 
-	ierr = FBLoad(&fb, PETSC_TRUE);
-	ierr = TSSolCreate(ts, fb); 				CHKERRQ(ierr);
+	ierr = TSSolCreate(ts, fb); CHKERRQ(ierr);
 
-	numDike    = dbdike->numDike; // number of dikes
+	numDike = dbdike->numDike; // number of dikes
 
-// create dike database
-	ierr = DBDikeCreate(dbdike, dbm, fb, jr, PETSC_TRUE);   CHKERRQ(ierr);
-	ierr = FBDestroy(&fb); CHKERRQ(ierr);
+	// create dike database
+	ierr = DBDikeCreate(dbdike, dbm, fb, jr, PETSC_TRUE); CHKERRQ(ierr);
 
 	for(nD = 0; nD < numDike; nD++)
 	{
@@ -1449,8 +1446,6 @@ PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *
 			ierr = VecReadRestart(dike->sxx_eff_ave_hist, fp); CHKERRQ(ierr);
 		}
 	}
-
-	
 
 	PetscFunctionReturn(0);
 }

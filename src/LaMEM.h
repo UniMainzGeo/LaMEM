@@ -199,9 +199,11 @@ typedef pair <PetscInt,    PetscInt> ipair;
 // PROTOTYPES
 //-----------------------------------------------------------------------------
 
+struct FB;
+
 // LaMEM library main function
 
-PetscErrorCode LaMEMLibMain(void *param, PetscLogStage stages[4]);
+PetscErrorCode LaMEMLibMain(void *param, FB *fb);
 
 //-----------------------------------------------------------------------------
 #endif

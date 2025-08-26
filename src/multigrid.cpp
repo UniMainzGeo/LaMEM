@@ -343,7 +343,7 @@ PetscErrorCode MGSetup(MG *mg)
 			fine = &mg->lvls[i-1];
 
 			// restrict evaluation context
-			ierr = MatDataRestrict(lvl->md, fine->md); CHKERRQ(ierr);
+			ierr = MatDataRestrict(lvl->md, fine->md, mg->MG2D); CHKERRQ(ierr);
 
 			if(lvl->type == _LVL_GALERKIN_)
 			{

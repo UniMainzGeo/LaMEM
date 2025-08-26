@@ -59,7 +59,7 @@ PetscErrorCode MatDataComputeIndex(MatData *md);
 
 PetscErrorCode MatDataSetup(MatData *md, JacRes *jr);
 
-PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine);
+PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine, PetscInt MG2D);
 
 PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr);
 

@@ -60,7 +60,7 @@ const char *PTypesName[] ={
 // Structure that holds inversion parameters
 struct ModParam
 {
-	PetscInt         use;                               // Choose one of InvTypes
+	InvTypes         use;                               // Choose one of InvTypes
 	PetscInt         mdN;                               // number of model parameters
 	PetscInt         mID;                               // current model number
 	char 			 type_name[_MAX_PAR_][_str_len_];   // stores the name of the adjoint parameters
@@ -115,8 +115,6 @@ struct ModParam
 	PetscScalar      Avel_num[_MAX_OBS_];             	// Numerically computed velocity at the comparison points
 	PetscBool        Apoint_on_proc[_MAX_OBS_];         // Is the observation point on the current processor or not (simplified printing)?
 	char   			 ScalLawFilename[_str_len_];		// Name of scaling law file
-
-	PetscLogStage	 stages[4]; 						/* Create stages for PETSC profiling */
 };
 
 // observation type

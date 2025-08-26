@@ -16,6 +16,36 @@
 #include "scaling.h"
 #include "fdstag.h"
 //-----------------------------------------------------------------------------
+PetscErrorCode setSolverOptions(FB *fb)
+{
+	char *all_options;
+
+	PetscFunctionBeginUser;
+
+	// copy all command line and previously specified options to buffer
+	PetscCall(PetscOptionsGetAll(NULL, &all_options));
+
+	// remove command line options from database
+	PetscCall(PetscOptionsClear(NULL));
+
+	// set simplified solver options from the input file
+	PetscCall(solverOptionsSetDefaults(fb));
+
+	// load additional options from file
+	PetscCall(PetscOptionsReadFromFile(fb));
+
+	// push command line options to the end of database (priority)
+	PetscCall(PetscOptionsInsertString(NULL, all_options));
+
+	// clean
+	PetscCall(PetscFree(all_options));
+
+	// list entire option database
+	PetscCall(PetscOptionsView(NULL, PETSC_VIEWER_STDOUT_WORLD));
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
 PetscErrorCode solverOptionsSetDefaults(FB *fb)
 {
 	// set "best-guess" solver options to help an inexperienced user
@@ -24,8 +54,8 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 	SolOptDB opt;
 	Scaling   scal_obj, *scal(&scal_obj);
 	FDSTAG    fs_obj,   *fs  (&fs_obj);
-	PetscInt  act_temp_diff(0), act_steady_temp(0), complete_build;
-	PetscInt  levels_num_local_cells[_max_num_mg_levels_], coarse_num_local_cells;
+	PetscInt  act_temp_diff(0), act_steady_temp(0), complete_build, MG2D;
+	PetscInt  levels_num_local_cells [_max_num_mg_levels_], coarse_num_local_cells;
 
 	PetscFunctionBeginUser;
 
@@ -120,6 +150,23 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 		// create grid (incomplete)
 		PetscCall(FDSTAGCreate(fs, fb, complete_build = 0));
 
+		// get 2D coarsening flag
+		PetscCall(FDSTAGCheckMG2D(fs, MG2D));
+
+		// check restrictions
+		if(MG2D)
+		{
+			// WARNING! 2D coarsening is not implemented for 3D multigrid in PETSc
+			if(!strcmp(opt.stokes_solver,"wbfbt"))
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "wBFBT solver is not available for 2D grid (stokes_solver): %s", opt.stokes_solver);
+			}
+			if(!strcmp(opt.init_thermal_solver, "mg"))
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Multigrid temperature solver is not available for 2D grid (init_thermal_solver): %s", opt.init_thermal_solver);
+			}
+		}
+
 		// select number of multigrid levels
 		PetscCall(get_num_mg_levels(opt, fs));
 
@@ -130,8 +177,14 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 		// select coarse solve reduction factor
 		PetscCall(get_coarse_reduction_factor(opt, coarse_num_local_cells));
 
+		// get number of local blocks per processor
+		PetscCall(get_num_local_blocks(opt, levels_num_local_cells, coarse_num_local_cells));
+
 		// destroy grid
 		PetscCall(FDSTAGDestroy(fs));
+
+		// select option for scalable triple matrix product (required for a)
+		PetscCall(PetscOptionsInsertString(NULL, "-matmatmatmult_via scalable"));
 	}
 
 	//===============
@@ -156,7 +209,7 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 			PetscCall(set_integer_option("gmg_mat_free_levels", opt.num_mat_free_levels));
 		}
 
-		PetscCall(set_custom_mg_options(opt, "gmg", coarse_num_local_cells, levels_num_local_cells));
+		PetscCall(set_custom_mg_options(opt, "gmg"));
 	}
 	else if(!strcmp(opt.stokes_solver, "block_mg"))
 	{
@@ -165,7 +218,7 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 		PetscCall(set_string_option("bf_schur_type", "inv_eta"));
 		PetscCall(set_string_option("vs_ksp_type",   "preonly"));
 
-		PetscCall(set_custom_mg_options(opt, "gmg", coarse_num_local_cells, levels_num_local_cells));
+		PetscCall(set_custom_mg_options(opt, "gmg"));
 	}
 	else if(!strcmp(opt.stokes_solver, "wbfbt"))
 	{
@@ -175,25 +228,9 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 		PetscCall(set_string_option("vs_ksp_type",   "preonly"));
 		PetscCall(set_string_option("ks_ksp_type",   "preonly"));
 
-		PetscCall(set_custom_mg_options(opt, "gmg", coarse_num_local_cells, levels_num_local_cells));
+		PetscCall(set_custom_mg_options(opt, "gmg"));
 
 		PetscCall(set_standard_mg_options(opt, "ks"));
-	}
-
-	//===========
-	// SUBDOMAINS
-	//===========
-
-	if(!strcmp(opt.smoother_pc,   "bjacobi")
-	|| !strcmp(opt.smoother_pc,   "asm")
-	|| !strcmp(opt.coarse_solver, "bjacobi")
-	|| !strcmp(opt.coarse_solver, "asm"))
-	{
-		PetscCall(set_string_option ("pc_type",                     "ilu",                     "sub"));
-		PetscCall(set_integer_option("pc_factor_levels",             opt.subdomain_ilu_levels, "sub"));
-		PetscCall(set_string_option ("pc_factor_mat_ordering_type",  "nd",                     "sub"));
-		PetscCall(set_empty_option  ("pc_factor_reuse_ordering",                               "sub"));
-
 	}
 
 	//===============
@@ -228,6 +265,9 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 		if(opt.monitor_solvers) { PetscCall(set_empty_option  ("ksp_monitor",  "its")); }
 		if(opt.view_solvers)    { PetscCall(set_empty_option  ("ksp_view",     "its")); }
 	}
+
+
+	set_empty_option("options_left");
 
 	PetscFunctionReturn(0);
 }
@@ -358,20 +398,9 @@ PetscErrorCode solverOptionsCheck(SolOptDB &opt)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-PetscErrorCode solverOptionsSetRequired()
-{
-	PetscFunctionBeginUser;
-
-	// MAT
-	PetscCall(PetscOptionsInsertString(NULL, "-mat_product_algorithm scalable"));
-	PetscCall(PetscOptionsInsertString(NULL, "-matmatmatmult_via scalable"));
-	PetscCall(PetscOptionsInsertString(NULL, "-matmatmult_via scalable"));
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
 PetscErrorCode get_num_mg_levels(SolOptDB &opt, FDSTAG *fs)
 {
+
 	// select number of multigrid levels
 
 	PetscInt ncors;
@@ -381,6 +410,9 @@ PetscErrorCode get_num_mg_levels(SolOptDB &opt, FDSTAG *fs)
 	// get maximum possible number of coarsening steps
 	PetscCall(FDSTAGCheckMG(fs, ncors));
 
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+	PetscPrintf(PETSC_COMM_WORLD, "General multigrid settings      :\n");
+
 	if(opt.num_mg_levels != -1)
 	{
 		// check user-specified number of levels
@@ -388,11 +420,89 @@ PetscErrorCode get_num_mg_levels(SolOptDB &opt, FDSTAG *fs)
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)opt.num_mg_levels, (LLD)(ncors + 1));
 		}
+
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels   : %lld (prescribed)\n", (LLD)opt.num_mg_levels);
 	}
 	else
 	{
+		//==========================================================================================
+		// WARNING!
+		// for small problems try to respect "coarse_cells_per_cpu" constraint here (use less levels)
+		//==========================================================================================
+
 		opt.num_mg_levels = ncors + 1;
+
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels   : %lld (automatic)\n", (LLD)opt.num_mg_levels);
 	}
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+PetscErrorCode get_num_local_blocks(
+		SolOptDB &opt,
+		PetscInt  levels_num_local_cells[],
+		PetscInt  coarse_num_local_cells)
+{
+	PetscInt i, ncells, petsc_mg_level;
+
+	PetscFunctionBeginUser;
+
+	if(opt.subdomain_num_cells != -1)
+	{
+		// levels
+		for(i = 0; i < opt.num_mg_levels - 1; i++)
+		{
+			opt.levels_num_local_blocks[i] = PetscCeilInt(levels_num_local_cells[i], opt.subdomain_num_cells);
+		}
+
+		// update number of local cells per aggregated cpu
+		ncells = coarse_num_local_cells*opt.coarse_reduction_factor;
+
+		//	coarse grid
+		opt.coarse_num_local_blocks = PetscCeilInt(ncells, opt.subdomain_num_cells);
+	}
+	else
+	{
+		// levels
+		for(i = 0; i < opt.num_mg_levels - 1; i++)
+		{
+			opt.levels_num_local_blocks[i] = 1;
+		}
+
+		//	coarse grid
+		opt.coarse_num_local_blocks = 1;
+	}
+
+	// check constant number of blocks on all levels
+	opt.levels_num_blocks_constant = opt.levels_num_local_blocks[0];
+
+	for(i = 1; i < opt.num_mg_levels - 1; i++)
+	{
+		if(opt.levels_num_local_blocks[i] != opt.levels_num_blocks_constant)
+		{
+			opt.levels_num_blocks_constant = 0;
+
+			break;
+		}
+	}
+
+	if(opt.levels_num_blocks_constant)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of blocks on levels   : %lld\n", (LLD)opt.levels_num_blocks_constant);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of blocks on          :\n");
+
+		for(i = 0, petsc_mg_level = opt.num_mg_levels-1; i < opt.num_mg_levels - 1; i++, petsc_mg_level--)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      PETSc level               : %lld -> %lld\n", (LLD)petsc_mg_level, (LLD)opt.levels_num_local_blocks[i]);
+		}
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of blocks coarse grid : %lld\n", (LLD)opt.coarse_num_local_blocks);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
@@ -420,16 +530,22 @@ PetscErrorCode get_coarse_reduction_factor(
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect reduction factor specified (coarse_reduction_factor): %lld", (LLD)opt.coarse_reduction_factor);
 		}
+
+		PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld (prescribed)\n", (LLD)opt.coarse_reduction_factor);
 	}
 	else if(total_num_cpu == 1)
 	{
 		// sequential case
 		opt.coarse_reduction_factor = 1;
+
+		PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld (sequential solve)\n", (LLD)opt.coarse_reduction_factor);
 	}
 	else if(opt.coarse_cells_per_cpu == -1)
 	{
 		// all processors are used for coarse solve
 		opt.coarse_reduction_factor = 1;
+
+		PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld (default)\n", (LLD)opt.coarse_reduction_factor);
 	}
 	else
 	{
@@ -457,6 +573,8 @@ PetscErrorCode get_coarse_reduction_factor(
 		{
 			opt.coarse_reduction_factor = upper_factor;
 		}
+
+		PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld (automatic)\n", (LLD)opt.coarse_reduction_factor);
 	}
 
 	PetscFunctionReturn(0);
@@ -494,7 +612,7 @@ PetscErrorCode set_default_smoother(SolOptDB &opt)
 PetscErrorCode set_smoother_options(
 		SolOptDB   &opt,
 		const char *prefix,
-		PetscInt    num_local_cells)
+		PetscInt    num_local_blocks)
 {
 	PetscFunctionBeginUser;
 
@@ -527,7 +645,7 @@ PetscErrorCode set_smoother_options(
 	else if(!strcmp(opt.smoother_pc, "bjacobi")
 	||      !strcmp(opt.smoother_pc, "asm"))
 	{
-		PetscCall(set_subdomain_options(opt, prefix, opt.smoother_pc, num_local_cells));
+		PetscCall(set_subdomain_options(opt, prefix, opt.smoother_pc, num_local_blocks));
 	}
 
 	PetscFunctionReturn(0);
@@ -537,49 +655,49 @@ PetscErrorCode set_subdomain_options(
 		SolOptDB   &opt,
 		const char *prefix,
 		const char *pc_type,
-		PetscInt    num_local_cells)
+		PetscInt    num_local_blocks)
 {
-
-	PetscInt num_local_blocks;
-
 	PetscFunctionBeginUser;
-
-	// compute number of local blocks
-	if(opt.subdomain_num_cells != 1)
-	{
-		num_local_blocks = PetscCeilInt(num_local_cells, opt.subdomain_num_cells);
-	}
-	else
-	{
-		num_local_blocks = 1;
-	}
 
 	if(!strcmp(pc_type, "bjacobi"))
 	{
+		PetscCall(set_string_option ("pc_type",                "bjacobi",         prefix));
 		PetscCall(set_integer_option("pc_bjacobi_local_blocks", num_local_blocks, prefix));
 	}
 	else if(!strcmp(pc_type, "asm"))
 	{
+		PetscCall(set_string_option ("pc_type",             "asm",                 prefix));
 		PetscCall(set_integer_option("pc_asm_local_blocks", num_local_blocks,      prefix));
 		PetscCall(set_integer_option("pc_asm_overlap",      opt.subdomain_overlap, prefix));
 		PetscCall(set_string_option ("pc_asm_type",         "restrict",            prefix));
 		PetscCall(set_string_option ("pc_asm_local_type",   "additive",            prefix));
 	}
 
+	//==========================================================================================
+	// WARNING!
+	// check wheather natural ordering gives better results compared to nested disection
+	// provide better pre-allocation parameter if more then zero levels is selected
+	//==========================================================================================
+
+	PetscCall(set_string_option ("sub_ksp_type",                    "preonly",                 prefix));
+	PetscCall(set_string_option ("sub_pc_type",                     "ilu",                     prefix));
+	PetscCall(set_integer_option("sub_pc_factor_levels",             opt.subdomain_ilu_levels, prefix));
+	PetscCall(set_string_option ("sub_pc_factor_mat_ordering_type",  "nd",                     prefix));
+	PetscCall(set_empty_option  ("sub_pc_factor_reuse_ordering",                               prefix));
+
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
 PetscErrorCode set_coarse_options(
 		SolOptDB   &opt,
-		const char *mg_prefix,
-		PetscInt    coarse_num_local_cells)
+		const char *mg_prefix)
 {
 	char *prefix;
 
 	PetscFunctionBeginUser;
 
 	// compile coarse solver prefix
-	asprintf(&prefix,"%s_%s", mg_prefix, "coarse");
+	asprintf(&prefix,"%s_mg_coarse", mg_prefix);
 
 	//==========
 	// TELESCOPE
@@ -594,10 +712,7 @@ PetscErrorCode set_coarse_options(
 		free(prefix);
 
 		// compile telescope prefixs
-		asprintf(&prefix,"%s_%s", mg_prefix, "coarse_telescope");
-
-		// update number of local cells per aggregated cpu
-		coarse_num_local_cells *= opt.coarse_reduction_factor;
+		asprintf(&prefix,"%s_mg_coarse_telescope", mg_prefix);
 	}
 
 	//====
@@ -642,7 +757,7 @@ PetscErrorCode set_coarse_options(
 	else if(!strcmp(opt.coarse_solver, "bjacobi")
 	||      !strcmp(opt.coarse_solver, "asm"))
 	{
-		PetscCall(set_subdomain_options(opt, prefix, opt.coarse_solver, coarse_num_local_cells));
+		PetscCall(set_subdomain_options(opt, prefix, opt.coarse_solver, opt.coarse_num_local_blocks));
 	}
 
 	free(prefix);
@@ -652,8 +767,7 @@ PetscErrorCode set_coarse_options(
 //-----------------------------------------------------------------------------
 PetscErrorCode set_levels_options(
 		SolOptDB   &opt,
-		const char *mg_prefix,
-		PetscInt    levels_num_local_cells[])
+		const char *mg_prefix)
 {
 	char    *prefix;
 	PetscInt i, petsc_mg_level;
@@ -662,25 +776,25 @@ PetscErrorCode set_levels_options(
 
 	if((!strcmp(opt.smoother_pc, "bjacobi")
 	||  !strcmp(opt.smoother_pc, "asm"))
-	&&  opt.subdomain_num_cells != -1)
+	&&  !opt.levels_num_blocks_constant)
 	{
 		for(i = 0, petsc_mg_level = opt.num_mg_levels-1; i < opt.num_mg_levels - 1; i++, petsc_mg_level--)
 		{
 			// compile level prefix
-			asprintf(&prefix,"%s_%s_%lld", mg_prefix, "levels", (LLD)petsc_mg_level);
+			asprintf(&prefix,"%s_mg_levels_%lld", mg_prefix, (LLD)petsc_mg_level);
 
 			// set smoother options level-wise (different number of local subdomains (blocks) per processor)
-			PetscCall(set_smoother_options(opt, prefix, levels_num_local_cells[i]));
+			PetscCall(set_smoother_options(opt, prefix, opt.levels_num_local_blocks[i]));
 
 			free(prefix);
 		}
 	}
 	else
 	{
-		asprintf(&prefix,"%s_%s", mg_prefix, "levels");
+		asprintf(&prefix,"%s_mg_levels", mg_prefix);
 
 		// set same options for all levels
-		PetscCall(set_smoother_options(opt, prefix));
+		PetscCall(set_smoother_options(opt, prefix, opt.levels_num_blocks_constant));
 
 		free(prefix);
 	}
@@ -690,9 +804,7 @@ PetscErrorCode set_levels_options(
 //-----------------------------------------------------------------------------
 PetscErrorCode set_custom_mg_options(
 		SolOptDB   &opt,
-		const char *prefix,
-		PetscInt    coarse_num_local_cells,
-		PetscInt    levels_num_local_cells[])
+		const char *prefix)
 {
 	PetscFunctionBeginUser;
 
@@ -701,11 +813,14 @@ PetscErrorCode set_custom_mg_options(
 		PetscCall(set_empty_option("pc_view", prefix));
 	}
 
+	// number of multigrid levels
+	PetscCall(set_integer_option("pc_mg_levels", opt.num_mg_levels, prefix));
+
 	// setup coarse solver
-	PetscCall(set_coarse_options(opt, prefix, coarse_num_local_cells));
+	PetscCall(set_coarse_options(opt, prefix));
 
 	// setup level smoothers
-	PetscCall(set_levels_options(opt, prefix, levels_num_local_cells));
+	PetscCall(set_levels_options(opt, prefix));
 
 	PetscFunctionReturn(0);
 }
@@ -787,3 +902,60 @@ PetscErrorCode set_empty_option(const char *key, const char *prefix)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+PetscErrorCode PetscOptionsReadFromFile(FB *fb)
+{
+	// * load additional options from input file
+	// * push command line options to the end of database
+	// (PETSc prioritizes options appearing LAST)
+
+	PetscInt  jj, i, lnbeg, lnend;
+	char     *line, **lines, *key, *val, *option;
+
+	PetscFunctionBeginUser;
+
+	// setup block access mode
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<PetscOptionsStart>", "<PetscOptionsEnd>"));
+
+	if(fb->nblocks > 1)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many petsc options blocks. Only one is allowed");
+	}
+
+	// get line buffer
+	line = fb->lbuf;
+
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		lines = FBGetLineRanges(fb, &lnbeg, &lnend);
+
+		for(i = lnbeg; i < lnend; i++)
+		{
+			// copy line for parsing
+			strcpy(line, lines[i]);
+
+			// get key
+			key = strtok(line, " ");
+
+			if(!key) continue;
+
+			// get value
+			val = strtok(NULL, " ");
+
+			if(!val) option = key;
+			else     asprintf(&option, "%s %s", key, val);
+
+			PetscCall(PetscOptionsInsertString(NULL, option));
+
+			if(val) free(option);
+		}
+
+		fb->blockID++;
+	}
+
+	PetscCall(FBFreeBlocks(fb));
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+
+

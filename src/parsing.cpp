@@ -12,16 +12,15 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "parsing.h"
-#include "options.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
+PetscErrorCode FBLoad(FB **pfb)
 {
 	FB        *fb;
 	FILE      *fp;
 	size_t    sz;
 	PetscBool found;
-	char      buffer[_str_len_], *filename, *all_options;
+	char      filename[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -31,22 +30,14 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
-		if(!restartFileName)
-		{
-			// check whether input file is specified
-			ierr = PetscOptionsGetCheckString("-ParamFile", buffer, &found); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
-			if(found != PETSC_TRUE)
-			{
-				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified. You must add the -ParamFile option to specify a LaMEM input file as in:  ./LaMEM -ParamFile your_input_file.dat \n");
-			}
+		// check whether input file is specified
+		ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
 
-			filename = buffer;
-		}
-		else
+		if(found != PETSC_TRUE)
 		{
-			// set restart input file
-			filename = restartFileName;
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified. You must add the -ParamFile option to specify a LaMEM input file as in:  ./LaMEM -ParamFile your_input_file.dat \n");
 		}
 
 		// open input file
@@ -58,10 +49,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
 		}
 
-		if(DisplayOutput)
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "Parsing input file : %s \n", filename);
-		}
+		PetscPrintf(PETSC_COMM_WORLD, "Parsing input file : %s \n", filename);
 
 		// get file size
 		fseek(fp, 0L, SEEK_END);
@@ -103,39 +91,11 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput, char *restartFileName)
 	// parse buffer
 	ierr = FBParseBuffer(fb); CHKERRQ(ierr);
 
-	// copy all command line and previously specified options to buffer
-	ierr = PetscOptionsGetAll(NULL, &all_options);  CHKERRQ(ierr);
-
-	// remove command line options from database
-	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
-
-	// set simplified solver options from the input file
-	ierr = solverOptionsSetDefaults(fb); CHKERRQ(ierr);
-
-	// load additional options from file
-	ierr = PetscOptionsReadFromFile(fb, DisplayOutput); CHKERRQ(ierr);
-
-	// push command line options to the end of database (priority)
-	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
-	
-	// set required options (priority)
-	ierr = solverOptionsSetRequired(); CHKERRQ(ierr);
-
 	// print message
-	if(DisplayOutput)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file \n");
-	}
-
-	// clean
-	ierr = PetscFree(all_options); CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file \n");
 
 	// return pointer
 	(*pfb) = fb;
-
-	if (DisplayOutput &&  ISRankZero(PETSC_COMM_WORLD)){
-		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-	}
 
 	PetscFunctionReturn(0);
 }
@@ -712,116 +672,6 @@ PetscErrorCode getStringParam(
 		if     (ptype == _REQUIRED_) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
 		else if(ptype == _OPTIONAL_) PetscFunctionReturn(0);
 	}
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
-// PETSc options parsing functions
-//-----------------------------------------------------------------------------
-PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
-{
-	// * load additional options from input file
-	// * push command line options to the end of database
-	// (PETSc prioritizes options appearing LAST)
-
-	PetscInt  jj, i, lnbeg, lnend;
-	char     *line, **lines, *key, *val, *option;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	if(!fb) PetscFunctionReturn(0);
-
-
-	// setup block access mode
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PetscOptionsStart>", "<PetscOptionsEnd>"); CHKERRQ(ierr);
-
-	// get line buffer
-	line = fb->lbuf;
-
-	for(jj = 0; jj < fb->nblocks; jj++)
-	{
-		lines = FBGetLineRanges(fb, &lnbeg, &lnend);
-
-		for(i = lnbeg; i < lnend; i++)
-		{
-			// copy line for parsing
-			strcpy(line, lines[i]);
-
-			// get key
-			key = strtok(line, " ");
-
-			if(!key) continue;
-
-			// get value
-			val = strtok(NULL, " ");
-
-			if(!val) option = key;
-			else     asprintf(&option, "%s %s", key, val);
-
-			// add to PETSc options
-			if (DisplayOutput){
-				PetscPrintf(PETSC_COMM_WORLD, "   Adding PETSc option: %s\n", option);
-			}
-			ierr = PetscOptionsInsertString(NULL, option); CHKERRQ(ierr);
-
-			if(val) free(option);
-		}
-
-		fb->blockID++;
-	}
-
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
-PetscErrorCode PetscOptionsReadRestart(FILE *fp)
-{
-	// load options from restart file, replace existing
-
-	size_t len;
-	char   *all_options;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
-
-	// length already includes terminating null character
-	fread(&len, sizeof(size_t), 1, fp);
-
-	ierr = PetscMalloc(sizeof(char)*len, &all_options); CHKERRQ(ierr);
-
-	fread(all_options, sizeof(char)*len, 1, fp); CHKERRQ(ierr);
-
-	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
-
-	ierr = PetscFree(all_options); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
-PetscErrorCode PetscOptionsWriteRestart(FILE *fp)
-{
-	// save all existing options to restart file
-
-	size_t len;
-	char   *all_options;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	ierr = PetscOptionsGetAll(NULL, &all_options);  CHKERRQ(ierr);
-
-	// include terminating null character
-	len = strlen(all_options) + 1;
-
-	fwrite(&len, sizeof(size_t), 1, fp);
-
-	fwrite(all_options, sizeof(char)*len, 1, fp);
-
-	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
