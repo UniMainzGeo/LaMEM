@@ -746,7 +746,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscLogDouble t;
 	char           *filename, file[_str_len_];
 	PetscScalar    *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
-	PetscInt       imark, nummark;
+	PetscInt       imark, nummark, nfields;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -763,8 +763,15 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
 
-	// read (and ignore) the silent undocumented file header
+	// the file header signals the version of the marker file
 	ierr = PetscBinaryRead(fd, &header, 1, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	if((PetscInt)header == 1211215) {
+		// version with APS as a field
+		nfields = 6;
+	} else {
+		// version without APS
+		nfields = 5;
+	}
 
 	// read number of local of markers
 	ierr = PetscBinaryRead(fd, &s_nummark, 1, NULL, PETSC_SCALAR); CHKERRQ(ierr);
@@ -777,10 +784,10 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	actx->nummark = nummark;
 
 	// allocate marker buffer
-	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)(nfields*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
 
 	// read markers into buffer
-	ierr = PetscBinaryRead(fd, markbuf, 5*actx->nummark, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, markbuf, nfields*actx->nummark, NULL, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// destroy file handle & file name
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
@@ -792,7 +799,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	Tshift = actx->jr->scal->Tshift;
 
 	// copy buffer to marker storage
-	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 5)
+	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += nfields)
 	{
 		P        =           &actx->markers[imark];
 		P->X[0]  =           markptr[0]/chLen;
@@ -800,6 +807,10 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 		P->X[2]  =           markptr[2]/chLen;
 		P->phase = (PetscInt)markptr[3];
 		P->T     =          (markptr[4] + Tshift)/chTemp;
+		if(nfields == 6) 
+		{
+			P->APS =         markptr[5];
+		}
 	}
 
 	// free marker buffer
