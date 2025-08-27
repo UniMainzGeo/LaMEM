@@ -276,9 +276,9 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "Advection parameters:\n");
 
 	// print advection scheme
- 	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
+	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
 	if     (actx->advect == ADV_NONE)      PetscPrintf(PETSC_COMM_WORLD, "no advection (no markers)\n");
- 	if     (actx->advect == BASIC_EULER)   PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order (basic implementation)\n");
+	if     (actx->advect == BASIC_EULER)   PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order (basic implementation)\n");
 	else if(actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
 	else if(actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
 
@@ -286,13 +286,13 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
  	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic_x,y,z)");
  	}
-	else{
+	else
+	{
 		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     : %lld %lld %lld \n",(LLD)fs->dsx.periodic,(LLD)fs->dsy.periodic,(LLD)fs->dsz.periodic);
-   		 
-	 }
+	}
 
- 	// apply default setup in case advection is deactivated
- 	if(actx->advect == ADV_NONE)
+	// apply default setup in case advection is deactivated
+	if(actx->advect == ADV_NONE)
 	{
 		// free surface must be deactivated
 		if(actx->surf->UseFreeSurf)
@@ -1099,9 +1099,9 @@ PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
 	PetscScalar *X;
 	PetscInt     i;
 	PetscInt     ptx, pty, ptz;
-    PetscScalar  bx,  by, bz;
-    PetscScalar  ex,  ey, ez;
-    PetscScalar  dx,  dy, dz;
+	PetscScalar  bx,  by, bz;
+	PetscScalar  ex,  ey, ez;
+	PetscScalar  dx,  dy, dz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1115,43 +1115,43 @@ PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
 	ptz = fs->dsz.periodic;
 
 	// get current coordinates of the mesh boundaries
-    ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
-    // get mesh sizes
-    dx = ex - bx;
-    dy = ey - by;
-    dz = ez - bz;
+	// get mesh sizes
+	dx = ex - bx;
+	dy = ey - by;
+	dz = ez - bz;
 
-    if(ptx)
-    {
-    	for(i = 0; i < actx->nsend; i++)
-    	{
-    		X = actx->sendbuf[i].X;
+	if(ptx)
+	{
+		for(i = 0; i < actx->nsend; i++)
+		{
+			X = actx->sendbuf[i].X;
 
-    		if(X[0] < bx) X[0] += dx;
-    		if(X[0] > ex) X[0] -= dx;
-    	}
-    }
-    if(pty)
-    {
-    	for(i = 0; i < actx->nsend; i++)
-    	{
-    		X = actx->sendbuf[i].X;
+			if(X[0] < bx) X[0] += dx;
+			if(X[0] > ex) X[0] -= dx;
+		}
+	}
+	if(pty)
+	{
+		for(i = 0; i < actx->nsend; i++)
+		{
+			X = actx->sendbuf[i].X;
 
-    		if(X[1] < by) X[1] += dy;
-    		if(X[1] > ey) X[1] -= dy;
-    	}
-    }
-    if(ptz)
-    {
-    	for(i = 0; i < actx->nsend; i++)
-    	{
-    		X = actx->sendbuf[i].X;
+			if(X[1] < by) X[1] += dy;
+			if(X[1] > ey) X[1] -= dy;
+		}
+	}
+	if(ptz)
+	{
+		for(i = 0; i < actx->nsend; i++)
+		{
+			X = actx->sendbuf[i].X;
 
-    		if(X[2] < bz) X[2] += dz;
-    		if(X[2] > ez) X[2] -= dz;
-    	}
-    }
+			if(X[2] < bz) X[2] += dz;
+			if(X[2] > ez) X[2] -= dz;
+		}
+	}
 
 	PetscFunctionReturn(0);
 }

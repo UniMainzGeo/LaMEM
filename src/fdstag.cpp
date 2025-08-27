@@ -856,6 +856,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	PetscInt         Nx,   Ny,   Nz;
 	PetscInt         Px,   Py,   Pz;
 	MeshSeg1D        msx,  msy,  msz;
+	DMBoundaryType   bcx;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -886,9 +887,13 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	Ny = msy.tcels + 1;
 	Nz = msz.tcels + 1;
 
+	// set boundary type in x direction
+	if(fs->dsx.periodic) { bcx = DM_BOUNDARY_PERIODIC; }
+	else                 { bcx = DM_BOUNDARY_GHOSTED; }
+
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
 
 	// get actual number of processors (can be different compared to given)
@@ -907,7 +912,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	if(complete_build)
 	{
 		// create corner, face and edge DMDA objects
-		ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+		ierr = FDSTAGCreateDMDA(fs, bcx, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
 		// setup indexing data
 		ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
@@ -967,9 +972,10 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 {
-	PetscInt *lx,  *ly,  *lz;
-	PetscInt  Nx,   Ny,   Nz;
-	PetscInt  Px,   Py,   Pz;
+	PetscInt      *lx,  *ly,  *lz;
+	PetscInt       Nx,   Ny,   Nz;
+	PetscInt       Px,   Py,   Pz;
+	DMBoundaryType bcx;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -997,16 +1003,20 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	ierr = Discret1DGetNumCells(&fs->dsy, &ly); CHKERRQ(ierr);
 	ierr = Discret1DGetNumCells(&fs->dsz, &lz); CHKERRQ(ierr);
 
+	// set boundary type in x direction
+	if(fs->dsx.periodic) { bcx = DM_BOUNDARY_PERIODIC; }
+	else                 { bcx = DM_BOUNDARY_GHOSTED; }
+
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_CEN); CHKERRQ(ierr);
 
 	// get number of nodes per processor (only different on the last processor)
 	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
 
 	// create corner, face and edge DMDA objects
-	ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+	ierr = FDSTAGCreateDMDA(fs, bcx, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
 	// delete temporary arrays
 	ierr = PetscFree(lx); CHKERRQ(ierr);
@@ -1040,6 +1050,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	const PetscInt  *plx,  *ply,  *plz;
 	PetscInt        *lx,   *ly,   *lz;
 	Discret1D       *fdsx, *fdsy, *fdsz;
+	DMBoundaryType   bcx;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1066,6 +1077,10 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	if(Ny > 2) { Ny /= 2;  for(i = 0; i < Py; i++) { ly[i] /= 2; } }
 	if(Nz > 2) { Nz /= 2;  for(i = 0; i < Pz; i++) { lz[i] /= 2; } }
 
+	// set boundary type in x direction
+	if(fine->dsx.periodic) { bcx = DM_BOUNDARY_PERIODIC; }
+	else                   { bcx = DM_BOUNDARY_GHOSTED;  }
+
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
@@ -1078,7 +1093,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
 
 	// create corner, face and edge DMDA objects
-	ierr = FDSTAGCreateDMDA(coarse, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+	ierr = FDSTAGCreateDMDA(coarse, bcx, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
 	// create index arrays
 	ierr = DOFIndexCreate(&coarse->dof, coarse->DA_CEN, coarse->DA_X, coarse->DA_Y, coarse->DA_Z); CHKERRQ(ierr);
@@ -1144,7 +1159,8 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
+PetscErrorCode FDSTAGCreateDMDA(
+	FDSTAG   *fs, DMBoundaryType bcx,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz)
@@ -1181,21 +1197,21 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
 	// X face (DA_X) with boundary ghost points (1-layer stencil box)
 	ly[Py-1]--; lz[Pz-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
 	ly[Py-1]++; lz[Pz-1]++;
 
 	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; lz[Pz-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
 	lx[Px-1]++; lz[Pz-1]++;
 
 	// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; ly[Py-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
 	lx[Px-1]++; ly[Py-1]++;
 

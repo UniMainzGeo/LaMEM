@@ -30,7 +30,6 @@ struct MeshSeg1D
 	PetscInt    tcels;                    // total number of cells
 	PetscInt    uniform;                  // uniform grid flag
 	PetscInt    periodic;                 // periodic topology flag
-
 };
 
 //---------------------------------------------------------------------------
@@ -209,7 +208,8 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine);
 
 PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine);
 
-PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
+PetscErrorCode FDSTAGCreateDMDA(
+	FDSTAG   *fs, DMBoundaryType bcx,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz);
