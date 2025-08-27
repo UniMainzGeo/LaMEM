@@ -35,6 +35,7 @@ struct SolOptDB
 	PetscInt    use_mat_free_jac               =  0;
 	char        stokes_solver[_str_len_]       = "block_direct";             // [block_direct, coupled_mg, block_mg, wbfbt]
 	char        direct_solver_type[_str_len_]  = "superlu_dist";             // [mumps, superlu_dist, lu]
+	PetscScalar block_tolerances[2]            = { 1e-2, 30 } ;              // rtol, maxit (fgmres settings for block solves in block_mg and wbfbt)
 	PetscScalar penalty                        =  1e3;                       // (only for block_direct)
 	PetscInt    num_mg_levels                  = -1;                         // (-1 = automatic setting)
 	PetscInt    num_mat_free_levels            =  0;                         // (only for coupled_mg)
@@ -46,8 +47,8 @@ struct SolOptDB
 	PetscInt    smoother_num_sweeps            =  20;                        // maxit
 	PetscInt    coarse_reduction_factor        = -1;                         // (-1 = automatic setting)
 	PetscInt    coarse_cells_per_cpu           =  2048;                      // (-1 = all cpus are used by coarse solve)
-	char        coarse_solver[_str_len_]       = "direct";                   // [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use gmres)
-	PetscScalar coarse_tolerances[2]           = { 1e-3, 100 } ;             // rtol, maxit (gmres settings for hypre, bjacobi and asm)
+	char        coarse_solver[_str_len_]       = "direct";                   // [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use fgmres)
+	PetscScalar coarse_tolerances[2]           = { 1e-2, 30 } ;              // rtol, maxit (fgmres settings for hypre, bjacobi and asm)
 	PetscInt    subdomain_overlap              =  1;                         // (only for asm)
 	PetscInt    subdomain_ilu_levels           =  0;                         // (only for bjacobi and asm)
 	PetscInt    subdomain_num_cells            = -1;                         // (only for bjacobi and asm) (-1 = one subdomain per cpu)
@@ -61,8 +62,6 @@ struct SolOptDB
 
 //-----------------------------------------------------------------------------
 
-PetscErrorCode setSolverOptions(FB *fb);
-
 PetscErrorCode solverOptionsSetDefaults(FB *fb);
 
 PetscErrorCode solverOptionsReadFromFile(FB *fb, SolOptDB &opt);
@@ -71,13 +70,13 @@ PetscErrorCode solverOptionsCheck(SolOptDB &opt);
 
 PetscErrorCode get_num_mg_levels(SolOptDB &opt, FDSTAG *fs);
 
+PetscErrorCode get_coarse_reduction_factor(
+		SolOptDB &opt,
+		PetscInt  coarse_num_local_cells);
+
 PetscErrorCode get_num_local_blocks(
 		SolOptDB &opt,
 		PetscInt  levels_num_local_cells[],
-		PetscInt  coarse_num_local_cells);
-
-PetscErrorCode get_coarse_reduction_factor(
-		SolOptDB &opt,
 		PetscInt  coarse_num_local_cells);
 
 PetscErrorCode set_default_smoother(SolOptDB &opt);
@@ -107,6 +106,8 @@ PetscErrorCode set_custom_mg_options(
 
 PetscErrorCode set_standard_mg_options(SolOptDB &opt, const char *prefix);
 
+PetscErrorCode set_ksp_solver(const char *prefix, const char *type, PetscScalar rtol, PetscScalar maxit);
+
 PetscErrorCode set_tolerances(const char *prefix, PetscScalar tolerances[3]);
 
 PetscErrorCode set_integer_option(const char *key, const PetscInt val, const char *prefix = NULL);
@@ -116,6 +117,12 @@ PetscErrorCode set_scalar_option(const char *key, const PetscScalar val, const c
 PetscErrorCode set_string_option(const char *key, const char *val, const char *prefix = NULL);
 
 PetscErrorCode set_empty_option(const char *key, const char *prefix = NULL);
+
+//-----------------------------------------------------------------------------
+// Driver routines
+//-----------------------------------------------------------------------------
+
+PetscErrorCode setSolverOptions(FB *fb);
 
 PetscErrorCode PetscOptionsReadFromFile(FB *fb);
 

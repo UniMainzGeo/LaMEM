@@ -14,6 +14,7 @@
 #include "options.h"
 #include "adjoint.h"
 #include "phase.h"
+
 //---------------------------------------------------------------------------
 static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 //---------------------------------------------------------------------------
@@ -21,7 +22,7 @@ int main(int argc, char **argv)
 {
 	FB       *fb;
 	ModParam IOparam;
-	char      str[_str_len_];
+	char     str[_str_len_];
 
 	PetscErrorCode ierr;
 
@@ -34,17 +35,11 @@ int main(int argc, char **argv)
 
 	IOparam.use = _none_;
 
-	//==========================================================================================
-	// WARNING!!!
-	// the following two functions are called here due poorly structured adjoint implementation
-	// the proper place to call them would be of course inside LaMEMLibMain function
-	//
 	// load and parse input file
 	ierr = FBLoad(&fb); CHKERRQ(ierr);
-	//
+
 	// set solver options
 	ierr = setSolverOptions(fb); CHKERRQ(ierr);
-	//==========================================================================================
 
 	IOparam.fb = fb;
 

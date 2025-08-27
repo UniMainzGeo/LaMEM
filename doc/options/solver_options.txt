@@ -160,9 +160,11 @@ Examples
 
 	-bf_vs_type user
 
+	-vs_pc_view
 	-vs_ksp_type preonly
 	-vs_pc_type lu
 	-vs_pc_factor_mat_solver_type superlu_dist
+	
 
 ================================================================================
 
@@ -175,7 +177,9 @@ Examples
 	-bf_vs_type mg
 	-bf_schur_type inv_eta
 
-	-vs_ksp_type preonly
+	-vs_ksp_type fgmres
+	-vs_ksp_rtol 0.01
+	-vs_ksp_max_it 30
 
 ================================================================================
 
@@ -189,8 +193,13 @@ Examples
 	-bf_vs_type mg
 	-bf_schur_type wbfbt
 
-	-vs_ksp_type preonly
-	-ks_ksp_type preonly
+	-vs_ksp_type fgmres
+	-vs_ksp_rtol 0.01
+	-vs_ksp_max_it 30
+	
+	-ks_ksp_type fgmres
+	-ks_ksp_rtol 0.01
+	-ks_ksp_max_it 30
 
 ================================================================================
 
@@ -230,6 +239,7 @@ Examples
 
 	(use default coarse solver settings or setup similar options as in [7])
 	
+	-ks_pc_view
 	-ks_pc_type mg
 	-ks_pc_mg_levels 3
 	-ks_pc_mg_galerkin
@@ -249,8 +259,12 @@ Examples
 	-gmg_mg_coarse_telescope_pc_type lu
 	-gmg_mg_coarse_telescope_pc_factor_mat_solver_type superlu_dist
 
-	[B] hypre boomeramg
-	-gmg_mg_coarse_telescope_ksp_type preonly
+	[B] gmres solver (for hypre, asm, and bjacobi)
+	-gmg_mg_coarse_telescope_ksp_type gmres
+	-gmg_mg_coarse_telescope_ksp_max_it 30
+	-gmg_mg_coarse_telescope_ksp_rtol 0.01
+
+	[C] hypre boomeramg
 	-gmg_mg_coarse_telescope_pc_type hypre
 	-gmg_mg_coarse_telescope_pc_hypre_type boomeramg
 	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_agg_nl 5
@@ -261,16 +275,14 @@ Examples
 	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_eu_bj
 	-gmg_mg_coarse_telescope_pc_hypre_boomeramg_coarsen_type HMIS 
 
-	[C] ASM
-	-gmg_mg_coarse_telescope_ksp_type gmres
+	[D] ASM
 	-gmg_mg_coarse_telescope_pc_type asm
 	-gmg_mg_coarse_telescope_pc_asm_local_blocks 1
 	-gmg_mg_coarse_telescope_pc_asm_overlap 2
 	-gmg_mg_coarse_telescope_pc_asm_type restrict
 	-gmg_mg_coarse_telescope_pc_asm_local_type additive
 
-	[D] block Jacobi
-	-gmg_mg_coarse_telescope_ksp_type gmres
+	[E] block Jacobi
 	-gmg_mg_coarse_telescope_pc_type bjacobi
 	-gmg_mg_coarse_telescope_pc_bjacobi_local_blocks 1
 	
@@ -278,18 +290,18 @@ Examples
 
 [8] subdomain solver settings (ASM and block Jacobi)
 
-	-sub_ksp_type preonly
+	-gmg_mg_coarse_telescope_sub_ksp_type preonly
 	
 	[A] incomplete factorization
 	
-	-sub_pc_type ilu
-	-sub_pc_factor_levels 1
-	-sub_pc_factor_mat_ordering_type nd
-	-sub_pc_factor_reuse_ordering
+	-gmg_mg_coarse_telescope_sub_pc_type ilu
+	-gmg_mg_coarse_telescope_sub_pc_factor_levels 1
+	-gmg_mg_coarse_telescope_sub_pc_factor_mat_ordering_type nd
+	-gmg_mg_coarse_telescope_sub_pc_factor_reuse_ordering
 
 	[B] direct solver
 
-	-sub_pc_type lu
+	-gmg_mg_coarse_telescope_sub_pc_type lu 
 		
 ================================================================================
 
@@ -297,6 +309,8 @@ Examples
 
 	-its_ksp_type gmres
 	-its_ksp_rtol 1e-8
+	
+	-its_pc_view
 	-its_pc_type mg
 	-its_pc_mg_levels 3
 	-its_pc_mg_galerkin
@@ -310,5 +324,6 @@ Examples
 	-ts_ksp_type gmres
 	-ts_ksp_rtol 1e-8
 	-ts_ksp_atol_auto
+	-ts_pc_view
 	
 ================================================================================

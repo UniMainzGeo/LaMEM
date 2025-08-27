@@ -652,7 +652,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 				//================================================================================================================
 				// Compute the adjoint gradients
 				//
-				//  This is done here, as the adjoint should be cmputed with the current residual that does not take advection etc.
+				//  This is done here, as the adjoint should be computed with the current residual that does not take advection etc.
 				//  into account. It does compute it every dt; one can perhaps only activate it for the last dt.
 				//================================================================================================================
 
@@ -954,6 +954,12 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	ierr = KSPSetOperators(tksp, jr->Att, jr->Att); CHKERRQ(ierr);
 	ierr = KSPSetUp(tksp);                          CHKERRQ(ierr);
 	ierr = KSPSolve(tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
+
+	// view solver
+	if(!dt)
+	{
+		PetscCall(ViewSolver(tksp));
+	}
 
 	// destroy initial temperature solver
 	ierr = KSPDestroy(&tksp); CHKERRQ(ierr);

@@ -452,8 +452,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD, ">\n");
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
-
 	// count active output vectors
 	pvout->nvec = OutMaskCountActive(omask);
 

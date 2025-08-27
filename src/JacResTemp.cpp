@@ -21,6 +21,7 @@
 #include "matrix.h"
 #include "surf.h"
 #include "dike.h"
+#include "tools.h"
 
 //---------------------------------------------------------------------------
 
@@ -244,6 +245,8 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	PetscCall(VecDestroy(&jr->dT));
 
 	PetscCall(VecDestroy(&jr->ge));
+
+	PetscCall(ViewSolver(jr->tksp));
 
 	PetscCall(KSPDestroy(&jr->tksp));
 

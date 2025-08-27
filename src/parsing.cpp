@@ -94,6 +94,8 @@ PetscErrorCode FBLoad(FB **pfb)
 	// print message
 	PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file \n");
 
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+
 	// return pointer
 	(*pfb) = fb;
 
@@ -636,6 +638,10 @@ PetscErrorCode getStringParam(
 		char        *str,        // output string
 		const char  *_default_)  // default value (optional)
 {
+	// default ->  NULL             str -> cleared
+	// default -> "_none_"          str -> not cleared
+	// default ->  any other value  str -> default
+
 	PetscBool found;
 	char     *dbkey;
 
@@ -645,8 +651,8 @@ PetscErrorCode getStringParam(
 	found = PETSC_FALSE;
 
 	// set defaults
-	if(_default_) { ierr = PetscStrncpy(str, _default_, _str_len_); CHKERRQ(ierr); }
-	else          { ierr = PetscMemzero(str,            _str_len_); CHKERRQ(ierr); }
+	if(_default_) { if(strcmp(_default_, "_none_")) { PetscCall(PetscStrncpy(str, _default_, _str_len_)); } }
+	else          {                                   PetscCall(PetscMemzero(str,            _str_len_)); }
 
 	if(!fb->nblocks)
 	{

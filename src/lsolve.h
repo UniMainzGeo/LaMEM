@@ -145,5 +145,6 @@ PetscErrorCode PCDataUserSetup(PCDataUser *pc, JacRes *jr);
 
 PetscErrorCode PCDataUserApply(Mat P, Vec r, Vec x);
 
-//--------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+
 #endif

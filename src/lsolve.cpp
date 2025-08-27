@@ -18,6 +18,7 @@
 #include "multigrid.h"
 #include "lsolve.h"
 #include "JacRes.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 PetscErrorCode PCParamSetFromOptions(PCParam *p)
 {
@@ -382,6 +383,8 @@ PetscErrorCode PCDataBFDestroy(PCDataBF *pc)
 
 	ierr = PMatBlockDestroy(&pc->pm); CHKERRQ(ierr);
 
+	PetscCall(ViewSolver(pc->vksp));
+
 	ierr = KSPDestroy(&pc->vksp);  CHKERRQ(ierr);
 
 	if(pc->param->vs_type == _VEL_MG_)
@@ -391,6 +394,8 @@ PetscErrorCode PCDataBFDestroy(PCDataBF *pc)
 
 	if(pc->param->sp_type == _SCHUR_WBFBT_)
 	{
+		PetscCall(ViewSolver(pc->pksp));
+
 		ierr = KSPDestroy(&pc->pksp); CHKERRQ(ierr);
 	}
 
@@ -656,5 +661,5 @@ PetscErrorCode PCDataUserApply(Mat P, Vec r, Vec x)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
