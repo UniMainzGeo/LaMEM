@@ -32,6 +32,7 @@ struct PVPtr
 	PetscInt  Pressure;
 	PetscInt  Phase;
 	PetscInt  MeltFraction;
+	PetscInt  APS;
 	PetscInt  ID;
 	PetscInt  Active;
 	PetscInt  Grid_mf;
