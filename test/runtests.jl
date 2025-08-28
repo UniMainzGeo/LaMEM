@@ -1054,5 +1054,39 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
 
+@testset "t33_Initial_APS" begin
+    cd(test_dir)
+    dir = "t33_Initial_APS";
+
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
+    
+    # Test backwards compatibility
+    #   Read marker file created before APS was added
+    #   No passive tracer output
+    @test perform_lamem_test(dir,"t33_setup.dat","t33_no_APS.expected", args="-mark_load_file ./mdb -out_dir ./no_APS",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+    #   APS output on passive tracers works even if no initial APS is set
+    @test perform_lamem_test(dir,"t33_setup.dat","t33_no_APS.expected", args="-mark_load_file ./mdb -out_ptr 1 -out_ptr_APS 1 -out_dir ./no_APS",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+
+    # Test initial accumulated plastic strain
+    #   Read marker file created by GMG after APS capability was added, APS=0.5 everywhere
+    #   No passive tracer output
+    @test perform_lamem_test(dir,"t33_setup.dat","t33_APS_0p5.expected", args="-mark_load_file ./mdb_APS_0p5 -out_dir ./APS_0p5",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+    #   APS output on passive tracers
+    @test perform_lamem_test(dir,"t33_setup.dat","t33_APS_0p5.expected", args="-mark_load_file ./mdb_APS_0p5 -out_ptr 1 -out_ptr_APS 1 -out_dir ./APS_0p5",
+    keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+
+    # Test that plast_strain values are correct in both cases
+    #   Includes pvd, marker, and passive tracer output
+    include(joinpath(dir,"t33_analytics.jl"))
+    mean_APS0, mean_APS1 = compare_APS(dir, "t33_setup.dat")
+    #  Verify APS values after 2 timesteps
+    @test mean_APS0 == 0.0
+    @test mean_APS1 == 0.5
+end
+
 end
 

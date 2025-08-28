@@ -1,0 +1,178 @@
+#===============================================================================
+# Scaling
+#===============================================================================
+
+    units = none
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+    nel_x   =  10
+    nel_y   =  10
+    nel_z   =  10
+
+# Coordinates of all segments (including start and end points)
+    coord_x =  -1.0 1.0
+    coord_y =  -1.0 1.0
+    coord_z =  -1.0 1.0
+
+# Number of markers per cell
+    nmark_x =  3
+    nmark_y =  3
+    nmark_z =  3
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+    time_end         =  1.0     # simulation end time
+    dt_max           =  0.2     # maximum time step
+    nstep_max        =  2     # maximum allowed number of steps (lower bound: time_end/dt_max)
+    nstep_rdb        =  100     # save restart database every n steps
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+
+# temperature on the top & bottom boundaries [usually constant]
+    temp_top   =  1000.0
+    temp_bot   =  1000.0
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+    gravity          =  0.0 0.0 -1.0     # gravitational acceleration vector
+    init_guess       =  1     # create an initial guess step (using constant viscosity `eta_ref` before starting the simulation
+    p_lim_plast      =  1     # limit pressure at first iteration for plasticity
+    act_p_shift      =  1     # pressure shift activation flag (enforce zero pressure on average in the top cell layer); note: this overwrites p_shift above!
+    eta_ref          =  1     # Reference viscosity (used for the initial guess) [Pas]
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+    SolverType       =  direct     # solver employed [`"direct"` or `"multigrid"`]
+    DirectSolver     =  mumps     # mumps/superlu_dist/pastix/umfpack  (requires these external PETSc packages to be installed!)
+    DirectPenalty    =  10000.0     # penalty parameter [employed if we use a direct solver]
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+    msetup           =  files     # Setup type - can be `geom` (phases are assigned from geometric primitives, using `add_geom!(model, ...)`), `files` (from julia input), `polygons` (from geomIO input, which requires `poly_file` to be specified) 
+    rand_noise       =  1     # add random noise to the particle location
+    bg_phase         =  0     # background phase ID
+    advect           =  rk2     # advection scheme; options=`none` (no advection); `basic` (Euler classical implementation [default]); `Euler` (Euler explicit in time); `rk2` (Runge-Kutta 2nd order in space)
+    interp           =  stag     # velocity interpolation scheme; options = `stag` (trilinear interpolation from FDSTAG points), `minmod` ( MINMOD interpolation to nodes, trilinear interpolation to markers + correction), `stagp` ( STAG_P empirical approach by T. Gerya) 
+    mark_ctrl        =  subgrid     # marker control type; options are `subgrid` (default; marker control enforced over fine scale grid), `none` (none), `basic` (AVD for cells + corner insertion), and `avd` (pure AVD for all control volumes)
+    nmark_lim        =  10 100     # min/max number per cell (marker control)
+    nmark_sub        =  3     # max number of same phase markers per subcell (subgrid marker control)
+
+#===============================================================================
+# Output options
+#===============================================================================
+
+    out_file_name    =  output     # output file name
+    out_dir          =  output_markers     # output directory
+    write_VTK_setup  =  true     # write VTK initial model setup
+    out_pvd          =  1     # activate writing .pvd file
+    out_phase        =  1     # dominant phase
+    out_density      =  1     # density
+    out_visc_total   =  1     # total (viscoelastoplastic) viscosity
+    out_visc_creep   =  1     # creep viscosity
+    out_velocity     =  1     # velocity
+    out_pressure     =  1     # (dynamic) pressure
+    out_tot_press    =  0     # total pressure
+    out_eff_press    =  0     # effective pressure
+    out_over_press   =  0     # out_over_press
+    out_litho_press  =  0     # lithospheric pressure
+    out_pore_press   =  0     # pore pressure
+    out_temperature  =  1     # temperature
+    out_dev_stress   =  0     # deviatoric strain rate tensor
+    out_j2_dev_stress  =  1     # second invariant of deviatoric stress tensor
+    out_strain_rate  =  0     # deviatoric strain rate tensor
+    out_j2_strain_rate  =  1     # second invariant of strain rate tensor
+    out_shmax        =  0     # sh max
+    out_ehmax        =  0     # eh max
+    out_yield        =  0     # yield stress
+    out_rel_dif_rate  =  0     # relative proportion of diffusion creep strainrate
+    out_rel_dis_rate  =  0     # relative proportion of dislocation creep strainrate
+    out_rel_prl_rate  =  0     # relative proportion of peierls creep strainrate
+    out_rel_pl_rate  =  0     # relative proportion of plastic strainrate
+    out_plast_strain  =  1     # accumulated plastic strain
+    out_plast_dissip  =  0     # plastic dissipation
+    out_tot_displ    =  0     # total displacement
+    out_moment_res   =  0     # momentum residual
+    out_cont_res     =  0     # continuity residual
+    out_energ_res    =  0     # energy residual
+    out_melt_fraction  =  0     # Melt fraction
+    out_fluid_density  =  0     # fluid density
+    out_conductivity  =  0     # conductivity
+    out_vel_gr_tensor  =  0     # velocity gradient tensor
+    out_surf         =  0     # activate surface output
+    out_surf_pvd     =  0     # activate writing .pvd file
+    out_surf_velocity  =  0     # surface velocity
+    out_surf_topography  =  0     # surface topography 
+    out_surf_amplitude  =  0     # amplitude of topography (=topo-average(topo))
+    out_mark         =  1     # activate marker output
+    out_mark_pvd     =  1     # activate writing .pvd file
+    out_mark_APS     =  1     # output accumulated plastic strain on markers
+    out_avd          =  0     # activate AVD phase output
+    out_avd_pvd      =  0     # activate writing .pvd file
+    out_avd_ref      =  0     # AVD grid refinement factor
+    out_ptr          =  0     # activate
+    out_ptr_ID       =  0     # ID of the passive tracers
+    out_ptr_phase    =  0     # phase of the passive tracers
+    out_ptr_Pressure  =  0     # interpolated pressure
+    out_ptr_Temperature  =  0     # temperature
+    out_ptr_APS      =  0     # accumulated plastic strain
+    out_ptr_MeltFraction  =  0     # melt fraction computed using P-T of the marker
+    out_ptr_Active   =  0     # option that highlight the marker that are currently active
+    out_ptr_Grid_Mf  =  0     # option that allow to store the melt fraction seen within the cell
+
+#===============================================================================
+# Passive tracers 
+#===============================================================================
+
+    Passive_Tracer              = 1                               # Activate passive tracers?
+	PassiveTracer_Box           =  -1 1 -1 1 -1 1         # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  10 10 10                      # The number of passive tracers in every direction
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 1 # density
+		eta = 1 # viscosity
+	<MaterialEnd>
+
+	# Define properties of block
+	<MaterialStart>
+		ID  = 1   # phase id
+		rho = 5   # density
+		eta = 100 # viscosity
+	<MaterialEnd>
+
+
+#===============================================================================
+# Define phase transitions
+#===============================================================================
+
+   # Define Phase Transition laws (maximum 10)
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+
