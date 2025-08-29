@@ -1534,9 +1534,7 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 		//---------
 		// X points
 		//---------
-		GET_NODE_RANGE(nx, sx, fs->dsx)
-		GET_CELL_RANGE(ny, sy, fs->dsy)
-		GET_CELL_RANGE(nz, sz, fs->dsz)
+		ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 		START_STD_LOOP
 		{
@@ -1569,9 +1567,8 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 		//---------
 		// Y points
 		//---------
-		GET_CELL_RANGE(nx, sx, fs->dsx)
-		GET_NODE_RANGE(ny, sy, fs->dsy)
-		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 		START_STD_LOOP
 		{
@@ -1654,9 +1651,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	//---------
 	// X points
 	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	if(bc->face == 1 || bc->face == 2)
 	{
@@ -1719,9 +1714,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	//---------
 	// Y points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	if(bc->face == 3 || bc->face == 4)
 	{
@@ -1769,9 +1763,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	//---------
 	// Z points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	if(bc->face == 5 )
 	{
@@ -2729,9 +2722,8 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	//=========================================================================
 
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{

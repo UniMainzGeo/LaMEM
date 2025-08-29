@@ -45,9 +45,9 @@ OPTIONS & PREFIXES
 	
 		Option prefix for user-defined velocity solver: -vs
 
-		WARNING! block preconditioner does not support support matrix-free multigrid
+		WARNING! block preconditioner does not support matrix-free multigrid
 
-	-bf_schur_type [inv_eta, wbfbt] - pressure Schur preconditioner preconditioner type (default inv_eta)
+	-bf_schur_type [inv_eta, wbfbt] - pressure Schur preconditioner type (default inv_eta)
 
 		inv_eta - pressure mass matrix scaled with inverse viscosity
 		wbfbt   - scaled BFBT preconditioner (wBFBT)
@@ -137,13 +137,11 @@ Examples
 
 # Matrix options (required to scale Galerkin multigrid on large number of MPI ranks)
 
-	-mat_product_algorithm scalable
 	-matmatmatmult_via scalable
-	-matmatmult_via scalable
 
 ================================================================================
 
-[1] Galerkin geometric multigrid for coupled system
+[2] Galerkin geometric multigrid for coupled system
 
 	(see [5] for coupled multigrid settings)
 
@@ -151,7 +149,7 @@ Examples
 
 ================================================================================
 
-[2] block factorization with penalty and direct solver for velocity block (a-la Powell-Hesteness)
+[3] block factorization with penalty and direct solver for velocity block (a-la Powell-Hesteness)
 	
 	(-jp_pgamma controls balance between stability and iteration count)
 
@@ -168,7 +166,7 @@ Examples
 
 ================================================================================
 
-[3] block factorization with multigrid for velocity block and inverse viscosity preconditioner
+[4] block factorization with multigrid for velocity block and inverse viscosity preconditioner
 
 	(see [5] for velocity multigrid settings)
 
@@ -183,7 +181,7 @@ Examples
 
 ================================================================================
 
-[4] block factorization with wBFBT preconditioner and multigrid for velocity and pressure blocks
+[5] block factorization with wBFBT preconditioner and multigrid for velocity and pressure blocks
 
 	(see [5] for velocity multigrid settings)
 	(see [6] for pressure multigrid settings)
@@ -203,7 +201,7 @@ Examples
 
 ================================================================================
 
-[5] multigrid solver settings (both coupled system & velocity block)
+[6] multigrid solver settings (both coupled system & velocity block)
 
 	(see [7] for coarse solver settings)
 
@@ -235,7 +233,7 @@ Examples
 	
 ================================================================================
 
-[6] multigrid settings for pressure block
+[7] multigrid settings for pressure block
 
 	(use default coarse solver settings or setup similar options as in [7])
 	
@@ -248,7 +246,7 @@ Examples
 
 ================================================================================
 
-[7] coarse solver settings (telescope)
+[8] coarse solver settings (telescope)
 	
 	-gmg_mg_coarse_ksp_type preonly
 	-gmg_mg_coarse_pc_type telescope
@@ -288,7 +286,7 @@ Examples
 	
 ================================================================================
 
-[8] subdomain solver settings (ASM and block Jacobi)
+[9] subdomain solver settings (ASM and block Jacobi)
 
 	-gmg_mg_coarse_telescope_sub_ksp_type preonly
 	
@@ -305,11 +303,10 @@ Examples
 		
 ================================================================================
 
-[9] Steady-state (initial) temperature solver settings (multigrid)
+[10] Steady-state (initial) temperature solver settings (multigrid)
 
 	-its_ksp_type gmres
 	-its_ksp_rtol 1e-8
-	
 	-its_pc_view
 	-its_pc_type mg
 	-its_pc_mg_levels 3
@@ -319,7 +316,7 @@ Examples
 
 ================================================================================
 
-[10] Transient temperature solver settings (multigrid is not necessary)
+[11] Transient temperature solver settings (multigrid is not necessary)
 	
 	-ts_ksp_type gmres
 	-ts_ksp_rtol 1e-8

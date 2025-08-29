@@ -2925,10 +2925,6 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				temprank = 100;
 				aop->Perturb = 1;
 
-
-
-
-
 				// access work vectors
 				ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
 				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
@@ -2953,9 +2949,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// central points
 				//-------------------------------
 				iter = 0;
-				GET_CELL_RANGE(nx, sx, fs->dsx)
-				GET_CELL_RANGE(ny, sy, fs->dsy)
-				GET_CELL_RANGE(nz, sz, fs->dsz)
+
+				ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				START_STD_LOOP
 				{
@@ -3082,9 +3077,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// xy edge points
 				//-------------------------------
 				iter = 0;
-				GET_NODE_RANGE(nx, sx, fs->dsx)
-				GET_NODE_RANGE(ny, sy, fs->dsy)
-				GET_CELL_RANGE(nz, sz, fs->dsz)
+
+				ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				START_STD_LOOP
 				{
@@ -3193,9 +3187,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// xz edge points
 				//-------------------------------
 				iter = 0;
-				GET_NODE_RANGE(nx, sx, fs->dsx)
-				GET_CELL_RANGE(ny, sy, fs->dsy)
-				GET_NODE_RANGE(nz, sz, fs->dsz)
+
+				ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				START_STD_LOOP
 				{
@@ -3303,9 +3296,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// yz edge points
 				//-------------------------------
 				iter = 0;
-				GET_CELL_RANGE(nx, sx, fs->dsx)
-				GET_NODE_RANGE(ny, sy, fs->dsy)
-				GET_NODE_RANGE(nz, sz, fs->dsz)
+
+				ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				START_STD_LOOP
 				{
@@ -3448,9 +3440,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// Compute the gradient
 				ierr = VecDot(res,psi,&grdt);    CHKERRQ(ierr);
 
-				GET_CELL_RANGE(nx, sx, fs->dsx)
-				GET_CELL_RANGE(ny, sy, fs->dsy)
-				GET_CELL_RANGE(nz, sz, fs->dsz)
+				ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				if (ik >= sx && ik < sx+nx && jk >= sy && jk < sy+ny && kk >= sz && kk < sz+nz)
 				{
@@ -4066,9 +4056,9 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	ierr = VecGetArray(aop->sty,&sty); CHKERRQ(ierr);
 
 	iterat = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
 	START_STD_LOOP
 	{
 		dx = SIZE_CELL(i, sx, fs->dsx);

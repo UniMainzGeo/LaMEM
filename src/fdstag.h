@@ -209,7 +209,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine);
 PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine);
 
 PetscErrorCode FDSTAGCreateDMDA(
-	FDSTAG   *fs, DMBoundaryType bcx,
+	FDSTAG   *fs, DMBoundaryType bx,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz);
@@ -266,12 +266,6 @@ PetscErrorCode FDSTAGGetLevelsLocalGridSize(
 
 // get sub-domain ranks, starting node IDs, and number of nodes for output
 #define GET_OUTPUT_RANGE(r, n, s, ds) { r = ds.rank; s = ds.starts[r]; n = ds.starts[r+1] - s + 1; }
-
-// get loop bounds for node discretization
-#define GET_NODE_RANGE(n, s, ds) { n = ds.nnods; s = ds.pstart; }
-
-// get loop bounds for cell discretization
-#define GET_CELL_RANGE(n, s, ds) { n = ds.ncels; s = ds.pstart; }
 
 // get loop bounds for node discretization (including INTERNAL ghost points)
 #define GET_NODE_RANGE_GHOST_INT(n, s, ds) { n = ds.nnods + 2; s = ds.pstart - 1; if(ds.grprev == -1) { s++; n--; } if(ds.grnext == -1) n--; }
@@ -386,5 +380,11 @@ PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
 
 
 //---------------------------------------------------------------------------
+
+
+PetscErrorCode TestPeriodic(DM DA_X);
+
+//---------------------------------------------------------------------------
+
 #endif
 

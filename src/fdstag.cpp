@@ -856,7 +856,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	PetscInt         Nx,   Ny,   Nz;
 	PetscInt         Px,   Py,   Pz;
 	MeshSeg1D        msx,  msy,  msz;
-	DMBoundaryType   bcx;
+	DMBoundaryType   bx;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -888,12 +888,12 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	Nz = msz.tcels + 1;
 
 	// set boundary type in x direction
-	if(fs->dsx.periodic) { bcx = DM_BOUNDARY_PERIODIC; }
-	else                 { bcx = DM_BOUNDARY_GHOSTED; }
+	if(msx.periodic) { bx = DM_BOUNDARY_PERIODIC; }
+	else             { bx = DM_BOUNDARY_GHOSTED;  }
 
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
 
 	// get actual number of processors (can be different compared to given)
@@ -912,10 +912,14 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	if(complete_build)
 	{
 		// create corner, face and edge DMDA objects
-		ierr = FDSTAGCreateDMDA(fs, bcx, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+		ierr = FDSTAGCreateDMDA(fs, bx, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
 		// setup indexing data
 		ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
+
+
+		PetscCall(TestPeriodic(fs->DA_X));
+
 	}
 
 	// get MPI processor rank
@@ -975,7 +979,7 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	PetscInt      *lx,  *ly,  *lz;
 	PetscInt       Nx,   Ny,   Nz;
 	PetscInt       Px,   Py,   Pz;
-	DMBoundaryType bcx;
+	DMBoundaryType bx;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1004,19 +1008,19 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	ierr = Discret1DGetNumCells(&fs->dsz, &lz); CHKERRQ(ierr);
 
 	// set boundary type in x direction
-	if(fs->dsx.periodic) { bcx = DM_BOUNDARY_PERIODIC; }
-	else                 { bcx = DM_BOUNDARY_GHOSTED; }
+	if(fs->dsx.periodic) { bx = DM_BOUNDARY_PERIODIC; }
+	else                 { bx = DM_BOUNDARY_GHOSTED;  }
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_CEN); CHKERRQ(ierr);
 
 	// get number of nodes per processor (only different on the last processor)
 	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
 
 	// create corner, face and edge DMDA objects
-	ierr = FDSTAGCreateDMDA(fs, bcx, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+	ierr = FDSTAGCreateDMDA(fs, bx, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
 	// delete temporary arrays
 	ierr = PetscFree(lx); CHKERRQ(ierr);
@@ -1050,7 +1054,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	const PetscInt  *plx,  *ply,  *plz;
 	PetscInt        *lx,   *ly,   *lz;
 	Discret1D       *fdsx, *fdsy, *fdsz;
-	DMBoundaryType   bcx;
+	DMBoundaryType   bx;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1078,12 +1082,12 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	if(Nz > 2) { Nz /= 2;  for(i = 0; i < Pz; i++) { lz[i] /= 2; } }
 
 	// set boundary type in x direction
-	if(fine->dsx.periodic) { bcx = DM_BOUNDARY_PERIODIC; }
-	else                   { bcx = DM_BOUNDARY_GHOSTED;  }
+	if(fine->dsx.periodic) { bx = DM_BOUNDARY_PERIODIC; }
+	else                   { bx = DM_BOUNDARY_GHOSTED;  }
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &coarse->DA_CEN); CHKERRQ(ierr);
 
 	// get total number of nodes
@@ -1093,7 +1097,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
 
 	// create corner, face and edge DMDA objects
-	ierr = FDSTAGCreateDMDA(coarse, bcx, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+	ierr = FDSTAGCreateDMDA(coarse, bx, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
 	// create index arrays
 	ierr = DOFIndexCreate(&coarse->dof, coarse->DA_CEN, coarse->DA_X, coarse->DA_Y, coarse->DA_Z); CHKERRQ(ierr);
@@ -1160,7 +1164,7 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 }
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGCreateDMDA(
-	FDSTAG   *fs, DMBoundaryType bcx,
+	FDSTAG   *fs, DMBoundaryType bx,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz)
@@ -1197,21 +1201,21 @@ PetscErrorCode FDSTAGCreateDMDA(
 	// X face (DA_X) with boundary ghost points (1-layer stencil box)
 	ly[Py-1]--; lz[Pz-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
 	ly[Py-1]++; lz[Pz-1]++;
 
 	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; lz[Pz-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
 	lx[Px-1]++; lz[Pz-1]++;
 
 	// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; ly[Py-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		bcx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		bx, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
 	lx[Px-1]++; ly[Py-1]++;
 
@@ -1317,9 +1321,7 @@ PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	lrt = 0.0;
 
@@ -1651,4 +1653,150 @@ PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
+PetscErrorCode TestPeriodic(DM DA_X)
+{
+	Vec      fx;
+	PetscInt i, j, k, nx, ny, nz, sx, sy, sz;
+
+	PetscScalar ***lfx;
+
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = DMGetLocalVector(DA_X, &fx); CHKERRQ(ierr);
+
+	ierr = VecSet(fx, 0.0); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(DA_X, fx, &lfx); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Test value : %g\n", lfx[nz/2][ny/2][-1]); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Test value : %g\n", lfx[nz/2][ny/2][nx]); CHKERRQ(ierr);
+
+	lfx[nz][ny][-1] = 1.0;
+
+	START_STD_LOOP
+	{
+		lfx[k][j][i] = 1.0;
+	}
+	END_STD_LOOP
+
+
+	ierr = DMDAVecRestoreArray(DA_X, fx, &lfx); CHKERRQ(ierr);
+
+
+	LOCAL_TO_LOCAL(DA_X, fx)
+
+	ierr = DMDAVecGetArray(DA_X, fx, &lfx); CHKERRQ(ierr);
+
+
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Test value : %g\n", lfx[nz/2][ny/2][-1]); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Test value : %g\n", lfx[nz/2][ny/2][nx]); CHKERRQ(ierr);
+
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Test value : %g\n", lfx[nz][ny][nx]); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(DA_X, fx, &lfx); CHKERRQ(ierr);
+
+
+	ierr = DMRestoreLocalVector(DA_X,  &fx); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+
+}
+
+
+
+PetscErrorCode TestPeriodic(DM DA_X)
+{
+	Vec      lfx, gfx;
+	PetscInt i, j, k, nx, ny, nz, sx, sy, sz;
+
+	PetscScalar ***fx;
+
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = DMGetLocalVector (DA_X, &lfx); CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(DA_X, &gfx); CHKERRQ(ierr);
+
+	ierr = VecSet(lfx, 0.0); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(DA_X, gfx, &fx); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		fx[k][j][i] = 1.0;
+	}
+	END_STD_LOOP
+
+
+	ierr = DMDAVecRestoreArray(DA_X, gfx, &fx); CHKERRQ(ierr);
+
+	GLOBAL_TO_LOCAL(DA_X, gfx, lfx)
+
+	ierr = DMDAVecGetArray(DA_X, lfx, &fx); CHKERRQ(ierr);
+
+
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Test value : %g\n", fx[nz/2][ny/2][-1]); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Test value : %g\n", fx[nz/2][ny/2][nx]); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(DA_X, lfx, &fx); CHKERRQ(ierr);
+
+
+
+	ierr = DMRestoreLocalVector (DA_X, &lfx); CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(DA_X, &gfx); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+
+}
+
+*/
+
+
+
+
+PetscErrorCode TestPeriodic(DM DA_X)
+{
+	Vec      lfx, gfx;
+	PetscInt i, j, k, nx, ny, nz, sx, sy, sz;
+
+	PetscScalar ***fx;
+
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = DMGetLocalVector (DA_X, &lfx); CHKERRQ(ierr);
+	ierr = DMGetGlobalVector(DA_X, &gfx); CHKERRQ(ierr);
+
+	ierr = VecSet(lfx, 1.0); CHKERRQ(ierr);
+
+	LOCAL_TO_GLOBAL(DA_X, lfx, gfx)
+
+
+	ierr = DMDAVecGetArray(DA_X, gfx, &fx); CHKERRQ(ierr);
+
+
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Test value : %g\n", fx[nz/2][ny/2][0]); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Test value : %g\n", fx[nz/2][ny/2][nx-1]); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(DA_X, gfx, &fx); CHKERRQ(ierr);
+
+
+
+	ierr = DMRestoreLocalVector (DA_X, &lfx); CHKERRQ(ierr);
+	ierr = DMRestoreGlobalVector(DA_X, &gfx); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+
+}
+
+
 

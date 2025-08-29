@@ -733,9 +733,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	// central points (dxx, dyy, dzz)
 	//-------------------------------
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -780,9 +778,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	// xy edge points (dxy)
 	//-------------------------------
 	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -812,9 +809,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	// xz edge points (dxz)
 	//-------------------------------
 	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -844,9 +840,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	// yz edge points (dyz)
 	//-------------------------------
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -894,8 +889,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
 PetscErrorCode JacResGetVorticity(JacRes *jr)
 {
 	// Compute components of the vorticity pseudo-vector
@@ -926,9 +919,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	// xy edge points (wz)
 	//-------------------------------
 
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -944,9 +935,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	// xz edge points (wy)
 	//-------------------------------
 
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -962,9 +951,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	// yz edge points (wx)
 	//-------------------------------
 
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1078,10 +1065,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// central points
 	//-------------------------------
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
 
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1211,9 +1196,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// xy edge points
 	//-------------------------------
 	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1320,9 +1304,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// xz edge points
 	//-------------------------------
 	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1429,9 +1412,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// yz edge points
 	//-------------------------------
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
