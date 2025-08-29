@@ -102,13 +102,12 @@
 # WARNING! Biased meshes perform terrible on practice. Therefore bias option is deprecated.
 # An attempt to specify a non-unit bias ratio will generate an error. 
     
-# Periodic grid topology flags (affects marker advection)
+# Periodic grid topology flags (affects marker advection, thermal, and mechanical solvers)
 # WARNING! only compatible wtih advect = basic
-# periodicity in the x direction also affects formulation of thermal and mechanical problems
+# WARNING! only allowed for x-direction
 
 	periodic_x = 1
-	periodic_y = 1
-	periodic_z = 1
+
 	
 # EXAMPLE:
 # segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)

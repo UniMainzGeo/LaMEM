@@ -39,7 +39,8 @@ PetscErrorCode MeshSeg1DReadParam(
 	PetscScalar leng,
 	PetscScalar gtol,
 	const char *dir,
-	FB         *fb);
+	FB         *fb,
+	PetscInt    allow_periodic = 0);
 
 // (partially) mesh a segment with (optionally) biased element size
 PetscErrorCode MeshSeg1DGenCoord(
@@ -209,7 +210,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine);
 PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine);
 
 PetscErrorCode FDSTAGCreateDMDA(
-	FDSTAG   *fs, DMBoundaryType bx,
+	FDSTAG   *fs, DMBoundaryType BC_TYPE_FACE_X,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz);
@@ -382,7 +383,7 @@ PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
 //---------------------------------------------------------------------------
 
 
-PetscErrorCode TestPeriodic(DM DA_X);
+// PetscErrorCode TestPeriodic(DM DA_X);
 
 //---------------------------------------------------------------------------
 
