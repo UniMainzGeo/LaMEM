@@ -996,6 +996,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
 	PetscInt    iter;
+	PetscInt    periodic;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
@@ -1017,6 +1018,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// access context
 	fs = jr->fs;
 	bc = jr->bc;
+
+	// set periodic flag
+	periodic = fs->dsx.cycle_geo;
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -1209,8 +1213,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//=================
 
 		// check index bounds
-		I1 = i;   if(I1 == mx) I1--;
-		I2 = i-1; if(I2 == -1) I2++;
+		I1 = i;
+		I2 = i-1;
+		if(!periodic)
+		{
+			if(I1 == mx) I1--;
+			if(I2 == -1) I2++;
+		}
 		J1 = j;   if(J1 == my) J1--;
 		J2 = j-1; if(J2 == -1) J2++;
 
@@ -1316,9 +1325,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// SECOND INVARIANT
 		//=================
 
-		// check index bounds
-		I1 = i;   if(I1 == mx) I1--;
-		I2 = i-1; if(I2 == -1) I2++;
+		I1 = i;
+		I2 = i-1;
+		if(!periodic)
+		{
+			if(I1 == mx) I1--;
+			if(I2 == -1) I2++;
+		}
 		K1 = k;   if(K1 == mz) K1--;
 		K2 = k-1; if(K2 == -1) K2++;
 
@@ -1516,6 +1529,23 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	}
 	END_STD_LOOP
 
+	// copy residual to ghost points on periodic boundary
+	if(periodic)
+	{
+		//---------
+		// X-points
+		//---------
+
+		ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		START_STD_LOOP
+		{
+			if(i == 0)  { fx[k][j][i-1] = fx[k][j][i]; }
+			if(i == mx) { fx[k][j][i+1] = fx[k][j][i]; }
+		}
+		END_STD_LOOP
+	}
+
 	// restore vectors
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
@@ -1567,6 +1597,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 
 	FDSTAG           *fs;
 	BCCtx            *bc;
+	PetscInt          periodic;
 	PetscInt          mcx, mcy, mcz;
 	PetscInt          I, J, K, fi, fj, fk;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
@@ -1591,6 +1622,9 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	ierr = VecGetArray    (jr->gvy, &vy);  CHKERRQ(ierr);
 	ierr = VecGetArray    (jr->gvz, &vz);  CHKERRQ(ierr);
 	ierr = VecGetArrayRead(x,       &sol); CHKERRQ(ierr);
+
+	// set periodic flag
+	periodic = fs->dsx.cycle_geo;
 
 	// copy vectors component-wise
 	iter = sol;
@@ -1667,10 +1701,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		I = i; fi = 0;
 		K = k; fk = 0;
 
-		if(i == 0)   { fi = 1; I = i-1; SET_TPC(bcvy, lvy, k, j, I, pmdof) }
-		if(i == mcx) { fi = 1; I = i+1; SET_TPC(bcvy, lvy, k, j, I, pmdof) }
-		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
+		if(i == 0   && !periodic) { fi = 1; I = i-1; SET_TPC(bcvy, lvy, k, j, I, pmdof) }
+		if(i == mcx && !periodic) { fi = 1; I = i+1; SET_TPC(bcvy, lvy, k, j, I, pmdof) }
+		if(k == 0)                { fk = 1; K = k-1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
+		if(k == mcz)              { fk = 1; K = k+1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 
 		if(fi && fk) SET_EDGE_CORNER(lvy, K, j, I, k, j, i, pmdof)
 
@@ -1692,10 +1726,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		I = i; fi = 0;
 		J = j; fj = 0;
 
-		if(i == 0)   { fi = 1; I = i-1; SET_TPC(bcvz, lvz, k, j, I, pmdof) }
-		if(i == mcx) { fi = 1; I = i+1; SET_TPC(bcvz, lvz, k, j, I, pmdof) }
-		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
+		if(i == 0    && !periodic) { fi = 1; I = i-1; SET_TPC(bcvz, lvz, k, j, I, pmdof) }
+		if(i == mcx  && !periodic) { fi = 1; I = i+1; SET_TPC(bcvz, lvz, k, j, I, pmdof) }
+		if(j == 0)                 { fj = 1; J = j-1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
+		if(j == mcy)               { fj = 1; J = j+1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 
 		if(fi && fj) SET_EDGE_CORNER(lvz, k, J, I, k, j, i, pmdof)
 

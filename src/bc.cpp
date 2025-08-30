@@ -344,6 +344,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 {
 	Scaling     *scal;
 	FDSTAG      *fs;
+	PetscInt     periodic;
 	PetscInt     jj, mID;
 	PetscScalar  bz;
 	char         inflow_temp[_str_len_],str_inflow[_str_len_];
@@ -355,6 +356,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	scal = bc->scal;
 	fs   = bc->fs;
 	mID  = bc->dbm->numPhases-1;
+
+	// set periodic flag
+	periodic = fs->dsx.cycle_geo;
 
 	// initialize
 	bc->Tbot[0]  		= 	-1.0;
@@ -666,52 +670,38 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
 	}
 
-	if(fs->dsx.cycle_geo)
+	if(periodic)
 	{
 		if(!bc->noslip[4])
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition requires no-slip on bottom boundary (periodic_x, noslip) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition requires no-slip on bottom boundary (cycle_geo_x, noslip) \n");
 		}
 
-		if(bc->ExxNumPeriods )
+		if(bc->noslip[0] || bc->noslip[1])
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with background strain rate (periodic_x, exx_num_periods, exy_num_periods) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with no-slip on left and right boundaries (cycle_geo_x, noslip) \n");
+		}
+
+		if(bc->ExxNumPeriods || bc->ExyNumPeriods)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with xx and xy background strain rates (cycle_geo_x, exx_num_periods, exy_num_periods) \n");
 		}
 
 		if(bc->face)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with boundary velocity (periodic_x, bvel_face) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with boundary velocity (cycle_geo_x, bvel_face) \n");
 		}
 
-		if(bc->fixPhase)
+		if(bc->fixPhase != -1)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed phase (periodic_x, fix_phase) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed phase (cycle_geo_x, fix_phase) \n");
 		}
 
-		if(bc->face)
+		if(bc->fixCell)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed cells (periodic_x, bvel_face) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed cells (cycle_geo_x, fix_cell) \n");
 		}
-/*
-		PetscInt         fixPhase;
-
-		// fixed cells (no-flow condition)
-		PetscInt         fixCell;
-
-
-
-	    fix_phase = 1
-
-	# fixed cells (no-flow condition)
-
-	    fix_cell = 1
-
-		bvel_face
-	*/
 	}
-
-
-
 
 	//==============
 	// print summary
@@ -721,7 +711,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD, "   No-slip boundary mask [lt rt ft bk bm tp]  : ");
 
-	if(fs->dsx.cycle_geo) { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in x-direction                 : "); }
+	if(periodic) { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in x-direction                 : "); }
 
 	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
 
@@ -1087,13 +1077,11 @@ PetscErrorCode BCApply(BCCtx *bc)
 	}
 
 	// synchronize SPC constraints in the internal ghost points
-	// WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
 	LOCAL_TO_LOCAL(fs->DA_X,   bc->bcvx)
 	LOCAL_TO_LOCAL(fs->DA_Y,   bc->bcvy)
 	LOCAL_TO_LOCAL(fs->DA_Z,   bc->bcvz)
 
 	// apply two-point constraints
-	// WARNING! IMPLEMENT TPC IN MULTIGRID COARSENING
 	ierr = BCApplyVelTPC(bc); CHKERRQ(ierr);
 
 	// form SPC constraint lists
@@ -1287,9 +1275,9 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscScalar vbx, vby, vbz;
 	PetscScalar vex, vey, vez;
 	PetscScalar y;
-
+	PetscInt    periodic;
 	PetscInt    mnx, mny, mnz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, top_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 
 	PetscErrorCode ierr;
@@ -1297,6 +1285,9 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	// access context
 	fs = bc->fs;
+
+	// set periodic flag
+	periodic = fs->dsx.cycle_geo;
 
 	// set open boundary flag
 	top_open = bc->top_open;
@@ -1335,24 +1326,24 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	// SPC (normal velocities)
 	//=========================================================================
 
-	iter = 0;
-
 	//------------------
 	// X points SPC only
 	//------------------
-	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
+	if(!periodic)
 	{
-		// get coordinate
-		y = COORD_CELL(j, sy, fs->dsy);
+		ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx + (y-Ryy)*Exy; }
-		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex + (y-Ryy)*Exy; }
+		START_STD_LOOP
+		{
+			// get coordinate
+			y = COORD_CELL(j, sy, fs->dsy);
 
-		iter++;
+			if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx + (y-Ryy)*Exy; }
+			if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex + (y-Ryy)*Exy; }
+
+		}
+		END_STD_LOOP
 	}
-	END_STD_LOOP
 
 	//------------------
 	// Y points SPC only
@@ -1363,7 +1354,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	{
 		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby; }
 		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey; }
-		iter++;
 	}
 	END_STD_LOOP
 
@@ -1376,7 +1366,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	{
 		if(k == 0                && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; }
 		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
-		iter++;
 	}
 	END_STD_LOOP
 

@@ -67,6 +67,9 @@ PetscErrorCode MeshSeg1DReadParam(
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic geometry is not allowed in the %s - direction\n", dir);
 	}
 
+	// automatically activate periodic advection
+	if(ms->cycle_geo) { ms->cycle_adv = 1; }
+
 	// compute starting node indices
 	for(i = 0, tcels = 0; i < ms->nsegs; i++)
 	{
@@ -1253,7 +1256,7 @@ PetscErrorCode FDSTAGCreateDMDA(
 	// YZ edges (DA_YZ) no boundary ghost points (1-layer stencil box)
 	lx[Px-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		BC_TYPE_EDGE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx-1, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_YZ); CHKERRQ(ierr);
 	lx[Px-1]++;
 

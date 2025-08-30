@@ -111,6 +111,7 @@
 
 # Periodic geometry flags (affects all solvers)
 # WARNING! only allowed for x-direction
+# WARNING! automatically activates periodic advection
 	
 	cycle_geo_x = 1
 	

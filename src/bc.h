@@ -119,6 +119,8 @@ struct BCCtx
 	//        DBL_MAX   - free-slip (zero-flux) condition flag
 	//        otherwise - two-point constraint (TPC) value
 	//
+	//    *Periodic ghost point is marked with a DOF index of the opposite boundary
+	//
 	// Boundary ghost points require consistent setting of constraints
 	// on the processor boundaries (since PETSc doesn't exchange boundary
 	// ghost point values). Internal ghost points should be synchronized
@@ -126,7 +128,6 @@ struct BCCtx
 	// can be skipped if all ghost points are initialized redundantly
 	// on all the processes.
 	//
-	// Periodic boundary node is indicated a positive primary DOF index
 	//
 	// Single point constraints are additionally stored as lists
 	// for constraining matrices and vectors. Matrices require global
