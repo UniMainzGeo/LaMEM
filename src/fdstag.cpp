@@ -25,12 +25,12 @@ PetscErrorCode MeshSeg1DReadParam(
 	PetscScalar gtol,
 	const char *dir,
 	FB         *fb,
-	PetscInt    allow_periodic)
+	PetscInt    allow_cycle_geo)
 {
 	PetscInt    i, tcels, uniform;
 	PetscInt    ncells[_max_num_segs_];
 	PetscScalar avgsz, sz;
-	char        *nseg, *nel, *coord, *bias, *periodic;
+	char        *nseg, *nel, *coord, *bias, *cycle_adv, *cycle_geo;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -47,22 +47,24 @@ PetscErrorCode MeshSeg1DReadParam(
 	}
 
 	// compose option keys
-	asprintf(&nseg,     "nseg_%s",     dir);
-	asprintf(&nel,      "nel_%s",      dir);
-	asprintf(&coord,    "coord_%s",    dir);
-	asprintf(&bias,     "bias_%s",     dir);
-	asprintf(&periodic, "periodic_%s", dir);
+	asprintf(&nseg,      "nseg_%s",      dir);
+	asprintf(&nel,       "nel_%s",       dir);
+	asprintf(&coord,     "coord_%s",     dir);
+	asprintf(&bias,      "bias_%s",      dir);
+	asprintf(&cycle_adv, "cycle_adv_%s", dir);
+	asprintf(&cycle_geo, "cycle_geo_%s", dir);
 
 	// read parameters
-	ierr = getIntParam   (fb, _OPTIONAL_, nseg,     &ms->nsegs,    1,           _max_num_segs_);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, nel,       ncells,       ms->nsegs,   _max_num_cells_); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, periodic, &ms->periodic, 1,           1);               CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, coord,     ms->xstart,   ms->nsegs+1, leng);            CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, bias,      ms->biases,   ms->nsegs,   1.0 );            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, nseg,      &ms->nsegs,     1,           _max_num_segs_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, nel,        ncells,        ms->nsegs,   _max_num_cells_); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, cycle_adv, &ms->cycle_adv, 1,           1);               CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, cycle_geo, &ms->cycle_geo, 1,           1);               CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, coord,      ms->xstart,    ms->nsegs+1, leng);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, bias,       ms->biases,    ms->nsegs,   1.0 );            CHKERRQ(ierr);
 
-	if(ms->periodic && !allow_periodic)
+	if(ms->cycle_geo && !allow_cycle_geo)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic boundary condition is not allowed in the %s - direction\n", dir);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic geometry is not allowed in the %s - direction\n", dir);
 	}
 
 	// compute starting node indices
@@ -115,7 +117,8 @@ PetscErrorCode MeshSeg1DReadParam(
 	free(nel);
 	free(coord);
 	free(bias);
-	free(periodic);
+	free(cycle_adv);
+	free(cycle_geo);
 
 	PetscFunctionReturn(0);
 }
@@ -350,8 +353,9 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	// set uniform grid flag
 	ds->uniform = ms->uniform;
 
-	// set periodic periodic topology flag
-	ds->periodic = ms->periodic;
+	// set periodic topology flag
+	ds->cycle_adv = ms->cycle_adv;
+	ds->cycle_geo = ms->cycle_geo;
 
 	// set global grid coordinate bounds
 	ds->gcrdbeg = ms->xstart[0];
@@ -407,10 +411,11 @@ PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine)
 	PetscFunctionBeginUser;
 
 	// copy data
-	coarse->uniform  = fine->uniform;  // uniform grid flag
-	coarse->periodic = fine->periodic; // periodic topology flag
-	coarse->gcrdbeg  = fine->gcrdbeg;  // global grid coordinate bound (begin)
-	coarse->gcrdend  = fine->gcrdend;  // global grid coordinate bound (end)
+	coarse->uniform   = fine->uniform;   // uniform grid flag
+	coarse->cycle_adv = fine->cycle_adv; // periodic advection flag
+	coarse->cycle_geo = fine->cycle_geo; // periodic geometry flag
+	coarse->gcrdbeg   = fine->gcrdbeg;   // global grid coordinate bound (begin)
+	coarse->gcrdend   = fine->gcrdend;   // global grid coordinate bound (end)
 
 	// check whether mesh is coarsened
 	if(coarse->ncels == fine->ncels)
@@ -485,7 +490,7 @@ PetscErrorCode Discret1DCompleteCoord(Discret1D *ds)
 	}
 
 	// swap ghost cells for periodic case
-	if(ds->periodic)
+	if(ds->cycle_geo)
 	{
 		// parallel
 		if(ds->nproc > 1)
@@ -941,8 +946,8 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	Nz = msz.tcels + 1;
 
 	// set boundary type in x direction
-	if(msx.periodic) { BC_TYPE_FACE_X = DM_BOUNDARY_PERIODIC; }
-	else             { BC_TYPE_FACE_X = DM_BOUNDARY_GHOSTED;  }
+	if(msx.cycle_geo) { BC_TYPE_FACE_X = DM_BOUNDARY_PERIODIC; }
+	else              { BC_TYPE_FACE_X = DM_BOUNDARY_GHOSTED;  }
 
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
@@ -1057,8 +1062,8 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	ierr = Discret1DGetNumCells(&fs->dsz, &lz); CHKERRQ(ierr);
 
 	// set boundary type in x direction
-	if(fs->dsx.periodic) { BC_TYPE_FACE_X = DM_BOUNDARY_PERIODIC; }
-	else                 { BC_TYPE_FACE_X = DM_BOUNDARY_GHOSTED;  }
+	if(fs->dsx.cycle_geo) { BC_TYPE_FACE_X = DM_BOUNDARY_PERIODIC; }
+	else                  { BC_TYPE_FACE_X = DM_BOUNDARY_GHOSTED;  }
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
@@ -1131,8 +1136,8 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	if(Nz > 2) { Nz /= 2;  for(i = 0; i < Pz; i++) { lz[i] /= 2; } }
 
 	// set boundary type in x direction
-	if(fine->dsx.periodic) { BC_TYPE_FACE_X = DM_BOUNDARY_PERIODIC; }
-	else                   { BC_TYPE_FACE_X = DM_BOUNDARY_GHOSTED;  }
+	if(fine->dsx.cycle_geo) { BC_TYPE_FACE_X = DM_BOUNDARY_PERIODIC; }
+	else                    { BC_TYPE_FACE_X = DM_BOUNDARY_GHOSTED;  }
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
@@ -1320,9 +1325,9 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 	Pz = fs->dsz.nproc;
 
 	// get periodic topology flags
-	ptx = fs->dsx.periodic;
-	pty = fs->dsy.periodic;
-	ptz = fs->dsz.periodic;
+	ptx = fs->dsx.cycle_adv;
+	pty = fs->dsy.cycle_adv;
+	ptz = fs->dsz.cycle_adv;
 
 	// clear counter
 	cnt = 0;
@@ -1449,11 +1454,10 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscPrintf(PETSC_COMM_WORLD, "   Lower coordinate bounds [bx, by, bz] : [%g, %g, %g]\n", bx*chLen, by*chLen, bz*chLen);
 	PetscPrintf(PETSC_COMM_WORLD, "   Upper coordinate bounds [ex, ey, ez] : [%g, %g, %g]\n", ex*chLen, ey*chLen, ez*chLen);
 
+	if(maxAspRat > 10.0) PetscPrintf(PETSC_COMM_WORLD, "   Don't expect any magic with this aspect ratio: %g ...\n", maxAspRat);
+	if(maxAspRat > 30.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "   Everything has a limit, reduce this aspect ratio: %g ...\n", maxAspRat);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
-	if(maxAspRat > 10.0) PetscPrintf(PETSC_COMM_WORLD, " Don't expect any magic with this aspect ratio %g ...\n", maxAspRat);
-	if(maxAspRat > 30.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Everything has a limit, reduce this aspect ratio: %g ...\n", maxAspRat);
 
 	PetscFunctionReturn(0);
 }

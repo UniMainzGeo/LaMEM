@@ -343,6 +343,7 @@ PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt
 PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 {
 	Scaling     *scal;
+	FDSTAG      *fs;
 	PetscInt     jj, mID;
 	PetscScalar  bz;
 	char         inflow_temp[_str_len_],str_inflow[_str_len_];
@@ -352,6 +353,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// access context
 	scal = bc->scal;
+	fs   = bc->fs;
 	mID  = bc->dbm->numPhases-1;
 
 	// initialize
@@ -622,7 +624,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if((bc->bot_open || bc->Plume_Type == 2) && !bc->phase_inflow_bot )
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The permeable inflow phase or the mantle plume phase must be defined\n");
-
 	}
 
 	//========================
@@ -651,7 +652,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "pres_top",  &bc->ptop,     1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_pres", &bc->initPres, 1, -1);  CHKERRQ(ierr);
 
+	//======
 	// CHECK
+	//======
+
 	if((bc->Tbot[0] == bc->Ttop) && bc->initTemp)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Top and bottom temperatures give zero initial gradient (Tbot, Ttop, initTemp) \n");
@@ -662,11 +666,64 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
 	}
 
+	if(fs->dsx.cycle_geo)
+	{
+		if(!bc->noslip[4])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition requires no-slip on bottom boundary (periodic_x, noslip) \n");
+		}
+
+		if(bc->ExxNumPeriods )
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with background strain rate (periodic_x, exx_num_periods, exy_num_periods) \n");
+		}
+
+		if(bc->face)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with boundary velocity (periodic_x, bvel_face) \n");
+		}
+
+		if(bc->fixPhase)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed phase (periodic_x, fix_phase) \n");
+		}
+
+		if(bc->face)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed cells (periodic_x, bvel_face) \n");
+		}
+/*
+		PetscInt         fixPhase;
+
+		// fixed cells (no-flow condition)
+		PetscInt         fixCell;
+
+
+
+	    fix_phase = 1
+
+	# fixed cells (no-flow condition)
+
+	    fix_cell = 1
+
+		bvel_face
+	*/
+	}
+
+
+
+
+	//==============
 	// print summary
+	//==============
 
 	PetscPrintf(PETSC_COMM_WORLD, "Boundary condition parameters: \n");
 
 	PetscPrintf(PETSC_COMM_WORLD, "   No-slip boundary mask [lt rt ft bk bm tp]  : ");
+
+	if(fs->dsx.cycle_geo) { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in x-direction                 : "); }
+
+	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
 
 	for(jj = 0; jj < 6; jj++)
 	{

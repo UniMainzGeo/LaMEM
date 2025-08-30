@@ -102,12 +102,17 @@
 # WARNING! Biased meshes perform terrible on practice. Therefore bias option is deprecated.
 # An attempt to specify a non-unit bias ratio will generate an error. 
     
-# Periodic grid topology flags (affects marker advection, thermal, and mechanical solvers)
+# Periodic advection flags
 # WARNING! only compatible wtih advect = basic
+
+	cycle_adv_x = 1
+	cycle_adv_y = 1
+	cycle_adv_z = 1
+
+# Periodic geometry flags (affects all solvers)
 # WARNING! only allowed for x-direction
-
-	periodic_x = 1
-
+	
+	cycle_geo_x = 1
 	
 # EXAMPLE:
 # segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)
@@ -243,7 +248,8 @@
 
     open_top_bound = 1
 
-# Permeable lower boundary flag    
+# Permeable lower boundary flag
+
     open_bot_bound = 0
     permeable_phase_inflow = 1 # Phase of the inflow material from the bottom (The temperature of the inflow phase it is the same of the bottom boundary)
     
@@ -273,6 +279,7 @@
 
 # temperature initial guess flag
 # linear profile between temp_top and temp_bot
+
     init_temp = 1;
 
 # Optional plume inflow @ bottom boundary

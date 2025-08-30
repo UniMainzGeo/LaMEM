@@ -126,6 +126,8 @@ struct BCCtx
 	// can be skipped if all ghost points are initialized redundantly
 	// on all the processes.
 	//
+	// Periodic boundary node is indicated a positive primary DOF index
+	//
 	// Single point constraints are additionally stored as lists
 	// for constraining matrices and vectors. Matrices require global
 	// index space, vectors require local index space.

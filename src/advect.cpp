@@ -282,13 +282,13 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	else if(actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
 	else if(actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
 
- 	if((fs->dsx.periodic || fs->dsy.periodic || fs->dsz.periodic) && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
+ 	if((fs->dsx.cycle_adv || fs->dsy.cycle_adv || fs->dsz.cycle_adv) && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
  	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic_x,y,z)");
  	}
 	else
 	{
-		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     : %lld %lld %lld \n",(LLD)fs->dsx.periodic,(LLD)fs->dsy.periodic,(LLD)fs->dsz.periodic);
+		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     : %lld %lld %lld \n",(LLD)fs->dsx.cycle_adv,(LLD)fs->dsy.cycle_adv,(LLD)fs->dsz.cycle_adv);
 	}
 
 	// apply default setup in case advection is deactivated
@@ -1110,9 +1110,9 @@ PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
 	fs = actx->fs;
 
 	// get periodic topology flags
-	ptx = fs->dsx.periodic;
-	pty = fs->dsy.periodic;
-	ptz = fs->dsz.periodic;
+	ptx = fs->dsx.cycle_adv;
+	pty = fs->dsy.cycle_adv;
+	ptz = fs->dsz.cycle_adv;
 
 	// get current coordinates of the mesh boundaries
 	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
