@@ -38,8 +38,14 @@ enum PCBFType
 // velocity block preconditioner type
 enum PCVelType
 {
-	_VEL_MG_,   // Galerkin multigrid
-	_VEL_USER_  // user-defined
+	_VEL_MG_,     // Galerkin multigrid
+	_VEL_USER_    // user-defined
+};
+//---------------------------------------------------------------------------
+enum PCVelUserType
+{
+	_VEL_USER_DIRECT_, // direct solver
+	_VEL_USER_GENERAL_ // all other solvers
 };
 //---------------------------------------------------------------------------
 // Schur complement preconditioner type
@@ -52,12 +58,13 @@ enum PCSchurType
 
 struct PCParam
 {
-	PicardType   ps_type; // Picard operator storage type
-	PCStokesType pc_type; // preconditioner type
-	PCBFType     bf_type; // block factorization type
-	PCVelType    vs_type; // velocity solver type
-	PCSchurType  sp_type; // Schur preconditioner type
-	PetscScalar  pgamma;  // penalty parameter
+	PicardType    ps_type; // Picard operator storage type
+	PCStokesType  pc_type; // preconditioner type
+	PCBFType      bf_type; // block factorization type
+	PCVelType     vs_type; // velocity solver type
+	PCVelUserType vu_type; // user velocity solver type
+	PCSchurType   sp_type; // Schur preconditioner type
+	PetscScalar   pgamma;  // penalty parameter
 };
 
 //--------------------------------------------------------------------------

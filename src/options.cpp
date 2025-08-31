@@ -153,7 +153,7 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 		// destroy grid
 		PetscCall(FDSTAGDestroy(fs));
 
-		// select option for scalable triple matrix product (required for a)
+		// select option for scalable triple matrix product (required for a large run)
 		PetscCall(PetscOptionsInsertString(NULL, "-matmatmatmult_via scalable"));
 	}
 
@@ -657,7 +657,7 @@ PetscErrorCode set_subdomain_options(
 
 	//==========================================================================================
 	// WARNING!
-	// check wheather natural ordering gives better results compared to nested disection
+	// check whether natural ordering gives better results compared to nested dissection
 	// provide better pre-allocation parameter if more then zero levels is selected
 	//==========================================================================================
 

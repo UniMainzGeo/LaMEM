@@ -19,30 +19,34 @@
 #include "lsolve.h"
 #include "JacRes.h"
 #include "tools.h"
+#include "parsing.h"
 //---------------------------------------------------------------------------
 PetscErrorCode PCParamSetFromOptions(PCParam *p)
 {
 	PetscBool mat_free;
-	char      pc_type[_str_len_], bf_type[_str_len_];
-	char      vs_type[_str_len_], sp_type[_str_len_];
+	char      pc_type   [_str_len_], bf_type[_str_len_];
+	char      vs_type   [_str_len_], sp_type[_str_len_];
+	char      vs_pc_type[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// set defaults
-	sprintf(pc_type, "user");
-	sprintf(bf_type, "upper");
-	sprintf(vs_type, "user");
-	sprintf(sp_type, "inv_eta");
+	sprintf(pc_type,    "user");
+	sprintf(bf_type,    "upper");
+	sprintf(vs_type,    "user");
+	sprintf(vs_pc_type, "general");
+	sprintf(sp_type,    "inv_eta");
 	p->pgamma = 1.0;
 
 	// read options
-	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free",   &mat_free);                CHKERRQ(ierr);
-	ierr = PetscOptionsGetString(NULL, NULL, "-jp_type",       pc_type, _str_len_, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetString(NULL, NULL, "-bf_type",       bf_type, _str_len_, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetString(NULL, NULL, "-bf_vs_type",    vs_type, _str_len_, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetString(NULL, NULL, "-bf_schur_type", sp_type, _str_len_, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",     &p->pgamma,        NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free",   &mat_free);                   CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-jp_type",       pc_type,    _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-bf_type",       bf_type,    _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-bf_vs_type",    vs_type,    _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-vs_pc_type",    vs_pc_type, _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-bf_schur_type", sp_type,    _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",     &p->pgamma,            NULL);  CHKERRQ(ierr);
 
 	if     (!strcmp(pc_type, "mg"))   p->pc_type = _STOKES_MG_;
 	else if(!strcmp(pc_type, "bf"))   p->pc_type = _STOKES_BF_;
@@ -56,6 +60,9 @@ PetscErrorCode PCParamSetFromOptions(PCParam *p)
 	if     (!strcmp(vs_type, "mg"))   p->vs_type = _VEL_MG_;
 	else if(!strcmp(vs_type, "user")) p->vs_type = _VEL_USER_;
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type (bf_vs_type): %s", vs_type);
+
+	if(!strcmp(vs_pc_type, "lu")) p->vu_type = _VEL_USER_DIRECT_;
+	else                          p->vu_type = _VEL_USER_GENERAL_;
 
 	if     (!strcmp(sp_type, "inv_eta")) p->sp_type = _SCHUR_INV_ETA_;
 	else if(!strcmp(sp_type, "wbfbt"))   p->sp_type = _SCHUR_WBFBT_;
@@ -306,8 +313,8 @@ PetscErrorCode PCDataMGApply(Mat P, Vec r, Vec x)
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, Mat P)
 {
-	PC       vpc;
-	PetscInt buildwBFBT, buildBvv;
+	PC        vpc;
+	PetscInt  buildwBFBT, buildBvv, set_null_space;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -325,10 +332,15 @@ PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, M
 	if     (param->ps_type == _PICARD_MAT_FREE_) buildBvv = 0;
 	else if(param->pgamma > 1.0)                 buildBvv = 1;
 
+	// set null space flag
+	if(param->vs_type == _VEL_USER_
+	&& param->vu_type != _VEL_USER_DIRECT_) set_null_space = 1;
+	else                                    set_null_space = 0;
+
 	// create matrix
 	PMatBlock *pm = &pc->pm;
 
-	ierr = PMatBlockCreate(pm, &pc->md, param->pgamma, buildwBFBT, buildBvv); CHKERRQ(ierr);
+	ierr = PMatBlockCreate(pm, &pc->md, param->pgamma, buildwBFBT, buildBvv, set_null_space); CHKERRQ(ierr);
 
 	// create velocity solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &pc->vksp); CHKERRQ(ierr);
@@ -548,6 +560,7 @@ PetscErrorCode PCDataUserCreate(PCDataUser *pc, PCParam *param, JacRes *jr, Mat 
 	MatData  *md;
 	DOFIndex *dof;
 	IS        isv, isp;
+	PetscInt  set_null_space;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -563,7 +576,7 @@ PetscErrorCode PCDataUserCreate(PCDataUser *pc, PCParam *param, JacRes *jr, Mat 
 	dof = &md->fs->dof;
 
 	// create matrix
-	ierr = PMatMonoCreate(&pc->pm, &pc->md, param->pgamma); CHKERRQ(ierr);
+	ierr = PMatMonoCreate(&pc->pm, &pc->md, param->pgamma, set_null_space = 1); CHKERRQ(ierr);
 
 	// create preconditioner context
 	ierr = PCCreate(PETSC_COMM_WORLD, &pc->pc); CHKERRQ(ierr);

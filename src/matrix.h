@@ -19,7 +19,7 @@ struct MatData;
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PMatCreate(MatData *md, Mat *A);
+PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space = 0);
 
 PetscErrorCode PMatAssemble(MatData *md, PetscScalar pgamma, Mat A);
 
@@ -41,7 +41,8 @@ struct PMatMono
 PetscErrorCode PMatMonoCreate(
 		PMatMono    *P,
 		MatData     *md,
-		PetscScalar  pgamma);
+		PetscScalar  pgamma,
+		PetscInt     set_null_space = 0);
 
 PetscErrorCode PMatMonoAssemble(PMatMono *P);
 
@@ -93,7 +94,8 @@ PetscErrorCode PMatBlockCreate(
 		MatData     *md,
 		PetscScalar  pgamma,
 		PetscInt     buildwBFBT,
-		PetscInt     buildBvv);
+		PetscInt     buildBvv,
+		PetscInt     set_null_space = 0);
 
 PetscErrorCode PMatBlockAssemble(PMatBlock *P);
 

@@ -18,7 +18,7 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-PetscErrorCode PMatCreate(MatData *md, Mat *A)
+PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space)
 {
 	//=========================================================================
 	// Count nonzero in diagonal and off-diagonal blocks
@@ -215,7 +215,10 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A)
 	ierr = MatAIJCreate(ln, ln, 0, d_nnz, 0, o_nnz, A); CHKERRQ(ierr);
 
 	// attach near null space
-	ierr = MatAIJSetNullSpace((*A), md); CHKERRQ(ierr);
+	if(set_null_space)
+	{
+		ierr = MatAIJSetNullSpace((*A), md); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -594,7 +597,8 @@ PetscErrorCode PMatDiagComp(MatData *md, PetscScalar pgamma, Mat M)
 PetscErrorCode PMatMonoCreate(
 		PMatMono    *P,
 		MatData     *md,
-		PetscScalar  pgamma)
+		PetscScalar  pgamma,
+		PetscInt     set_null_space)
 {
 	DOFIndex *dof;
 
@@ -609,7 +613,7 @@ PetscErrorCode PMatMonoCreate(
 	dof = &md->fs->dof;
 
 	// create matrix
-	ierr = PMatCreate(md, &P->A); CHKERRQ(ierr);
+	ierr = PMatCreate(md, &P->A, set_null_space); CHKERRQ(ierr);
 
 	// create diagonal compensation matrix
 	ierr = MatAIJCreateDiag(dof->ln, dof->st, &P->M); CHKERRQ(ierr);
@@ -678,7 +682,8 @@ PetscErrorCode PMatBlockCreate(
 		MatData     *md,
 		PetscScalar  pgamma,
 		PetscInt     buildwBFBT,
-		PetscInt     buildBvv)
+		PetscInt     buildBvv,
+		PetscInt     set_null_space)
 {
 	FDSTAG      *fs;
 	DOFIndex    *dof;
@@ -913,7 +918,10 @@ PetscErrorCode PMatBlockCreate(
 	ierr = PetscFree(Apv_o_nnz); CHKERRQ(ierr);
 
 	// attach near null space
-	ierr = MatAIJSetNullSpace(P->Avv, md); CHKERRQ(ierr);
+	if(set_null_space)
+	{
+		ierr = MatAIJSetNullSpace(P->Avv, md); CHKERRQ(ierr);
+	}
 
 	// create BFBT preconditioner
 	if(buildwBFBT)

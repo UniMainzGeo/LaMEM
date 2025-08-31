@@ -98,15 +98,10 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 	MatNullSpace nullsp;                       // near null space
 	Vec          nullsp_vecs[_max_nullsp_sz_]; // near null space vectors
 	PetscScalar *v;
-	PetscBool    set_nullsp;
 	PetscInt     i, j, sz, ln, iter, nullsp_sz, lbsz[_max_nullsp_sz_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-
-	ierr = PetscOptionsHasName(NULL, NULL, "-pcmat_set_null_space", &set_nullsp); CHKERRQ(ierr);
-
-	if(set_nullsp != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access context
 	dof = &md->fs->dof;
