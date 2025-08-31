@@ -166,8 +166,7 @@ PetscErrorCode MatDataComputeIndex(MatData *md)
 
 	FDSTAG      *fs;
 	DOFIndex    *dof;
-	PetscInt    periodic;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mnx, stv=0, stp=0;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, stv=0, stp=0;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
 	PetscErrorCode ierr;
@@ -175,9 +174,6 @@ PetscErrorCode MatDataComputeIndex(MatData *md)
 
 	fs  =  md->fs;
 	dof = &fs->dof;
-
-	// set periodic flag
-	periodic = fs->dsx.cycle_geo;
 
 	// set global indices of the local and ghost nodes (including boundary)
 	ierr = VecSet(md->ivx, -1.0); CHKERRQ(ierr);
@@ -195,8 +191,8 @@ PetscErrorCode MatDataComputeIndex(MatData *md)
 	// compute interlaced global numbering of the local nodes
 	//=======================================================
 
-	if     (md->idxmod == _IDX_COUPLED_)  { stv = md->fs->dof.st;  stp = dof->st + dof->lnv; }
-	else if(md->idxmod == _IDX_BLOCK_)    { stv = md->fs->dof.stv; stp = dof->stp;           }
+	if     (md->idxmod == _IDX_COUPLED_)  { stv = dof->st;  stp = dof->st + dof->lnv; }
+	else if(md->idxmod == _IDX_BLOCK_)    { stv = dof->stv; stp = dof->stp;           }
 
 	//---------
 	// X-points
@@ -253,30 +249,6 @@ PetscErrorCode MatDataComputeIndex(MatData *md)
 	LOCAL_TO_LOCAL(fs->DA_Y,   md->ivy)
 	LOCAL_TO_LOCAL(fs->DA_Z,   md->ivz)
 	LOCAL_TO_LOCAL(fs->DA_CEN, md->ip)
-
-	// set primary DOF indices for periodic boundary
-	if(periodic)
-	{
-		// initialize index bounds
-		mnx = fs->dsx.tnods - 1;
-
-		ierr = DMDAVecGetArray(fs->DA_X, md->ivx, &ivx); CHKERRQ(ierr);
-
-		//---------
-		// X-points
-		//---------
-
-		ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-		START_STD_LOOP
-		{
-			if(i == 0)   {                                ivx[k][j][i-1] = -1; }
-			if(i == mnx) { ivx[k][j][i] = ivx[k][j][i+1]; ivx[k][j][i+1] = -1; }
-		}
-		END_STD_LOOP
-
-		ierr = DMDAVecRestoreArray(fs->DA_X, md->ivx, &ivx); CHKERRQ(ierr);
-	}
 
 	PetscFunctionReturn(0);
 }
