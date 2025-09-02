@@ -1082,7 +1082,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//=================
 		if (jr->ctrl.actDike)
 		{
-
 			y_c = COORD_CELL(j,sy,fs->dsy);
 
 			dikeRHS = 0.0;
@@ -1213,15 +1212,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//=================
 
 		// check index bounds
-		I1 = i;
-		I2 = i-1;
-		if(!periodic)
-		{
-			if(I1 == mx) I1--;
-			if(I2 == -1) I2++;
-		}
-		J1 = j;   if(J1 == my) J1--;
-		J2 = j-1; if(J2 == -1) J2++;
+		I1 = i;   if(!periodic && I1 == mx) I1--;
+		I2 = i-1; if(!periodic && I2 == -1) I2++;
+		J1 = j;   if(             J1 == my) J1--;
+		J2 = j-1; if(             J2 == -1) J2++;
 
 		// access strain rates
 		XY = dxy[k][j][i];
@@ -1325,15 +1319,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// SECOND INVARIANT
 		//=================
 
-		I1 = i;
-		I2 = i-1;
-		if(!periodic)
-		{
-			if(I1 == mx) I1--;
-			if(I2 == -1) I2++;
-		}
-		K1 = k;   if(K1 == mz) K1--;
-		K2 = k-1; if(K2 == -1) K2++;
+		I1 = i;   if(!periodic && I1 == mx) I1--;
+		I2 = i-1; if(!periodic && I2 == -1) I2++;
+		K1 = k;   if(             K1 == mz) K1--;
+		K2 = k-1; if(             K2 == -1) K2++;
 
 		// access strain rates
 		XZ = dxz[k][j][i];
