@@ -24,13 +24,12 @@ PetscErrorCode MeshSeg1DReadParam(
 	PetscScalar leng,
 	PetscScalar gtol,
 	const char *dir,
-	FB         *fb,
-	PetscInt    allow_cycle_geo)
+	FB         *fb)
 {
 	PetscInt    i, tcels, uniform;
 	PetscInt    ncells[_max_num_segs_];
 	PetscScalar avgsz, sz;
-	char        *nseg, *nel, *coord, *bias, *cycle_adv, *cycle_geo;
+	char        *nseg, *nel, *coord, *bias;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -51,24 +50,12 @@ PetscErrorCode MeshSeg1DReadParam(
 	asprintf(&nel,       "nel_%s",       dir);
 	asprintf(&coord,     "coord_%s",     dir);
 	asprintf(&bias,      "bias_%s",      dir);
-	asprintf(&cycle_adv, "cycle_adv_%s", dir);
-	asprintf(&cycle_geo, "cycle_geo_%s", dir);
 
 	// read parameters
 	ierr = getIntParam   (fb, _OPTIONAL_, nseg,      &ms->nsegs,     1,           _max_num_segs_);  CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _REQUIRED_, nel,        ncells,        ms->nsegs,   _max_num_cells_); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, cycle_adv, &ms->cycle_adv, 1,           1);               CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, cycle_geo, &ms->cycle_geo, 1,           1);               CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, coord,      ms->xstart,    ms->nsegs+1, leng);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, bias,       ms->biases,    ms->nsegs,   1.0 );            CHKERRQ(ierr);
-
-	if(ms->cycle_geo && !allow_cycle_geo)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic geometry is not allowed in the %s - direction\n", dir);
-	}
-
-	// automatically activate periodic advection
-	if(ms->cycle_geo) { ms->cycle_adv = 1; }
 
 	// compute starting node indices
 	for(i = 0, tcels = 0; i < ms->nsegs; i++)
@@ -120,8 +107,6 @@ PetscErrorCode MeshSeg1DReadParam(
 	free(nel);
 	free(coord);
 	free(bias);
-	free(cycle_adv);
-	free(cycle_geo);
 
 	PetscFunctionReturn(0);
 }
@@ -196,14 +181,15 @@ PetscErrorCode MeshSeg1DGenCoord(
 //---------------------------------------------------------------------------
 PetscErrorCode Discret1DCreate(
 		Discret1D  *ds,
-		PetscInt    nproc,     // number of processors
-		PetscInt    rank,      // processor rank
-		PetscInt   *nnodProc,  // number of nodes per processor
-		PetscInt    color,     // column color
-		PetscMPIInt grprev,    // global rank of previous process
-		PetscMPIInt grnext,    // global rank of next process
-		PetscScalar gtol,      // geometric tolerance
-		const char *dir)       // direction label
+		PetscInt    nproc,    // number of processors
+		PetscInt    rank,     // processor rank
+		PetscInt   *nnodProc, // number of nodes per processor
+		PetscInt    color,    // column color
+		PetscMPIInt grprev,   // global rank of previous process
+		PetscMPIInt grnext,   // global rank of next process
+		PetscScalar gtol,     // geometric tolerance
+		const char *dir,      // direction label
+		PetscInt    periodic) // periodic topology flag
 {
 	PetscInt i, cnt;
 
@@ -276,6 +262,9 @@ PetscErrorCode Discret1DCreate(
 
 	// geometric tolerance
 	ds->gtol = gtol;
+
+	// periodic grid topology flag
+	ds->periodic = periodic;
 
 	PetscFunctionReturn(0);
 }
@@ -356,10 +345,6 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	// set uniform grid flag
 	ds->uniform = ms->uniform;
 
-	// set periodic topology flag
-	ds->cycle_adv = ms->cycle_adv;
-	ds->cycle_geo = ms->cycle_geo;
-
 	// set global grid coordinate bounds
 	ds->gcrdbeg = ms->xstart[0];
 	ds->gcrdend = ms->xstart[ms->nsegs];
@@ -414,11 +399,9 @@ PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine)
 	PetscFunctionBeginUser;
 
 	// copy data
-	coarse->uniform   = fine->uniform;   // uniform grid flag
-	coarse->cycle_adv = fine->cycle_adv; // periodic advection flag
-	coarse->cycle_geo = fine->cycle_geo; // periodic geometry flag
-	coarse->gcrdbeg   = fine->gcrdbeg;   // global grid coordinate bound (begin)
-	coarse->gcrdend   = fine->gcrdend;   // global grid coordinate bound (end)
+	coarse->uniform = fine->uniform;   // uniform grid flag
+	coarse->gcrdbeg = fine->gcrdbeg;   // global grid coordinate bound (begin)
+	coarse->gcrdend = fine->gcrdend;   // global grid coordinate bound (end)
 
 	// check whether mesh is coarsened
 	if(coarse->ncels == fine->ncels)
@@ -493,7 +476,7 @@ PetscErrorCode Discret1DCompleteCoord(Discret1D *ds)
 	}
 
 	// swap ghost cells for periodic case
-	if(ds->cycle_geo)
+	if(ds->periodic)
 	{
 		// parallel
 		if(ds->nproc > 1)
@@ -916,8 +899,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	PetscInt         Nx,   Ny,   Nz;
 	PetscInt         Px,   Py,   Pz;
 	MeshSeg1D        msx,  msy,  msz;
-	DMBoundaryType   BC_TYPE_FACE_X;
-	PetscInt         allow_periodic;
+	DMBoundaryType   BC_TYPE_X;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -927,6 +909,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	// set & read geometry tolerance
 	fs->gtol = 1e-6;
 	ierr = getScalarParam(fb, _OPTIONAL_, "gtol", &fs->gtol, 1, 1.0); CHKERRQ(ierr);
+
+	// read periodic grid topolgy flag
+	ierr = getIntParam(fb, _OPTIONAL_, "periodic", &fs->periodic, 1, 1); CHKERRQ(ierr);
 
 	// set number of processors
 	Px = PETSC_DECIDE;
@@ -939,9 +924,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	ierr = getIntParam(fb, _OPTIONAL_, "cpu_z", &Pz, 1, _max_num_procs_); CHKERRQ(ierr);
 
 	// read mesh parameters
-	ierr = MeshSeg1DReadParam(&msx, scal->length, fs->gtol, "x", fb, allow_periodic = 1); CHKERRQ(ierr);
-	ierr = MeshSeg1DReadParam(&msy, scal->length, fs->gtol, "y", fb);                     CHKERRQ(ierr);
-	ierr = MeshSeg1DReadParam(&msz, scal->length, fs->gtol, "z", fb);                     CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msx, scal->length, fs->gtol, "x", fb); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msy, scal->length, fs->gtol, "y", fb); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msz, scal->length, fs->gtol, "z", fb); CHKERRQ(ierr);
 
 	// get total number of nodes
 	Nx = msx.tcels + 1;
@@ -949,12 +934,12 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	Nz = msz.tcels + 1;
 
 	// set boundary type in x direction
-	if(msx.cycle_geo) { BC_TYPE_FACE_X = DM_BOUNDARY_PERIODIC; }
-	else              { BC_TYPE_FACE_X = DM_BOUNDARY_GHOSTED;  }
+	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else             { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
 
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_FACE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		BC_TYPE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
 
 	// get actual number of processors (can be different compared to given)
@@ -973,7 +958,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	if(complete_build)
 	{
 		// create corner, face and edge DMDA objects
-		ierr = FDSTAGCreateDMDA(fs, BC_TYPE_FACE_X, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+		ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
 		// setup indexing data
 		ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
@@ -994,7 +979,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	ierr = Discret1DCreate(&fs->dsx, Px, rx, lx, cx,
 			getGlobalRank(rx-1, ry, rz, Px, Py, Pz),
 			getGlobalRank(rx+1, ry, rz, Px, Py, Pz),
-			fs->gtol, "x"); CHKERRQ(ierr);
+			fs->gtol, "x", fs->periodic); CHKERRQ(ierr);
 
 	ierr = Discret1DCreate(&fs->dsy, Py, ry, ly, cy,
 			getGlobalRank(rx, ry-1, rz, Px, Py, Pz),
@@ -1036,7 +1021,7 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	PetscInt      *lx,  *ly,  *lz;
 	PetscInt       Nx,   Ny,   Nz;
 	PetscInt       Px,   Py,   Pz;
-	DMBoundaryType BC_TYPE_FACE_X;
+	DMBoundaryType BC_TYPE_X;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1065,19 +1050,19 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	ierr = Discret1DGetNumCells(&fs->dsz, &lz); CHKERRQ(ierr);
 
 	// set boundary type in x direction
-	if(fs->dsx.cycle_geo) { BC_TYPE_FACE_X = DM_BOUNDARY_PERIODIC; }
-	else                  { BC_TYPE_FACE_X = DM_BOUNDARY_GHOSTED;  }
+	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else             { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_FACE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		BC_TYPE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_CEN); CHKERRQ(ierr);
 
 	// get number of nodes per processor (only different on the last processor)
 	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
 
 	// create corner, face and edge DMDA objects
-	ierr = FDSTAGCreateDMDA(fs, BC_TYPE_FACE_X, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+	ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
 	// delete temporary arrays
 	ierr = PetscFree(lx); CHKERRQ(ierr);
@@ -1111,7 +1096,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	const PetscInt  *plx,  *ply,  *plz;
 	PetscInt        *lx,   *ly,   *lz;
 	Discret1D       *fdsx, *fdsy, *fdsz;
-	DMBoundaryType   BC_TYPE_FACE_X;
+	DMBoundaryType   BC_TYPE_X;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1120,8 +1105,10 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	ierr = PetscMemzero(coarse, sizeof(FDSTAG)); CHKERRQ(ierr);
 
 	// copy data
-	coarse->scal = fine->scal;
-	coarse->gtol = fine->gtol;
+	coarse->scal     = fine->scal;
+	coarse->gtol     = fine->gtol;
+	coarse->periodic = fine->periodic;
+
 	for(i = 0; i < _num_neighb_; i++) { coarse->neighb[i] = fine->neighb[i]; }
 
 	// get number of cells & processors in the fine grid
@@ -1139,12 +1126,12 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	if(Nz > 2) { Nz /= 2;  for(i = 0; i < Pz; i++) { lz[i] /= 2; } }
 
 	// set boundary type in x direction
-	if(fine->dsx.cycle_geo) { BC_TYPE_FACE_X = DM_BOUNDARY_PERIODIC; }
-	else                    { BC_TYPE_FACE_X = DM_BOUNDARY_GHOSTED;  }
+	if(coarse->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else                 { BC_TYPE_X = DM_BOUNDARY_GHOSTED;  }
 
 	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_FACE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		BC_TYPE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &coarse->DA_CEN); CHKERRQ(ierr);
 
 	// get total number of nodes
@@ -1154,7 +1141,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
 
 	// create corner, face and edge DMDA objects
-	ierr = FDSTAGCreateDMDA(coarse, BC_TYPE_FACE_X, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+	ierr = FDSTAGCreateDMDA(coarse, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
 	// create index arrays
 	ierr = DOFIndexCreate(&coarse->dof, coarse->DA_CEN, coarse->DA_X, coarse->DA_Y, coarse->DA_Z); CHKERRQ(ierr);
@@ -1165,7 +1152,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	fdsz = &fine->dsz;
 
 	ierr = Discret1DCreate(&coarse->dsx, Px, fdsx->rank, lx, fdsx->color,
-			fdsx->grprev, fdsx->grnext, coarse->gtol, "x"); CHKERRQ(ierr);
+			fdsx->grprev, fdsx->grnext, coarse->gtol, "x", coarse->periodic); CHKERRQ(ierr);
 
 	ierr = Discret1DCreate(&coarse->dsy, Py, fdsy->rank, ly, fdsy->color,
 			fdsy->grprev, fdsy->grnext, coarse->gtol, "y"); CHKERRQ(ierr);
@@ -1220,70 +1207,68 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode FDSTAGCreateDMDA(
-	FDSTAG   *fs, DMBoundaryType BC_TYPE_FACE_X,
+PetscErrorCode FDSTAGCreateDMDA(FDSTAG   *fs,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz)
 {
 	PetscInt       bc_node;
-	DMBoundaryType BC_TYPE_EDGE_X;
+	DMBoundaryType BC_NONE, BC_GHOSTED;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// PERIODIC CASE:
-	// JUST USE ONE POINT LESS IN X-DIRECTION FOR DA_COR, DA_XY, DA_XZ, AND DA_X
+	// PERIODIC CASE: JUST USE ONE POINT LESS IN X-DIRECTION FOR DA_COR, DA_XY, DA_XZ, AND DA_X
 
-	if(BC_TYPE_FACE_X == DM_BOUNDARY_PERIODIC) { BC_TYPE_EDGE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
-	else                                       { BC_TYPE_EDGE_X = DM_BOUNDARY_NONE;     bc_node = 0; }
+	if(fs->periodic) { BC_NONE = DM_BOUNDARY_PERIODIC; BC_GHOSTED = DM_BOUNDARY_PERIODIC, bc_node = 1; }
+	else             { BC_NONE = DM_BOUNDARY_NONE;     BC_GHOSTED = DM_BOUNDARY_GHOSTED,  bc_node = 0; }
 
 	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
 	lx[Px-1] -= bc_node;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_EDGE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		BC_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx-bc_node, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
 	lx[Px-1] += bc_node;
 
 	// XY edges (DA_XY) no boundary ghost points (1-layer stencil box)
 	lz[Pz-1]--; lx[Px-1] -= bc_node;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_EDGE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		BC_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx-bc_node, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
 	lz[Pz-1]++; lx[Px-1] += bc_node;
 
 	// XZ edges (DA_XZ) no boundary ghost points (1-layer stencil box)
 	ly[Py-1]--; lx[Px-1] -= bc_node;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_EDGE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		BC_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx-bc_node, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
 	ly[Py-1]++; lx[Px-1] += bc_node;
 
 	// YZ edges (DA_YZ) no boundary ghost points (1-layer stencil box)
 	lx[Px-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_EDGE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		BC_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx-1, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_YZ); CHKERRQ(ierr);
 	lx[Px-1]++;
 
 	// X face (DA_X) with boundary ghost points (1-layer stencil box)
 	ly[Py-1]--; lz[Pz-1]--; lx[Px-1] -= bc_node;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_FACE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		BC_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-bc_node, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
 	ly[Py-1]++; lz[Pz-1]++; lx[Px-1] += bc_node;
 
 	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; lz[Pz-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_FACE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		BC_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
 	lx[Px-1]++; lz[Pz-1]++;
 
 	// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; ly[Py-1]--;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_FACE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		BC_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
 	lx[Px-1]++; ly[Py-1]++;
 
@@ -1300,12 +1285,20 @@ PetscErrorCode FDSTAGSetNum(FDSTAG *fs)
 	PetscFunctionBeginUser;
 
 	// compute local number of grid points
-	nnx = fs->dsx.nnods; ncx = fs->dsx.ncels;
-	nny = fs->dsy.nnods; ncy = fs->dsy.ncels;
-	nnz = fs->dsz.nnods; ncz = fs->dsz.ncels;
+	if(fs->periodic)
+	{
+		nnx = fs->dsx.nnods-1; ncx = fs->dsx.ncels;
+		nny = fs->dsy.nnods;   ncy = fs->dsy.ncels;
+		nnz = fs->dsz.nnods;   ncz = fs->dsz.ncels;
+	}
+	else
+	{
+		nnx = fs->dsx.nnods; ncx = fs->dsx.ncels;
+		nny = fs->dsy.nnods; ncy = fs->dsy.ncels;
+		nnz = fs->dsz.nnods; ncz = fs->dsz.ncels;
+	}
 
 	fs->nCells = ncx*ncy*ncz;
-	fs->nCorns = nnx*nny*nnz;
 	fs->nXYEdg = nnx*nny*ncz;
 	fs->nXZEdg = nnx*ncy*nnz;
 	fs->nYZEdg = ncx*nny*nnz;
@@ -1334,9 +1327,9 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 	Pz = fs->dsz.nproc;
 
 	// get periodic topology flags
-	ptx = fs->dsx.cycle_adv;
-	pty = fs->dsy.cycle_adv;
-	ptz = fs->dsz.cycle_adv;
+	ptx = fs->periodic;
+	pty = 0;
+	ptz = 0;
 
 	// clear counter
 	cnt = 0;

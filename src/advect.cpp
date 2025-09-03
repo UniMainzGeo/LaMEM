@@ -254,6 +254,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 {
 	FDSTAG   *fs;
+	BCCtx    *bc;
 	PetscInt maxPhaseID;
 	char     advect[_str_len_];
 
@@ -262,6 +263,7 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 
 	// initialize
 	fs         = actx->fs;
+	bc         = actx->jr->bc;
 	maxPhaseID = actx->dbm->numPhases-1;
 
 	// get advection type
@@ -282,13 +284,16 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	else if(actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
 	else if(actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
 
- 	if((fs->dsx.cycle_adv || fs->dsy.cycle_adv || fs->dsz.cycle_adv) && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
+	// set periodic advection flag
+	if(fs->periodic || bc->ExyNumPeriods) { actx->periodic = 1; }
+
+ 	if(actx->periodic && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
  	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic_x,y,z)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic, exy_num_periods)");
  	}
 	else
 	{
-		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     : %lld %lld %lld \n",(LLD)fs->dsx.cycle_adv,(LLD)fs->dsy.cycle_adv,(LLD)fs->dsz.cycle_adv);
+		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     @\n");
 	}
 
 	// apply default setup in case advection is deactivated
@@ -1098,10 +1103,7 @@ PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
 	FDSTAG      *fs;
 	PetscScalar *X;
 	PetscInt     i;
-	PetscInt     ptx, pty, ptz;
-	PetscScalar  bx,  by, bz;
-	PetscScalar  ex,  ey, ez;
-	PetscScalar  dx,  dy, dz;
+	PetscScalar  bx, ex, dx;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1109,20 +1111,13 @@ PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
 	// access context
 	fs = actx->fs;
 
-	// get periodic topology flags
-	ptx = fs->dsx.cycle_adv;
-	pty = fs->dsy.cycle_adv;
-	ptz = fs->dsz.cycle_adv;
-
 	// get current coordinates of the mesh boundaries
-	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+	ierr = FDSTAGGetGlobalBox(fs, &bx, NULL, NULL, &ex, NULL, NULL); CHKERRQ(ierr);
 
-	// get mesh sizes
+	// get mesh size
 	dx = ex - bx;
-	dy = ey - by;
-	dz = ez - bz;
 
-	if(ptx)
+	if(actx->periodic)
 	{
 		for(i = 0; i < actx->nsend; i++)
 		{
@@ -1130,26 +1125,6 @@ PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
 
 			if(X[0] < bx) X[0] += dx;
 			if(X[0] > ex) X[0] -= dx;
-		}
-	}
-	if(pty)
-	{
-		for(i = 0; i < actx->nsend; i++)
-		{
-			X = actx->sendbuf[i].X;
-
-			if(X[1] < by) X[1] += dy;
-			if(X[1] > ey) X[1] -= dy;
-		}
-	}
-	if(ptz)
-	{
-		for(i = 0; i < actx->nsend; i++)
-		{
-			X = actx->sendbuf[i].X;
-
-			if(X[2] < bz) X[2] += dz;
-			if(X[2] > ez) X[2] -= dz;
 		}
 	}
 

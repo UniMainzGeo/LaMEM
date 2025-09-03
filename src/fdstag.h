@@ -29,8 +29,7 @@ struct MeshSeg1D
 	PetscScalar biases[_max_num_segs_  ]; // biases for each segment
 	PetscInt    tcels;                    // total number of cells
 	PetscInt    uniform;                  // uniform grid flag
-	PetscInt    cycle_adv;                // periodic advection flag
-	PetscInt    cycle_geo;                // periodic geometry flag
+
 };
 
 //---------------------------------------------------------------------------
@@ -40,8 +39,7 @@ PetscErrorCode MeshSeg1DReadParam(
 	PetscScalar leng,
 	PetscScalar gtol,
 	const char *dir,
-	FB         *fb,
-	PetscInt    allow_cycle_geo = 0);
+	FB         *fb);
 
 // (partially) mesh a segment with (optionally) biased element size
 PetscErrorCode MeshSeg1DGenCoord(
@@ -80,13 +78,12 @@ struct Discret1D
 	MPI_Comm      comm;      // column communicator
 
 	PetscInt      uniform;   // uniform grid flag
-	PetscInt      cycle_adv; // periodic advection flag
-	PetscInt      cycle_geo; // periodic geometry flag
 
 	PetscScalar   gcrdbeg;  // global grid coordinate bound (begin)
 	PetscScalar   gcrdend;  // global grid coordinate bound (end)
 
 	PetscScalar   gtol;     // geometric tolerance
+	PetscInt      periodic; // periodic topology flag
 };
 
 //---------------------------------------------------------------------------
@@ -95,14 +92,15 @@ struct Discret1D
 
 PetscErrorCode Discret1DCreate(
 		Discret1D  *ds,
-		PetscInt    nproc,     // number of processors
-		PetscInt    rank,      // processor rank
-		PetscInt   *nnodProc,  // number of nodes per processor
-		PetscInt    color,     // column color
-		PetscMPIInt grprev,    // global rank of previous process
-		PetscMPIInt grnext,    // global rank of next process
-		PetscScalar gtol,      // geometric tolerance
-		const char *dir);      // direction label
+		PetscInt    nproc,         // number of processors
+		PetscInt    rank,          // processor rank
+		PetscInt   *nnodProc,      // number of nodes per processor
+		PetscInt    color,         // column color
+		PetscMPIInt grprev,        // global rank of previous process
+		PetscMPIInt grnext,        // global rank of next process
+		PetscScalar gtol,          // geometric tolerance
+		const char *dir,           // direction label
+		PetscInt    periodic = 0); // periodic topology flag
 
 PetscErrorCode Discret1DDestroy(Discret1D *ds);
 
@@ -182,7 +180,6 @@ struct FDSTAG
 
 	// local number of local grid points
 	PetscInt nCells;  // cells
-	PetscInt nCorns;  // corners
 	PetscInt nXYEdg;  // XY-edges
 	PetscInt nXZEdg;  // XZ-edges
 	PetscInt nYZEdg;  // YZ-edges
@@ -191,8 +188,8 @@ struct FDSTAG
 	PetscInt nZFace;  // Z-faces
 
 	PetscMPIInt neighb[_num_neighb_]; // global ranks of neighboring process
-
-	PetscScalar gtol; // relative geometry tolerance
+	PetscScalar gtol;                 // relative geometry tolerance
+	PetscInt    periodic;             // periodic topology flag
 };
 
 //---------------------------------------------------------------------------
@@ -211,8 +208,7 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine);
 
 PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine);
 
-PetscErrorCode FDSTAGCreateDMDA(
-	FDSTAG   *fs, DMBoundaryType BC_TYPE_FACE_X,
+PetscErrorCode FDSTAGCreateDMDA(FDSTAG   *fs,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz);

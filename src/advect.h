@@ -137,6 +137,7 @@ struct AdvCtx
 	PetscInt      randNoise;           // random noise flag for marker distribution
 	PetscInt      randNoiseGP;         // random noise flag, subsequently applied to geometric primitives
 	PetscInt      bgPhase;             // background phase ID
+	PetscInt      periodic;            // periodic advection flag
 
 	PetscInt      saveMark;            // flag for saving markers
 	char          saveFile[_str_len_]; // marker output file name
@@ -193,7 +194,6 @@ struct AdvCtx
 
 	PetscInt  ndel; // number of markers to be deleted from storage
 	PetscInt *idel; // indices of markers to be deleted
-
 };
 
 //---------------------------------------------------------------------------

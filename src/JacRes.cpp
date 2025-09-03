@@ -1034,7 +1034,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	dt   = jr->ts->dt;    // time step
 
 	// set periodic flag
-	periodic = fs->dsx.cycle_geo;
+	periodic = fs->periodic;
 
 	// setup constitutive equation evaluation context parameters
 	ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
@@ -1596,7 +1596,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	ierr = VecGetArrayRead(x,       &sol); CHKERRQ(ierr);
 
 	// set periodic flag
-	periodic = fs->dsx.cycle_geo;
+	periodic = fs->periodic;
 
 	// copy vectors component-wise
 	iter = sol;
@@ -1741,7 +1741,7 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 	bc  =  jr->bc;
 
 	// set periodic flag
-	periodic = fs->dsx.cycle_geo;
+	periodic = fs->periodic;
 
 	// initialize maximal index in all directions
 	mcx = fs->dsx.tcels - 1;

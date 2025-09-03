@@ -358,7 +358,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	mID  = bc->dbm->numPhases-1;
 
 	// set periodic flag
-	periodic = fs->dsx.cycle_geo;
+	periodic = fs->periodic;
 
 	// initialize
 	bc->Tbot[0]  		= 	-1.0;
@@ -1287,7 +1287,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	fs = bc->fs;
 
 	// set periodic flag
-	periodic = fs->dsx.cycle_geo;
+	periodic = fs->periodic;
 
 	// set open boundary flag
 	top_open = bc->top_open;
