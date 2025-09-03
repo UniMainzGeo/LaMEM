@@ -1226,7 +1226,7 @@ PetscErrorCode FDSTAGCreateDMDA(
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz)
 {
-	PetscInt       node;
+	PetscInt       bc_node;
 	DMBoundaryType BC_TYPE_EDGE_X;
 
 	PetscErrorCode ierr;
@@ -1235,27 +1235,29 @@ PetscErrorCode FDSTAGCreateDMDA(
 	// PERIODIC CASE:
 	// JUST USE ONE POINT LESS IN X-DIRECTION FOR DA_COR, DA_XY, DA_XZ, AND DA_X
 
-	if(BC_TYPE_FACE_X == DM_BOUNDARY_PERIODIC) { BC_TYPE_EDGE_X = DM_BOUNDARY_PERIODIC; node = 1; }
-	else                                       { BC_TYPE_EDGE_X = DM_BOUNDARY_NONE;     node = 0; }
+	if(BC_TYPE_FACE_X == DM_BOUNDARY_PERIODIC) { BC_TYPE_EDGE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
+	else                                       { BC_TYPE_EDGE_X = DM_BOUNDARY_NONE;     bc_node = 0; }
 
 	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
+	lx[Px-1] -= bc_node;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx-node, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
+		Nx-bc_node, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
+	lx[Px-1] += bc_node;
 
 	// XY edges (DA_XY) no boundary ghost points (1-layer stencil box)
-	lz[Pz-1]--;
+	lz[Pz-1]--; lx[Px-1] -= bc_node;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		BC_TYPE_EDGE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx-node, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
-	lz[Pz-1]++;
+		Nx-bc_node, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
+	lz[Pz-1]++; lx[Px-1] += bc_node;
 
 	// XZ edges (DA_XZ) no boundary ghost points (1-layer stencil box)
-	ly[Py-1]--;
+	ly[Py-1]--; lx[Px-1] -= bc_node;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		BC_TYPE_EDGE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx-node, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
-	ly[Py-1]++;
+		Nx-bc_node, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
+	ly[Py-1]++; lx[Px-1] += bc_node;
 
 	// YZ edges (DA_YZ) no boundary ghost points (1-layer stencil box)
 	lx[Px-1]--;
@@ -1265,11 +1267,11 @@ PetscErrorCode FDSTAGCreateDMDA(
 	lx[Px-1]++;
 
 	// X face (DA_X) with boundary ghost points (1-layer stencil box)
-	ly[Py-1]--; lz[Pz-1]--;
+	ly[Py-1]--; lz[Pz-1]--; lx[Px-1] -= bc_node;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		BC_TYPE_FACE_X, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-		Nx-node, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
-	ly[Py-1]++; lz[Pz-1]++;
+		Nx-bc_node, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
+	ly[Py-1]++; lz[Pz-1]++; lx[Px-1] += bc_node;
 
 	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; lz[Pz-1]--;
