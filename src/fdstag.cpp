@@ -1241,7 +1241,7 @@ PetscErrorCode FDSTAGCreateDMDA(
 	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
 	lx[Px-1] -= bc_node;
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		BC_TYPE_EDGE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx-bc_node, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
 	lx[Px-1] += bc_node;
 
