@@ -962,6 +962,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 
 		// setup indexing data
 		ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
+
+		// set number of local grid points
+		ierr = FDSTAGSetNum(fs); CHKERRQ(ierr);
 	}
 
 	// get MPI processor rank
@@ -996,16 +999,13 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	ierr = PetscFree(ly); CHKERRQ(ierr);
 	ierr = PetscFree(lz); CHKERRQ(ierr);
 
-	// set number of local grid points
-	ierr = FDSTAGSetNum(fs); CHKERRQ(ierr);
-
-	// get ranks of neighbor processes
-	ierr = FDSTAGGetNeighbProc(fs); CHKERRQ(ierr);
-
 	// generate coordinates
 	ierr = Discret1DGenCoord(&fs->dsx, &msx); CHKERRQ(ierr);
 	ierr = Discret1DGenCoord(&fs->dsy, &msy); CHKERRQ(ierr);
 	ierr = Discret1DGenCoord(&fs->dsz, &msz); CHKERRQ(ierr);
+
+	// get ranks of neighbor processes
+	ierr = FDSTAGGetNeighbProc(fs); CHKERRQ(ierr);
 
 	// print essential grid details
 	if(complete_build)
@@ -1279,32 +1279,15 @@ PetscErrorCode FDSTAGSetNum(FDSTAG *fs)
 {
 	// set number of local grid points
 
-	PetscInt nnx, nny, nnz;
-	PetscInt ncx, ncy, ncz;
-
 	PetscFunctionBeginUser;
 
-	// compute local number of grid points
-	if(fs->periodic)
-	{
-		nnx = fs->dsx.nnods-1; ncx = fs->dsx.ncels;
-		nny = fs->dsy.nnods;   ncy = fs->dsy.ncels;
-		nnz = fs->dsz.nnods;   ncz = fs->dsz.ncels;
-	}
-	else
-	{
-		nnx = fs->dsx.nnods; ncx = fs->dsx.ncels;
-		nny = fs->dsy.nnods; ncy = fs->dsy.ncels;
-		nnz = fs->dsz.nnods; ncz = fs->dsz.ncels;
-	}
-
-	fs->nCells = ncx*ncy*ncz;
-	fs->nXYEdg = nnx*nny*ncz;
-	fs->nXZEdg = nnx*ncy*nnz;
-	fs->nYZEdg = ncx*nny*nnz;
-	fs->nXFace = nnx*ncy*ncz;
-	fs->nYFace = ncx*nny*ncz;
-	fs->nZFace = ncx*ncy*nnz;
+	PetscCall(DMDAGetLocalGridSize(fs->DA_CEN, fs->nCells));
+	PetscCall(DMDAGetLocalGridSize(fs->DA_XY,  fs->nXYEdg));
+	PetscCall(DMDAGetLocalGridSize(fs->DA_XZ,  fs->nXZEdg));
+	PetscCall(DMDAGetLocalGridSize(fs->DA_YZ,  fs->nYZEdg));
+	PetscCall(DMDAGetLocalGridSize(fs->DA_X,   fs->nXFace));
+	PetscCall(DMDAGetLocalGridSize(fs->DA_Y,   fs->nYFace));
+	PetscCall(DMDAGetLocalGridSize(fs->DA_Z,   fs->nZFace));
 
 	PetscFunctionReturn(0);
 }

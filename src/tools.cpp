@@ -883,4 +883,18 @@ PetscErrorCode ViewSolver(KSP ksp)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+PetscErrorCode DMDAGetLocalGridSize(DM DA, PetscInt &nnods)
+{
+	PetscInt nx, ny, nz;
+
+	PetscFunctionBeginUser;
+
+	PetscCall(DMDAGetCorners(DA, NULL, NULL, NULL, &nx, &ny, &nz));
+
+	nnods = nx*ny*nz;
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+
 

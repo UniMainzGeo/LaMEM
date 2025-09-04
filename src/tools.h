@@ -275,4 +275,9 @@ static inline PetscScalar InterpLin2D(
 PetscErrorCode ViewSolver(KSP ksp);
 
 //--------------------------------------------------------------------------
+
+PetscErrorCode DMDAGetLocalGridSize(DM DA, PetscInt &nnods);
+
+//--------------------------------------------------------------------------
+
 #endif
