@@ -193,11 +193,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	gy = ctrl->grav[1];
 	gz = ctrl->grav[2];
 
-	if(gx || gy)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Horizontal gravity components are currently not supported (grav)");
-	}
-
 	if(ctrl->FSSA < 0.0 || ctrl->FSSA > 1.0)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Free surface stabilization parameter must be between 0 and 1 (FSSA)");
