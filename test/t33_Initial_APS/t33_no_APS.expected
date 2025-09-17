@@ -1,0 +1,188 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Aug 27 2025 - Time: 12:19:36 	    
+     Version : 2.2.0 
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : t33.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 2 
+   Time step                    : 0.04 [ ] 
+   Minimum time step            : 0.004 [ ] 
+   Maximum time step            : 0.2 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.8 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+   Save restart every [n] steps : 100 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [10, 10, 10]
+   Number of cells                      :  1000
+   Number of faces                      :  3300
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [-1., -1., -1.]
+   Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0   
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 1   
+   (dens)   : rho = 5. [ ]  
+   (diff)   : eta = 100. [ ]  Bd = 0.005 [ ]  
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+   Top boundary temperature                   : 1000. [ ] 
+   Bottom boundary temperature                : 1000. [ ] 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Enforce zero average pressure on top    @ 
+   Limit pressure at first iteration       @ 
+   Reference viscosity (initial guess)     : 1. [ ] 
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Periodic marker advection     : 0 0 0 
+   Marker setup scheme           : binary files (MATLAB)
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : subgrid 
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+--------------------------------------------------------------------------
+Loading markers in parallel from file(s) <./mdb> ... done (0.00852894 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : output 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Temperature                             @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate second invariant @ 
+--------------------------------------------------------------------------
+Marker output parameters:
+   Write .pvd file : yes 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Penalty parameter (pgamma)    : 1.000000e+04
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.429054972744e+01
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.204296519874e-09
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.0463128 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.808956955924e-10 
+      |Div|_2   = 1.200942050950e-09 
+   Momentum: 
+      |mRes|_2  = 8.982370533532e-11 
+--------------------------------------------------------------------------
+Saving output ... done (0.0260617 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [ ] 
+Tentative time step : 0.04000000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.294916043380e+02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 9.866084366261e-07
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 0.0319112 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.008510935694e-10 
+      |Div|_2   = 8.402338717480e-10 
+   Momentum: 
+      |mRes|_2  = 9.866080788383e-07 
+--------------------------------------------------------------------------
+Actual time step : 0.04400 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 6.0539e-04 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0238554 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.04400000 [ ] 
+Tentative time step : 0.04400000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.531163135253e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.388741476344e-08
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.032639 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 8.821187703900e-12 
+      |Div|_2   = 4.078502999897e-11 
+   Momentum: 
+      |mRes|_2  = 1.388735487388e-08 
+--------------------------------------------------------------------------
+Actual time step : 0.04840 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 6.1814e-04 s
+--------------------------------------------------------------------------
+Saving output ... done (0.028779 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 0.250712 (sec) 
+--------------------------------------------------------------------------
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There are 4 unused database options. They are:
+Option left: name:-mat_product_algorithm value: scalable source: code
+Option left: name:-matmatmatmult_via value: scalable source: code
+Option left: name:-matmatmult_via value: scalable source: code
+Option left: name:-ParamFile value: t33.dat source: code

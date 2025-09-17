@@ -80,6 +80,7 @@ struct P_Tr
 	Vec    T;     // temperature
 	Vec    Melt_fr; // Melt fraction acquired
 	Vec    Melt_Grid; // melt quantity effectively seen by the grid
+	Vec    APS; // accumulated plastic strain
 	Vec    C_advection; // condition to advect marker /*NB: in the future it could be useful to customize better this vector */
 	Vec    Recv;  // Vector that must be used during synching operation
 };
