@@ -53,6 +53,7 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_MeltFraction",    &pvptr->MeltFraction, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Active",          &pvptr->Active   , 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Grid_Mf",         &pvptr->Grid_mf   , 1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_APS",             &pvptr->APS       , 1, 1); CHKERRQ(ierr);
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Passive Tracers output parameters:\n");
@@ -180,7 +181,12 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	{
 		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf_Grid %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_unit  ,(LLD)offset);
 		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
-		}
+	}
+	if(pvptr->APS)
+	{
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"APS\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
+		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
+	}
 
 	if(pvptr->ID)
 	{
@@ -359,6 +365,24 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 		}
 
+	if(pvptr->APS)
+		{
+			ierr = VecGetArray(ptr->APS, &buf)           ; CHKERRQ(ierr);
+
+			length = (uint64_t)sizeof(float)*(ptr->nummark);
+			fwrite( &length,sizeof(uint64_t),1, fp);
+
+			for( i = 0; i < ptr->nummark; i++)
+			{
+				var = float(buf[i]);
+				fwrite( &var, sizeof(float),1, fp );
+			}
+		// -------------------
+			ierr = VecRestoreArray(ptr->APS, &buf)           ; CHKERRQ(ierr);
+
+
+		}
+
 	if(pvptr->ID)
 			{
 				ierr = VecGetArray(ptr->ID, &buf)           ; CHKERRQ(ierr);
@@ -476,6 +500,13 @@ PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
 				// point data
 				fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Mf_Grid %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_unit);
 			}
+
+	if(pvptr->APS)
+		{
+			// point data
+			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"APS\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
+		}
+
 	if(pvptr->ID)
 		{
 			// point data
