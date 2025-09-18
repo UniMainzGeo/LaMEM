@@ -191,5 +191,8 @@ typedef pair <PetscInt,    PetscInt> ipair;
 
 PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4]);
 
+
+int LaMEM_main(int argc, char **argv);
+
 //-----------------------------------------------------------------------------
 #endif

@@ -20,6 +20,11 @@ mode = opt
 
 PLATFORM = $(shell uname -m)
 
+# C wrapper configuration  
+LAMEM_FLAGS += -IC_headers/ -fvisibility=default
+						 
+# Add C headers to C_WRAPPER_SOURCES (to simplify calling LaMEM functions in the from other codes)
+C_WRAPPER_SOURCES = $(wildcard C_headers/*.cpp)
 
 # IBM machine (XLC compiler assumed)
 ifeq ($(PLATFORM), ppc64)
@@ -109,6 +114,13 @@ ifneq ($(filter MSYS%,$(UNAME)),)
 CLIB_FLAGS = -lssp
 endif
 
+# This is CORRECT (uses tabs):
+$(SHARED_LIB): $(LIB_OBJECTS)
+	$(CXX) $(SHARED_FLAGS) -o $@ $^ $(PETSC_LIB)
+
+# Static library target  
+$(STATIC_LIB): $(LIB_OBJECTS)
+	$(AR) rcs $@ $^
 #====================================================
 
 # Environment required for documentation 
