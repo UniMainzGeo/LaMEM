@@ -82,7 +82,6 @@
 #===============================================================================
 
     out_file_name    =  output     # output file name
-    out_dir          =  output_markers     # output directory
     write_VTK_setup  =  true     # write VTK initial model setup
     out_pvd          =  1     # activate writing .pvd file
     out_phase        =  1     # dominant phase

@@ -5,7 +5,7 @@
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : t33.dat 
+Parsing input file : t33_setup.dat 
 Finished parsing input file 
 --------------------------------------------------------------------------
 Time stepping parameters:
@@ -60,6 +60,7 @@ Solution parameters & controls:
    Max. melt fraction (viscosity, density) : 1.    
    Rheology iteration number               : 25  
    Rheology iteration tolerance            : 1e-06    
+   Passive Tracers are active              @ 
    Ground water level type                 : none 
 --------------------------------------------------------------------------
 Advection parameters:
@@ -71,7 +72,16 @@ Advection parameters:
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : random noise
 --------------------------------------------------------------------------
-Loading markers in parallel from file(s) <./mdb_APS> ... done (0.00752266 sec)
+Loading markers in parallel from file(s) <./markers_APS/mdb> ... done (0.00826161 sec)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Passive Tracers: 
+   Initial coordinate Box x = [Left,Right] : -1.000000, 1.000000 
+   Initial coordinate Box y = [Front,Back] : -1.000000, 1.000000 
+   Initial coordinate Box z = [Bot, Top]   : -1.000000, 1.000000 
+   # of tracers in [x,y,z] direction       : [10, 10, 10] 
+   Total # of tracers                      : 1000 
+   Tracer advection activation type        : Always active
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : output 
@@ -85,9 +95,13 @@ Output parameters:
    Temperature                             @ 
    Deviatoric stress second invariant      @ 
    Deviatoric strain rate second invariant @ 
+   Accumulated Plastic Strain (APS)        @ 
 --------------------------------------------------------------------------
 Marker output parameters:
    Write .pvd file : yes 
+--------------------------------------------------------------------------
+Passive Tracers output parameters:
+   Write Passive tracers pvd file  
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Matrix type                   : monolithic
@@ -101,88 +115,96 @@ Solver parameters specified:
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.429054972744e+01
+  0 SNES Function norm 3.000000000000e+01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.204296519874e-09
+  1 SNES Function norm 3.447357117050e-13
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0438342 (sec)
+SNES solution time      : 0.0442286 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.808956955924e-10 
-      |Div|_2   = 1.200942050950e-09 
+      |Div|_inf = 4.268263780470e-19 
+      |Div|_2   = 2.976369593026e-18 
    Momentum: 
-      |mRes|_2  = 8.982370533532e-11 
+      |mRes|_2  = 3.447357116922e-13 
 --------------------------------------------------------------------------
-Saving output ... done (0.0224544 sec)
+Saving output ... done (0.0291225 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [ ] 
 Tentative time step : 0.04000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 6.294916043380e+02
+  0 SNES Function norm 3.447357117050e-13
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 9.866084366261e-07
+  1 SNES Function norm 1.702827803925e-14
 --------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0321663 (sec)
+SNES solution time      : 0.0325925 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.008510935694e-10 
-      |Div|_2   = 8.402338717480e-10 
+      |Div|_inf = 1.000905792098e-30 
+      |Div|_2   = 6.292622793103e-30 
    Momentum: 
-      |mRes|_2  = 9.866080788383e-07 
+      |mRes|_2  = 1.702827803925e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.04400 [ ] 
 --------------------------------------------------------------------------
-Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 6.1158e-04 s
+Advection Passive tracers ... 
+ Currently active tracers    :  1000 
+done (0.000209763 sec)
 --------------------------------------------------------------------------
-Saving output ... done (0.0204886 sec)
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 6.1014e-04 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0280006 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.04400000 [ ] 
 Tentative time step : 0.04400000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.531163135253e+00
+  0 SNES Function norm 1.702827803925e-14
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.388741476344e-08
+  1 SNES Function norm 2.066419328549e-14
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.03207 (sec)
+SNES solution time      : 0.0335445 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.821187703900e-12 
-      |Div|_2   = 4.078502999897e-11 
+      |Div|_inf = 2.927413515469e-32 
+      |Div|_2   = 1.879127781752e-31 
    Momentum: 
-      |mRes|_2  = 1.388735487388e-08 
+      |mRes|_2  = 2.066419328549e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.04840 [ ] 
 --------------------------------------------------------------------------
-Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 6.0588e-04 s
+Advection Passive tracers ... 
+ Currently active tracers    :  1000 
+done (0.000190579 sec)
 --------------------------------------------------------------------------
-Saving output ... done (0.0227087 sec)
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 6.6785e-04 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0238208 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.228827 (sec) 
+Total solution time : 0.249846 (sec) 
 --------------------------------------------------------------------------
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!
-There are 4 unused database options. They are:
+There are 5 unused database options. They are:
 Option left: name:-mat_product_algorithm value: scalable source: code
 Option left: name:-matmatmatmult_via value: scalable source: code
 Option left: name:-matmatmult_via value: scalable source: code
-Option left: name:-ParamFile value: t33.dat source: code
+Option left: name:-ParamFile value: t33_setup.dat source: code
