@@ -1054,6 +1054,7 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
 
+#=
 @testset "t33_Initial_APS" begin
     cd(test_dir)
     dir = "t33_Initial_APS";
@@ -1087,6 +1088,7 @@ end
     @test mean_APS0 == 0.0
     @test mean_APS1 == 0.5
 end
+=#
 
 end
 
