@@ -495,7 +495,6 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
   FDSTAG      *fs;
   PetscInt   nD, numDike, numPhtr, nPtr, n, icounter;
   PetscInt   j, j1, j2, sx, sy, sz, ny, nx, nz;
-
   PetscErrorCode ierr; 
 
   PetscFunctionBeginUser;
@@ -503,6 +502,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
   jr = actx->jr;
   fs  =  jr->fs;
   ctrl = &jr->ctrl;
+
   
   if (!ctrl->actDike || jr->ts->istep+1 == 0) PetscFunctionReturn(0);   // only execute this function if dikes are active
   fs = jr->fs;
@@ -559,7 +559,6 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 
 		ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
 		ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
-		//if (L==0 && M>=2 && M<=5) printf("ItoDikeLocate istep=%lld: nD=%lld, L=%lld, M=%lld, j1=%lld, j2=%lld\n", jr->ts->istep+1, nD, L, M, j1, j2); //debugging
 		if (((jr->ts->istep+1) % dike->nstep_locate) == 0)
 		{
 	   		PetscPrintf(PETSC_COMM_WORLD, "Calling Set_dike_zones: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1),(LLD)(nD));
@@ -1390,24 +1389,14 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 	Dike        *dike;
 	Discret1D   *dsx, *dsy, *dsz;
 	Ph_trans_t  *CurrPhTr;
-	PetscScalar sxx_max, dike_width, mindist, xshift, xcell;
-	PetscScalar xcent_search, ycent_search, xc0, xcenter_smooth, yc, dy, dalong, sum_xcent, sum_w, w, dfac;
 	PetscScalar ***gsxx_eff_ave;
-	PetscScalar ***ycoors, *lycoors, ***ycoors_prev, *lycoors_prev, ***ycoors_next, *lycoors_next;
-	PetscScalar ***xcenter, *lxcenter, ***xcenter_prev, *lxcenter_prev, ***xcenter_next, *lxcenter_next;
+	PetscScalar xcenter, sxx_max, dike_width, mindist, xshift, xcell;
 	PetscScalar ***xboundL_pass, *lxboundL_pass, ***xboundR_pass, *lxboundR_pass;
-	PetscScalar sxxm, sxxp, dx12, dsdx1, dsdx2, x_maxsxx, dtime;   
-	PetscScalar filty;
-	//PetscScalar xcn,ycn1,ycn2,xcp,ycp1,ycp2;  //debugging
-
 	Vec         vxboundL_pass, vxboundR_pass;
-	Vec         vycoors, vycoors_prev, vycoors_next;
-	Vec         vxcenter, vxcenter_prev, vxcenter_next;
-
-
-	PetscInt    i, lj, jj, j, sx, sy, sz, nx, ny, nz, L, Lx, M, ixcenter;
+	PetscInt    i, lj, j, sx, sy, sz, nx, ny, nz, L, Lx, M, ixcenter;
+	PetscScalar sxxm, sxxp, dx12, dsdx1, dsdx2, x_maxsxx, ycell, dtime;   
 	PetscInt    ixmax, istep, nstep_out;
- 	MPI_Request srequest, rrequest, srequest2, rrequest2, srequest3, rrequest3, srequest4, rrequest4;
+ 	MPI_Request srequest, rrequest;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1424,10 +1413,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 	nstep_out=jr->ts->nstep_out;
 
 	dike = jr->dbdike->matDike+nD;
-	filty=dike->filty;
 	CurrPhTr = jr->dbm->matPhtr+nPtr;
 	dtime=jr->scal->time*jr->ts->time;
-	dfac=1.0;
 
 
 	if (Lx>0)
@@ -1438,45 +1425,6 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	// get communication buffer (Gets a PETSc vector, vxcenter, that may be used with the DM global routines)
-	//for dike center
-	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vxcenter); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vxcenter_prev); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vxcenter_next); CHKERRQ(ierr);
-
-	ierr = VecZeroEntries(vxcenter); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vxcenter_prev); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vxcenter_next); CHKERRQ(ierr);
-	//y node coords
-	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vycoors); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vycoors_prev); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_1D, &vycoors_next); CHKERRQ(ierr);
-
-	ierr = VecZeroEntries(vycoors); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vycoors_prev); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vycoors_next); CHKERRQ(ierr);
-
-	// open index buffer for computation (xcenter is the array that shares data with vector vxcenter & indexed with global dimensions)
-	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vxcenter, &xcenter); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vxcenter_prev, &xcenter_prev); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vxcenter_next, &xcenter_next); CHKERRQ(ierr);
-	//y node coords
-	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vycoors, &ycoors); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vycoors_prev, &ycoors_prev); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_1D, vycoors_next, &ycoors_next); CHKERRQ(ierr);
-
-	// open linear buffer for send/receive  (returns the pointer, lxcenter, that contains this processor portion of vector data, vxcenter)
-	ierr = VecGetArray(vxcenter, &lxcenter); CHKERRQ(ierr);
-	ierr = VecGetArray(vxcenter_prev, &lxcenter_prev); CHKERRQ(ierr);
-	ierr = VecGetArray(vxcenter_next, &lxcenter_next); CHKERRQ(ierr); 
-	//y node coords
-	ierr = VecGetArray(vycoors, &lycoors); CHKERRQ(ierr);
-	ierr = VecGetArray(vycoors_prev, &lycoors_prev); CHKERRQ(ierr);
-	ierr = VecGetArray(vycoors_next, &lycoors_next); CHKERRQ(ierr);
-
-	//-----------------------------------------------------------------------------------------------------------------------                            
-	//FIND new center based on peak sxx
-	//-----------------------------------------------------------------------------------------------------------------------                            
 	for(lj = j1; lj <= j2; lj++)  //local index
 	{
 		sxx_max=-1e12;
@@ -1487,15 +1435,15 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
 		j=sy+lj;  //global index
 		dike_width=CurrPhTr->celly_xboundR[lj]-CurrPhTr->celly_xboundL[lj];
-		xc0=(CurrPhTr->celly_xboundR[lj] + CurrPhTr->celly_xboundL[lj])/2;
+		xcenter=(CurrPhTr->celly_xboundR[lj] + CurrPhTr->celly_xboundL[lj])/2;
 
 		for(i=sx+1; i < sx+nx-1; i++) 
 		{
 			xcell=COORD_CELL(i, sx, fs->dsx);
-			if (fabs(xcell-xc0) <= mindist) //find indice of dike zone center (xcenter)
+			if (fabs(xcell-xcenter) <= mindist) //find indice of dike zone center (xcenter)
 			{
 				ixcenter=i;
-				mindist=fabs(xcell-xc0);
+				mindist=fabs(xcell-xcenter);
 			}
 		} //end loop to find ixcenter
  
@@ -1507,6 +1455,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 				//xshift=COORD_CELL(i, sx, fs->dsx)-xcenter;
 				ixmax=i;
 			}
+
 		} 
 		
 		//finding where slope of dsxx/dx=0
@@ -1526,7 +1475,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
         	x_maxsxx=COORD_CELL(ixmax,sx,fs->dsx);
 		}
 
-		xshift=x_maxsxx-xc0;
+		xshift=x_maxsxx-xcenter;
 
 		if (xshift>0 && fabs(xshift) > 0.5*SIZE_CELL(ixcenter, sx, fs->dsx)) //ensure new center is within width of cell to right of center
 		{
@@ -1537,149 +1486,20 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
         	xshift=-0.5*SIZE_CELL(ixcenter-1, sx, fs->dsx);
 		}
 
-		xcenter[L][M][lj]=xc0+xshift;
-
-	}//end loop to find new xcenter
-
-	for(jj = sy; jj <= sy+ny; jj++)  //global index through to ny to fill in ny+1 values
-	{
-		ycoors[L][M][jj-sy]=COORD_NODE(jj,sy,fs->dsy);  //can put j in last entry because ny<nx
-	}
-		
-
-	//--------------------------------------------------
-	// Passing arrays between previous and next y proc
-	//--------------------------------------------------
-	if (dsy->nproc > 1 && dsy->grprev != -1)  //Exchange arrays from previous proc, if not the first proc
-	{
-		ierr = MPI_Irecv(lycoors_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Irecv(lxcenter_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest2); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest2, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-
-		ierr = MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest3); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest3, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest4); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest4, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-	}
-
-	if ((dsy->nproc != 1) &&  (dsy->grnext != -1))  //Exhange arrays with next proc, if not the last proc
-	{
-		ierr = MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest2); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest2, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-
-		ierr = MPI_Irecv(lycoors_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest3); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest3, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Irecv(lxcenter_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest4); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest4, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-	}
-
-	//-----------------------------------------------------------------------------------------------------------------------                            
-	//Smooth and redefine dike coords
-	//----------------------------------------------------------------------------------------------------------------------- 
-	/*if (L==0 &&  M>3 && M<7 && nD==2) printf("ItoDikeSet istep=%lld: L=%lld, M=%lld, j1=%lld, j2=%lld\n", istep, L, M, j1, j2);
-	if (L==0 &&  M>3 && M<7 && nD==2)   //debugging
-	{
-	for(jj = sy; jj < ny+sy; jj++)  //debugging
-	{
-		xc0 = xcenter[L][M][jj-sy];
-		yc = ycoors[L][M][jj-sy];
-		xcn = xcenter_next[L][M][jj-sy];
-		ycn1 = ycoors_next[L][M][jj-sy];
-		ycn2 = ycoors_next[L][M][jj-sy+1];
-		xcp = xcenter_prev[L][M][jj-sy];
-		ycp1 = ycoors_prev[L][M][jj-sy];
-		ycp2 = ycoors_prev[L][M][jj-sy+1];
-		printf("ITO: M=%lld, jj=%lld: (%g,%g), %lld: (%g,%g,%g), %lld: (%g,%g,%g)\n", M, jj,xc0,yc,dsy->grprev, xcp,ycp1,ycp2, dsy->grnext, xcn,ycn1,ycn2);
-	}
-	}*/
-
-
-	for(lj = j1; lj <= j2; lj++)  //local indices only on dike cells
-	{
-		xc0 = xcenter[L][M][lj];
-		yc = COORD_CELL(lj+sy, sy, fs->dsy);
-		sum_xcent=0.0;
-		sum_w=0.0;
-
-		for(jj = sy; jj < sy+ny; jj++)  //Gotta search whole array of (global) indexes for filtering
-		{
-			//Current proc
-			xcent_search=xcenter[L][M][jj-sy];  //beyond dike end this will be 1e12 so dalong>filty
-			ycent_search=COORD_CELL(jj, sy, fs->dsy);
-			dy=SIZE_CELL(jj,sy,fs->dsy);
-			dalong=sqrt(pow((xc0-xcent_search),2)+pow((yc-ycent_search),2));
-			if (dalong<=dfac*filty) 			
-			{
-				w=exp(-0.5*pow(dalong/filty,2))*dy;
-				sum_xcent += xcent_search*w;
-				sum_w+=w;
-				/*if (L==0 &&  M==5 && nD==2 && lj==j2-2)   //debugging
-				{
-				printf("GIto Current proc: lj=%lld, xc0=%g, yc=%g, jj=%lld, xcsearh=%g, ycsearch=%g, dalong=%g, w=%g \n", 
-												lj, xc0, yc, jj, xcent_search, ycent_search, dalong, w);
-				}*/
-			}
-
-			// locations from next proc
-			if ((dsy->nproc != 1) && (dsy->grnext != -1))
-			{
-				xcent_search=xcenter_next[L][M][jj-sy];  //if beyond dike end this will be 1e12 so dalong>filty
- 				ycent_search=(ycoors_next[L][M][jj-sy+1]+ycoors_next[L][M][jj-sy])/2;
-				dy=ycoors_next[L][M][jj+1-sy]-ycoors_next[L][M][jj-sy];
-				dalong=sqrt(pow((xc0-xcent_search),2)+pow((yc-ycent_search),2));
-				if (dalong<=dfac*filty) 			
-				{
-					w=exp(-0.5*pow(dalong/filty,2))*dy;
-					sum_xcent += xcent_search*w;
-					sum_w+=w;
-					/*if (L==0 &&  M==5 && nD==2 && lj==j2-2)   //debugging
-					{
-						printf("GIto    Next proc:    %lld    %g     %g     %lld          %g           %g         %g    %g \n", 
-														lj,   xc0,    yc,    jj, xcent_search, ycent_search, dalong, w);
-					}*/
-				}
-			}
-
-			//Locations from previous proc
-			if ( (dsy->nproc != 1) && (dsy->grprev != -1))
-			{
-				xcent_search=xcenter_prev[L][M][jj-sy];  //if beyond dike end this will be 1e12 and dalong>filty
- 				ycent_search=(ycoors_prev[L][M][jj-sy+1]+ycoors_prev[L][M][jj-sy])/2;
-				dy=ycoors_prev[L][M][jj+1-sy]-ycoors_prev[L][M][jj-sy];
-				dalong=sqrt(pow((xc0-xcent_search),2)+pow((yc-ycent_search),2));
-				if (dalong<=dfac*filty) 			
-				{
-					w=exp(-0.5*pow(dalong/filty,2))*dy;
-					sum_xcent += xcent_search*w;
-					sum_w+=w;
-					/*if (L==0 &&  M==5 && nD==2 && lj==j2-2)   //debugging
-					{
-						printf("GIto    PREV proc:    %lld    %g     %g     %lld          %g           %g         %g    %g \n", 
-														lj,   xc0,    yc,    jj, xcent_search, ycent_search, dalong, w);
-					}*/
-				}
-				
-			}
-		}// end loop for smoothing
-		xcenter_smooth=sum_xcent/sum_w;
-
 		//relocating dike bounds here
-		CurrPhTr->celly_xboundL[lj]=xcenter_smooth-dike_width/2; 
-		CurrPhTr->celly_xboundR[lj]=xcenter_smooth+dike_width/2; 
+		CurrPhTr->celly_xboundL[lj]=xcenter+xshift-dike_width/2; 
+		CurrPhTr->celly_xboundR[lj]=xcenter+xshift+dike_width/2; 
 
 		if (L==0 &&  ((istep % nstep_out)==0) && (dike->out_dikeloc > 0)) 
 		{ 
+			ycell = COORD_CELL(j, sy, fs->dsy);  
+        	xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
         	PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %lld %g %g %g %g %g %lld %g \n", 
-				(LLD)(jr->ts->istep+1), yc, xc0, 0.0, 
+				(LLD)(jr->ts->istep+1), ycell, xcenter, xshift, 
 				CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], (LLD)(nD), dtime);  
 		}
 
-	}//end loop over length of dike zone
-
-
+	}//end loop over j cell row
 
 	if (((istep % nstep_out)==0) && (dike->out_dikeloc > 0))  
 	{
@@ -1777,7 +1597,6 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
   PetscFunctionReturn(0);  
 }
-
 
 //---------------------------------------------------------------------------
 PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp)
