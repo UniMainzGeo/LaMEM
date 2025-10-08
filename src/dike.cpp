@@ -521,7 +521,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 	//if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start) && ((jr->ts->istep+1) % dike->nstep_locate) == 0) 
 	if (dike->dyndike_start && (jr->ts->istep+1 >= dike->dyndike_start)) //debugging
     {
-       // compute lithostatic pressure
+
+		// compute lithostatic pressure
        if (icounter==0) 
        {
          ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
@@ -558,6 +559,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
        	}
 
 		ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
+
 		ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
 		if (((jr->ts->istep+1) % dike->nstep_locate) == 0)
 		{
