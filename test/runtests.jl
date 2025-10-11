@@ -1054,5 +1054,46 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 end
 
+@testset "t33_Initial_APS" begin
+    cd(test_dir)
+    dir = "t33_Initial_APS";
+
+    include(joinpath(dir,"t33_analytics.jl"))
+
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
+    
+    name0 = "no_APS"
+    name1 = "APS"
+    CreateMarkers_t33(dir, "t33_setup.dat", "./markers_$name0"; NumberCores=1)
+    CreateMarkers_t33(dir, "t33_setup.dat", "./markers_$name1"; APS=0.5, NumberCores=1)
+
+    # Test backwards compatibility
+    #   Read marker file created without APS column
+    #   No passive tracer output
+    @test perform_lamem_test(dir,"t33_setup.dat","t33_$name0.expected", args="-mark_load_file ./markers_$name0/mdb",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec, clean_dir=false)
+    #   APS output on passive tracers works even if no initial APS is set on markers
+    @test perform_lamem_test(dir,"t33_setup.dat","t33_$name0.expected", args="-mark_load_file ./markers_$name0/mdb -out_ptr 1 -out_ptr_APS 1",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec, clean_dir=false)
+
+    # Test initial accumulated plastic strain
+    #   Read marker file created with APS=0.5
+    #   No passive tracer output
+    @test perform_lamem_test(dir,"t33_setup.dat","t33_$name1.expected", args="-mark_load_file ./markers_$name1/mdb",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec, clean_dir=false)
+    #   APS output on passive tracers
+    @test perform_lamem_test(dir,"t33_setup.dat","t33_$name1.expected", args="-mark_load_file ./markers_$name1/mdb -out_ptr 1 -out_ptr_APS 1",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec, clean_dir=false)
+
+    # Test that plast_strain values are correct in both cases
+    #   Includes pvd, marker, and passive tracer output
+    mean_APS0, mean_APS1 = compare_APS(dir, "t33_setup.dat", "./markers_$name0", "./markers_$name1")
+    #  Verify APS values after 2 timesteps
+    @test mean_APS0 == 0.0
+    @test mean_APS1 == 0.5
+    clean_test_directory(dir)
+end
+
 end
 
