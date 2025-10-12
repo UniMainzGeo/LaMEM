@@ -1,6 +1,6 @@
 using LinearAlgebra
 using Statistics
-using CairoMakie
+#using CairoMakie
 
     
 """
@@ -74,6 +74,7 @@ function extract_1D_profiles(data, dir)
     return phase_vec,ρ, z, Szz_vec, Sxx_vec, Pf_vec, τII_vec
 end
 
+#=
 function Plot_vs_analyticalSolution(data, dir, filename="Analytics_vs_LaMEM.png")
 
     # extract 1D profiles
@@ -83,7 +84,7 @@ function Plot_vs_analyticalSolution(data, dir, filename="Analytics_vs_LaMEM.png"
     Sv_a, Pf_a, P_hydro_a, Sh_anal_a = AnalyticalSolution(ρ, phase_vec, z)
 
     # Open figure 
-    f = Figure(resolution = (1500, 800))
+    f = Figure(size = (1500, 800))
     ax = Axis(f[1, 1],  xlabel = "Pressure & Stress [bar]", ylabel = "Depth [km]")
     lines!(ax, Sv_a*10, z,  label = "Analytical σᵥ") 
     lines!(ax, Pf_a*10, z,  label = "Analytical Pf") 
@@ -106,3 +107,4 @@ function Plot_vs_analyticalSolution(data, dir, filename="Analytics_vs_LaMEM.png"
 
     return f 
 end
+=#

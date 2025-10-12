@@ -22,7 +22,6 @@ int main(int argc, char **argv)
 
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
-
 	ModParam IOparam;
 	char      str[_str_len_];
 
@@ -42,10 +41,16 @@ int main(int argc, char **argv)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown parameter for 'Adjoint_mode'. Possibilities are [None; GenericInversion; AdjointGradients; GradientDescent or SyntheticForwardRun]");
 	} 
 	
+	/* Name stages */
+	PetscCall(PetscLogStageRegister("Initial guess",  &IOparam.stages[0])); 
+	PetscCall(PetscLogStageRegister("SNES solve",     &IOparam.stages[1]));
+	PetscCall(PetscLogStageRegister("Advect markers", &IOparam.stages[2])); 
+	PetscCall(PetscLogStageRegister("I/O",            &IOparam.stages[3]));
+
 	if(IOparam.use == 0)
 	{
 		// Forward simulation	
-		ierr = LaMEMLibMain(NULL); CHKERRQ(ierr);
+		ierr = LaMEMLibMain(NULL,IOparam.stages); CHKERRQ(ierr);
 	}
 	else
 	{

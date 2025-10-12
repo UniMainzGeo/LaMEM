@@ -180,6 +180,8 @@ PetscErrorCode ADVPtrReCreateStorage(AdvCtx *actx)
 		ierr = VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Melt_Grid);      CHKERRQ(ierr);
 		ierr = VecZeroEntries(actx->Ptr->Melt_Grid); CHKERRQ(ierr);
 
+		ierr = VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->APS);      CHKERRQ(ierr);
+		ierr = VecZeroEntries(actx->Ptr->APS); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -315,7 +317,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	vector <spair>    dist;
 	spair d;
 	Marker   *IP;
-	PetscScalar  X[3],Xm[3],*Xp,*Yp,*Zp,*Pr,*T,*phase;
+	PetscScalar  X[3],Xm[3],*Xp,*Yp,*Zp,*Pr,*T,*phase,*APS;
 	PetscInt     I, J, K,ii,numpassive,imark,ID,nx,ny,n,*markind,id_m;
 	PetscScalar ex,bx,ey,by,ez,bz;
 
@@ -346,6 +348,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	ierr = VecGetArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
 	ierr = VecGetArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
 	ierr = VecGetArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->APS, &APS)           ; CHKERRQ(ierr);
 	ierr = VecGetArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 
 	for(imark=0;imark<numpassive;imark++)
@@ -394,6 +397,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 			phase[imark]= ((PetscScalar) IP->phase);
 			T[imark]= IP->T;
 			Pr[imark]= IP->p;
+			APS[imark]= IP->APS;
 			}
 			else
 			{
@@ -401,6 +405,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 				phase[imark]= -DBL_MAX;
 				T[imark]= -DBL_MAX;
 				Pr[imark]= -DBL_MAX;
+				APS[imark]= -DBL_MAX;
 			}
 
 	}
@@ -410,6 +415,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	ierr = VecRestoreArray(actx->Ptr->z, &Zp)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->p, &Pr)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->T, &T)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->APS, &APS)        ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 
 	if(ISParallel(PETSC_COMM_WORLD))
@@ -425,6 +431,10 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 		ierr = Sync_Vector(actx->Ptr->phase,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
 		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->phase); CHKERRQ(ierr);
+
+		ierr = Sync_Vector(actx->Ptr->APS,actx,actx->Ptr->nummark); CHKERRQ(ierr);
+
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->APS); CHKERRQ(ierr);
 	}
 
 
@@ -459,7 +469,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	PetscScalar     *ccx, *ccy, *ccz;
 	PetscScalar     ***lvx, ***lvy, ***lvz, ***lp, ***lT;
 	PetscScalar     vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop, endx,endy,endz,begx,begy,begz,npx,npy,npz;
-	PetscScalar     *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active,*melt_grid;
+	PetscScalar     *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active,*melt_grid,*aps;
 	PetscScalar     pShift;
 	PetscScalar     Xm[3],X[3];
 	PetscLogDouble t;
@@ -537,6 +547,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	ierr = VecGetArray(actx->Ptr->phase, &phase)       ; CHKERRQ(ierr);
 	ierr = VecGetArray(actx->Ptr->Melt_fr, &mf_ptr)    ; CHKERRQ(ierr);
 	ierr = VecGetArray(actx->Ptr->Melt_Grid, &melt_grid); CHKERRQ(ierr);
+	ierr = VecGetArray(actx->Ptr->APS, &aps)           ; CHKERRQ(ierr);
 	ierr = VecGetArray(actx->Ptr->C_advection, &Active); CHKERRQ(ierr);
 
 	// scan all markers
@@ -727,6 +738,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	ierr = VecRestoreArray(actx->Ptr->phase, &phase)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->Melt_fr, &mf_ptr)           ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->Melt_Grid, &melt_grid)           ; CHKERRQ(ierr);
+	ierr = VecRestoreArray(actx->Ptr->APS, &aps)         ; CHKERRQ(ierr);
 	ierr = VecRestoreArray(actx->Ptr->C_advection, &Active)           ; CHKERRQ(ierr);
 
 
@@ -790,6 +802,11 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 		ierr = Sync_Vector(actx->Ptr->phase,actx,actx->Ptr->nummark); CHKERRQ(ierr);
 
 		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->phase); CHKERRQ(ierr);
+
+		//sync APS
+		ierr = Sync_Vector(actx->Ptr->APS,actx,actx->Ptr->nummark); CHKERRQ(ierr);
+
+		ierr = VecCopy(actx->Ptr->Recv,actx->Ptr->APS); CHKERRQ(ierr);
 
 		// number of active tracer in the whole domain
         PetscInt numActTracers_0;
@@ -1119,6 +1136,8 @@ PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 
 	VecDestroy(&actx->Ptr->Melt_Grid);
 
+	VecDestroy(&actx->Ptr->APS);
+
 	VecDestroy(&actx->Ptr->C_advection);
 
 	VecDestroy(&actx->Ptr->Recv);
@@ -1148,6 +1167,7 @@ PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
 	ierr = VecWriteRestart(actx->Ptr->phase, fp); CHKERRQ(ierr);
 	ierr = VecWriteRestart(actx->Ptr->Melt_fr, fp); CHKERRQ(ierr);
 	ierr = VecWriteRestart(actx->Ptr->Melt_Grid, fp); CHKERRQ(ierr);
+	ierr = VecWriteRestart(actx->Ptr->APS, fp); CHKERRQ(ierr);
 	ierr = VecWriteRestart(actx->Ptr->C_advection, fp); CHKERRQ(ierr);
 	ierr = VecWriteRestart(actx->Ptr->ID, fp); CHKERRQ(ierr);
 	}
@@ -1175,6 +1195,7 @@ PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
 		ierr = VecReadRestart(actx->Ptr->phase, fp); CHKERRQ(ierr);
 		ierr = VecReadRestart(actx->Ptr->Melt_fr, fp); CHKERRQ(ierr);
 		ierr = VecReadRestart(actx->Ptr->Melt_Grid, fp); CHKERRQ(ierr);
+		ierr = VecReadRestart(actx->Ptr->APS, fp); CHKERRQ(ierr);
 		ierr = VecReadRestart(actx->Ptr->C_advection, fp); CHKERRQ(ierr);
 		ierr = VecReadRestart(actx->Ptr->ID, fp); CHKERRQ(ierr);
 	}

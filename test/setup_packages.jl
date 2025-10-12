@@ -1,29 +1,25 @@
 # this downloads the required packages
 
-# Add PETSc
+# Add PETSc with required version
 using Pkg
-Pkg.add(name="PETSc_jll", version="3.18.6")
+Pkg.add(name="PETSc_jll", version="3.22.0")
+Pkg.add(name="MPICH_jll", version="4.2.3")
 
 # Copy the relevant directories over
-using PETSc_jll
+using PETSc_jll, MPICH_jll
 
-mpi_dir   = PETSc_jll.PATH_list[1][1:end-3]
-petsc_dir = PETSc_jll.PATH_list[2][1:end-3]
-@show mpi_dir
-@show petsc_dir
+# copy the contents of all directories in a single one
+for path in PETSc_jll.PATH_list
+    cur_dir = path[1:end-3]   
 
-# copy mpi directories - we somehow have to do that one by one
-dirs = ["bin","lib","include","share"]
-for d in dirs
-    run(`sudo -E cp -r $mpi_dir/$d /workspace/destdir/`)
+    # copy mpi directories - we somehow have to do that one by one
+    dirs = ["bin","lib","include","share"]
+    for d in dirs
+        if isdir(joinpath(cur_dir,d))
+            run(`sudo -E cp -r $cur_dir/$d /workspace/destdir/`)   
+        end 
+    end
 end
-
-# Same with petsc
-dirs = ["bin","lib","share"]
-for d in dirs
-    run(`sudo -E cp -r $mpi_dir/$d /workspace/destdir/`)
-end
-
 
 """
     copy all files 
@@ -50,7 +46,7 @@ for srcdir in PETSc_jll.LIBPATH_list
 end
 
 # copy PETSc directories
-run(`sudo -E cp -rf $petsc_dir/lib /workspace/destdir`)
+#run(`sudo -E cp -rf $petsc_dir/lib /workspace/destdir`)
 
 # print
 run(`ls /workspace/destdir/lib`);

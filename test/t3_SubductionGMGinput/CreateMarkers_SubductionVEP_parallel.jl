@@ -8,7 +8,7 @@ function CreateMarkers_SubductionVEP(dir="./", ParamFile="Subduction_VEP.dat"; N
 
     # Load LaMEM particles grid
     #ParamFile_2 =   "Subduction_MATLAB_Particles.dat"
-    Grid        =   ReadLaMEM_InputFile(ParamFile)
+    Grid        =   read_LaMEM_inputfile(ParamFile)
 
     # Geometry- related parameters
     ThickAir=   20;
@@ -109,17 +109,17 @@ function CreateMarkers_SubductionVEP(dir="./", ParamFile="Subduction_VEP.dat"; N
 
     # Save julia setup 
     Model3D     =   CartData(Grid, (Phases=Phase,Temp=Temp))   # Create LaMEM model:
-    Write_Paraview(Model3D,"LaMEM_ModelSetup_VEP", verbose=false)              # Save model to paraview   (load with opening LaMEM_ModelSetup.vts in paraview)  
+    write_paraview(Model3D,"LaMEM_ModelSetup_VEP", verbose=false)              # Save model to paraview   (load with opening LaMEM_ModelSetup.vts in paraview)  
 
     # Save LaMEM markers
     if NumberCores==1
         # 1 core
-        Save_LaMEMMarkersParallel(Model3D, directory="./markers", verbose=false)                      # Create LaMEM marker input on 1 core
+        save_LaMEM_markers_parallel(Model3D, directory="./markers", verbose=false)                      # Create LaMEM marker input on 1 core
     else
         #> 1 cores; create partitioning file first
-        #PartFile = CreatePartitioningFile(ParamFile,NumberCores, LaMEM_dir="../../bin/opt/", verbose=false);
         PartFile = CreatePartitioningFile_local(ParamFile, NumberCores; LaMEM_dir="../../bin/", mpiexec=mpiexec)
-        Save_LaMEMMarkersParallel(Model3D, PartitioningFile=PartFile,  directory="./markers", verbose=false, is64bit=is64bit)     
+        save_LaMEM_markers_parallel(Model3D, PartitioningFile=PartFile, directory="./markers", verbose=false, is64bit=is64bit)
+
     end
 
     cd(cur_dir)

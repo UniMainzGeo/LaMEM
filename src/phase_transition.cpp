@@ -17,9 +17,9 @@
  * All the phase transition listed are coming from [1] (Tab.1).
  * [1] Manuele Faccenda, Luca Dal Zilio, The role of solid–solid phase transitions in mantle convection, Lithos,
         Volumes 268–271, 2017,
- * [2]B.R. Hacker, G.A. Abers, S.M. Peacock Subduction factory 1. Theoretical mineralogy, densities, seismic wave speeds, and H2O contents
+ * [2] B.R. Hacker, G.A. Abers, S.M. Peacock Subduction factory 1. Theoretical mineralogy, densities, seismic wave speeds, and H2O contents
         Journal of Geophysical Research, 108 (2003), 10.1029/2001JB001127
- * [3] Hydrous solidus of CMAS-pyrolite and melting of mantle plumes at the bottom of the upper mantle
+ * [3] K. Litasov, E. Ohtani. Hydrous solidus of CMAS-pyrolite and melting of mantle plumes at the bottom of the upper mantle
 		Geophysical Research Letters, 30 (2003), 10.1029/2003GL018318
  * [4] E.R. Hernandez, J. Brodholt, D. Alfè Structural, vibrational and thermodynamic properties of Mg2SiO4 and MgSiO3 minerals from first-principles simulations
 	   Physics of the Earth and Planetary Interiors, 240 (2015), pp. 1-24
@@ -568,9 +568,9 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 	}
 
-	ierr = getScalarParam(fb, _OPTIONAL_, "clapeyron_slope",    ph->clapeyron_slope,ph->neq,    1.0); CHKERRQ(ierr);    // units??
-	ierr = getScalarParam(fb, _OPTIONAL_, "P0_clapeyron",       ph->P0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // units??
-	ierr = getScalarParam(fb, _OPTIONAL_, "T0_clapeyron",       ph->T0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // units??        
+	ierr = getScalarParam(fb, _OPTIONAL_, "clapeyron_slope",    ph->clapeyron_slope,ph->neq,    1.0); CHKERRQ(ierr);    // [MPa/K]
+	ierr = getScalarParam(fb, _OPTIONAL_, "P0_clapeyron",       ph->P0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // [Pa]
+	ierr = getScalarParam(fb, _OPTIONAL_, "T0_clapeyron",       ph->T0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // [Celsius]        
 
 	if((!ph->clapeyron_slope || !ph->T0_clapeyron || !ph->clapeyron_slope   ||  !ph->Name_clapeyron))
 	{
@@ -583,7 +583,7 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	{
         PetscPrintf(PETSC_COMM_WORLD,"       eq[%lld]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", (LLD)it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
 
-		ph->clapeyron_slope[it]     *=  1e6*(scal->temperature/scal->stress_si);                    // [K/MPa]
+		ph->clapeyron_slope[it]     /=  (scal->stress/scal->temperature);                           // [MPa/K]
 		ph->P0_clapeyron[it]        /=  (scal->stress_si);                                          // [Pa]
 		ph->T0_clapeyron[it]        =   (ph->T0_clapeyron[it]+scal->Tshift)/ (scal->temperature);   // [Celcius]
 	}
@@ -671,21 +671,21 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 		ph->T0_clapeyron[1]     =   700;
 		ph->clapeyron_slope[1]  =   -30;
 	}
-	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_WadsleyiteRingwoodite_wet"))
+	else if(!strcmp(ph->Name_clapeyron,"Olivine_to_Wadsleyite_410km"))
 	{
 		// [1][3]
 		ph->neq                 =   1;
 		ph->P0_clapeyron[0]     =   13.5e9;
 		ph->T0_clapeyron[0]     =   1537;
-		ph->clapeyron_slope[0]  =   5;
+		ph->clapeyron_slope[0]  =   5;          // literature values range from 1.5 to 5.0
 	}
-	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_WadsleyiteRingwoodite_dry"))
+	else if(!strcmp(ph->Name_clapeyron,"Wadsleyite_to_Ringwoodite_520km"))
 	{
 		//[1][4]
 		ph->neq                 =   1;
 		ph->P0_clapeyron[0]     =   18e9;
 		ph->T0_clapeyron[0]     =   1597;
-		ph->clapeyron_slope[0]  =   3.5;
+		ph->clapeyron_slope[0]  =   3.5;        // literature values range from 3.0 to 7.0
 	}
 	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_660km"))
 	{
@@ -693,7 +693,7 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 		ph->neq                 =   1;
 		ph->P0_clapeyron[0]     =   23e9;
 		ph->T0_clapeyron[0]     =   1667;
-		ph->clapeyron_slope[0]  =   -2.5;
+		ph->clapeyron_slope[0]  =   -2.5;       // literature values range from -4.0 to -0.5
 	}
 	else if(!strcmp(ph->Name_clapeyron,"Zircon_Reidite"))
 	{
@@ -750,7 +750,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	    PhaseTrans = jr->dbm->matPhtr+nPtr;
 
 	    // Is the phase transition changing the phase, or other properites?
-	    if((PhaseTrans->PhaseInside[0]>0 && PhaseTrans->PhaseOutside[0]>0) || (PhaseTrans->PhaseAbove[0]>0 && PhaseTrans->PhaseBelow[0]>0))
+	    if((PhaseTrans->PhaseInside[0]>=0 && PhaseTrans->PhaseOutside[0]>=0) || (PhaseTrans->PhaseAbove[0]>=0 && PhaseTrans->PhaseBelow[0]>=0))
 	    {
               nphc = 1;
 	    }

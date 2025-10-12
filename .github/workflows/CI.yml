@@ -1,5 +1,6 @@
 # CI for LaMEM
 # inspired by CI actions used in GEOS
+#
 name: CI
 
 on:
@@ -39,7 +40,11 @@ jobs:
     - name: 'Install julia'
       uses: julia-actions/setup-julia@v1
       with:
-        version: '1.9'
+        version: '1.10'
+        
+    - run: julia -e 'using InteractiveUtils; versioninfo(verbose=true)'
+
+    - run: julia -e '@show Base.BinaryPlatforms.HostPlatform()'
 
     - name: 'Checkout LaMEM'
       uses: actions/checkout@v3
@@ -85,7 +90,31 @@ jobs:
     - name: 'Test LaMEM | Int64'
       run: |
         cd bin
+        # rename directories
+        sudo -E rm -rf opt
+        sudo -E rm -rf deb
+        
         sudo -E cp -r opt64 opt
         sudo -E cp -r deb64 deb
+        
         cd ..
-        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit no_superlu
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 
+        
+  build_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: '1.10'
+      - name: Install dependencies 1
+        run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev        
+      - name: Install dependencies 2
+        run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+      - name: Build and deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # For authentication with SSH deploy key
+        run: DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' 
+             julia --project=docs/ docs/make.jl
+             

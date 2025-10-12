@@ -32,36 +32,33 @@ sudo add-apt-repository "deb https://apt.repos.intel.com/oneapi all main"
 
 sudo apt install intel-hpckit
 
-add ./opt/intel/oneapi/setvars.sh to .bashrc
+add . /opt/intel/oneapi/setvars.sh to .bashrc
 
 ------------------------------------------------------------------
 PETSc optimized example configuration
 ------------------------------------------------------------------
 
 ./configure \
---prefix=/home/data/software/petsc/petsc-3.18.4-opt \
+--prefix=/home/data/software/petsc/petsc-3.19.6-opt \
 --with-mkl_pardiso-dir=$MKLROOT/lib/intel64 \
 --with-mkl_cpardiso-dir=$MKLROOT/lib/intel64 \
 --with-blaslapack-dir=$MKLROOT/lib/intel64 \
 --with-scalapack-lib="-L=$MKLROOT/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64" \
---COPTFLAGS="-O2 -diag-disable=10441" \
---FOPTFLAGS="-O2" \
---CXXOPTFLAGS="-O2 -diag-disable=10441" \
+--COPTFLAGS="-O2 -xCORE-AVX2" \
+--FOPTFLAGS="-O2 -xCORE-AVX2" \
+--CXXOPTFLAGS="-O2 -xCORE-AVX2" \
 --with-debugging=0 \
 --with-large-file-io=1 \
 --with-c++-support=1 \
---with-cc=mpiicc \
---with-cxx="mpiicpc" \
---with-fc=mpiifort \
+--with-cc=mpiicx \
+--with-cxx="mpiicpx" \
+--with-fc=mpiifx \
 --download-metis=1 \
 --download-parmetis=1 \
 --download-ptscotch=1 \
 --download-mumps=1 \
 --download-superlu_dist=1 \
 --with-clean
-
-NOTE: -diag-disable=10441 disables deprecated compiler warning
-Remove this in the future versions
 
 ------------------------------------------------------------------
 

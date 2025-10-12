@@ -22,6 +22,7 @@
 /src/.project
 /test/*/ProcessorPartitioning*.*
 /test/t8_AdjointGradients/ScalingLaw_Test.dat
+/test/t33_Initial_APS/Timestep_*
 Manifest.toml  
 docs/build/
 
