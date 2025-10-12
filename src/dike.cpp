@@ -822,7 +822,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	PetscScalar filtx, filty, w, dfac, magPfac, magPwidth;
 	PetscScalar xcent, xcent_north, xcent_south, ycent_north, ycent_south, xcent_search, ycent_search;
 	PetscScalar azim, dalong, dxazim, dyazim, radbound, sumslope, sumadd;
-	PetscScalar dx_tot, dy_tot, dyazmin, dyazmax, dyaz, str_y;
+	PetscScalar dx_tot, dy_tot, str_y;
 
 	Vec         vycoors, vycoors_prev, vycoors_next;
 	Vec         vxcenter, vxcenter_prev, vxcenter_next;
@@ -1111,8 +1111,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 		dx_tot=(fabs(dfac*filtx*cos(azim))+fabs(dfac*filty*sin(azim)));
 		dy_tot=(fabs(dfac*filtx*sin(azim))+fabs(dfac*filty*cos(azim)));  
 
-
-		dyazmin=1e6; dyazmax=-1e6;  //for detecting if near dike zone end
 		//Loop over y to define area of Gaussian smoothing patch
 		for(jj = sy; jj < sy+ny; jj++)
 		{
@@ -1123,11 +1121,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 				j1prev=(PetscInt)min(j1prev,jj);   
 				j2prev=(PetscInt)max(j2prev,jj);
 			}
-			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
-			if ( dsy->grprev != -1 && fabs(dyaz) <= filty && xcenter_prev[L][M][jj-sy] < 1.0e+12) 
-			{
-				dyazmin=(PetscScalar)min(dyaz,dyazmin);
-			}
 
 			//Next proc
 			yy=(ycoors_next[L][M][jj-sy+1]+ycoors_next[L][M][jj-sy])/2;
@@ -1135,11 +1128,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 			{
 				j1next=(PetscInt)min(j1next,jj);   
 				j2next=(PetscInt)max(j2next,jj);
-			}
-			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty
-			if (dsy->grnext != -1 && fabs(dyaz)<=filty && xcenter_next[L][M][jj-sy] < 1.0e+12)
-			{
-				dyazmax=(PetscScalar)max(dyaz,dyazmax);
 			}
 
 			//Current proc
@@ -1149,12 +1137,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 				jj1=(PetscInt)min(jj1,jj);
 				jj2=(PetscInt)max(jj2,jj);
 			}
-			dyaz=(yy-yc)/cos(azim);  //for stretching: if distance oriented with "azim" is within filty 
-			if (fabs(dyaz) <= filty && xcenter[L][M][jj-sy] < 1.0e+12)
-			{
-				dyazmin=(PetscScalar)min(dyaz,dyazmin);
-				dyazmax=(PetscScalar)max(dyaz,dyazmax);
-			}
+
 		}  //end y loop for defining area of Gaussian smoothing patch
 
 		str_y=1;
