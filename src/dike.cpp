@@ -332,7 +332,7 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx,
 		               left = CurrPhTr->celly_xboundL[J];
 		               right = CurrPhTr->celly_xboundR[J];
 						back = CurrPhTr->ybounds[2*nsegs-1];
-
+						front = CurrPhTr->ybounds[0];
 		               v_spread = PetscAbs(bc->velin);
 		      
 		               // linear interpolation between different M values, Mf is M in front, Mb is M in back
