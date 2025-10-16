@@ -53,7 +53,9 @@ $ spack info petsc
 ```
 Install PETSc with the correct packages, and leave out stuff we don't need. The optimized compilation of PETSc is installed with
 ```
+
 $ spack install petsc@3.22.5 +mumps +suite-sparse -hypre -hdf5 -shared -debug
+
 ```
 If that works out, you'll have to update your environmental variables and create the ``PETSC_OPT`` variable
 ```
@@ -133,17 +135,29 @@ $ sudo port install gfortran gcc git cmake
 The most important package for LaMEM is PETSc. If you just want to give LaMEM a try, the most basic installation is sufficient. Once you do production runs, it is worthwhile to experiment a bit with more optimized solver options. Installing PETSc with those does not always work, but PETSc has a very responsive user list which is searchable, and where you can post your questions if needed. 
 As PETSc regularly changes its syntac, LaMEM is always only compatible with a particular version of PETSc. This is typically updated once per year. 
 
+<<<<<<< HEAD
+The current version of LaMEM is compatible with **PETSc 3.18.6**
+
+You can download the PETSc version you need [here](http://www.mcs.anl.gov/petsc/download/index.html). Do that and unzip it with
+```
+$ tar -xvf petsc-3.18.6.tar.gz
+=======
 The current version of LaMEM is compatible with **PETSc 3.22.5** 
 We have also successfully compiled LaMEM with PETSc 3.23.x so you are also welcome to use that, but our Github actions CI testing environment uses 3.22.5 at the moment. 
 
 You can download the PETSc version you need [here](http://www.mcs.anl.gov/petsc/download/index.html). Do that and unzip it with
 ```
 $ tar -xvf petsc-3.22.5.tar.gz
+>>>>>>> upstream/master
 ```
 
 Change to the PETSc directory from the command window, for example with:
 ```
+<<<<<<< HEAD
+$ cd ~/Software/PETSc/petsc-3.18.6
+=======
 $ cd ~/Software/PETSc/petsc-3.22.5
+>>>>>>> upstream/master
 ```
 and specify the PETSC environmental variable:
 ```
@@ -153,14 +167,24 @@ $ export PETSC_DIR=$PWD
 The simplest installation of PETSc can be configured as follows (assuming you are in the PETSc directory). This will automatically download and install the MPI library as well, together with a few other packages we will use.
 
 ```
+<<<<<<< HEAD
+$  ./config/configure.py --prefix=/opt/petsc/petsc-3.18.6-opt --download-mpich=1 --download-superlu_dist=1 --download-mumps=1 --download-scalapack=1 --download-fblaslapack=1 --with-debugging=0 --FOPTFLAGS=-O3 --CXXOPTFLAGS=-O3 --COPTFLAGS=-O3 --with-shared-libraries=0 --download-cmake
+```
+This will install an optimized (fast) version of PETSc on your system in the directory `opt/petsc/petsc-3.18.6-opt`. You can change this directory, obviously, but in that case please remember where you put it as we need it later.
+=======
 $  ./config/configure.py --prefix=/opt/petsc/petsc-3.22.5-opt --download-mpich=1 --download-superlu_dist=1 --download-mumps=1 --download-scalapack=1 --download-fblaslapack=1 --with-debugging=0 --FOPTFLAGS=-O3 --CXXOPTFLAGS=-O3 --COPTFLAGS=-O3 --with-shared-libraries=0 --download-cmake
 ```
 This will install an optimized (fast) version of PETSc on your system in the directory `opt/petsc/petsc-3.22.5-opt`. You can change this directory, obviously, but in that case please remember where you put it as we need it later.
+>>>>>>> upstream/master
 
 If you want to have more control over PETSc and use the MPI version that you installed earlier on your system, using the package manager (see above), you can install it as: 
 
 ```
+<<<<<<< HEAD
+$ ./config/configure.py --prefix=/opt/petsc/petsc-3.18.6-opt --download-superlu_dist=1 --doCleanup=1 --download-mumps=1 --download-suitesparse=1 --download-scalapack=1 --download-fblaslapack=1  --FOPTFLAGS=-O3 --CXXOPTFLAGS=-O3 --COPTFLAGS=-O3 --with-shared-libraries=0 --download-cmake --with-debugging=0 --with-mpi-include=/opt/local/include/mpich-gcc7/ --with-cc=/opt/local/bin/mpicc --with-cxx=/opt/local/bin/mpicxx --with-fc=/opt/local/bin/mpif90 --with-mpi-lib=/opt/local/lib/mpich-gcc7/libmpi.a
+=======
 $ ./config/configure.py --prefix=/opt/petsc/petsc-3.22.5-opt --download-superlu_dist=1 --doCleanup=1 --download-mumps=1 --download-suitesparse=1 --download-scalapack=1 --download-fblaslapack=1  --FOPTFLAGS=-O3 --CXXOPTFLAGS=-O3 --COPTFLAGS=-O3 --with-shared-libraries=0 --download-cmake --with-debugging=0 --with-mpi-include=/opt/local/include/mpich-gcc7/ --with-cc=/opt/local/bin/mpicc --with-cxx=/opt/local/bin/mpicxx --with-fc=/opt/local/bin/mpif90 --with-mpi-lib=/opt/local/lib/mpich-gcc7/libmpi.a
+>>>>>>> upstream/master
 ```
 Note that the above lines assume that mpi is installed under the directory `/opt/local/bin/`. 
 You can check that this is the case for you as well by typing
@@ -175,34 +199,58 @@ After the configuration step has finished succesfully (which will take some time
 
 Next, make PETSc with:
 ```
+<<<<<<< HEAD
+$ make PETSC_DIR=/Users/kausb/Software/PETSC/petsc-3.18.6 PETSC_ARCH=arch-darwin-c-opt all
+=======
 $ make PETSC_DIR=/Users/kausb/Software/PETSC/petsc-3.22.5 PETSC_ARCH=arch-darwin-c-opt all
+>>>>>>> upstream/master
 ```
 After that, you will be asked to install PETSc 
 
 ```
+<<<<<<< HEAD
+sudo make PETSC_DIR=/Users/kausb/Software/PETSC/petsc-3.18.6 PETSC_ARCH=arch-darwin-c-opt install
+=======
 sudo make PETSC_DIR=/Users/kausb/Software/PETSC/petsc-3.22.5 PETSC_ARCH=arch-darwin-c-opt install
+>>>>>>> upstream/master
 ```
 
 and test whether the installation works with
 ```
+<<<<<<< HEAD
+$ make PETSC_DIR=/opt/petsc/petsc-3.18.6-opt PETSC_ARCH="" check
+=======
 $ make PETSC_DIR=/opt/petsc/petsc-3.22.5-opt PETSC_ARCH="" check
+>>>>>>> upstream/master
 ```
 This will run a few test cases and if all is well, will tell you so.
 
 If you only run simulations with LaMEM, the optimized version of PETSc described above will be sufficient. Yet, if you also develop routines and have to do debugging, it is a good idea to also install the debug version:
 
 ```
+<<<<<<< HEAD
+$ ./config/configure.py --prefix=/opt/petsc/petsc-3.18.6-deb --download-superlu_dist=1 --doCleanup=1 --download-mumps=1 --download-suitesparse=1 --download-scalapack=1 --download-fblaslapack=1 --FOPTFLAGS="-O0 -g" --CXXOPTFLAGS="-O0 -g" --COPTFLAGS="-O0 -g" --with-shared-libraries=0 --download-cmake --with-debugging=1 --with-mpi-include=/opt/local/include/mpich-gcc7/ --with-cc=/opt/local/bin/mpicc --with-cxx=/opt/local/bin/mpicxx --with-fc=/opt/local/bin/mpif90 --with-mpi-lib=/opt/local/lib/mpich-gcc7/libmpi.a
+```
+Compared to before, we have three changes, namely: 
+
+1) That the prefix (or the directory where PETSc will be put) is changed to `--prefix=/opt/petsc/petsc-3.18.6-deb` 
+=======
 $ ./config/configure.py --prefix=/opt/petsc/petsc-3.22.5-deb --download-superlu_dist=1 --doCleanup=1 --download-mumps=1 --download-suitesparse=1 --download-scalapack=1 --download-fblaslapack=1 --FOPTFLAGS="-O0 -g" --CXXOPTFLAGS="-O0 -g" --COPTFLAGS="-O0 -g" --with-shared-libraries=0 --download-cmake --with-debugging=1 --with-mpi-include=/opt/local/include/mpich-gcc7/ --with-cc=/opt/local/bin/mpicc --with-cxx=/opt/local/bin/mpicxx --with-fc=/opt/local/bin/mpif90 --with-mpi-lib=/opt/local/lib/mpich-gcc7/libmpi.a
 ```
 Compared to before, we have three changes, namely: 
 
 1) That the prefix (or the directory where PETSc will be put) is changed to `--prefix=/opt/petsc/petsc-3.22.5-deb` 
+>>>>>>> upstream/master
 2) We tell it to compile a debug version of PETSc with  `--with-debugging=1`
 3) We change the optimization flags to `--FOPTFLAGS="-O0 -g" --CXXOPTFLAGS="-O0 -g" --COPTFLAGS="-O0 -g"`
 
 With this you can repeat the procedure above. Just for completion, the simple configute option of above in debug mode would thus be:
 ```
+<<<<<<< HEAD
+$  ./config/configure.py --prefix=/opt/petsc/petsc-3.18.6-deb --download-mpich=1 --download-superlu_dist=1 --download-mumps=1 --download-scalapack=1 --download-fblaslapack=1 --download-cmake --with-debugging=1 --FOPTFLAGS="-O0 -g" --CXXOPTFLAGS="-O0 -g" --COPTFLAGS="-O0 -g" --with-shared-libraries=0
+=======
 $  ./config/configure.py --prefix=/opt/petsc/petsc-3.22.5-deb --download-mpich=1 --download-superlu_dist=1 --download-mumps=1 --download-scalapack=1 --download-fblaslapack=1 --download-cmake --with-debugging=1 --FOPTFLAGS="-O0 -g" --CXXOPTFLAGS="-O0 -g" --COPTFLAGS="-O0 -g" --with-shared-libraries=0
+>>>>>>> upstream/master
 ```
 
 ## 1.1.4 Installing PETSc on a cluster
@@ -215,7 +263,11 @@ If you are lucky, a previous version of PETSc exists already on the cluster and 
 2) Run it, while adding the command-line option ```-log_view```
 3) At the end of the simulation, it will show you the command-line options that were used to compile PETSc. These can be long; for us it was:
 ```
+<<<<<<< HEAD
+Configure options: --prefix=/cluster/easybuild/broadwell/software/numlib/PETSc/3.18.6-intel-2018.02-downloaded-deps --with-mkl_pardiso=1 --with-mkl_pardiso-dir=/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl --with-hdf5=1 --with-hdf5-dir=/cluster/easybuild/broadwell/software/data/HDF5/1.8.20-intel-2018.02 --with-large-io=1 --with-c++-support=1 --with-debugging=0 --download-hypre=1 --download-triangle=1 --download-ptscotch=1 --download-pastix=1 --download-ml=1 --download-superlu=1 --download-metis=1 --download-superlu_dist=1 --download-prometheus=1 --download-mumps=1 --download-parmetis=1 --download-suitesparse=1 --download-hypre-shared=0 --download-metis-shared=0 --download-ml-shared=0 --download-mumps-shared=0 --download-parmetis-shared=0 --download-pastix-shared=0 --download-prometheus-shared=0 --download-ptscotch-shared=0 --download-suitesparse-shared=0 --download-superlu-shared=0 --download-superlu_dist-shared=0 --with-cc=mpiicc --with-cxx=mpiicpc --with-c++-support --with-fc=mpiifort --CFLAGS="-O3 -xCORE-AVX2 -ftz -fp-speculation=safe -fp-model source -fPIC" --CXXFLAGS="-O3 -xCORE-AVX2 -ftz -fp-speculation=safe -fp-model source -fPIC" --FFLAGS="-O2 -xCORE-AVX2 -ftz -fp-speculation=safe -fp-model source -fPIC" --with-gnu-compilers=0 --with-mpi=1 --with-build-step-np=4 --with-shared-libraries=1 --with-debugging=0 --with-pic=1 --with-x=0 --with-windows-graphics=0 --with-fftw=1 --with-fftw-include=/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/include/fftw --with-fftw-lib="[/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/lib/intel64/libfftw3xc_intel_pic.a,libfftw3x_cdft_lp64_pic.a,libmkl_cdft_core.a,libmkl_blacs_intelmpi_lp64.a,libmkl_intel_lp64.a,libmkl_sequential.a,libmkl_core.a]" --with-scalapack=1 --with-scalapack-include=/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/include --with-scalapack-lib="[/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/lib/intel64/libmkl_scalapack_lp64.a,libmkl_blacs_intelmpi_lp64.a,libmkl_intel_lp64.a,libmkl_sequential.a,libmkl_core.a]" --with-blaslapack-lib="[/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/lib/intel64/libmkl_intel_lp64.a,libmkl_sequential.a,libmkl_core.a]" --with-hdf5=1 --with-hdf5-dir=/cluster/easybuild/broadwell/software/data/HDF5/1.8.20-intel-2018.02
+=======
 Configure options: --prefix=/cluster/easybuild/broadwell/software/numlib/PETSc/3.22.5-intel-2018.02-downloaded-deps --with-mkl_pardiso=1 --with-mkl_pardiso-dir=/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl --with-hdf5=1 --with-hdf5-dir=/cluster/easybuild/broadwell/software/data/HDF5/1.8.20-intel-2018.02 --with-large-io=1 --with-c++-support=1 --with-debugging=0 --download-hypre=1 --download-triangle=1 --download-ptscotch=1 --download-pastix=1 --download-ml=1 --download-superlu=1 --download-metis=1 --download-superlu_dist=1 --download-prometheus=1 --download-mumps=1 --download-parmetis=1 --download-suitesparse=1 --download-hypre-shared=0 --download-metis-shared=0 --download-ml-shared=0 --download-mumps-shared=0 --download-parmetis-shared=0 --download-pastix-shared=0 --download-prometheus-shared=0 --download-ptscotch-shared=0 --download-suitesparse-shared=0 --download-superlu-shared=0 --download-superlu_dist-shared=0 --with-cc=mpiicc --with-cxx=mpiicpc --with-c++-support --with-fc=mpiifort --CFLAGS="-O3 -xCORE-AVX2 -ftz -fp-speculation=safe -fp-model source -fPIC" --CXXFLAGS="-O3 -xCORE-AVX2 -ftz -fp-speculation=safe -fp-model source -fPIC" --FFLAGS="-O2 -xCORE-AVX2 -ftz -fp-speculation=safe -fp-model source -fPIC" --with-gnu-compilers=0 --with-mpi=1 --with-build-step-np=4 --with-shared-libraries=1 --with-debugging=0 --with-pic=1 --with-x=0 --with-windows-graphics=0 --with-fftw=1 --with-fftw-include=/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/include/fftw --with-fftw-lib="[/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/lib/intel64/libfftw3xc_intel_pic.a,libfftw3x_cdft_lp64_pic.a,libmkl_cdft_core.a,libmkl_blacs_intelmpi_lp64.a,libmkl_intel_lp64.a,libmkl_sequential.a,libmkl_core.a]" --with-scalapack=1 --with-scalapack-include=/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/include --with-scalapack-lib="[/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/lib/intel64/libmkl_scalapack_lp64.a,libmkl_blacs_intelmpi_lp64.a,libmkl_intel_lp64.a,libmkl_sequential.a,libmkl_core.a]" --with-blaslapack-lib="[/cluster/easybuild/broadwell/software/numlib/imkl/2018.2.199-iimpi-2018.02-GCC-6.3.0/mkl/lib/intel64/libmkl_intel_lp64.a,libmkl_sequential.a,libmkl_core.a]" --with-hdf5=1 --with-hdf5-dir=/cluster/easybuild/broadwell/software/data/HDF5/1.8.20-intel-2018.02
+>>>>>>> upstream/master
 ```
 4) Use the same options for your latest installation, while adding config options you may need.
 
@@ -229,8 +281,13 @@ git clone https://bitbucket.org/bkaus/lamem.git ./LaMEM
 ```
 Next you need to specify the environmental variables ```PETSC_OPT``` and ```PETSC_DEB```:
 ```
+<<<<<<< HEAD
+export PETSC_OPT=/opt/petsc/petsc-3.18.6-opt
+export PETSC_DEB=/opt/petsc/petsc-3.18.6-deb
+=======
 export PETSC_OPT=/opt/petsc/petsc-3.22.5-opt
 export PETSC_DEB=/opt/petsc/petsc-3.22.5-deb
+>>>>>>> upstream/master
 ```
 Note that this may need to be adapted, depending on the machine you use.
 You may also want to specify this in your ```.bashrc``` files.
