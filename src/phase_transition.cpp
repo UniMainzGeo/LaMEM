@@ -278,23 +278,12 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	{
 		ph->ConstantValue   /= scal->length;
 	}
-/*
-	WHY DOING UNNECESSARY ASSIGNMENTS HERE?
-
-	else if(ph->Parameter_transition==_PlasticStrain_)  //  accumulated plastic strain
-	{
-		ph->ConstantValue   = ph->ConstantValue;        // 	is already in nd units
-	}
-	else if(ph->Parameter_transition==_MeltFraction_)   //  melt fraction
-	{
-		ph->ConstantValue   = ph->ConstantValue;        // is already in nd units
-	}
-*/
 	else if(ph->Parameter_transition==_Time_)       //  Time [s]
 	{
 		ph->ConstantValue   /= scal->time;
 	}
-	else{
+	else if( !(ph->Parameter_transition==_PlasticStrain_ || ph->Parameter_transition==_MeltFraction_) )
+	{
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for [Constant] Phase transition");
     }
 
