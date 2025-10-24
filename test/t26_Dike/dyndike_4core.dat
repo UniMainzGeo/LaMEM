@@ -493,9 +493,9 @@
 
 <PetscOptionsStart>
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_rtol 5e-2					
+	-snes_rtol 8e-2					
 	-snes_atol 1e-4					
-	-snes_max_it 2				
+	-snes_max_it 20				
 	
 	-snes_PicardSwitchToNewton_rtol 1e-5   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
