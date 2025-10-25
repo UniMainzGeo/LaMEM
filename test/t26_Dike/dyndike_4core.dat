@@ -22,7 +22,7 @@
 #	inc_dt    = 0.1     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 5      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 4      # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 5      # save output every n steps
 	nstep_rdb = 60    # save restart database every n steps
 
@@ -330,7 +330,7 @@
 		PhaseTransID = 0
 		dyndike_start = 1
 		filtx = 2.0
-                filtx = 2.0
+                filty = 3.0
 	        zmax_magma = -12.00
                 drhomagma = 500	
 		istep_nave = 1
@@ -353,9 +353,9 @@
 		Mb = 0.7 
 		PhaseID = 4
 		PhaseTransID = 2
-		dyndike_start = 4
+		dyndike_start = 3
 		filtx = 2.0
-		filty = 2.0
+		filty = 3.0
 		zmax_magma = -12.00
                 drhomagma = 500	
 		istep_nave = 1
@@ -493,9 +493,9 @@
 
 <PetscOptionsStart>
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_rtol 5e-2					
+	-snes_rtol 2e-2					
 	-snes_atol 1e-4					
-	-snes_max_it 60				
+	-snes_max_it 50				
 	
 	-snes_PicardSwitchToNewton_rtol 1e-5   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
@@ -504,7 +504,7 @@
 	-js_ksp_monitor 				# display how the inner iterations converge
 	-js_ksp_max_it 20				# inner
 	-js_ksp_atol 1e-8
-	-js_ksp_rtol 1e-4
+	-js_ksp_rtol 1e-5
 
 	-snes_linesearch_type l2
 	-snes_linesearch_monitor
