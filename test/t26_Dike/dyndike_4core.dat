@@ -208,7 +208,7 @@
 	out_file_name       = output # output file name
 	out_pvd             = 1       	# activate writing .pvd file
 	out_phase           = 1
-	out_density         = 1 
+	out_density         = 0 
 	out_visc_total      = 1
 	out_visc_creep      = 0
 	out_velocity        = 1
@@ -216,7 +216,7 @@
 	out_litho_press		  = 1
 	out_eff_press       = 0
 	out_temperature     = 1
-	out_dev_stress      = 1
+	out_dev_stress      = 0
 	out_j2_dev_stress   = 1
 	out_strain_rate     = 0
 	out_j2_strain_rate  = 1
@@ -493,9 +493,9 @@
 
 <PetscOptionsStart>
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_rtol 8e-2					
+	-snes_rtol 5e-2					
 	-snes_atol 1e-4					
-	-snes_max_it 20				
+	-snes_max_it 60				
 	
 	-snes_PicardSwitchToNewton_rtol 1e-5   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
