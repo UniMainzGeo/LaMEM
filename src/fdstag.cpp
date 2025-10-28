@@ -1438,6 +1438,10 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscPrintf(PETSC_COMM_WORLD, "   Maximum cell aspect ratio            :  %7.5f\n", maxAspRat);
 	PetscPrintf(PETSC_COMM_WORLD, "   Lower coordinate bounds [bx, by, bz] : [%g, %g, %g]\n", bx*chLen, by*chLen, bz*chLen);
 	PetscPrintf(PETSC_COMM_WORLD, "   Upper coordinate bounds [ex, ey, ez] : [%g, %g, %g]\n", ex*chLen, ey*chLen, ez*chLen);
+	if(fs->periodic)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Using periodic BC in x-direction     @ \n");
+	}
 
 	if(maxAspRat > 10.0) PetscPrintf(PETSC_COMM_WORLD, "   Don't expect any magic with this aspect ratio: %g ...\n", maxAspRat);
 	if(maxAspRat > 30.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "   Everything has a limit, reduce this aspect ratio: %g ...\n", maxAspRat);
