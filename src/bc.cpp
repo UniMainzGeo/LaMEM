@@ -1203,7 +1203,6 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 	// get boundary temperatures
 	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);
 
-	//Tbot = bc->Tbot;
 	Ttop = bc->Ttop;
 
 	// initialize index bounds
