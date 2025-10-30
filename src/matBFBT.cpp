@@ -24,7 +24,9 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 {
 	FDSTAG         *fs;
 	DOFIndex       *dof;
-	PetscInt        lnv, stv;
+	DMBoundaryType BC_TYPE_X;
+	PetscInt       periodic;
+	PetscInt       lnv, stv;
 	const PetscInt *lx, *ly, *lz;
 
 	PetscErrorCode ierr;
@@ -39,12 +41,19 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 	lnv = dof->lnv;
 	stv = dof->stv;
 
+	// set periodic flag
+	periodic = fs->periodic;
+
 	// get cell center grid partitioning
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
 
+	// set boundary type in x direction
+	if(periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else         { BC_TYPE_X = DM_BOUNDARY_NONE;     }
+
 	// create DMDA
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+		BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_STAR,
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
