@@ -225,7 +225,7 @@ Configure options: --prefix=/cluster/easybuild/broadwell/software/numlib/PETSc/3
 Once you successfully installed the correct version of PETSc, installing LaMEM should be straightforward.
 You can download the latest version of LaMEM with
 ```
-git clone https://bitbucket.org/bkaus/lamem.git ./LaMEM
+git clone https://github.com/UniMainzGeo/LaMEM.git ./LaMEM
 ```
 Next you need to specify the environmental variables ```PETSC_OPT``` and ```PETSC_DEB```:
 ```

@@ -15,21 +15,21 @@ Below, we give specific instructions.
 
 ### 6.2.1. Fork LaMEM
 
-What forking does is create a copy of LaMEM within your own bitbucket account on which you can do your own work, create branches etc. (or also give other access if you wish). Once you are ready to push a local branch back to LaMEM master, you can create a pull request.
+What forking does is create a copy of LaMEM within your own GitHub account on which you can do your own work, create branches etc. (or also give other access if you wish). Once you are ready to push a local branch back to LaMEM master, you can create a pull request.
 
 In order to fork, please follow the following steps:
 
-1. Login to your BitBucket account and go from there to the LaMEM repository `https://bitbucket.org/bkaus/lamem/src/master/`
-2. Click on the `+` on the left side of the webpage and select `Fork this repository`. It will ask you to give it a Project Name (you could use `LaMEM_Project`, for example). You can make this repo private or public.
+1. Login to your GitHub account and go from there to the LaMEM repository `https://github.com/UniMainzGeo/LaMEM`
+2. Click on the `Fork` button in the toolbar. You can make this repo private or public.
 3. Next, you clone LaMEM *from your own repository* to your local directory. The easiest way to do this is via the webpage where you go to `Clone` and copy the clone command. Next go to your terminal and type this
    ``` 
-   git clone https://<username>@bitbucket.org/username/lamem.git ./LaMEM
+   git clone https://github.com/<username>/LaMEM.git ./LaMEM
    ```
-   where `username` should be your Bitbucket username (done automatically if you copy it from the wen interface).
+   where `<username>` should be your GitHub username (or copy the command from the web interface).
 4. Change to the directory: `cd ./LaMEM` 
 5. Link the open-source main version of LaMEM (also called upstream version) with your local copy of it by typing on the command-line
    ```
-   git remote add upstream https://bitbucket.org/bkaus/lamem/src/master/
+   git remote add upstream https://github.com/UniMainzGeo/LaMEM.git
    ```
 6. You can now always get the latest changes of the main version of LaMEM into your local copy by typing
    ```
@@ -45,7 +45,7 @@ The workflow is as follows:
    ```
    git checkout master
    ```
-   Alternatively, you can also push a button in te GUI (which is what we tend to do). Many of us use SourceTree which is provided by bitbucket.
+   Alternatively, you can also push a button in the GUI (which is what we tend to do). Many of us use SourceTree which is provided by Atlassian.
 2. Download the main changes of LaMEM into your own copy of the code
    ```
    git pull upstream master
@@ -112,12 +112,12 @@ The LaMEM development team will make sure that things in master work and that te
   
 #### 6.3.2 Filing a pull request  
 Once you are ready to push back your branch to the main version of LaMEM, you should create a pull request. 
-Creating a pull request is best done through the bitbucket web page:
+Creating a pull request is best done through the GitHub web page:
 
-1. Go to your own bitbucket account and the forked version of LaMEM. 
+1. Go to your own GitHub account and the forked version of LaMEM. 
 2. Select `branches` on the left side and select the branch.
 3. On the right side you will have the option `Create Pull Request`
-4. Click on that, and select as destination on the right `bkaus/lamem` and `master` 
+4. Click on that, and select as destination on the right `UniMainzGeo/LaMEM` and `master` 
 5. Create a title and a description of what the pull request is about
 6. Select Anton and Boris as reviewers
 7. And push `Create Pull Request`
