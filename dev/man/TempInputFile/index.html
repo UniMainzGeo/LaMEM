@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>3.4 How to use a temperature input file · LaMEM</title><meta name="title" content="3.4 How to use a temperature input file · LaMEM"/><meta property="og:title" content="3.4 How to use a temperature input file · LaMEM"/><meta property="twitter:title" content="3.4 How to use a temperature input file · LaMEM"/><meta name="description" content="Documentation for LaMEM."/><meta property="og:description" content="Documentation for LaMEM."/><meta property="twitter:description" content="Documentation for LaMEM."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../Home/">LaMEM</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../Home/">Home</a></li><li><a class="tocitem" href="../Quickstart/">Quick start</a></li><li><span class="tocitem">User Guide</span><ul><li><a class="tocitem" href="../Installation/">Installation</a></li><li><a class="tocitem" href="../GettingStarted/">Getting Started</a></li><li><a class="tocitem" href="../InitialModelSetup/">Initial Model setup</a></li></ul></li><li><span class="tocitem">Development</span><ul><li><a class="tocitem" href="../LaMEM_Development/">LaMEM Development</a></li><li><a class="tocitem" href="../Debugging/">LaMEM Debugging</a></li></ul></li><li><a class="tocitem" href="../CODE_OF_CONDUCT/">Code of conduct</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>3.4 How to use a temperature input file</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>3.4 How to use a temperature input file</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/UniMainzGeo/LaMEM" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/UniMainzGeo/LaMEM/blob/master/docs/src/man/TempInputFile.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="3.4-How-to-use-a-temperature-input-file"><a class="docs-heading-anchor" href="#3.4-How-to-use-a-temperature-input-file">3.4 How to use a temperature input file</a><a id="3.4-How-to-use-a-temperature-input-file-1"></a><a class="docs-heading-anchor-permalink" href="#3.4-How-to-use-a-temperature-input-file" title="Permalink"></a></h1><p>A temperature input file can be used to introduce a custom temperature field at the start of the simulation. The file can be created in Matlab as a 3D matrix for convenience. The matrix is expected to cover the entire model <strong>(not more and not less)</strong>. The size of the matrix does not matter but if you want to <strong>assign a temperature to a certain body</strong>, it is recommended to fit the <strong>marker resolution</strong>.</p><h3 id="Setting-up-the-file-with-Matlab"><a class="docs-heading-anchor" href="#Setting-up-the-file-with-Matlab">Setting up the file with Matlab</a><a id="Setting-up-the-file-with-Matlab-1"></a><a class="docs-heading-anchor-permalink" href="#Setting-up-the-file-with-Matlab" title="Permalink"></a></h3><pre><code class="nohighlight hljs">%% Setup temperature
+% get bounds of LaMEM box
+x_box       = opt.setup.coord_x;
+y_box       = opt.setup.coord_y;
+z_box       = opt.setup.coord_z;
+
+% fit marker distribution
+nx  = length(opt.setup.marker_x);
+ny  = length(opt.setup.marker_y);
+nz  = length(opt.setup.marker_z);
+
+% initialize matrix
+T3D = zeros(nx,ny,nz);
+
+% set up coordinate grid (for assigning specific temperatures based on coordinates)
+dx      = (x_box(2)-x_box(1))/nx;
+dy      = (y_box(2)-y_box(1))/ny; 
+dz      = (z_box(2)-z_box(1))/nz;
+x_vec   = (x_box(1)+dx/2:dx:x_box(2)-dx/2);
+y_vec   = (y_box(1)+dy/2:dy:y_box(2)-dy/2);
+z_vec   = (z_box(1)+dz/2:dz:z_box(2)-dz/2);
+% DO NOT USE MESHGRID HERE!
+[X,Y,Z] = ndgrid(x_vec,y_vec,z_vec);
+
+%% setup linear Temperature profile starting at the surface
+z_surf      = 3;
+gradient    = 30;      % [K/km]
+zeros(nz,1);
+ind_surf    = find(z_vec &lt; z_surf);
+T_vec       = zeros(nz,1);
+T_vec(ind_surf)     = (z_surf - z_vec(ind_surf)) * gradient;
+
+for i = 1 : nz
+    T3D(:,:,i) = T_vec(i);
+end
+
+%% assign Temperature to volume
+vol     = Volumes.Magma;
+T_vol   = 1180;
+
+% run through all depths
+for k = 1 : nz
+    depth   = z_vec(k);
+    Slices  = {};
+    % find slices at that depth
+    for s = 1 : length(vol.Polygons)
+        if vol.Polygons{s}(1,3) &lt;= depth + dz/10 &amp;&amp; vol.Polygons{s}(1,3) &gt;= depth - dz/10
+            Slices = [Slices; vol.Polygons{s}];
+        end
+    end
+    
+    % if slices of the body exist at that depth
+    if ~isempty(Slices)
+        allInds = false(nx,ny);
+        % add all markers that lie inside the body
+        for s = 1 : length(Slices)
+            inds = inpolygon(X(:,:,k),Y(:,:,k),Slices{s}(:,1),Slices{s}(:,2));
+            allInds = allInds | inds;
+        end
+        % assign the markers a temperature
+        T_Slice             = squeeze(T3D(:,:,k));
+        T_Slice(allInds)    = T_vol; 
+        T3D(:,:,k) = T_Slice;
+    end
+    
+end
+
+%% write binary to be read by LaMEM
+%(Filename,[# of points in x-dir, # of points in y-dir, # of points in z-dir, Temp-Matrix in vector form])
+petscBinaryWrite(&#39;T3D.dat&#39;,[nx;ny;nz;T3D(:)]);</code></pre><h3 id="Loading-file-in-LaMEM"><a class="docs-heading-anchor" href="#Loading-file-in-LaMEM">Loading file in LaMEM</a><a id="Loading-file-in-LaMEM-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-file-in-LaMEM" title="Permalink"></a></h3><p>In the LaMEM input file, set:</p><pre><code class="nohighlight hljs">temp_file	= ./T3D.dat</code></pre><p>Options <code>init_temp</code> and <code>act_steady_temp</code> need to be disabled</p><pre><code class="nohighlight hljs">init_temp       = 0
+act_steady_temp = 0</code></pre><p><img src="../../assets/img/TempFromFile.png" alt="TempFromFile"/></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.15.0 on <span class="colophon-date" title="Friday 31 October 2025 12:44">Friday 31 October 2025</span>. Using Julia version 1.10.10.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
