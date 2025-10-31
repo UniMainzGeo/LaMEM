@@ -98,6 +98,7 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 {
 	MatData    *md;
 	FDSTAG     *fs;
+	PetscInt    periodic;
 	MatStencil  row[1], col[7];
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
@@ -123,6 +124,9 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 	mny  = fs->dsy.tnods - 1;
 	mnz  = fs->dsz.tnods - 1;
 
+	// set periodic flag
+	periodic = fs->periodic;
+
 	//===============
 	// SCALING MATRIX
 	//===============
@@ -137,8 +141,8 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 
 	START_STD_LOOP
 	{
-		I1 = i;   if(I1 == mnx) I1--;
-		I2 = i-1; if(I2 == -1)  I2++;
+		I1 = i;   if(I1 == mnx) { if(!periodic) I1--; }
+		I2 = i-1; if(I2 == -1)  { if(!periodic) I2++; }
 
 		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[k][j][I1] + eta[k][j][I2])/2.0), INSERT_VALUES); CHKERRQ(ierr);
 
@@ -196,20 +200,20 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 	START_STD_LOOP
 	{
 		// check index bounds, get pressure TPC multipliers
-		Im1 = i-1; cfp[0] = 1.0; if(Im1 < 0)   { Im1++; if(bcp[k][j][i-1] != DBL_MAX) cfp[0] = -1.0; }
-		Ip1 = i+1; cfp[1] = 1.0; if(Ip1 > mcx) { Ip1--; if(bcp[k][j][i+1] != DBL_MAX) cfp[1] = -1.0; }
-		Jm1 = j-1; cfp[2] = 1.0; if(Jm1 < 0)   { Jm1++; if(bcp[k][j-1][i] != DBL_MAX) cfp[2] = -1.0; }
-		Jp1 = j+1; cfp[3] = 1.0; if(Jp1 > mcy) { Jp1--; if(bcp[k][j+1][i] != DBL_MAX) cfp[3] = -1.0; }
-		Km1 = k-1; cfp[4] = 1.0; if(Km1 < 0)   { Km1++; if(bcp[k-1][j][i] != DBL_MAX) cfp[4] = -1.0; }
-		Kp1 = k+1; cfp[5] = 1.0; if(Kp1 > mcz) { Kp1--; if(bcp[k+1][j][i] != DBL_MAX) cfp[5] = -1.0; }
+		Im1 = i-1; cfp[0] = 1.0; if(Im1 < 0)   { if(!periodic) { Im1++; if(bcp[k][j][i-1] != DBL_MAX) cfp[0] = -1.0; } }
+		Ip1 = i+1; cfp[1] = 1.0; if(Ip1 > mcx) { if(!periodic) { Ip1--; if(bcp[k][j][i+1] != DBL_MAX) cfp[1] = -1.0; } }
+		Jm1 = j-1; cfp[2] = 1.0; if(Jm1 < 0)   {                 Jm1++; if(bcp[k][j-1][i] != DBL_MAX) cfp[2] = -1.0; }
+		Jp1 = j+1; cfp[3] = 1.0; if(Jp1 > mcy) {                 Jp1--; if(bcp[k][j+1][i] != DBL_MAX) cfp[3] = -1.0; }
+		Km1 = k-1; cfp[4] = 1.0; if(Km1 < 0)   {                 Km1++; if(bcp[k-1][j][i] != DBL_MAX) cfp[4] = -1.0; }
+		Kp1 = k+1; cfp[5] = 1.0; if(Kp1 > mcz) {                 Kp1--; if(bcp[k+1][j][i] != DBL_MAX) cfp[5] = -1.0; }
 
 		// get velocity SPC multipliers
-		cfv[0] = 1.0; if(bcvx[k][j][i]   != DBL_MAX) cfv[0] = 0.0;
-		cfv[1] = 1.0; if(bcvx[k][j][i+1] != DBL_MAX) cfv[1] = 0.0;
-		cfv[2] = 1.0; if(bcvy[k][j][i]   != DBL_MAX) cfv[2] = 0.0;
-		cfv[3] = 1.0; if(bcvy[k][j+1][i] != DBL_MAX) cfv[3] = 0.0;
-		cfv[4] = 1.0; if(bcvz[k][j][i]   != DBL_MAX) cfv[4] = 0.0;
-		cfv[5] = 1.0; if(bcvz[k+1][j][i] != DBL_MAX) cfv[5] = 0.0;
+		cfv[0] = 1.0; if(!periodic) { if(bcvx[k][j][i]   != DBL_MAX) cfv[0] = 0.0; }
+		cfv[1] = 1.0; if(!periodic) { if(bcvx[k][j][i+1] != DBL_MAX) cfv[1] = 0.0; }
+		cfv[2] = 1.0;                 if(bcvy[k][j][i]   != DBL_MAX) cfv[2] = 0.0;
+		cfv[3] = 1.0;                 if(bcvy[k][j+1][i] != DBL_MAX) cfv[3] = 0.0;
+		cfv[4] = 1.0;                 if(bcvz[k][j][i]   != DBL_MAX) cfv[4] = 0.0;
+		cfv[5] = 1.0;                 if(bcvz[k+1][j][i] != DBL_MAX) cfv[5] = 0.0;
 
 		// get viscosity scaling coefficients
 		cfe[0] = sqrt((eta[k][j][i] + eta[k][j][Im1])/2.0);
