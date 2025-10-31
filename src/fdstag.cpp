@@ -1220,8 +1220,8 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG   *fs,
 
 	// PERIODIC CASE: JUST USE ONE POINT LESS IN X-DIRECTION FOR DA_COR, DA_XY, DA_XZ, AND DA_X
 
-	if(fs->periodic) { BC_NONE = DM_BOUNDARY_PERIODIC; BC_GHOSTED = DM_BOUNDARY_PERIODIC, bc_node = 1; }
-	else             { BC_NONE = DM_BOUNDARY_NONE;     BC_GHOSTED = DM_BOUNDARY_GHOSTED,  bc_node = 0; }
+	if(fs->periodic) { BC_NONE = DM_BOUNDARY_PERIODIC; BC_GHOSTED = DM_BOUNDARY_PERIODIC; bc_node = 1; }
+	else             { BC_NONE = DM_BOUNDARY_NONE;     BC_GHOSTED = DM_BOUNDARY_GHOSTED;  bc_node = 0; }
 
 	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
 	lx[Px-1] -= bc_node;

@@ -134,6 +134,8 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 {
 	FDSTAG         *fs;
+	PetscInt       bc_node;
+	DMBoundaryType BC_TYPE_X;
 	const PetscInt *lx, *ly;
 
 	PetscErrorCode ierr;
@@ -142,15 +144,19 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	// access context
 	fs = surf->jr->fs;
 
+	// set boundary type in x direction
+	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
+	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     bc_node = 0; }
+
 	// get grid partitioning in X & Y directions
 	ierr = DMDAGetOwnershipRanges(fs->DA_COR, &lx, &ly, NULL); CHKERRQ(ierr);
 
 	// create redundant free surface DMDA
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+		BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_BOX,
-		fs->dsx.tnods, fs->dsy.tnods, fs->dsz.nproc,
-		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+		fs->dsx.tnods - bc_node, fs->dsy.tnods, fs->dsz.nproc,
+		fs->dsx.nproc,           fs->dsy.nproc, fs->dsz.nproc,
 		1, 1, lx, ly, NULL, &surf->DA_SURF); CHKERRQ(ierr);
 
 	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->ltopo);  CHKERRQ(ierr);
@@ -168,6 +174,7 @@ PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 {
 	JacRes      *jr;
 	FDSTAG      *fs;
+	PetscInt     Nx, Ny, Nz;
 	PetscScalar  avg_topo;
 
 	PetscErrorCode ierr;
@@ -179,7 +186,9 @@ PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 	// compute & set average topography
 	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
 
-	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
+	ierr = DMDAGetInfo(surf->DA_SURF, 0, &Nx, &Ny, &Nz, 0, 0, 0, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
+
+	avg_topo /= (PetscScalar)(Nx*Ny*Nz);
 
 	surf->avg_topo = avg_topo;
 
