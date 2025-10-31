@@ -49,15 +49,22 @@ CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
 
 # Define list of LaMEM library source files
 # List files to be excluded after filter-out
-CSRC = $(filter-out LaMEM.cpp, $(wildcard *.cpp))
+CSRC = $(filter-out LaMEM.cpp LaMEM_C.cpp, $(wildcard *.cpp))
+
+# Add C wrapper source
+#CSRC += $(C_WRAPPER_SOURCES)
+
+# Objects generated from C_headers/*.cpp
+#C_HEADERS_OBJ := $(addprefix ../lib/${mode}/, $(notdir $(wildcard C_headers/*.cpp:.cpp=.o)))
+C_HEADERS_OBJ := $(patsubst C_headers/%.cpp, ../lib/${mode}/%.o, $(wildcard C_headers/*.cpp))
 
 #====================================================
 
-# Generate lists of library object files:
-COBJ := $(addprefix ../lib/${mode}/, $(notdir $(CSRC:.cpp=.o)))
+# Generate lists of library object files (exclude C_HEADERS_OBJ):
+COBJ := $(addprefix ../lib/${mode}/, $(notdir $(filter-out C_headers/*.cpp, $(CSRC:.cpp=.o))))
 
 # Generate lists of library dependency files:
-CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.cpp=.d)))
+CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.cpp=.o:.o=.d)))
 
 # Get library and executable objects:
 LaMEM = ../bin/${mode}/LaMEM
@@ -135,9 +142,15 @@ ${LaMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 	ranlib $@
 
 # Create a dynamic library
-dylib: ${COBJ}
-	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
-
+dylib: ${COBJ} ${C_HEADERS_OBJ}
+	@echo "............................................."
+	@echo ".......... Building Dynamic Library ........"
+	@echo "............................................."
+ifeq ($(shell uname), Darwin)
+	$(CCOMPILER) -dynamiclib -undefined dynamic_lookup -o ../lib/$(mode)/liblamem.dylib ${COBJ} ${C_HEADERS_OBJ} ${PETSC_LIB}
+else
+	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/liblamem.so ${COBJ} ${C_HEADERS_OBJ} ${PETSC_LIB}
+endif
 #====================================================
 
 # Link LaMEM executable
@@ -159,6 +172,17 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 # NOTE: IBM XL compiler generates dependency as a by-product of compilation
 
 ../lib/${mode}/%.o : %.cpp
+	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@
+ifeq ($(PLATFORM), ppc64)
+	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
+else
+	@${CCOMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} $< -o ../dep/${mode}/$*.d.tmp
+endif
+	@sed '1s,^,../lib/${mode}/,' < ../dep/${mode}/$*.d.tmp > ../dep/${mode}/$*.d
+	@rm -f ../dep/${mode}/$*.d.tmp
+
+# Pattern rule for C_headers files
+../lib/${mode}/%.o : C_headers/%.cpp
 	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@
 ifeq ($(PLATFORM), ppc64)
 	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
@@ -222,8 +246,20 @@ clean_all :
 	@rm -rf ../lib/$(mode)/*
 	@rm -rf ../bin/$(mode)/*
 	@rm -rf ../dep/$(mode)/*
+	@rm -f $(C_HEADERS_OBJ)
 
 #====================================================
+
+debug_sources:
+	@echo "C_WRAPPER_SOURCES: $(C_WRAPPER_SOURCES)"
+	@echo "CSRC: $(CSRC)"
+	@echo "COBJ: $(COBJ)"
+
+debug_headers:
+	@echo "C_HEADERS_OBJ: $(C_HEADERS_OBJ)"
+
+debug_wildcard:
+	@echo "C_headers/*.cpp: $(wildcard C_headers/*.cpp)"
 
 # Create automatic documentation
 
