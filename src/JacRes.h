@@ -202,7 +202,7 @@ struct JacRes
 	Vec                   gdxy, gdxz, gdyz; // global
 	// (ADVInterpMarkToEdge & ADVInterpFieldToMark is the only
 	//  couple of functions where global vectors (gdxy, gdxz, gdyz) are used.
-	//  Get a fuck rid of this ugly averaging between markers & edges!
+	//  Get rid of this ugly averaging between markers & edges!
 	//  In ADVInterpFieldToMark it's easy.
 	//  In ADVInterpMarkToEdge it's impossible because of assembly operation.
 	//  Really really really need to switch to ghost marker approach!

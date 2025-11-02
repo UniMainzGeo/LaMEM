@@ -172,16 +172,11 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 //---------------------------------------------------------------------------
 PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 {
-	JacRes      *jr;
-	FDSTAG      *fs;
 	PetscInt     Nx, Ny, Nz;
 	PetscScalar  avg_topo;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-
-	jr = surf->jr;
-	fs = jr->fs;
 
 	// compute & set average topography
 	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
@@ -287,9 +282,6 @@ PetscErrorCode FreeSurfGetVelComp(
 	Vec vcomp_grid, Vec vcomp_surf)
 {
 	// project velocity component from grid faces on the free surface
-
-	// WARNING! this function has a problem if surface is placed on top boundary
-	// most likely FindPointInCell has an issue
 
 	JacRes      *jr;
 	FDSTAG      *fs;
@@ -1010,7 +1002,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation at constant level (%e %s) to internal free surface.\n", level*scal->length, scal->lbl_length);
 	}
 	else if(surf->SedimentModel == 2) 
-	{ 
+	{
 		// sedimentation after Gemmer et al. 2004 - Moving Gaussian to mimic the sedimentation at a continental margin
 
 		// determine sedimentation rate & phase number
@@ -1056,16 +1048,13 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		
 		START_PLANE_LOOP
 		{
-
 			x = COORD_NODE(i, sx, fs->dsx);
 			y = COORD_NODE(j, sy, fs->dsy);
 
 			// get topography
 			z = topo[L][j][i];
 
-
 			// compute distance to margin
-
 			t0    = ((x-aO[0])*b[0] + (y-aO[1])*b[1]) / (b[0]*b[0]+b[1]*b[1]);
 			t0n   = ((x-aOn[0])*b[0] + (y-aOn[1])*b[1]) / (b[0]*b[0]+b[1]*b[1]);
 			l[0]  = aO[0] + t0 * b[0];
@@ -1124,8 +1113,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		surf->marginE[1] = aEn[1];
 
 		// print info
-		PetscPrintf(PETSC_COMM_WORLD, "Applying directed (cont. margin) sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",
-			(LLD)phase);
+		PetscPrintf(PETSC_COMM_WORLD, "Applying directed (cont. margin) sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n", (LLD)phase);
 	}
 	else if(surf->SedimentModel == 3)
 	{
@@ -1147,7 +1135,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		// lateral offset
 		dz1 = rate1*dt;
 		dz2 = rate2*dt;
-		dz = dz1-dz2;
+		dz  = dz1-dz2;
 
 		// access topography
 		ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
@@ -1159,16 +1147,13 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		ierr = FDSTAGGetGlobalBox(fs, &bx, 0, 0, &ex,0, 0); CHKERRQ(ierr);
 		BoxWidth = ex-bx;
 
-
 		START_PLANE_LOOP
 		{
-
 			x = COORD_NODE(i, sx, fs->dsx);
 			y = COORD_NODE(j, sy, fs->dsy);
 
 			// get topography
 			z = topo[L][j][i];
-
 
 			dz_x = -dz/BoxWidth * x + dz1;
 
@@ -1181,8 +1166,6 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 
 			// store advected topography
 			topo[L][j][i] = z;
-
-			
 		}
 		END_PLANE_LOOP
 
@@ -1199,7 +1182,6 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		PetscPrintf(PETSC_COMM_WORLD, "Applying differential loading to internal free surface. Phase that is currently being sedimented is %lld   \n",
 			(LLD)phase);
 	}
-
 	
 	PetscFunctionReturn(0);
 }
@@ -1260,11 +1242,7 @@ PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf)
 		// interpolate topography from input grid onto LaMEM nodes
 		PetscRandomGetValueReal(rctx,&rnd);
 
-		topo[level][j][i] = topo[level][j][i] + 
-				  ampl_cos  * (PetscCosScalar(2*PETSC_PI/wavel*xp))/leng
-				+ ampl_noise* rnd;
-		
-
+		topo[level][j][i] += ampl_cos*(PetscCosScalar(2*PETSC_PI/wavel*xp))/leng + ampl_noise* rnd;
 	}
 	END_PLANE_LOOP
 

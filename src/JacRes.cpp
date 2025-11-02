@@ -319,6 +319,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	FDSTAG         *fs;
 	DOFIndex       *dof;
 	PetscScalar    *svBuff;
+	DMBoundaryType BC_TYPE_X;
 	const PetscInt *lx, *ly;
 	PetscInt        i, n, svBuffSz, numPhases;
 
@@ -329,6 +330,10 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	dof       = &fs->dof;
 	numPhases =  jr->dbm->numPhases;
 	
+	// set boundary type in x direction
+	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     }
+
 	// If any phase involves phase diagram initialize the data
 	for(i=0; i<jr->dbm->numPhases; i++)
 	{
@@ -444,7 +449,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 
 	// create 2D cell center grid
 	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+		BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_BOX,
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
