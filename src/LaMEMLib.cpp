@@ -505,6 +505,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->dbm.scal    = &lm->scal;
 	// FDSTAG
 	lm->fs.scal     = &lm->scal;
+	lm->fs.FSLib	= &lm->FSLib;
 	// FreeSurf
 	lm->surf.jr     = &lm->jr;
 	lm->surf.FSLib  = &lm->FSLib;
@@ -512,7 +513,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->FSLib.surf  = &lm->surf;
 	lm->FSLib.pvsurf= &lm->pvsurf;
 	lm->FSLib.jr    = &lm->jr;
-	lm->FSLib.dbm   = &lm->dbm;
+	lm->FSLib.scal  = &lm->scal;
 	// BCCtx
 	lm->bc.scal     = &lm->scal;
 	lm->bc.ts       = &lm->ts;
@@ -574,6 +575,8 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	time    = ts->time*scal->time;
 	step    = ts->istep;
 	bgPhase = lm->actx.bgPhase;
+
+
 
 	// create directory (encode current time & step number)
 	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
@@ -659,7 +662,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
-	
+
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
@@ -710,7 +713,24 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 
 		// advect free surface // change the topography, controled by the surf_max_angle, when equal to 0.0, 
 		// don't using the process
-		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
+
+		if( 1 == SURFACE)
+		{
+			// without FastScape
+			if(1 == lm->surf.SurfMode)
+			{
+				ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
+			}
+			// with FastScape
+			else if(2 == lm->surf.SurfMode)
+			{
+				ierr = FastScapeCopyVelocity(&lm->FSLib);  CHKERRQ(ierr);
+			}
+		}
+		else
+		{
+			ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
+		}
 
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
@@ -726,15 +746,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 
 		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 
-		int SurfaceMode;
-		SurfaceMode = SURFACE; // SURFACE, default value = 1
-
-		FreeSurf *surfmode;
-		surfmode = &lm->surf;
-
-		if( 1 == SurfaceMode) // compile without FastScape
+		if( 0 == SURFACE) // compile without FastScape
 		{
-//			PetscPrintf(PETSC_COMM_WORLD, "\nCalculating surface process through LaMEM code \n");
 			// apply erosion to the free surface
 			ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
@@ -742,12 +755,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 			ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
 		}
 
-		if ( 2 == SurfaceMode) // compile with FastScape
+		if ( 1 == SURFACE) // compile with FastScape
 		{
-			if( 1 == surfmode->SurfMode )
+			if( 1 == lm->surf.SurfMode )
 			// using LaMEM original code to calculate topography
 			{
-		//		PetscPrintf(PETSC_COMM_WORLD, "\nCalculating surface process through LaMEM code \n");
 				// apply erosion to the free surface
 				ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
@@ -755,13 +767,18 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 				ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
 			}
 
-			if( 2 == surfmode->SurfMode)
+			if( 2 == lm->surf.SurfMode)
 			// Using FastScape to calculate topography
 			{
-		//		PetscPrintf(PETSC_COMM_WORLD, "\n-------------------------------------------------------------------\n");
 				PetscPrintf(PETSC_COMM_WORLD, "Begin FastScape \n");
 				PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
-				ierr = fastscape(&lm->FSLib); CHKERRQ(ierr);
+				ierr = FastScapeRun(&lm->FSLib); CHKERRQ(ierr);
+
+				// smooth topography spikes 
+				ierr = FreeSurfSmoothMaxAngle(&lm->surf); CHKERRQ(ierr);
+
+				// compute & store average topography
+				ierr = FreeSurfGetAvgTopo(&lm->surf); CHKERRQ(ierr);
 			}
 		}
 

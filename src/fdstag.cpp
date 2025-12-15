@@ -15,16 +15,17 @@
 #include "parsing.h"
 #include "scaling.h"
 #include "tools.h"
-
+#include "fastscape.h"
 //---------------------------------------------------------------------------
 // MeshSeg1D functions
 //---------------------------------------------------------------------------
 PetscErrorCode MeshSeg1DReadParam(
-	MeshSeg1D  *ms,
-	PetscScalar leng,
-	PetscScalar gtol,
-	const char *dir,
-	FB         *fb)
+	MeshSeg1D    *ms,
+	PetscScalar  leng,
+	PetscScalar  gtol,
+	const char   *dir,
+	FB           *fb,
+	FastScapeLib *FSLib)
 {
 	PetscInt    i, tcels, uniform;
 	PetscInt    ncells[_max_num_segs_];
@@ -93,6 +94,40 @@ PetscErrorCode MeshSeg1DReadParam(
 	// set grid parameters
 	ms->tcels   = tcels;
 	ms->uniform = uniform;
+
+	if(1 == SURFACE)
+	{
+		if( 0 == strcmp("x", dir) )
+		{
+			FSLib->msx_fs.nsegs             = ms->nsegs;
+			FSLib->msx_fs.periodic          = ms->periodic;
+			FSLib->msx_fs.tcels             = ms->tcels;
+
+			for(i = 0, tcels = 0; i < ms->nsegs; i++)
+			{
+				FSLib->msx_fs.istart[i]     = ms->istart[i];
+				FSLib->msx_fs.xstart[i]     = ms->xstart[i];
+				FSLib->msx_fs.biases[i]     = ms->biases[i];
+
+			}
+			FSLib->msx_fs.istart[ms->nsegs] = ms->istart[ms->nsegs];
+		}
+		else if( 0 == strcmp("y", dir) )
+		{
+			FSLib->msy_fs.nsegs = ms->nsegs;
+			FSLib->msy_fs.periodic          = ms->periodic;
+			FSLib->msy_fs.tcels             = ms->tcels;
+
+			for(i = 0, tcels = 0; i < ms->nsegs; i++)
+			{
+				FSLib->msy_fs.istart[i]     = ms->istart[i];
+				FSLib->msy_fs.xstart[i]     = ms->xstart[i];
+				FSLib->msy_fs.biases[i]     = ms->biases[i];
+
+			}
+			FSLib->msy_fs.istart[ms->nsegs] = ms->istart[ms->nsegs];
+		}
+	}
 
 	// free keys
 	free(nseg);
@@ -876,6 +911,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	// to compute strain/rates/stresses/residuals including boundary conditions.
 
 	Scaling          *scal;
+	FastScapeLib 	 *FSLib;
 	PetscMPIInt      rank;
 	PetscInt         nnx, nny, nnz;
 	PetscInt         ncx, ncy, ncz;
@@ -890,8 +926,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	scal = fs->scal;
-
+	scal  = fs->scal;
+	FSLib = fs->FSLib;
+	
 	// set & read geometry tolerance
 	fs->gtol = 1e-6;
 	ierr = getScalarParam(fb, _OPTIONAL_, "gtol", &fs->gtol, 1, 1.0); CHKERRQ(ierr);
@@ -907,9 +944,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	ierr = getIntParam(fb, _OPTIONAL_, "cpu_z", &Pz, 1, _max_num_procs_); CHKERRQ(ierr);
 
 	// read mesh parameters
-	ierr = MeshSeg1DReadParam(&msx, scal->length, fs->gtol, "x", fb); CHKERRQ(ierr);
-	ierr = MeshSeg1DReadParam(&msy, scal->length, fs->gtol, "y", fb); CHKERRQ(ierr);
-	ierr = MeshSeg1DReadParam(&msz, scal->length, fs->gtol, "z", fb); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msx, scal->length, fs->gtol, "x", fb, FSLib); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msy, scal->length, fs->gtol, "y", fb, FSLib); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msz, scal->length, fs->gtol, "z", fb, FSLib); CHKERRQ(ierr);
 
 	// get total number of nodes
 	Nx = msx.tcels + 1;

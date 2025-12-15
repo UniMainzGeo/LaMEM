@@ -913,72 +913,79 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			// check whether air marker is below the free surface
 			if(phaseptr[jj] == ((PetscScalar) AirPhase) && zp < topo)
 			{
-				if(surf->SedimentModel > 0)
+				if( 1 == SURFACE && 2 == surf->SurfMode)
 				{
-				// sedimentation (physical) -> air turns into a prescribed rock
-					phaseptr[jj]= (PetscScalar) surf->phase;
+					// sedimentation (physical) -> air turns into a prescribed rock
+						phaseptr[jj]= (PetscScalar) surf->phase;
 				}
 				else
 				{
-				// sedimentation (numerical) -> air turns into closest (reference) rock
-					Xm[0]=xp;
-					Xm[1]=yp;
-					Xm[2]=zp;
-
-				// get marker list in containing cell
-					nmark   = actx->markstart[ID+1] - actx->markstart[ID];
-					markind = actx->markind + actx->markstart[ID];
-
-				// clear distance storage
-					dist.clear();
-
-					for(ii = 0; ii < nmark; ii++)
+					if(surf->SedimentModel > 0)
 					{
-					// get current marker
-						markid = markind[ii];
-						IP     = &actx->markers[markid];
-
-						// sort out air markers
-						if(IP->phase == AirPhase) continue;
-
-						// get marker coordinates
-						IX = IP->X;
-
-						// store marker index and distance
-						d.first  = EDIST(Xm, IX);
-						d.second = markid;
-
-						dist.push_back(d);
-					}
-
-					// find closest rock marker (if any)
-					if(dist.size())
-					{
-					// sort rock markers by distance
-						sort(dist.begin(), dist.end());
-
-					// copy phase from closest marker
-						IP = &actx->markers[dist.begin()->second];
-
-						phaseptr[jj] = (PetscScalar) IP->phase;
+					// sedimentation (physical) -> air turns into a prescribed rock
+						phaseptr[jj]= (PetscScalar) surf->phase;
 					}
 					else
 					{
-					// no local rock marker found, set phase to reference
-						phaseID = (PetscInt)phase[sz+K][sy+J][sx+I];
+					// sedimentation (numerical) -> air turns into closest (reference) rock
+						Xm[0]=xp;
+						Xm[1]=yp;
+						Xm[2]=zp;
 
-						if(phaseID < 0)
+					// get marker list in containing cell
+						nmark   = actx->markstart[ID+1] - actx->markstart[ID];
+						markind = actx->markind + actx->markstart[ID];
+
+					// clear distance storage
+						dist.clear();
+
+						for(ii = 0; ii < nmark; ii++)
 						{
-						SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
+						// get current marker
+							markid = markind[ii];
+							IP     = &actx->markers[markid];
+
+							// sort out air markers
+							if(IP->phase == AirPhase) continue;
+
+							// get marker coordinates
+							IX = IP->X;
+
+							// store marker index and distance
+							d.first  = EDIST(Xm, IX);
+							d.second = markid;
+
+							dist.push_back(d);
 						}
 
-						phaseptr[jj] = (PetscScalar) phaseID;
-					}
-				}
-				//=======================================================================
-				// WARNING! At best clone history from nearest rock marker
-				//=======================================================================
+						// find closest rock marker (if any)
+						if(dist.size())
+						{
+						// sort rock markers by distance
+							sort(dist.begin(), dist.end());
 
+						// copy phase from closest marker
+							IP = &actx->markers[dist.begin()->second];
+
+							phaseptr[jj] = (PetscScalar) IP->phase;
+						}
+						else
+						{
+						// no local rock marker found, set phase to reference
+							phaseID = (PetscInt)phase[sz+K][sy+J][sx+I];
+
+							if(phaseID < 0)
+							{
+							SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
+							}
+
+							phaseptr[jj] = (PetscScalar) phaseID;
+						}
+					}
+					//=======================================================================
+					// WARNING! At best clone history from nearest rock marker
+					//=======================================================================
+				}
 			}
 		}
 		else

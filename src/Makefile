@@ -25,8 +25,8 @@ include Makefile.in
 #  make mode=deb all (compile debug version of LaMEM and put in /bin/deb)
 #  make mode=opt all (compile optimized version of LaMEM and put in /bin/opt)
 #  make all          (compile optimized version of LaMEM and put in /bin/opt)
-#  make mode=optFS all surface=SURFACE=2 (compile optimized version of LaMEM with fastscape and put in /bin/optFS)
-#  surf_mode = 1; don't use fastscape; surf_mode = 2; use fastscape
+#  make mode=optFS all surface=SURFACE=1 (compile optimized version of LaMEM with fastscape and put in /bin/optFS)
+#  surf_mode = 1 in .dat file; don't use fastscape; surf_mode = 2 in .dat file; use fastscape 
 
 ifeq ($(mode), deb)
 ifeq (${PETSC_DEB},)
@@ -57,30 +57,18 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 # Define PETSc-based C++ compiler command
 CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
 
-# Define FastScape-based fortran compiler command
-GF = gfortran
 # Define FastScapeFortranLib 
+# FS_LIB = -L${FASTSCAPE_DIR} -lfastscapelib_fortran -lgfortran
 FS_LIB = -L${FASTSCAPE_DIR} -lfastscapelib_fortran
-
 #====================================================
 
 # Define list of LaMEM library source files
 # List files to be excluded after filter-out
 CSRC = $(filter-out LaMEM.cpp, $(wildcard *.cpp))
-FS = $(wildcard *.f90)
 
 #====================================================
-ifeq ($(mode), optFS)
-# Generate lists of library object files:
-COBJ := $(addprefix ../lib/${mode}/, $(notdir $(CSRC:.cpp=.o) $(FS:.f90=.o)))
-
-# Generate lists of library dependency files:
-CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.cpp=.d) $(FS:.f90=.d)))
-
-else
 COBJ := $(addprefix ../lib/${mode}/, $(notdir $(CSRC:.cpp=.o)))
 CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.cpp=.d)))
-endif
 
 # Get library and executable objects:
 LaMEM = ../bin/${mode}/LaMEM
@@ -187,13 +175,9 @@ endif
 # Pattern rules for automatic generation of object & dependency files
 # Insert full path to object files in dependency files with sed command
 # NOTE: IBM XL compiler generates dependency as a by-product of compilation
-ifeq ($(mode), optFS)
-../lib/${mode}/%.o : %.f90
-	${GF} ${FS_LIB}  -c $< -o $@ 
-endif
 
-# define SURFACE 1 in Cpp script when there isn't a value setting in bash
-surface=SURFACE=1
+# define SURFACE 0 in Cpp script when there isn't a value setting in bash
+surface=SURFACE=0
 
 ../lib/${mode}/%.o : %.cpp 
 	${CCOMPILER} ${LAMEM_FLAGS} -D$(surface) -c $< -o $@ 

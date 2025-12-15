@@ -37,7 +37,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	// initialize
 	surf->phaseCorr   =  1;
 	surf->AirPhase    = -1;
-	surf->SurfMode	  =  0;
+	surf->SurfMode	  =  1;
 	
 	// check whether free surface is activated
 	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
@@ -60,7 +60,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  2);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  3);            CHKERRQ(ierr);
 
-	if (SURFACE == 1 && surf->SurfMode > 1 )
+	if (0 == SURFACE && 1 < surf->SurfMode )
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " There only two choices without compiling with fastscape [surf_mode = 1 or 0] \n");	
 	}
@@ -124,7 +124,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	//	PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
 	}
 
-	if(surf->SurfMode == 2)	PetscPrintf(PETSC_COMM_WORLD, "   Using FastScape           : %s \n", surf->SurfMode==2 ? "yes":"no");
+	if(2 == surf->SurfMode)	PetscPrintf(PETSC_COMM_WORLD, "   Using FastScape           : %s \n", surf->SurfMode==2 ? "yes":"no");
 
 	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %lld \n",  (LLD)surf->numLayers);
 	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
@@ -132,7 +132,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
-	if(SURFACE == 2 )
+	if(1 == SURFACE)
 	{
 		if(2 == surf->SurfMode)
 		{
@@ -164,6 +164,7 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	FDSTAG         *fs;
 	const PetscInt *lx, *ly;
 	FastScapeLib   *FSLib;
+
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
@@ -189,9 +190,13 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vz);     CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vpatch); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vmerge); CHKERRQ(ierr);
-	
- 	ierr = DMCreateGlobalVector(surf->DA_SURF, &FSLib->vz_collect);  CHKERRQ(ierr);
-	
+
+	//FastScape data
+	if(1 == SURFACE)
+	{
+	 	ierr = FastScapeCreateData(FSLib); 	   CHKERRQ(ierr);
+	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -231,6 +236,15 @@ PetscErrorCode FreeSurfReadRestart(FreeSurf *surf, FILE *fp)
 	// read topography vector
 	ierr = VecReadRestart(surf->gtopo, fp); CHKERRQ(ierr);
 
+	// FastScape
+	if(1 == SURFACE)
+	{
+		if(2 == surf->SurfMode)
+		{
+			ierr = FastScapeReadRestart(surf->FSLib, fp);	CHKERRQ(ierr);
+		}
+	}
+
 	// get ghosted topography vector
 	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
@@ -247,6 +261,15 @@ PetscErrorCode FreeSurfWriteRestart(FreeSurf *surf, FILE *fp)
 
 	// store topography vector
 	ierr = VecWriteRestart(surf->gtopo, fp); CHKERRQ(ierr);
+
+	// FastScape
+	if(1 == SURFACE)
+	{
+		if(2 == surf->SurfMode)
+		{
+			ierr = FastScapeWriteRestart(surf->FSLib, fp);	CHKERRQ(ierr);
+		}
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -267,6 +290,11 @@ PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 	ierr = VecDestroy(&surf->vz);      CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->vpatch);  CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->vmerge);  CHKERRQ(ierr);
+
+	if(1 == SURFACE)
+	{
+		ierr = FastScapeDestroy(surf->FSLib); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -291,10 +319,10 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	ierr = FreeSurfGetVelComp(surf, &InterpYFaceCorner, jr->lvy, surf->vy); CHKERRQ(ierr);
 	ierr = FreeSurfGetVelComp(surf, &InterpZFaceCorner, jr->lvz, surf->vz); CHKERRQ(ierr);
 
-	// advect topography // change the topography
+	// advect topography 
 	ierr = FreeSurfAdvectTopo(surf); CHKERRQ(ierr);
 
-	// smooth topography spikes // also change the topography 
+	// smooth topography spikes 
 	ierr = FreeSurfSmoothMaxAngle(surf); CHKERRQ(ierr);
 
 	// compute & store average topography
@@ -514,41 +542,20 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 		cy[11] = (cy[3] + cy[4] + cy[6] + cy[7])/4.0;
 		cy[12] = (cy[4] + cy[5] + cy[7] + cy[8])/4.0;
 
-		if( 1 == surf->SurfMode )
-		// using LaMEM original code to advect the node in z direction
-		{
-			// compute deformed grid z-coordinates
-			cz[0]  = step*vz[L][J1][I1] + topo[L][J1][I1];
-			cz[1]  = step*vz[L][J1][I ] + topo[L][J1][I ];
-			cz[2]  = step*vz[L][J1][I2] + topo[L][J1][I2];
-			cz[3]  = step*vz[L][J ][I1] + topo[L][J ][I1];
-			cz[4]  = step*vz[L][J ][I ] + topo[L][J ][I ];
-			cz[5]  = step*vz[L][J ][I2] + topo[L][J ][I2];
-			cz[6]  = step*vz[L][J2][I1] + topo[L][J2][I1];
-			cz[7]  = step*vz[L][J2][I ] + topo[L][J2][I ];
-			cz[8]  = step*vz[L][J2][I2] + topo[L][J2][I2];
-			cz[9]  = (cz[0] + cz[1] + cz[3] + cz[4])/4.0;
-			cz[10] = (cz[1] + cz[2] + cz[4] + cz[5])/4.0;
-			cz[11] = (cz[3] + cz[4] + cz[6] + cz[7])/4.0;
-			cz[12] = (cz[4] + cz[5] + cz[7] + cz[8])/4.0;
-		}
-		// SurfaceMode = 2; using FastScape to advect the node in Z direction; ref to fastscapeFortran.f90
-		if( 2 == surf->SurfMode ) // change the topography
-		{
-			cz[0]  = topo[L][J1][I1];
-			cz[1]  = topo[L][J1][I ];
-			cz[2]  = topo[L][J1][I2];
-			cz[3]  = topo[L][J ][I1];
-			cz[4]  = topo[L][J ][I ];
-			cz[5]  = topo[L][J ][I2];
-			cz[6]  = topo[L][J2][I1];
-			cz[7]  = topo[L][J2][I ];
-			cz[8]  = topo[L][J2][I2];
-			cz[9]  = (cz[0] + cz[1] + cz[3] + cz[4])/4.0;
-			cz[10] = (cz[1] + cz[2] + cz[4] + cz[5])/4.0;
-			cz[11] = (cz[3] + cz[4] + cz[6] + cz[7])/4.0;
-			cz[12] = (cz[4] + cz[5] + cz[7] + cz[8])/4.0;	
-		}
+		// compute deformed grid z-coordinates
+		cz[0]  = step*vz[L][J1][I1] + topo[L][J1][I1];
+		cz[1]  = step*vz[L][J1][I ] + topo[L][J1][I ];
+		cz[2]  = step*vz[L][J1][I2] + topo[L][J1][I2];
+		cz[3]  = step*vz[L][J ][I1] + topo[L][J ][I1];
+		cz[4]  = step*vz[L][J ][I ] + topo[L][J ][I ];
+		cz[5]  = step*vz[L][J ][I2] + topo[L][J ][I2];
+		cz[6]  = step*vz[L][J2][I1] + topo[L][J2][I1];
+		cz[7]  = step*vz[L][J2][I ] + topo[L][J2][I ];
+		cz[8]  = step*vz[L][J2][I2] + topo[L][J2][I2];
+		cz[9]  = (cz[0] + cz[1] + cz[3] + cz[4])/4.0;
+		cz[10] = (cz[1] + cz[2] + cz[4] + cz[5])/4.0;
+		cz[11] = (cz[3] + cz[4] + cz[6] + cz[7])/4.0;
+		cz[12] = (cz[4] + cz[5] + cz[7] + cz[8])/4.0;
 
 		// compute updated node position if background strain rate is defined
 		X += step*Exx*(X - Rxx);
