@@ -615,9 +615,6 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 	// create send and receive buffers for asynchronous MPI communication
 	ierr = ADVCreateMPIBuff(actx); CHKERRQ(ierr);
 
-	// apply periodic marker advection
-	ierr = ADVApplyPeriodic(actx); CHKERRQ(ierr);
-
 	// communicate markers with neighbor processes
 	ierr = ADVExchangeMark(actx); CHKERRQ(ierr);
 
@@ -958,6 +955,8 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 {
 	// count number of markers to be sent to each neighbor domain
 
+	PetscScalar *X;
+	PetscScalar  bx, ex, dx;
 	PetscInt     i, lrank, cnt;
 	PetscMPIInt  grank;
 	FDSTAG      *fs;
@@ -967,14 +966,30 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 
 	fs = actx->fs;
 
+	// get current coordinates of the mesh boundaries
+	ierr = FDSTAGGetGlobalBox(fs, &bx, NULL, NULL, &ex, NULL, NULL); CHKERRQ(ierr);
+
+	// get mesh size
+	dx = ex - bx;
+
 	// clear send counters
 	ierr = PetscMemzero(actx->nsendm, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
 
 	// scan markers
 	for(i = 0, cnt = 0; i < actx->nummark; i++)
 	{
+		// get marker coordinates
+		X = actx->markers[i].X;
+
+		// correct marker position for periodic case
+		if(actx->periodic)
+		{
+			if(X[0] < bx) X[0] += dx;
+			if(X[0] > ex) X[0] -= dx;
+		}
+
 		// get global & local ranks of a marker
-		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
+		ierr = FDSTAGGetPointRanks(fs, X, &lrank, &grank); CHKERRQ(ierr);
 
 		if(grank == -1)
 		{
@@ -1092,41 +1107,6 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 
 	// rewind send buffer pointers
 	rewindPtr(_num_neighb_, actx->ptsend);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
-{
-	// apply periodic marker advection
-
-	FDSTAG      *fs;
-	PetscScalar *X;
-	PetscInt     i;
-	PetscScalar  bx, ex, dx;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// access context
-	fs = actx->fs;
-
-	// get current coordinates of the mesh boundaries
-	ierr = FDSTAGGetGlobalBox(fs, &bx, NULL, NULL, &ex, NULL, NULL); CHKERRQ(ierr);
-
-	// get mesh size
-	dx = ex - bx;
-
-	if(actx->periodic)
-	{
-		for(i = 0; i < actx->nsend; i++)
-		{
-			X = actx->sendbuf[i].X;
-
-			if(X[0] < bx) X[0] += dx;
-			if(X[0] > ex) X[0] -= dx;
-		}
-	}
 
 	PetscFunctionReturn(0);
 }
