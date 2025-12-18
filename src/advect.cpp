@@ -981,16 +981,16 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 		// get marker coordinates
 		X = actx->markers[i].X;
 
+		// get global & local ranks of a marker
+		ierr = FDSTAGGetPointRanks(fs, X, &lrank, &grank); CHKERRQ(ierr);
+		
 		// correct marker position for periodic case
 		if(actx->periodic)
 		{
 			if(X[0] < bx) X[0] += dx;
 			if(X[0] > ex) X[0] -= dx;
 		}
-
-		// get global & local ranks of a marker
-		ierr = FDSTAGGetPointRanks(fs, X, &lrank, &grank); CHKERRQ(ierr);
-
+		
 		if(grank == -1)
 		{
 			// count outflow markers
