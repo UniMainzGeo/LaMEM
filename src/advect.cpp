@@ -956,7 +956,6 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 	// count number of markers to be sent to each neighbor domain
 
 	PetscScalar *X;
-	PetscScalar  bx, ex, dx;
 	PetscInt     i, lrank, cnt;
 	PetscMPIInt  grank;
 	FDSTAG      *fs;
@@ -965,12 +964,6 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
-
-	// get current coordinates of the mesh boundaries
-	ierr = FDSTAGGetGlobalBox(fs, &bx, NULL, NULL, &ex, NULL, NULL); CHKERRQ(ierr);
-
-	// get mesh size
-	dx = ex - bx;
 
 	// clear send counters
 	ierr = PetscMemzero(actx->nsendm, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
@@ -983,13 +976,6 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 
 		// get global & local ranks of a marker
 		ierr = FDSTAGGetPointRanks(fs, X, &lrank, &grank); CHKERRQ(ierr);
-		
-		// correct marker position for periodic case
-		if(actx->periodic)
-		{
-			if(X[0] < bx) X[0] += dx;
-			if(X[0] > ex) X[0] -= dx;
-		}
 		
 		if(grank == -1)
 		{
@@ -1062,14 +1048,22 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 
 	// NOTE! Currently the memory allocation model is fully dynamic.
 	// Maybe it makes sense to introduce static model with reallocation.
-	FDSTAG     *fs;
-	PetscInt    i, cnt, lrank;
-	PetscMPIInt grank;
+	FDSTAG      *fs;
+	PetscScalar *X;
+	PetscScalar  bx, ex, dx;
+	PetscInt     i, cnt, lrank;
+	PetscMPIInt  grank;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
+
+	// get current coordinates of the mesh boundaries
+	ierr = FDSTAGGetGlobalBox(fs, &bx, NULL, NULL, &ex, NULL, NULL); CHKERRQ(ierr);
+
+	// get mesh size
+	dx = ex - bx;
 
 	// compute buffer pointers
 	actx->nsend = getPtrCnt(_num_neighb_, actx->nsendm, actx->ptsend);
@@ -1087,8 +1081,18 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	// copy markers to send buffer, store their indices
 	for(i = 0, cnt = 0; i < actx->nummark; i++)
 	{
+		// get marker coordinates
+		X = actx->markers[i].X;
+
 		// get global & local ranks of a marker
-		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
+		ierr = FDSTAGGetPointRanks(fs, X, &lrank, &grank); CHKERRQ(ierr);
+
+		// correct marker position for periodic case
+		if(actx->periodic)
+		{
+			if(X[0] < bx) X[0] += dx;
+			if(X[0] > ex) X[0] -= dx;
+		}
 
 		if(grank == -1)
 		{
