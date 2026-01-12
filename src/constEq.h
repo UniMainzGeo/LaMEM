@@ -76,7 +76,16 @@ struct ConstEqCtx
 	PetscScalar  A_fk;   // Frank-Kamenetzky constant
 	PetscScalar  taupl;  // plastic yield stress
 	PetscScalar  eta_vp; // regularization viscosity
+
 	
+	// rate and state parameters
+	PetscScalar sigma_c; // compressive strength (WHATEVER THIS IS!)
+	PetscScalar gamma_s; // static friction coefficient
+	PetscScalar gamma_d; // dynamic friction coefficient
+
+	// ADD MORE AND INITIALIZE THEM ALL FROM PHASES OR GLOBALLY
+	// ...
+
 
 	// control volume results
 	PetscScalar  eta;    // effective viscosity

@@ -397,17 +397,18 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 
 	Controls    *ctrl;
 	PetscInt    it, conv;
-	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
+	PetscScalar p_total, dP;
+	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII, gamma_eff;
 	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIplc, DIIfk, DIIvs, phRat;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_fk, inv_eta_min;
 
 	PetscFunctionBeginUser;
 
 	// access context
-	ctrl   = ctx->ctrl;      // global controls
-	phRat  = ctx->phRat[ID]; // phase ratio
-	taupl  = ctx->taupl;     // plastic yield stress
-	DII    = ctx->DII;       // effective strain rate
+	ctrl    = ctx->ctrl;      // global controls
+	phRat   = ctx->phRat[ID]; // phase ratio
+	taupl   = ctx->taupl;     // plastic yield stress
+	DII     = ctx->DII;       // effective strain rate
 
 	// initialize
 	it     = 1;
@@ -415,11 +416,65 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	DIIpl  = 0.0;
 	eta_cr = 0.0;
 
+	//========================
+	// RATE AND STATE FRICTION
+	//========================
+
+	// compute effective mean stress
+	p_total = ctx->p + ctrl->biot*ctx->p_pore;
+	dP      = p_total - ctx->p_pore;
+
+	if(ctx->gamma_d && dP > 0.0 && DII)
+	{
+		// compute yield stress lower bound using dynamic friction
+		tauII = dP*ctx->gamma_d + ctx->sigma_c;
+
+		// get initial viscosity
+		eta = tauII/(2.0*DII);
+
+		// compute initial plastic strain rate (upper bound because of lowest strength)
+		DIIpl = getConsEqRes(eta, ctx);
+
+		// reset if plasticity is not active
+		if(DIIpl < 0.0)
+		{
+			DIIpl = 0.0;
+		}
+		else
+		{
+			//==================================================================
+			// solve for effective friction coefficient by fixed-point iteration
+			//==================================================================
+			do
+			{
+				// compute Vp
+				// Vp = ...
+
+				// compute gamma_eff
+				// gamma_eff = ...
+
+				gamma_eff = 1.0; // placeholder
+
+				// update yield stress
+				tauII = dP*gamma_eff + ctx->sigma_c;
+				eta   = tauII/(2.0*DII);
+
+			    // store current strain strain rate
+			    DIIplc = DIIpl;
+
+				// compute updated plastic strain rate
+				DIIpl = getConsEqRes(eta, ctx);
+
+				// set convergence flag
+				conv = (PetscAbsScalar((DIIpl - DIIplc)/DII) <= ctrl->lrtol);
+
+			} while(!conv && ++it < ctrl->lmaxit);
+		}
+	}
 	//===========
 	// PLASTICITY
 	//===========
-
-	if(taupl && DII)
+	else if(taupl && DII)
 	{
 		// get initial yield stress and viscosity
 		tauII = taupl;
