@@ -1193,6 +1193,10 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
     PetscInt    mcz;
     PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
     PetscScalar ***bcT;
+    PetscScalar x,y;
+    PetscScalar xmin, xmax;
+    PetscScalar rad_plume_squared, rad_squared;
+
 
     PetscErrorCode ierr;
     PetscFunctionBeginUser;
@@ -1230,7 +1234,6 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
             // in case we have a plume-like inflow boundary condition:
             if(bc->Plume_Inflow == 1 && k==0)
             {
-                PetscScalar x,y;
 
                 x       = COORD_CELL(i, sx, fs->dsx);
                 y       = COORD_CELL(j, sy, fs->dsy);
@@ -1239,10 +1242,9 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 
                 if(bc->Plume_Dimension==1)	// 2D plume
                 {	
-                    PetscScalar xmin, xmax;
                     
-                    xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
-                    xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
+                    xmin =  bc->Plume_Center[0] - 3.0*bc->Plume_Radius;
+                    xmax =  bc->Plume_Center[0] + 3.0*bc->Plume_Radius;
 
                     
                     if ( (x >= xmin) && (x <= xmax))
@@ -1253,9 +1255,11 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
                 }
                 else	// 3D plume
                 {
-                    if ( ( PetscPowScalar( (x - bc->Plume_Center[0]), 2.0)  + PetscPowScalar( (y - bc->Plume_Center[1]),2.0) ) <= PetscPowScalar(bc->Plume_Radius,2.0))
+                    rad_plume_squared = PetscPowScalar(bc->Plume_Radius,2.0);
+                    rad_squared = PetscPowScalar(x - bc->Plume_Center[0],2.0) + PetscPowScalar(y - bc->Plume_Center[1],2.0);
+                    if (rad_squared <= 15.0*rad_plume_squared)
                     {
-                        bcT[k-1][j][i]     = bc->Plume_Temperature;
+                        bcT[k-1][j][i]     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - (rad_squared/(2.0*rad_plume_squared)));
                     }
                 }
             }
