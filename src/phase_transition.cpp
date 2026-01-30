@@ -999,7 +999,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, Petsc
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
 	{
-		ierr = Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr, cellID); CHKERRQ(ierr);   // adjust phase according to T within Box but ignore airphase particles
+		ierr = Check_NotInAirBox_Phase_Transition(PhaseTrans, P,PH1,PH2, scal, &ph, &T, jr, cellID); CHKERRQ(ierr);   // adjust phase according to T within Box but ignore airphase particles
 	}
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
@@ -1011,7 +1011,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, Petsc
 	}
 	else if(PhaseTrans->Type==_Box_)
 	{
-		ierr = Check_Box_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, &InAbove); CHKERRQ(ierr);		// compute phase & T within Box
+		ierr = Check_Box_Phase_Transition(PhaseTrans,jr, P,PH1,PH2, scal, &ph, &T, &InAbove); CHKERRQ(ierr);		// compute phase & T within Box
 	}
 	
 	// Prepare output
@@ -1109,11 +1109,12 @@ PetscErrorCode Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,
 }
 
 //------------------------------------------------------------------------------------------------------------//
-PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,
+PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Marker *P,PetscInt PH1, PetscInt PH2,
 			Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InAbove)
 {
 	PetscInt 	ph, InAb;
 	PetscScalar T;
+	PetscScalar dT_adiabatic, Z_Top;
 
 	PetscFunctionBeginUser;
 
@@ -1163,6 +1164,19 @@ PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 			d 		=	zTop - P->X[2];
 			T 		= 	(botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
+	    if(jr->ctrl.Adiabatic_gr > 0.0 && PhaseTrans->TempType != 0)
+	    {
+	        if(jr->surf->UseFreeSurf)
+	        {
+	            Z_Top = jr->surf->InitLevel;
+			}				
+	        else
+	        {
+	            Z_Top = jr->fs->dsz.gcrdend;
+			}	
+	        dT_adiabatic = jr->ctrl.Adiabatic_gr * PetscAbs(P->X[2] - Z_Top);
+	        T = T + dT_adiabatic;
+	    }
 
 	}
 	else{
@@ -1188,6 +1202,7 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 	//PetscInt     I;
 
 	PetscScalar  T, xboundL, xboundR;
+	PetscScalar dT_adiabatic, Z_Top;
 	FDSTAG 	*fs;
 	Discret1D	*dsy;   
   
@@ -1270,6 +1285,19 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 			d		=       zTop - P->X[2];
 			T		=       (botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
+	    if(jr->ctrl.Adiabatic_gr > 0.0 && PhaseTrans->TempType != 0)
+	    {
+	        if(jr->surf->UseFreeSurf)
+	        {
+	            Z_Top = jr->surf->InitLevel;
+			}				
+	        else
+	        {
+	            Z_Top = jr->fs->dsz.gcrdend;
+			}			
+	        dT_adiabatic = jr->ctrl.Adiabatic_gr * PetscAbs(P->X[2] - Z_Top);
+	        T = T + dT_adiabatic;
+	    }
 	}
 	else{  
 		// Outside; keep T
