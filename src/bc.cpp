@@ -488,13 +488,20 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
         ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
         ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
 		ierr = getIntParam   (fb, _OPTIONAL_, "velin_num_periods",  &bc->VelNumPeriods,  1,                  _max_periods_  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_relax_d",&bc->relax_dist,1, scal->length  ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "velin_net_num_periods",  &bc->VelNetNumPeriods,  1,                  _max_periods_  ); CHKERRQ(ierr);
+        ierr = getScalarParam(fb, _OPTIONAL_, "bvel_relax_d",&bc->relax_dist,1, scal->length  ); CHKERRQ(ierr);
 		if(bc->VelNumPeriods>1)
 		{
 			ierr = getScalarParam(fb, _REQUIRED_, "velin_time_delims",   bc->VelTimeDelims,  bc->VelNumPeriods-1, scal->time    ); CHKERRQ(ierr);
 			ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",          bc->velin_array,    bc->VelNumPeriods,   scal->velocity); CHKERRQ(ierr);
 			ierr = BCGetVelins(bc); CHKERRQ(ierr);
 		}
+        if(bc->VelNetNumPeriods>1)
+        {
+            ierr = getScalarParam(fb, _REQUIRED_, "velin_net_time_delims",   bc->VelNetTimeDelims,  bc->VelNetNumPeriods-1, scal->time    ); CHKERRQ(ierr);
+            ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin_net",          bc->velin_net_array,    bc->VelNetNumPeriods,   scal->velocity); CHKERRQ(ierr);
+            ierr = BCGetVelins(bc); CHKERRQ(ierr);
+        }
         ierr = getScalarParam(fb, _OPTIONAL_, "bvel_phase_interval", bc->phase_interval, bc->num_phase_bc+1, scal->length); CHKERRQ(ierr);
         ierr = getStringParam(fb, _OPTIONAL_, "bvel_temperature_inflow", inflow_temp , NULL); 					CHKERRQ(ierr);
         if     	(!strcmp(inflow_temp, "Constant_T_inflow"))      bc->bvel_temperature_inflow = 1;
@@ -747,6 +754,11 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 							{
 							PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %lld   \n", (LLD) bc->VelNumPeriods);}
 							else {PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : 1   \n");
+							}
+                            if(bc->VelNetNumPeriods>1)
+							{
+							PetscPrintf(PETSC_COMM_WORLD, "      Number of net inflow periods                : %lld   \n", (LLD) bc->VelNetNumPeriods);}
+							else {PetscPrintf(PETSC_COMM_WORLD, "      Number of net inflow periods                : 1   \n");
 							}							
                             PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %s \n", str_inflow);
      if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }
@@ -1440,25 +1452,71 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 PetscErrorCode BCGetVelins(
 		BCCtx       *bc)
 {
-	PetscScalar  bz;
-	PetscInt    jj;
-	PetscScalar time;
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-	// initialize
-	time = bc->ts->time;
-	if(bc->VelNumPeriods)
-	{
-		for(jj = 0; jj < bc->VelNumPeriods-1; jj++)
-		{
-			if(time < bc->VelTimeDelims[jj]) break;
-		}
-		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
-		bc->velin  =  bc->velin_array[jj];
-		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
-	}
+    Scaling *scal = bc->scal;
+    PetscScalar  bz;
+    PetscInt    jj, kk;
+    PetscScalar time;
+    PetscErrorCode ierr;
+    PetscFunctionBegin;
+    /* initialize */
+    time = bc->ts->time;
+    
+    if (bc->VelNumPeriods > 1 && bc->VelNetNumPeriods > 1) {
+        /* both velin and velin_net have period arrays */
+        for (jj = 0; jj < bc->VelNumPeriods-1; jj++) {
+            if (time < bc->VelTimeDelims[jj]) break;
+        }
+        for (kk = 0; kk < bc->VelNetNumPeriods-1; kk++) {
+            if (time < bc->VelNetTimeDelims[kk]) break;
+        }
+        ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+        bc->velin  = bc->velin_array[jj] + bc->velin_net_array[kk];
+        bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+        
+        PetscPrintf(PETSC_COMM_WORLD,
+        "BCGetVelins BOTH: time=%g (Myr) jj=%d kk=%d velin_base=%g velin_net=%g velin_total=%g\n",
+        (double)(time*scal->time),
+        (int)jj, (int)kk,
+        (double)(bc->velin_array[jj]*scal->velocity),
+        (double)(bc->velin_net_array[kk]*scal->velocity),
+        (double)((bc->velin_array[jj] + bc->velin_net_array[kk])*scal->velocity));
+    }
 
-	PetscFunctionReturn(0);
+    else if (bc->VelNumPeriods) {
+        /* only velin array provided */
+        for (jj = 0; jj < bc->VelNumPeriods-1; jj++) {
+            if (time < bc->VelTimeDelims[jj]) break;
+        }
+        ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+        bc->velin  = bc->velin_array[jj];
+        bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+    }
+
+    else if (bc->VelNetNumPeriods > 1) {
+        /* only velin_net array provided; velin scalar should have been read earlier */
+        static PetscBool   baseVelinInitialized = PETSC_FALSE;
+        static PetscScalar baseVelin            = 0.0;
+        if (!baseVelinInitialized) {
+            baseVelin            = bc->velin;  /* store the original scalar inflow velocity */
+            baseVelinInitialized = PETSC_TRUE;
+        }
+        for (kk = 0; kk < bc->VelNetNumPeriods-1; kk++) {
+            if (time < bc->VelNetTimeDelims[kk]) break;
+        }
+        ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+        /* piecewise constant: base scalar inflow plus the current net offset;
+           no accumulation over timesteps */
+        bc->velin  = baseVelin + bc->velin_net_array[kk];
+        bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+    }
+    
+    else {
+        /* neither periods array provided; use scalar velin (already read) and compute velout */
+        ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+        bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+    }
+
+    PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode BCApplyVelTPC(BCCtx *bc)
@@ -1700,11 +1758,14 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 {
     FDSTAG      *fs;
-    PetscInt    mnz, mnx, mny;
+    DBMat      *dbm;
+    Ph_trans_t      *PhaseTrans;
+    Scaling *scal = bc->scal;
+    PetscInt    mnz, mnx, mny, nPtr, numPhTrn;
     PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+    PetscInt    kk;
     PetscScalar ***bcvx,  ***bcvy, ***bcvz;
-    PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open, bot_open;
-
+    PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, top_open, bot_open; 
     PetscErrorCode ierr;
     PetscFunctionBeginUser;
 
@@ -1723,10 +1784,27 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
     relax_dist= bc->relax_dist;
     velbot = bc->velbot;
     veltop = bc->veltop;
+    PetscScalar time = 0.0;
+    if (bc->ts) time = bc->ts->time;
+    else if (bc->jr && bc->jr->ts) time = bc->jr->ts->time;
+    dbm = NULL;
+    if (bc->dbm) dbm = bc->dbm;
+    else if (bc->jr) dbm = bc->jr->dbm;
+    numPhTrn = dbm ? dbm->numPhtr : 0;
 
     // set open boundary flag
     top_open = (PetscScalar) bc->top_open;
     bot_open = (PetscScalar) bc->bot_open;
+
+    //* precompute net inflow value once for this timestep to avoid repeated inner-loop work */ // pkongpet 11/12/25
+    PetscScalar velin_net = 0.0;
+    if (bc->VelNetNumPeriods > 1)
+    {
+        for (kk = 0; kk < bc->VelNetNumPeriods-1; kk++) {
+            if (time < bc->VelNetTimeDelims[kk]) break;
+        }
+        velin_net = bc->velin_net_array[kk]; // nondimensionalize
+    }
 
     // initialize maximal index in all directions
     mnx = fs->dsx.tnods - 1;
@@ -1798,7 +1876,10 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
             if(z <= top && z >= bot) vel = velin;
 
             if(i == 0)   { bcvx[k][j][i] = vel; }
-            if(i == mnx) { bcvx[k][j][i] = -vel; }
+            if(i == mnx)
+            {
+                bcvx[k][j][i] = -vel + (2.0*velin_net); // right boundary (compensating inflow)
+            }
             iter++;
         }
         END_STD_LOOP
