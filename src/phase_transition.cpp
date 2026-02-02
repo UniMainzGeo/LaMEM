@@ -1112,12 +1112,16 @@ PetscErrorCode Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,
 PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Marker *P,PetscInt PH1, PetscInt PH2,
 			Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InAbove)
 {
-	PetscInt 	ph, InAb;
+	Material_t  *mat;
+    PetscInt 	ph, InAb;
 	PetscScalar T;
-	PetscScalar dT_adiabatic, Z_Top;
+    PetscScalar alpha, Cp, g, T_adiab;
+    PetscScalar dz, depth, k1, k2, Z_Top, Ztot;
+    PetscInt    nsteps, i;
 
-	PetscFunctionBeginUser;
+    PetscFunctionBeginUser;
 
+    g     = PetscAbs(jr->ctrl.grav[2]);
 	ph = P->phase;
 	T  = P->T;
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
@@ -1164,18 +1168,36 @@ PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Ma
 			d 		=	zTop - P->X[2];
 			T 		= 	(botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
-	    if(jr->ctrl.Adiabatic_gr > 0.0 && PhaseTrans->TempType != 0)
+        // Add the Adiabatic Gradient
+    if(jr->ctrl.AdiabHeat > 0.0 && PhaseTrans->TempType != 0)
 	    {
-	        if(jr->surf->UseFreeSurf)
-	        {
-	            Z_Top = jr->surf->InitLevel;
-			}				
-	        else
-	        {
-	            Z_Top = jr->fs->dsz.gcrdend;
-			}	
-	        dT_adiabatic = jr->ctrl.Adiabatic_gr * PetscAbs(P->X[2] - Z_Top);
-	        T = T + dT_adiabatic;
+            mat   = jr->dbm->phases + PH1;
+            alpha = mat->alpha;
+            Cp    = mat->Cp;
+            // Get top of domain
+            if(jr->surf->UseFreeSurf)
+                Z_Top = jr->surf->InitLevel;
+            else
+                Z_Top = jr->fs->dsz.gcrdend;
+
+            // Global Domain thickness used to define dz
+            Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
+			depth = PetscAbs(Z_Top - P->X[2]);
+			nsteps=(PetscInt)((depth/Ztot)*(jr->fs->dsz.tcels/2))+1;
+            dz = depth/(PetscScalar)(nsteps);
+
+            // Start with the temperature T (potential temperature from TempType)
+            T_adiab = T;
+
+            // RK2 integration: dT/dz = alpha * g * T / Cp
+            for(i = 0; i < nsteps; i++)
+            {
+                k1 = alpha * g * T_adiab / Cp;
+                k2 = alpha * g * (T_adiab + 0.5*dz*k1) / Cp;
+                T_adiab = T_adiab + dz * k2;
+            }
+
+            T = T_adiab;
 	    }
 
 	}
@@ -1197,17 +1219,19 @@ PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Ma
 PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal,
 					PetscInt *ph_out, PetscScalar *T_out, JacRes *jr, PetscInt cellID)
 {
-
+	Material_t  *mat;
 	PetscInt     ph, AirPhase, J, K, nx, ny;
 	//PetscInt     I;
-
 	PetscScalar  T, xboundL, xboundR;
-	PetscScalar dT_adiabatic, Z_Top;
+	PetscScalar alpha, Cp, g, T_adiab;
+    PetscScalar dz, depth, k1, k2, Z_Top, Ztot;
+    PetscInt    nsteps, i;
 	FDSTAG 	*fs;
 	Discret1D	*dsy;   
   
 	PetscFunctionBeginUser;
 
+  	g     = PetscAbs(jr->ctrl.grav[2]);
 	AirPhase  = jr->surf->AirPhase;
 	ph = P->phase;
 	T  = P->T;
@@ -1285,18 +1309,35 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 			d		=       zTop - P->X[2];
 			T		=       (botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
-	    if(jr->ctrl.Adiabatic_gr > 0.0 && PhaseTrans->TempType != 0)
+	    if(jr->ctrl.AdiabHeat > 0.0 && PhaseTrans->TempType != 0)
 	    {
-	        if(jr->surf->UseFreeSurf)
-	        {
-	            Z_Top = jr->surf->InitLevel;
-			}				
-	        else
-	        {
-	            Z_Top = jr->fs->dsz.gcrdend;
-			}			
-	        dT_adiabatic = jr->ctrl.Adiabatic_gr * PetscAbs(P->X[2] - Z_Top);
-	        T = T + dT_adiabatic;
+            mat   = jr->dbm->phases + PH1;
+            alpha = mat->alpha;
+            Cp    = mat->Cp;
+            // Get top of domain
+            if(jr->surf->UseFreeSurf)
+                Z_Top = jr->surf->InitLevel;
+            else
+                Z_Top = jr->fs->dsz.gcrdend;
+
+            // Global Domain thickness used to define dz
+            Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
+			depth = PetscAbs(Z_Top - P->X[2]);
+			nsteps=(PetscInt)((depth/Ztot)*(jr->fs->dsz.tcels/2))+1;
+            dz = depth/(PetscScalar)(nsteps);
+
+            // Start with the temperature T (potential temperature from TempType)
+            T_adiab = T;
+
+            // RK2 integration: dT/dz = alpha * g * T / Cp
+            for(i = 0; i < nsteps; i++)
+            {
+                k1 = alpha * g * T_adiab / Cp;
+                k2 = alpha * g * (T_adiab + 0.5*dz*k1) / Cp;
+                T_adiab = T_adiab + dz * k2;
+            }
+
+            T = T_adiab;
 	    }
 	}
 	else{  
