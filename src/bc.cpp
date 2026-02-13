@@ -1269,7 +1269,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
                 {
                     rad_plume_squared = PetscPowScalar(bc->Plume_Radius,2.0);
                     rad_squared = PetscPowScalar(x - bc->Plume_Center[0],2.0) + PetscPowScalar(y - bc->Plume_Center[1],2.0);
-                    if (rad_squared <= 15.0*rad_plume_squared)
+                    if (rad_squared <= 9.0*rad_plume_squared)
                     {
                         bcT[k-1][j][i]     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - (rad_squared/(2.0*rad_plume_squared)));
                     }
