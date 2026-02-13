@@ -268,7 +268,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// read LaMEM library database
 	fread(lm, sizeof(LaMEMLib), 1, fp);
-
+	
 	// setup cross-references between library objects
 	ierr = LaMEMLibSetLinks(lm); CHKERRQ(ierr);
 
@@ -296,18 +296,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
 
-	// arrays for dynamic NotInAir phase_trans
-	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
-
-	// read from input file, create arrays for dynamic diking, and read from restart file
-	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, &lm->ts, fp);  CHKERRQ(ierr);
- 
-	// close temporary restart file
-	fclose(fp);
-
-	// free space
-	free(fileName);
-
 	// check whether restart input file is specified
 	ierr = PetscOptionsGetCheckString("-RestartParamFile", restartFileName, &found); CHKERRQ(ierr);
 
@@ -316,12 +304,38 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 		// load restart input file
 		ierr = FBLoad(&fb, PETSC_TRUE, restartFileName); CHKERRQ(ierr);
 
+		// create scaling object
+		ierr = ScalingCreate(&lm->scal, fb, PETSC_TRUE); CHKERRQ(ierr);
+
+		// create time stepping object
+		ierr = TSSolCreate(&lm->ts, fb); CHKERRQ(ierr);
+	
+		// create boundary condition context
+		ierr = BCCreate(&lm->bc, fb); CHKERRQ(ierr);
+
+		// Reset material database to clear computed values (e.g., Bd) from restart,
+		// allowing fresh parameters to be read from input file without conflicts.
+    	ierr = PetscMemzero(&lm->dbm, sizeof(DBMat)); CHKERRQ(ierr);
+    	lm->dbm.scal = &lm->scal;  // restore scaling pointer
+
 		// override material database
 		ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
 		// destroy file buffer
 		ierr = FBDestroy(&fb); CHKERRQ(ierr);
 	}
+	
+	// arrays for dynamic NotInAir phase_trans
+	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
+	
+	// read from input file, create arrays for dynamic diking, and read from restart file
+	ierr = DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, &lm->ts, fp);  CHKERRQ(ierr);
+
+	// close temporary restart file
+	fclose(fp);
+
+	// free space
+	free(fileName);
 
 	PrintDone(t);
 
