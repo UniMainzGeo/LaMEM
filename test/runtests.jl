@@ -818,6 +818,10 @@ end
     @test perform_lamem_test(dir,"CompensatedInflow_test_3D.dat","CompensatedInflow3D-p2.expected",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 
+    # test_migrating ridge
+    @test perform_lamem_test(dir,"MigratingRidge_2D.dat","MigratingRidge_2D.expected",
+                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+    
 end
 
 @testset "t20_FSSA" begin
@@ -1093,19 +1097,6 @@ end
     @test mean_APS0 == 0.0
     @test mean_APS1 == 0.5
     clean_test_directory(dir)
-end
-
-@testset "t34_PRI_MigRidge" begin
-    cd(test_dir)
-    dir = "t34_PRI_MigRidge";
-    
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
-
-   # Test 2D Plume Ridge Interaction with Migrating Ridge
-    @test perform_lamem_test(dir,"2D_PRI_MigRidge.dat","2D_PRI_MigRidge.expected",
-                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
-    
 end
 
 end
