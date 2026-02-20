@@ -295,9 +295,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
-
-	// check whether restart input file is specified
-	ierr = PetscOptionsGetCheckString("-RestartParamFile", restartFileName, &found); CHKERRQ(ierr);
 	
 	// arrays for dynamic NotInAir phase_trans
 	ierr = DynamicPhTr_ReadRestart(&lm->jr, fp); CHKERRQ(ierr);
@@ -311,6 +308,9 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// free space
 	free(fileName);
     
+	// check whether restart input file is specified
+	ierr = PetscOptionsGetCheckString("-RestartParamFile", restartFileName, &found); CHKERRQ(ierr);
+
     if(found == PETSC_TRUE)
 	{
 		// load restart input file
@@ -321,11 +321,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	
 		// create boundary condition context
 		ierr = BCCreate(&lm->bc, fb); CHKERRQ(ierr);
-
-		// Reset material database to clear computed values (e.g., Bd) from restart,
-		// allowing fresh parameters to be read from input file without conflicts.
-    	ierr = PetscMemzero(&lm->dbm, sizeof(DBMat)); CHKERRQ(ierr);
-    	lm->dbm.scal = &lm->scal;  // restore scaling pointer
 
 		// override material database
 		ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
