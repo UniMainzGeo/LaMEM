@@ -322,6 +322,9 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 		// create boundary condition context
 		ierr = BCCreate(&lm->bc, fb); CHKERRQ(ierr);
 
+		// Clear computed material params from restart before re-reading from input file
+		ierr = PetscMemzero(&lm->dbm.phases, sizeof(lm->dbm.phases)); CHKERRQ(ierr);
+
 		// override material database
 		ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
