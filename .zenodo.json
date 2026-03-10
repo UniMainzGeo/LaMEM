@@ -1,0 +1,35 @@
+{
+  "title": "LaMEM",
+  "description": "LaMEM (Lithosphere and Mantle Evolution Model) is a parallel 3D numerical code that can be used to simulate various thermo-mechanical geodynamical processes such as mantle-lithosphere interaction for rocks that have visco-elasto-plastic rheologies. It was developed to better understand geological processes, particularly related to the dynamics of the crust and lithosphere and their interaction with the mantle. It can also be used to solve geomechanical problems, includes (compressible) poroelasticity, has a gravity solver and an (adjoint) inversion framework. The code uses a marker-in-cell approach with a staggered finite difference discretization and is built on top of PETSc such that it can run on anything from a laptop to a massively parallel machine. A range of (Galerkin) multigrid and iterative solvers are available, for both linear and non-linear rheologies, using Picard and quasi-Newton solvers (provided through the PETSc interface). LaMEM has been tested on a variety of machines ranging from laptops to a massively parallel cluster with 458'752 cores.",
+  "creators": [
+    {
+      "name": "Popov, Anton A.",
+      "affiliation": "Johannes Gutenberg University Mainz, Germany",
+      "orcid": "https://orcid.org/0000-0002-8075-8406"
+    },
+    {
+      "name": "Kaus, Boris J.P.",
+      "affiliation": "Johannes Gutenberg University Mainz, Germany",
+      "orcid": "https://orcid.org/0000-0002-0247-8660"
+    }
+  ],
+  "keywords": [
+    "Computational Geodynamics",
+    "Geodynamics",
+    "Geomechanics",
+    "Tectonics",
+    "MPI",
+    "PETSc"
+  ],
+  "grants": [
+    {"id": "10.13039/501100000780::771143"},
+    {"id": "10.13039/501100000780::713397"},
+    {"id": "10.13039/501100000780::258830"},
+    {"id": "10.13039/501100000780::101093038"}
+  ],
+  "license": {
+    "id": "MIT"
+  },
+  "upload_type": "software",
+  "access_right": "open",
+}
