@@ -110,8 +110,8 @@ struct FastScapeLib
 	Vec gtopo_et_refine, vx_et_refine, vy_et_refine, vz_et_refine;
 
   // max grid
-  PetscInt    nx_solve;
-  PetscInt    ny_solve;
+  int    nx_solve;
+  int    ny_solve;
   PetscInt    nodes_solve;
 
   // surface parameter
