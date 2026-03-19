@@ -41,6 +41,9 @@
 #include "phase_transition.h"
 #include "passive_tracer.h"
 
+// surface process
+#include "fastscape.h"
+
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 {
@@ -60,7 +63,7 @@ PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4])
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
-	PetscPrintf(PETSC_COMM_WORLD,"     Version : 2.2.0 \n");
+	PetscPrintf(PETSC_COMM_WORLD,"     Version : 2.1.4 \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
@@ -502,8 +505,15 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->dbm.scal    = &lm->scal;
 	// FDSTAG
 	lm->fs.scal     = &lm->scal;
+	lm->fs.FSLib	= &lm->FSLib;
 	// FreeSurf
 	lm->surf.jr     = &lm->jr;
+	lm->surf.FSLib  = &lm->FSLib;
+	// FastScape
+	lm->FSLib.surf  = &lm->surf;
+	lm->FSLib.pvsurf= &lm->pvsurf;
+	lm->FSLib.jr    = &lm->jr;
+	lm->FSLib.scal  = &lm->scal;
 	// BCCtx
 	lm->bc.scal     = &lm->scal;
 	lm->bc.ts       = &lm->ts;
@@ -653,7 +663,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
-	
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
@@ -702,8 +711,26 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
 
-		// advect free surface
-		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
+		// advect free surface // change the topography, controled by the surf_max_angle, when equal to 0.0, 
+		// don't using the process
+
+		if( 1 == SURFACE)
+		{
+			// without FastScape
+			if(1 == lm->surf.SurfMode)
+			{
+				ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
+			}
+			// with FastScape
+			else if(2 == lm->surf.SurfMode)
+			{
+				ierr = FastScapeCopyVelocity(&lm->FSLib);  CHKERRQ(ierr);
+			}
+		}
+		else
+		{
+			ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
+		}
 
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
@@ -719,18 +746,48 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 
 		PetscCall(PetscLogStagePop()); /* Stop profiling stage*/
 
-		// apply erosion to the free surface
-		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
+		if( 0 == SURFACE) // compile without FastScape
+		{
+			// apply erosion to the free surface
+			ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
-		// apply sedimentation to the free surface
-		ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
+			// apply sedimentation to the free surface
+			ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
+		}
+
+		if ( 1 == SURFACE) // compile with FastScape
+		{
+			if( 1 == lm->surf.SurfMode )
+			// using LaMEM original code to calculate topography
+			{
+				// apply erosion to the free surface
+				ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
+
+				// apply sedimentation to the free surface
+				ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
+			}
+
+			if( 2 == lm->surf.SurfMode)
+			// Using FastScape to calculate topography
+			{
+				PetscPrintf(PETSC_COMM_WORLD, "Begin FastScape \n");
+				PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+				ierr = FastScapeRun(&lm->FSLib); CHKERRQ(ierr);
+
+				// smooth topography spikes 
+				ierr = FreeSurfSmoothMaxAngle(&lm->surf); CHKERRQ(ierr);
+
+				// compute & store average topography
+				ierr = FreeSurfGetAvgTopo(&lm->surf); CHKERRQ(ierr);
+			}
+		}
 
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
-
+		
 		//==================
 		// Save data to disk
 		//==================

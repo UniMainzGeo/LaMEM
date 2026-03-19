@@ -16,6 +16,7 @@
 
 struct FB;
 struct Scaling;
+struct FastScapeLib;
 
 //---------------------------------------------------------------------------
 // mesh segments data (temporary structure)
@@ -36,11 +37,12 @@ struct MeshSeg1D
 //---------------------------------------------------------------------------
 
 PetscErrorCode MeshSeg1DReadParam(
-	MeshSeg1D  *ms,
-	PetscScalar leng,
-	PetscScalar gtol,
-	const char *dir,
-	FB         *fb);
+	MeshSeg1D    *ms,
+	PetscScalar  leng,
+	PetscScalar  gtol,
+	const char   *dir,
+	FB           *fb,
+	FastScapeLib *FSLib);
 
 // (partially) mesh a segment with (optionally) biased element size
 PetscErrorCode MeshSeg1DGenCoord(
@@ -176,6 +178,7 @@ PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod);
 struct FDSTAG
 {
 	Scaling  *scal;
+	FastScapeLib *FSLib;
 
 	// local discretization data (coordinates, indexing & domain decomposition)
 	Discret1D dsx;

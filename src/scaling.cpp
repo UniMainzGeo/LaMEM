@@ -250,6 +250,11 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 		sprintf(scal->lbl_gas_constant,      "[J/mol/K]");
 	}
 
+	if(1 == SURFACE)
+	{
+		ierr = 	ScalingFastScapeCreate(scal);	CHKERRQ(ierr);
+	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

@@ -19,6 +19,8 @@
 #include "surf.h"
 #include "JacRes.h"
 #include "tools.h"
+#include "fastscape.h"
+
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 {
@@ -40,8 +42,7 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	pvsurf->topography = 1;
 	pvsurf->amplitude  = 1;
 	pvsurf->velocity   = 1;
-	
-
+		
 	// read
 	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       filename,        "output"); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_pvd",        &pvsurf->outpvd,     1, 1); CHKERRQ(ierr);
@@ -51,16 +52,24 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Surface output parameters:\n");
-	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file : %s \n", pvsurf->outpvd ? "yes" : "no");
-
-	if(pvsurf->velocity)   PetscPrintf(PETSC_COMM_WORLD, "   Velocity        @ \n");
-	if(pvsurf->topography) PetscPrintf(PETSC_COMM_WORLD, "   Topography      @ \n");
-	if(pvsurf->amplitude)  PetscPrintf(PETSC_COMM_WORLD, "   Amplitude       @ \n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file            : %s\n", pvsurf->outpvd ? "yes" : "no");
+	if(pvsurf->velocity)   PetscPrintf(PETSC_COMM_WORLD, "   Velocity                   @ \n");
+	if(pvsurf->topography) PetscPrintf(PETSC_COMM_WORLD, "   Topography                 @ \n");
+	if(pvsurf->amplitude)  PetscPrintf(PETSC_COMM_WORLD, "   Amplitude                  @ \n");
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// set file name
 	sprintf(pvsurf->outfile, "%s_surf", filename);
+
+	// FastScape output
+	if(1 == SURFACE)
+	{
+		if(2 == pvsurf->surf->SurfMode)
+		{
+			ierr = PVSurfFastScapeCreate(pvsurf->surf->FSLib, fb);	CHKERRQ(ierr);
+		}
+	}
 
 	// create output buffer
 	ierr = PVSurfCreateData(pvsurf); CHKERRQ(ierr);

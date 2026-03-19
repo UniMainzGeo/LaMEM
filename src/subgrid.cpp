@@ -27,6 +27,7 @@
 #include "Tensor.h"
 #include "tools.h"
 #include "phase_transition.h"
+#include "fastscape.h"
 
 /*
 #START_DOC#
@@ -485,6 +486,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	Marker          *P, *IP;
 	FDSTAG          *fs;
 	FreeSurf        *surf;
+	FastScapeLib    *FSLib;
 	Vec             vphase;
 	PetscInt        sx, sy, sz, nx, ny;
 	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
@@ -500,6 +502,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 
 	// access context
 	surf      = actx->surf;
+	FSLib     = surf->FSLib;
 	fs        = actx->fs;
 	L         = fs->dsz.rank;
 	AirPhase  = surf->AirPhase;
@@ -560,69 +563,77 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 		// check whether air marker is below the free surface
 		if(P->phase == AirPhase && zp < topo)
 		{
-			if(surf->SedimentModel > 0)
+			if( 1 == SURFACE && 2 == surf->SurfMode)
 			{
 				// sedimentation (physical) -> air turns into a prescribed rock
-				P->phase = surf->phase;
+				P->phase = surf->phase;	
 			}
 			else
 			{
-				// sedimentation (numerical) -> air turns into closest (reference) rock
-				X = P->X;
-
-				// get marker list in containing cell
-				nmark   = actx->markstart[ID+1] - actx->markstart[ID];
-				markind = actx->markind + actx->markstart[ID];
-
-				// clear distance storage
-				dist.clear();
-
-				for(ii = 0; ii < nmark; ii++)
+				if(surf->SedimentModel > 0)
 				{
-					// get current marker
-					markid = markind[ii];
-					IP     = &actx->markers[markid];
-
-					// sort out air markers
-					if(IP->phase == AirPhase) continue;
-
-					// get marker coordinates
-					IX = IP->X;
-
-					// store marker index and distance
-					d.first  = EDIST(X, IX);
-					d.second = markid;
-
-					dist.push_back(d);
-				}
-
-				// find closest rock marker (if any)
-				if(dist.size())
-				{
-					// sort rock markers by distance
-					sort(dist.begin(), dist.end());
-
-					// copy phase from closest marker
-					IP = &actx->markers[dist.begin()->second];
-
-					P->phase = IP->phase;
+					// sedimentation (physical) -> air turns into a prescribed rock
+					P->phase = surf->phase;
 				}
 				else
 				{
-					// no local rock marker found, set phase to reference
-					phaseID = (PetscInt)phase[sz+K][sy+J][sx+I];
+					// sedimentation (numerical) -> air turns into closest (reference) rock
+					X = P->X;
 
-					if(phaseID < 0)
+					// get marker list in containing cell
+					nmark   = actx->markstart[ID+1] - actx->markstart[ID];
+					markind = actx->markind + actx->markstart[ID];
+
+					// clear distance storage
+					dist.clear();
+
+					for(ii = 0; ii < nmark; ii++)
 					{
-						SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
+						// get current marker
+						markid = markind[ii];
+						IP     = &actx->markers[markid];
+
+						// sort out air markers
+						if(IP->phase == AirPhase) continue;
+
+						// get marker coordinates
+						IX = IP->X;
+
+						// store marker index and distance
+						d.first  = EDIST(X, IX);
+						d.second = markid;
+
+						dist.push_back(d);
 					}
 
-					P->phase = phaseID;
-				}
+					// find closest rock marker (if any)
+					if(dist.size())
+					{
+						// sort rock markers by distance
+						sort(dist.begin(), dist.end());
 
-				//=======================================================================
-				// WARNING! At best clone history from nearest rock marker
-				//=======================================================================
+						// copy phase from closest marker
+						IP = &actx->markers[dist.begin()->second];
+
+						P->phase = IP->phase;
+					}
+					else
+					{
+						// no local rock marker found, set phase to reference
+						phaseID = (PetscInt)phase[sz+K][sy+J][sx+I];
+
+						if(phaseID < 0)
+						{
+							SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
+						}
+
+						P->phase = phaseID;
+					}
+
+					//=======================================================================
+					// WARNING! At best clone history from nearest rock marker
+					//=======================================================================
+				}
 			}
 		}
 	}

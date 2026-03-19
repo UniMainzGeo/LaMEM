@@ -131,11 +131,31 @@ struct Scaling
 	char lbl_inverse_stress   [_lbl_sz_];
 	char lbl_gas_constant     [_lbl_sz_];
 
+	// units in FastScape
+	PetscScalar time_fs;
+	PetscScalar length_fs;
+	PetscScalar velocity_fs;
+	PetscScalar area_fs;
+	PetscScalar rate;
+	PetscScalar fraction;
+	PetscScalar degree;
+
+	char lbl_time_fs          [_lbl_sz_];
+	char lbl_length_fs        [_lbl_sz_];
+	char lbl_velocity_fs      [_lbl_sz_];
+	char lbl_area_fs	      [_lbl_sz_];
+	char lbl_rate		      [_lbl_sz_];
+	char lbl_fraction		  [_lbl_sz_];
+	char lbl_degree		      [_lbl_sz_];
+
+
 };
 //---------------------------------------------------------------------------
 // scaling routines
 
 PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput);
+
+PetscErrorCode ScalingFastScapeCreate(Scaling *scal);
 
 //---------------------------------------------------------------------------
 #endif

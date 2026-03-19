@@ -21,6 +21,7 @@
 #include "JacRes.h"
 #include "interpolate.h"
 #include "tools.h"
+#include "fastscape.h"
 //---------------------------------------------------------------------------
 // * stair-case type of free surface
 // ...
@@ -36,7 +37,8 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	// initialize
 	surf->phaseCorr   =  1;
 	surf->AirPhase    = -1;
-
+	surf->SurfMode	  =  1;
+	
 	// check whether free surface is activated
 	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
 
@@ -52,41 +54,52 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",         &surf->InitLevel,     1,  scal->length); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",     &surf->AirPhase,      1,  maxPhaseID);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",     &surf->MaxAngle,      1,  scal->angle);  CHKERRQ(ierr);
+
+	ierr = getIntParam   (fb, _OPTIONAL_, "surf_mode",      &surf->SurfMode,  1,  2);            CHKERRQ(ierr);
+
 	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  2);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  3);            CHKERRQ(ierr);
 
-	if(surf->ErosionModel == 2)
+	if (0 == SURFACE && 1 < surf->SurfMode )
 	{
-		// sedimentation model parameters
-		ierr = getIntParam   (fb, _REQUIRED_, "er_num_phases",  &surf->numErPhs,  1,                 _max_er_phases_);   CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelimsEr, surf->numErPhs-1, scal->time);        CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "er_rates",        surf->erRates,   surf->numErPhs,   scal->velocity);    CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "er_levels",       surf->erLevels,  surf->numErPhs,   scal->length);    CHKERRQ(ierr);
-	}
-	if(surf->SedimentModel == 1 || surf->SedimentModel == 2 || surf->SedimentModel == 3 )
-	{
-		// sedimentation model parameters
-		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_sed_layers_);  CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->velocity);    CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "sed_levels",       surf->sedLevels,  surf->numLayers,   scal->length);      CHKERRQ(ierr);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " There only two choices without compiling with fastscape [surf_mode = 1 or 0] \n");	
 	}
 
-	if(surf->SedimentModel == 2)
+	if(1 == surf->SurfMode)
 	{
-		// sedimentation model parameters
-		ierr = getScalarParam(fb, _REQUIRED_, "marginO",          surf->marginO,    2,                 scal->length);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "hUp",             &surf->hUp,        1,                 scal->length);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "hDown",           &surf->hDown,      1,                 scal->length);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "dTrans",          &surf->dTrans,     1,                 scal->length);      CHKERRQ(ierr);
-	}
+		if(surf->ErosionModel == 2)
+		{
+			// sedimentation model parameters
+			ierr = getIntParam   (fb, _REQUIRED_, "er_num_phases",  &surf->numErPhs,  1,                 _max_er_phases_);   CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelimsEr, surf->numErPhs-1, scal->time);        CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "er_rates",        surf->erRates,   surf->numErPhs,   scal->velocity);    CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "er_levels",       surf->erLevels,  surf->numErPhs,   scal->length);    CHKERRQ(ierr);
+		}
+		if(surf->SedimentModel == 1 || surf->SedimentModel == 2 || surf->SedimentModel == 3 )
+		{
+			// sedimentation model parameters
+			ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_sed_layers_);  CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->velocity);    CHKERRQ(ierr);
+			ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "sed_levels",       surf->sedLevels,  surf->numLayers,   scal->length);      CHKERRQ(ierr);
+		}
 
-	if (surf->SedimentModel == 3)
-	{
-		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates2nd",        surf->sedRates2nd,   surf->numLayers,   scal->velocity);  CHKERRQ(ierr);
+		if(surf->SedimentModel == 2)
+		{
+			// sedimentation model parameters
+			ierr = getScalarParam(fb, _REQUIRED_, "marginO",          surf->marginO,    2,                 scal->length);      CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "hUp",             &surf->hUp,        1,                 scal->length);      CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "hDown",           &surf->hDown,      1,                 scal->length);      CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "dTrans",          &surf->dTrans,     1,                 scal->length);      CHKERRQ(ierr);
+		}
+
+		if (surf->SedimentModel == 3)
+		{
+			ierr = getScalarParam(fb, _REQUIRED_, "sed_rates2nd",        surf->sedRates2nd,   surf->numLayers,   scal->velocity);  CHKERRQ(ierr);
+		}
 	}
 
 	// print summary
@@ -95,16 +108,23 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "   Sticky air phase ID       : %lld \n",  (LLD)surf->AirPhase);
     PetscPrintf(PETSC_COMM_WORLD, "   Initial surface level     : %g %s \n",  surf->InitLevel*scal->length, scal->lbl_length);
 
-	PetscPrintf(PETSC_COMM_WORLD, "   Erosion model             : ");
-	if      (surf->ErosionModel == 0)  PetscPrintf(PETSC_COMM_WORLD, "none\n");
-	else if (surf->ErosionModel == 1)  PetscPrintf(PETSC_COMM_WORLD, "infinitely fast\n");
-	else if (surf->ErosionModel == 2)  PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
-   
-	PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
-	if      (surf->SedimentModel == 0) PetscPrintf(PETSC_COMM_WORLD, "none\n");
-	else if (surf->SedimentModel == 1) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
-	else if (surf->SedimentModel == 2) PetscPrintf(PETSC_COMM_WORLD, "directed sedimentation (continental margin) with prescribed rate\n");
-	else if (surf->SedimentModel == 3) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate\n");
+	if(1 == surf->SurfMode)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Erosion model             : ");
+		if      (surf->ErosionModel == 0)  PetscPrintf(PETSC_COMM_WORLD, "none\n");
+		else if (surf->ErosionModel == 1)  PetscPrintf(PETSC_COMM_WORLD, "infinitely fast\n");
+		else if (surf->ErosionModel == 2)  PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
+	
+		PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
+		if      (surf->SedimentModel == 0) PetscPrintf(PETSC_COMM_WORLD, "none\n");
+		else if (surf->SedimentModel == 1) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
+		else if (surf->SedimentModel == 2) PetscPrintf(PETSC_COMM_WORLD, "directed sedimentation (continental margin) with prescribed rate\n");
+		else if (surf->SedimentModel == 3) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate\n");
+
+	//	PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
+	}
+
+	if(2 == surf->SurfMode)	PetscPrintf(PETSC_COMM_WORLD, "   Using FastScape           : %s \n", surf->SurfMode==2 ? "yes":"no");
 
 	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %lld \n",  (LLD)surf->numLayers);
 	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
@@ -112,6 +132,14 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
+	if(1 == SURFACE)
+	{
+		if(2 == surf->SurfMode)
+		{
+			ierr = FastScapeCreate(surf->FSLib, fb);	CHKERRQ(ierr);
+		}
+	}
+	
 	// create structures
 	ierr = FreeSurfCreateData(surf); CHKERRQ(ierr);
 
@@ -135,12 +163,14 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 {
 	FDSTAG         *fs;
 	const PetscInt *lx, *ly;
+	FastScapeLib   *FSLib;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
 	fs = surf->jr->fs;
+	FSLib = surf->FSLib;
 
 	// get grid partitioning in X & Y directions
 	ierr = DMDAGetOwnershipRanges(fs->DA_COR, &lx, &ly, NULL); CHKERRQ(ierr);
@@ -160,6 +190,12 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vz);     CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vpatch); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vmerge); CHKERRQ(ierr);
+
+	//FastScape data
+	if(1 == SURFACE)
+	{
+	 	ierr = FastScapeCreateData(FSLib); 	   CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -200,6 +236,15 @@ PetscErrorCode FreeSurfReadRestart(FreeSurf *surf, FILE *fp)
 	// read topography vector
 	ierr = VecReadRestart(surf->gtopo, fp); CHKERRQ(ierr);
 
+	// FastScape
+	if(1 == SURFACE)
+	{
+		if(2 == surf->SurfMode)
+		{
+			ierr = FastScapeReadRestart(surf->FSLib, fp);	CHKERRQ(ierr);
+		}
+	}
+
 	// get ghosted topography vector
 	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
@@ -216,6 +261,15 @@ PetscErrorCode FreeSurfWriteRestart(FreeSurf *surf, FILE *fp)
 
 	// store topography vector
 	ierr = VecWriteRestart(surf->gtopo, fp); CHKERRQ(ierr);
+
+	// FastScape
+	if(1 == SURFACE)
+	{
+		if(2 == surf->SurfMode)
+		{
+			ierr = FastScapeWriteRestart(surf->FSLib, fp);	CHKERRQ(ierr);
+		}
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -236,6 +290,11 @@ PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 	ierr = VecDestroy(&surf->vz);      CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->vpatch);  CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->vmerge);  CHKERRQ(ierr);
+
+	if(1 == SURFACE)
+	{
+		ierr = FastScapeDestroy(surf->FSLib); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -260,10 +319,10 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	ierr = FreeSurfGetVelComp(surf, &InterpYFaceCorner, jr->lvy, surf->vy); CHKERRQ(ierr);
 	ierr = FreeSurfGetVelComp(surf, &InterpZFaceCorner, jr->lvz, surf->vz); CHKERRQ(ierr);
 
-	// advect topography
+	// advect topography 
 	ierr = FreeSurfAdvectTopo(surf); CHKERRQ(ierr);
 
-	// smooth topography spikes
+	// smooth topography spikes 
 	ierr = FreeSurfSmoothMaxAngle(surf); CHKERRQ(ierr);
 
 	// compute & store average topography
@@ -519,7 +578,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 
 		// store advected topography
 		advect[L][J][I] = Z;
-
+	
 	}
 	END_PLANE_LOOP
 
@@ -879,7 +938,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 			{
 				// uniformly advect
 				z -= dz;
-				// PetscPrintf(PETSC_COMM_WORLD, "Topography is (%e %s).\n", z*scal->length, scal->lbl_length);
+				PetscPrintf(PETSC_COMM_WORLD, "Topography is (%e %s).\n", z*scal->length, scal->lbl_length);
 			}
 			// check if internal free surface goes outside the model domain
 			if(z > ztop) z = ztop;
@@ -973,7 +1032,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 			{
 				// uniformly advect
 				z += dz;
-				//PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%lld) to internal free surface.\n", (LLD)surf->SedimentModel);
+				PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%lld) to internal free surface.\n", (LLD)surf->SedimentModel);
 			}
 
 			// check if internal free surface goes outside the model domain

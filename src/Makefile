@@ -19,11 +19,14 @@ include Makefile.in
 # Environmental variables for PETSc installation directories:
 # PETSC_DEB = /directory/where/petsc/debug/is/installed
 # PETSC_OPT = /directory/where/petsc/optimized/is/installed
+# FASTSCAPELIB = /directory/where/FastScapeLib/is/located
 #
 # LaMEM compilation command:
 #  make mode=deb all (compile debug version of LaMEM and put in /bin/deb)
 #  make mode=opt all (compile optimized version of LaMEM and put in /bin/opt)
 #  make all          (compile optimized version of LaMEM and put in /bin/opt)
+#  make mode=optFS all surface=SURFACE=1 (compile optimized version of LaMEM with fastscape and put in /bin/optFS)
+#  surf_mode = 1 in .dat file; don't use fastscape; surf_mode = 2 in .dat file; use fastscape 
 
 ifeq ($(mode), deb)
 ifeq (${PETSC_DEB},)
@@ -35,6 +38,15 @@ ifeq (${PETSC_OPT},)
 $(error Environmental variable PETSC_OPT must be set to PETSc optimized installation directory)
 endif
 PETSC_DIR = ${PETSC_OPT}
+else ifeq ($(mode), optFS)
+# ifneq (, $(filter,${FASTSCAPE_LIB} ${PETSC_OPT}))
+ifeq (${FASTSCAPE_LIB},)
+${error Environmental variable PETSC_OPT and FASTSCAPE_LIB must be set to installation directory, respectively}
+else ifeq (${PETSC_OPT},)
+${error Environmental variable PETSC_OPT and FASTSCAPE_LIB must be set to installation directory, respectively}
+endif
+PETSC_DIR = ${PETSC_OPT}
+FASTSCAPE_DIR = ${FASTSCAPE_LIB}
 else
 $(error Unknown compilation mode specified)
 endif
@@ -45,6 +57,9 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 # Define PETSc-based C++ compiler command
 CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
 
+# Define FastScapeFortranLib 
+# FS_LIB = -L${FASTSCAPE_DIR} -lfastscapelib_fortran -lgfortran
+FS_LIB = -L${FASTSCAPE_DIR} -lfastscapelib_fortran
 #====================================================
 
 # Define list of LaMEM library source files
@@ -52,11 +67,7 @@ CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
 CSRC = $(filter-out LaMEM.cpp, $(wildcard *.cpp))
 
 #====================================================
-
-# Generate lists of library object files:
 COBJ := $(addprefix ../lib/${mode}/, $(notdir $(CSRC:.cpp=.o)))
-
-# Generate lists of library dependency files:
 CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.cpp=.d)))
 
 # Get library and executable objects:
@@ -74,7 +85,7 @@ endif
 
 # Target list
 
-.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc
+.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc 
 
 # Default target (build executable)
 
@@ -136,8 +147,11 @@ ${LaMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 
 # Create a dynamic library
 dylib: ${COBJ}
+ifeq ($(mode), optFS)
+	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} ${FS_LIB}
+else
 	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
-
+endif
 #====================================================
 
 # Link LaMEM executable
@@ -150,7 +164,11 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 	@echo "............................................."
 	@echo "......... Linking LaMEM Executable .........."
 	@echo "............................................."
-	${CXXLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o $@
+ifeq ($(mode), optFS)
+	${CXXLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} ${FS_LIB} -o  $@
+else
+	${CXXLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o  $@
+endif
 
 #====================================================
 
@@ -158,8 +176,12 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 # Insert full path to object files in dependency files with sed command
 # NOTE: IBM XL compiler generates dependency as a by-product of compilation
 
-../lib/${mode}/%.o : %.cpp
-	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@
+# define SURFACE 0 in Cpp script when there isn't a value setting in bash
+surface=SURFACE=0
+
+../lib/${mode}/%.o : %.cpp 
+	${CCOMPILER} ${LAMEM_FLAGS} -D$(surface) -c $< -o $@ 
+
 ifeq ($(PLATFORM), ppc64)
 	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
 else
@@ -210,6 +232,11 @@ endif
 	@echo "............................................."
 	@echo "PETSC_LIB   : " ${PETSC_LIB}
 	@echo "............................................."
+ifeq ($(mode), optFS)
+	@echo "............................................."
+	@echo "FASTSCAPE_LIB   : " ${FS_LIB}
+	@echo "............................................."
+endif
 	@echo "CLIB_FLAGS  : " ${CLIB_FLAGS}
 	@echo "............................................."
 
@@ -222,7 +249,6 @@ clean_all :
 	@rm -rf ../lib/$(mode)/*
 	@rm -rf ../bin/$(mode)/*
 	@rm -rf ../dep/$(mode)/*
-
 #====================================================
 
 # Create automatic documentation
