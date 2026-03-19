@@ -2727,7 +2727,8 @@ PetscErrorCode FastScapeFortranCppAdvc(FastScapeLib *FSLib, PetscScalar dt_max, 
     PetscScalar step_fs, PetscScalar *vx_pass, PetscScalar *vy_pass, PetscScalar *vz_pass, PetscScalar *topo_pass)
 {
     PetscErrorCode ierr;
-    PetscInt istep, ind, i, j, idx;
+	int istep;
+    PetscInt ind, i, j, idx;
     PetscScalar rangeX, rangeY;
     PetscScalar *topo_random = PETSC_NULL, *kf = PETSC_NULL, *kd = PETSC_NULL;
     PetscScalar *silt_fraction = PETSC_NULL, *basement = PETSC_NULL, *total_erosion = PETSC_NULL;
