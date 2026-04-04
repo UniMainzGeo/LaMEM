@@ -1,25 +1,17 @@
 name = "LaMEM_C"
 uuid = "29b6043d-3311-4c16-b469-b02bf85cb680"
-version = "2.2.0"
 authors = ["Anton Popov <popov@uni-mainz.de>", "Boris Kaus <kaus@uni-mainz.de>"]
+version = "2.2.0"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 GeophysicalModelGenerator = "3700c31b-fa53-48a6-808a-ef22d5a84742"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
-LightXML = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
-ReadVTK = "dc215faf-f008-4882-a9f7-a79a826fadc3"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
-Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
-WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
 GeophysicalModelGenerator = "0.4, 0.5, 0.6, 0.7"
-LightXML = "0.9.3"
-ReadVTK = "0.2.6"
-Suppressor = "0.2.8"
-WriteVTK = "1.21.2"
 julia = "1.9"
 
 [extras]
