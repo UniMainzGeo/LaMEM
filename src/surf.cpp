@@ -89,6 +89,14 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates2nd",        surf->sedRates2nd,   surf->numLayers,   scal->velocity);  CHKERRQ(ierr);
 	}
 
+	ierr = getIntParam(fb, _OPTIONAL_, "topo_diff", &surf->topo_diff, 1, 1); CHKERRQ(ierr);
+
+	if(surf->topo_diff)
+	{
+		ierr = getScalarParam(fb, _REQUIRED_, "topo_diffusivity", &surf->topo_diffusivity, 1,
+			scal->length_si * scal->length_si / scal->time_si); CHKERRQ(ierr);
+	}
+
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Free surface parameters: \n");
 
@@ -109,6 +117,11 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %lld \n",  (LLD)surf->numLayers);
 	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
 	if(surf->MaxAngle)  PetscPrintf(PETSC_COMM_WORLD, "   Maximum surface slope     : %g %s\n",  surf->MaxAngle*scal->angle, scal->lbl_angle);
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Topographic diffusion     : ");
+	if(!surf->topo_diff) PetscPrintf(PETSC_COMM_WORLD, "none\n");
+	else                 PetscPrintf(PETSC_COMM_WORLD, "active (K = %g [m^2/s])\n",
+	                                 surf->topo_diffusivity * scal->length_si * scal->length_si / scal->time_si);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
@@ -1192,6 +1205,143 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	}
 
 	
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FreeSurfAppTopoDiffusion(FreeSurf *surf)
+{
+	// Apply topographic diffusion to the free surface.
+	// Solves dh/dt = K*(d²h/dx² + d²h/dy²) using an explicit FD scheme with sub-stepping.
+	// Interior nodes use centered differences; global boundary nodes are left unchanged
+	// (zero-flux Neumann condition). Activated when topo_diff = 1.
+
+	JacRes      *jr;
+	FDSTAG      *fs;
+	PetscScalar ***topo, ***topo_old;
+	PetscScalar  dt, K, dt_cfl, dt_solve;
+	PetscScalar  dx_r, dx_l, dx_c, dy_r, dy_l, dy_c;
+	PetscScalar  flux_x, flux_y, z;
+	PetscScalar  dx_min_loc, dy_min_loc, dx_min, dy_min;
+	PetscScalar  inv_dx2, inv_dy2, zbot, ztop;
+	PetscInt     L, i, j, nx, ny, sx, sy, sz;
+	PetscInt     I, I1, I2, J, J1, J2, mx, my;
+	PetscInt     ksolve, nsolve, ii, jj;
+	Scaling     *scal;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// free surface and diffusion cases only
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
+	if(!surf->topo_diff)   PetscFunctionReturn(0);
+
+	// access context
+	jr   = surf->jr;
+	fs   = jr->fs;
+	dt   = jr->ts->dt;
+	K    = surf->topo_diffusivity;
+	L    = (PetscInt)fs->dsz.rank;
+	mx   = fs->dsx.tnods;
+	my   = fs->dsy.tnods;
+	scal = jr->scal;
+
+	// get box z-bounds for clamping
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
+
+	// get local domain corners
+	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+
+	// find local minimum node spacing in x and y (for CFL check)
+	dx_min_loc = 1.0e+30;
+	for(ii = 0; ii < fs->dsx.nnods - 1; ii++)
+	{
+		PetscScalar d = fs->dsx.ncoor[ii+1] - fs->dsx.ncoor[ii];
+		if(d < dx_min_loc) dx_min_loc = d;
+	}
+	dy_min_loc = 1.0e+30;
+	for(jj = 0; jj < fs->dsy.nnods - 1; jj++)
+	{
+		PetscScalar d = fs->dsy.ncoor[jj+1] - fs->dsy.ncoor[jj];
+		if(d < dy_min_loc) dy_min_loc = d;
+	}
+
+	// global minimum across all processors
+	ierr = MPI_Allreduce(&dx_min_loc, &dx_min, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	ierr = MPI_Allreduce(&dy_min_loc, &dy_min, 1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	// CFL-limited step: dt_cfl = 0.5 / (K * (1/dx^2 + 1/dy^2))
+	// Only include a direction if it has interior nodes (> 2 total nodes).
+	// With 2 nodes (nel=1), both are global boundaries → no diffusion in that direction.
+	inv_dx2 = (mx > 2) ? 1.0/(dx_min*dx_min) : 0.0;
+	inv_dy2 = (my > 2) ? 1.0/(dy_min*dy_min) : 0.0;
+	dt_cfl  = 0.5 / (K * (inv_dx2 + inv_dy2));
+
+	// number of sub-steps required for stability
+	nsolve   = (dt_cfl < dt) ? (PetscInt)PetscCeilReal(dt/dt_cfl) : 1;
+	dt_solve = dt / (PetscScalar)nsolve;
+
+	// sub-stepping loop
+	for(ksolve = 0; ksolve < nsolve; ksolve++)
+	{
+		// read from ltopo (includes ghost cells), write to gtopo
+		ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &topo);     CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo_old); CHKERRQ(ierr);
+
+		START_PLANE_LOOP
+		{
+			I  = i;
+			I1 = I-1; if(I1 < 0)   I1 = I;
+			I2 = I+1; if(I2 >= mx) I2 = I;
+			J  = j;
+			J1 = J-1; if(J1 < 0)   J1 = J;
+			J2 = J+1; if(J2 >= my) J2 = J;
+
+			// x-direction Laplacian (centered differences; zero flux at global x-boundaries)
+			flux_x = 0.0;
+			if(I1 != I && I2 != I)
+			{
+				dx_r   = COORD_NODE(I2, sx, fs->dsx) - COORD_NODE(I,  sx, fs->dsx);
+				dx_l   = COORD_NODE(I,  sx, fs->dsx) - COORD_NODE(I1, sx, fs->dsx);
+				dx_c   = 0.5*(dx_r + dx_l);
+				flux_x = K * ((topo_old[L][J][I2] - topo_old[L][J][I ]) / dx_r
+				             -(topo_old[L][J][I ] - topo_old[L][J][I1]) / dx_l) / dx_c;
+			}
+
+			// y-direction Laplacian (centered differences; zero flux at global y-boundaries)
+			flux_y = 0.0;
+			if(J1 != J && J2 != J)
+			{
+				dy_r   = COORD_NODE(J2, sy, fs->dsy) - COORD_NODE(J,  sy, fs->dsy);
+				dy_l   = COORD_NODE(J,  sy, fs->dsy) - COORD_NODE(J1, sy, fs->dsy);
+				dy_c   = 0.5*(dy_r + dy_l);
+				flux_y = K * ((topo_old[L][J2][I] - topo_old[L][J ][I]) / dy_r
+				             -(topo_old[L][J ][I] - topo_old[L][J1][I]) / dy_l) / dy_c;
+			}
+
+			// explicit update
+			z = topo_old[L][J][I] + dt_solve*(flux_x + flux_y);
+
+			// clamp to model box
+			if(z > ztop) z = ztop;
+			if(z < zbot) z = zbot;
+
+			topo[L][j][i] = z;
+		}
+		END_PLANE_LOOP
+
+		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &topo);     CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo_old); CHKERRQ(ierr);
+
+		// refresh ghost cells before next sub-step
+		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
+	}
+
+	// update average topography
+	ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Applying topographic diffusion (K = %g [m^2/s]) in %lld sub-step(s).\n",
+		K * scal->length_si * scal->length_si / scal->time_si, (LLD)nsolve);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
