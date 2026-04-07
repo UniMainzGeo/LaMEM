@@ -28,7 +28,7 @@
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 {
 	Scaling  *scal;
-	PetscInt  maxPhaseID;
+	PetscInt  maxPhaseID, jj;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -52,16 +52,26 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",         &surf->InitLevel,     1,  scal->length); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",     &surf->AirPhase,      1,  maxPhaseID);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",     &surf->MaxAngle,      1,  scal->angle);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  2);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  3);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  3);            CHKERRQ(ierr);
 
 	if(surf->ErosionModel == 2)
 	{
-		// sedimentation model parameters
+		// erosion model parameters
 		ierr = getIntParam   (fb, _REQUIRED_, "er_num_phases",  &surf->numErPhs,  1,                 _max_er_phases_);   CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelimsEr, surf->numErPhs-1, scal->time);        CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "er_rates",        surf->erRates,   surf->numErPhs,   scal->velocity);    CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "er_levels",       surf->erLevels,  surf->numErPhs,   scal->length);    CHKERRQ(ierr);
+	}
+	if(surf->ErosionModel == 3)
+	{
+		// spatially-limited erosion model parameters
+		ierr = getIntParam   (fb, _REQUIRED_, "er_num_phases",  &surf->numErPhs,  1,                 _max_er_phases_);   CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelimsEr, surf->numErPhs-1, scal->time);        CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "er_rates",        surf->erRates,   surf->numErPhs,   scal->velocity);    CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "er_levels",       surf->erLevels,  surf->numErPhs,   scal->length);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "er_x_min",        surf->erXMin,    surf->numErPhs,   scal->length);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "er_x_max",        surf->erXMax,    surf->numErPhs,   scal->length);      CHKERRQ(ierr);
 	}
 	if(surf->SedimentModel == 1 || surf->SedimentModel == 2 || surf->SedimentModel == 3 )
 	{
@@ -99,7 +109,16 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	if      (surf->ErosionModel == 0)  PetscPrintf(PETSC_COMM_WORLD, "none\n");
 	else if (surf->ErosionModel == 1)  PetscPrintf(PETSC_COMM_WORLD, "infinitely fast\n");
 	else if (surf->ErosionModel == 2)  PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
-   
+	else if (surf->ErosionModel == 3)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level and x-coordinate range\n");
+		for(jj = 0; jj < surf->numErPhs; jj++)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Phase %lld: x ∈ [%g, %g] %s\n",
+				(LLD)jj, surf->erXMin[jj]*scal->length, surf->erXMax[jj]*scal->length, scal->lbl_length);
+		}
+	}
+
 	PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
 	if      (surf->SedimentModel == 0) PetscPrintf(PETSC_COMM_WORLD, "none\n");
 	else if (surf->SedimentModel == 1) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level\n");
@@ -902,6 +921,74 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 		// print info
 		PetscPrintf(PETSC_COMM_WORLD, "Applying erosion at constant rate (%f %s) to internal free surface.\n", rate*scal->velocity, scal->lbl_velocity);
 		PetscPrintf(PETSC_COMM_WORLD, "Applying erosion at constant level (%e %s) to internal free surface.\n", level*scal->length, scal->lbl_length);
+	}
+	// Erosion with spatially-limited constant rate
+	else if(surf->ErosionModel == 3)
+	{
+		PetscScalar x, xmin, xmax;
+
+		// get size of box
+		ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
+
+		// determine erosion rate and spatial limits
+		for(jj = 0; jj < surf->numErPhs-1; jj++)
+		{
+			if(time < surf->timeDelimsEr[jj]) break;
+		}
+
+		rate  = surf->erRates[jj];
+		level = surf->erLevels[jj];
+		xmin  = surf->erXMin[jj];
+		xmax  = surf->erXMax[jj];
+
+		// get incremental erosion thickness
+		dz = rate*dt;
+
+		// access topography
+		ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+
+		// scan all free surface local points
+		ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+
+		START_PLANE_LOOP
+		{
+			// get x-coordinate
+			x = COORD_NODE(i, sx, fs->dsx);
+
+			// get topography
+			z = topo[L][j][i];
+
+			// apply erosion only within x-coordinate range
+			if(x >= xmin && x <= xmax && z > level)
+			{
+				// uniformly erode
+				z -= dz;
+			}
+
+			// check if internal free surface goes outside the model domain
+			if(z > ztop) z = ztop;
+			if(z < zbot) z = zbot;
+
+			// store updated topography
+			topo[L][j][i] = z;
+		}
+		END_PLANE_LOOP
+
+		// restore access
+		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+
+		// compute ghosted version of the topography
+		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
+
+		// compute & store average topography
+		ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
+
+		// print info
+		PetscPrintf(PETSC_COMM_WORLD, "Applying spatially-limited erosion at constant rate (%f %s) to internal free surface.\n",
+			rate*scal->velocity, scal->lbl_velocity);
+		PetscPrintf(PETSC_COMM_WORLD, "  Erosion level:       %e %s\n", level*scal->length, scal->lbl_length);
+		PetscPrintf(PETSC_COMM_WORLD, "  X-coordinate range:  [%e, %e] %s\n",
+			xmin*scal->length, xmax*scal->length, scal->lbl_length);
 	}
 
 	PetscFunctionReturn(0);

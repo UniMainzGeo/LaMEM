@@ -1095,5 +1095,21 @@ end
     clean_test_directory(dir)
 end
 
+@testset "t34_spatially_limited_erosion" begin
+    cd(test_dir)
+    dir = "t34_spatially_limited_erosion";
+    include(joinpath(dir,"CreateMarkers_t34_SingleCore.jl"));
+
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5, atol=5e-5), (rtol=2.5e-4,atol=1e-4));
+
+    ParamFile = "spatially_limited_erosion.dat"
+
+    CreateMarkers_t34_SingleCore(dir, ParamFile, NumberCores=1, mpiexec=mpiexec)
+    @test perform_lamem_test(dir, ParamFile, "spatially_limited_erosion_opt-p1.expected",
+                            args="-nstep_max 2",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+end
+
 end
 
