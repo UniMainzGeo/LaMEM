@@ -818,6 +818,10 @@ end
     @test perform_lamem_test(dir,"CompensatedInflow_test_3D.dat","CompensatedInflow3D-p2.expected",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
 
+    # test_migrating ridge
+    @test perform_lamem_test(dir,"MigratingRidge_2D.dat","MigratingRidge_2D.expected",
+                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+    
 end
 
 @testset "t20_FSSA" begin

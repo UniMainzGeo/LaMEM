@@ -1,0 +1,372 @@
+# This is 2D setup to simulate plume-lithosphere interaction with a heterogenous plume 
+# impinging on a moving lithosphere, with the aim to understand how long heterogeneities 
+# can stay stable underneath the moving lithosphere 
+# add plume phase for the phase transition boxes
+# full model with low-viscosity box in y-axis
+
+#===============================================================================
+# Scaling
+#===============================================================================
+	units            = geo		# geological units 
+	unit_temperature = 1000
+	unit_length      = 100e3
+	unit_viscosity   = 1e20
+	unit_stress      = 1e9
+	
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+	time_end  = 3.0    # simulation end time
+	dt        = 0.01   # initial time step
+	dt_min    = 1e-6  	# minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 1   	# maximum time step
+	inc_dt    = 0.1   	# time step increment per time step (fraction of unit)
+	CFL       = 0.5   	# CFL (Courant-Friedrichs-Lewy) criterion
+	nstep_max = 100 	# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 10    # save output every n steps
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+# Segments vor variable grid spacing
+	nseg_x	=	1
+	nseg_y	=	1
+	nseg_z	=	1
+	
+# Number of cells for all segments
+	nel_x 	=	64
+	nel_y 	= 	4 
+	nel_z 	= 	32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = -128 128
+	coord_y =  0 16
+	coord_z = -128 0
+	
+# Bias is the size at the end of the segment divided by that of the beginning
+	bias_x = 1.0
+	bias_y = 1.0
+	bias_z = 1.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+	surf_use           = 0                # free surface activation flag
+	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+	surf_level         = 0                # initial level
+	#surf_air_phase     = 0                # phase ID of sticky air layer
+	#surf_max_angle     = 10.0             # maximum angle with horizon (smoothed if larger)
+	
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+# temperature on the top & bottom boundaries
+	temp_top  = 0.0
+	temp_bot  = 1350.0;
+	
+# No-slip boundary flag mask (left right front back bottom top)
+	noslip 				= 	0 0 0 0 1 0
+	open_top_bound 			= 	0
+	open_bot_bound 			= 	1
+	permeable_phase_inflow 	= 	1  # Phase of the inflow material from the bottom # pkongpet chang from 2 to 1
+
+# In/Out flow BC
+	bvel_face    =  CompensatingInflow     # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
+	bvel_bot     =  -50.0  # bottom coordinate of inflow window
+	bvel_top     =  0.0    # top coordinate of inflow window
+#	velin_num_periods       = 1                            # Number of periods when velocity changes (Optional)
+#   velin_time_delims       = 0               # Change velocity at 2 and 5 Myrs (one less than number of intervals, not required for one interval) (Optional)
+    bvel_velin              = -3.0           # inflow velocity for each time interval(Multiple values required if  velin_num_periods>1)
+	velin_net_num_periods   = 2
+	velin_net_time_delims   = 1.0          # according to t0_box t1_box
+	bvel_velin_net          = 0.0 3.0      # according to v_box
+#	bvel_velbot             =   0.31  # bottom inflow velocity  matlab: 0.3551
+#	bvel_veltop             =  -1.0   # top inflow velocity
+
+# Plume_like inflow boundary condition
+	Plume_InflowBoundary 	= 	1			    # have a plume-like inflow boundary @ bottom
+	Plume_Type             =   Permeable_Type  # Inflow_Type or Pressure_Type (circular)
+	Plume_Dimension        = 	2D			    # 2D or 3D (circular)		
+	Plume_Phase 			=	3			    # phase of plume
+	Plume_Depth            =   -128.0          # depth of provenience of the plume (i.e. how far from the bottom of the model the plume source is) 
+	Plume_Temperature 		=	1450		    # temperature of inflow plume
+	Plume_Center 			=	0.0 0.0	        # [X,Y] of center  (2D plume only)
+	Plume_Radius 			=	15			# Width/Radius of plume
+	Plume_Phase_Mantle		=   1
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+	gravity        = 0.0 0.0 -10    # gravity vector
+	FSSA           = 0.0            # free surface stabilization parameter [0 - 1]
+	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess     = 1              # initial guess flag
+	act_temp_diff  = 1  			# activate thermal diffusion
+	shear_heat_eff = 0.0  
+	eta_min        = 0.3e18           # viscosity upper bound
+	eta_ref 	   = 1e20			# reference viscosity for initial guess	
+	eta_max        = 1e23           # viscosity lower limit
+    init_lith_pres = 1
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	#SolverType 	=	direct 			# solver [direct or multigrid]
+	#DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	#DirectPenalty 	=	1e3
+    MGLevels        =   3               # number of MG levels [default=3]
+    MGCourseSolver  =   redundant       # coarse grid solver [direct/mumps/superlu_dist or redundant - more options through command-line options -crs_ksp_type & -crs_pc_type]
+    MGRedundantNum  =   4
+    MGRedundant Solver = mumps
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+	msetup         = geom              # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise     = 1                 # random noise flag
+	advect         = rk2               # advection scheme
+	interp         = stagp             # velocity interpolation scheme
+	mark_ctrl      = subgrid           # marker control type
+	nmark_lim      = 8 100             # min/max number per cell
+	nmark_sub       = 1                 # max number of same phase markers per subcell (subgrid marker control)
+
+# Geometric primitives to define the initial setup:
+	# normally sticky air but this is just a place to put phase 0, which is never used.
+	<BoxStart>
+		phase  = 0
+		bounds = -128.0 128.0 0.0 16.0 0.0 10.0  # (left, right, front, back, bottom, top)
+		Temperature = constant
+		cstTemp = 1
+	<BoxEnd>
+	
+	<RidgeSegStart>
+	    	phase = 1
+	    	bounds      = -128.0 128.0 0.0 16.0  -128.0 0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+    		ridgeseg_x  = -50 -50        # coordinate order: left, right [can be different for oblique ridge], center it in the middle of an element for 3-element wide weak NotInAirBox
+    		ridgeseg_y  = 0.0 8.0          # coordinate order: front, back [needs to be the same as the front and back of bounds]
+    		topTemp     = 1                # required: temperature @ top [in Celcius in case of GEO units]
+    		botTemp     = 1350             # required: temperature @ bottom [in Celcius in case of GEO units]
+    		Temperature = halfspace_age    # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
+    		age0        = 0.2              # minimum age of seafloor at ridge [in Myr in case of GEO units]
+		    maxAge      = 40.0             # [optional] parameter that indicates the maximum thermal age of a plate
+	<RidgeSegEnd>
+	
+    #Weak zone at ridge axis, 3 elements wide
+	<PhaseTransitionStart>
+		ID      = 0
+		Type    = NotInAirBox
+		nsegs = 1
+		xbounds = -56.0 -44.0
+		ybounds  = 0.0 16.0
+		zbounds  = -8.0 0.0
+		number_phases   = 1
+		PhaseInside     = 2
+		PhaseOutside    = 1 #mantle#
+		PhaseDirection  = BothWays
+		PTBox_TempType  = none
+		v_box           =   3.0                           # [optional] only for NotInAirBox, velocity with which box moves in cm/yr  
+        t0_box          =   1.0                           # [optional] beginning time of movemen in Myr
+        #t1_box          =   6.0                           # [optional] end time of movement in Myr
+	<PhaseTransitionEnd>
+
+    # Define left box (for phase transition)
+	<PhaseTransitionStart>
+		ID      = 1
+		Type    = Box
+		PTBox_Bounds    = -128 -108 0.0 16.0 -128 -20 # [left right front back bottom top]
+		number_phases   = 2
+		PhaseInside     = 4 4 
+		PhaseOutside    = 1 3  #mantle, plume              
+		PhaseDirection  = BothWays
+		PTBox_TempType  = constant
+		PTBox_topTemp   = 1350
+		PTBox_botTemp   = 1350		
+		PTBox_cstTemp   = 1350
+	<PhaseTransitionEnd>
+    
+    # Define right box (for phase transition)
+	<PhaseTransitionStart>
+		ID      = 2
+		Type    = Box
+		PTBox_Bounds    = 108 128 0.0 16.0 -128 -20 # [left right front back bottom top]
+		number_phases   = 2
+		PhaseInside     = 5 5 
+		PhaseOutside    = 1 3        # mantle, plume#
+		PhaseDirection  = BothWays
+		PTBox_TempType  = constant
+		PTBox_topTemp   = 1350
+		PTBox_botTemp   = 1350		
+		PTBox_cstTemp   = 1350
+	<PhaseTransitionEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = output    # output file name
+	out_pvd             = 1       	# activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_visc_plast      = 0
+	out_velocity        = 1
+	out_pressure        = 1
+	out_tot_press       = 1  
+	out_eff_press       = 0
+	out_temperature     = 1
+	out_dev_stress      = 0
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 0
+	out_j2_strain_rate  = 1
+	out_yield           = 0
+	out_plast_strain    = 0
+	out_plast_dissip    = 0
+	out_tot_displ       = 0
+	out_moment_res      = 1
+	out_cont_res        = 1
+	
+# AVD phase viewer output options (requires activation)
+
+#	out_avd     		= 1 # activate AVD phase output
+#	out_avd_pvd 		= 1 # activate writing .pvd file
+#	out_avd_ref 		= 3 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+	
+	# Define properties of phase 0 (non-existent sticky air above model) 
+	<MaterialStart>
+		ID  		= 	0               # phase id
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		G           =   3e10            # add later
+		eta 	    =  	1e20            # viscosity
+        k           =   3.0        		# conductivity [W/m/K]
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Define properties of oceanic mantle lithosphere
+	<MaterialStart>
+		ID  		= 	1               # phase id
+		Bd          =   1e-08 
+		Ed          =   375000
+		Vd          =   2e-06 
+		rho        	= 	3300			# density [kg/m3]
+		alpha   	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		G           =   3e10            # shear modulus for elasticity
+		#eta 	    =  	1e24            # viscosity
+        k           =   3.0        		# conductivity [W/m/K]
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Ridge axis
+	<MaterialStart>
+		ID  		= 	2               # phase id
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		G           =   3e10            # add later
+		eta 	    =  	1e20            # viscosity
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Properties of Plume
+	<MaterialStart>
+		ID  		= 	3 				# phase id
+		Bd          =   1e-08 
+		Ed          =   375000
+		Vd          =   2e-06
+		G           =   3e10            # shear modulus for elasticity
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]	
+		#eta 		= 	1e19
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Left Low-viscosity box
+	<MaterialStart>
+		ID  		= 	4               # phase id
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		G           =   3e10            # add later
+		eta 	    =  	1e18            # viscosity
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+	
+	# Right Low-viscosity box
+	<MaterialStart>
+		ID  		= 	5               # phase id
+		rho        	= 	3300			# density [kg/m3]
+		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
+		G           =   3e10            # add later
+		eta 	    =  	1e18            # viscosity
+        k           =   3        		# conductivity
+        Cp          =   1050        	# heat capacity
+	<MaterialEnd>
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_rtol 1e-4				
+	-snes_atol 1e-8					
+	-snes_max_it 30				
+	
+	-snes_PicardSwitchToNewton_rtol 1e-5   # relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	100     # number of Newton iterations after which we switch back to Picard
+	
+	-js_ksp_type fgmres
+	-js_ksp_monitor 				# display how the inner iterations converge
+	-js_ksp_max_it 30				# inner
+	#-js_ksp_atol 1e-6
+	#-js_ksp_rtol 1e-3
+
+	-snes_linesearch_type l2 #I believe this is relevant to Newton, where L2 norm is used 
+	-snes_linesearch_monitor
+	-snes_linesearch_maxstep 10 #step size for correction applied with the Jacobian 
+
+#For MULTIGRID
+	
+	-snes_ksp_ew
+	-snes_ksp_ew_rtolmax 1e-4
+    -snes_ksp_ew_rtol 1e-4
+    -snes_ksp_ew_atol 1e-8
+
+	#Stokes Preconditioner
+        -pstokes mg                                     # multigrid
+
+        # Matrix type
+        -pcmat_type mono                        # monolithic matrix [coupled MG solver]
+        -jp_type mg                                     # multigrid
+
+        -gmg_pc_type mg
+        -gmg_pc_mg_levels 3
+        -gmg_pc_mg_galerkin
+        -gmg_pc_mg_type multiplicative
+        -gmg_pc_mg_cycle_type v
+
+        -gmg_mg_levels_ksp_type richardson
+        -gmg_mg_levels_ksp_richardson_scale 0.5
+        -gmg_mg_levels_ksp_max_it 20
+        -gmg_mg_levels_pc_type jacobi
+
+        -crs_ksp_type preonly
+        -crs_pc_type lu
+        -crs_pc_factor_mat_solver_package mumps
+
+        -objects_dump
+
+<PetscOptionsEnd>
+#===============================================================================
