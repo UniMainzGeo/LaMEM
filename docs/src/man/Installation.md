@@ -53,7 +53,7 @@ $ spack info petsc
 ```
 Install PETSc with the correct packages, and leave out stuff we don't need. The optimized compilation of PETSc is installed with
 ```
-$ spack install petsc@3.22.5 +mumps +suite-sparse -hypre -hdf5 -shared -debug
+$ spack install petsc@3.22.5 +mumps +suite-sparse +superlu-dist ~hypre ~hdf5 ~shared ~debug
 ```
 If that works out, you'll have to update your environmental variables and create the ``PETSC_OPT`` variable
 ```

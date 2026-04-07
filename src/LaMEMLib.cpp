@@ -731,6 +731,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4])
 		// apply sedimentation to the free surface
 		ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
 
+		// apply topographic diffusion to the free surface
+		ierr = FreeSurfAppTopoDiffusion(&lm->surf); CHKERRQ(ierr);
+
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
 

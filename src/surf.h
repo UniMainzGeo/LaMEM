@@ -60,6 +60,10 @@ struct FreeSurf
 	PetscScalar hDown;                      // down dip thickness of sediment cover
 	PetscScalar dTrans;                     // half of transition zone
 
+	// topographic diffusion parameters
+	PetscInt    topo_diff;        // topographic diffusion flag [0-none, 1-active]
+	PetscScalar topo_diffusivity; // topographic diffusivity (non-dimensional, input in [m^2/s])
+
 	// run-time parameters
 	PetscScalar avg_topo; // average topography (updated by all functions changing topography)
 	PetscInt    phase;    // current sediment phase
@@ -103,6 +107,9 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf);
 
 // apply sedimentation to the free surface
 PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf);
+
+// apply topographic diffusion to the free surface
+PetscErrorCode FreeSurfAppTopoDiffusion(FreeSurf *surf);
 
 // Set topography from file
 PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb);
