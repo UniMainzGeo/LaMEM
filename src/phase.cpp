@@ -522,7 +522,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	if(!(( eta && !m->Bd)   // eta
 	||   ( !eta && m->Bd)   // Bd
-	||   ( !eta && !m->Bd))) // nothing
+	||   ( !eta && !m->Bd)  // nothing
+	||   (eta && m->Bd && (PetscAbsScalar(m->Bd - scal->viscosity/(2.0*eta)) < PetscAbsScalar(1e-10 * m->Bd))))) //on restart both exist; compare in non-dimensional units
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %lld (eta, Bd)\n", (LLD)ID);
 	}
@@ -534,7 +535,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	if(!(( eta0 &&  e0 &&  m->n &&  !m->Bn)   // eta0, e0, n
 	||   (!eta0 && !e0 &&  m->n &&   m->Bn)   // Bn, n
-	||   (!eta0 && !e0 &&  !m->n && !m->Bn))) // nothing
+	||   (!eta0 && !e0 &&  !m->n && !m->Bn)   // nothing
+	||   ( eta0 &&  e0 && m->n &&  m->Bn && (PetscAbsScalar(m->Bn - (pow(2.0*eta0, -m->n)*pow(e0, 1 - m->n)*pow(scal->stress_si, m->n)*scal->time_si)) < PetscAbsScalar(1e-10 * m->Bn))))) // on restart: full set, compare in non-dimensional units
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %lld (eta0 + e0 + n, Bn + n)\n", (LLD)ID);
 	}

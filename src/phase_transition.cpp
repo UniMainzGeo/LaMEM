@@ -999,7 +999,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, Petsc
 	
 	if (PhaseTrans->Type==_NotInAirBox_ )
 	{
-		ierr = Check_NotInAirBox_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, jr, cellID); CHKERRQ(ierr);   // adjust phase according to T within Box but ignore airphase particles
+		ierr = Check_NotInAirBox_Phase_Transition(PhaseTrans, P,PH1,PH2, scal, &ph, &T, jr, cellID); CHKERRQ(ierr);   // adjust phase according to T within Box but ignore airphase particles
 	}
 	else if(PhaseTrans->Type==_Constant_)    // NOTE: string comparisons can be slow; we can change this to integers if needed
 	{
@@ -1011,7 +1011,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, Petsc
 	}
 	else if(PhaseTrans->Type==_Box_)
 	{
-		ierr = Check_Box_Phase_Transition(PhaseTrans,P,PH1,PH2, scal, &ph, &T, &InAbove); CHKERRQ(ierr);		// compute phase & T within Box
+		ierr = Check_Box_Phase_Transition(PhaseTrans,jr, P,PH1,PH2, scal, &ph, &T, &InAbove); CHKERRQ(ierr);		// compute phase & T within Box
 	}
 	
 	// Prepare output
@@ -1109,14 +1109,19 @@ PetscErrorCode Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,
 }
 
 //------------------------------------------------------------------------------------------------------------//
-PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,
+PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Marker *P,PetscInt PH1, PetscInt PH2,
 			Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InAbove)
 {
-	PetscInt 	ph, InAb;
+	Material_t  *mat;
+    PetscInt 	ph, InAb;
 	PetscScalar T;
+    PetscScalar alpha, Cp, g, T_adiab;
+    PetscScalar dz, depth, k1, k2, Z_Top, Ztot;
+    PetscInt    nsteps, i;
 
-	PetscFunctionBeginUser;
+    PetscFunctionBeginUser;
 
+    g     = PetscAbs(jr->ctrl.grav[2]);
 	ph = P->phase;
 	T  = P->T;
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
@@ -1163,6 +1168,37 @@ PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 			d 		=	zTop - P->X[2];
 			T 		= 	(botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
+        // Add the Adiabatic Gradient
+    if(jr->ctrl.AdiabHeat > 0.0 && PhaseTrans->TempType != 0)
+	    {
+            mat   = jr->dbm->phases + PH1;
+            alpha = mat->alpha;
+            Cp    = mat->Cp;
+            // Get top of domain
+            if(jr->surf->UseFreeSurf)
+                Z_Top = jr->surf->InitLevel;
+            else
+                Z_Top = jr->fs->dsz.gcrdend;
+
+            // Global Domain thickness used to define dz
+            Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
+			depth = PetscAbs(Z_Top - P->X[2]);
+			nsteps=(PetscInt)((depth/Ztot)*(jr->fs->dsz.tcels/2))+1;
+            dz = depth/(PetscScalar)(nsteps);
+
+            // Start with the temperature T (potential temperature from TempType)
+            T_adiab = T;
+
+            // RK2 integration: dT/dz = alpha * g * T / Cp
+            for(i = 0; i < nsteps; i++)
+            {
+                k1 = alpha * g * T_adiab / Cp;
+                k2 = alpha * g * (T_adiab + 0.5*dz*k1) / Cp;
+                T_adiab = T_adiab + dz * k2;
+            }
+
+            T = T_adiab;
+	    }
 
 	}
 	else{
@@ -1183,16 +1219,19 @@ PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal,
 					PetscInt *ph_out, PetscScalar *T_out, JacRes *jr, PetscInt cellID)
 {
-
+	Material_t  *mat;
 	PetscInt     ph, AirPhase, J, K, nx, ny;
 	//PetscInt     I;
-
 	PetscScalar  T, xboundL, xboundR;
+	PetscScalar alpha, Cp, g, T_adiab;
+    PetscScalar dz, depth, k1, k2, Z_Top, Ztot;
+    PetscInt    nsteps, i;
 	FDSTAG 	*fs;
 	Discret1D	*dsy;   
   
 	PetscFunctionBeginUser;
 
+  	g     = PetscAbs(jr->ctrl.grav[2]);
 	AirPhase  = jr->surf->AirPhase;
 	ph = P->phase;
 	T  = P->T;
@@ -1270,6 +1309,36 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 			d		=       zTop - P->X[2];
 			T		=       (botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
+	    if(jr->ctrl.AdiabHeat > 0.0 && PhaseTrans->TempType != 0)
+	    {
+            mat   = jr->dbm->phases + PH1;
+            alpha = mat->alpha;
+            Cp    = mat->Cp;
+            // Get top of domain
+            if(jr->surf->UseFreeSurf)
+                Z_Top = jr->surf->InitLevel;
+            else
+                Z_Top = jr->fs->dsz.gcrdend;
+
+            // Global Domain thickness used to define dz
+            Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
+			depth = PetscAbs(Z_Top - P->X[2]);
+			nsteps=(PetscInt)((depth/Ztot)*(jr->fs->dsz.tcels/2))+1;
+            dz = depth/(PetscScalar)(nsteps);
+
+            // Start with the temperature T (potential temperature from TempType)
+            T_adiab = T;
+
+            // RK2 integration: dT/dz = alpha * g * T / Cp
+            for(i = 0; i < nsteps; i++)
+            {
+                k1 = alpha * g * T_adiab / Cp;
+                k2 = alpha * g * (T_adiab + 0.5*dz*k1) / Cp;
+                T_adiab = T_adiab + dz * k2;
+            }
+
+            T = T_adiab;
+	    }
 	}
 	else{  
 		// Outside; keep T

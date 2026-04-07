@@ -241,6 +241,9 @@ struct BCCtx
 	PetscInt     VelNumPeriods; 			// number of periods when boundary inflow velocity will change , must be less than _max_periods_
     PetscScalar  VelTimeDelims [_max_periods_-1];
     PetscScalar  velin_array [_max_periods_];
+	PetscInt     VelNetNumPeriods;
+	PetscScalar  VelNetTimeDelims [_max_periods_-1];
+	PetscScalar  velin_net_array [_max_periods_];
 
 	// Plume inflow bottom boundary condition
 	PetscInt        Plume_Inflow;
