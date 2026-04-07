@@ -149,6 +149,10 @@
     hDown              = 0.1              # down dip thickness of sediment cover (off shore)
     dTrans             = 1.0              # half of transition zone
 
+    # Topographic diffusion (runs after erosion/sedimentation each time step)
+    topo_diff          = 0                # topographic diffusion flag [0-none (default), 1-active]
+  # topo_diffusivity   = 1e-5            # topographic diffusivity [m^2/s] (required when topo_diff=1)
+
 #===============================================================================
 # Boundary conditions
 #===============================================================================
