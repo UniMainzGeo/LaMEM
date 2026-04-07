@@ -1119,6 +1119,8 @@ end
         opt      = true,
         mpiexec  = mpiexec,
     )
+end
+
 @testset "t34_spatially_limited_erosion" begin
     cd(test_dir)
     dir = "t34_spatially_limited_erosion";
