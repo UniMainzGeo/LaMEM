@@ -1099,6 +1099,24 @@ end
     clean_test_directory(dir)
 end
 
+
+@testset "t34_3D_2D_push_block" begin
+    cd(test_dir)
+    dir = "t34_3D_2D_push_block";
+    
+    ParamFile = "3D_push_block.dat";
+    
+    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
+    acc      = ((rtol=1e-6,atol=1e-10), (rtol=1e-5,atol=1e-10), (rtol=1e-4,atol=1e-10));
+    
+    # Test 3D Bezier push block functionality
+    @test perform_lamem_test(dir,ParamFile,"3D_push_block_opt-p1.expected", 
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+
+    # Test 2D Bezier push block functionality (push along x-axis only)
+    ParamFile = "2D_push_block.dat";
+    @test perform_lamem_test(dir,ParamFile,"2D_push_block_opt-p1.expected", 
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
 @testset "t34_TopoDiffusion" begin
     cd(test_dir)
     dir = "t34_TopoDiffusion"
@@ -1139,3 +1157,4 @@ end
 
 end
 
+end

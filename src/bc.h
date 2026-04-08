@@ -39,14 +39,15 @@ struct BCBlock
 {
 	// path description
 	PetscInt    npath;                        // number of path points of Bezier curve
+	PetscInt    pathDim;                      // path dimension (2 = x-y plane, 3 = full 3D)
 	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
 	PetscScalar time [  _max_path_points_  ]; // times at path points
-	PetscScalar path [6*_max_path_points_-4]; // Bezier curve path & control points (3*n-2)
+	PetscScalar path [9*_max_path_points_-6]; // Bezier curve path & control points (3*n-2 points, up to 3 coords each)
 
 	// block description
 	PetscInt    npoly;                      // number of polygon vertices
 	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
-	PetscScalar bot, top;                   // bottom & top coordinates of the block
+	PetscScalar bot, top;                   // bottom & top z-coordinates at initial time (move with path for 3D)
 
 	// WARNING bottom coordinate should be advected (how? average?)
 	// Top of the box can be assumed to be the free surface
@@ -59,10 +60,15 @@ struct BCBlock
 // setup data structures
 PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb);
 
+// print Bezier block summary
+PetscErrorCode BCBlockPrint(BCBlock *bcb, Scaling *scal, PetscInt cnt);
+
 // compute position along the path and rotation angle as a function of time
+// For 2D path: x[0]=x, x[1]=y, x[2]=theta
+// For 3D path: x[0]=x, x[1]=y, x[2]=z, x[3]=theta
 PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar x[]);
 
-// compute current polygon coordinates
+// compute current polygon coordinates (2D x-y polygon, z handled separately in BCApplyBezier)
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
 
 //---------------------------------------------------------------------------

@@ -31,30 +31,65 @@
 //---------------------------------------------------------------------------
 PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 {
-    //	-npath - Number of path points of Bezier curve (end-points only!)
-    //	-theta - Orientation angles at path points (counter-clockwise positive)
-    //	-time  - Times at path points
-    //	-path  - path points x-y coordinates
-    //	-npoly - Number of polygon vertices
-    //	-poly  - Polygon x-y coordinates at initial time
-    //	-bot   - Polygon bottom coordinate
-    //	-top   - Polygon top coordinate
+    //	-npath    - Number of path points of Bezier curve (end-points only!)
+    //	-path_dim - Path dimension: 2 = x-y plane (default), 3 = full 3D
+    //	-theta    - Orientation angles at path points (counter-clockwise positive)
+    //	-time     - Times at path points
+    //	-path     - path points coordinates (x-y for 2D, x-y-z for 3D)
+    //	-npoly    - Number of polygon vertices
+    //	-poly     - Polygon x-y coordinates at initial time (absolute, moves with path)
+    //	-bot      - Polygon bottom z-coordinate at initial time (absolute, moves with path for 3D)
+    //	-top      - Polygon top z-coordinate at initial time (absolute, moves with path for 3D)
 
     PetscErrorCode ierr;
+    PetscInt       numPathCoords;
     PetscFunctionBeginUser;
 
-    bcb->npath = 2;
-    bcb->npoly = 4;
+    // set defaults
+    bcb->npath   = 2;
+    bcb->pathDim = 2;
+    bcb->npoly   = 4;
 
-    ierr = getIntParam   (fb, _OPTIONAL_, "npath", &bcb->npath, 1,              _max_path_points_); CHKERRQ(ierr);
-    ierr = getScalarParam(fb, _OPTIONAL_, "theta",  bcb->theta, bcb->npath,      scal->angle     ); CHKERRQ(ierr);
-    ierr = getScalarParam(fb, _REQUIRED_, "time",   bcb->time,  bcb->npath,      scal->time      ); CHKERRQ(ierr);
-    ierr = getScalarParam(fb, _REQUIRED_, "path",   bcb->path,  2*bcb->npath,    scal->length    ); CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "npath",    &bcb->npath,   1, _max_path_points_); CHKERRQ(ierr);
+    ierr = getIntParam   (fb, _OPTIONAL_, "path_dim", &bcb->pathDim, 1, 3);                 CHKERRQ(ierr);
+
+    // validate path_dim
+    if(bcb->pathDim != 2 && bcb->pathDim != 3)
+    {
+        SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "path_dim must be 2 or 3, got: %lld", (LLD)bcb->pathDim);
+    }
+
+    // compute number of path coordinates based on dimension
+    numPathCoords = bcb->pathDim * bcb->npath;
+
+    ierr = getScalarParam(fb, _OPTIONAL_, "theta",  bcb->theta, bcb->npath,    scal->angle ); CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _REQUIRED_, "time",   bcb->time,  bcb->npath,    scal->time  ); CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _REQUIRED_, "path",   bcb->path,  numPathCoords, scal->length); CHKERRQ(ierr);
 
     ierr = getIntParam   (fb, _OPTIONAL_, "npoly", &bcb->npoly, 1,              _max_poly_points_); CHKERRQ(ierr);
-    ierr = getScalarParam(fb, _REQUIRED_, "poly",   bcb->poly,  2*bcb->npoly,    scal->length    ); CHKERRQ(ierr);
-    ierr = getScalarParam(fb, _REQUIRED_, "bot",   &bcb->bot,   1,               scal->length    ); CHKERRQ(ierr);
-    ierr = getScalarParam(fb, _REQUIRED_, "top",   &bcb->top,   1,               scal->length    ); CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _REQUIRED_, "poly",   bcb->poly,  2*bcb->npoly,   scal->length     ); CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _REQUIRED_, "bot",   &bcb->bot,   1,              scal->length     ); CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _REQUIRED_, "top",   &bcb->top,   1,              scal->length     ); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode BCBlockPrint(BCBlock *bcb, Scaling *scal, PetscInt cnt)
+{
+    PetscFunctionBeginUser;
+
+    PetscPrintf(PETSC_COMM_WORLD, "      Bezier block #                          : %lld \n", (LLD)cnt);
+    PetscPrintf(PETSC_COMM_WORLD, "      Path dimension                          : %lld \n", (LLD)bcb->pathDim);
+    PetscPrintf(PETSC_COMM_WORLD, "      Number of path points                   : %lld \n", (LLD)bcb->npath);
+    PetscPrintf(PETSC_COMM_WORLD, "      Number of polygon vertices              : %lld \n", (LLD)bcb->npoly);
+
+    PetscPrintf(PETSC_COMM_WORLD, "      Bot/Top initial z-coordinates          : %g / %g %s \n",
+        bcb->bot*scal->length, bcb->top*scal->length, scal->lbl_length);
+
+    if(bcb->pathDim == 3)
+    {
+        PetscPrintf(PETSC_COMM_WORLD, "      (bot/top move with 3D path)            @ \n");
+    }
 
     PetscFunctionReturn(0);
 }
@@ -62,8 +97,10 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar X[])
 {
     // compute position along the path and rotation angle as a function of time
+    // For 2D path (pathDim=2): X[0]=x, X[1]=y, X[2]=theta
+    // For 3D path (pathDim=3): X[0]=x, X[1]=y, X[2]=z, X[3]=theta
 
-    PetscInt      i, n;
+    PetscInt      i, n, dim;
     PetscScalar   r, s;
     PetscScalar  *p1, *p2;
     PetscScalar  *path, *theta, *time;
@@ -71,6 +108,7 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
     PetscFunctionBeginUser;
 
     n     = bcb->npath;
+    dim   = bcb->pathDim;
     path  = bcb->path;
     theta = bcb->theta;
     time  = bcb->time;
@@ -81,18 +119,29 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
     // find time interval
     for(i = 1; i < n-1; i++) { if(t < time[i]) break; } i--;
 
-    // get path and control points
-    p1 = path + 2*i;
-    p2 = p1   + 2;
+    // get path and control points (stride depends on dimension)
+    p1 = path + dim*i;
+    p2 = p1   + dim;
 
     // compute interpolation parameters
     r  = (t - time[i])/(time[i+1] - time[i]);
     s  = 1.0 - r;
 
     // interpolate path and rotation angle
-    X[0] = s*p1[0]    + r*p2[0];
-    X[1] = s*p1[1]    + r*p2[1];
-    X[2] = s*theta[i] + r*theta[i+1];
+    X[0] = s*p1[0] + r*p2[0];  // x
+    X[1] = s*p1[1] + r*p2[1];  // y
+
+    if(dim == 3)
+    {
+        // 3D path: X[0]=x, X[1]=y, X[2]=z, X[3]=theta
+        X[2] = s*p1[2]    + r*p2[2];      // z
+        X[3] = s*theta[i] + r*theta[i+1]; // theta
+    }
+    else
+    {
+        // 2D path: X[0]=x, X[1]=y, X[2]=theta
+        X[2] = s*theta[i] + r*theta[i+1]; // theta
+    }
 
 //   [A] Bezier curves can be input directly.
 //   Bezier curve requires 4 points per segment (see e.g. wikipedia):
@@ -150,21 +199,35 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 //---------------------------------------------------------------------------
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly)
 {
-    // compute current polygon coordinates
+    // compute current polygon coordinates (2D x-y polygon)
+    // For 2D path: Xb[0]=x, Xb[1]=y, Xb[2]=theta
+    // For 3D path: Xb[0]=x, Xb[1]=y, Xb[2]=z, Xb[3]=theta
 
-    PetscInt     i;
+    PetscInt     i, dim;
     PetscScalar *xa, *xb;
-    PetscScalar  Xa[3], theta, costh, sinth;
+    PetscScalar  Xa[4], thetaCur, thetaInit, theta, costh, sinth;
 
     PetscFunctionBeginUser;
 
-    // get initial polygon position
+    dim = bcb->pathDim;
+
+    // get initial polygon position (x, y only for 2D rotation)
     Xa[0] = bcb->path[0];
     Xa[1] = bcb->path[1];
-    Xa[2] = bcb->theta[0];
+    thetaInit = bcb->theta[0];
 
-    // get rotation matrix
-    theta = Xb[2] - Xa[2];
+    // get current rotation angle (theta is at different index for 2D vs 3D)
+    if(dim == 3)
+    {
+        thetaCur = Xb[3];
+    }
+    else
+    {
+        thetaCur = Xb[2];
+    }
+
+    // get rotation matrix (rotation around z-axis)
+    theta = thetaCur - thetaInit;
     costh = cos(theta);
     sinth = sin(theta);
 
@@ -175,7 +238,7 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
         xa = bcb->poly + 2*i;
         xb = cpoly     + 2*i;
 
-        // rotate & displace
+        // rotate & displace (2D rotation in x-y plane)
         RotDispPoint2D(Xa, Xb, costh, sinth, xa, xb);
     }
 
@@ -694,6 +757,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
     if(bc->ExxNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %lld \n",  (LLD)bc->ExxNumPeriods);
     if(bc->EyyNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods);
     if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
+
+    for(jj = 0; jj < bc->nblocks; jj++)
+    {
+        ierr = BCBlockPrint(bc->blocks + jj, scal, jj); CHKERRQ(ierr);
+    }
+
     if(bc->nboxes)           PetscPrintf(PETSC_COMM_WORLD, "   Number of velocity boxes                   : %lld \n",  (LLD)bc->nboxes);
 
     for(jj = 0; jj < bc->nboxes; jj++)
@@ -1629,11 +1698,11 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 {
     FDSTAG      *fs;
     BCBlock     *bcb;
-    PetscInt    fbeg, fend, npoly, in;
+    PetscInt    fbeg, fend, npoly, in, dim;
     PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ib;
-    PetscScalar ***bcvx,  ***bcvy;
-    PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel;
-    PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
+    PetscScalar ***bcvx, ***bcvy, ***bcvz;
+    PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel, zOffset, velz;
+    PetscScalar Xbeg[4], Xend[4], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
 
     PetscErrorCode ierr;
     PetscFunctionBeginUser;
@@ -1649,13 +1718,13 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
     // access velocity constraint vectors
     ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
     ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
     // loop over all bezier blocks
     for(ib = 0; ib < bc->nblocks; ib++)
     {
         bcb   =  bc->blocks + ib;
-        bot   =  bcb->bot;
-        top   =  bcb->top;
+        dim   =  bcb->pathDim;
         npoly =  bcb->npoly;
 
         // get polygon positions in the beginning & end of the time step
@@ -1665,6 +1734,25 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
         // check whether constraint applies to the current time step
         if(!fbeg || !fend) continue;
 
+        // compute bot/top z-coordinates
+        // For 2D path: bot/top are absolute z-coordinates (no z-movement)
+        // For 3D path: bot/top are initial absolute z-coordinates that move with the path
+        //              (same as polygon x-y vertices which are also initial absolute)
+        if(dim == 3)
+        {
+            // compute z-displacement from initial path position (same logic as polygon x-y)
+            zOffset = Xbeg[2] - bcb->path[2];  // current_path_z - initial_path_z
+            bot     = bcb->bot + zOffset;
+            top     = bcb->top + zOffset;
+            velz    = (Xend[2] - Xbeg[2])/dt;  // z-velocity
+        }
+        else
+        {
+            bot  = bcb->bot;
+            top  = bcb->top;
+            velz = 0.0;
+        }
+
         // get current polygon geometry
         ierr = BCBlockGetPolygon(bcb, Xbeg, cpoly);
 
@@ -1672,7 +1760,15 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
         polygon_box(&npoly, cpoly, 1e-12, &atol, box);
 
         // get time step rotation matrix
-        theta = Xend[2] - Xbeg[2];
+        // theta is at index 2 for 2D path, index 3 for 3D path
+        if(dim == 3)
+        {
+            theta = Xend[3] - Xbeg[3];
+        }
+        else
+        {
+            theta = Xend[2] - Xbeg[2];
+        }
         costh = cos(theta);
         sinth = sin(theta);
 
@@ -1747,10 +1843,44 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
             iter++;
         }
         END_STD_LOOP
+
+        //---------
+        // Z points (only for 3D path)
+        //---------
+        if(dim == 3)
+        {
+            GET_CELL_RANGE(nx, sx, fs->dsx)
+            GET_CELL_RANGE(ny, sy, fs->dsy)
+            GET_NODE_RANGE(nz, sz, fs->dsz)
+
+            START_STD_LOOP
+            {
+                // get node coordinates in the beginning of time step
+                xbeg[0] = COORD_CELL(i, sx, fs->dsx);
+                xbeg[1] = COORD_CELL(j, sy, fs->dsy);
+                xbeg[2] = COORD_NODE(k, sz, fs->dsz);
+
+                // perform point test
+                if(xbeg[2] >= bot && xbeg[2] <= top)
+                {
+                    in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
+
+                    // check whether point is inside polygon
+                    if(in)
+                    {
+                        // set z-velocity (uniform for the block)
+                        bcvz[k][j][i] = velz;
+                    }
+                }
+                iter++;
+            }
+            END_STD_LOOP
+        }
     }
     // restore access
     ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
     ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+    ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

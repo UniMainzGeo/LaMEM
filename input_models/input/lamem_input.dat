@@ -186,15 +186,18 @@
     bg_ref_point     = 0.0 0.0 0.0       # background strain rate reference point (fixed)
 
 # Bezier blocks (single entry per block)
+# path_dim = 2 (default): 2D path in x-y plane, path contains (x,y) coordinates
+# path_dim = 3: 3D path, path contains (x,y,z) coordinates
     <BCBlockStart>
-        npath =  2                                 # Number of path points of Bezier curve (path-points only!)
-        theta =  0.0 5.0                           # Orientation angles at path points (counter-clockwise positive)
-        time  =  1.0 2.0                           # Times at path points
-        path  =  0.0 0.0 0.0 10.0                  # Path points x-y coordinates
-        npoly =  4                                 # Number of polygon vertices
-        poly  =  0.0 0.0 0.1 0.0 0.1 0.1 0.0 0.1   # Polygon x-y coordinates at initial time
-        bot   =  0.0                               # Polygon bottom coordinate
-        top   =  0.1                               # Polygon top coordinate
+        npath    =  2                                 # Number of path points of Bezier curve (path-points only!)
+        path_dim =  2                                 # Path dimension: 2 = x-y plane (default), 3 = x-y-z
+        theta    =  0.0 5.0                           # Orientation angles at path points (counter-clockwise positive)
+        time     =  1.0 2.0                           # Times at path points
+        path     =  0.0 0.0 0.0 10.0                  # Path points x-y coordinates (or x-y-z if path_dim=3)
+        npoly    =  4                                 # Number of polygon vertices
+        poly     =  0.0 0.0 0.1 0.0 0.1 0.1 0.0 0.1   # Polygon x-y coordinates at initial time
+        bot      =  0.0                               # Polygon bottom coordinate
+        top      =  0.1                               # Polygon top coordinate
     <BCBlockEnd>
 
 # Internal velocity box(es)
