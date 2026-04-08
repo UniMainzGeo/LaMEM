@@ -40,15 +40,15 @@ ifeq ($(PLATFORM), x86_64)
    ifneq ($(shell mpicc -v 2>&1 | grep -c gcc), 0)
       # GNU
       DEPEN_FLAGS = -MM
-      LAMEM_FLAGS += -std=c++11 -Wall -W \
+      LAMEM_FLAGS += -std=c++17 -Wall -W \
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
-      -Wno-unused-result -Wno-inline
+      -Wno-unused-result -Wno-inline -I .
    endif
    ifneq ($(shell mpicc -v 2>&1 | grep -c apple), 0)
       # GNU
       DEPEN_FLAGS = -MM
-      LAMEM_FLAGS += -std=c++11  -pedantic -Wall -W -Wmissing-prototypes \
+      LAMEM_FLAGS += -std=c++17  -pedantic -Wall -W -Wmissing-prototypes \
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
@@ -60,14 +60,14 @@ ifeq (,$(findstring $PLATFORM, aarch64 armv6l armv7l i686 powerpc64le amd64))
    ifneq ($(shell mpicc -v 2>&1 | grep -c gcc), 0)
       # GNU
       DEPEN_FLAGS = -MM
-      LAMEM_FLAGS += -std=c++11 -Wall -W \
+      LAMEM_FLAGS += -std=c++17 -Wall -W \
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
    endif
    ifneq ($(shell mpicc -v 2>&1 | grep -c clang), 0)
       DEPEN_FLAGS = -MM
-      LAMEM_FLAGS = -std=c++11  -pedantic -Wall -W -Wmissing-prototypes \
+      LAMEM_FLAGS = -std=c++17  -pedantic -Wall -W -Wmissing-prototypes \
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
@@ -75,7 +75,7 @@ ifeq (,$(findstring $PLATFORM, aarch64 armv6l armv7l i686 powerpc64le amd64))
    ifneq ($(shell mpicc -v 2>&1 | grep -c apple), 0)
       # GNU
       DEPEN_FLAGS = -MM
-      LAMEM_FLAGS = -std=c++11  -pedantic -W  \
+      LAMEM_FLAGS = -std=c++17  -pedantic -W  \
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
@@ -83,7 +83,7 @@ ifeq (,$(findstring $PLATFORM, aarch64 armv6l armv7l i686 powerpc64le amd64))
    ifneq ($(shell mpicc -v 2>&1 | grep -c freebsd), 0)
       # GNU
       DEPEN_FLAGS = -MM
-      LAMEM_FLAGS = -std=c++11 -Wall -W \
+      LAMEM_FLAGS = -std=c++17 -Wall -W \
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
@@ -91,7 +91,7 @@ ifeq (,$(findstring $PLATFORM, aarch64 armv6l armv7l i686 powerpc64le amd64))
    ifneq ($(shell mpicc -v 2>&1 | grep -c musl), 0)
       # GNU
       DEPEN_FLAGS = -MM
-      LAMEM_FLAGS = -std=c++11  -pedantic -W  \
+      LAMEM_FLAGS = -std=c++17  -pedantic -W  \
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline
