@@ -26,6 +26,7 @@ You can also install and run a parallel version of LaMEM with the julia package 
 LaMEM is an open source code that was initially developed at the Johannes-Gutenberg University in Mainz (Germany). Many other colleagues have contributed to its development as well (see the documentation).
 The key funding for the Mainz team came from:
 - The European Research Council through Grants ERC StG 258830 (MODEL), ERC PoC 713397 (SALTED) and ERC CoG 771143 (MAGMA)
+- EuroHPC through the Center of Excellence [ChEESE-2p](https://cheese2.eu/)
 - The German ministry of Science and Eduction (BMBF) through projects SECURE, PERMEA, and PERMEA2.
 - Priority programs of the German research foundation (DFG), specifically the [4DMB](http://www.spp-mountainbuilding.de) and [Habitable Earth](https://habitableearth.uni-koeln.de) projects. 
    
