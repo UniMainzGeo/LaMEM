@@ -1571,7 +1571,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	BCCtx            *bc;
 	PetscInt          periodic;
 	PetscInt          mcx, mcy, mcz;
-	PetscInt          I, J, K, fi, fj, fk;
+	PetscInt          I, J, K;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar       ***bcvx,  ***bcvy,  ***bcvz;
 	PetscScalar       ***lvx, ***lvy, ***lvz;
@@ -1645,15 +1645,13 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	{
 		pmdof = lvx[k][j][i];
 
-		J = j; fj = 0;
-		K = k; fk = 0;
+		J = j;
+		K = k;
 
-		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
-		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
-
-		if(fj && fk) SET_EDGE_CORNER(lvx, K, J, i, k, j, i, pmdof)
+		if(j == 0)   { J = j-1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
+		if(j == mcy) { J = j+1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
+		if(k == 0)   { K = k-1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
+		if(k == mcz) { K = k+1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
 	}
 	END_STD_LOOP
 
@@ -1668,15 +1666,13 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	{
 		pmdof = lvy[k][j][i];
 
-		I = i; fi = 0;
-		K = k; fk = 0;
+		I = i;
+		K = k;
 
-		if(i == 0)   { fi = 1; I = i-1; if(!periodic) { SET_TPC(bcvy, lvy, k, j, I, pmdof) } }
-		if(i == mcx) { fi = 1; I = i+1; if(!periodic) { SET_TPC(bcvy, lvy, k, j, I, pmdof) } }
-		if(k == 0)   { fk = 1; K = k-1;                 SET_TPC(bcvy, lvy, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1;                 SET_TPC(bcvy, lvy, K, j, i, pmdof) }
-
-		if(fi && fk) SET_EDGE_CORNER(lvy, K, j, I, k, j, i, pmdof)
+		if(i == 0)   { I = i-1; if(!periodic) { SET_TPC(bcvy, lvy, k, j, I, pmdof) } }
+		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvy, lvy, k, j, I, pmdof) } }
+		if(k == 0)   { K = k-1;                 SET_TPC(bcvy, lvy, K, j, i, pmdof) }
+		if(k == mcz) { K = k+1;                 SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 	}
 	END_STD_LOOP
 
@@ -1691,16 +1687,13 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	{
 		pmdof = lvz[k][j][i];
 
-		I = i; fi = 0;
-		J = j; fj = 0;
+		I = i;
+		J = j;
 
-		if(i == 0 )  { fi = 1; I = i-1; if(!periodic) { SET_TPC(bcvz, lvz, k, j, I, pmdof) } }
-		if(i == mcx) { fi = 1; I = i+1; if(!periodic) { SET_TPC(bcvz, lvz, k, j, I, pmdof) } }
-		if(j == 0)   { fj = 1; J = j-1;                 SET_TPC(bcvz, lvz, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1;                 SET_TPC(bcvz, lvz, k, J, i, pmdof) }
-
-		if(fi && fj) SET_EDGE_CORNER(lvz, k, J, I, k, j, i, pmdof)
-
+		if(i == 0 )  { I = i-1; if(!periodic) { SET_TPC(bcvz, lvz, k, j, I, pmdof) } }
+		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvz, lvz, k, j, I, pmdof) } }
+		if(j == 0)   { J = j-1;                 SET_TPC(bcvz, lvz, k, J, i, pmdof) }
+		if(j == mcy) { J = j+1;                 SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 	}
 	END_STD_LOOP
 
@@ -1723,7 +1716,6 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 	BCCtx             *bc;
 	PetscInt          periodic;
 	PetscInt          mcx, mcy, mcz;
-	PetscInt          I, J, K, fi, fj, fk;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar       ***bcp;
 	PetscScalar       ***lp;
@@ -1781,22 +1773,12 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 	{
 		pmdof = lp[k][j][i];
 
-		I = i; fi = 0;
-		J = j; fj = 0;
-		K = k; fk = 0;
-
-		if(i == 0)   { fi = 1; I = i-1; if(!periodic) { SET_TPC(bcp, lp, k, j, I, pmdof) } }
-		if(i == mcx) { fi = 1; I = i+1; if(!periodic) { SET_TPC(bcp, lp, k, j, I, pmdof) } }
-		if(j == 0)   { fj = 1; J = j-1;                 SET_TPC(bcp, lp, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1;                 SET_TPC(bcp, lp, k, J, i, pmdof) }
-		if(k == 0)   { fk = 1; K = k-1;                 SET_TPC(bcp, lp, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1;                 SET_TPC(bcp, lp, K, j, i, pmdof) }
-
-		if(fi && fj)       SET_EDGE_CORNER(lp, k, J, I, k, j, i, pmdof)
-		if(fi && fk)       SET_EDGE_CORNER(lp, K, j, I, k, j, i, pmdof)
-		if(fj && fk)       SET_EDGE_CORNER(lp, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk) SET_EDGE_CORNER(lp, K, J, I, k, j, i, pmdof)
-
+		if(i == 0)   { if(!periodic) { SET_TPC(bcp, lp, k,   j,   i-1, pmdof) } }
+		if(i == mcx) { if(!periodic) { SET_TPC(bcp, lp, k,   j,   i+1, pmdof) } }
+		if(j == 0)   {                 SET_TPC(bcp, lp, k,   j-1, i,   pmdof) }
+		if(j == mcy) {                 SET_TPC(bcp, lp, k,   j+1, i,   pmdof) }
+		if(k == 0)   {                 SET_TPC(bcp, lp, k-1, j,   i,   pmdof) }
+		if(k == mcz) {                 SET_TPC(bcp, lp, k+1, j,   i,   pmdof) }
 	}
 	END_STD_LOOP
 

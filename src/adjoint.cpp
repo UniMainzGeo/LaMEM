@@ -2293,13 +2293,17 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 
 	fs = jr->fs;
 
+	// initialize corners and edges for interpolation
+	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
+	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
+	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
+
 	// create vectors with correct layout (doesn't copy values!)
  	ierr = VecDuplicate(jr->gsol, &pro);             CHKERRQ(ierr);
  	ierr = VecDuplicate(jr->gsol, &xini);            CHKERRQ(ierr);
 	VecZeroEntries(pro);
 	VecZeroEntries(xini);
 	
-
 	// Access the local velocities
 	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);

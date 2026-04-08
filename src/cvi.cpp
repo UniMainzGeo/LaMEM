@@ -24,6 +24,7 @@
 #include "bc.h"
 #include "tssolve.h"
 #include "tools.h"
+#include "interpolate.h"
 
 //---------------------------------------------------------------------------
 PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
@@ -956,6 +957,11 @@ PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
 
+	// initialize corners and edges for interpolation
+	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
+	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
+	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
+
 	// access velocity, pressure & temperature vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
@@ -1038,6 +1044,11 @@ PetscErrorCode ADVelInterpMINMOD(AdvVelCtx *vi)
 	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+
+	// initialize corners and edges for interpolation
+	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
+	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
+	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
 
 	// access velocity, pressure & temperature vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
@@ -1259,6 +1270,11 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+
+	// initialize corners and edges for interpolation
+	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
+	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
+	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
 
 	// access velocity, pressure & temperature vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);

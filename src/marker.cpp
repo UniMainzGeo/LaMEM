@@ -22,6 +22,7 @@
 #include "tools.h"
 #include "bc.h"
 #include "surf.h"
+#include "interpolate.h"
 #include "phase_transition.h"
 
 /*
@@ -677,6 +678,9 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	AirPhase = -1;
 	Ttop     =  0.0;
 
+	// initialize corners and edges for interpolation
+	PetscCall(SetEdgeCornerCenter(fs, jr->lT));
+
 	if(actx->surf->UseFreeSurf)
 	{
 		AirPhase = actx->surf->AirPhase;
@@ -694,7 +698,7 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	ccz = fs->dsz.ccoor;
 
 	// access temperature vector
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT);  CHKERRQ(ierr);
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)

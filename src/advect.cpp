@@ -25,6 +25,7 @@
 #include "cvi.h"
 #include "subgrid.h"
 #include "tools.h"
+#include "interpolate.h"
 #include "phase_transition.h"
 #include "passive_tracer.h"
 /*
@@ -838,8 +839,6 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 {
 	// update marker positions from current velocities & time step
-	// WARNING! Forward Euler Explicit algorithm
-	// (need to implement more accurate schemes)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
@@ -852,15 +851,6 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
 	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop;
 
-	AirPhase = -1;
-	Ttop     =  0.0;
-
-	if(actx->surf->UseFreeSurf)
-	{
-		AirPhase = actx->surf->AirPhase;
-		Ttop     = actx->jr->bc->Ttop;
-	}
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
@@ -871,6 +861,15 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	// current time step
 	dt = jr->ts->dt;
 
+	AirPhase = -1;
+	Ttop     =  0.0;
+
+	if(actx->surf->UseFreeSurf)
+	{
+		AirPhase = actx->surf->AirPhase;
+		Ttop     = actx->jr->bc->Ttop;
+	}
+
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
 	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
@@ -880,6 +879,11 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+
+	// initialize velocity in the edges and corners
+	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
+	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
+	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
 
 	// access velocity, pressure & temperature vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
@@ -924,8 +928,8 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		svCell = &jr->svCell[ID];
 
 		// update pressure & temperature variables
-		P->p += lp[sz+K][sy+J][sx+I]  	- 	svCell->svBulk.pn;
-		P->T += lT[sz+K][sy+J][sx+I] 	-	svCell->svBulk.Tn;
+		P->p += lp[sz+K][sy+J][sx+I] - svCell->svBulk.pn;
+		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
 
 		// override temperature of air phase
 		if(AirPhase != -1 && P->phase == AirPhase) P->T = Ttop;

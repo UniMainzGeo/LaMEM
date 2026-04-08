@@ -276,8 +276,6 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	fs = jr->fs;
 	bc = jr->bc;
 
-	PetscCall(VecZeroEntries(jr->lT));
-
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT));
 
@@ -348,7 +346,6 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 	PetscScalar pmdof;
 	PetscScalar ***lT, ***bcT;
 	PetscInt    mcx, mcy, mcz;
-	PetscInt    I, J, K, fi, fj, fk;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
 	PetscErrorCode ierr;
@@ -380,23 +377,12 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 	{
 		pmdof = lT[k][j][i];
 
-		I = i; fi = 0;
-		J = j; fj = 0;
-		K = k; fk = 0;
-
-		if(i == 0)   { fi = 1; I = i-1; if(!periodic) { SET_TPC(bcT, lT, k, j, I, pmdof) } }
-		if(i == mcx) { fi = 1; I = i+1; if(!periodic) { SET_TPC(bcT, lT, k, j, I, pmdof) } }
-		if(j == 0)   { fj = 1; J = j-1;                 SET_TPC(bcT, lT, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1;                 SET_TPC(bcT, lT, k, J, i, pmdof) }
-		if(k == 0)   { fk = 1; K = k-1;                 SET_TPC(bcT, lT, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1;                 SET_TPC(bcT, lT, K, j, i, pmdof) }
-
-		// set BC @ edges and corners
-		if(fi && fj )           SET_EDGE_CORNER(lT, k, J, I, k, j, i, pmdof)
-		if(fi && fk )           SET_EDGE_CORNER(lT, K, j, I, k, j, i, pmdof)
-		if(fj && fk )           SET_EDGE_CORNER(lT, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk )     SET_EDGE_CORNER(lT, K, J, I, k, j, i, pmdof)
-
+		if(i == 0)   { if(!periodic) { SET_TPC(bcT, lT, k,   j,   i-1, pmdof) } }
+		if(i == mcx) { if(!periodic) { SET_TPC(bcT, lT, k,   j,   i+1, pmdof) } }
+		if(j == 0)   {                 SET_TPC(bcT, lT, k,   j-1, i,   pmdof) }
+		if(j == mcy) {                 SET_TPC(bcT, lT, k,   j+1, i,   pmdof) }
+		if(k == 0)   {                 SET_TPC(bcT, lT, k-1, j,   i,   pmdof) }
+		if(k == mcz) {                 SET_TPC(bcT, lT, k+1, j,   i,   pmdof) }
 	}
 	END_STD_LOOP
 
@@ -556,13 +542,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		dy = SIZE_CELL(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
-		// original balance equation:
-
-		// rho*Cp*(Tc - Tn)/dt = (fqx - bqx)/dx + (fqy - bqy)/dy + (fqz - bqz)/dz + Hr + rho*A
-
-		// to get positive diagonal in the preconditioner matrix
-		// put right hand side to the left, which gives the following:
-
+		// get residual
 		ge[k][j][i] = rho_Cp*(invdt*(Tc - Tn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho_A - Ha;
 	}
 	END_STD_LOOP

@@ -31,6 +31,7 @@
 #include "surf.h"
 #include "subgrid.h"
 #include "tssolve.h"
+#include "interpolate.h"
 
 // allocate storage for the passive tracers
 // create initial distribution of markers (every processors knows everything)
@@ -518,6 +519,13 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 	begz = fs->dsz.gcrdbeg;
 	endz = fs->dsz.gcrdend;
+
+	// initialize corners and edges for interpolation
+	PetscCall(SetEdgeCornerXFace (fs, jr->lvx));
+	PetscCall(SetEdgeCornerYFace (fs, jr->lvy));
+	PetscCall(SetEdgeCornerZFace (fs, jr->lvz));
+	PetscCall(SetEdgeCornerCenter(fs, jr->lp));
+	PetscCall(SetEdgeCornerCenter(fs, jr->lT));
 
 	// access velocity, pressure & temperature vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);

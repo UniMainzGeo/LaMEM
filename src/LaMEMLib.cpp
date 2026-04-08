@@ -852,7 +852,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 
 		// ignore existing temperature initialization
 		ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
-		ierr = JacResApplyTempBC(jr); CHKERRQ(ierr);
+		ierr = JacResApplyTempBC(jr);  CHKERRQ(ierr);
 
 		// compute steady-state temperature distribution
 		ierr = LaMEMLibSolveTemp(lm, 0.0); CHKERRQ(ierr);

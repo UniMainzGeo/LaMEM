@@ -296,12 +296,11 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 
 	ACCESS_FUNCTION_HEADER
 
-	biot 	= jr->ctrl.biot;
-	
-	cf  	= scal->stress;
+	biot = jr->ctrl.biot;
+	cf   = scal->stress;
 
 	// scale pressure shift
-	pShift 	= -cf*jr->ctrl.pShift;		// minus to be consistent with output routine
+	pShift = -cf*jr->ctrl.pShift;
 	
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
@@ -383,16 +382,16 @@ PetscErrorCode PVOutWriteTemperature(OutVec* outvec)
 PetscErrorCode PVOutWriteConductivity(OutVec* outvec)
 {
 
-  COPY_FUNCTION_HEADER
+	COPY_FUNCTION_HEADER
 
 	// macros to copy conductivity to buffer  
-        #define GET_COND_CENTER buff[k][j][i] = jr->svCell[iter++].svBulk.cond;
+	#define GET_COND_CENTER buff[k][j][i] = jr->svCell[iter++].svBulk.cond;
 
-        cf = scal->conductivity;
+	cf = scal->conductivity;
 	
-        INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_COND_CENTER, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_COND_CENTER, 1, 0)
 
-        PetscFunctionReturn(0);
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
