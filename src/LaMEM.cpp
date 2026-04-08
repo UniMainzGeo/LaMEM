@@ -16,7 +16,13 @@
 //---------------------------------------------------------------------------
 static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 //---------------------------------------------------------------------------
+
 int main(int argc, char **argv)
+{
+	return LaMEM_main(argc, argv);
+}
+
+int LaMEM_main(int argc, char **argv)
 {
 	PetscErrorCode 	ierr;
 
