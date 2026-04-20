@@ -1,8 +1,8 @@
 # This is a simple 2D subduction setup a free slip upper boundary
-# The geometry is created in MATLAB, and linear rheologies are being used apart from the 
+# The geometry is created in Julia, and linear rheologies are being used apart from the 
 # crust, which is plastic to allow detachment of the upper boundary
 #
-# The MATLAB file CreateMarkers_Subduction_Linear_FreeSlip_parallel.m is used to create 
+# The Julia script CreateMarkers_Subduction_Linear_FreeSlip_parallel.jl is used to create 
 # the input geometry.
 # A direct solver is employed
 
