@@ -197,18 +197,23 @@ PetscInt TSSolIsOutput(TSSol *ts)
 	//  * for the fixed number of initial steps
 	//  * after fixed number of steps
 	//  * after fixed time interval
+	//  * after last time step
 	//==========================================
 
-	PetscScalar time_out;
+	PetscScalar time_end, time_out;
+
+	// get end time (with tolerance)
+	time_end = ts->time_end - ts->tol*ts->dt_max;
 
 	// get next output time (with tolerance)
 	time_out = ts->time_out + ts->dt_out - ts->tol*ts->dt_max;
 
 	// check output conditions
 	if ((!ts->istep
- 	  || (ts->nstep_ini &&   ts->istep <= ts->nstep_ini)
-	  || (ts->nstep_out && !(ts->istep %  ts->nstep_out))
-	  || (ts->dt_out    &&   ts->time  >= time_out))
+ 	  || (ts->nstep_ini         &&   ts->istep <= ts->nstep_ini)
+	  || (ts->nstep_out         && !(ts->istep %  ts->nstep_out))
+	  || (ts->dt_out            &&   ts->time  >= time_out)
+	  || (ts->time  >= time_end ||   ts->istep == ts->nstep_max))
 	  && (ts->nstep_out > 0) )							
 	{
 		// update output time stamp
@@ -216,8 +221,6 @@ PetscInt TSSolIsOutput(TSSol *ts)
 
 		return 1;
 	}
-
-
 
 	return 0;
 }

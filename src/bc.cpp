@@ -27,30 +27,65 @@
 //---------------------------------------------------------------------------
 PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 {
-	//	-npath - Number of path points of Bezier curve (end-points only!)
-	//	-theta - Orientation angles at path points (counter-clockwise positive)
-	//	-time  - Times at path points
-	//	-path  - path points x-y coordinates
-	//	-npoly - Number of polygon vertices
-	//	-poly  - Polygon x-y coordinates at initial time
-	//	-bot   - Polygon bottom coordinate
-	//	-top   - Polygon top coordinate
+	//	-npath    - Number of path points of Bezier curve (end-points only!)
+	//	-path_dim - Path dimension: 2 = x-y plane (default), 3 = full 3D
+	//	-theta    - Orientation angles at path points (counter-clockwise positive)
+	//	-time     - Times at path points
+	//	-path     - path points coordinates (x-y for 2D, x-y-z for 3D)
+	//	-npoly    - Number of polygon vertices
+	//	-poly     - Polygon x-y coordinates at initial time (absolute, moves with path)
+	//	-bot      - Polygon bottom z-coordinate at initial time (absolute, moves with path for 3D)
+	//	-top      - Polygon top z-coordinate at initial time (absolute, moves with path for 3D)
 
 	PetscErrorCode ierr;
+	PetscInt       numPathCoords;
 	PetscFunctionBeginUser;
 
-	bcb->npath = 2;
-	bcb->npoly = 4;
+	// set defaults
+	bcb->npath   = 2;
+	bcb->pathDim = 2;
+	bcb->npoly   = 4;
 
-	ierr = getIntParam   (fb, _OPTIONAL_, "npath", &bcb->npath, 1,              _max_path_points_); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "theta",  bcb->theta, bcb->npath,      scal->angle     ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "time",   bcb->time,  bcb->npath,      scal->time      ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "path",   bcb->path,  2*bcb->npath,    scal->length    ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "npath",    &bcb->npath,   1, _max_path_points_); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "path_dim", &bcb->pathDim, 1, 3);                 CHKERRQ(ierr);
+
+	// validate path_dim
+	if(bcb->pathDim != 2 && bcb->pathDim != 3)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "path_dim must be 2 or 3, got: %lld", (LLD)bcb->pathDim);
+	}
+
+	// compute number of path coordinates based on dimension
+	numPathCoords = bcb->pathDim * bcb->npath;
+
+	ierr = getScalarParam(fb, _OPTIONAL_, "theta",  bcb->theta, bcb->npath,    scal->angle ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "time",   bcb->time,  bcb->npath,    scal->time  ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "path",   bcb->path,  numPathCoords, scal->length); CHKERRQ(ierr);
 
 	ierr = getIntParam   (fb, _OPTIONAL_, "npoly", &bcb->npoly, 1,              _max_poly_points_); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "poly",   bcb->poly,  2*bcb->npoly,    scal->length    ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "bot",   &bcb->bot,   1,               scal->length    ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "top",   &bcb->top,   1,               scal->length    ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "poly",   bcb->poly,  2*bcb->npoly,   scal->length     ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "bot",   &bcb->bot,   1,              scal->length     ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "top",   &bcb->top,   1,              scal->length     ); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode BCBlockPrint(BCBlock *bcb, Scaling *scal, PetscInt cnt)
+{
+	PetscFunctionBeginUser;
+
+	PetscPrintf(PETSC_COMM_WORLD, "      Bezier block #                          : %lld \n", (LLD)cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Path dimension                          : %lld \n", (LLD)bcb->pathDim);
+	PetscPrintf(PETSC_COMM_WORLD, "      Number of path points                   : %lld \n", (LLD)bcb->npath);
+	PetscPrintf(PETSC_COMM_WORLD, "      Number of polygon vertices              : %lld \n", (LLD)bcb->npoly);
+
+	PetscPrintf(PETSC_COMM_WORLD, "      Bot/Top initial z-coordinates          : %g / %g %s \n",
+		bcb->bot*scal->length, bcb->top*scal->length, scal->lbl_length);
+
+	if(bcb->pathDim == 3)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "      (bot/top move with 3D path)            @ \n");
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -58,8 +93,10 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar X[])
 {
 	// compute position along the path and rotation angle as a function of time
+	// For 2D path (pathDim=2): X[0]=x, X[1]=y, X[2]=theta
+	// For 3D path (pathDim=3): X[0]=x, X[1]=y, X[2]=z, X[3]=theta
 
-	PetscInt      i, n;
+	PetscInt      i, n, dim;
 	PetscScalar   r, s;
 	PetscScalar  *p1, *p2;
 	PetscScalar  *path, *theta, *time;
@@ -67,6 +104,7 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 	PetscFunctionBeginUser;
 
 	n     = bcb->npath;
+	dim   = bcb->pathDim;
 	path  = bcb->path;
 	theta = bcb->theta;
 	time  = bcb->time;
@@ -77,18 +115,29 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 	// find time interval
 	for(i = 1; i < n-1; i++) { if(t < time[i]) break; } i--;
 
-	// get path and control points
-	p1 = path + 2*i;
-	p2 = p1   + 2;
+	// get path and control points (stride depends on dimension)
+	p1 = path + dim*i;
+	p2 = p1   + dim;
 
 	// compute interpolation parameters
 	r  = (t - time[i])/(time[i+1] - time[i]);
 	s  = 1.0 - r;
 
 	// interpolate path and rotation angle
-	X[0] = s*p1[0]    + r*p2[0];
-	X[1] = s*p1[1]    + r*p2[1];
-	X[2] = s*theta[i] + r*theta[i+1];
+	X[0] = s*p1[0] + r*p2[0];  // x
+	X[1] = s*p1[1] + r*p2[1];  // y
+
+	if(dim == 3)
+	{
+		// 3D path: X[0]=x, X[1]=y, X[2]=z, X[3]=theta
+		X[2] = s*p1[2]    + r*p2[2];      // z
+		X[3] = s*theta[i] + r*theta[i+1]; // theta
+	}
+	else
+	{
+		// 2D path: X[0]=x, X[1]=y, X[2]=theta
+		X[2] = s*theta[i] + r*theta[i+1]; // theta
+	}
 
 	//   [A] Bezier curves can be input directly.
 	//   Bezier curve requires 4 points per segment (see e.g. wikipedia):
@@ -146,21 +195,35 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 //---------------------------------------------------------------------------
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly)
 {
-	// compute current polygon coordinates
+	// compute current polygon coordinates (2D x-y polygon)
+	// For 2D path: Xb[0]=x, Xb[1]=y, Xb[2]=theta
+	// For 3D path: Xb[0]=x, Xb[1]=y, Xb[2]=z, Xb[3]=theta
 
-	PetscInt     i;
+	PetscInt     i, dim;
 	PetscScalar *xa, *xb;
-	PetscScalar  Xa[3], theta, costh, sinth;
+	PetscScalar  Xa[4], thetaCur, thetaInit, theta, costh, sinth;
 
 	PetscFunctionBeginUser;
 
-	// get initial polygon position
+	dim = bcb->pathDim;
+
+	// get initial polygon position (x, y only for 2D rotation)
 	Xa[0] = bcb->path[0];
 	Xa[1] = bcb->path[1];
-	Xa[2] = bcb->theta[0];
+	thetaInit = bcb->theta[0];
 
-	// get rotation matrix
-	theta = Xb[2] - Xa[2];
+	// get current rotation angle (theta is at different index for 2D vs 3D)
+	if(dim == 3)
+	{
+		thetaCur = Xb[3];
+	}
+	else
+	{
+		thetaCur = Xb[2];
+	}
+
+	// get rotation matrix (rotation around z-axis)
+	theta = thetaCur - thetaInit;
 	costh = cos(theta);
 	sinth = sin(theta);
 
@@ -171,13 +234,12 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 		xa = bcb->poly + 2*i;
 		xb = cpoly     + 2*i;
 
-		// rotate & displace
+		// rotate & displace (2D rotation in x-y plane)
 		RotDispPoint2D(Xa, Xb, costh, sinth, xa, xb);
 	}
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 // Velocity box functions
 //---------------------------------------------------------------------------
@@ -361,14 +423,14 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	periodic = fs->periodic;
 
 	// initialize
-	bc->Tbot[0]  		= 	-1.0;
-	bc->Ttop     		= 	-1.0;
-	bc->pbot    	 	= 	-1.0;
-	bc->ptop     		= 	-1.0;
-	bc->fixPhase 		= 	-1;
-	bc->num_phase_bc    =   -1;
-	bc->velout   		=  	DBL_MAX;
-	bc->Plume_Inflow 	= 	0;
+	bc->Tbot[0]                 = -1.0;
+	bc->Ttop                    = -1.0;
+	bc->pbot                    = -1.0;
+	bc->ptop                    = -1.0;
+	bc->fixPhase                = -1;
+	bc->num_phase_bc            =   -1;
+	bc->velout                  =  DBL_MAX;
+	bc->Plume_Inflow            = 0;
 	bc->bvel_temperature_inflow = -1;
 
 	//=====================
@@ -466,43 +528,55 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// boundary inflow/outflow velocities
 	ierr = getStringParam(fb, _OPTIONAL_, "bvel_face", str_inflow, NULL); CHKERRQ(ierr);  // must have component
-	if      (!strcmp(str_inflow, "Left"))                                      bc->face=1;
-	else if (!strcmp(str_inflow, "Right"))                                     bc->face=2;
-	else if (!strcmp(str_inflow, "Front"))                                     bc->face=3;
-	else if (!strcmp(str_inflow, "Back"))                                      bc->face=4;
-	else if (!strcmp(str_inflow, "CompensatingInflow"))                        bc->face=5;
+	if      (!strcmp(str_inflow, "Left"))               bc->face=1;
+	else if (!strcmp(str_inflow, "Right"))              bc->face=2;
+	else if (!strcmp(str_inflow, "Front"))              bc->face=3;
+	else if (!strcmp(str_inflow, "Back"))               bc->face=4;
+	else if (!strcmp(str_inflow, "CompensatingInflow")) bc->face=5;
 
-	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 	1, -1); 		CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "bvel_face_out", &bc->face_out, 	1, -1); CHKERRQ(ierr);
 
 	if(bc->face)
 	{
-		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_num_phase", &bc->num_phase_bc, 1, 5           ); CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase",  bc->phase, bc->num_phase_bc, mID           ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",    &bc->bot,    1, scal->length  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",    &bc->top,    1, scal->length  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _OPTIONAL_, "velin_num_periods",  &bc->VelNumPeriods,  1,                  _max_periods_  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_relax_d",&bc->relax_dist,1, scal->length  ); CHKERRQ(ierr);
-		if(bc->VelNumPeriods>1)
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_num_phase",        &bc->num_phase_bc,     1, 5);                  CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "bvel_phase",             bc->phase,            bc->num_phase_bc, mID); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",              &bc->bot,              1, scal->length  );     CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",              &bc->top,              1, scal->length  );     CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",            &bc->velin,            1, scal->velocity);     CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout",           &bc->velout,           1, scal->velocity);     CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "velin_num_periods",     &bc->VelNumPeriods,    1, _max_periods_);      CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "velin_net_num_periods", &bc->VelNetNumPeriods, 1, _max_periods_);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_relax_d",          &bc->relax_dist,       1, scal->length );      CHKERRQ(ierr);
+
+		if(bc->VelNumPeriods > 1)
 		{
-			ierr = getScalarParam(fb, _REQUIRED_, "velin_time_delims",   bc->VelTimeDelims,  bc->VelNumPeriods-1, scal->time    ); CHKERRQ(ierr);
-			ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",          bc->velin_array,    bc->VelNumPeriods,   scal->velocity); CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "velin_time_delims", bc->VelTimeDelims, bc->VelNumPeriods-1, scal->time    ); CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",        bc->velin_array,   bc->VelNumPeriods,   scal->velocity); CHKERRQ(ierr);
 			ierr = BCGetVelins(bc); CHKERRQ(ierr);
 		}
-		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_phase_interval", bc->phase_interval, bc->num_phase_bc+1, scal->length); CHKERRQ(ierr);
-		ierr = getStringParam(fb, _OPTIONAL_, "bvel_temperature_inflow", inflow_temp , NULL); 					CHKERRQ(ierr);
-		if     	(!strcmp(inflow_temp, "Constant_T_inflow"))      bc->bvel_temperature_inflow = 1;
-		if     	(!strcmp(inflow_temp, "Fixed_thermal_age"))      bc->bvel_temperature_inflow = 2;
+
+		if(bc->VelNetNumPeriods > 1)
+		{
+			ierr = getScalarParam(fb, _REQUIRED_, "velin_net_time_delims", bc->VelNetTimeDelims,  bc->VelNetNumPeriods-1, scal->time    ); CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin_net",        bc->velin_net_array,   bc->VelNetNumPeriods,   scal->velocity); CHKERRQ(ierr);
+			ierr = BCGetVelins(bc); CHKERRQ(ierr);
+		}
+
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_phase_interval",     bc->phase_interval, bc->num_phase_bc+1, scal->length); CHKERRQ(ierr);
+		ierr = getStringParam(fb, _OPTIONAL_, "bvel_temperature_inflow", inflow_temp , NULL);                                   CHKERRQ(ierr);
+
+		if(!strcmp(inflow_temp, "Constant_T_inflow")) { bc->bvel_temperature_inflow = 1; }
+		if(!strcmp(inflow_temp, "Fixed_thermal_age")) { bc->bvel_temperature_inflow = 2; }
+
 		if( bc->bvel_temperature_inflow == 2)
 		{
-			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_mantle", &bc->bvel_potential_temperature, 1, 1.0);         CHKERRQ(ierr);
-			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_top",    &bc->bvel_temperature_top,       1, 1.0);         CHKERRQ(ierr);
-			ierr = getScalarParam(fb, _REQUIRED_, "bvel_thermal_age",        &bc->bvel_thermal_age,           1, scal->time);  CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_mantle", &bc->bvel_potential_temperature, 1, 1.0);        CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_top",    &bc->bvel_temperature_top,       1, 1.0);        CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_thermal_age",        &bc->bvel_thermal_age,           1, scal->time); CHKERRQ(ierr);
 		}
 		else if(bc->bvel_temperature_inflow == 1)
 		{
-			ierr = getScalarParam(fb, _REQUIRED_,     "bvel_temperature_constant", &bc->bvel_constant_temperature, 1, scal->time);     CHKERRQ(ierr);
+			ierr = getScalarParam(fb, _REQUIRED_, "bvel_temperature_constant", &bc->bvel_constant_temperature, 1, scal->time); CHKERRQ(ierr);
 		}
 
 		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velbot", &bc->velbot, 1, scal->velocity); CHKERRQ(ierr);
@@ -520,44 +594,44 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	}
 
 	// open boundary flag
-	ierr = getIntParam(fb, _OPTIONAL_, "open_top_bound",		&bc->top_open, 		1, -1); 	CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "open_top_bound", &bc->top_open, 1, -1); CHKERRQ(ierr);
 
 	//open bottom boundary flag
+	ierr = getIntParam(fb, _OPTIONAL_, "open_bot_bound", &bc->bot_open, 1, -1); CHKERRQ(ierr);
 
-	ierr = getIntParam(fb, _OPTIONAL_, "open_bot_bound",		&bc->bot_open, 		1, -1); 	CHKERRQ(ierr);
 	if(bc->bot_open)
 	{
-		ierr = getIntParam(fb, _OPTIONAL_, "permeable_phase_inflow",		&bc->phase_inflow_bot, 		1, -1); 	CHKERRQ(ierr);
+		ierr = getIntParam(fb, _OPTIONAL_, "permeable_phase_inflow", &bc->phase_inflow_bot, 1, -1); CHKERRQ(ierr);
 	}
 
-
 	// no-slip boundary condition mask
-	ierr = getIntParam(fb, _OPTIONAL_, "noslip", 				bc->noslip, 		6, -1); 	CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "noslip",  bc->noslip, 6, -1); CHKERRQ(ierr);
 
 	// fixed phase (no-flow condition)
-	ierr = getIntParam(fb, _OPTIONAL_, "fix_phase", 			&bc->fixPhase, 		1, mID); 	CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "fix_phase", &bc->fixPhase, 1, mID); CHKERRQ(ierr);
 
 	// fixed cells (no-flow condition)
-	ierr = getIntParam(fb, _OPTIONAL_, "fix_cell", 				&bc->fixCell, 		1, mID); 	CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "fix_cell",  &bc->fixCell, 1, mID); CHKERRQ(ierr);
 
-	// Plume-like inflow boundary condition @ bottom
-	ierr = getIntParam(fb, _OPTIONAL_, "Plume_InflowBoundary", 	&bc->Plume_Inflow, 	1, -1); 	CHKERRQ(ierr);
+	// plume-like inflow boundary condition @ bottom
+	ierr = getIntParam(fb, _OPTIONAL_, "Plume_InflowBoundary", &bc->Plume_Inflow, 1, -1); CHKERRQ(ierr);
+
 	if(bc->Plume_Inflow)
 	{
-		char             str[_str_len_];
+		char str[_str_len_];
 
-		// Type of plume (2D or 3D)
-		ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", 	str, NULL);                     CHKERRQ(ierr);  // must have component
+		// type of plume (2D or 3D)
+		ierr = getStringParam(fb, _REQUIRED_, "Plume_Type", str, NULL); CHKERRQ(ierr);  // must have component
 
-		// Type of boundary conditions
+		// type of boundary conditions
 		if(!strcmp(str, "Inflow_Type"))
 		{
-			bc->Plume_Type = 1;                                  // velocity flux
+			bc->Plume_Type = 1; // velocity flux
 		}
 		else if(!strcmp(str, "Permeable_Type"))
 		{
-			bc->Plume_Type = 2;                                // activate open_bot boundary condition
-			bc->bot_open   = 1;                                // open the bottom boundary
+			bc->Plume_Type = 2; // activate open_bot boundary condition
+			bc->bot_open   = 1; // open the bottom boundary
 		}
 		else
 		{
@@ -567,16 +641,18 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		if(bc->Plume_Type == 1)
 		{
 			bc->Plume_areaFrac = 1.0;
-			ierr = getScalarParam(fb,_REQUIRED_,  "Plume_Inflow_Velocity",	&bc->Plume_Inflow_Velocity,	1,	scal->velocity);	CHKERRQ(ierr);
-			ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType", 	 str, "Gaussian"); 				                    CHKERRQ(ierr);  // must have component
-			ierr = getScalarParam(fb, _OPTIONAL_, "Plume_areaFrac",         &bc->Plume_areaFrac,        1,  1.0);               CHKERRQ(ierr);
+
+			ierr = getScalarParam(fb,_REQUIRED_,  "Plume_Inflow_Velocity", &bc->Plume_Inflow_Velocity, 1, scal->velocity); CHKERRQ(ierr);
+			ierr = getStringParam(fb, _REQUIRED_, "Plume_VelocityType",    str, "Gaussian");                               CHKERRQ(ierr);  // must have component
+			ierr = getScalarParam(fb, _OPTIONAL_, "Plume_areaFrac",         &bc->Plume_areaFrac,       1,  1.0);           CHKERRQ(ierr);
+
 			if(!strcmp(str, "Poiseuille"))
 			{
 				bc->Plume_VelocityType = 0; // Poiseuille
 			}
 			else if(!strcmp(str, "Gaussian"))
 			{
-				bc->Plume_VelocityType = 1;	// Gaussian perturbation (smoother)
+				bc->Plume_VelocityType = 1; // Gaussian perturbation (smoother)
 			}
 			else
 			{
@@ -585,15 +661,15 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		}
 		if(bc->Plume_Type == 2)
 		{
-			//bc->Plume_Pressure = -1;
-			//ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",	&bc->Plume_Depth,	1,	scal->length);	CHKERRQ(ierr);
-			//ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure",&bc->Plume_Pressure,	1,	scal->stress);	CHKERRQ(ierr);
-			ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase_Mantle"  , &bc->phase_inflow_bot,        1, mID);            CHKERRQ(ierr);
-
+			// bc->Plume_Pressure = -1;
+			// ierr = getScalarParam(fb,_REQUIRED_,"Plume_Depth",    &bc->Plume_Depth,    1, scal->length); CHKERRQ(ierr);
+			// ierr = getScalarParam(fb,_OPTIONAL_,"Plume_Pressure", &bc->Plume_Pressure, 1, scal->stress); CHKERRQ(ierr);
+			ierr = getIntParam(fb, _REQUIRED_, "Plume_Phase_Mantle"  , &bc->phase_inflow_bot, 1, mID); CHKERRQ(ierr);
 		}
 
 		// 2D or 3D
-		ierr = getStringParam(fb, _REQUIRED_, "Plume_Dimension", str, NULL);                 CHKERRQ(ierr);  // must have component
+		ierr = getStringParam(fb, _REQUIRED_, "Plume_Dimension", str, NULL); CHKERRQ(ierr);  // must have component
+
 		if(!strcmp(str, "2D"))
 		{
 			bc->Plume_Dimension = 1; // 2D setup
@@ -610,18 +686,18 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		if(bc->Plume_Dimension == 1)
 		{
 			// 2D perturbation in x-direction
-			ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",  bc->Plume_Center,      1,		scal->length); CHKERRQ(ierr);
+			ierr = getScalarParam(fb,_REQUIRED_, "Plume_Center",  bc->Plume_Center, 1, scal->length); CHKERRQ(ierr);
 		}
 		else if(bc->Plume_Dimension == 2)
 		{
 			// 3D circular inflow a given [X,Y] coordinates
-			ierr = getScalarParam(fb,_REQUIRED_,	"Plume_Center",	 bc->Plume_Center,      2,		scal->length); CHKERRQ(ierr);
+			ierr = getScalarParam(fb,_REQUIRED_, "Plume_Center", bc->Plume_Center, 2, scal->length); CHKERRQ(ierr);
 		}
 
 		// other options
-		ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"    	  , &bc->Plume_Phase, 		1, mID);           CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature" , &bc->Plume_Temperature, 1, 1);             CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "Plume_Radius",       &bc->Plume_Radius,		1,	scal->length); CHKERRQ(ierr);
+		ierr = getIntParam	 (fb, _REQUIRED_, "Plume_Phase"       , &bc->Plume_Phase,       1, mID);          CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "Plume_Temperature" , &bc->Plume_Temperature, 1, 1);            CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "Plume_Radius",       &bc->Plume_Radius,      1, scal->length); CHKERRQ(ierr);
 
 	}
 
@@ -635,7 +711,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	//========================
 
 	bc->TbotNumPeriods = 1;
-	ierr = getIntParam   (fb, _OPTIONAL_, "temp_bot_num_periods",  &bc->TbotNumPeriods,  1, _max_periods_ ); CHKERRQ(ierr);
+	ierr = getIntParam (fb, _OPTIONAL_, "temp_bot_num_periods",  &bc->TbotNumPeriods,  1, _max_periods_ ); CHKERRQ(ierr);
+
 	if(bc->TbotNumPeriods > 1)
 	{
 		ierr = getScalarParam(fb, _REQUIRED_, "temp_bot_time_delim", bc->TbotTimeDelims, bc->TbotNumPeriods-1, scal->time	); CHKERRQ(ierr);
@@ -674,32 +751,32 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	{
 		if(!bc->noslip[4])
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition requires no-slip on bottom boundary (cycle_geo_x, noslip) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition requires no-slip on bottom boundary (periodic, noslip) \n");
 		}
 
 		if(bc->noslip[0] || bc->noslip[1])
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with no-slip on left and right boundaries (cycle_geo_x, noslip) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with no-slip on left and right boundaries (periodic, noslip) \n");
 		}
 
 		if(bc->ExxNumPeriods || bc->ExyNumPeriods)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with xx and xy background strain rates (cycle_geo_x, exx_num_periods, exy_num_periods) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with xx and xy background strain rates (periodic, exx_num_periods, exy_num_periods) \n");
 		}
 
 		if(bc->face)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with boundary velocity (cycle_geo_x, bvel_face) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with boundary velocity (periodic, bvel_face) \n");
 		}
 
 		if(bc->fixPhase != -1)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed phase (cycle_geo_x, fix_phase) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed phase (periodic, fix_phase) \n");
 		}
 
 		if(bc->fixCell)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed cells (cycle_geo_x, fix_cell) \n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic condition is incompatible with fixed cells (periodic, fix_cell) \n");
 		}
 	}
 
@@ -711,9 +788,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD, "   No-slip boundary mask [lt rt ft bk bm tp]  : ");
 
-	if(periodic) { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in x-direction                 : "); }
-
-	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
+	if(periodic) { PetscPrintf(PETSC_COMM_WORLD, "   Periodic bc in x-direction                 @ "); }
 
 	for(jj = 0; jj < 6; jj++)
 	{
@@ -722,10 +797,16 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD, "\n");
 
-	if(bc->ExxNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %lld \n",  (LLD)bc->ExxNumPeriods);
-	if(bc->EyyNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods);
-	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
-	if(bc->nboxes)           PetscPrintf(PETSC_COMM_WORLD, "   Number of velocity boxes                   : %lld \n",  (LLD)bc->nboxes);
+	if(bc->ExxNumPeriods) { PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %lld \n",  (LLD)bc->ExxNumPeriods); }
+	if(bc->EyyNumPeriods) { PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods); }
+	if(bc->nblocks)       { PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);       }
+
+	for(jj = 0; jj < bc->nblocks; jj++)
+	{
+		ierr = BCBlockPrint(bc->blocks + jj, scal, jj); CHKERRQ(ierr);
+	}
+
+	if(bc->nboxes) { PetscPrintf(PETSC_COMM_WORLD, "   Number of velocity boxes                   : %lld \n",  (LLD)bc->nboxes); }
 
 	for(jj = 0; jj < bc->nboxes; jj++)
 	{
@@ -736,120 +817,166 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	{
 		ierr = VelCylinderPrint(bc->vcylinders + jj, scal, jj); CHKERRQ(ierr);
 	}
-
-	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
-	if(bc->bot_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                       @ \n");
-	if(bc->bot_open && bc->Plume_Type == 2)
+	if(bc->top_open) { PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n"); }
+	if(bc->bot_open) { PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                       @ \n"); }
+	if(bc->bot_open && bc->Plume_Type == 2) {;}
+	if(bc->fixPhase != -1)   { PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase); }
+	if(bc->Ttop     != -1.0) { PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature); }
+	if(bc->TbotNumPeriods == 1)
 	{
-
-	}
-	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
-	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
-	if(bc->TbotNumPeriods==1)
-	{
-		if(bc->Tbot[0]   != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot[0], scal->lbl_temperature);
+		if(bc->Tbot[0] != -1.0) { PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot[0], scal->lbl_temperature); }
 	}
 	else
 	{
-		// We have a Tbot that changes with time
+		// we have a Tbot that changes with time
 		PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", (LLD)bc->TbotNumPeriods);
 		PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperatures               : ");
-		for(jj=0; jj<bc->TbotNumPeriods; jj++)
+		for (jj=0; jj<bc->TbotNumPeriods; jj++)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "%g ", bc->Tbot[jj]);
 		}
 		PetscPrintf(PETSC_COMM_WORLD, " %s \n", scal->lbl_temperature);
 		PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temp time periods          :     ");
-		for(jj=0; jj<bc->TbotNumPeriods-1; jj++)
+		for (jj=0; jj<bc->TbotNumPeriods-1; jj++)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "%g ", bc->TbotTimeDelims[jj]*scal->time);
 		}
 		PetscPrintf(PETSC_COMM_WORLD, " %s \n", scal->lbl_time);
-
 	}
 
 	if(bc->Plume_Inflow == 1)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Adding plume inflow bottom condition       @ \n");
-		if(bc->Plume_Type == 1) { PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : Inflow \n");}
-		else{                     PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : Open Bottom \n");}
-		if(bc->Plume_VelocityType == 0) { PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Poiseuille flow (and constant outflow) \n");}
-		else{                             PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Gaussian in/out flow \n");}
-		PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, scal->lbl_temperature);
+		if(bc->Plume_Type == 1)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : Inflow \n");
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Type of plume                           : Open Bottom \n");
+		}
+		if(bc->Plume_VelocityType == 0)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Poiseuille flow (and constant outflow) \n");
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Type of velocity perturbation           : Gaussian in/out flow \n");
+		}
+
+		PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, 	 				scal->lbl_temperature);
 		PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %lld \n", (LLD) bc->Plume_Phase);
 		PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %g %s \n", bc->Plume_Inflow_Velocity*scal->velocity, scal->lbl_velocity);
 		PetscPrintf(PETSC_COMM_WORLD, "      Area fraction of plume                  : %g \n", bc->Plume_areaFrac);
-		if(bc->Plume_Dimension == 1) { PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g] %s \n", bc->Plume_Center[0]*scal->length,       scal->lbl_length);}
-		else{                          PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g, %g] %s \n", bc->Plume_Center[0]*scal->length, bc->Plume_Center[1]*scal->length, scal->lbl_length);}
+
+		if(bc->Plume_Dimension == 1)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g] %s \n", bc->Plume_Center[0]*scal->length,       scal->lbl_length);
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g, %g] %s \n", bc->Plume_Center[0]*scal->length, bc->Plume_Center[1]*scal->length, scal->lbl_length);
+		}
+
 		PetscPrintf(PETSC_COMM_WORLD, "      Radius of plume                         : %g %s \n", bc->Plume_Radius*scal->length, scal->lbl_length);
 	}
 
-	if(bc->face > 0)
+	if(bc->face)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Adding inflow velocity at boundary         @ \n");
-		if(bc->VelNumPeriods > 1)
+
+		if(bc->VelNumPeriods>1)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %lld   \n", (LLD) bc->VelNumPeriods);}
+			PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %lld   \n", (LLD) bc->VelNumPeriods);
+		}
 		else
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : 1   \n");
 		}
+
+		if(bc->VelNetNumPeriods > 1)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Number of net inflow periods                : %lld   \n", (LLD) bc->VelNetNumPeriods);
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Number of net inflow periods                : 1   \n");
+		}
+
 		PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity boundary                : %s \n", str_inflow);
-		if (bc->face_out==1){  PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");                    }
-		if (bc->num_phase_bc>=0){     PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %lld \n", (LLD)bc->phase);      }
-		else {                 PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");                    }
+
+		if(bc->face_out == 1)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Outflow at opposite boundary            @ \n");
+		}
+
+		if(bc->num_phase_bc >= 0)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %lld \n", (LLD)bc->phase);
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase from next to boundary      @ \n");
+		}
 
 		PetscPrintf(PETSC_COMM_WORLD, "      Inflow window [bottom, top]             : [%3.2f,%3.2f] %s \n", bc->bot*scal->length, bc->top*scal->length, scal->lbl_length);
 		PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %1.2f %s \n", bc->velin*scal->velocity, scal->lbl_velocity);
-		if (bc->velout>0){     PetscPrintf(PETSC_COMM_WORLD, "      Outflow velocity                        : %1.2f %s \n", bc->velout*scal->velocity, scal->lbl_velocity); }
-		else if (!bc->face_out) {                 PetscPrintf(PETSC_COMM_WORLD, "       Outflow velocity from mass balance     @ \n"); }
-		if (bc->face==5){      PetscPrintf(PETSC_COMM_WORLD, "      Bottom flow velocity                    : %1.2f %s \n", bc->velbot*scal->velocity, scal->lbl_velocity); }
-		if (bc->face==5 && !bc->top_open) {     PetscPrintf(PETSC_COMM_WORLD, "      Top flow velocity                       : %1.2f %s \n", bc->veltop*scal->velocity, scal->lbl_velocity); }
 
-		if (bc->relax_dist>0){ PetscPrintf(PETSC_COMM_WORLD, "      Velocity smoothening distance           : %1.2f %s \n", bc->relax_dist*scal->length, scal->lbl_length); }
-
-		if (bc->bvel_temperature_inflow > 0)
+		if(bc->velout > 0.0)
 		{
-			if(bc->bvel_temperature_inflow == 1){
+			PetscPrintf(PETSC_COMM_WORLD, "      Outflow velocity                        : %1.2f %s \n", bc->velout*scal->velocity, scal->lbl_velocity);
+		}
+		else if (!bc->face_out)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "       Outflow velocity from mass balance     @ \n");
+		}
+		if(bc->face == 5)                  { PetscPrintf(PETSC_COMM_WORLD, "      Bottom flow velocity                    : %1.2f %s \n", bc->velbot*scal->velocity, scal->lbl_velocity); }
+		if(bc->face == 5 && !bc->top_open) { PetscPrintf(PETSC_COMM_WORLD, "      Top flow velocity                       : %1.2f %s \n", bc->veltop*scal->velocity, scal->lbl_velocity); }
+
+		if(bc->relax_dist > 0){ PetscPrintf(PETSC_COMM_WORLD, "      Velocity smoothening distance           : %1.2f %s \n", bc->relax_dist*scal->length, scal->lbl_length); }
+
+		if(bc->bvel_temperature_inflow)
+		{
+			if(bc->bvel_temperature_inflow == 1)
+			{
 				PetscPrintf(PETSC_COMM_WORLD, "      Temperature type of inflow material     : Constant \n");
 				PetscPrintf(PETSC_COMM_WORLD, "         Temperature                          : %g %s  \n",bc->bvel_constant_temperature*scal->time,    scal->lbl_temperature);
 			}
-			if(bc->bvel_temperature_inflow == 2){
+			if(bc->bvel_temperature_inflow == 2)
+			{
 				PetscPrintf(PETSC_COMM_WORLD, "      Temperature type of inflow material     : Halfspace cooling \n");
 				PetscPrintf(PETSC_COMM_WORLD, "         Thermal Age                          : %1.0f %s  \n",bc->bvel_thermal_age*scal->time,    scal->lbl_time);
 				PetscPrintf(PETSC_COMM_WORLD, "         Temperature @ top                    : %1.1f %s  \n",bc->bvel_temperature_top,           scal->lbl_temperature );
 				PetscPrintf(PETSC_COMM_WORLD, "         Temperature @ bottom                 : %1.1f %s  \n",bc->bvel_potential_temperature,     scal->lbl_temperature );
 			}
-
 		}
 		else
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "      Inflow temperature from closest marker  @ \n");
+			 PetscPrintf(PETSC_COMM_WORLD, "      Inflow temperature from closest marker  @ \n");
 		}
 	}
 
-	// TO BE ADDED: Information about inflow/outflow lateral velocities that are specified!
-
-	if(bc->ptop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary pressure                      : %g %s \n", bc->ptop, scal->lbl_stress);
-	if(bc->pbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot, scal->lbl_stress);
+	if(bc->ptop != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary pressure                      : %g %s \n", bc->ptop, scal->lbl_stress);
+	if(bc->pbot != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot, scal->lbl_stress);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	// nondimensionalize temperature & pressure
-	if(bc->Ttop != -1.0)                        bc->Ttop  = (bc->Ttop + scal->Tshift)/scal->temperature;
+	if(bc->Ttop    != -1.0) { bc->Ttop  = (bc->Ttop + scal->Tshift)/scal->temperature; }
 	if(bc->Tbot[0] != -1.0)
 	{
-		for (jj=0; jj<bc->TbotNumPeriods; jj++){
-			bc->Tbot[jj]  = (bc->Tbot[jj]  + scal->Tshift)/scal->temperature;
+		for (jj = 0; jj < bc->TbotNumPeriods; jj++)
+		{
+			bc->Tbot[jj] = (bc->Tbot[jj]  + scal->Tshift)/scal->temperature;
 		}
 	}
 
-	if(bc->ptop != -1.0)                        bc->ptop /= scal->stress;
-	if(bc->pbot != -1.0)                        bc->pbot /= scal->stress;
-	bc->Plume_Temperature = (bc->Plume_Temperature+scal->Tshift)/scal->temperature;							// to Kelvin & nondimensionalise
-	bc->bvel_potential_temperature = (bc->bvel_potential_temperature+scal->Tshift)/scal->temperature;		// to Kelvin & nondimensionalise
-	bc->bvel_temperature_top       = (bc->bvel_temperature_top+scal->Tshift)/scal->temperature;
-	bc->bvel_constant_temperature  = (bc->bvel_constant_temperature+scal->Tshift)/scal->temperature;
+	if(bc->ptop != -1.0)            { bc->ptop /= scal->stress; }
+	if(bc->pbot != -1.0)            { bc->pbot /= scal->stress; }
+	bc->Plume_Temperature          = (bc->Plume_Temperature          + scal->Tshift)/scal->temperature;
+	bc->bvel_potential_temperature = (bc->bvel_potential_temperature + scal->Tshift)/scal->temperature;
+	bc->bvel_temperature_top       = (bc->bvel_temperature_top       + scal->Tshift)/scal->temperature;
+	bc->bvel_constant_temperature  = (bc->bvel_constant_temperature  + scal->Tshift)/scal->temperature;
 
 	// allocate vectors and arrays
 	ierr = BCCreateData(bc); CHKERRQ(ierr);
@@ -1129,7 +1256,6 @@ PetscErrorCode BCApplySPC(BCCtx *bc)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 // Specific constraints
 //---------------------------------------------------------------------------
@@ -1189,10 +1315,12 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 
 	FDSTAG      *fs;
 	PetscScalar Tbot, Ttop;
-	PetscScalar x, y;
 	PetscInt    mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcT;
+	PetscScalar x,y;
+	PetscScalar xmin, xmax;
+	PetscScalar rad_plume_squared, rad_squared;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1201,7 +1329,7 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 	fs = bc->fs;
 
 	// get boundary temperatures
-	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);
+	ierr = BCGetTempBound(bc, &Tbot); CHKERRQ(ierr);
 
 	Ttop = bc->Ttop;
 
@@ -1232,34 +1360,37 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 				x = COORD_CELL_GHOST(i, fs->dsx);
 				y = COORD_CELL_GHOST(j, fs->dsy);
 
-				if(bc->Plume_Dimension==1)	// 2D plume
+				// 2D plume
+				if(bc->Plume_Dimension==1)
 				{
-					PetscScalar xmin, xmax;
+					xmin =  bc->Plume_Center[0] - 3.0*bc->Plume_Radius;
+					xmax =  bc->Plume_Center[0] + 3.0*bc->Plume_Radius;
 
-					xmin =  bc->Plume_Center[0] - bc->Plume_Radius;
-					xmax =  bc->Plume_Center[0] + bc->Plume_Radius;
-
-					if ( (x >= xmin) && (x <= xmax))
+					if((x >= xmin) && (x <= xmax))
 					{
-						bcT[k-1][j][i]     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - PetscPowScalar(x-bc->Plume_Center[0],2.0 ) /(PetscPowScalar(bc->Plume_Radius,2.0))) ;
+						bcT[k-1][j][i] = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar(-PetscPowScalar(x-bc->Plume_Center[0], 2.0)/(PetscPowScalar(bc->Plume_Radius, 2.0)));
 					}
 
 				}
-				else	// 3D plume
+				// 3D plume
+				else
 				{
-					if ( ( PetscPowScalar( (x - bc->Plume_Center[0]), 2.0)  + PetscPowScalar( (y - bc->Plume_Center[1]),2.0) ) <= PetscPowScalar(bc->Plume_Radius,2.0))
+					rad_plume_squared = PetscPowScalar(bc->Plume_Radius,2.0);
+					rad_squared       = PetscPowScalar(x - bc->Plume_Center[0],2.0) + PetscPowScalar(y - bc->Plume_Center[1],2.0);
+
+					if(rad_squared <= 9.0*rad_plume_squared)
 					{
-						bcT[k-1][j][i]     = bc->Plume_Temperature;
+						bcT[k-1][j][i] = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar(-(rad_squared/(2.0*rad_plume_squared)));
 					}
 				}
 			}
-				}
+		}
 		END_STD_LOOP
 	}
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
 
-	PetscFunctionReturn(0);
+PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode BCApplyVelDefault(BCCtx *bc)
@@ -1379,21 +1510,77 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 //---------------------------------------------------------------------------
 PetscErrorCode BCGetVelins(BCCtx *bc)
 {
+	Scaling *scal = bc->scal;
 	PetscScalar  bz;
-	PetscInt    jj;
+	PetscInt    jj, kk;
 	PetscScalar time;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
 	// initialize
 	time = bc->ts->time;
-	if(bc->VelNumPeriods)
+
+	if (bc->VelNumPeriods > 1 && bc->VelNetNumPeriods > 1)
 	{
+		// both velin and velin_net have period arrays
+		for (jj = 0; jj < bc->VelNumPeriods-1; jj++)
+		{
+			if (time < bc->VelTimeDelims[jj]) break;
+		}
+		for (kk = 0; kk < bc->VelNetNumPeriods-1; kk++)
+		{
+			if (time < bc->VelNetTimeDelims[kk]) break;
+		}
+
+		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+
+		bc->velin  = bc->velin_array[jj] + bc->velin_net_array[kk];
+		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+
+		PetscPrintf(PETSC_COMM_WORLD,
+				"BCGetVelins BOTH: time=%g (Myr) jj=%d kk=%d velin_base=%g velin_net=%g velin_total=%g\n",
+				(PetscScalar)(time*scal->time),
+				(int)jj, (int)kk,
+				(PetscScalar)(bc->velin_array[jj]*scal->velocity),
+				(PetscScalar)(bc->velin_net_array[kk]*scal->velocity),
+				(PetscScalar)((bc->velin_array[jj] + bc->velin_net_array[kk])*scal->velocity));
+	}
+	else if (bc->VelNumPeriods)
+	{
+		// only velin array provided
 		for(jj = 0; jj < bc->VelNumPeriods-1; jj++)
 		{
-			if(time < bc->VelTimeDelims[jj]) break;
+			if (time < bc->VelTimeDelims[jj]) break;
 		}
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
-		bc->velin  =  bc->velin_array[jj];
+		bc->velin  = bc->velin_array[jj];
+		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+	}
+	else if (bc->VelNetNumPeriods > 1)
+	{
+		// only velin_net array provided; velin scalar should have been read earlier */
+		static PetscBool   baseVelinInitialized = PETSC_FALSE;
+		static PetscScalar baseVelin            = 0.0;
+		if(!baseVelinInitialized)
+		{
+			baseVelin            = bc->velin;  // store the original scalar inflow velocity
+			baseVelinInitialized = PETSC_TRUE;
+		}
+		for(kk = 0; kk < bc->VelNetNumPeriods-1; kk++)
+		{
+			if (time < bc->VelNetTimeDelims[kk]) break;
+		}
+		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+		// piecewise constant: base scalar inflow plus the current net offset;
+		// no accumulation over timesteps
+		bc->velin  = baseVelin + bc->velin_net_array[kk];
+		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+	}
+	else
+	{
+		// neither periods array provided; use scalar velin (already read) and compute velout
+		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
 	}
 
@@ -1527,11 +1714,11 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 {
 	FDSTAG      *fs;
 	BCBlock     *bcb;
-	PetscInt    fbeg, fend, npoly, in;
+	PetscInt    fbeg, fend, npoly, in, dim;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ib;
-	PetscScalar ***bcvx,  ***bcvy;
-	PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel;
-	PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
+	PetscScalar ***bcvx, ***bcvy, ***bcvz;
+	PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel, zOffset, velz;
+	PetscScalar Xbeg[4], Xend[4], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1547,13 +1734,13 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	// access velocity constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	// loop over all bezier blocks
 	for(ib = 0; ib < bc->nblocks; ib++)
 	{
 		bcb   =  bc->blocks + ib;
-		bot   =  bcb->bot;
-		top   =  bcb->top;
+		dim   =  bcb->pathDim;
 		npoly =  bcb->npoly;
 
 		// get polygon positions in the beginning & end of the time step
@@ -1563,6 +1750,25 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 		// check whether constraint applies to the current time step
 		if(!fbeg || !fend) continue;
 
+		// compute bot/top z-coordinates
+		// For 2D path: bot/top are absolute z-coordinates (no z-movement)
+		// For 3D path: bot/top are initial absolute z-coordinates that move with the path
+		//              (same as polygon x-y vertices which are also initial absolute)
+		if(dim == 3)
+		{
+			// compute z-displacement from initial path position (same logic as polygon x-y)
+			zOffset = Xbeg[2] - bcb->path[2];  // current_path_z - initial_path_z
+			bot     = bcb->bot + zOffset;
+			top     = bcb->top + zOffset;
+			velz    = (Xend[2] - Xbeg[2])/dt;  // z-velocity
+		}
+		else
+		{
+			bot  = bcb->bot;
+			top  = bcb->top;
+			velz = 0.0;
+		}
+
 		// get current polygon geometry
 		ierr = BCBlockGetPolygon(bcb, Xbeg, cpoly);
 
@@ -1570,7 +1776,15 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 		polygon_box(&npoly, cpoly, 1e-12, &atol, box);
 
 		// get time step rotation matrix
-		theta = Xend[2] - Xbeg[2];
+		// theta is at index 2 for 2D path, index 3 for 3D path
+		if(dim == 3)
+		{
+			theta = Xend[3] - Xbeg[3];
+		}
+		else
+		{
+			theta = Xend[2] - Xbeg[2];
+		}
 		costh = cos(theta);
 		sinth = sin(theta);
 
@@ -1612,7 +1826,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 		//---------
 		// Y points
 		//---------
-
 		ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 		START_STD_LOOP
@@ -1642,21 +1855,54 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 			iter++;
 		}
 		END_STD_LOOP
+
+		//---------
+		// Z points (only for 3D path)
+		//---------
+		if(dim == 3)
+		{
+			ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+			START_STD_LOOP
+			{
+				// get node coordinates in the beginning of time step
+				xbeg[0] = COORD_CELL(i, sx, fs->dsx);
+				xbeg[1] = COORD_CELL(j, sy, fs->dsy);
+				xbeg[2] = COORD_NODE(k, sz, fs->dsz);
+
+				// perform point test
+				if(xbeg[2] >= bot && xbeg[2] <= top)
+				{
+					in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
+
+					// check whether point is inside polygon
+					if(in)
+					{
+						// set z-velocity (uniform for the block)
+						bcvz[k][j][i] = velz;
+					}
+				}
+				iter++;
+			}
+			END_STD_LOOP
+		}
 	}
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
-	PetscFunctionReturn(0);
+PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 {
 	FDSTAG      *fs;
 	PetscInt    mnz, mnx, mny;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, kk;
+	PetscInt    top_open, bot_open;
 	PetscScalar ***bcvx,  ***bcvy, ***bcvz;
-	PetscScalar z, bot, top, vel, velin, velout, relax_dist, velbot, veltop, top_open, bot_open;
+	PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, time;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -1676,10 +1922,20 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	relax_dist = bc->relax_dist;
 	velbot     = bc->velbot;
 	veltop     = bc->veltop;
+	time       = bc->ts->time;
+	top_open   = bc->top_open;
+	bot_open   = bc->bot_open;
 
-	// set open boundary flag
-	top_open = (PetscScalar) bc->top_open;
-	bot_open = (PetscScalar) bc->bot_open;
+	// precompute net inflow value once for this timestep to avoid repeated inner-loop work */ // pkongpet 11/12/25
+	PetscScalar velin_net = 0.0;
+	if (bc->VelNetNumPeriods > 1)
+	{
+		for (kk = 0; kk < bc->VelNetNumPeriods-1; kk++)
+		{
+			if (time < bc->VelNetTimeDelims[kk]) break;
+		}
+		velin_net = bc->velin_net_array[kk]; // nondimensionalize
+	}
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
@@ -1697,20 +1953,18 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	// X points
 	//---------
 	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
+	
 	if(bc->face == 1 || bc->face == 2)
 	{
 		START_STD_LOOP
 		{
 			z   = COORD_CELL(k, sz, fs->dsz);
 			vel = 0.0;
-
 			if(bc->face_out)
 			{
 				if(z <= top && z >= bot)           vel = velin;
 				if(z >= top && z<= top+relax_dist) vel = velin-(velin/(relax_dist))*(z-top);
 				if(z <= bot && z>= bot-relax_dist) vel = velin+(velin/(relax_dist))*(z-bot);
-
 				if(bc->face_out != 1)
 				{
 					if(z < bot-relax_dist)             vel = velout;
@@ -1727,14 +1981,15 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 
 				if((bc->face  == 2) && i == 0   && bc->face_out == -1) { bcvx[k][j][i] =  vel; }
 				if((bc->face  == 2) && i == mnx && bc->face_out == -1) { bcvx[k][j][i] = -vel; }
+
 			}
 			else
 			{
 				if(z <= top && z >= bot) vel = velin;
 				if(z < bot)              vel = velout;
 
-				if((bc->face == 1) && i == 0 )   { bcvx[k][j][i] = vel; }
-				if((bc->face == 2) && i == mnx)  { bcvx[k][j][i] = vel; }
+				if((bc->face == 1)  && i == 0 )   { bcvx[k][j][i] = vel; }
+				if((bc->face == 2) && i == mnx) { bcvx[k][j][i] = vel; }
 			}
 			iter++;
 		}
@@ -1750,7 +2005,10 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 			if(z <= top && z >= bot) vel = velin;
 
 			if(i == 0)   { bcvx[k][j][i] = vel; }
-			if(i == mnx) { bcvx[k][j][i] = -vel; }
+			if(i == mnx)
+			{
+				bcvx[k][j][i] = -vel + (2.0*velin_net); // right boundary (compensating inflow)
+			}
 			iter++;
 		}
 		END_STD_LOOP
@@ -1759,7 +2017,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	//---------
 	// Y points
 	//---------
-
 	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	if(bc->face == 3 || bc->face == 4)
@@ -1808,7 +2065,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	//---------
 	// Z points
 	//---------
-
 	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	if(bc->face == 5 )
@@ -2463,8 +2719,8 @@ PetscErrorCode BCGetTempBound(
 	PetscFunctionBeginUser;
 
 	// initialize
-	time  		= bc->ts->time;
-	Tbot_val  	= 0.0;
+	time     = bc->ts->time;
+	Tbot_val = 0.0;
 
 	//
 	if(bc->TbotNumPeriods)
@@ -2482,7 +2738,6 @@ PetscErrorCode BCGetTempBound(
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 PetscErrorCode BCStretchGrid(BCCtx *bc)
 {
@@ -2611,11 +2866,11 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 		// if we have have a inflow condition @ the lower boundary, we change the phase of the particles within the zone
 		if(k+sz == 0)
 		{
-			if (bc->Plume_Inflow == 1)
+			if(bc->Plume_Inflow == 1)
 			{
-				 // This routine handle the inflow and outflow. If the Plume boundary is "permeable" type, within the plume radius the phase that are
-				 // injected is the one prescribed for the plume. The particle injected has the same temperature of the TBot (i.e. according to a gaussian thermal
-				 // perturbation). Otherwise has the phase and temperature of the background mantle.
+				// This routine handle the inflow and outflow. If the Plume boundary is "permeable" type, within the plume radius the phase that are
+				// injected is the one prescribed for the plume. The particle injected has the same temperature of the TBot (i.e. according to a gaussian thermal
+				// perturbation). Otherwise has the phase and temperature of the background mantle.
 
 				phase_inflow = bc->phase_inflow_bot;
 
@@ -2657,7 +2912,6 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 {
@@ -2672,7 +2926,6 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	PetscFunctionBeginUser;
 
 	if(!bc->Plume_Inflow) 	PetscFunctionReturn(0);
-
 
 	fs = bc->fs;
 
@@ -2710,7 +2963,6 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	}
 	else
 	{
-
 		// Gaussian-like inflow perturbation
 		if(bc->Plume_Dimension == 1)
 		{
@@ -2760,8 +3012,6 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	// access constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
 
-	//PetscPrintf(PETSC_COMM_WORLD,"Plume velocity BC: V_in=%e, V_out=%e \n",V_in, V_out);
-
 	//=========================================================================
 	// SPC (normal velocities)
 	//=========================================================================
@@ -2778,12 +3028,14 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
 		if ( bc->Plume_VelocityType==0 ){
 			// Poiseuille type inflow
-			if(bc->Plume_Dimension == 1)   // 2D
+			if(bc->Plume_Dimension == 1)
 			{
+				// 2D
 				R       =   PetscPowScalar((x-bc->Plume_Center[0]),2.0);
 			}
-			else                        // 3D
+			else
 			{
+				// 3D
 				y       =   COORD_CELL(j, sy, fs->dsy);
 				R       =   PetscPowScalar((x-bc->Plume_Center[0]),2.0) + PetscPowScalar((y-bc->Plume_Center[1]),2.0);
 			}
@@ -2801,14 +3053,15 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 			xc = bc->Plume_Center[0];
 
 			// gaussian type perturbation
-			if(bc->Plume_Dimension == 1){   // 2D
-
+			if(bc->Plume_Dimension == 1)
+			{
+				// 2D
 				// Gaussian velocity perturbation
 				vel = V_out + (V_in-V_out)*PetscExpScalar( - PetscPowScalar(x-xc,2.0 ) /radius2 ) ;
 
 			}
-			else{
-
+			else
+			{
 				PetscScalar yc;
 				yc  =   bc->Plume_Center[1];
 				y   =   COORD_CELL(j, sy, fs->dsy);

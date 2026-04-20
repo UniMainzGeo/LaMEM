@@ -81,7 +81,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	PetscInt    i, idx, connect, phase;
 	uint64_t	length;
 	PetscScalar scal_length;
-	float       xp[3];
+	float       xp[3], APS;
 	size_t      offset = 0;
 
 	PetscFunctionBeginUser;
@@ -141,6 +141,9 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
 	offset += sizeof(uint64_t) + sizeof(int)*(size_t)actx->nummark;
+	
+	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"APS\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
+	offset += sizeof(uint64_t) + sizeof(float)*(size_t)actx->nummark;
 
 	fprintf( fp, "\t\t\t</PointData>\n");
 
@@ -212,6 +215,18 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	}
 	// -------------------
 
+	// -------------------
+	// write field: APS
+	// -------------------
+	length = (uint64_t)sizeof(float)*(actx->nummark);
+	fwrite( &length,sizeof(uint64_t),1, fp);
+	for( i = 0; i < actx->nummark; i++)
+	{
+		APS = (float)actx->markers[i].APS;
+		fwrite( &APS, sizeof(float),1, fp );
+	}
+	// -------------------
+
 	// end header
 	fprintf( fp,"\n\t</AppendedData>\n");
 	fprintf( fp, "</VTKFile>\n");
@@ -272,6 +287,7 @@ PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName)
 	// point data
 	fprintf( fp, "\t\t<PPointData>\n");
 	fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
+	fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"APS\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
 	fprintf( fp, "\t\t</PPointData>\n");
 
 	for(i = 0; i < actx->nproc; i++){

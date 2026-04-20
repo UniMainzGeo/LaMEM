@@ -1,0 +1,20 @@
+# Note: this workflow is copied from the Trixi.jl package
+name: Validate_Zenodo_Metadata
+on:
+  push:
+    branches:
+      - 'main'
+    tags: '*'
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v6
+
+      - name: 🛡️ Validate Zenodo Metadata
+        uses: vsoch/zenodo-validator@main 
+        with:
+          path: '.zenodo.json'

@@ -102,10 +102,10 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 
 ### 2.2.3 Install LaMEM
 
-* Download LaMEM from BitBucket, preferable by using GIT on your system:
+* Download LaMEM from GitHub, preferable by using GIT on your system:
 
 ```
-        $ git clone https://bkaus@bitbucket.org/bkaus/lamem.git ./LaMEM
+        $ git clone https://github.com/UniMainzGeo/LaMEM.git ./LaMEM
 ``` 
 
 * Set the environment variables in your .bashrc or .bash_profile scripts such that the LaMEM makefile knows where to look for PETSc:
@@ -159,9 +159,10 @@ Note that you can look at the ```tests``` directory contains subdirectories that
   You can change the input parameters (such as resolution) by opening the file ```FallingBlock_IterativeSolver.dat``` with a texteditor and changing the parameters.
 
 ### 3.2 Learning more
- As we do not have an extensive user-guide yet (it takes time to create one, but will come at some point..), the best way to learn LaMEM is by looking at the input files in the order that is recommended in the README files. Start with ```/BuildInSetups```, which shows various example with geometries that are specified in the LaMEM input file. 
 
-In addition, you can also look at the [Wiki](https://bitbucket.org/bkaus/lamem/wiki/Home) page (left menu). This will be the location where we will add more extensive documentation on how to use LaMEM.
+You can also look at the [User Guide](https://unimainzgeo.github.io/LaMEM/dev/man/Home/). This website also contains more extensive documentation on how to use LaMEM.
+
+The best way to learn LaMEM is by looking at the input files in the order that is recommended in the README files. Start with ```/BuildInSetups```, which shows various example with geometries that are specified in the LaMEM input file. 
 
 All possible input parameters in LaMEM are listed in the file ```/input_models/input/lamem_input.dat```, which is worthwhile having a look at. Note that not all of these parameters have to be set (we select useful default options in most cases). 
 

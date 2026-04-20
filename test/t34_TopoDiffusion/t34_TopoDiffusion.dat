@@ -1,0 +1,166 @@
+#===============================================================================
+# Scaling
+#===============================================================================
+
+    units            = geo
+    unit_temperature = 1000
+    unit_length      = 1e3
+    unit_viscosity   = 1e20
+    unit_stress      = 1e9
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+    dt        = 0.01
+    dt_max    = 0.01
+    nstep_max = 3
+    nstep_out = 1
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+    nseg_x = 1
+    nseg_y = 1
+    nseg_z = 1
+
+    nel_x  = 64
+    nel_y  = 1
+    nel_z  = 35
+
+    coord_x = -100  100
+    coord_y =   -1    1
+    coord_z =  -20   15
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+    surf_use        = 1
+    surf_level      = 0
+    surf_air_phase  = 0
+    surf_corr_phase = 1
+    surf_max_angle  = 45.0
+
+    surf_topo_file  = t34_topo.bin
+
+    topo_diff        = 1
+    topo_diffusivity = 1e-5
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+    noslip = 0 0 0 0 1 0
+
+#===============================================================================
+# Solution parameters
+#===============================================================================
+
+    gravity      = 0.0 0.0 -9.81
+    FSSA         = 1.0
+    init_guess   = 1
+    eta_ref      = 1e20
+    eta_min      = 1e15
+    eta_max      = 1e25
+
+#===============================================================================
+# Solver
+#===============================================================================
+
+    SolverType    = direct
+    DirectSolver  = mumps
+    DirectPenalty = 1e4
+
+#===============================================================================
+# Markers (geometric setup)
+#===============================================================================
+
+    msetup      = geom
+    nmark_x     = 3
+    nmark_y     = 3
+    nmark_z     = 3
+    rand_noise  = 1
+    bg_phase    = 1
+    advect      = rk2
+    interp      = stag
+    mark_ctrl   = subgrid
+    nmark_lim   = 10 100
+    nmark_sub   = 3
+
+    # Air layer: everything above z = 0
+    <BoxStart>
+        phase  = 0
+        bounds = -100 100 -1 1 0 15
+    <BoxEnd>
+
+    # Crust_2 half-sphere: centred at (0, 0, 0), radius 10 km
+    # Lower half sits inside Crust_1; upper half protrudes into air
+    <SphereStart>
+        phase  = 2
+        radius = 10
+        center = 0 0 0
+    <SphereEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+    out_file_name       = output
+    out_pvd             = 1
+    out_surf            = 1
+    out_surf_pvd        = 1
+    out_surf_topography = 1
+
+#===============================================================================
+# Material phases
+#===============================================================================
+
+    <MaterialStart>
+        ID   = 0
+        Name = Air
+        rho  = 50
+        eta  = 1e19
+        ch   = 1e7
+        fr   = 0.0
+    <MaterialEnd>
+
+    <MaterialStart>
+        ID   = 1
+        Name = Crust_1
+        rho  = 2700
+        eta  = 1e22
+        ch   = 3e7
+        fr   = 20.0
+    <MaterialEnd>
+
+    <MaterialStart>
+        ID   = 2
+        Name = Crust_2
+        rho  = 2700
+        eta  = 1e22
+        ch   = 3e7
+        fr   = 20.0
+    <MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+    -snes_monitor
+    -snes_atol      1e-4
+    -snes_rtol      1e-8
+    -snes_stol      1e-16
+    -snes_max_it    50
+
+    -js_ksp_type    fgmres
+    -js_ksp_max_it  40
+    -js_ksp_rtol    1e-6
+    -js_ksp_atol    1e-8
+
+    -da_refine_y 1
+<PetscOptionsEnd>
+
+#===============================================================================

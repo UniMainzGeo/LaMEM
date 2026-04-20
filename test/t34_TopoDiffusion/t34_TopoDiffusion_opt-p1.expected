@@ -1,0 +1,500 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Apr  4 2026 - Time: 20:43:00 	    
+     Version : 2.2.0 
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : t34_TopoDiffusion.dat 
+   Adding PETSc option: -snes_monitor
+   Adding PETSc option: -snes_atol 1e-4
+   Adding PETSc option: -snes_rtol 1e-8
+   Adding PETSc option: -snes_stol 1e-16
+   Adding PETSc option: -snes_max_it 50
+   Adding PETSc option: -js_ksp_type fgmres
+   Adding PETSc option: -js_ksp_max_it 40
+   Adding PETSc option: -js_ksp_rtol 1e-6
+   Adding PETSc option: -js_ksp_atol 1e-8
+   Adding PETSc option: -da_refine_y 1
+Finished parsing input file 
+--------------------------------------------------------------------------
+Scaling parameters:
+   Temperature : 1000. [C/K] 
+   Length      : 1000. [m] 
+   Viscosity   : 1e+20 [Pa*s] 
+   Stress      : 1e+09 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 0.03 [Myr] 
+   Maximum number of steps      : 3 
+   Time step                    : 0.01 [Myr] 
+   Minimum time step            : 0.0002 [Myr] 
+   Maximum time step            : 0.01 [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.8 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 1, 35]
+   Number of cells                      :  2240
+   Number of faces                      :  9059
+   Maximum cell aspect ratio            :  3.12500
+   Lower coordinate bounds [bx, by, bz] : [-100., -1., -20.]
+   Upper coordinate bounds [ex, ey, ez] : [100., 1., 15.]
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Material parameters: 
+--------------------------------------------------------------------------
+   Phase ID : 0     --   Air 
+   (dens)   : rho = 50. [kg/m^3]  
+   (diff)   : eta = 1e+19 [Pa*s]  Bd = 5e-20 [1/Pa/s]  
+   (plast)  : ch = 1e+07 [Pa]  
+
+   Phase ID : 1     --   Crust_1 
+   (dens)   : rho = 2700. [kg/m^3]  
+   (diff)   : eta = 1e+22 [Pa*s]  Bd = 5e-23 [1/Pa/s]  
+   (plast)  : ch = 3e+07 [Pa]  fr = 20. [deg]  
+
+   Phase ID : 2     --   Crust_2 
+   (dens)   : rho = 2700. [kg/m^3]  
+   (diff)   : eta = 1e+22 [Pa*s]  Bd = 5e-23 [1/Pa/s]  
+   (plast)  : ch = 3e+07 [Pa]  fr = 20. [deg]  
+
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0. [km] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+   Maximum surface slope     : 45. [deg]
+   Topographic diffusion     : active (K = 1e-05 [m^2/s])
+--------------------------------------------------------------------------
+Loading topography redundantly from file(s) <t34_topo.bin> ... done (0.000159427 sec)
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
+--------------------------------------------------------------------------
+ Warning: True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, Kb, beta, p_litho_visc, p_litho_plast, open_top_bound)
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
+   Surface stabilization (FSSA)            :  1. 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 1e+15 [Pa*s] 
+   Maximum viscosity                       : 1e+25 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Periodic marker advection     : 0 0 0 
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : subgrid 
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.000925935 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : output 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Penalty parameter (pgamma)    : 1.000000e+04
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : fgmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 9.478149690415e-01
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 2.869142228917e-08
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.0641469 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.716006934639e-09 
+      |Div|_2   = 2.869142228916e-08 
+   Momentum: 
+      |mRes|_2  = 3.002802732569e-14 
+--------------------------------------------------------------------------
+Saving output ... done (0.00163692 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.01000000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.833622730542e-01
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 3.896491426899e-01
+  1 PICARD ||F||/||F0||=8.061224e-01 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 2.377511503976e-01
+  2 PICARD ||F||/||F0||=4.918695e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  3 SNES Function norm 1.806762941519e-01
+  3 PICARD ||F||/||F0||=3.737906e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  4 SNES Function norm 1.446473502642e-01
+  4 PICARD ||F||/||F0||=2.992525e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  5 SNES Function norm 1.152168193371e-01
+  5 PICARD ||F||/||F0||=2.383654e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  6 SNES Function norm 9.143654522294e-02
+  6 PICARD ||F||/||F0||=1.891677e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  7 SNES Function norm 7.576528359023e-02
+  7 PICARD ||F||/||F0||=1.567464e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  8 SNES Function norm 6.336979082222e-02
+  8 PICARD ||F||/||F0||=1.311021e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  9 SNES Function norm 4.769404124342e-02
+  9 PICARD ||F||/||F0||=9.867142e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 10 SNES Function norm 4.154409061906e-02
+ 10 PICARD ||F||/||F0||=8.594814e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 11 SNES Function norm 3.318009719378e-02
+ 11 PICARD ||F||/||F0||=6.864437e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 12 SNES Function norm 2.850427773245e-02
+ 12 PICARD ||F||/||F0||=5.897084e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 13 SNES Function norm 2.461658527544e-02
+ 13 PICARD ||F||/||F0||=5.092782e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 14 SNES Function norm 1.913053153796e-02
+ 14 PICARD ||F||/||F0||=3.957804e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 15 SNES Function norm 1.518406355980e-02
+ 15 PICARD ||F||/||F0||=3.141342e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 16 SNES Function norm 1.262060318052e-02
+ 16 PICARD ||F||/||F0||=2.611003e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 17 SNES Function norm 1.072088747054e-02
+ 17 PICARD ||F||/||F0||=2.217982e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 18 SNES Function norm 9.240333658083e-03
+ 18 PICARD ||F||/||F0||=1.911679e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 19 SNES Function norm 8.058302820238e-03
+ 19 PICARD ||F||/||F0||=1.667135e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 20 SNES Function norm 7.090218931590e-03
+ 20 PICARD ||F||/||F0||=1.466854e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 21 SNES Function norm 6.276323676573e-03
+ 21 PICARD ||F||/||F0||=1.298472e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 22 SNES Function norm 5.579697671257e-03
+ 22 PICARD ||F||/||F0||=1.154351e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 23 SNES Function norm 4.974487871339e-03
+ 23 PICARD ||F||/||F0||=1.029143e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 24 SNES Function norm 4.440296209735e-03
+ 24 MMFD   ||F||/||F0||=9.186270e-03 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 22
+ 25 SNES Function norm 3.452701026621e-03
+ 25 MMFD   ||F||/||F0||=7.143092e-03 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 22
+ 26 SNES Function norm 1.753444548816e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 26
+SNES solution time      : 1.24056 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.171699014537e-12 
+      |Div|_2   = 8.645159598175e-12 
+   Momentum: 
+      |mRes|_2  = 1.753444548816e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00368 [Myr] 
+--------------------------------------------------------------------------
+Applying topographic diffusion (K = 1e-05 [m^2/s]) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1859 markers and merged 3 markers in 4.2434e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.00143673 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00367910 [Myr] 
+Tentative time step : 0.00367910 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.785498019017e-02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 2.239197371485e-02
+  1 PICARD ||F||/||F0||=5.915199e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  2 SNES Function norm 1.197994263612e-02
+  2 PICARD ||F||/||F0||=3.164694e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  3 SNES Function norm 8.126396020390e-03
+  3 PICARD ||F||/||F0||=2.146718e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  4 SNES Function norm 5.487743211835e-03
+  4 PICARD ||F||/||F0||=1.449675e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  5 SNES Function norm 3.954875744252e-03
+  5 PICARD ||F||/||F0||=1.044744e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  6 SNES Function norm 3.021325771176e-03
+  6 PICARD ||F||/||F0||=7.981316e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  7 SNES Function norm 2.410576599690e-03
+  7 PICARD ||F||/||F0||=6.367925e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  8 SNES Function norm 1.977982449277e-03
+  8 PICARD ||F||/||F0||=5.225158e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  9 SNES Function norm 1.628255290291e-03
+  9 PICARD ||F||/||F0||=4.301297e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 10 SNES Function norm 1.360072842842e-03
+ 10 PICARD ||F||/||F0||=3.592850e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 11 SNES Function norm 1.162589145838e-03
+ 11 PICARD ||F||/||F0||=3.071166e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 12 SNES Function norm 1.016516149315e-03
+ 12 PICARD ||F||/||F0||=2.685290e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 13 SNES Function norm 8.962168799125e-04
+ 13 PICARD ||F||/||F0||=2.367501e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 14 SNES Function norm 7.919576929184e-04
+ 14 PICARD ||F||/||F0||=2.092083e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 15 SNES Function norm 6.998061241795e-04
+ 15 PICARD ||F||/||F0||=1.848650e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 16 SNES Function norm 6.179035847512e-04
+ 16 PICARD ||F||/||F0||=1.632291e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 17 SNES Function norm 5.451175392851e-04
+ 17 PICARD ||F||/||F0||=1.440015e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 18 SNES Function norm 4.805641909232e-04
+ 18 PICARD ||F||/||F0||=1.269487e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 19 SNES Function norm 4.234495641031e-04
+ 19 PICARD ||F||/||F0||=1.118610e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 20 SNES Function norm 3.730257342914e-04
+ 20 MMFD   ||F||/||F0||=9.854073e-03 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 19
+ 21 SNES Function norm 8.173271328321e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 21
+SNES solution time      : 0.898051 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.452029717106e-11 
+      |Div|_2   = 2.048556627293e-10 
+   Momentum: 
+      |mRes|_2  = 8.173271325754e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00392 [Myr] 
+--------------------------------------------------------------------------
+Applying topographic diffusion (K = 1e-05 [m^2/s]) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1232 markers and merged 16 markers in 4.1412e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.00141529 sec)
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00759424 [Myr] 
+Tentative time step : 0.00391514 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.453898932932e-02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 2.551419988683e-02
+  1 PICARD ||F||/||F0||=7.387072e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  2 SNES Function norm 1.504827074555e-02
+  2 PICARD ||F||/||F0||=4.356894e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  3 SNES Function norm 1.153184452684e-02
+  3 PICARD ||F||/||F0||=3.338790e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  4 SNES Function norm 9.353927942926e-03
+  4 PICARD ||F||/||F0||=2.708223e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  5 SNES Function norm 7.724190394442e-03
+  5 PICARD ||F||/||F0||=2.236368e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  6 SNES Function norm 6.543256269536e-03
+  6 PICARD ||F||/||F0||=1.894455e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  7 SNES Function norm 5.565915213465e-03
+  7 PICARD ||F||/||F0||=1.611488e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  8 SNES Function norm 4.793680216655e-03
+  8 PICARD ||F||/||F0||=1.387904e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+  9 SNES Function norm 4.194856808954e-03
+  9 PICARD ||F||/||F0||=1.214528e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 10 SNES Function norm 3.711415790414e-03
+ 10 PICARD ||F||/||F0||=1.074558e-01 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 11 SNES Function norm 3.306349854389e-03
+ 11 PICARD ||F||/||F0||=9.572804e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 12 SNES Function norm 2.963785975240e-03
+ 12 PICARD ||F||/||F0||=8.580986e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 13 SNES Function norm 2.675822386023e-03
+ 13 PICARD ||F||/||F0||=7.747252e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 14 SNES Function norm 2.418112067629e-03
+ 14 PICARD ||F||/||F0||=7.001108e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 15 SNES Function norm 2.193113187221e-03
+ 15 PICARD ||F||/||F0||=6.349674e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 16 SNES Function norm 1.995446431233e-03
+ 16 PICARD ||F||/||F0||=5.777374e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 17 SNES Function norm 1.818828988745e-03
+ 17 PICARD ||F||/||F0||=5.266017e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 18 SNES Function norm 1.667319121631e-03
+ 18 PICARD ||F||/||F0||=4.827354e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 19 SNES Function norm 1.524382439169e-03
+ 19 PICARD ||F||/||F0||=4.413512e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 20 SNES Function norm 1.395393768234e-03
+ 20 PICARD ||F||/||F0||=4.040054e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 21 SNES Function norm 1.278158667436e-03
+ 21 PICARD ||F||/||F0||=3.700626e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 22 SNES Function norm 1.171238973148e-03
+ 22 PICARD ||F||/||F0||=3.391063e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 23 SNES Function norm 1.073530336334e-03
+ 23 PICARD ||F||/||F0||=3.108170e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 24 SNES Function norm 9.842070665825e-04
+ 24 PICARD ||F||/||F0||=2.849554e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 25 SNES Function norm 9.023924556908e-04
+ 25 PICARD ||F||/||F0||=2.612678e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 26 SNES Function norm 8.274165516912e-04
+ 26 PICARD ||F||/||F0||=2.395602e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 27 SNES Function norm 7.587339225470e-04
+ 27 PICARD ||F||/||F0||=2.196746e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 28 SNES Function norm 6.958295290343e-04
+ 28 PICARD ||F||/||F0||=2.014620e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 29 SNES Function norm 6.382318344532e-04
+ 29 PICARD ||F||/||F0||=1.847859e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 30 SNES Function norm 5.855093173762e-04
+ 30 PICARD ||F||/||F0||=1.695213e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 31 SNES Function norm 5.372652057925e-04
+ 31 PICARD ||F||/||F0||=1.555533e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 32 SNES Function norm 4.931334257657e-04
+ 32 PICARD ||F||/||F0||=1.427759e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 33 SNES Function norm 4.527755253138e-04
+ 33 PICARD ||F||/||F0||=1.310911e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 34 SNES Function norm 4.158782944244e-04
+ 34 PICARD ||F||/||F0||=1.204084e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 35 SNES Function norm 3.821518532159e-04
+ 35 PICARD ||F||/||F0||=1.106436e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 36 SNES Function norm 3.513280514877e-04
+ 36 PICARD ||F||/||F0||=1.017193e-02 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 2
+ 37 SNES Function norm 3.231590733128e-04
+ 37 MMFD   ||F||/||F0||=9.356356e-03 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 20
+ 38 SNES Function norm 1.487803060312e-04
+ 38 MMFD   ||F||/||F0||=4.307605e-03 
+    Linear js_ solve converged due to CONVERGED_ATOL iterations 15
+ 39 SNES Function norm 1.508165368253e-08
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 39
+SNES solution time      : 1.66406 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.497552082341e-13 
+      |Div|_2   = 5.176960097422e-13 
+   Momentum: 
+      |mRes|_2  = 1.508165367365e-08 
+--------------------------------------------------------------------------
+Actual time step : 0.00431 [Myr] 
+--------------------------------------------------------------------------
+Applying topographic diffusion (K = 1e-05 [m^2/s]) in 1 sub-step(s).
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 839 markers and merged 16 markers in 3.8625e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.00151676 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 4.04247 (sec) 
+--------------------------------------------------------------------------
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There are 4 unused database options. They are:
+Option left: name:-mat_product_algorithm value: scalable source: code
+Option left: name:-matmatmatmult_via value: scalable source: code
+Option left: name:-matmatmult_via value: scalable source: code
+Option left: name:-ParamFile value: t34_TopoDiffusion.dat source: code

@@ -48,6 +48,8 @@ struct FreeSurf
 	PetscScalar timeDelimsEr[_max_er_phases_-1]; // sediment layers time delimiters
 	PetscScalar erRates[_max_er_phases_];        // erosion rates
 	PetscScalar erLevels[_max_er_phases_];       // erosion levels
+	PetscScalar erXMin[_max_er_phases_];         // erosion x-coordinate minimum
+	PetscScalar erXMax[_max_er_phases_];         // erosion x-coordinate maximum
 	PetscScalar sedRates[_max_sed_layers_  ];    // sedimentation rates
 	PetscScalar sedLevels[_max_sed_layers_];     // sedimentation levels
 	PetscScalar sedRates2nd[_max_sed_layers_  ]; // sedimentation rates
@@ -57,6 +59,10 @@ struct FreeSurf
 	PetscScalar hUp;                        // up dip thickness of sediment cover
 	PetscScalar hDown;                      // down dip thickness of sediment cover
 	PetscScalar dTrans;                     // half of transition zone
+
+	// topographic diffusion parameters
+	PetscInt    topo_diff;        // topographic diffusion flag [0-none, 1-active]
+	PetscScalar topo_diffusivity; // topographic diffusivity (non-dimensional, input in [m^2/s])
 
 	// run-time parameters
 	PetscScalar avg_topo; // average topography (updated by all functions changing topography)
@@ -101,6 +107,9 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf);
 
 // apply sedimentation to the free surface
 PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf);
+
+// apply topographic diffusion to the free surface
+PetscErrorCode FreeSurfAppTopoDiffusion(FreeSurf *surf);
 
 // Set topography from file
 PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb);

@@ -1,7 +1,7 @@
 name = "LaMEM_C"
 uuid = "29b6043d-3311-4c16-b469-b02bf85cb680"
 authors = ["Anton Popov <popov@uni-mainz.de>", "Boris Kaus <kaus@uni-mainz.de>"]
-version = "2.2.0"
+version = "2.2.1"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"

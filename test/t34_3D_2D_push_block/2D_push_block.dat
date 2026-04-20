@@ -1,0 +1,161 @@
+#===============================================================================
+# Test for 2D Bezier push block functionality (push along x-axis only)
+# Based on 3D push block test, with 2D push parameters
+#===============================================================================
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt        = 1e-2  # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 10     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 16
+	nel_y = 16
+	nel_z = 16
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 1.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# 2D Bezier push block - pushes the block rightward (x+) only
+# The polygon covers the full x-y extent of the falling block (0.25-0.75 in both x and y)
+# Path starts at block center (0.5, 0.5) and moves to (0.7, 0.5) over time 0-1
+# This creates x velocity (+0.2/1.0 = 0.2), z stays constant
+
+	<BCBlockStart>
+		npath    = 2                                    # Number of path points
+		path_dim = 2                                    # 2D path (x, z)
+		theta    = 0.0 0.0                              # No rotation
+		time     = 0.0 1.0                              # Time interval
+		path     = 0.5 0.5   0.7 0.5                    # Path: x moves 0.5 -> 0.7, z stays at 0.5
+		npoly    = 4                                    # Square polygon matching block x-y extent
+		poly     = 0.25 0.25  0.75 0.25  0.75 0.75  0.25 0.75   # Square covering block (0.25-0.75 in x,y)
+		bot      = 0.25                                 # Initial z bottom (same as block)
+		top      = 0.75                                 # Initial z top (same as block)
+	<BCBlockEnd>
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -1.0   # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 0              # initial guess flag
+	eta_min        = 1e-3           # viscosity upper bound
+	eta_max        = 1e12           # viscosity lower limit
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix
+	DirectPenalty 	=	1e5
+
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+
+
+# Geometric primitives - a block that will be pushed
+
+	<HexStart>
+		phase  = 1
+		coord = 0.25 0.25 0.25   0.75 0.25 0.25   0.75 0.75 0.25   0.25 0.75 0.25   0.25 0.25 0.75   0.75 0.25 0.75   0.75 0.75 0.75   0.25 0.75 0.75
+	<HexEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = 2D_push_test # output file name
+	out_pvd             = 1            # activate writing .pvd file
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 1 # density
+		eta = 1 # viscosity
+	<MaterialEnd>
+
+	# Define properties of block
+	<MaterialStart>
+		ID  = 1   # phase id
+		rho = 2   # density
+		eta = 100 # viscosity
+	<MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_type ksponly # no nonlinear solver
+
+	# Jacobian (linear) outer KSP
+	-js_ksp_type gmres
+	-js_ksp_max_it 25
+	-js_ksp_monitor
+	-js_ksp_rtol 1e-4
+	-js_ksp_atol 1e-10
+
+	-objects_dump
+
+<PetscOptionsEnd>
+
+#===============================================================================

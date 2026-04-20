@@ -56,12 +56,21 @@ public:
   Vec sxx_eff_ave;
   Vec magPressure;
   Vec sxx_eff_ave_hist;
+
 };
       
 struct DBPropDike
 {
   PetscInt numDike;                   // number of dikes
   Dike     matDike[_max_num_dike_];   // dike properties per dike ID
+  //===========================================
+	// 2D planview plus levels for time averaging
+	//===========================================
+	DM DA_CELL_2D_tave; // 2D cell center grid
+  //==================================
+	// For 1D arrays
+	//==================================
+	DM DA_CELL_1D; // 1D cell center grid
 };
 
 // create the dike strutures for read-in 
