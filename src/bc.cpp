@@ -2788,7 +2788,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	// get time-dependent Tbot
 	ierr = BCGetTempBound(bc, &Tbot); CHKERRQ(ierr);
 
-	if( (bc->face) || bc->Plume_Inflow || bc->bot_open)
+	if((bc->face) || bc->Plume_Inflow || bc->bot_open)
 	{
 		fs = bc->fs;
 		M  = fs->dsx.ncels;
@@ -2844,7 +2844,6 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 		if(bc->num_phase_bc >= 0)
 		{
 			// expand i, j, k cell indices
-
 			if(((bc->face == 1 && i + sx == 0)
 					||  (bc->face == 2 && i + sx == mx)
 					||  (bc->face == 3 && j + sy == 0)
@@ -2857,11 +2856,8 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 					{
 						P->phase = bc->phase[ip];
 					}
-
 				}
-
 			}
-
 		}
 
 		// if we have have a inflow condition @ the lower boundary, we change the phase of the particles within the zone
@@ -2889,7 +2885,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 				}
 				else
 				{
-					T_inflow     = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/(PetscPowScalar(bc->Plume_Radius,2.0)));
+					T_inflow = Tbot + (bc->Plume_Temperature-Tbot)*PetscExpScalar( - ( PetscPowScalar(x-bc->Plume_Center[0],2.0 ) + PetscPowScalar(y-bc->Plume_Center[1],2.0 ) )/(PetscPowScalar(bc->Plume_Radius,2.0)));
 
 					if (PetscPowScalar((x - bc->Plume_Center[0]),2.0) +
 						PetscPowScalar((y - bc->Plume_Center[1]),2.0) <= PetscPowScalar( bc->Plume_Radius,2.0) )
@@ -2926,14 +2922,14 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	if(!bc->Plume_Inflow) 	PetscFunctionReturn(0);
+	if(!bc->Plume_Inflow) PetscFunctionReturn(0);
 
 	fs = bc->fs;
 
 	ierr = FDSTAGGetGlobalBox(bc->fs, &x_min, &y_min,NULL, &x_max, &y_max, NULL); CHKERRQ(ierr);
 
-	V_in                = 	bc->Plume_Inflow_Velocity;                      // max. inflow velocity
-	areaFrac            =   bc->Plume_areaFrac;
+	V_in      = bc->Plume_Inflow_Velocity; // max. inflow velocity
+	areaFrac  = bc->Plume_areaFrac;
 
 	if(bc->Plume_Dimension == 1)
 	{
@@ -2945,7 +2941,7 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	else
 	{
 		Area_Bottom  = (x_max-x_min)*(y_max-y_min);
-		Area_Inflow  = PETSC_PI*bc->Plume_Radius*bc->Plume_Radius;		// inflow
+		Area_Inflow  = PETSC_PI*bc->Plume_Radius*bc->Plume_Radius; // inflow
 		Area_Outflow = Area_Bottom-Area_Inflow;
 	}
 
@@ -2959,8 +2955,8 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 		else                         { V_avg = V_in*1.0/2.0; } // 3D
 
 		// outflow velocity is based on mass conservation (i.e.: Qin+Qout=0)
-		Qin 	=  V_avg * Area_Inflow * areaFrac; // volume influx
-		V_out 	= -Qin / Area_Outflow;             // outflow velocity
+		Qin   =  V_avg * Area_Inflow * areaFrac; // volume influx
+		V_out = -Qin / Area_Outflow;             // outflow velocity
 	}
 	else
 	{
@@ -2979,10 +2975,11 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
 			xc      =   bc->Plume_Center[0];
 			c       =   bc->Plume_Radius;
-			a       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_max)/c)/2.0/(x_max-x_min);     //dV
-			b       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_min)/c)/2.0/(x_max-x_min);     //dV
+			a       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_max)/c)/2.0/(x_max-x_min); // dV
+			b       =   PetscSqrtScalar(PETSC_PI)*c*erf((-xc + x_min)/c)/2.0/(x_max-x_min); // dV
 
-			V_out   =   -V_in*(a-b)/(1-(a-b))*areaFrac;                     // average velocity should be zero
+			// average velocity should be zero
+			V_out   =   -V_in*(a-b)/(1-(a-b))*areaFrac;
 
 		}
 		else
@@ -3023,11 +3020,11 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-
 		x       = COORD_CELL(i, sx, fs->dsx);
 		radius2 = PetscPowScalar(bc->Plume_Radius,2.0);
 
-		if ( bc->Plume_VelocityType==0 ){
+		if(bc->Plume_VelocityType==0 )
+		{
 			// Poiseuille type inflow
 			if(bc->Plume_Dimension == 1)
 			{
@@ -3042,7 +3039,6 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 			}
 			if  ( R <=  radius2 ) {  vel = V_in*(1.0 - R/radius2);   }
 			else                  {  vel = V_out;                    }
-
 		}
 
 		else
