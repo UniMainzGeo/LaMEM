@@ -2578,7 +2578,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 	{
 		LIST_SPC(bcvx, SPCList, SPCVals, numSPC, iter)
 
-        iter++;
+		iter++;
 	}
 	END_STD_LOOP
 
@@ -2592,7 +2592,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 	{
 		LIST_SPC(bcvy, SPCList, SPCVals, numSPC, iter)
 
-        iter++;
+		iter++;
 	}
 	END_STD_LOOP
 
@@ -2785,7 +2785,8 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		// get time-dependent Tbot
+	// get time-dependent Tbot
+	ierr = BCGetTempBound(bc, &Tbot); CHKERRQ(ierr);
 
 	if( (bc->face) || bc->Plume_Inflow || bc->bot_open)
 	{
