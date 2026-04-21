@@ -179,11 +179,13 @@ print :
 	@echo "............................................."
 	@echo "........ Environmental variables ............"
 	@echo "............................................."
-ifeq ($(PLATFORM), x86_64)
+ifeq (,$(findstring $PLATFORM, x86_64 arm64))
 ifneq ($(shell mpicc --version 2>&1 | grep -c pgcc), 0)
 	@echo "COMPILER    :  PORTLAND GROUP"
 else ifneq ($(shell mpicc --version 2>&1 | grep -c gcc), 0)
 	@echo "COMPILER    :  GNU "
+else ifneq ($(shell mpicc --version 2>&1 | grep -c clang), 0)
+	@echo "COMPILER    :  CLANG "
 else ifneq ($(shell mpicc --version 2>&1 | grep -c icc), 0)
 	@echo "COMPILER    :  INTEL "
 else

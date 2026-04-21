@@ -26,8 +26,8 @@ ifeq ($(PLATFORM), ppc64)
 	LAMEM_FLAGS += -qmakedep=gcc -qinfo=nouse
 endif
 
-# Intel or AMD machine
-ifeq ($(PLATFORM), x86_64)
+# Intel AMD or ARM machine
+ifeq (,$(findstring $PLATFORM, x86_64 arm64))
    # Detect compilers
    ifneq ($(shell mpicc -v 2>&1 | grep -c pgcc), 0)
       # PORTLAND GROUP
@@ -45,8 +45,8 @@ ifeq ($(PLATFORM), x86_64)
       -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Wno-unused-result -Wno-inline -I .
    endif
-   ifneq ($(shell mpicc -v 2>&1 | grep -c apple), 0)
-      # GNU
+   ifneq ($(shell mpicc -v 2>&1 | grep -c clang), 0)
+      # CLANG
       DEPEN_FLAGS = -MM
       LAMEM_FLAGS += -std=c++17  -pedantic -Wall -W -Wmissing-prototypes \
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
@@ -108,14 +108,6 @@ UNAME := $(shell uname)
 ifneq ($(filter MSYS%,$(UNAME)),)
 CLIB_FLAGS = -lssp
 endif
-
-#====================================================
-
-# Environment required for documentation 
-# Define paths to most current pdflatex and bibtex implementation
-
-PDFLATEX = $(shell which pdflatex)
-BIBTEX = $(shell which bibtex)
 
 #====================================================
 
