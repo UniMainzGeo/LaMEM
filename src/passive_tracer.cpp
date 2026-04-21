@@ -608,7 +608,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			  //check if the original phase saved is one that has a phase/melt law associated
 
 
-				if(mat[PetscInt(phase[jj])].pdn)
+				if(mat[PetscInt(phase[jj])].pdn[0] != '\0')
 				{
 					ierr = setDataPhaseDiagram(Pd, Pr[jj], T[jj], mat[PetscInt(phase[jj])].pdn); CHKERRQ(ierr);
 					mf_ptr[jj]= Pd->mf;
@@ -634,7 +634,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 						X[1]  = yp;
 						X[2]  = zp;
 
-						if (mat[actx->markers[ii].phase].pdn)
+						if(mat[actx->markers[ii].phase].pdn[0] != '\0')
 						{
 							d.first  = EDIST(Xm, X);
 							d.second = id_m;
