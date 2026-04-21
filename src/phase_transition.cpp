@@ -1043,7 +1043,7 @@ PetscErrorCode Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,
 
 	ph 		= 0;
 	InAb 	= 0;
-	if((PhaseTrans->Parameter_transition==_T_))   // NOTE: string comparisons can be slow; optimization possibility
+	if(PhaseTrans->Parameter_transition==_T_)  // NOTE: string comparisons can be slow; optimization possibility
 		{
             // Temperature transition
             if ( P->T >= PhaseTrans->ConstantValue)     {   ph = PH2; InAb=1;  	}

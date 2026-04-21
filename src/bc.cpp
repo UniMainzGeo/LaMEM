@@ -1715,7 +1715,7 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	FDSTAG      *fs;
 	BCBlock     *bcb;
 	PetscInt    fbeg, fend, npoly, in, dim;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ib;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, ib;
 	PetscScalar ***bcvx, ***bcvy, ***bcvz;
 	PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel, zOffset, velz;
 	PetscScalar Xbeg[4], Xend[4], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
@@ -1788,8 +1788,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 		costh = cos(theta);
 		sinth = sin(theta);
 
-		iter = 0;
-
 		//---------
 		// X points
 		//---------
@@ -1819,7 +1817,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 					bcvx[k][j][i] = vel;
 				}
 			}
-			iter++;
 		}
 		END_STD_LOOP
 
@@ -1852,7 +1849,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 					bcvy[k][j][i] = vel;
 				}
 			}
-			iter++;
 		}
 		END_STD_LOOP
 
@@ -1882,7 +1878,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 						bcvz[k][j][i] = velz;
 					}
 				}
-				iter++;
 			}
 			END_STD_LOOP
 		}
@@ -1899,7 +1894,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 {
 	FDSTAG      *fs;
 	PetscInt    mnz, mnx, mny;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, kk;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, kk;
 	PetscInt    top_open, bot_open;
 	PetscScalar ***bcvx,  ***bcvy, ***bcvz;
 	PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, time;
@@ -1947,8 +1942,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
-	iter = 0;
-
 	//---------
 	// X points
 	//---------
@@ -1991,7 +1984,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 				if((bc->face == 1)  && i == 0 )   { bcvx[k][j][i] = vel; }
 				if((bc->face == 2) && i == mnx) { bcvx[k][j][i] = vel; }
 			}
-			iter++;
 		}
 		END_STD_LOOP
 	}
@@ -2009,7 +2001,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 			{
 				bcvx[k][j][i] = -vel + (2.0*velin_net); // right boundary (compensating inflow)
 			}
-			iter++;
 		}
 		END_STD_LOOP
 	}
@@ -2057,7 +2048,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 				if(bc->face == 3 && j == 0)   { bcvy[k][j][i] = vel; }
 				if(bc->face == 4 && j == mny) { bcvy[k][j][i] = vel; }
 			}
-			iter++;
 		}
 		END_STD_LOOP
 	}
@@ -2078,7 +2068,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 
 			if(k == 0   && !bot_open) { bcvz[k][j][i] = vel; }
 			if(k == mnz && !top_open) { bcvz[k][j][i] = vel; }
-			iter++;
 		}
 		END_STD_LOOP
 	}
@@ -2913,7 +2902,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 {
 	FDSTAG          *fs;
-	PetscInt        i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt        i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar     ***bcvz;
 	PetscScalar     vel, x_min,x_max,y_min,y_max,x,y;
 	PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin, areaFrac;
@@ -3014,8 +3003,6 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	// SPC (normal velocities)
 	//=========================================================================
 
-	iter = 0;
-
 	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -3073,8 +3060,6 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 		{
 			bcvz[k][j][i] = vel;
 		}
-
-		iter++;
 	}
 	END_STD_LOOP
 

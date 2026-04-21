@@ -328,7 +328,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		ierr = GetProfileName(fb, scal, ndisl, "disl_prof"); CHKERRQ(ierr);
 		if(strlen(ndisl)){
 			ierr = SetDislProfile(&m, ndisl);  CHKERRQ(ierr);
-			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), par_str); CHKERRQ(ierr);
+			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), &par_str); CHKERRQ(ierr);
 
 			// Set parameters 
 			strcpy(par_str,"Bn"); AddParamToList(ID, m.Bn, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
@@ -340,7 +340,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		ierr = GetProfileName(fb, scal, ndiff, "diff_prof"); 	CHKERRQ(ierr);
 		if(strlen(ndiff)){
 			ierr = SetDiffProfile(&m, ndiff);  					CHKERRQ(ierr);
-			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), par_str); CHKERRQ(ierr);
+			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), &par_str); CHKERRQ(ierr);
 
 			// Set parameters 	
 			strcpy(par_str,"Bd"); AddParamToList(ID, m.Bd, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
@@ -794,12 +794,12 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 
 		// Determine what cost function type is used
 		ierr 	= getStringParam(fb, _REQUIRED_, "Parameter", ParType, NULL); CHKERRQ(ierr);  // must have component
-		if     	(!strcmp(ParType, "Vx") | !strcmp(ParType, "Vy") | !strcmp(ParType, "Vz"))
+		if     	(!strcmp(ParType, "Vx") || !strcmp(ParType, "Vy") || !strcmp(ParType, "Vz"))
 		{    
 			IOparam->MfitType = 0;  ct1++;	// these parameters are compute by projection 
 		}
-		else if	(!strcmp(ParType, "PSD") | !strcmp(ParType, "Exx") | !strcmp(ParType, "Eyy") | !strcmp(ParType, "Ezz" ) | 
-				 !strcmp(ParType, "Exy") | !strcmp(ParType, "Eyz") | !strcmp(ParType, "Exz") | !strcmp(ParType, "E2nd"))
+		else if	(!strcmp(ParType, "PSD") || !strcmp(ParType, "Exx") || !strcmp(ParType, "Eyy") || !strcmp(ParType, "Ezz" ) ||
+				 !strcmp(ParType, "Exy") || !strcmp(ParType, "Eyz") || !strcmp(ParType, "Exz") || !strcmp(ParType, "E2nd"))
 		{    
 			IOparam->MfitType = 1;  ct2++;	// these parameters are compyted @ the center for the FDSTAG point
 		}
@@ -2000,7 +2000,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		{
 			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"| Field-based gradients can currently only be computed for a single parameter \n");		// error check
 		}
-		if (!strcmp(CurName,"rho") | !strcmp(CurName,"eta0") | !strcmp(CurName,"n"))		// we need some way to ensure that we do this for one field at a time only
+		if (!strcmp(CurName,"rho") || !strcmp(CurName,"eta0") || !strcmp(CurName,"n"))		// we need some way to ensure that we do this for one field at a time only
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"| Starting computation of Field-based gradients.  \n");	
 			// Compute the gradient
@@ -2175,7 +2175,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n| ");
 
 		PetscPrintf(PETSC_COMM_WORLD,"\n| Gradients: \n");
-		if ((IOparam->FS==0) ){   
+		if (IOparam->FS==0){
 			PetscPrintf(PETSC_COMM_WORLD,"|                    Parameter             |  Gradient (dimensional)  \n");    
 			PetscPrintf(PETSC_COMM_WORLD,"|                  -----------------------   ------------------------ \n");    
 
@@ -4180,8 +4180,8 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 						// Store observation
 						sty[ii] = phival * (180/3.14159265359);
 					}
-					else if (!strcmp(IOparam->ObsName[ii],"Exx") | !strcmp(IOparam->ObsName[ii],"Eyy") | !strcmp(IOparam->ObsName[ii],"Ezz") | 
-							 !strcmp(IOparam->ObsName[ii],"Exy") | !strcmp(IOparam->ObsName[ii],"Eyz") | !strcmp(IOparam->ObsName[ii],"Exz") | !strcmp(IOparam->ObsName[ii],"E2nd"))
+					else if (!strcmp(IOparam->ObsName[ii],"Exx") || !strcmp(IOparam->ObsName[ii],"Eyy") || !strcmp(IOparam->ObsName[ii],"Ezz") ||
+							 !strcmp(IOparam->ObsName[ii],"Exy") || !strcmp(IOparam->ObsName[ii],"Eyz") || !strcmp(IOparam->ObsName[ii],"Exz") || !strcmp(IOparam->ObsName[ii],"E2nd"))
 					{		
 
 						// Perform computation for strainrate tensor components 

@@ -67,14 +67,15 @@ DEPEN_FLAGS = -MM
 # set common compiler flags (should be supported by all compilers)
 LAMEM_FLAGS = -std=c++17 -Wall -Wextra -Wconversion \
               -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 \
-              -Wundef -Wnon-virtual-dtor -Wno-unused-result
+              -Wundef -Wnon-virtual-dtor -Wno-unused-result -Wunused-but-set-variable
 
 # tune compiler flags
 ifeq ($(findstring $CXX_COMPILER, icpx),)
-   LAMEM_FLAGS += -Wimplicit-fallthrough
+   LAMEM_FLAGS += -Wimplicit-fallthrough -Wno-sign-conversion \
+   -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
 else ifeq ($(findstring $CXX_COMPILER, g++),)
    LAMEM_FLAGS += -Wduplicated-cond -Wduplicated-branches\
-                   -Wlogical-op -Wnull-dereference -Wuseless-cast
+                   -Wlogical-op -Wnull-dereference -Wuseless-cast 
 else ifeq ($(findstring $CXX_COMPILER, clang++),)
    LAMEM_FLAGS += -Wimplicit-fallthrough \
                   -Wshorten-64-to-32 -Wnewline-eof

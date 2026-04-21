@@ -331,6 +331,7 @@ PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, M
 
 	if     (param->ps_type == _PICARD_MAT_FREE_) buildBvv = 0;
 	else if(param->pgamma > 1.0)                 buildBvv = 1;
+	else                                         buildBvv = 0;
 
 	// set null space flag
 	if(param->vs_type == _VEL_USER_

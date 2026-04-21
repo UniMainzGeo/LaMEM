@@ -107,6 +107,8 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 	dof = &md->fs->dof;
 
 	// get number of vectors
+	nullsp_sz = 0;
+	ln        = 0;
 	if     (md->idxmod == _IDX_COUPLED_) { nullsp_sz = 4; ln = dof->lnv + dof->lnp; }
 	else if(md->idxmod == _IDX_BLOCK_)   { nullsp_sz = 3; ln = dof->lnv; }
 

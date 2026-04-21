@@ -54,7 +54,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	PetscScalar       s[3], h[3], *x;
 	PetscLogDouble    t0, t1;
 	ipair             t;
-	spair             d;
 	vector <Marker>   iclone;
 	vector <PetscInt> imerge;
 	vector <ipair>    cell;
