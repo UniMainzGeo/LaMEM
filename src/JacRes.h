@@ -284,7 +284,10 @@ PetscErrorCode JacResGetPressShift(JacRes *jr);
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr);
 
 // compute velocity gradients for output
-PetscErrorCode JacResGetVelGrad(JacRes *jr);
+PetscErrorCode JacResGetVelGrad(JacRes *jr,
+		Vec dvxdx, Vec dvxdy, Vec dvxdz,
+		Vec dvydx, Vec dvydy, Vec dvydz,
+		Vec dvzdx, Vec dvzdy, Vec dvzdz);
 
 // compute components of vorticity vector
 PetscErrorCode JacResGetVorticity(JacRes *jr);
@@ -317,14 +320,6 @@ PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f);
 PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
 
 PetscErrorCode JacResViewRes(JacRes *jr);
-
-//---------------------------------------------------------------------------
-
-// compute velocity gradient and normalized velocities at cell center
-PetscErrorCode getGradientVel(
-	FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
-	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz,
-	Tensor2RN *L, PetscScalar *vel, PetscScalar *pvnrm);
 
 //---------------------------------------------------------------------------
 

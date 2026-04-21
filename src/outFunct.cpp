@@ -859,27 +859,57 @@ PetscErrorCode PVOutWriteVelGrad(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
 
-	// ACHTUNG! Complete the implementation
-	UNUSED(outvec);
-/*
 	ACCESS_FUNCTION_HEADER
 
+	FDSTAG *fs;
+
+	Vec dvxdx, dvxdy, dvxdz;
+	Vec dvydx, dvydy, dvydz;
+	Vec dvzdx, dvzdy, dvzdz;
+
+	// access context
+	fs = jr->fs;
 	cf = scal->strain_rate;
 
-	ierr = JacResGetVelGrad(jr); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_CEN, &dvxdx); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_CEN, &dvydy); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_CEN, &dvzdz); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_XY,  &dvxdy); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_XY,  &dvydx); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_XZ,  &dvxdz); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_XZ,  &dvzdx); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_YZ,  &dvydz); CHKERRQ(ierr);
+	ierr = DMGetLocalVector(fs->DA_YZ,  &dvzdy); CHKERRQ(ierr);
 
+	// copy velocity to local vectors
+	ierr = JacResCopyVel(jr, jr->gsol); CHKERRQ(ierr);
 
-	INTERPOLATE_ACCESS(jr->dvxdx, InterpCenterCorner, 9, 0, 0.0)
-	INTERPOLATE_ACCESS(jr->dvxdy, InterpXYEdgeCorner, 9, 1, 0.0)
-	INTERPOLATE_ACCESS(jr->dvxdz, InterpXZEdgeCorner, 9, 2, 0.0)
-	INTERPOLATE_ACCESS(jr->dvydx, InterpXYEdgeCorner, 9, 3, 0.0)
-	INTERPOLATE_ACCESS(jr->dvydy, InterpCenterCorner, 9, 4, 0.0)
-	INTERPOLATE_ACCESS(jr->dvydz, InterpYZEdgeCorner, 9, 5, 0.0)
-	INTERPOLATE_ACCESS(jr->dvzdx, InterpXZEdgeCorner, 9, 6, 0.0)
-	INTERPOLATE_ACCESS(jr->dvzdy, InterpYZEdgeCorner, 9, 7, 0.0)
-	INTERPOLATE_ACCESS(jr->dvzdz, InterpCenterCorner, 9, 8, 0.0)
+	// compute velocity gradients
+	ierr = JacResGetVelGrad(jr,
+		dvxdx,  dvxdy,  dvxdz,
+		dvydx,  dvydy,  dvydz,
+		dvzdx,  dvzdy,  dvzdz); CHKERRQ(ierr);
 
-*/
+	INTERPOLATE_ACCESS(dvxdx, InterpCenterCorner, 9, 0, 0.0)
+	INTERPOLATE_ACCESS(dvxdy, InterpXYEdgeCorner, 9, 1, 0.0)
+	INTERPOLATE_ACCESS(dvxdz, InterpXZEdgeCorner, 9, 2, 0.0)
+	INTERPOLATE_ACCESS(dvydx, InterpXYEdgeCorner, 9, 3, 0.0)
+	INTERPOLATE_ACCESS(dvydy, InterpCenterCorner, 9, 4, 0.0)
+	INTERPOLATE_ACCESS(dvydz, InterpYZEdgeCorner, 9, 5, 0.0)
+	INTERPOLATE_ACCESS(dvzdx, InterpXZEdgeCorner, 9, 6, 0.0)
+	INTERPOLATE_ACCESS(dvzdy, InterpYZEdgeCorner, 9, 7, 0.0)
+	INTERPOLATE_ACCESS(dvzdz, InterpCenterCorner, 9, 8, 0.0)
+
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &dvxdx); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &dvydy); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &dvzdz); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_XY,  &dvxdy); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_XY,  &dvydx); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_XZ,  &dvxdz); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_XZ,  &dvzdx); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_YZ,  &dvydz); CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(fs->DA_YZ,  &dvzdy); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
