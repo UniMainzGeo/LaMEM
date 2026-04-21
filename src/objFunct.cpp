@@ -222,7 +222,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 		}
 
 		// free buffer
-		PetscFree(readbuff);
+		ierr = PetscFree(readbuff); CHKERRQ(ierr);
 	}
 	else
 	{

@@ -650,7 +650,7 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	}
 
 	// clear memory
-	PetscFree(Temp);
+	ierr = PetscFree(Temp); CHKERRQ(ierr);
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
 	PrintDone(t);
@@ -1547,14 +1547,14 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	}
 
 	// free
-	PetscFree(idx);
-	PetscFree(polyin);
-	PetscFree(polyin_sum);
-	PetscFree(X);
-	PetscFree(PolyIdx);
-	PetscFree(PolyLen);
-	PetscFree(PolyX);
-	PetscFree(PolyFile);
+	ierr = PetscFree(idx);        CHKERRQ(ierr);
+	ierr = PetscFree(polyin);     CHKERRQ(ierr);
+	ierr = PetscFree(polyin_sum); CHKERRQ(ierr);
+	ierr = PetscFree(X);          CHKERRQ(ierr);
+	ierr = PetscFree(PolyIdx);    CHKERRQ(ierr);
+	ierr = PetscFree(PolyLen);    CHKERRQ(ierr);
+	ierr = PetscFree(PolyX);      CHKERRQ(ierr);
+	ierr = PetscFree(PolyFile);   CHKERRQ(ierr);
 	
 	if(actx->randNoise)
 	{

@@ -543,7 +543,7 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 	PetscFunctionBeginUser;
 
 	// output vectors
-	PetscFree(pvout->outvecs);
+	ierr = PetscFree(pvout->outvecs); CHKERRQ(ierr);
 
 	// output buffer
 	ierr = OutBufDestroy(&pvout->outbuf); CHKERRQ(ierr);
