@@ -251,6 +251,9 @@ struct JacRes
 	Vec ge;   // energy residual (global)
 	KSP tksp; // temperature diffusion solver
 
+	// reference energy residual norm for automatic tolerance setting
+	PetscScalar refEngResNorm;
+
 	//==========================
 	// 2D integration primitives
 	//==========================

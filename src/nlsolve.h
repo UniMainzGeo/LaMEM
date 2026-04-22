@@ -38,6 +38,14 @@ struct NLSol
 	PetscInt    minItPic; // minimum number Picard iterations forced at every step
 	PetscScalar rtolNwt;  // relative tolerance to switch to Picard (divergence)
 	PetscInt    maxItNwt; // maximum number Newton iterations to switch to Picard (divergence)
+
+	// automatic absolute tolerance flags
+	PetscInt    snes_atol_auto;
+	PetscInt    js_ksp_atol_auto;
+	PetscInt    ts_ksp_atol_auto;
+
+	// reference coupled residual norm for automatic tolerance setting
+	PetscScalar refCoupledResNorm;
 };
 //---------------------------------------------------------------------------
 

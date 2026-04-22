@@ -58,9 +58,16 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 		{
 			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_type l2"));
 			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_max_it 5"));
-			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_maxstep 1.0"));
 			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_minlambda 0.05"));
+			if(PETSC_VERSION_LT(3, 24, 0))
+			{
+				PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_maxstep 1.0"));
+			}
+			else
+			{
+				PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_maxlambda 1.0"));
 
+			}
 		}
 
 		if(opt.use_eisenstat_walker)
@@ -236,7 +243,7 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 
 	if(act_steady_temp)
 	{
-		PetscCall(set_ksp_solver("its","gmres",
+		PetscCall(set_ksp_solver("its", "fgmres",
 				opt.thermal_tolerances[0],
 				opt.thermal_tolerances[2]));
 

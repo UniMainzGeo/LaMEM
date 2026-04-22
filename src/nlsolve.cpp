@@ -32,6 +32,7 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	DOFIndex       *dof;
 	SNESType        type;
 	NLSol          *nl;
+	PetscBool       set;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -115,6 +116,10 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "act_temp_diff = 1 and -snes_type ksponly are incompatible, use -snes_max_it 1 instead\n");
 	}
+
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-snes_atol_auto",   &set)); if(set) { nl->snes_atol_auto   = 1; }
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-js_ksp_atol_auto", &set)); if(set) { nl->js_ksp_atol_auto = 1; }
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-ts_ksp_atol_auto", &set)); if(set) { nl->ts_ksp_atol_auto = 1; }
 
 	// force one nonlinear iteration regardless of the initial residual
 	ierr = SNESSetForceIteration(snes, PETSC_TRUE); CHKERRQ(ierr);
@@ -319,6 +324,9 @@ PetscErrorCode SNESCoupledTest(
 {
 	NLSol  *nl;
 	JacRes *jr;
+	KSP     ksp;
+
+	PetscScalar rtol, atol, EngResNorm;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -330,6 +338,34 @@ PetscErrorCode SNESCoupledTest(
 
 	// access context
 	jr = nl->jr;
+
+	// set reference coupled residual norm
+	if(!nl->refCoupledResNorm) { nl->refCoupledResNorm = f; }
+
+	// set automatic absolute tolerance
+	if(nl->snes_atol_auto)
+	{
+		PetscCall(SNESGetTolerances(snes, NULL, &rtol, NULL, NULL, NULL));
+
+		atol = nl->refCoupledResNorm*rtol;
+
+		PetscCall(SNESSetTolerances(snes, atol, PETSC_CURRENT, PETSC_CURRENT, PETSC_CURRENT, PETSC_CURRENT));
+
+		nl->snes_atol_auto = 0;
+	}
+
+	if(nl->js_ksp_atol_auto)
+	{
+		PetscCall(SNESGetKSP(snes, &ksp));
+
+		PetscCall(KSPGetTolerances(ksp, &rtol, NULL, NULL, NULL));
+
+		atol = nl->refCoupledResNorm*rtol;
+
+		PetscCall(KSPSetTolerances(ksp, PETSC_CURRENT, atol, PETSC_CURRENT, PETSC_CURRENT));
+
+		nl->js_ksp_atol_auto = 0;
+	}
 
 	// call default convergence test
 	ierr = SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);
@@ -344,6 +380,27 @@ PetscErrorCode SNESCoupledTest(
 	{
 		ierr = JacResGetTempRes(jr, jr->ts->dt);            CHKERRQ(ierr);
 		ierr = JacResGetTempMat(jr, jr->ts->dt);            CHKERRQ(ierr);
+
+		// set reference energy norm
+		if(!jr->refEngResNorm)
+		{
+			ierr = VecNorm(jr->ge, NORM_2, &EngResNorm); CHKERRQ(ierr);
+
+			jr->refEngResNorm = EngResNorm;
+		}
+
+		// set automatic absolute tolerance
+		if(nl->ts_ksp_atol_auto)
+		{
+			PetscCall(KSPGetTolerances(jr->tksp, &rtol, NULL, NULL, NULL));
+
+			atol = jr->refEngResNorm*rtol;
+
+			PetscCall(KSPSetTolerances(jr->tksp, PETSC_CURRENT, atol, PETSC_CURRENT, PETSC_CURRENT));
+
+			nl->ts_ksp_atol_auto = 0;
+		}
+
 		ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
 		ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
 		ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);

@@ -2167,10 +2167,9 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	if(jr->ctrl.actTemp)
 	{
-		ierr = JacResGetTempRes(jr,jr->ts->dt);         CHKERRQ(ierr);
-		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
-		ierr = VecNorm(jr->lT, NORM_2, &T2); CHKERRQ(ierr);
-		
+		ierr = JacResGetTempRes(jr,jr->ts->dt); CHKERRQ(ierr);
+		ierr = VecNorm(jr->ge, NORM_2, &e2);    CHKERRQ(ierr);
+		ierr = VecNorm(jr->lT, NORM_2, &T2);    CHKERRQ(ierr);
 	}
 
 	// print
@@ -2181,7 +2180,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "   Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "      |mRes|_2  = %12.12e \n", f2);
 
-	if (jr->ctrl.printNorms)
+	if(jr->ctrl.printNorms)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Velocity: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "      |Vx|_2    = %12.12e \n", vx2);

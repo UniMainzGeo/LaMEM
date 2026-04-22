@@ -929,6 +929,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	JacRes         *jr;
 	AdvCtx         *actx;
 	KSP            tksp;
+	PetscScalar    EngResNorm;
 	
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -952,6 +953,14 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	// STEADY STATE solution is activated by setting time step to zero
 	ierr = JacResGetTempRes(jr, dt); CHKERRQ(ierr);
 	ierr = JacResGetTempMat(jr, dt); CHKERRQ(ierr);
+
+	// set reference energy norm
+	if(!jr->refEngResNorm)
+	{
+		ierr = VecNorm(jr->ge, NORM_2, &EngResNorm); CHKERRQ(ierr);
+
+		jr->refEngResNorm = EngResNorm;
+	}
 
 	// solve linear system
 	ierr = KSPSetOperators(tksp, jr->Att, jr->Att); CHKERRQ(ierr);
