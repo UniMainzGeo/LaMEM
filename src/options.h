@@ -60,7 +60,7 @@ struct SolOptDB
 	PetscInt    subdomain_overlap              =  1;                         // (only for asm)
 	PetscInt    subdomain_ilu_levels           =  0;                         // (only for bjacobi and asm)
 
-	char        init_thermal_solver[_str_len_] = "mg";                       // [mg, default]
+	char        init_thermal_solver[_str_len_] = "default";                  // [mg, default]
 	PetscScalar thermal_tolerances[3]          =  { 1e-8, -1.0, 500.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
 
 	// computational parameters
