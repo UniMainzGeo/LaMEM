@@ -45,8 +45,8 @@ struct SolOptDB
 	PetscScalar smoother_damping               =  0.5;                       // (only for richardson)
 	PetscScalar smoother_omega                 =  1.0;                       // (only for sor)
 	PetscInt    smoother_num_sweeps            =  20;                        // maxit
-	PetscInt    coarse_reduction_factor        = -1;                         // (-1 = automatic setting)
-	PetscInt    coarse_cells_per_cpu           =  2048;                      // (-1 = all cpus are used by coarse solve)
+	PetscInt    coarse_reduction_factor        = -1;                         // (-1 = automatic setting, 0 = 1 cpu, 1 = all cpus, >1 = specific user setting)
+	PetscInt    coarse_cells_per_cpu           =  4096;                      // (only for coarse_reduction_factor = -1)
 	char        coarse_solver[_str_len_]       = "direct";                   // [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use fgmres)
 	PetscScalar coarse_tolerances[2]           = { 1e-2, 30 } ;              // rtol, maxit (fgmres settings for hypre, bjacobi and asm)
 	PetscInt    subdomain_overlap              =  1;                         // (only for asm)

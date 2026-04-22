@@ -303,7 +303,7 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb, SolOptDB &opt)
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "smoother_omega",          &opt.smoother_omega,          1, 1.0));
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "smoother_num_sweeps",     &opt.smoother_num_sweeps,     1, 1000));
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "coarse_reduction_factor", &opt.coarse_reduction_factor, 1, 1024));
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "coarse_cells_per_cpu",    &opt.coarse_cells_per_cpu,    1, 32768));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "coarse_cells_per_cpu",    &opt.coarse_cells_per_cpu,    1, 131072));
 		PetscCall(getStringParam(fb, _OPTIONAL_, "coarse_solver",            opt.coarse_solver,           "_none_"));
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "coarse_tolerances",        opt.coarse_tolerances,       2, 1.0));
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "subdomain_overlap",       &opt.subdomain_overlap,       1, 10));
@@ -435,59 +435,56 @@ PetscErrorCode get_coarse_reduction_factor(
 
 	total_num_cpu = (PetscInt)size;
 
-	if(opt.coarse_reduction_factor != -1)
+	if(total_num_cpu == 1)
 	{
-		// check user-specified reduction factor
-		if(total_num_cpu % opt.coarse_reduction_factor)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect reduction factor specified (coarse_reduction_factor): %lld", (LLD)opt.coarse_reduction_factor);
-		}
-
-		PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld (prescribed)\n", (LLD)opt.coarse_reduction_factor);
-	}
-	else if(total_num_cpu == 1)
-	{
-		// sequential case
+		// sequential case (no choice)
 		opt.coarse_reduction_factor = 1;
-
-		PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld (sequential solve)\n", (LLD)opt.coarse_reduction_factor);
-	}
-	else if(opt.coarse_cells_per_cpu == -1)
-	{
-		// all processors are used for coarse solve
-		opt.coarse_reduction_factor = 1;
-
-		PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld (default)\n", (LLD)opt.coarse_reduction_factor);
 	}
 	else
 	{
-		// compute target number of processors
-		coarse_num_cpu = PetscCeilInt(coarse_num_local_cells, opt.coarse_cells_per_cpu);
-
-		// correct target number of processors
-		if(coarse_num_cpu > total_num_cpu) { coarse_num_cpu = total_num_cpu; }
-
-		// compute target reduction factor
-		targer_factor = PetscCeilInt(total_num_cpu, coarse_num_cpu);
-
-		// get lower estimate
-		lower_factor = targer_factor; while(total_num_cpu % lower_factor) { lower_factor--; }
-
-		// get upper estimate
-		upper_factor = targer_factor; while(total_num_cpu % upper_factor) { upper_factor++; }
-
-		// select optimal
-		if((targer_factor - lower_factor) <= (upper_factor - targer_factor))
+		if(opt.coarse_reduction_factor == 0)
 		{
-			opt.coarse_reduction_factor = lower_factor;
+			// use one processors for coarse solve
+			opt.coarse_reduction_factor = total_num_cpu;
+		}
+		else if(opt.coarse_reduction_factor == -1)
+		{
+			// compute target number of processors
+			coarse_num_cpu = PetscCeilInt(coarse_num_local_cells, opt.coarse_cells_per_cpu);
+
+			// correct target number of processors
+			if(coarse_num_cpu > total_num_cpu) { coarse_num_cpu = total_num_cpu; }
+
+			// compute target reduction factor
+			targer_factor = PetscCeilInt(total_num_cpu, coarse_num_cpu);
+
+			// get lower estimate
+			lower_factor = targer_factor; while(total_num_cpu % lower_factor) { lower_factor--; }
+
+			// get upper estimate
+			upper_factor = targer_factor; while(total_num_cpu % upper_factor) { upper_factor++; }
+
+			// select optimal
+			if((targer_factor - lower_factor) <= (upper_factor - targer_factor))
+			{
+				opt.coarse_reduction_factor = lower_factor;
+			}
+			else
+			{
+				opt.coarse_reduction_factor = upper_factor;
+			}
 		}
 		else
 		{
-			opt.coarse_reduction_factor = upper_factor;
+			// check user-specified reduction factor
+			if(total_num_cpu % opt.coarse_reduction_factor)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect reduction factor specified (coarse_reduction_factor): %lld", (LLD)opt.coarse_reduction_factor);
+			}
 		}
-
-		PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld (automatic)\n", (LLD)opt.coarse_reduction_factor);
 	}
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld (one cpu requested)\n", (LLD)opt.coarse_reduction_factor);
 
 	PetscFunctionReturn(0);
 }
