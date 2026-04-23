@@ -13,6 +13,7 @@ clean :
 	@rm -f *.pvd
 	@rm -f *.bin
 	@rm -f *.xml
+	@rm -f *.vts
 	@rm -rf ./Timestep*
 	@rm -rf ./restart
 	@rm -rf ./markers*

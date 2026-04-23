@@ -9,29 +9,33 @@ Compared to defining the internal geometry, this method has the disadvantage tha
 you need to run an Julia script before you start a LaMEM simulation. If the 
 resolution of your model domain changes, you'll have to to recreate the input file.
 
-There are two ways to create a setup, depending on whether you will run LaMEM in 
-   parallel or not:
+Creating a parallel setup involves 3 steps:
 
-Method 1) If you run your simulation on one processor, you can simply run the 
-   corresponding *.jl file, while making sure that the LaMEM *.dat input file is 
-   in the same directory
-
-Method 2) Of you run your simulation in parallel, you first need to generate a 
-   parallel partitioning file, as explained below.
-
-Creating such a geometry involves 3 steps:
-
-2a) Create a partitioning file, by adding the command-line option "-mode save_grid"
-   ../../bin/opt/LaMEM -ParamFile <FileName.dat> -mode save_grid
+1) Create a partitioning file, by adding the command-line option "-mode save_grid"
+    
+   Example:
+   
+   mpiexec -np 8 ../../bin/opt/LaMEM -ParamFile Subduction2D_FreeSlip_Particles_Linear_DirectSolver.dat -mode save_grid
  
-2b) Run the Julia script, while making sure that the partitioning file is specified
-   All examples in this directory also create a VTS file of the input geometry and 
+2) Run the Julia script and pass partitioning (.bin) file name as an argument:
+        
+   Example:
+    
+   julia CreateMarkers_Subduction_Linear_FreeSlip_parallel.jl ProcessorPartitioning_8cpu_4.1.2.bin
+
+   The script will also generate a VTS file of the input geometry and 
    temperature structure, so you can check it is correct, before running a simulation.
 
-2c) Run the LaMEM file, the normal way (or with "-mode normal", which is default)
-   ../../bin/opt/LaMEM -ParamFile <FileName.dat>
+3) Run the LaMEM file, the normal way (or with "-mode normal", which is default)
+    
+   Example:
+    
+   mpiexec -np 8 ../../bin/opt/LaMEM -ParamFile Subduction2D_FreeSlip_Particles_Linear_DirectSolver.dat
 
 And as always, you can use Paraview to visualize the files.
+
+If you want to run the setup on one processor, you dont't need to generate
+the partitioning file. So step 1) falls off, and in step 2 you do need pass the file name.
 
 Input files:
 
