@@ -66,7 +66,6 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 			else
 			{
 				PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_maxlambda 1.0"));
-
 			}
 		}
 
@@ -234,6 +233,8 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 	if(act_temp_diff)
 	{
 		PetscCall(set_string_option("ksp_type", "gmres", "ts"));
+
+		PetscCall(PetscOptionsInsertString(NULL, "-ts_ksp_converged_reason"));
 
 		PetscCall(set_tolerances("ts_ksp", opt.thermal_tolerances));
 
@@ -1005,4 +1006,3 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-

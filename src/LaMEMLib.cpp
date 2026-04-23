@@ -928,8 +928,11 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 {
 	JacRes         *jr;
 	AdvCtx         *actx;
+	Controls       *ctrl;
 	KSP            tksp;
-	PetscScalar    EngResNorm;
+	PetscScalar    norm;
+	PetscBool      set;
+	PetscInt       ts_ksp_atol_auto;
 	
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -937,7 +940,14 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	// access context
 	jr   = &lm->jr;
 	actx = &lm->actx;
+	ctrl = &jr->ctrl;
+
+	// get automatic absolute tolerance initialization flag
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-ts_ksp_atol_auto", &set));
 	
+	if(set && ctrl->actTemp) { ts_ksp_atol_auto = 1; }
+	else                     { ts_ksp_atol_auto = 0; }
+
 	// create temperature diffusion solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &tksp); CHKERRQ(ierr);
 
@@ -951,21 +961,21 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 
 	// compute matrix and rhs
 	// STEADY STATE solution is activated by setting time step to zero
-	ierr = JacResGetTempRes(jr, dt); CHKERRQ(ierr);
-	ierr = JacResGetTempMat(jr, dt); CHKERRQ(ierr);
+	PetscCall(JacResGetTempRes(jr, dt));
+	PetscCall(JacResGetTempMat(jr, dt));
 
-	// set reference energy norm
-	if(!jr->refEngResNorm)
+	// update reference norm for automatic tolerance selection
+	if(ts_ksp_atol_auto)
 	{
-		ierr = VecNorm(jr->ge, NORM_2, &EngResNorm); CHKERRQ(ierr);
+		PetscCall(VecNorm(jr->ge, NORM_2, &norm));
 
-		jr->refEngResNorm = EngResNorm;
+		if(norm > jr->ts_ksp_ref_norm) { jr->ts_ksp_ref_norm = norm; }
 	}
 
 	// solve linear system
-	ierr = KSPSetOperators(tksp, jr->Att, jr->Att); CHKERRQ(ierr);
-	ierr = KSPSetUp(tksp);                          CHKERRQ(ierr);
-	ierr = KSPSolve(tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
+	PetscCall(KSPSetOperators(tksp, jr->Att, jr->Att));
+	PetscCall(KSPSetUp(tksp));
+	PetscCall(KSPSolve(tksp, jr->ge, jr->dT));
 
 	// view solver
 	if(!dt)

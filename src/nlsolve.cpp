@@ -32,7 +32,7 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	DOFIndex       *dof;
 	SNESType        type;
 	NLSol          *nl;
-	PetscBool       set;
+	PetscBool       flag;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -117,9 +117,10 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "act_temp_diff = 1 and -snes_type ksponly are incompatible, use -snes_max_it 1 instead\n");
 	}
 
-	PetscCall(PetscOptionsHasName(NULL, NULL, "-snes_atol_auto",   &set)); if(set) { nl->snes_atol_auto   = 1; }
-	PetscCall(PetscOptionsHasName(NULL, NULL, "-js_ksp_atol_auto", &set)); if(set) { nl->js_ksp_atol_auto = 1; }
-	PetscCall(PetscOptionsHasName(NULL, NULL, "-ts_ksp_atol_auto", &set)); if(set) { nl->ts_ksp_atol_auto = 1; }
+	// get automatic absolute tolerance initialization flags
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-snes_atol_auto",   &flag)); if(flag) { nl->snes_atol_auto   = 1; }
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-js_ksp_atol_auto", &flag)); if(flag) { nl->js_ksp_atol_auto = 1; }
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-ts_ksp_atol_auto", &flag)); if(flag) { nl->ts_ksp_atol_auto = 1; }
 
 	// force one nonlinear iteration regardless of the initial residual
 	ierr = SNESSetForceIteration(snes, PETSC_TRUE); CHKERRQ(ierr);
@@ -322,11 +323,11 @@ PetscErrorCode SNESCoupledTest(
 	SNESConvergedReason *reason,
 	void                *cctx)
 {
-	NLSol  *nl;
-	JacRes *jr;
-	KSP     ksp;
+	NLSol    *nl;
+	JacRes   *jr;
+	KSP      js_ksp;
 
-	PetscScalar rtol, atol, EngResNorm;
+	PetscScalar norm;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -339,72 +340,38 @@ PetscErrorCode SNESCoupledTest(
 	// access context
 	jr = nl->jr;
 
-	// set reference coupled residual norm
-	if(!nl->refCoupledResNorm) { nl->refCoupledResNorm = f; }
+	PetscCall(SNESGetKSP(snes, &js_ksp));
 
-	// set automatic absolute tolerance
-	if(nl->snes_atol_auto)
-	{
-		PetscCall(SNESGetTolerances(snes, NULL, &rtol, NULL, NULL, NULL));
-
-		atol = nl->refCoupledResNorm*rtol;
-
-		PetscCall(SNESSetTolerances(snes, atol, PETSC_CURRENT, PETSC_CURRENT, PETSC_CURRENT, PETSC_CURRENT));
-
-		nl->snes_atol_auto = 0;
-	}
-
-	if(nl->js_ksp_atol_auto)
-	{
-		PetscCall(SNESGetKSP(snes, &ksp));
-
-		PetscCall(KSPGetTolerances(ksp, &rtol, NULL, NULL, NULL));
-
-		atol = nl->refCoupledResNorm*rtol;
-
-		PetscCall(KSPSetTolerances(ksp, PETSC_CURRENT, atol, PETSC_CURRENT, PETSC_CURRENT));
-
-		nl->js_ksp_atol_auto = 0;
-	}
+	// update absolute tolerances
+	PetscCall(SNESUpdateAbsTol(snes,    nl->snes_atol_auto,   nl->snes_ref_norm,   f, it));
+	PetscCall(KSPUpdateAbsTol (js_ksp,  nl->js_ksp_atol_auto, nl->js_ksp_ref_norm, f, it));
 
 	// call default convergence test
-	ierr = SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);
+	PetscCall(SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL));
 
 	//=============================
 	// Temperature diffusion solver
 	//=============================
 
-	if(!it) PetscFunctionReturn(0);
-
 	if(jr->ctrl.actTemp)
 	{
-		ierr = JacResGetTempRes(jr, jr->ts->dt);            CHKERRQ(ierr);
-		ierr = JacResGetTempMat(jr, jr->ts->dt);            CHKERRQ(ierr);
+		// get residual and tangent matrix
+		PetscCall(JacResGetTempRes(jr, jr->ts->dt));
+		PetscCall(JacResGetTempMat(jr, jr->ts->dt));
 
-		// set reference energy norm
-		if(!jr->refEngResNorm)
+		// update absolute tolerance
+		PetscCall(VecNorm(jr->ge, NORM_2, &norm));
+		PetscCall(NLSolvePushNorm(nl->ts_ksp_ref_norm, jr->ts_ksp_ref_norm, norm));
+		PetscCall(KSPUpdateAbsTol(jr->tksp, nl->ts_ksp_atol_auto, nl->ts_ksp_ref_norm, norm, it));
+
+		// compute and apply temperature correction (not on first iteration)
+		if(it)
 		{
-			ierr = VecNorm(jr->ge, NORM_2, &EngResNorm); CHKERRQ(ierr);
-
-			jr->refEngResNorm = EngResNorm;
+			PetscCall(KSPSetOperators(jr->tksp, jr->Att, jr->Att));
+			PetscCall(KSPSetUp(jr->tksp));
+			PetscCall(KSPSolve(jr->tksp, jr->ge, jr->dT));
+			PetscCall(JacResUpdateTemp(jr));
 		}
-
-		// set automatic absolute tolerance
-		if(nl->ts_ksp_atol_auto)
-		{
-			PetscCall(KSPGetTolerances(jr->tksp, &rtol, NULL, NULL, NULL));
-
-			atol = jr->refEngResNorm*rtol;
-
-			PetscCall(KSPSetTolerances(jr->tksp, PETSC_CURRENT, atol, PETSC_CURRENT, PETSC_CURRENT));
-
-			nl->ts_ksp_atol_auto = 0;
-		}
-
-		ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
-		ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
-		ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
-		ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -427,7 +394,7 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 
 	PetscTime(&t_end);
 
-	ierr = SNESGetIterationNumber(snes, &its);    CHKERRQ(ierr);
+	ierr = SNESGetIterationNumber(snes, &its);     CHKERRQ(ierr);
 	ierr = SNESGetConvergedReason(snes, &reason);  CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
@@ -523,4 +490,78 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode SNESUpdateAbsTol(SNES snes, PetscInt set, PetscScalar &refNorm, PetscScalar norm, PetscInt it)
+{
+	PetscScalar rtol, abstol;
+
+	PetscFunctionBeginUser;
+
+	// only update tolerance if all criteria are satisfied:
+	// 1 - tolerance setting is requested
+	// 2 - first iteration of the SNES solve
+	// 3 - current norm is larger than the reference
+
+	if(!set || it || norm < refNorm) PetscFunctionReturn(0);
+
+	// update reference norm
+	refNorm = norm;
+
+	// get relative tolerance
+	PetscCall(SNESGetTolerances(snes, NULL, &rtol, NULL, NULL, NULL));
+
+	// compute new absolute tolerance
+	abstol = refNorm*rtol;
+
+	// update absolute tolerance
+	PetscCall(SNESSetTolerances(snes, abstol, PETSC_CURRENT, PETSC_CURRENT, PETSC_CURRENT, PETSC_CURRENT));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode KSPUpdateAbsTol(KSP ksp, PetscInt set, PetscScalar &refNorm, PetscScalar norm, PetscInt it)
+{
+	PetscScalar rtol, abstol;
+
+	PetscFunctionBeginUser;
+
+	// only update tolerance if all criteria are satisfied:
+	// 1 - tolerance setting is requested
+	// 2 - first iteration of the SNES solve
+	// 3 - current norm is larger than the reference
+
+	if(!set || it || norm < refNorm) PetscFunctionReturn(0);
+
+	// update reference norm
+	refNorm = norm;
+
+	// get relative tolerance
+	PetscCall(KSPGetTolerances(ksp, &rtol, NULL, NULL, NULL));
+
+	// compute new absolute tolerance
+	abstol = refNorm*rtol;
+
+	// update absolute tolerance
+	PetscCall(KSPSetTolerances(ksp, PETSC_CURRENT, abstol, PETSC_CURRENT, PETSC_CURRENT));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode NLSolvePushNorm(PetscScalar ref_norm, PetscScalar ref_norm_init, PetscScalar &norm)
+{
+	// override norm with initial value if reference is not initialized
+
+	PetscFunctionBeginUser;
+
+	if(!ref_norm)
+	{
+		if(norm < ref_norm_init)
+		{
+			norm = ref_norm_init;
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
 

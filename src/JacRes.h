@@ -252,7 +252,7 @@ struct JacRes
 	KSP tksp; // temperature diffusion solver
 
 	// reference energy residual norm for automatic tolerance setting
-	PetscScalar refEngResNorm;
+	PetscScalar ts_ksp_ref_norm;
 
 	//==========================
 	// 2D integration primitives

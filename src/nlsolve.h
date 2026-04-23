@@ -39,13 +39,16 @@ struct NLSol
 	PetscScalar rtolNwt;  // relative tolerance to switch to Picard (divergence)
 	PetscInt    maxItNwt; // maximum number Newton iterations to switch to Picard (divergence)
 
-	// automatic absolute tolerance flags
+	// automatic absolute tolerance initialization flags
 	PetscInt    snes_atol_auto;
 	PetscInt    js_ksp_atol_auto;
 	PetscInt    ts_ksp_atol_auto;
 
-	// reference coupled residual norm for automatic tolerance setting
-	PetscScalar refCoupledResNorm;
+	// reference norms for automatic tolerance setting
+	PetscScalar snes_ref_norm;
+	PetscScalar js_ksp_ref_norm;
+	PetscScalar ts_ksp_ref_norm;
+
 };
 //---------------------------------------------------------------------------
 
@@ -73,4 +76,12 @@ PetscErrorCode SNESCoupledTest(
 PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg);
 
 //---------------------------------------------------------------------------
+
+PetscErrorCode SNESUpdateAbsTol(SNES snes, PetscInt set, PetscScalar &refNorm, PetscScalar norm, PetscInt it);
+PetscErrorCode KSPUpdateAbsTol (KSP ksp,   PetscInt set, PetscScalar &refNorm, PetscScalar norm, PetscInt it);
+PetscErrorCode NLSolvePushNorm (PetscScalar ref_norm, PetscScalar ref_norm_init, PetscScalar &norm);
+
+//---------------------------------------------------------------------------
+
+
 #endif
