@@ -50,7 +50,7 @@ struct SolOptDB
 	PetscScalar smoother_omega                 =  1.0;                       // (only for sor)
 	PetscInt    smoother_num_sweeps            =  20;                        // maxit
 
-	PetscInt    coarse_num_cpu                 = -1;                         // number of cpu for coarse solve (-1 = automatic setting) (NOTE: can be assigned differently)
+	PetscInt    coarse_num_cpu                 =  0;                         // number of cpu for coarse solve (-1 = automatic setting) (0 = all cpus) (NOTE: can be assigned differently)
 	PetscInt    coarse_cells_per_cpu           =  8192;                      // (only for coarse_num_cpu = -1)
 	char        coarse_solver[_str_len_]       = "direct";                   // [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use fgmres)
 	PetscScalar coarse_tolerances[2]           = { 1e-2, 30 } ;              // rtol, maxit (fgmres settings for hypre, bjacobi and asm)

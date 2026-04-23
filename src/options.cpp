@@ -444,9 +444,9 @@ PetscErrorCode get_coarse_reduction_factor(
 
 	total_num_cpu = (PetscInt)size;
 
-	if(total_num_cpu == 1)
+	if(total_num_cpu == 1 || !opt.coarse_num_cpu)
 	{
-		// sequential case (no choice)
+		// use all processors
 		opt.coarse_reduction_factor = 1;
 	}
 	else
