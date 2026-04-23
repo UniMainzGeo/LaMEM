@@ -51,12 +51,12 @@ struct SolOptDB
 	PetscInt    smoother_num_sweeps            =  20;                        // maxit
 
 	PetscInt    coarse_num_cpu                 =  0;                         // number of cpu for coarse solve (-1 = automatic setting) (0 = all cpus) (NOTE: can be assigned differently)
-	PetscInt    coarse_cells_per_cpu           =  8192;                      // (only for coarse_num_cpu = -1)
+	PetscInt    coarse_cells_per_cpu           =  4096;                      // (only for coarse_num_cpu = -1)
 	char        coarse_solver[_str_len_]       = "direct";                   // [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use fgmres)
 	PetscScalar coarse_tolerances[2]           = { 1e-2, 30 } ;              // rtol, maxit (fgmres settings for hypre, bjacobi and asm)
 
 	PetscInt    subdomain_num_per_cpu          =  1;                         // number of subdomains per cpu (only for bjacobi and asm) (-1 = automatic setting)
-	PetscInt    subdomain_cells_per_cpu        =  8192;                      // (only for subdomain_num_per_cpu = -1)
+	PetscInt    subdomain_cells_per_cpu        =  2048;                      // (only for subdomain_num_per_cpu = -1)
 	PetscInt    subdomain_overlap              =  1;                         // (only for asm)
 	PetscInt    subdomain_ilu_levels           =  0;                         // (only for bjacobi and asm)
 
