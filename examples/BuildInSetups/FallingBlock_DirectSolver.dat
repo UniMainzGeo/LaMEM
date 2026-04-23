@@ -71,17 +71,7 @@
 	init_guess     = 0              # initial guess flag
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e12           # viscosity lower limit
-
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	#DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectSolver 	=	superlu_dist			# mumps/superlu_dist/pastix	
 	
-	DirectPenalty 	=	1e5
-
-		
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -98,7 +88,6 @@
 	mark_ctrl      = avd               # marker control type
 	nmark_lim      = 16 100            # min/max number per cell
 	
-
 # Geometric primitives:
 
 #	<BoxStart>
@@ -145,17 +134,16 @@
 	<MaterialEnd>
 
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly # no nonlinear solver
+	set_linear_problem = 1
+	monitor_solvers    = 1
+	stokes_solver      = block_direct
+	penalty            = 1e4
 
-	-js_ksp_monitor # display how the inner iterations converge
-
-
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================

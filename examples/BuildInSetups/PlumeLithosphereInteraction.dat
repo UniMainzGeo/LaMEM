@@ -28,7 +28,6 @@
 	nstep_out = 5     # save output every n steps
 	nstep_rdb = 100   # save restart database every n steps
 
-
 #===============================================================================
 # Grid & discretization parameters
 #===============================================================================
@@ -75,21 +74,13 @@
 	gravity        = 0.0 0.0 -9.81  # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	init_guess     = 0              # initial guess flag
-	eta_min        = 1e18           # viscosity upper bound
-	eta_ref 	   = 1e20			# reference viscosity for initial guess	
-	eta_max        = 1e25           # viscosity lower limit
+	eta_min        = 1e18           # viscosity lower bound
+	eta_ref 	     = 1e20           # reference viscosity for initial guess	
+	eta_max        = 1e25           # viscosity upper bound
 	DII_ref        = 1e-15          # background (reference) strain-rate
 	p_litho_visc   = 1              # use lithostatic pressure for creep laws
 	p_litho_plast  = 1              # use lithostatic pressure for plasticity
 	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
-
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e5
-
 		
 #===============================================================================
 # Model setup & advection
@@ -151,9 +142,6 @@
 
 	<SphereEnd>
 
-
-
-	
 #===============================================================================
 # Output
 #===============================================================================
@@ -267,18 +255,22 @@
         	k           =   3        		# conductivity
 	        Cp          =   1050        		# heat capacity
 	<MaterialEnd>
-	
+
+
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_ksp_ew
+	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit(-1 = automatic setting, only for atol)
+	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
+	penalty              = 1e4
 
-	-js_ksp_monitor # display how the inner iterations converge
-
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================

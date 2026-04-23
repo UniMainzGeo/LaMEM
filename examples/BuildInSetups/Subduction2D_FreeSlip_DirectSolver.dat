@@ -73,15 +73,7 @@
 	eta_max        = 1e23           # viscosity lower limit	
 	p_litho_visc    = 1              # use lithostatic pressure for creep laws
 	p_litho_plast   = 1              # use lithostatic pressure for plasticity
-
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e5
-
-		
+	
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -185,22 +177,23 @@
 		ch		=	5e6			# cohesion [MPa]
 		fr 		=	5			# friction angle	
 		
-		
 	<MaterialEnd>
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances    =  1e-4 -1  50        # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	linear_tolerances       =  1e-6 -1  100       # rtol, atol, maxit(-1 = automatic setting, only for atol)
+	picard_to_newton        =  1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	
-#===============================================================================
-# PETSc options
-#===============================================================================
+	monitor_solvers    = 1
+	stokes_solver      = block_direct
+	direct_solver_type = mumps
+	penalty            = 1e4
 
-<PetscOptionsStart>
-
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_ksp_ew
-
-
-	-js_ksp_monitor # display how the inner iterations converge
-
-
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================

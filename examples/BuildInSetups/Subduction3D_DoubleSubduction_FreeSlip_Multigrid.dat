@@ -1,5 +1,5 @@
 # This is a 3D double subduction setup with GEO units and a free slip upper boundary
-# The model is viscoplastic and the geometry is created with the build-in geometry tools
+# The model is linear viscous and the geometry is created with the build-in geometry tools
 # Multigrid solvers are being used, and it is best to run this in parallel	
 #
 # The target resolution is -nel_x 512 -nel_y 256 -nel_z 128 
@@ -61,7 +61,6 @@
 # No-slip boundary flag mask (left right front back bottom top)
 
 	noslip = 0 0 0 0 1 0
-	
 
 #===============================================================================
 # Solution parameters & controls
@@ -73,17 +72,6 @@
 	eta_min        = 1e18           # viscosity upper bound
 	eta_ref        = 1e20			# reference viscosity for initial guess	
 	eta_max        = 1e23           # viscosity lower limit
-	
-	
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	multigrid 	# solver [direct or multigrid]
-	MGLevels 		=	3			# number of MG levels [default=3]
-	MGSweeps 		=	5			# number of MG smoothening steps per level [default=10]
-	MGSmoother 		=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
-	MGCoarseSolver 	=	mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
-	
 	
 #===============================================================================
 # Model setup & advection
@@ -260,22 +248,26 @@
 		rho = 3385    # density
 		eta = 1.4e23  # viscosity
 	<MaterialEnd>
-	
-	
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly			# switches off nonlinear iterations
-
-	-js_ksp_monitor # display how the inner iterations converge
-	
-	-js_ksp_rtol 1e-3
-	-js_ksp_atol 1e-4
-	
-<PetscOptionsEnd>
 
 #===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+
+	set_linear_problem  = 1
+	monitor_solvers     = 1
+	linear_tolerances   = 1e-3 1e-4 200  # rtol, atol, maxit
+	num_mg_levels       = 4
+	stokes_solver       = coupled_mg
+	smoother_type       = intermediate   # chebyshev+sor
+	smoother_num_sweeps = 10
+	coarse_solver       = direct
+	direct_solver_type  = mumps
+	coarse_num_cpu      = -1
+
+<SolverOptionsEnd>
+
+#===============================================================================
+
+

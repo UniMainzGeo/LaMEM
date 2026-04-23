@@ -71,16 +71,6 @@
 	init_guess     = 0              # initial guess flag
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e12           # viscosity lower limit
-
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 			=	multigrid  	# solver [direct or multigrid]
-	MGLevels 			=	4			# number of MG levels [default=3]
-	MGSweeps 			=	10			# number of MG smoothening steps per level [default=10]
-	MGSmoother 			=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
-	MGCoarseSolver 		=	mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
-	
 	
 #===============================================================================
 # Model setup & advection
@@ -156,19 +146,27 @@
 		rho = 2   # density
 		eta = 1000 # viscosity
 	<MaterialEnd>
+
+
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly # no nonlinear solver
-	-js_ksp_monitor # display how the inner iterations converge
+	set_linear_problem  = 1
+	monitor_solvers     = 1
+	num_mg_levels       = 4
+	stokes_solver       = coupled_mg
+	smoother_type       = intermediate # chebyshev+sor
+	smoother_num_sweeps = 10
+	coarse_solver       = bjacobi
+	coarse_num_cpu      = 1
 
-	# Use an iterative coarse grid solver (doesn't need any external parallel solvers)
-	-crs_pc_type bjacobi
+<SolverOptionsEnd>
+
+#===============================================================================
 	
-<PetscOptionsEnd>
+	
 
-#===============================================================================
+

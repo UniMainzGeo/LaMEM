@@ -184,58 +184,26 @@
 		eta = 1000 # viscosity
 	<MaterialEnd>
 
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-
-# LINEAR & NONLINEAR SOLVER OPTIONS
--snes_type ksponly 		# no nonlinear solver
--js_ksp_type fgmres
--js_ksp_max_it 1000
--js_ksp_monitor
--js_ksp_rtol 1e-6
-
-# wBFBT PRECONDITIONER WITH MULTIGRID
-
--pcmat_type block
-#-pcmat_schur_type wbfbt
--pcmat_schur_type inv_eta
-
--jp_type bf
-
--bf_type lower
--bf_vs_type mg
-
--vs_ksp_type preonly
-
-#-ks_ksp_type preonly
-#-ks_pc_type mg
-#-ks_pc_mg_levels 4
-#-ks_pc_mg_galerkin
-#-ks_pc_mg_type multiplicative
-#-ks_pc_mg_cycle_type v
-
-
--gmg_pc_type mg
--gmg_pc_mg_levels 4
--gmg_pc_mg_galerkin
--gmg_pc_mg_type multiplicative
--gmg_pc_mg_cycle_type v
--gmg_mg_levels_ksp_type richardson
--gmg_mg_levels_ksp_richardson_scale 0.5
--gmg_mg_levels_ksp_max_it 20
--gmg_mg_levels_pc_type jacobi
--crs_ksp_type preonly
--crs_pc_type lu
--crs_pc_factor_mat_solver_type mumps
-
-#-vs_ksp_view
-#-crs_ksp_view
-#-ks_ksp_view
-
-
-<PetscOptionsEnd>
 
 #===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+
+	set_linear_problem      = 1
+	monitor_solvers         = 1
+	linear_tolerances       = 1e-6 1e-9 1000  # rtol, atol, maxit
+	num_mg_levels           = 4
+	stokes_solver           = wbfbt
+	block_tolerances        = 1e-5 50         # rtol, maxit
+	smoother_type           = light           # richardson+jacobi
+	smoother_num_sweeps     = 5
+	coarse_solver           = direct
+	direct_solver_type      = mumps
+	coarse_num_cpu          = 1
+
+<SolverOptionsEnd>
+
+#===============================================================================
+

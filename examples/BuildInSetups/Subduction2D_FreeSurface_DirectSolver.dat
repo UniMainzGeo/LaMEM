@@ -2,7 +2,6 @@
 # The model is linear viscous and the geometry is created with the build-in geometry objects
 # The full simulation runs for 150 Myrs, and takes about 500 timesteps
 
-
 #===============================================================================
 # Scaling
 #===============================================================================
@@ -72,15 +71,6 @@
 	eta_min        = 1e18           # viscosity upper bound
 	eta_ref 	   = 1e20			# reference viscosity for initial guess	
 	eta_max        = 1e25           # viscosity lower limit
-	
-	
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e5
-
 		
 #===============================================================================
 # Model setup & advection
@@ -182,20 +172,22 @@
 		rho = 1 	# density
 		eta = 1e18 	# viscosity
 	<MaterialEnd>
-	
+
+
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_ksp_ew
+	set_linear_problem = 1
+	linear_tolerances  = 1e-6 -1  100       # rtol, atol, maxit(-1 = automatic setting, only for atol)
+	monitor_solvers    = 1
+	stokes_solver      = block_direct
+	direct_solver_type = mumps
+	penalty            = 1e4
 
+<SolverOptionsEnd>
 
-	-js_ksp_monitor # display how the inner iterations converge
-
-
-<PetscOptionsEnd>
 
 #===============================================================================

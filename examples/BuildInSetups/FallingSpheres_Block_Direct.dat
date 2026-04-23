@@ -65,7 +65,6 @@
 	eta_min        = 0.1            # viscosity lower bound
 	eta_max        = 1e12           # viscosity upper limit
 
-
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -184,33 +183,20 @@
 		eta = 1000 # viscosity
 	<MaterialEnd>
 
+
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-# LINEAR & NONLINEAR SOLVER OPTIONS
--snes_type ksponly 		# no nonlinear solver
--js_ksp_type fgmres
--js_ksp_max_it 1000
--js_ksp_monitor
--js_ksp_rtol 1e-6
+	set_linear_problem = 1
+	monitor_solvers    = 1
+	linear_tolerances  = 1e-6 1e-9 1000  # rtol, atol, maxit
+	stokes_solver      = block_direct
+	penalty            = 1e3
+	direct_solver_type = mumps
 	
-# BLOCK DIRECT SOLVER WITH PENALTY
--pcmat_type block
--pcmat_pgamma 1e3
--jp_type bf
--bf_vs_type user
--vs_ksp_type preonly
--vs_pc_type lu
--vs_pc_factor_mat_solver_type mumps
-
-#-vs_ksp_view
-#-crs_ksp_view
-#-ks_ksp_view
-
-
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================
