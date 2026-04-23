@@ -33,7 +33,12 @@ PetscErrorCode SetEdgeCornerCenter(FDSTAG *fs, Vec Center)
 	// access vector
 	ierr = DMDAVecGetArray(fs->DA_CEN, Center, &lCenter);  CHKERRQ(ierr);
 
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	//---------------
+	// central points
+	//---------------
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
 
 	START_STD_LOOP
 	{
@@ -83,7 +88,12 @@ PetscErrorCode SetEdgeCornerXFace (FDSTAG *fs, Vec XFace)
 	// access vector
 	ierr = DMDAVecGetArray(fs->DA_X, XFace, &lXFace); CHKERRQ(ierr);
 
-	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	//---------
+	// X points
+	//---------
+	GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
 
 	START_STD_LOOP
 	{
@@ -126,7 +136,12 @@ PetscErrorCode SetEdgeCornerYFace (FDSTAG *fs, Vec YFace)
 	// access local solution vectors
 	ierr = DMDAVecGetArray(fs->DA_Y, YFace, &lYFace); CHKERRQ(ierr);
 
-	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	//---------
+	// Y points
+	//---------
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
 
 	START_STD_LOOP
 	{
@@ -168,7 +183,12 @@ PetscErrorCode SetEdgeCornerZFace (FDSTAG *fs, Vec ZFace)
 	// access local solution vectors
 	ierr = DMDAVecGetArray(fs->DA_Z, ZFace, &lZFace); CHKERRQ(ierr);
 
-	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	//---------
+	// Z points
+	//---------
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
 
 	START_STD_LOOP
 	{
