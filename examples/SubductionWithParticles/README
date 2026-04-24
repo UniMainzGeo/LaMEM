@@ -35,7 +35,7 @@ Creating a parallel setup involves 3 steps:
 And as always, you can use Paraview to visualize the files.
 
 If you want to run the setup on one processor, you dont't need to generate
-the partitioning file. So step 1) falls off, and in step 2 you do need pass the file name.
+the partitioning file. So step 1) falls off, and in step 2 you do not need pass the file name.
 
 Input files:
 
