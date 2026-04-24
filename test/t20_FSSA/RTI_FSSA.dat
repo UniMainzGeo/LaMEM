@@ -1,8 +1,6 @@
 # This reproduces the setup to test the FSSA algorithm, as described in Kaus et al. (2010)
 # By default, FSSA is activated. 
 #
-# 
-
 #===============================================================================
 # Scaling
 #===============================================================================
@@ -79,12 +77,6 @@
 	eta_min        = 1e16           # viscosity upper bound
 	eta_max        = 1e23           # viscosity lower limit
 		
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 			=	direct 	# solver [direct or multigrid]
-	DirectSolver 		=	umfpack
-	
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -169,17 +161,19 @@
 
 
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
+
+	set_linear_problem = 1
+	monitor_solvers    = 1
+	stokes_solver      = block_direct
+	penalty            = 1e3
+	direct_solver_type = mumps
 	
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly # no nonlinear solver
-
-
-	-objects_dump
-
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================
+
+

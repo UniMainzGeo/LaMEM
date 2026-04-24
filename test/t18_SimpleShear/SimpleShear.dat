@@ -58,8 +58,6 @@
 	
 	bg_ref_point     = 0.0 0.0 -20      # background strain rate reference point (fixed)
 	
-
-
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
@@ -81,14 +79,6 @@
 	gw_level       = 0.0            # ground water level at the free surface (if defined)
 	biot           = 1.0            # Biot pressure parameter
 
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 			=	direct 		# solver [direct or multigrid]
-	#MGLevels 			=	4			# number of MG levels [default=3]
-	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
-	DirectPenalty 		=	1e4			# penalty parameter [employed if we use a direct solver]
-	
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -125,9 +115,6 @@
 		Temperature 	= constant 
 		cstTemp     	= 650     	# in Celcius
 	<CylinderEnd>
-
-
-
 
 #===============================================================================
 # Output
@@ -168,7 +155,6 @@
 # Material phase parameters
 #===============================================================================
 
-
 	# rheology
 	<MaterialStart>
 		ID        	= 0
@@ -202,43 +188,22 @@
 		Cp        = 1000			# Specific heat (capacity)
 		k         = 2.5000    		# Thermal conductivity
 	<MaterialEnd>
-	
-	
 
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-# SNES
-	-snes_ksp_ew						# Eisenstat Walker algorithm
-
-	-snes_monitor
-	-snes_atol 1e-7   # 1e-12
-	-snes_rtol 1e-4
-	-snes_stol 1e-6
-	-snes_max_it 200
-	-snes_max_funcs 50000
-
-	-js_ksp_atol 1e-10
-	-js_ksp_rtol 1e-3
-	-js_ksp_max_it 100
-
-	-res_log
-
-	# Linesearch options
-#	-snes_linesearch_monitor
-	-snes_linesearch_max_it 50
-	-snes_linesearch_type l2				#Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType)  [l2 seems to work better with VEP]
-	-snes_linesearch_maxstep 1.0			# very important to prevent the code from "blowing up"
-
-	-snes_PicardSwitchToNewton_rtol 1e-1   # relative tolerance to switch to Newton (1e-2)
-
-# Jacobian solver
-	-js_ksp_monitor
-
-
-<PetscOptionsEnd>
+	nonlinear_tolerances = 1e-4 1e-7  200        # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	linear_tolerances    = 1e-3 1e-10 100       # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	picard_to_newton     = 1e-1 5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
+	penalty              = 1e4
+	use_eisenstat_walker = 1
+	
+<SolverOptionsEnd>
 
 #===============================================================================
