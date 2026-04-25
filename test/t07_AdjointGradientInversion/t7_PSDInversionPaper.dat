@@ -88,12 +88,6 @@
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e6           # viscosity lower limit
 	eta_ref 	   = 10
-
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	direct 	# solver [direct or multigrid]
-	DirectSolver	=	mumps
 	
 #===============================================================================
 # Model setup & advection
@@ -221,8 +215,24 @@
 	#	Value 		=	1.52578e+02						# for 16^3 resolution
 	#	Value 		=	1.35000e+02						# for 8^3 resolution
 	#<AdjointObservationPointEnd>
-	
 
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 	# solver [direct or multigrid]
+	DirectSolver	=	mumps
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
+	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
+
+<SolverOptionsEnd>
 #===============================================================================
 # PETSc options
 #===============================================================================

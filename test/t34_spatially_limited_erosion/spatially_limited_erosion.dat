@@ -75,14 +75,6 @@
     eta_ref          =  1.0e20     # Reference viscosity (used for the initial guess) [Pas]
 
 #===============================================================================
-# Solver options
-#===============================================================================
-
-    SolverType       =  direct     # solver employed [`"direct"` or `"multigrid"`]
-    DirectSolver     =  mumps     # mumps/superlu_dist/pastix/umfpack  (requires these external PETSc packages to be installed!)
-    DirectPenalty    =  10000.0     # penalty parameter [employed if we use a direct solver]
-
-#===============================================================================
 # Model setup & advection
 #===============================================================================
 
@@ -191,6 +183,25 @@
 #===============================================================================
 
    # Define Phase Transition laws (maximum 10)
+   
+#===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+
+	set_linear_problem = 1
+	monitor_solvers    = 1
+	linear_tolerances  = 1e-6 1e-9 1000  # rtol, atol, maxit
+	stokes_solver      = block_direct
+	direct_solver_type = mumps
+	
+<SolverOptionsEnd>
+
+    SolverType       =  direct     # solver employed [`"direct"` or `"multigrid"`]
+    DirectSolver     =  mumps     # mumps/superlu_dist/pastix/umfpack  (requires these external PETSc packages to be installed!)
+
+   
 #===============================================================================
 # PETSc options
 #===============================================================================

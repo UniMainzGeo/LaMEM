@@ -115,13 +115,7 @@
 	min_cohes       = 1e6            # cohesion lower bound  [Pa]
 	min_fric        = 1.0            # friction lower bound  [degree]
 	tau_ult         = 1e9            # ultimate yield stress [Pa]
-	
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	multigrid	# solver [direct or multigrid]
-#	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
-	
+
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -200,6 +194,31 @@
                 eta             =       1e24    # viscosity
                 G               =       5e10
         <MaterialEnd>
+
+
+	
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	multigrid	# solver [direct or multigrid]
+#	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
+	
+
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances = 5e-2 1e-4 200      # rtol, atol, maxit
+	linear_tolerances    = 1e-4 1e-8 50       # rtol, atol, maxit
+	picard_to_newton     = 1e-2  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	use_line_search      = 1
+	monitor_solvers      = 1
+	num_mg_levels        = 2
+	stokes_solver        = coupled_mg
+	smoother_type        = light           # richardson+jacobi
+	coarse_solver        = direct
+	direct_solver_type   = mumps
+
+<SolverOptionsEnd>
 
 #===============================================================================
 # PETSc options

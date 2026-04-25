@@ -115,9 +115,7 @@
 	-js_ksp_rtol 1e-6
 	-js_ksp_atol 1e-10
 
-	# Direct solver with penalty method
 	-pcmat_type    mono
-	-pcmat_pgamma  1e5	# penalty parameter
 	-jp_type       user
 	-jp_pc_type    lu
 

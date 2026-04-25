@@ -76,13 +76,6 @@
 	gw_level_type  = surf           # ground water level type for pore pressure computation (see below)
 	gw_level       = 0.0            # ground water level at the free surface (if defined)
 	biot           = 1.0            # Biot pressure parameer
-
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 			=	direct 		# solver [direct or multigrid]
-	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
-	DirectPenalty 		=	1e4			# penalty parameter [employed if we use a direct solver]
 	
 #===============================================================================
 # Model setup & advection
@@ -162,7 +155,31 @@
 		k         = 2.5000    	# Thermal conductivity
 	<MaterialEnd>
 	
-	
+
+
+
+
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 			=	direct 		# solver [direct or multigrid]
+	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
+
+
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances = 1e-4  1e-7   100  # rtol, atol, maxit
+	linear_tolerances    = 1e-12 1e-10  100  # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5 1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
+
+<SolverOptionsEnd>
+
+
 
 
 #===============================================================================

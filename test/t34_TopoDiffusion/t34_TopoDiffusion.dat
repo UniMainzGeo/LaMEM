@@ -66,14 +66,6 @@
     eta_max      = 1e25
 
 #===============================================================================
-# Solver
-#===============================================================================
-
-    SolverType    = direct
-    DirectSolver  = mumps
-    DirectPenalty = 1e4
-
-#===============================================================================
 # Markers (geometric setup)
 #===============================================================================
 
@@ -143,6 +135,28 @@
         ch   = 3e7
         fr   = 20.0
     <MaterialEnd>
+
+
+
+#===============================================================================
+# Solver
+#===============================================================================
+
+    SolverType    = direct
+    DirectSolver  = mumps
+    DirectPenalty = 1e4
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
+	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
+
+<SolverOptionsEnd>
+
 
 #===============================================================================
 # PETSc options

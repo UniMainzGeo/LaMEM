@@ -213,63 +213,25 @@
 		alpha = 1e-5
 	<MaterialEnd>
 
+
+
 #===============================================================================
 # PETSc options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-# SNES
-	-snes_monitor
-	-snes_atol 1e-4
-	-snes_rtol 1e-6
-	-snes_stol 1e-16
-	-snes_max_it 50
-	-snes_max_funcs 500000
-	-snes_max_linear_solve_fail 10000
+	nonlinear_tolerances = 1e-6 1e-4 50     # rtol, atol, maxit
+	linear_tolerances    = 1e-4 1e-8 40     # rtol, atol, maxit
+	picard_to_newton     = 1e-3 10 1.1 10   # picard rtol, picard minit, newton rtol, newton maxit
+	use_line_search      = 1
+	monitor_solvers      = 1
+	num_mg_levels        = 2
+	stokes_solver        = coupled_mg
+	smoother_type        = light           # richardson+jacobi
+	coarse_solver        = direct
+	direct_solver_type   = mumps
 
-	-snes_Picard_max_it 10
-	-snes_PicardSwitchToNewton_rtol 1e-3
-	-snes_NewtonSwitchToPicard_it   10
-	-snes_NewtonSwitchToPicard_rtol 1.1
-
-	-snes_linesearch_monitor
-	-snes_linesearch_type l2
-	-snes_linesearch_maxstep 1.1
-
-# Jacobian solver
-
-	-js_ksp_type fgmres
-	-js_ksp_max_it 40
-	-js_ksp_converged_reason
-	-js_ksp_monitor
-	-js_ksp_rtol 1e-4
-	-js_ksp_atol 1e-8
-
-# Preconditioner
-
-	#-pcmat_type mono
-	-jp_type mg
-	-gmg_pc_type mg
-	-gmg_pc_mg_levels 2
-	-gmg_pc_mg_galerkin
-	-gmg_pc_mg_type multiplicative
-	-gmg_pc_mg_cycle_type v
-	-gmg_mg_levels_ksp_type richardson
-	-gmg_mg_levels_ksp_richardson_scale 0.5
-	-gmg_mg_levels_ksp_max_it 20
-	-gmg_mg_levels_pc_type jacobi
-	-crs_ksp_type preonly
-	-crs_pc_type lu
-	-crs_pc_factor_mat_solver_type mumps
-	
-
-# 2D Multigrid !!!
-
-	-da_refine_y 1
-
-	-objects_dump
-
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================

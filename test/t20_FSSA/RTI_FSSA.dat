@@ -169,7 +169,6 @@
 	set_linear_problem = 1
 	monitor_solvers    = 1
 	stokes_solver      = block_direct
-	penalty            = 1e3
 	direct_solver_type = mumps
 	
 <SolverOptionsEnd>

@@ -77,14 +77,6 @@
 	eta_max        = 1e23           # viscosity lower limit	
 	p_litho_visc   = 1              # use lithostatic pressure for creep laws
 	p_litho_plast  = 1
-	
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e5
-
 		
 #===============================================================================
 # Model setup & advection
@@ -248,6 +240,29 @@
 	#	Value  				= -0.36
 	#<AdjointObservationPointEnd>
 	
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+
+<SolverOptionsStart>
+
+	set_linear_problem = 1
+	monitor_solvers    = 1
+	linear_tolerances  = 1e-6 1e-9 1000  # rtol, atol, maxit
+	stokes_solver      = block_direct
+	direct_solver_type = mumps
+	
+<SolverOptionsEnd>
+
+
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e5
+
+	
+
 	
 #===============================================================================
 # PETSc options

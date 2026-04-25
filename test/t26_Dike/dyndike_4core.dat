@@ -106,17 +106,6 @@
 #       lrtol           = 1e-6           # local rheology iterations relative tolerance
   
 #===============================================================================
-# Solver options
-#===============================================================================
-        #SolverType      =      direct   # solver [direct or multigrid]
-        #DirectSolver   =       mumps       # mumps/superlu_dist/pastix
-        #DirectPenalty  =       1e3
-        MGLevels        =       3           #number of MG levels [default=3]
-        MGCourseSolver  =   redundant       #coarse grid solver [direct/mumps/superlu_dist or redundant - more options through command-line options -crs_ksp_type & -crs_pc_type]
-        MGRedundantNum = 4
-        MGRedundant Solver = mumps
-
-#===============================================================================
 # Model setup & advection
 #===============================================================================
 
@@ -193,11 +182,6 @@
 		maxAge      = 3.8              # [optional] parameter that indicates the maximum thermal age of a plate
 		v_spread    = 0.55        # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above
 	<RidgeSegEnd>
-
-
-
-
-
 
 #===============================================================================
 # Output
@@ -488,55 +472,24 @@
 
 
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_rtol 2e-2					
-	-snes_atol 1e-4					
-	-snes_max_it 50				
+<SolverOptionsStart>
+
+	nonlinear_tolerances = 2e-2 1e-4 50      # rtol, atol, maxit
+	linear_tolerances    = 1e-5 1e-8 20       # rtol, atol, maxit
+	picard_to_newton     = 1e-5  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	use_line_search      = 1
+	monitor_solvers      = 1
+	use_eisenstat_walker =  1
+	num_mg_levels        = 3
+	stokes_solver        = coupled_mg
+	smoother_type        = light           # richardson+jacobi
+	coarse_solver        = direct
+	direct_solver_type   = mumps
+	coarse_num_cpu       = 1
 	
-	-snes_PicardSwitchToNewton_rtol 1e-5   # relative tolerance to switch to Newton (1e-2)
-	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
-	
-	-js_ksp_type fgmres
-	-js_ksp_monitor 				# display how the inner iterations converge
-	-js_ksp_max_it 20				# inner
-	-js_ksp_atol 1e-8
-	-js_ksp_rtol 1e-5
-
-	-snes_linesearch_type l2
-	-snes_linesearch_monitor
-	-snes_linesearch_maxstep 10
-
-#For MULTIGRID
-	-snes_ksp_ew
-	-snes_ksp_ew_rtolmax 1e-4
-
-	#Stokes Preconditioner
-        -pstokes mg                                     # multigrid
-
-        # Matrix type
-        -pcmat_type mono                        # monolithic matrix [coupled MG solver]
-        -jp_type mg                                     # multigrid
-
-        -gmg_pc_type mg
-        -gmg_pc_mg_levels 3
-        -gmg_pc_mg_galerkin
-        -gmg_pc_mg_type multiplicative
-        -gmg_pc_mg_cycle_type v
-
-        -gmg_mg_levels_ksp_type richardson
-        -gmg_mg_levels_ksp_richardson_scale 0.5
-        -gmg_mg_levels_ksp_max_it 20
-        -gmg_mg_levels_pc_type jacobi
-
-        -crs_ksp_type preonly
-        -crs_pc_type lu
-        -crs_pc_factor_mat_solver_package mumps
-
-        -objects_dump
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================

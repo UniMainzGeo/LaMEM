@@ -59,12 +59,6 @@
 	eta_max           = 1e20           # viscosity lower limit
 
 #===============================================================================
-# Solver options
-#===============================================================================
-
-	SolverType              =       direct                  # solver [direct or multigrid]
-	DirectSolver            =       superlu_dist                   # mumps/superlu_dist/pastix     
-#===============================================================================
 # Model setup & advection
 #===============================================================================
 
@@ -93,7 +87,6 @@
 	out_cont_res        = 1
 	out_energ_res       = 1
 
-
 #===============================================================================
 # Material phase parameters
 #===============================================================================
@@ -105,6 +98,32 @@
 		Cp  = 1050
 		k   = 3
 	<MaterialEnd>
+	
+
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
+	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
+
+<SolverOptionsEnd>
+	
+#===============================================================================
+# Solver options
+#===============================================================================
+
+	SolverType              =       direct                  # solver [direct or multigrid]
+	DirectSolver            =       superlu_dist                   # mumps/superlu_dist/pastix     
+
+
 #===============================================================================
 # PETSc options
 #===============================================================================

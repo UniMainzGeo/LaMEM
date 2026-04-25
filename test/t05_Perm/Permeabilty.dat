@@ -109,7 +109,6 @@
 	monitor_solvers    = 1
 	linear_tolerances  = 1e-6 1e-10 20  # rtol, atol, maxit
 	stokes_solver      = block_direct
-	penalty            = 1e3
 	direct_solver_type = mumps
 	
 <SolverOptionsEnd>

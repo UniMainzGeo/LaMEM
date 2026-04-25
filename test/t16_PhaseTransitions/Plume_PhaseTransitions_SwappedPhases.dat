@@ -82,12 +82,6 @@
     init_lith_pres = 1
 	DII_ref        = 1e-15          # background (reference) strain-rate
 	Phasetrans     = 1	
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	superlu_dist			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e3
 
 #===============================================================================
 # Model setup & advection
@@ -370,6 +364,29 @@
 	   	ResetParam 				=	APS
 
 	<PhaseTransitionEnd>
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
+	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
+
+<SolverOptionsEnd>
+
+
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	superlu_dist			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e3
+
+
 
 #===============================================================================
 # PETSc options

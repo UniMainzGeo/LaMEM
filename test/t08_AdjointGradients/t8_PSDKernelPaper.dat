@@ -63,11 +63,6 @@
 	eta_max        = 1e6           # viscosity lower limit
 		
 #===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 			=	direct 	# solver [direct or multigrid]
-	
-#===============================================================================
 # Model setup & advection
 #===============================================================================
 
@@ -169,38 +164,20 @@
 		Parameter 			= PSD
 		Value  				= 90
 	<AdjointObservationPointEnd>
-	
+
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	#-snes_type ksponly # no nonlinear solver
+	nonlinear_tolerances = 1e-20 1e-12  20    # rtol, atol, maxit
+	linear_tolerances    = 1e-10 1e-15  50    # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5  1.2 20    # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
 
-	# Jacobian (linear) outer KSP
-	-js_ksp_type gmres
-	-js_ksp_max_it 50
-#	-js_ksp_converged_reason
- 	-js_ksp_monitor
-	-js_ksp_rtol 1e-10
-	-js_ksp_atol 1e-15
-
-        -snes_max_it 20
-        -snes_atol 1e-12
-        -snes_rtol 1e-20
-        -snes_stol 1e-20
-	#-snes_PicardSwitchToNewton_rtol 1e-20
-
-	# Direct solver with penalty method
-#	-pcmat_type    mono
-#	-pcmat_pgamma  1e5	# penalty parameter
-#	-jp_type       user
-#	-jp_pc_type    lu
-
-	-objects_dump
-
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================

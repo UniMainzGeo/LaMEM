@@ -95,13 +95,6 @@
 	lmaxit          = 8             # maximum number of local rheology iterations
 
 #===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 	=	direct 			# solver [direct or multigrid]
-#	DirectSolver 	=	mumps		# mumps/superlu_dist/pastix	
-#	DirectPenalty 	=	1e3
-		
-#===============================================================================
 # Model setup & advection
 #===============================================================================
 
@@ -235,7 +228,33 @@
 		healID          = 2       #healing ID
 	<MaterialEnd>
 
-	
+
+
+
+
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
+	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
+	penalty              = 1e3
+
+<SolverOptionsEnd>
+
+
+	SolverType 	=	direct 			# solver [direct or multigrid]
+#	DirectSolver 	=	mumps		# mumps/superlu_dist/pastix	
+#	DirectPenalty 	=	1e3
+
 #===============================================================================
 # PETSc options
 #===============================================================================

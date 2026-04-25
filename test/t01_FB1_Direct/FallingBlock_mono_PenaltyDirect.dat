@@ -58,15 +58,7 @@
 	init_guess     = 0              # initial guess flag
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e12           # viscosity lower limit
-
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e5
-
-		
+	
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -124,30 +116,17 @@
 	<MaterialEnd>
 
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly # no nonlinear solver
-
-	# Jacobian (linear) outer KSP
-	-js_ksp_type gmres
-	-js_ksp_max_it 25
-#	-js_ksp_converged_reason
- 	-js_ksp_monitor
-	-js_ksp_rtol 1e-4
-	-js_ksp_atol 1e-10
-
-	# Direct solver with penalty method
-#	-pcmat_type    mono
-#	-pcmat_pgamma  1e5	# penalty parameter
-#	-jp_type       user
-#	-jp_pc_type    lu
-
-	-objects_dump
-
-<PetscOptionsEnd>
+	set_linear_problem = 1
+	monitor_solvers    = 1
+	linear_tolerances  = 1e-4 1e-10 25  # rtol, atol, maxit
+	stokes_solver      = block_direct
+	direct_solver_type = mumps
+	
+<SolverOptionsEnd>
 
 #===============================================================================

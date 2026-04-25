@@ -228,6 +228,24 @@
 		alpha = 1e-5
 	<MaterialEnd>
 
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
+	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = mumps
+
+<SolverOptionsEnd>
+
+
 #===============================================================================
 # PETSc options
 #===============================================================================
@@ -266,9 +284,7 @@
 	# Matrix type
 	-pcmat_type mono # monolithic matrix [coupled MG solver]
 
-	# Direct solver with penalty method
 	-pcmat_type   mono
-	-pcmat_pgamma 1e2 # penalty parameter
 	-jp_type      user
 	-jp_pc_type   lu
 

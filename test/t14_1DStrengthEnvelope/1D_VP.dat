@@ -270,7 +270,6 @@ unit_stress      = 1e9
 	monitor_solvers    = 1
 	stokes_solver      = block_direct
 	direct_solver_type = mumps
-	penalty            = 1e4
 
 <SolverOptionsEnd>
 

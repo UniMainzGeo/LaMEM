@@ -265,7 +265,6 @@
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = superlu_dist
-	penalty              = 1e3
 
 <SolverOptionsEnd>
 
