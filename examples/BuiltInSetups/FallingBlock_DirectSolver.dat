@@ -2,7 +2,7 @@
 # Linear viscosity is assumed.
 # It runs for 10 timesteps and creates output every timestep.
 #
-# Assuming that you are in /input_models/BuildInSetups, you run it with:
+# Assuming that you are in /examples/BuiltInSetups, you run it with:
 #	../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
 # or, in parallel:
 #	mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat

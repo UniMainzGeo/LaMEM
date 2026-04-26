@@ -7,7 +7,7 @@ We will look at the sinking of a few high-density spheres in a lower density flu
 
 First, switch to the correct directory:
 ```
-$ cd /input_models/BuildInSetups
+$ cd /examples/BuiltInSetups
 ```
 after which you can run the simulation with the optimized version of LaMEM as follows:
 
@@ -97,16 +97,16 @@ Next, let's change the viscosity of the spheres. For this, scroll towards the en
 In this simulation, the matrix has Phase ID=0 and the spheres have ID=1. Obviously, the matrix has viscosity and density both equal to 1 and the spheres have a higher viscosity (1000) and higher density (2).  
 You can change the viscosity of the spheres by changing the according numbers in the input file and rerunning the simulation.
 
-*Note:* This particular simulation is performed in non-dimensional units, as ```units = none``` in the parameter-file. LaMEM can also use ```units=si``` or ```units=geo```, where the last one is most convenient if performing geodynamic simualtions (as length scales are in km, and timescales in Myrs). Later in the tutorial you will learn more about this.
+*Note:* This particular simulation is performed in non-dimensional units, as ```units = none``` in the parameter-file. LaMEM can also use ```units=si``` or ```units=geo```, where the last one is most convenient if performing geodynamic simulations (as length scales are in km, and timescales in Myrs). Later in the tutorial you will learn more about this.
 
 
 ## 2.4 Exercises
-If you are a new user of LaMEM, the best way for you to get familiar with the code is to do a few exercises. The ones below will also give you a bit of info about LaMEM along the way. All exercises employ the build-in geometry options of LaMEM (implying that the input model geometry is constructed with geometrical objects that are specified in the input file). All input files we will discuss are in the directory ```/input_files/BuildInSetups```.
+If you are a new user of LaMEM, the best way for you to get familiar with the code is to do a few exercises. The ones below will also give you a bit of info about LaMEM along the way. All exercises employ the built-in geometry options of LaMEM (implying that the input model geometry is constructed with geometrical objects that are specified in the input file). All input files we will discuss are in the directory ```/examples/BuiltInSetups```.
 
 ## 2.4.1 Exercise A: Falling Block
-Run the Falling Block direct test from the build in setups (```/BuildInSetups/FallingBlock_DirectSolver.dat```) and inspect the input file with a text editor to get a feeling for the parameters that are specified there. 
+Run the Falling Block direct test from the built-in setups (```/BuiltInSetups/FallingBlock_DirectSolver.dat```) and inspect the input file with a text editor to get a feeling for the parameters that are specified there. 
 
-This example uses a socalled **direct** solver, which the recommended method for 2D setups as it is more robust in cases with large viscosity contrasts. Yet, it is too slow for large 3D simulations, which will require "multigrid" solvers (that unfortunately don't work always very well with large viscosity contrasts and require somewhat more tuning and expertise). PETSc itself does not have build-in parallel direct solvers, but you can install PETSc with SUPERLU_DIST and MUMPS which are two packages that. LaMEM automatically uses those if they are available.
+This example uses a so-called **direct** solver, which the recommended method for 2D setups as it is more robust in cases with large viscosity contrasts. Yet, it is too slow for large 3D simulations, which will require "multigrid" solvers (that unfortunately don't work always very well with large viscosity contrasts and require somewhat more tuning and expertise). PETSc itself does not have built-in parallel direct solvers, but you can install PETSc with SUPERLU_DIST and MUMPS which are two packages that. LaMEM automatically uses those if they are available.
 
 Once the simulation is finished, it should give a setup that is fairly similar to the falling spheres discussed above, but with a square block.
 
@@ -121,47 +121,53 @@ Try to reproduce this; the result should look like this:
 
 ![GettingStarted_Exercise2_FallingBlocks](../assets/img/GettingStarted_Exercise2_FallingBlocks.png)
 
-Note that in this visualiation, the blocks look a bit rounded as the resolution of the simulation was quite low.
+Note that in this visualization, the blocks look a bit rounded as the resolution of the simulation was quite low.
 
 ## 2.4.3 Exercise C: Falling Block + multigrid 
-The direct solver, we used sofar, is fine for low resolutions but not for higher ones. For those, you will want to use a **multigrid** solver instead. In LaMEM, this can be done by specifying ```solver = multigrid``` in the input file.
-Run the Falling block multigrid test by running ```/BuildInSetups/FallingBlock_Multigrid.dat```. 
+The direct solver, we used sofar, is fine for low resolutions but not for higher ones. For those, you will want to use a **multigrid** solver instead. In LaMEM, this can be done by specifying ```stokes_solver = coupled_mg``` in the input file.
+Run the Falling block multigrid test by running ```/BuiltInSetups/FallingBlock_Multigrid.dat```. 
 
 The section in the input file that deals with this is:
 
 ```
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 			=	multigrid  	# solver [direct or multigrid]
-	MGLevels 			=	4			# number of MG levels [default=3]
-	MGSweeps 			=	10			# number of MG smoothening steps per level [default=10]
-	MGSmoother 			=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
-	MGCoarseSolver 		=	mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
+<SolverOptionsStart>
+
+	set_linear_problem  = 1
+	monitor_solvers     = 1
+	num_mg_levels       = 4
+	stokes_solver       = coupled_mg
+	smoother_type       = intermediate # chebyshev+sor
+	smoother_num_sweeps = 10
+	coarse_solver       = bjacobi
+	coarse_num_cpu      = 1
+
+<SolverOptionsEnd>
+
 ```
 
 And LaMEM will print the following statements
 ```
-Preconditioner parameters:
-   Matrix type                   : monolithic
+Preconditioner parameters: 
+   Picard operator type          : assembled
    Preconditioner type           : coupled Galerkin geometric multigrid
-   Global coarse grid [nx,ny,nz] : [4, 4, 4]
+   Global coarse grid [Nx,Ny,Nz] : [4, 4, 4]
    Local coarse grid  [nx,ny,nz] : [4, 2, 2]
    Number of multigrid levels    :  4
+   Number of matrix-free levels  :  0
 ```
 What this states is that we use 4 levels of multgrid. Our finest resolution is given by the ```nel_x, nel_y, nel_z``` at the beginning of the file (32,32,32 in this example).
 The next coarser grid will be (16,16,16), followed by (8,8,8) and the coarsest resolution is (4,4,4).
-Multigrid solves the governing equations at these different grids, and uses a direct solver (e.g., MUMPS) on the coarsest grid. Unfortunately, it is slightly more tricky to set up and use, and you will have to experiment a bit with the number of smoothening steps used at every level and the number of multigid levels that you employ. 
+Multigrid solves the governing equations at these different grids, and uses a direct solver (e.g., MUMPS) on the coarsest grid. Unfortunately, it is slightly more tricky to set up and use, and you will have to experiment a bit with the number of smoothening steps used at every level and the number of multigrid levels that you employ. In this particular example we use block Jacoby preconditioner that can run with PETSc built-in direct solver and therefore does not need parallel directs solvers, like MUMPS, to be installed.
 
 What is important in typical geodynamic simulations is that the coarse grid should be able to "feel" the viscosity structure, so having an extremely coarse grid doesn't work all that well. If your coarse grid is too large, on the other hand, the coarse grid solution will start dominating the computational time, which is also not what you want. Experimenting with this is thus important for real setups. 
 
-*Hint:* You can add the command-line option `-log_view` to get a detailed overview of your simulation, and the time spend on each of the levels. This will be shown at the end of the simulatiom. If you wish, you can only run the simulation for a few timesteps by adding the command-line option `-nstep_max 5`.
+*Hint:* You can add the command-line option `-log_view` to get a detailed overview of your simulation, and the time spend on each of the levels. This will be shown at the end of the simulation. If you wish, you can only run the simulation for a few timesteps by adding the command-line option `-nstep_max 5`.
 
 ## 2.4.4 Exercise D: 2D subduction       
 The previous exercises were all performed for a non-dimensional setup. Yet, in most geoscience applications it is useful to have your input in units of kilometers, degrees Celcius, stresses in MPa, etc. For this reason, LaMEM has the ```geo``` input units. 
 Let's do a subduction simulation to have a look at this, using a 2D example. As the current version of LaMEM 3D-only, we simulate 2D cases by having 2 elements in the y-direction.  
 
-For this, run the dimensional subduction test setup that uses build-in geometries which is called ```/BuildInSetups/Subduction2D_FreeSlip_Direct.dat```. This simulation is a simple viscous subduction setup, with a free slip upper boundary and a plastic crust (such that the plate detaches from the top boundary). The simulation will take a bit longer than some of the previous simulations, but look approximately like this:
+For this, run the dimensional subduction test setup that uses built-in geometries which is called ```/BuiltInSetups/Subduction2D_FreeSlip_Direct.dat```. This simulation is a simple viscous subduction setup, with a free slip upper boundary and a plastic crust (such that the plate detaches from the top boundary). The simulation will take a bit longer than some of the previous simulations, but look approximately like this:
 
 ![GettingStarted_2D_Subduction_FreeSlip](../assets/img/GettingStarted_2D_Subduction_FreeSlip.png)
 
@@ -172,12 +178,12 @@ The result should look like:
 
 ![GettingStarted_2D_Subduction_FreeSurface](../assets/img/GettingStarted_2D_Subduction_FreeSurface.png)
 
-Note that we used "threshold" in paraview to remove the air layer from the simulation.
+Note that we used "threshold" in ParaView to remove the air layer from the simulation.
 
 ## 2.4.6 Exercise F: 2D rifting    	
 As a next step, we perform a simulation of a 2D rift that forms an asymmetric fault zone/core complex. The setup consists of a lower crust, an upper crust and a sticky air layer to simulate the free surface (represented by an internal free surface).
 
-In this case we have a slightly more complicated setup and use a multigrid solver in a 2D setting. In order to run this example use the file ```/BuildInSetups/Rifting2D_MultigridSolver.dat```.
+In this case we have a slightly more complicated setup and use a multigrid solver in a 2D setting. In order to run this example use the file ```/BuiltInSetups/Rifting2D_MultigridSolver.dat```.
 
 New compared to previous cases is that we:
 

@@ -15,13 +15,12 @@ LaMEM has been tested on a variety of machines ranging from laptops to a massive
 LaMEM consists of the following directories:
 ```
 /bin          -  Contains binaries after compilation (/deb contains the debug version and /opt the optimized)
-/docs         -  Some documentation and the current webpage
-/input_models -  Various input models (run with ../bin/LaMEM -ParamFile *.dat). See the README file in that directory.
-/matlab       -  Various matlab files to change initial mesh and read binary output into matlab. [n]
-/scripts      -	 Various scripts, currently mainly related to Paraview VTK files.
+/doc          -  Some documentation and the current webpage
+/examples     -  Various input models (run with ../bin/LaMEM -ParamFile *.dat). See the README file in that directory.
+/info         -	 Installation instructions and input file nomenclature
+/scripts      -	 Various scripts written in Julia and Bash
 /src          -	 LaMEM source code; compile with "make mode=opt all" and "make mode=deb all"
 /test         -	 Directory with the testing framework. 
-/utils        -	 Various non-essential files.
 ```
 
 ## 2. Download and build LaMEM
@@ -44,15 +43,15 @@ julia> using LaMEM
 (Note: use the backspace to go back from the package manager to the julia REPL.)
 Running a simulation can be done with
 ```julia
-julia> ParamFile="../../input_models/BuildInSetups/FallingBlock_Multigrid.dat";
+julia> ParamFile="../../examples/BuiltInSetups/FallingBlock_Multigrid.dat";
 julia> run_lamem(ParamFile, 2, "-nstep_max = 1")
 ```
 This will run the simulation on 2 processors for 1 timestep. 
 You do have to make sure that the path to the input `*.dat` file is correct in your system. 
-Most likely you will have to change the path, which can be done with the build-in terminal (or PowerShell) in julia:
+Most likely you will have to change the path, which can be done with the built-in terminal (or PowerShell) in julia:
 ```julia
 julia>; 
-shell> cd ~/WORK/LaMEM/input_models/BuildInSetups/
+shell> cd ~/LaMEM/examples/BuiltInSetups/
 ```
 
 If you wish, you can also directly run the downloaded binaries from your terminal without using julia. In that case you'll need to set the correct paths to the required binaries (`LaMEM`,`mpiexec`) and required dynamic libraries, which you can show with:
@@ -70,31 +69,29 @@ If you want test some of the LaMEM examples in this repository, either clone the
 Whereas the pre-build libraries are quite handy, there are some limitations:
 
   * On Windows the MUMPS parallel direct solver is not available. SuperLU_dist does work, so we recommend using that instead.
-  * On Mac, the current compilation of SuperLU_dist does not seem to work, so use MUMPS instead. Linux has both SuperLU_dist & MUMPS available.
+  * On Mac and Linux both SuperLU_dist and MUMPS available.
 
 ## 2.2 Compiling it yourself
 If want, you can ofcourse also compile LaMEM yourself, which will give you the latest version of the code. On large HPC clusters, this is often necessary as you need to link PETSc to the optimized MPI implementation on that system. 
 ### 2.2.1 Main dependencies
 LaMEM crucially relies on:
 
-  * PETSc 3.18.x, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX.
+  * PETSc, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX.
 
 and to a minor extend on:
 
-  * Python, to run the LaMEM testing environment, and see if things work as expected. 
-  * Paraview, to visualize results.
+  * Julia, to run the LaMEM testing environment and see if things work as expected, and to facilitate creating more complicated input geometries.
+  * ParaView, to visualize results.
   * GIT, in order to pull the latest version of LaMEM
-  * MATLAB (version not important), in order to facilitate creating more complicated input geometries
-  * geomIO, to create input geometries from Inkscape (see https://geomio.bitbucket.io) 
   * Any text editor, to modify the LaMEM input files. 
   
 ### 2.2.2 Dependency installation
 We develop LaMEM on Linux and Mac machines, but we also have had success on Windows 10, where we recommend installing it through the (new) bash shell. In order for LaMEM to work, you'll need to install the correct version of PETSc first. PETSc is usually not backwards compatible, so it won't work with the incorrect version. Also please note that we do not always immediately update LaMEM to the latest version of PETSc, so you may have to download/install an older version.
 
 * PETSc: 
-     See http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
-     for installation instructions. We also provide some installation instructions on how to compile 
-     PETSc (and mpich, gcc, as well as PETSc) on various machines in /doc/installation. The simplest manner is sometimes to let PETSc install all additional packages (like MPICH), but that often does not result in the most efficient code. You also have to make sure that the path is set correctly in that case (for MPICH, for example). On a large scale cluster, you will have to link against the cluster libraries (for MPI, for example).
+     [Go here](http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html)
+     to see the installation instructions. We also provide some installation instructions on how to compile 
+     PETSc (and mpich, gcc, as well as PETSc) on various machines in ```/info/installation``` . The simplest manner is sometimes to let PETSc install all additional packages (like MPICH), but that often does not result in the most efficient code. You also have to make sure that the path is set correctly in that case (for MPICH, for example). On a large scale cluster, you will have to link against the cluster libraries (for MPI, for example).
 
 * If you want to do debugging of LaMEM as well, it is a good idea to install both a DEBUG and an OPTIMIZED version of PETSc, in separate directories.
 
@@ -121,22 +118,12 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 
 * Once build, you can verify that LaMEM works correctly with:
 ```  
-        $ cd /tests
+        $ cd /test
         $ make test
 ```
+  Ideally, the tests should run all with no problems. Depending on which external direct solver packages you installed, some may fail (for example, if you did not install MUMPS). The julia test framework will give some hints as where the issues came from.  
 
-  Note that we use the PythonTestHarness framework, which is a set of Python scripts that simplify regression testing (developed by Dave May and Patrick Sanan). The first time you run the makefile, it will download the git repository and put it in the directory ```./pythontestharness```. If this fails for some reason, you can download it directly from the Dave's bitbucket repository and put it in the directory. In that case, it will ask you which batch queuing system to use, which should be ```<none>```.	
-
-  Ideally, the tests should run all with no problems. Depending on which external direct solver packages you installed, some may fail (for example, if you did not install PASTIX). The python test harness will give some hints as where the issues came from.  
-
-  In case you happen to have MATLAB installed on your system, additional tests will be performed in which an input setup is generated from within MATLAB. In order for this to work, you will have to let the system know where the MATLAB-binary is located by setting the following environmental variable (which can also be set in your .bashrc file):
-```  
-        $ which matlab
-        /path_to_your_matlab_library/matlab
-        $ export MATLAB=/path_to_your_matlab_library/matlab
-        $ make test
-```
-Note that you can look at the ```tests``` directory contains subdirectories that are named: ```t?_***``` (for example ```./t1_FB1_Direct/``` which contains a test for a Falling Block setup). Within each of these directories you will find a working LaMEM input file (```*.dat```), and a python file that runs the actual tests in that directory (such as ```test_1_FB1.py```). Have a look at these files to learn more on how to run LaMEM.
+Note that you can look at the ```tests``` directory contains subdirectories that are named: ```t?_***``` (for example ```./t01_FB1_Direct/``` which contains a test for a Falling Block setup). Within each of these directories you will find a working LaMEM input file (```*.dat```), and a Julia script that runs the actual tests in that directory (such as ```test_01_FB1.py```). Have a look at these files to learn more on how to run LaMEM.
 
 
 ## 3. Getting started
@@ -144,7 +131,7 @@ Note that you can look at the ```tests``` directory contains subdirectories that
   You can run your first LaMEM simulation with 
 
 ```
-      $ cd /input_models/BuildInSetups
+      $ cd /examples/BuiltInSetups
       $ ../../bin/opt/LaMEM -ParamFile FallingBlock_IterativeSolver.dat
 ```
   which will run a setup that has a falling block of higher density embedded in a lower density fluid for 10 timesteps.  
@@ -162,47 +149,51 @@ Note that you can look at the ```tests``` directory contains subdirectories that
 
 You can also look at the [User Guide](https://unimainzgeo.github.io/LaMEM/dev/man/Home/). This website also contains more extensive documentation on how to use LaMEM.
 
-The best way to learn LaMEM is by looking at the input files in the order that is recommended in the README files. Start with ```/BuildInSetups```, which shows various example with geometries that are specified in the LaMEM input file. 
+The best way to learn LaMEM is by looking at the input files in the order that is recommended in the README files. Start with ```/BuiltInSetups```, which shows various example with geometries that are specified in the LaMEM input file. 
 
-All possible input parameters in LaMEM are listed in the file ```/input_models/input/lamem_input.dat```, which is worthwhile having a look at. Note that not all of these parameters have to be set (we select useful default options in most cases). 
-
+All possible input parameters in LaMEM are listed in the file ```/info/options/input_file.dat```, which is worthwhile having a look at. Note that not all of these parameters have to be set (we select useful default options in most cases). 
 
 
 ## 4. Development team
 The main developers of the current version are:
 
-* Anton Popov         (Johannes Gutenberg University Mainz, popov@uni-mainz.de), 2011-
-* Boris Kaus          (JGU Mainz, kaus@uni-mainz.de), 2011-
-* Tobias Baumann      (JGU Mainz), 2011-
-* Georg Reuber        (JGU Mainz), 2015-	
-* Adina Puesoek       (JGU Mainz, UC San Diego), 2012-
-* Naiara Fernandez    (JGU Mainz), 2011-2014
-* Arthur Bauville     (JGU Mainz), 2015
-* Andrea Piccolo      (JGU Mainz), 2015-
-* Beatriz Montesinos  (JGU Mainz), 2015-
-* Maximilian Kottwitz (JGU Mainz), 2019-
-* Arne Spang          (JGU Mainz), 2019-
-* Garrett Ito          (University Hawaii), 2021-
-* Jana Schierjott     (University Hawaii), 2020-
+* Anton Popov (JGU Mainz, Germany) [popov@uni-mainz.de]
+* Boris Kaus  (JGU Mainz, Germany) [kaus@uni-mainz.de]
 
-Older versions of LaMEM included a finite element solver as well, 
-and were developed by:
+These people have contributed to LaMEM over the previous years:
 
-* Boris J.P. Kaus (ETH Zurich, Switzerland). 2007-2011
-* Dave A. May     (ETH Zurich, Switzerland). 2009-2011
+* Tobias Baumann
+* Adina Pusok
+* Arthur Bauville
+* Georg Reuber
+* Andrea Piccolo
+* Arne Spang
+* Oskar Kottwitz
+* Philipp Eichheimer
+* Richard Spitz
+* Christian Schuler
+* Naiara Fernandez
+* Marine Collignon
+* Beatriz Martinez
+* Jianfeng Yang
+* Xinxin Wang
+* Patrick Sanan
+* Dave May
+* Garrett Apuzen-Ito
+* Jana Schierjott
+* Sam Howell
+* Wenrong Cao
+
+Older versions of LaMEM including a finite element solver as well, were developed by:
+
+* Boris J.P. Kaus (ETH Zurich, Switzerland). 
+* Dave A. May     (ETH Zurich, Switzerland).
 
 Development work was supported by the European Research Council, 
 with ERC Starting Grant 258830, ERC Proof of Concept Grant 713397 and ERC Consolidator Grant 771143, as well as by BMBF projects SECURE and PERMEA awarded to Boris Kaus. 
 
 LaMEM is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
-
-LaMEM is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
+it under the terms of the MIT License. ```LICENSE``` file for more information.
 
 You should have received a copy of the GNU General Public License
 along with LaMEM. If not, see <http://www.gnu.org/licenses/>.

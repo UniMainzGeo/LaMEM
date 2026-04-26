@@ -1,4 +1,4 @@
-This folder contains example setups for LaMEM, which is created by Jula scrit.
+This folder contains example setups for LaMEM, which is created by Julia script.
 
 Using Julia to generate a model setup is a very flexible way to precisely
 control the phase and temperature at every point of the domain. You can also look 

@@ -10,7 +10,7 @@ The `master` branch contains all features and bug fixes that are believed to be 
 
 ## 6.2 Adding new features to LaMEM using git 
 Most external users of LaMEM do not have writing access rights to LaMEM, to prevent mistakes from happening. Yet you can still contribute code in a rather straightforward manner, by using forking. An overall description of 
-what forking does is given [here](https://www.atlassian.com/git/tutorials/comparing-workflows/forking-workflow). 
+what forking does is given [here](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo). 
 Below, we give specific instructions.
 
 ### 6.2.1. Fork LaMEM
@@ -72,9 +72,9 @@ The workflow is as follows:
    - Commit all files changed: `git commit -a` or
    - Commit selected files: `git commit file1 file2 file1` or
    - Add new files to be committed:`git add file1 file2` followed by `git commit`. Modified files can be added to a commit in the same way.
-   - The same can ofcourse be done through the GUI.
+   - The same can of course be done through the GUI.
    - It is important to do this frequently and add useful commit messages as 
-7. Push the feature branch from your local harddisk to your online bibucket account, such that others (with access) can see it: `git push -u origin andrea_piccolo/feature-passive_tracers`
+7. Push the feature branch from your local hard disk to your online GitHub account, such that others (with access) can see it: `git push -u origin andrea_piccolo/feature-passive_tracers`
 (or equivalently, `git push --set-upstream origin andrea_piccolo/feature-passive_tracers`).
 Note that this step will still be in your own fork of LaMEM, and not in the main version of LaMEM.s
 8. On a regular basis: merge `master` back into your feature or bugfix branch. This is easiest done with SourceTree. On a regular basis you should also pull the latest updates of the main LaMEM into your forked repository (step 2 above)
@@ -93,18 +93,18 @@ Once your branch is ready and you would like to push it back to the main version
 
 ## 6.3 Contributing workflows
 
-Note that LaMEM is an open source-code, and the GPL license states that changes you made to the code must be pushed back to LaMEM. We think this is fair, because we have spend a considerable amount of time developping it without having received specific funding to create an open-source community code. By pushing back your contributions to `master` other users can benefit from your additions. If the additions are part of a paper that you would like to be cited, feel free to add the reference in the source code. 
-The LaMEM development team will make sure that things in master work and that tests will keep on running. By adding appropiate tests for your features it will also work in some time from now. Our experience shows that if you don't do this, or wait too long to push changes back to master, you will find that it becomes increasingly difficult to keep your branch in line with `LaMEM/master`.  
+Note that LaMEM is an open source-code, and the GPL license states that changes you made to the code must be pushed back to LaMEM. We think this is fair, because we have spend a considerable amount of time developing it without having received specific funding to create an open-source community code. By pushing back your contributions to `master` other users can benefit from your additions. If the additions are part of a paper that you would like to be cited, feel free to add the reference in the source code. 
+The LaMEM development team will make sure that things in master work and that tests will keep on running. By adding appropriate tests for your features it will also work in some time from now. Our experience shows that if you don't do this, or wait too long to push changes back to master, you will find that it becomes increasingly difficult to keep your branch in line with `LaMEM/master`.  
 
 
 #### 6.3.1 Before filing a pull request
 
 - If your contribution can be logically decomposed into 2 or more separate contributions, submit them in sequence with different branches instead of all at once. That makes it much easier to detect and resolve issues.
-- Include tests which cover any changes to the source code.  Create a new directory for these tests within `LaMEM/tests` and add the test itself to `runLaMEM_Tests.py`. You will have to create a python file for each new test directory, and will have to add `*.expected` files. Please make sure that these tests run reasonably fast, as it will otherwise significantly slow down the full testing framework (in most cases it is sufficient to have a low resolution case for testing). Tests can also involve python based plotting or postprocessing, or even running MATLAB to create a setup, but this is not a requirement. If you do plotting and postprocessing you need to make sure that these tests will also work on machines that do not have the python plotting packages installed. You can most likely get inspiration by looking at the existing examples.
-- Run the full test suite on your machine - i.e `make test` in the `/LaMEM/tests` directory before a pull request. All tests should pass; if not ensure that. 
+- Include tests which cover any changes to the source code.  Create a new directory for these tests within `LaMEM/test` and add the test itself to `runtests.jl`. You will have to create a Julia script for each new test directory, and will have to add `*.expected` files. Please make sure that these tests run reasonably fast, as it will otherwise significantly slow down the full testing framework (in most cases it is sufficient to have a low resolution case for testing). You can most likely get inspiration by looking at the existing examples.
+- Run the full test suite on your machine - i.e `make test` in the `/LaMEM/test` directory before a pull request. All tests should pass; if not ensure that. 
 - Make sure that there are NO compiler warnings left if you compile a fresh version of LaMEM with `make mode=deb clean_all; make mode=deb all`
 - Do the same on a different machine (e.g., linux, mac etc.) if it is available to you. Sometimes things work on one machine but not on the other.
-- If your additions resulted in new input parameters to the input script, add these new options (with a brief explanation of their meaning) to the input master file `LaMEM/input_models/input/lamem_input.dat`. Note that the nomenclature of the new parameters must be unique and case-independent. It is thus not allowed to call a paramater `K`, since we already have thermal conductivity `k`. The reason for this is that new parameters are automatically part of the adjoint inversion framework which otherwise gets confused.  New parameters should also have a clearly recognizable name (so everything related to your new plume inflow boundary condition should be called something like `Plume_`). Note that any new parameter in the input file can also automatically be called/overruled from the command line.
+- If your additions resulted in new input parameters to the input script, add these new options (with a brief explanation of their meaning) to the input master file `LaMEM/info/installation/input_file.dat`. Note that the nomenclature of the new parameters must be unique and case-independent. It is thus not allowed to call a parameter `K`, since we already have thermal conductivity `k`. The reason for this is that new parameters are automatically part of the adjoint inversion framework which otherwise gets confused.  New parameters should also have a clearly recognizable name (so everything related to your new plume inflow boundary condition should be called something like `Plume_`). Note that any new parameter in the input file can also automatically be called/overruled from the command line.
 - Merge the latest version of master back into your branch and make sure that all tests work (you may have to resolve conflicts; if you do his step regularly as suggested above it will in general be easier to keep your branch up-to-date). 
 - Make sure that you have no memory leaks. That means that every vector/matrix/dm you created should also be destroyed with VecDestroy, etc. In addition, if you happen to allocate memory yourself (with PetscMalloc) you *must* make sure that you free the memory again (using PetscFree). A simple way to check that you are fine with the PETSc internal objects is to run your testfile with ` -log_view` at the end. This will give you a picture such as this one 
   ![MemoryUsage](../assets/img/PETSc_memory_usage.png)
@@ -121,8 +121,8 @@ Creating a pull request is best done through the GitHub web page:
 5. Create a title and a description of what the pull request is about
 6. Select Anton and Boris as reviewers
 7. And push `Create Pull Request`
-8. Boris and Anton will reveive an email and at least one of us has to approve the pull request. If you want others to look at it as well, add them at this stage. They will all receive an email if the PR is created and if changes are made to the PR.
-9. We will go over the code, test it ourselves, and in most cases make suggestions for changes. These can be incorporated into your branch by commiting changes in the usual manner. 
+8. Boris and Anton will review an email and at least one of us has to approve the pull request. If you want others to look at it as well, add them at this stage. They will all receive an email if the PR is created and if changes are made to the PR.
+9. We will go over the code, test it ourselves, and in most cases make suggestions for changes. These can be incorporated into your branch by committing changes in the usual manner. 
 10. Once approved, it will be merged to `master` and your branch will be closed. The tests will ensure that the new features will keep working.
   
 

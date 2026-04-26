@@ -1,20 +1,20 @@
-# 4.1 2D subduction setup with nonlinear rheologies
+# 4.1 2D subduction setup with linear rheologies
 
-This is a worked-out example of how to create a 2D subduction setup with temperature dependent rheology.
+This is a worked-out example of how to create a 2D subduction setup with linear rheology.
 
 The example input file can be found under:
 ```
-/input_models/SubductionWithParticles/Subduction2D_FreeSurface_MATLABParticles_Nonlinear_DirectSolver.dat
+/examples/SubductionWithParticles/Subduction2D_FreeSlip_Particles_Linear_DirectSolver.dat
 ```
-whereas the MATLAB/Octave file is here:
+whereas the Julia script is here:
 ```
-/input_models/SubductionWithParticles/CreateMarkers_Subduction_Tdependent_FreeSurface_parallel.m
+/examples/SubductionWithParticles/CreateMarkers_Subduction_Linear_FreeSlip_parallel.jl
 ```
 
 ### 4.1.1 Input model geometry 
 We start with having a look at the input file. With Visual Studio Code this can be done with
 ```
-$ code Subduction2D_FreeSurface_MATLABParticles_Nonlinear_DirectSolver.dat
+$ code Subduction2D_FreeSlip_Particles_Linear_DirectSolver.dat
 ```
 
 ***Units***
@@ -31,19 +31,19 @@ At the beginning of the script, we specify the units
 	unit_viscosity   = 1e20
 	unit_stress      = 1e9
 ``` 
-Internally, LaMEM computes everything in non-dimensional units in order to preent round-off (numerical) errors. In order to transfer things from dimensional to non-dimensional units you need to specify these values.
+Internally, LaMEM computes everything in non-dimensional units in order to prevent round-off (numerical) errors. In order to transfer things from dimensional to non-dimensional units you need to specify these values.
 LaMEM has 3 modes for units
 ```
 units = none
 units = SI
 units = geo
 ```
-as you can imagine, the first implies that all input is in non-dimensional units, the second that all is given in SI units. The third, and the one that is most typically used, employs geodynamically sensible units, such as temperature in celcius, length scales in kilometers, times in million years, etc.
+as you can imagine, the first implies that all input is in non-dimensional units, the second that all is given in SI units. The third, and the one that is most typically used, employs geodynamically sensible units, such as temperature in Celcius, length scales in kilometers, times in million years, etc.
 
-The units that you define here are in SI-units, which implies that the typical lengthscale is 1000 meters, and the typical stress is $10^9$ Pa.
+The units that you define here are in SI-units, which implies that the typical length scale is 1000 meters, and the typical stress is $10^9$ Pa.
 
 ***Model domain***
-The model domain and numerical reoslution are specified here:
+The model domain and numerical resolution are specified here:
 ```
 #===============================================================================
 # Grid & discretization parameters
@@ -68,7 +68,7 @@ The remaining part of this block defines the number of elements in each directio
 Also note that you can always specify parameters on the command-line, that will *overrule* whatever is written in the input file. 
 For example: 
 ```
-../../bin/LaMEM -ParamFile Subduction2D_FreeSurface_MATLABParticles_Nonlinear_DirectSolver.dat -nel_x 64 -nel_z 16
+../../bin/LaMEM -ParamFile Subduction2D_FreeSlip_Particles_Linear_DirectSolver.dat -nel_x 64 -nel_z 16
 ```
 will perform a simulation with 64 by 2 by 16 elements instead.
 

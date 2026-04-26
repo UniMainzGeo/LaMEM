@@ -20,7 +20,7 @@
 ## Features
 LaMEM contains a number of features, specifically tailored to simulate geological processes and complex geometries:
 
-* 2D/3D parallel thermomechanical code for cartesian geometries
+* 2D/3D parallel thermo-mechanical code for cartesian geometries
 
 * Build from the onset to run on MPI-parallel machines; the largest we tested had 458'752 processors
   
@@ -31,10 +31,9 @@ LaMEM contains a number of features, specifically tailored to simulate geologica
 * Newton solvers for nonlinear iterations 
 
 * Multiple ways to create model geometries: 
-   (1) Build-in geometrical objects,
-   (2) MATLAB/Octave input files, 
-   (3) [GeomIO](https://geomio.bitbucket.io) support to create 2D/3D input geometries from vector graphics,
-   (4) Voxel-based input (to compute effective permeabilities of porous rocks).
+   (1) Built-in geometrical objects,
+   (2) Julia scripts, 
+   (3) Voxel-based input (to compute effective permeabilities of porous rocks).
 
 * Mechanical solver for visco-elasto-plastic solvers, for both (thermo)-elastic bulk compressible and incompressible cases
   
@@ -60,12 +59,12 @@ LaMEM contains a number of features, specifically tailored to simulate geologica
 
 We recommend that your start with reading the [installation](Installation.md) instructions.
 
-## Extending this userguide
+## Extending this user guide
 
-The userguide consists of [Markdown](http://daringfireball.net/projects/markdown/) pages which is compiled into webpages using the julia [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) package.  
+The user guide consists of [Markdown](http://daringfireball.net/projects/markdown/) pages which is compiled into webpages using the julia [Documenter.jl](https://github.com/JuliaDocs/Documenter.jl) package.  
 The pages are listed in the 
 ```
-/docs
+/doc
 ```
 directory of this repository. You can extend it by adding new pages to the repository, which can be added to the side menu by modifying `make.jl`. 
 It will be automatically compiled when you push
