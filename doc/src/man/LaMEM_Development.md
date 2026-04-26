@@ -93,7 +93,7 @@ Once your branch is ready and you would like to push it back to the main version
 
 ## 6.3 Contributing workflows
 
-Note that LaMEM is an open source-code, distributed under the terms of MIT License. Although this license is permissive, we still highly encourage you to contribute changes you made to the code back to LaMEM repository. By pushing back your contributions to `master` other users can benefit from your additions. If the additions are part of a paper that you would like to be cited, feel free to add the reference in the source code. 
+Note that LaMEM is an open-source code, distributed under the terms of MIT License. Although this license is permissive, we still highly encourage you to contribute changes you made to the code back to LaMEM repository. By pushing back your contributions to `master` other users can benefit from your additions. If the additions are part of a paper that you would like to be cited, feel free to add the reference in the source code. 
 The LaMEM development team will make sure that things in master work and that tests will keep on running. By adding appropriate tests for your features it will also work in some time from now. Our experience shows that if you don't do this, or wait too long to push changes back to master, you will find that it becomes increasingly difficult to keep your branch in line with `LaMEM/master`.  
 
 

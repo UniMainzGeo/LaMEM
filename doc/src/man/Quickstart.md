@@ -16,11 +16,11 @@ LaMEM consists of the following directories:
 ```
 /bin          -  Contains binaries after compilation (/deb contains the debug version and /opt the optimized)
 /doc          -  Some documentation and the current webpage
-/examples     -  Various input models (run with ../bin/LaMEM -ParamFile *.dat). See the README file in that directory.
+/examples     -  Various input models (run with ../bin/LaMEM -ParamFile *.dat). See the README file in that directory
 /info         -	 Installation instructions and input file nomenclature
 /scripts      -	 Various scripts written in Julia and Bash
 /src          -	 LaMEM source code; compile with "make mode=opt all" and "make mode=deb all"
-/test         -	 Directory with the testing framework. 
+/test         -	 Directory with the testing framework
 ```
 
 ## 2. Download and build LaMEM
