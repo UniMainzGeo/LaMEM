@@ -1,22 +1,22 @@
 [TOC]
 
 ## 7. Debugging LaMEM
-If you are only a user of LaMEM, any text-editor is sufficient to change the *.dat LaMEM input files. Yet, if you are planning to do some more serious code development, it is quite helpful to install a more professional debugging environment.  
+If you are only a user of LaMEM, any text-editor is sufficient to change the *.dat LaMEM input files. Yet, if you are planning to do some more serious code development, it is quite helpful to install a more professional debugging environment such as Microsoft Visual Studio Code or Eclipse.
 
 ### 7.1. Microsoft Visual Studio Code
 [Microsoft Visual Studio Code](https://code.visualstudio.com) is a recent and open-source development by Microsoft which has quickly become the number one development environment among professional programmers. It runs on Linux, Mac and Windows and provides a very simple way to get debugging to work with PETSc. It also allows you to do development on a remote system almost as if it is on your local machine, which is pretty cool.
 
-Here it will be assumed that PETSc, MPICH and LaMEM are installed in
+Here it will be assumed that we debug on Mac OS, MPICH is installed via Homebrew, and PETSc and LaMEM are installed in the following folders
 ```
-$ /opt/petsc/petsc-3.22.5-deb
-$ /Users/user/PROG/LaMEM
+$ /Users/user/software/petsc/petsc-3.22.5-deb 
+$ /Users/user/prog/LaMEM
 ```
 which you obviously have to update for your system. 
 
 If you want to do remote debugging on a linux machine, you should first install the [Remote SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) plugin and login to the remote server (this obviously requires you to have ssh login data to that machine). On the remote machine go to the `/LaMEM/src` directory.
 
 The first thing to do is to add a file called `c_cpp_properties.json` inside the (hidden) directory 
-`/Users/user/PROG/LaMEM/.vscode/` with the following content:
+`/Users/user/prog/LaMEM/.vscode/` with the following content:
 ```
 {
     "configurations": [
@@ -25,7 +25,7 @@ The first thing to do is to add a file called `c_cpp_properties.json` inside the
             "includePath": [
                 "${workspaceFolder}/**",
                 "/opt/homebrew/include",
-                "/opt/petsc/petsc-3.22.5-deb/include/"
+                "/Users/user/software/petsc/petsc-3.22.5-deb/include/"
             ]
         }
     ],
@@ -36,7 +36,7 @@ This will tell the code where PETSc, and will give you info about all the PETSc 
 
 If you want to debugging as well, you need to make sure that you have a working debugger installed (for example the GNU debugger gdb, or on the newer arm64 apple systems the lldb debugger). On an arm64 apple system you would need to install the `C/C++` extension as well as the `CodeLLDB` extension. 
 
-Once that is the case, you need to create a file called `launch.json` in the same hidden directory `/local/home/user/LaMEM/.vscode/`:
+Once that is the case, you need to create a file called `launch.json` in the same hidden directory `/Users/user/prog/LaMEM/.vscode/`:
 ```
 {
     // Use IntelliSense to learn about possible attributes.
@@ -48,11 +48,11 @@ Once that is the case, you need to create a file called `launch.json` in the sam
             "name": "(lldb) Launch",
             "type": "lldb",
             "request": "launch",
-            "program": "/Users/user/PROG/LaMEM/bin/deb/LaMEM",
+            "program": "/Users/user/prog/LaMEM/bin/deb/LaMEM",
             "args": ["-ParamFile","FallingBlock_IterativeSolver.dat","-nstep_max","2"],
             "stopOnEntry": false,
-            "cwd": "/Users/user/PROG/LaMEM/examples/BuiltInSetups/",
-            "env": {"PETSC_DEB": "/opt/petsc/petsc-3.22.5-deb",
+            "cwd": "/Users/user/prog/LaMEM/examples/BuiltInSetups/",
+            "env": {"PETSC_DEB": "/Users/user/software/petsc/petsc-3.22.5-deb",
                     "PATH": "/opt/homebrew/bin:${env:PATH}"},
             "preLaunchTask": "C/C++: build LaMEM deb file",
         },   
@@ -61,7 +61,7 @@ Once that is the case, you need to create a file called `launch.json` in the sam
 ```
 
 For this to work, we also need to create a task that runs `make mode=deb all` in `/LaMEM/src` before we start the debugger, to rebuild the code. 
-For this, you need to create a file `tasks.json` in `.vscode`:
+For this, you need to create a file `tasks.json` in `/Users/user/prog/LaMEM/.vscode/`:
 ```
 {
     "tasks": [
@@ -73,8 +73,8 @@ For this, you need to create a file `tasks.json` in `.vscode`:
                 "mode=deb","all"
             ],
             "options": {
-                "cwd": "/Users/user/PROG/LaMEM/src",
-                "env": {"PETSC_DEB":  "/opt/petsc/petsc-3.22.5-deb/",
+                "cwd": "/Users/user/prog/LaMEM/src",
+                "env": {"PETSC_DEB":  "/Users/user/software/petsc/petsc-3.22.5-deb",
                         "PATH": "/opt/homebrew/bin:${env:PATH}"}
             },
             "problemMatcher": [
@@ -93,7 +93,6 @@ For this, you need to create a file `tasks.json` in `.vscode`:
 
 After this, you should be able to run LaMEM with the debugger, and even step inside PETSc routines.
 
-
 ### 7.2. Eclipse
 
-The Eclipse Integrated Developer Environment is more difficult to set up. If you want more information about it, please have a look at `LaMEM/info/installation/linux`. Please note that Eclipse debugging is currently only functional on Linux platform since `gdb` debugger is no longer available on Mac OS.
+The Eclipse Integrated Developer Environment is more difficult to set up. If you want more information about it, please have a look at `LaMEM/info/installation/linux`. Please note that Eclipse debugging is currently only functional on Linux platform since `gdb` debugger is no longer available on Mac OS, and native `lldb` debugger has very incomplete and fragile integration with Eclipse. Please consider using VS Code on Mac OS.

@@ -71,7 +71,7 @@ If you generate the file on a different number of processors, or use different b
 
 #### 3.2.2.2 Run the Julia script
 
-Execute the Julia script again, but this time provide the name of the partitioning file as a command ine option
+Execute the Julia script again, but this time provide the name of the partitioning file as a command line option
 ```
 julia CreateMarkers_Subduction_Linear_FreeSlip_parallel.jl ProcessorPartitioning_4cpu_4.1.1.bin
 ```
