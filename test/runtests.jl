@@ -6,6 +6,8 @@ using Test
 using GeophysicalModelGenerator
 using PETSc_jll
 
+refresh_expected=false # allows easy refreshing of the expected files (WARNING! Use with caution!)
+
 const create_plots = false
 if create_plots
     using CairoMakie
@@ -42,15 +44,14 @@ include("test_utils.jl")        # test-framework specific functions
 
 test_dir = pwd()
 
-
-
-
 # ===================
 @testset "LaMEM Testsuite" verbose=true begin
 
-@testset "t1_FB1_Direct" verbose=true begin
+#=
+	
+@testset "t01_FB1_Direct" verbose=true begin
     cd(test_dir)
-    dir = "t1_FB1_Direct";
+    dir = "t01_FB1_Direct";
     
     ParamFile = "FallingBlock_mono_PenaltyDirect.dat";
     
@@ -59,20 +60,25 @@ test_dir = pwd()
     
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt-p1.expected", 
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 
     @test perform_lamem_test(dir,ParamFile,"FB1_b_Direct_deb-p1.expected", 
-                            keywords=keywords, accuracy=acc, cores=1, deb=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, deb=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 
     @test perform_lamem_test(dir,ParamFile,"FB1_c_MUMPS_opt-p2.expected", 
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
-                            args="-jp_pc_factor_mat_solver_package mumps")
+                            args="-jp_pc_factor_mat_solver_type mumps",
+                            create_expected_file=refresh_expected)
 end
 
-@testset "t2_FB2_MG" begin
+
+
+@testset "t02_FB2_MG" begin
     if test_superlu
         cd(test_dir)
-        dir = "t2_FB2_MG";
+        dir = "t02_FB2_MG";
         
         ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
         
@@ -81,13 +87,14 @@ end
         
         # Perform tests
         @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1.expected", 
-                                keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=false)
+                                keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=false,
+                                create_expected_file=refresh_expected)
     end
 end
 
-@testset "t3_Subduction" begin
+@testset "t03_Subduction" begin
     cd(test_dir)
-    dir = "t3_SubductionGMGinput";
+    dir = "t03_SubductionGMGinput";
     
     # input script 
     include(joinpath(dir,"CreateMarkers_Subduction.jl"));      
@@ -98,14 +105,16 @@ end
     acc      = ((rtol=1e-6,atol=5e-7), (rtol=1e-5,atol=1e-5), (rtol=5e-4,atol=1e-3));
     
     # test on 1 core
-    # t3_Sub1_a_Direct_opt
+    # t03_Sub1_a_Direct_opt
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=1, mpiexec=mpiexec)
 
     @test perform_lamem_test(dir,ParamFile,"Sub1_a_Direct_opt-p1.expected", 
                             args="-nstep_max 2",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 
-    # t3_Sub1_b_MUMPS_opt                            
+
+    # t03_Sub1_b_MUMPS_opt                            
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
         
@@ -113,9 +122,10 @@ end
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt-p4.expected", 
                                 args="-nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
+                                create_expected_file=refresh_expected)
 
-    # t3_Sub1_c_MUMPS_deb    
+    # t03_Sub1_c_MUMPS_deb    
                      
     # writing parallel marker files doesn't work in CI with 64 bit atm 
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
@@ -125,9 +135,10 @@ end
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb-p4.expected", 
                                 args="-jp_pc_factor_mat_solver_type mumps  -nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
-
-    # t3_Sub1_d_MUMPS_MG_VEP_opt                                 
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
+                                create_expected_file=refresh_expected)
+                        
+    # t03_Sub1_d_MUMPS_MG_VEP_opt                                 
     # NOTE: This employs 1D grid refinement
     include(joinpath(dir,"CreateMarkers_SubductionVEP_parallel.jl"));      
 
@@ -139,13 +150,13 @@ end
     CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=2, mpiexec=mpiexec,  is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p8.expected", 
                                 args="-nstep_max 2",
-                                keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)  
- 
+                                keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
+                                create_expected_file=refresh_expected)       
 end
 
-@testset "t4_Localisation" begin
+@testset "t04_Localisation" begin
     cd(test_dir)
-    dir = "t4_Loc";
+    dir = "t04_Loc";
     
     ParamFile = "localization.dat";
     
@@ -156,51 +167,56 @@ end
     if test_mumps & !is64bit
         # This test has issues on github actions with 64bit but works fine on our machines and with 32bit.
 
-        # t4_Loc1_a_MUMPS_VEP_opt
+        # t04_Loc1_a_MUMPS_VEP_opt
         @test perform_lamem_test(dir,"localization.dat","Loc1_a_MUMPS_VEP_opt-p4.expected",
                                 args="-nstep_max 20", 
-                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
+                            	create_expected_file=refresh_expected)
     end
 
-    # t4_Loc1_b_MUMPS_VEP_Reg_opt
+    # t04_Loc1_b_MUMPS_VEP_Reg_opt
     @test perform_lamem_test(dir,"localization_eta_min_reg.dat","Loc1_b_MUMPS_VEP_Reg_opt-p4.expected",
                             args="-nstep_max 20", 
-                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 
-    # t4_Loc1_c_Direct_VEP_opt                            
+    # t04_Loc1_c_Direct_VEP_opt                            
     @test perform_lamem_test(dir,"localization.dat","Loc1_c_Direct_VEP_opt-p1.expected",
                             args="-nstep_max 20", 
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 
 
-    # t4_Loc1_d_MUMPS_VEP_VPReg_opt
+    # t04_Loc1_d_MUMPS_VEP_VPReg_opt
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=5e-2,atol=1e-8), (rtol=2e-3,atol=5e-9), (rtol=2e-3,atol=2e-7));
     
-    @test perform_lamem_test(dir,"localization_eta_vp_reg.dat","t4_Loc1_d_MUMPS_VEP_VPReg_opt-p1.expected",
+    @test perform_lamem_test(dir,"localization_eta_vp_reg.dat","t04_Loc1_d_MUMPS_VEP_VPReg_opt-p1.expected",
                             args="-nstep_max 20", 
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 
 end
 
-@testset "t5_Permeability" begin
+@testset "t05_Permeability" begin
     cd(test_dir)
-    dir = "t5_Perm";
+    dir = "t05_Perm";
     
     ParamFile = "Permea.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,), (rtol=1e-5,), (rtol=1e-2,atol=1e-8));
     
-    # t5_Permeability_Direct_opt
+    # t05_Permeability_Direct_opt
     @test perform_lamem_test(dir,ParamFile,"Permeability_direct_opt-p4.expected", 
-                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 end
 
 
-@testset "t6_AdjointGradientScalingLaws_p2" begin
+@testset "t06_AdjointGradientScalingLaws_p2" begin
     cd(test_dir)
-    dir = "t6_AdjointGradientScaling";
+    dir = "t06_AdjointGradientScaling";
     
     keywords   = (  "|Div|_inf",
                     "|Div|_2",
@@ -227,24 +243,24 @@ end
         # t6_AdjointGradientScalingLaws_p2
         ParamFile = "t6_RTI_ScalingLaw.dat";
         @test perform_lamem_test(dir,ParamFile,"t6_AdjointGradientScaling_p2.expected",
-                                keywords=keywords, accuracy=acc, cores=2, opt=true, split_sign=split_sign, mpiexec=mpiexec)
+                                keywords=keywords, accuracy=acc, cores=2, opt=true, split_sign=split_sign, mpiexec=mpiexec,
+                                create_expected_file=refresh_expected)
     end
         
-    # t6_AdjointGradientScalingLaws_SoftFilm
-    ParamFile = "t6_RTI_ScalingLaw.dat";
-    @test perform_lamem_test(dir,ParamFile,"t6_AdjointGradientScaling_SoftFilm_p1.expected",
+    # t06_AdjointGradientScalingLaws_SoftFilm
+    ParamFile = "t06_RTI_ScalingLaw.dat";
+    @test perform_lamem_test(dir,ParamFile,"t06_AdjointGradientScaling_SoftFilm_p1.expected",
                             args = "-surf_level 0.1 -eta[0] 10 -eta[1] 1 -coord_x -0.4,0.4 -FreeSurf_Wavelength 0.8", 
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, split_sign=split_sign,  mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, split_sign=split_sign,  mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 
 end
 
-
-
-@testset "t7_AdjointGradientInversion" begin
+@testset "t07_AdjointGradientInversion" begin
     cd(test_dir)
-    dir = "t7_AdjointGradientInversion";
+    dir = "t07_AdjointGradientInversion";
     
-    # t7_AdjointGradientInversion_1
+    # t07_AdjointGradientInversion_1
     keywords   = (  "| 1 Diff parameter value =",
                     "| 2 Diff parameter value =",
                     "| 1 Parameter value =",
@@ -258,12 +274,13 @@ end
                 );
 
     # Perform tests
-    ParamFile = "t7_Subduction2D_FreeSlip_Inversion.dat";
-    @test perform_lamem_test(dir,ParamFile,"t7_AdjointGradientInversion_1.expected",
+    ParamFile = "t07_Subduction2D_FreeSlip_Inversion.dat";
+    @test perform_lamem_test(dir,ParamFile,"t07_AdjointGradientInversion_1.expected",
                             args="-nel_z 16 -nel_x 64",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 
-    # t7_AdjointGradientInversion_2
+    # t07_AdjointGradientInversion_2
     keywords   = (  "| misfit          ",
                     "| misfit / misfit0",
                     "|   1 eta[0] =",
@@ -280,12 +297,13 @@ end
                 );
     split_sign = ("=","=","","","","")
 
-    ParamFile = "t7_Subduction2D_FreeSlip_Inversion.dat";
-    @test perform_lamem_test(dir,ParamFile,"t7_AdjointGradientInversion_2.expected",
+    ParamFile = "t07_Subduction2D_FreeSlip_Inversion.dat";
+    @test perform_lamem_test(dir,ParamFile,"t07_AdjointGradientInversion_2.expected",
                             args="-tao_fmin 1e-6 -nel_z 16 -nel_x 64 -Inversion_EmployTAO 1",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec); 
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected) 
 
-    # t7_AdjointGradientInversion_3
+    # t07_AdjointGradientInversion_3
     keywords   = (  "| misfit          ",
                     "| misfit / misfit0",
                     "|   1 eta[0] =",
@@ -301,13 +319,14 @@ end
                     (rtol=2e-4, atol=1e-6),
                 );
 
-    ParamFile = "t7_Subduction2D_FreeSlip_Inversion_FD.dat";
-    @test perform_lamem_test(dir,ParamFile,"t7_AdjointGradientInversion_3.expected",
+    ParamFile = "t07_Subduction2D_FreeSlip_Inversion_FD.dat";
+    @test perform_lamem_test(dir,ParamFile,"t07_AdjointGradientInversion_3.expected",
                             args="-tao_fmin 1e-6 -nel_z 16 -nel_x 32",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec) 
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected) 
 
     # PSD paper inversion for nonlinear materials:
-    # t7_PSDInversion_1
+    # t07_PSDInversion_1
     keywords   = (  "| LS factor for 1.Parameter = ",
                     "|    F =",
                     "| 1 Parameter value = "
@@ -318,13 +337,14 @@ end
                     (rtol=1e-5, atol=1e-5),
                 );
     
-    ParamFile = "t7_PSDInversionPaper.dat";
-    @test perform_lamem_test(dir,ParamFile,"t7_PSDInversionPaper_1.expected",
+    ParamFile = "t07_PSDInversionPaper.dat";
+    @test perform_lamem_test(dir,ParamFile,"t07_PSDInversionPaper_1.expected",
                             args="-Inversion_rtol 4.6e-2 -nel_x -nel_y 8 -nel_z 8",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected)
 
     # PSD paper inversion for linear materials:   
-    # t7_PSDInversion_2                            
+    # t07_PSDInversion_2                            
     keywords   = (  "| LS factor for 1.Parameter = ",
                     "|    F =",
                     "| 1 Parameter value = "
@@ -335,23 +355,24 @@ end
                     (rtol=5e-5, atol=1e-5),
                 );
 
-    ParamFile = "t7_PSDInversionPaper.dat";
-    @test perform_lamem_test(dir,ParamFile,"t7_PSDInversionPaper_2.expected",
+    ParamFile = "t07_PSDInversionPaper.dat";
+    @test perform_lamem_test(dir,ParamFile,"t07_PSDInversionPaper_2.expected",
                             args="-nel_x 8 -nel_y 8 -nel_z 8  -n[0] 1 -n[1] 1 -n[2] 1  -Value[0] 135",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec) 
+                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
+                            create_expected_file=refresh_expected) 
 end
 
 
-@testset "t8_AdjointGradients" begin
+@testset "t08_AdjointGradients" begin
   cd(test_dir)
   include("AdjointGradients.jl")
 end
 
 
 
-@testset "t9_PhaseDiagrams" begin
+@testset "t09_PhaseDiagrams" begin
     cd(test_dir)
-    dir = "t9_PhaseDiagrams";
+    dir = "t09_PhaseDiagrams";
     
     ParamFile = "test_9_FallingBlock_PhaseDiagrams.dat";
     
@@ -1100,6 +1121,7 @@ end
 end
 
 
+
 @testset "t34_3D_2D_push_block" begin
     cd(test_dir)
     dir = "t34_3D_2D_push_block";
@@ -1111,48 +1133,55 @@ end
     
     # Test 3D Bezier push block functionality
     @test perform_lamem_test(dir,ParamFile,"3D_push_block_opt-p1.expected", 
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+							create_expected_file=refresh_expected)
 
     # Test 2D Bezier push block functionality (push along x-axis only)
     ParamFile = "2D_push_block.dat";
     @test perform_lamem_test(dir,ParamFile,"2D_push_block_opt-p1.expected", 
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
-@testset "t34_TopoDiffusion" begin
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+							create_expected_file=refresh_expected)
+
+@testset "t35_TopoDiffusion" begin
     cd(test_dir)
-    dir = "t34_TopoDiffusion"
-    include(joinpath(dir, "t34_CreateSetup.jl"))
+    dir = "t35_TopoDiffusion"
+    include(joinpath(dir, "TopoDiffusionCreateSetup.jl"))
 
     keywords = ("|Div|_inf", "|Div|_2", "|mRes|_2")
     acc      = ((rtol=1e-6, atol=1e-6), (rtol=1e-5, atol=5e-5), (rtol=2.5e-4, atol=1e-4))
 
-    ParamFile = "t34_TopoDiffusion.dat"
+    ParamFile = "TopoDiffusion.dat"
 
-    t34_CreateSetup(dir, ParamFile; NumberCores=1, mpiexec=mpiexec)
+    TopoDiffusionCreateSetup(dir, ParamFile; NumberCores=1, mpiexec=mpiexec)
 
-    @test perform_lamem_test(dir, ParamFile, "t34_TopoDiffusion_opt-p1.expected";
+    @test perform_lamem_test(dir, ParamFile, "TopoDiffusion_opt-p1.expected";
         args     = "-nstep_max 3",
         keywords = keywords,
         accuracy = acc,
         cores    = 1,
         opt      = true,
         mpiexec  = mpiexec,
+		create_expected_file=refresh_expected
     )
 end
 
-@testset "t34_spatially_limited_erosion" begin
+=# 
+
+@testset "t36_spatially_limited_erosion" begin
     cd(test_dir)
-    dir = "t34_spatially_limited_erosion";
-    include(joinpath(dir,"CreateMarkers_t34_SingleCore.jl"));
+    dir = "t36_spatially_limited_erosion";
+    include(joinpath(dir,"CreateMarkers_SingleCore.jl"));
 
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5, atol=5e-5), (rtol=2.5e-4,atol=1e-4));
 
     ParamFile = "spatially_limited_erosion.dat"
 
-    CreateMarkers_t34_SingleCore(dir, ParamFile, NumberCores=1, mpiexec=mpiexec)
+    CreateMarkers_SingleCore(dir, ParamFile, NumberCores=1, mpiexec=mpiexec)
     @test perform_lamem_test(dir, ParamFile, "spatially_limited_erosion_opt-p1.expected",
                             args="-nstep_max 2",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+							create_expected_file=refresh_expected, clean_dir = false)
 end
 
 end

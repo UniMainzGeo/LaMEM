@@ -1,7 +1,7 @@
 # Load package that contains LaMEM I/O routines
 using GeophysicalModelGenerator, SpecialFunctions  
 
-function CreateMarkers_t34_SingleCore(dir="./", ParamFile="spatially_limited_erosion.dat"; NumberCores=1, mpiexec="mpiexec", is64bit=false)
+function CreateMarkers_SingleCore(dir="./", ParamFile="spatially_limited_erosion.dat"; NumberCores=1, mpiexec="mpiexec", is64bit=false)
 
     cur_dir = pwd()
     cd(dir)

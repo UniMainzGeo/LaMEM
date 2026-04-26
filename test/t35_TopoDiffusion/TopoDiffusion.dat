@@ -137,44 +137,19 @@
     <MaterialEnd>
 
 
-
 #===============================================================================
-# Solver
+# Solver options
 #===============================================================================
-
-    SolverType    = direct
-    DirectSolver  = mumps
-    DirectPenalty = 1e4
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
-	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
+	nonlinear_tolerances = 1e-4 1e-8  50      # rtol, atol, maxit
+	linear_tolerances    = 1e-6 1e-8  40      # rtol, atol, maxit
 	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps
 
 <SolverOptionsEnd>
-
-
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-    -snes_monitor
-    -snes_atol      1e-4
-    -snes_rtol      1e-8
-    -snes_stol      1e-16
-    -snes_max_it    50
-
-    -js_ksp_type    fgmres
-    -js_ksp_max_it  40
-    -js_ksp_rtol    1e-6
-    -js_ksp_atol    1e-8
-
-    -da_refine_y 1
-<PetscOptionsEnd>
 
 #===============================================================================
