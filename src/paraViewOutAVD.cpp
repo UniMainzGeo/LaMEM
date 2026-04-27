@@ -673,7 +673,6 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "AVD output parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file       : %s \n", pvavd->outpvd ? "yes" : "no");
 	PetscPrintf(PETSC_COMM_WORLD, "   AVD refinement factor : %lld \n", (LLD)pvavd->refine);
-	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// set file name
 	sprintf(pvavd->outfile, "%s_phase", filename);

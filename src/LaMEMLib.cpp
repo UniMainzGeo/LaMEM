@@ -798,6 +798,8 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	// compute inverse elastic parameters (dependent on dt)
 	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+
 	if(lm->jr.ctrl.initGuess)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "============================== INITIAL GUESS =============================\n");
