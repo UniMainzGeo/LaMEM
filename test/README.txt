@@ -1,3 +1,4 @@
+==========================================================================================
 LaMEM TESTING
 ==========================================================================================
 
@@ -33,17 +34,20 @@ a) Create a new test directory.
 
 	For every type of test (i.e.: every test that has its own LaMEM input file), you should create a
 	new input directory. In general, we name tests as:
-
-	t1_FB1_Direct
-
-	where t? is the number of the test (please number them consecutively), followed by something
+	
+	t01_FB1_Direct
+	
+	where txx is the number of the test (please number them consecutively), followed by something
 	that explains the meaning of the test (FallingBlock with direct solvers in this case).
+
+	WARNING! USE t01, t02, ... INSTEAD OF t1, t2, ...
+	WARNING! USE t01, t02, ... ONLY FOR DIRECTORIES, NOT FOR FILES (LITERALLY ALL FILES MUST BE FREE OF THIS PREFIX)
 
 b) Put the relevant LaMEM input file (*.dat) in the new test directory. 
 	If you need to create a more complicated input geometry, you might also have to create a new julia input file. 
 	Have a look at 
 	
-	./t3_SubductionGMGinput/CreateMarkers_SubductionVEP_parallel.jl 
+	./t03_SubductionGMGinput/CreateMarkers_SubductionVEP_parallel.jl 
 	
 	for an example.
 	
@@ -61,7 +65,7 @@ c) Add the test to "runtests.jl".
 	compare certain keywords with an "expected" file generated at an earlier stage.
 	In the simplest case, this would be:
 
- 	dir = "t1_FB1_Direct";
+ 	dir = "t01_FB1_Direct";
     ParamFile = "FallingBlock_mono_PenaltyDirect.dat";
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-7,atol=1e-8), (rtol=1e-5,atol=1e-8), (rtol=1e-4,atol=1e-8));
@@ -70,7 +74,7 @@ c) Add the test to "runtests.jl".
     @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt-p1.expected", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
-	In some cases you may have to first generate a setup (see "t3_Subduction") 
+	In some cases you may have to first generate a setup (see "t03_Subduction") 
 	or you want to compare the results with those of an analytical solution and/or create plots ("t13_Rheology0D" or "t14_1DStrengthEnvelope")
 
 
@@ -84,12 +88,35 @@ d) Create the "expected" file for your new test.
     julia> acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
 
 	julia> perform_lamem_test(dir,"1D_VP.dat","t14_1D_VP_Direct_opt-p1.expected",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, clean_dir=false,
-							create_expected_file=true)
+                            keywords=keywords, accuracy=acc, cores=1, opt=true,
+							create_expected_file=refresh_expected, clean_dir=clean_files)
+	
+	For designing the test you can set the flags as follows:
+	
+	refresh_expected = true
+	clean_files      = false
 
-	So you essentially do the test, but add the keyword "create_expected_file=true". This adds the file to the directory.
-	Make sure that this keyword is set to false in the actual testing
-
+	Make sure to revert the flags after completing the test design:
+	
+	refresh_expected = false
+	clean_files      = true
+	
+	Sometimes you want to permanently set clean_dir=false, e.g. when you want to compare the results with closed-form solution ("t13_Rheology0D").
+	But later you anyway should clean the entire test directory like this:
+	
+	if clean_files
+		clean_test_directory(dir)
+	end
+	
+	or like this:
+	
+	if clean_files
+    	clean_directory(dir)
+    end
+    
+    Here clean_files flag has the same meaning as above. You can use it to keep the files while designing/debugging the test.
+	
+	
 e) Tests to make sure that it works by running the full test-suite again
 
 f) Commit to LaMEM 
