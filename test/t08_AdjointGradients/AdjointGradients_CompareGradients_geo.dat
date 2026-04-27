@@ -226,37 +226,20 @@ noslip = 0 0 0 0 1 0
 	<AdjointObservationPointEnd>
 
 
-
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-#	DirectPenalty 	=	1e5
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
-	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
-	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	nonlinear_tolerances = 1e-4 1e-7  50     # rtol, atol, maxit
+	linear_tolerances    = 1e-6 1e-9  100    # rtol, atol, maxit
+	picard_to_newton     = 1e-4 5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps
 
 <SolverOptionsEnd>
 
-
-
-	
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-#	-snes_type ksponly # no nonlinear solver
-
-<PetscOptionsEnd>
 
 #===============================================================================

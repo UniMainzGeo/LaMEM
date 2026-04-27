@@ -79,8 +79,9 @@ end
 #---------------------------------------------------------------------------
 
 @testset "t08_AdjointGradients" begin
-  cd(test_dir)
-  include("AdjointGradients.jl")
+	cd(test_dir)
+	dir = "t08_AdjointGradients";
+	include(joinpath(dir,"AdjointGradients.jl"));
 end
 
 
