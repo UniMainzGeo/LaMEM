@@ -109,14 +109,6 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
     return success
 end
 
-
-function JuliaStringToArray(input)
-
-
-    arr = split(input,"\n")
-	return arr
-end
-
 function get_line_containing(stringarray::Vector{SubString{String}}, lookfor::String)
 
 	for line in stringarray
@@ -152,7 +144,7 @@ function CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::S
             
     logoutput = String(read("savegrid.log"))
 
-    arr          = JuliaStringToArray(logoutput)
+    arr          = split(logoutput,"\n")
 	foundline    = get_line_containing(arr,"Processor grid  [nx, ny, nz]         : ")
 	foundline    = join(map(x -> isspace(foundline[x]) ? "" : foundline[x], 1:length(foundline)))
 	
@@ -376,6 +368,9 @@ function clean_test_directory(dir)
         
     cd(dir)
     for f in glob("*.out")
+        rm(f)
+    end
+    for f in glob("*.log")
         rm(f)
     end
     for f in glob("ProcessorPartitioning*")

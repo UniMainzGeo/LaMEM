@@ -1,17 +1,49 @@
+--------------------------------------------------------------------------
+Parsing input file : FallingBlock_mono_CoupledMG_RedundantCoarse.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Multigrid settings summary: 
+   Number of multigrid levels   : 3 (prescribed)
+   Coarse grid number of cpu    : 1
+   Coarse grid reduction factor : 4
+   Number of blocks on levels   : 1
+   Number of coarse grid blocks : 1
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-gmg_mg_coarse_ksp_type preonly # (source: code)
+-gmg_mg_coarse_pc_telescope_reduction_factor 4 # (source: code)
+-gmg_mg_coarse_pc_type telescope # (source: code)
+-gmg_mg_coarse_telescope_ksp_type preonly # (source: code)
+-gmg_mg_coarse_telescope_pc_factor_mat_solver_type superlu_dist # (source: code)
+-gmg_mg_coarse_telescope_pc_type lu # (source: code)
+-gmg_mg_levels_ksp_max_it 20 # (source: code)
+-gmg_mg_levels_ksp_richardson_scale 0.5 # (source: code)
+-gmg_mg_levels_ksp_type richardson # (source: code)
+-gmg_mg_levels_pc_type jacobi # (source: code)
+-gmg_pc_mg_levels 3 # (source: code)
+-jp_type mg # (source: code)
+-js_ksp_atol 1e-05 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 100 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 0.001 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-matmatmatmult_via scalable # (source: code)
+-options_left # (source: code)
+-ParamFile FallingBlock_mono_CoupledMG_RedundantCoarse.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+#End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct  2 2024 - Time: 12:03:50 	    
-     Version : 2.1.4 
+     Compiled: Date: Apr 27 2026 - Time: 14:47:52 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : FallingBlock_mono_CoupledMG_RedundantCoarse.dat 
-   Adding PETSc option: -snes_type ksponly
-   Adding PETSc option: -js_ksp_rtol 1e-3
-   Adding PETSc option: -js_ksp_atol 1e-5
-   Adding PETSc option: -crs_redundant_pc_factor_mat_solver_type superlu_dist
-Finished parsing input file 
---------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
    Maximum number of steps      : 2 
@@ -35,9 +67,8 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
    Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Material parameters: 
---------------------------------------------------------------------------
+
    Phase ID : 0   
    (dens)   : rho = 1. [ ]  
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
@@ -46,7 +77,6 @@ Material parameters:
    (dens)   : rho = 2. [ ]  
    (diff)   : eta = 100. [ ]  Bd = 0.005 [ ]  
 
---------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
@@ -64,7 +94,7 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     : 0 0 0 
+   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -72,7 +102,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00327943 sec)
+Reading geometric primitives ... done (0.00214294 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : FB_test 
@@ -88,85 +118,115 @@ AVD output parameters:
    AVD refinement factor : 3 
 --------------------------------------------------------------------------
 Preconditioner parameters: 
-   Matrix type                   : monolithic
-   Schur preconditioner type     : inv_eta 
+   Picard operator type          : assembled
    Preconditioner type           : coupled Galerkin geometric multigrid
-   Global coarse grid [nx,ny,nz] : [8, 8, 8]
+   Global coarse grid [Nx,Ny,Nz] : [8, 8, 8]
    Local coarse grid  [nx,ny,nz] : [8, 4, 4]
    Number of multigrid levels    :  3
+   Number of matrix-free levels  :  0
 --------------------------------------------------------------------------
-Solver parameters specified: 
-   Outermost Krylov solver       : gmres 
-   Solver type                   : multigrid 
-   Multigrid smoother levels KSP : richardson 
-   Multigrid dampening parameter : 0.500000 
-   Multigrid smoother levels PC  : jacobi 
-   Number of smoothening steps   : 20 
-   Coarse level KSP              : preonly 
-   Coarse level PC               : redundant 
-   Number of redundant solvers   : 2 
-   Redundant solver package      : superlu_dist 
 --------------------------------------------------------------------------
-Saving output ... done (0.0960831 sec)
+Saving output ... done (0.0937553 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [ ] 
 Tentative time step : 0.01000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.095328136593e+02 
+  0 SNES Function norm 2.095328136593e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
-  1 SNES Function norm 1.949203397980e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.095328136593e+02
+    1 KSP Residual norm 1.349283007750e+02
+    2 KSP Residual norm 1.810883211229e+01
+    3 KSP Residual norm 9.804707287893e+00
+    4 KSP Residual norm 2.554198086266e+00
+    5 KSP Residual norm 6.158325108576e-01
+    6 KSP Residual norm 2.722707973276e-01
+    7 KSP Residual norm 8.087598006413e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+  1 SNES Function norm 8.087598006386e-02
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.71762 (sec)
+SNES solution time      : 1.53733 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.201806360416e-03 
-      |Div|_2   = 2.373839458922e-02 
+      |Div|_inf = 3.966700542602e-03 
+      |Div|_2   = 5.087153471190e-02 
    Momentum: 
-      |mRes|_2  = 1.949058843472e+00 
+      |mRes|_2  = 6.287297597017e-02 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.12805 sec)
+Saving output ... done (0.124739 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.01100000 [ ] 
 Tentative time step : 0.01100000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.952248806036e+00 
+  0 SNES Function norm 1.430772342086e-01
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 1.245139039235e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.430772342086e-01
+    1 KSP Residual norm 5.081180700238e-02
+    2 KSP Residual norm 3.615030064546e-02
+    3 KSP Residual norm 8.222514893466e-03
+    4 KSP Residual norm 4.301225598926e-03
+    5 KSP Residual norm 1.046870496947e-03
+    6 KSP Residual norm 5.815432198943e-04
+    7 KSP Residual norm 3.322061463776e-04
+    8 KSP Residual norm 9.908107195380e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+  1 SNES Function norm 9.908107195582e-05
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.44633 (sec)
+SNES solution time      : 1.26204 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.956264717537e-07 
-      |Div|_2   = 1.297491022786e-05 
+      |Div|_inf = 3.649224810109e-06 
+      |Div|_2   = 6.309421068366e-05 
    Momentum: 
-      |mRes|_2  = 1.245071435193e-03 
+      |mRes|_2  = 7.639489117815e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.01210 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.125298 sec)
+Saving output ... done (0.120775 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 3.74261 (sec) 
+Total solution time : 3.38813 (sec) 
 --------------------------------------------------------------------------
+#PETSc Option Table entries:
+-gmg_mg_coarse_ksp_type preonly # (source: code)
+-gmg_mg_coarse_pc_telescope_reduction_factor 4 # (source: code)
+-gmg_mg_coarse_pc_type telescope # (source: code)
+-gmg_mg_coarse_telescope_ksp_type preonly # (source: code)
+-gmg_mg_coarse_telescope_pc_factor_mat_solver_type superlu_dist # (source: code)
+-gmg_mg_coarse_telescope_pc_type lu # (source: code)
+-gmg_mg_levels_ksp_max_it 20 # (source: code)
+-gmg_mg_levels_ksp_richardson_scale 0.5 # (source: code)
+-gmg_mg_levels_ksp_type richardson # (source: code)
+-gmg_mg_levels_pc_type jacobi # (source: code)
+-gmg_pc_mg_levels 3 # (source: code)
+-jp_type mg # (source: code)
+-js_ksp_atol 1e-05 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 100 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 0.001 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-matmatmatmult_via scalable # (source: code)
+-options_left # (source: code)
+-ParamFile FallingBlock_mono_CoupledMG_RedundantCoarse.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+#End of PETSc Option Table entries
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!
-There are 4 unused database options. They are:
-Option left: name:-js_ksp_min_it value: 1 source: code
+There is one unused database option. It is:
 Option left: name:-ParamFile value: FallingBlock_mono_CoupledMG_RedundantCoarse.dat source: code
-Option left: name:-snes_linesearch_maxstep value: 1.0 source: code
-Option left: name:-snes_linesearch_type value: basic source: code

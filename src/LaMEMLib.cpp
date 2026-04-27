@@ -574,18 +574,28 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
 	SNES           snes;   // PETSc nonlinear solver
  	AdjGrad        aop;    // Adjoint options
-	PetscInt       restart;
+	PetscInt       restart, track_stages;
 	PetscLogDouble t;
 	PetscLogStage  stages[4];
 
-	// name computational stages
-	PetscCall(PetscLogStageRegister("Initial guess",  &stages[0]));
-	PetscCall(PetscLogStageRegister("SNES solve",     &stages[1]));
-	PetscCall(PetscLogStageRegister("Advect markers", &stages[2]));
-	PetscCall(PetscLogStageRegister("I/O",            &stages[3]));
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
+
+	if(!param)
+	{
+		// normal mode only
+		track_stages = 1;
+
+		// name computational stages
+		PetscCall(PetscLogStageRegister("Initial guess",  &stages[0]));
+		PetscCall(PetscLogStageRegister("SNES solve",     &stages[1]));
+		PetscCall(PetscLogStageRegister("Advect markers", &stages[2]));
+		PetscCall(PetscLogStageRegister("I/O",            &stages[3]));
+	}
+	else
+	{	// not for the inversion!
+		track_stages = 0;
+	}
 
 	// create nonlinear solver
 	ierr = NLSolCreate(&snes, &lm->jr); CHKERRQ(ierr);
@@ -594,11 +604,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	// INITIAL GUESS
 	//==============
 
-	PetscCall(PetscLogStagePush(stages[0]));
+	if(track_stages) { PetscCall(PetscLogStagePush(stages[0])); }
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
 
-	PetscCall(PetscLogStagePop());
+	if(track_stages) { PetscCall(PetscLogStagePop()); }
 
 	if(param)
 	{
@@ -630,11 +640,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
 
-		PetscCall(PetscLogStagePush(stages[1]));
+		if(track_stages) { PetscCall(PetscLogStagePush(stages[1])); }
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop());
+		if(track_stages) { PetscCall(PetscLogStagePop()); }
 
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
@@ -664,7 +674,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================
 
-		PetscCall(PetscLogStagePush(stages[2]));
+		if(track_stages) { PetscCall(PetscLogStagePush(stages[2])); }
 
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
@@ -687,7 +697,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// Advect Passive tracers
 		ierr = ADVAdvectPassiveTracer(&lm->actx); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop());
+		if(track_stages) { PetscCall(PetscLogStagePop()); }
 
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
@@ -711,12 +721,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// update time stamp and counter
 		ierr = TSSolStepForward(&lm->ts); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePush(stages[3]));
+		if(track_stages) { PetscCall(PetscLogStagePush(stages[3])); }
 
 		// grid & marker output
 		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
 
-		PetscCall(PetscLogStagePop());
+		if(track_stages) { PetscCall(PetscLogStagePop()); }
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);

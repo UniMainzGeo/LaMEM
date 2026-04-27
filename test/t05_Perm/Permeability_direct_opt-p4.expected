@@ -1,24 +1,35 @@
+--------------------------------------------------------------------------
+Parsing input file : Permea.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-10 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile Permea.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
-     Version : 2.1.4 
+     Compiled: Date: Apr 27 2026 - Time: 14:47:50 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : Permea.dat 
-   Adding PETSc option: -snes_type ksponly
-   Adding PETSc option: -js_ksp_type fgmres
-   Adding PETSc option: -js_ksp_max_it 50
-   Adding PETSc option: -js_ksp_monitor
-   Adding PETSc option: -js_ksp_rtol 1e-6
-   Adding PETSc option: -js_ksp_atol 1e-10
-   Adding PETSc option: -pcmat_type mono
-   Adding PETSc option: -pcmat_pgamma 1e5
-   Adding PETSc option: -jp_type user
-   Adding PETSc option: -jp_pc_type lu
-   Adding PETSc option: -objects_dump
-Finished parsing input file 
---------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
    Maximum number of steps      : 1 
@@ -41,16 +52,14 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
    Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Material parameters: 
---------------------------------------------------------------------------
+
    Phase ID : 0   
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
 
    Phase ID : 1   
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
 
---------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 1 1 0 0 0 0 
@@ -67,7 +76,7 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     : 0 0 0 
+   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -75,7 +84,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000190014 sec)
+Reading geometric primitives ... done (0.000330237 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : permea 
@@ -87,52 +96,75 @@ Output parameters:
    Momentum residual                       @ 
    Continuity residual                     @ 
 --------------------------------------------------------------------------
+--------------------------------------------------------------------------
 Preconditioner parameters: 
-   Matrix type                   : monolithic
-   Penalty parameter (pgamma)    : 1.000000e+05
-   Schur preconditioner type     : inv_eta 
-   Preconditioner type           : user-defined
+   Picard operator type          : assembled
+   Preconditioner type           : block factorization
+   Block factorization type      : upper 
+   Velocity preconditioner       : user-defined
+   Schur preconditioner          : inverse viscosity
+   Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Solver parameters specified: 
-   Outermost Krylov solver       : fgmres 
-   Solver type                   : parallel direct/lu 
-   Solver package                : petsc default
---------------------------------------------------------------------------
-Saving output ... done (0.000600553 sec)
+Saving output ... done (0.000797808 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [ ] 
 Tentative time step : 0.20000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.620386719675e+02 
+  0 SNES Function norm 3.620386719675e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.620386719675e+02 
-    1 KSP Residual norm 2.611431342556e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 2.611431342556e-04 
+    0 KSP Residual norm 3.620386719675e+02
+    1 KSP Residual norm 3.504799918841e+02
+    2 KSP Residual norm 2.603387172879e-02
+    3 KSP Residual norm 2.588587418641e-02
+    4 KSP Residual norm 3.971370540258e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
+  1 SNES Function norm 3.971370377231e-05
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.270432 (sec)
+SNES solution time      : 0.209756 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 9.687396488824e-06 
-      |Div|_2   = 2.611431342555e-04 
+      |Div|_inf = 1.978929485613e-06 
+      |Div|_2   = 3.971370377230e-05 
    Momentum: 
-      |mRes|_2  = 1.883962795121e-10 
+      |mRes|_2  = 3.334585147114e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.22000 [ ] 
 --------------------------------------------------------------------------
 Saving output ... 
 ==========================================================================
-EFFECTIVE PERMEABILITY CONSTANT: 1.464855E-02 [ ]
+EFFECTIVE PERMEABILITY CONSTANT: 1.464841E-02 [ ]
 ==========================================================================
-done (0.000734856 sec)
+done (0.000658955 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.287778 (sec) 
+Total solution time : 0.229477 (sec) 
 --------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-10 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile Permea.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: Permea.dat source: code

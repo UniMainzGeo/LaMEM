@@ -143,7 +143,7 @@ Examples
 
 [2] Galerkin geometric multigrid for coupled system
 
-	(see [5] for coupled multigrid settings)
+	(see [6] for coupled multigrid settings)
 
 	-jp_type mg
 
@@ -168,7 +168,7 @@ Examples
 
 [4] block factorization with multigrid for velocity block and inverse viscosity preconditioner
 
-	(see [5] for velocity multigrid settings)
+	(see [6] for velocity multigrid settings)
 
 	-jp_type bf
 
@@ -183,8 +183,8 @@ Examples
 
 [5] block factorization with wBFBT preconditioner and multigrid for velocity and pressure blocks
 
-	(see [5] for velocity multigrid settings)
-	(see [6] for pressure multigrid settings)
+	(see [6] for velocity multigrid settings)
+	(see [7] for pressure multigrid settings)
 
 	-jp_type bf
 
@@ -203,7 +203,7 @@ Examples
 
 [6] multigrid solver settings (both coupled system & velocity block)
 
-	(see [7] for coarse solver settings)
+	(see [8] for coarse solver settings)
 
 	-gmg_pc_view
 	-gmg_pc_mg_levels 3
@@ -235,7 +235,7 @@ Examples
 
 [7] multigrid settings for pressure block
 
-	(use default coarse solver settings or setup similar options as in [7])
+	(use default coarse solver settings or setup similar options as in [8])
 	
 	-ks_pc_view
 	-ks_pc_type mg

@@ -99,28 +99,19 @@
 		eta = 1   # viscosity
 	<MaterialEnd>
 
+
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly # no nonlinear solver
-
-	# Jacobian (linear) outer KSP
-	-js_ksp_type fgmres
-	-js_ksp_max_it 50
- 	-js_ksp_monitor
-	-js_ksp_rtol 1e-6
-	-js_ksp_atol 1e-10
-
-	-pcmat_type    mono
-	-jp_type       user
-	-jp_pc_type    lu
-
-	-objects_dump
-
-<PetscOptionsEnd>
+	set_linear_problem = 1
+	monitor_solvers    = 1
+	linear_tolerances  = 1e-6 1e-10 20  # rtol, atol, maxit
+	stokes_solver      = block_direct
+	direct_solver_type = mumps
+	
+<SolverOptionsEnd>
 
 #===============================================================================

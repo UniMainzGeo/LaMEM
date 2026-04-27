@@ -74,7 +74,6 @@
 #===============================================================================
 
     out_file_name    =  output     # output file name
-    write_VTK_setup  =  true     # write VTK initial model setup
     out_pvd          =  1     # activate writing .pvd file
     out_phase        =  1     # dominant phase
     out_density      =  1     # density

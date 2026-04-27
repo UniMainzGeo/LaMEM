@@ -188,14 +188,15 @@
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 1e-4 -1  100       # rtol, atol, maxit (-1 = automatic setting, only for atol)
-	linear_tolerances    = 1e-6 -1  50        # rtol, atol, maxit(-1 = automatic setting, only for atol)
-	picard_to_newton     = 1e-2  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	nonlinear_tolerances = 1e-4 1e-7   100  # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	linear_tolerances    = 1e-6 1e-9   50   # rtol, atol, maxit(-1 = automatic setting, only for atol)
+	picard_to_newton     = 1e-1 3 1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps
-	use_eisenstat_walker =  1
+	use_eisenstat_walker = 1
 
 <SolverOptionsEnd>
+
 
 #===============================================================================

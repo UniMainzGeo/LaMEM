@@ -1,20 +1,35 @@
+--------------------------------------------------------------------------
+Parsing input file : FallingBlock_Direct_MUMPS.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-10 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 25 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 0.0001 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile FallingBlock_Direct_MUMPS.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
-     Version : 2.1.4 
+     Compiled: Date: Apr 23 2026 - Time: 12:13:57 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : FallingBlock_mono_PenaltyDirect.dat 
-   Adding PETSc option: -snes_type ksponly
-   Adding PETSc option: -js_ksp_type gmres
-   Adding PETSc option: -js_ksp_max_it 25
-   Adding PETSc option: -js_ksp_monitor
-   Adding PETSc option: -js_ksp_rtol 1e-4
-   Adding PETSc option: -js_ksp_atol 1e-10
-   Adding PETSc option: -objects_dump
-Finished parsing input file 
---------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
    Maximum number of steps      : 2 
@@ -38,9 +53,8 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
    Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Material parameters: 
---------------------------------------------------------------------------
+
    Phase ID : 0   
    (dens)   : rho = 1. [ ]  
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
@@ -49,7 +63,6 @@ Material parameters:
    (dens)   : rho = 2. [ ]  
    (diff)   : eta = 100. [ ]  Bd = 0.005 [ ]  
 
---------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
@@ -67,7 +80,7 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     : 0 0 0 
+   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -75,7 +88,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000282366 sec)
+Reading geometric primitives ... done (0.000280828 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : FB_test 
@@ -85,81 +98,106 @@ Output parameters:
    Creep effective viscosity               @ 
    Velocity                                @ 
    Pressure                                @ 
---------------------------------------------------------------------------
 AVD output parameters:
    Write .pvd file       : yes 
    AVD refinement factor : 3 
 --------------------------------------------------------------------------
+--------------------------------------------------------------------------
 Preconditioner parameters: 
-   Matrix type                   : monolithic
-   Penalty parameter (pgamma)    : 1.000000e+05
-   Schur preconditioner type     : inv_eta 
-   Preconditioner type           : user-defined
---------------------------------------------------------------------------
-Solver parameters specified: 
-   Outermost Krylov solver       : gmres 
-   Solver type                   : parallel direct/lu 
-   Solver package                : mumps 
---------------------------------------------------------------------------
-Saving output ... done (0.0134232 sec)
+   Picard operator type          : assembled
+   Preconditioner type           : block factorization
+   Block factorization type      : upper 
+   Velocity preconditioner       : user-defined
+   Schur preconditioner          : inverse viscosity
+   Penalty parameter (pgamma)    : 1.000000e+03
+Saving output ... done (0.013273 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [ ] 
 Tentative time step : 0.01000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 7.310266752999e+01 
+  0 SNES Function norm 7.310266752999e+01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.136017315766e+01 
-    1 KSP Residual norm 1.604128937489e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 1.011998660702e-03 
+    0 KSP Residual norm 7.310266752999e+01
+    1 KSP Residual norm 7.257569382228e+01
+    2 KSP Residual norm 2.107218416936e-02
+    3 KSP Residual norm 2.104528218550e-02
+    4 KSP Residual norm 8.525492478132e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
+  1 SNES Function norm 8.525492529397e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.338835 (sec)
+SNES solution time      : 0.257002 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.550729532035e-06 
-      |Div|_2   = 2.110210787594e-04 
+      |Div|_inf = 5.759498518400e-07 
+      |Div|_2   = 8.525492529285e-06 
    Momentum: 
-      |mRes|_2  = 9.897531983181e-04 
+      |mRes|_2  = 4.354413554021e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.014854 sec)
+Saving output ... done (0.0155742 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.01100000 [ ] 
 Tentative time step : 0.01100000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.201208073686e-02 
+  0 SNES Function norm 1.196277600180e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.880246330112e-04 
-    1 KSP Residual norm 2.575361666101e-09 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 3.159230211359e-07 
+    0 KSP Residual norm 1.196277600180e-02
+    1 KSP Residual norm 1.196023037415e-02
+    2 KSP Residual norm 7.749443376127e-03
+    3 KSP Residual norm 3.276198693302e-04
+    4 KSP Residual norm 3.276082938978e-04
+    5 KSP Residual norm 4.988006882928e-07
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 5
+  1 SNES Function norm 4.988006825096e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.175369 (sec)
+SNES solution time      : 0.154874 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.751307553838e-10 
-      |Div|_2   = 5.492148720378e-09 
+      |Div|_inf = 6.123990203832e-13 
+      |Div|_2   = 9.301858899497e-12 
    Momentum: 
-      |mRes|_2  = 3.158752785294e-07 
+      |mRes|_2  = 4.988006824228e-07 
 --------------------------------------------------------------------------
 Actual time step : 0.01210 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0143188 sec)
+Saving output ... done (0.0141948 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.580852 (sec) 
+Total solution time : 0.481993 (sec) 
 --------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-10 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 25 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 0.0001 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile FallingBlock_Direct_MUMPS.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: FallingBlock_Direct_MUMPS.dat source: code

@@ -1,3 +1,35 @@
+--------------------------------------------------------------------------
+Parsing input file : RTI_ScalingLaw.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+   Adding PETSc option: -FreeSurf_Wavelength 1.0
+   Adding PETSc option: -FreeSurf_AmplCos 1e-3
+Total number of options added: 2
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-coord_x -0.4,0.4 # (source: code)
+-eta[0] 10 # (source: code)
+-eta[1] 1 # (source: code)
+-FreeSurf_AmplCos 1e-3 # (source: code)
+-FreeSurf_Wavelength 0.8 # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-15 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 50 # (source: code)
+-js_ksp_rtol 1e-11 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile RTI_ScalingLaw.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-surf_level 0.1 # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
 | ------------------------------------------------------------------------- 
 |                                      LaMEM                                
 |                        Adjoint Gradient Framework Active                  
@@ -24,18 +56,11 @@
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
-     Version : 2.1.4 
+     Compiled: Date: Apr 27 2026 - Time: 14:47:50 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : t6_RTI_ScalingLaw.dat 
-   Adding PETSc option: -FreeSurf_Wavelength 1.0
-   Adding PETSc option: -FreeSurf_AmplCos 1e-3
-   Adding PETSc option: -snes_type ksponly
-   Adding PETSc option: -js_ksp_rtol 1e-11
-Finished parsing input file 
---------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 10000. [ ] 
    Maximum number of steps      : 1 
@@ -59,9 +84,8 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [-0.4, -0.01, 0.]
    Upper coordinate bounds [ex, ey, ez] : [0.4, 0.01, 1.]
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Material parameters: 
---------------------------------------------------------------------------
+
    Phase ID : 0     --   Upper 
    (dens)   : rho = 1. [ ]  
    (diff)   : eta = 10. [ ]  Bd = 0.05 [ ]  
@@ -70,13 +94,13 @@ Material parameters:
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
 
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Free surface parameters: 
    Sticky air phase ID       : 0 
    Initial surface level     : 0.1 [ ] 
    Erosion model             : none
    Sedimentation model       : none
    Correct marker phases     @ 
+   Topographic diffusion     : none
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
@@ -94,7 +118,7 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     : 0 0 0 
+   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -102,7 +126,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 1 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000499811 sec)
+Reading geometric primitives ... done (0.000484271 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : RTI_test 
@@ -120,51 +144,50 @@ Surface output parameters:
    Topography      @ 
    Amplitude       @ 
 --------------------------------------------------------------------------
+--------------------------------------------------------------------------
 Preconditioner parameters: 
-   Matrix type                   : monolithic
-   Schur preconditioner type     : inv_eta 
-   Preconditioner type           : user-defined
+   Picard operator type          : assembled
+   Preconditioner type           : block factorization
+   Block factorization type      : upper 
+   Velocity preconditioner       : user-defined
+   Schur preconditioner          : inverse viscosity
+   Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Solver parameters specified: 
-   Outermost Krylov solver       : gmres 
-   Solver type                   : serial direct/lu 
-   Solver package                : petsc 
---------------------------------------------------------------------------
-Saving output ... done (0.000963021 sec)
+Saving output ... done (0.00108915 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [ ] 
 Tentative time step : 100.00000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 6.038861570174e+01 
+  0 SNES Function norm 6.038861570174e+01
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 19
-  1 SNES Function norm 4.056052784006e-08 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+  1 SNES Function norm 8.894126093193e-10
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.273895 (sec)
+SNES solution time      : 0.209048 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.579627143677e-11 
-      |Div|_2   = 1.565304860318e-10 
+      |Div|_inf = 7.098308400078e-11 
+      |Div|_2   = 8.883228633398e-10 
    Momentum: 
-      |mRes|_2  = 4.056022579906e-08 
+      |mRes|_2  = 4.401454400332e-11 
 --------------------------------------------------------------------------
 Actual time step : 110.00000 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.00091265 sec)
+Saving output ... done (0.000961162 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.455983 (sec) 
+Total solution time : 0.442758 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 6.5209377098e-07
+| Current Cost function = 6.5209409431e-07
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -172,10 +195,10 @@ Total solution time : 0.455983 (sec)
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 0]            6.519090e-07 
-|  adjoint     2:          eta[ 0]           -4.473035e-08 
+|  adjoint     1:          rho[ 0]            6.519089e-07 
+|  adjoint     2:          eta[ 0]           -4.473036e-08 
 |  adjoint     3:          rho[ 1]            nan 
-|  adjoint     4:          eta[ 1]           -2.043518e-07 
+|  adjoint     4:          eta[ 1]           -2.043516e-07 
 | 
 | 
 | Observation points: 
@@ -203,11 +226,40 @@ Total solution time : 0.455983 (sec)
 |                  eta[  1]      -0.313           Lower
 |                  rho[  1]       nan             Lower
 |       
-|   Prefactor A               :  3.16416982e-06 
+|   Prefactor A               :  3.16416985e-06 
 |   Reference Density         :  0.00  
-|   Velocity check            :  6.52093771e-07 
+|   Velocity check            :  6.52094094e-07 
 |   Scaling law data saved to :  ScalingLaw.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 0.456662 s                         	 
+| Adjoint computation was successful & took 0.443256 s                         	 
 | ************************************************************************ 
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-coord_x -0.4,0.4 # (source: code)
+-eta[0] 1.00000000000000000000e+01 # (source: code)
+-eta[1] 1.00000000000000000000e+00 # (source: code)
+-FreeSurf_AmplCos 1e-3 # (source: code)
+-FreeSurf_Wavelength 0.8 # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-15 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 50 # (source: code)
+-js_ksp_rtol 1e-11 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile RTI_ScalingLaw.dat # (source: code)
+-rho[0] 1.00000000000000000000e+00 # (source: code)
+-rho[1] 0.00000000000000000000e+00 # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-surf_level 0.1 # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: RTI_ScalingLaw.dat source: code

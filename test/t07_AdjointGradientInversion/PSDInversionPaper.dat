@@ -220,40 +220,16 @@
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 		=	direct 	# solver [direct or multigrid]
-	DirectSolver	=	mumps
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
-	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
-	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	nonlinear_tolerances = 1e-20 1e-12  20      # rtol, atol, maxit
+	linear_tolerances    = 1e-10 1e-15  50     # rtol, atol, maxit
+	picard_to_newton     = 1e-20  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps
 
 <SolverOptionsEnd>
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-
-
-	# Jacobian (linear) outer KSP
-	-js_ksp_type gmres
-	-js_ksp_max_it 50
-#	-js_ksp_converged_reason
-# 	-js_ksp_monitor
-	-js_ksp_rtol 1e-10
-	-js_ksp_atol 1e-15
-
-  	-snes_max_it 20
-    -snes_atol 1e-12
-    -snes_rtol 1e-20
-    -snes_stol 1e-20
-	#-snes_PicardSwitchToNewton_rtol 1e-20
-
-<PetscOptionsEnd>
 
 #===============================================================================

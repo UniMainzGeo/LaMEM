@@ -245,37 +245,14 @@
 # Solver options
 #===============================================================================
 
-
 <SolverOptionsStart>
 
 	set_linear_problem = 1
 	monitor_solvers    = 1
-	linear_tolerances  = 1e-6 1e-9 1000  # rtol, atol, maxit
+	linear_tolerances  = 1e-10 1e-15 50  # rtol, atol, maxit
 	stokes_solver      = block_direct
 	direct_solver_type = mumps
 	
 <SolverOptionsEnd>
-
-
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e5
-
-	
-
-	
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-
-	
-	-js_ksp_monitor # display how the inner iterations converge
-
-
-<PetscOptionsEnd>
 
 #===============================================================================

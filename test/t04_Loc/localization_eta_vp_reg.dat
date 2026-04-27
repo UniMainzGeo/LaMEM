@@ -193,54 +193,23 @@
 	<MaterialEnd>
 
 
+
+
+
 #===============================================================================
 # Solver options
 #===============================================================================
-	#SolverType 		=	multigrid 			# solver [direct or multigrid]
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	
-	MGLevels 		=   4
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e3
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
-	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
-	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	nonlinear_tolerances = 1e-4 1e-7   100  # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	linear_tolerances    = 1e-6 1e-9   50   # rtol, atol, maxit(-1 = automatic setting, only for atol)
+	picard_to_newton     = 1e-1 3 1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps
+	use_eisenstat_walker = 1
 
 <SolverOptionsEnd>
-
-
-#===============================================================================
-# PETSc options
-#===============================================================================
-<PetscOptionsStart>
-	
-	# Eisenstatt-Walker (sometimes converges faster for nonlinear cases)
-	-snes_ksp_ew
-    -snes_ksp_ew_rtolmax 1e-1
-    -snes_max_linear_solve_fail 10000
- 	-snes_max_it 			100
-	
-	-pcmat_pgamma 1e2
-   		
-	# Newton/picard options
-	-snes_PicardSwitchToNewton_rtol 1e0   # relative tolerance to switch to Newton (1e-2)
-	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
-
-	# Linesearch options
-	-snes_linesearch_type 		l2 				#Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType) 
-	-snes_linesearch_maxstep 	1.0				# very important to prevent the code from "blowing up"
-	
-	
-	# Jacobian solver
-	-js_ksp_type fgmres	
-	-js_ksp_max_it 50
-
-<PetscOptionsEnd>
 
 #===============================================================================
