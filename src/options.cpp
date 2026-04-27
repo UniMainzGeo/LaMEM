@@ -169,12 +169,16 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 
 	if(!strcmp(opt.stokes_solver, "block_direct"))
 	{
-		PetscCall(set_string_option("jp_type",                      "bf"));
-		PetscCall(set_scalar_option("jp_pgamma",                    opt.penalty));
-		PetscCall(set_string_option("bf_vs_type",                   "user"));
-		PetscCall(set_string_option("vs_ksp_type",                  "preonly"));
-		PetscCall(set_string_option("vs_pc_type",                   "lu"));
-		PetscCall(set_string_option("vs_pc_factor_mat_solver_type", opt.direct_solver_type));
+		PetscCall(set_string_option("jp_type",     "bf"));
+		PetscCall(set_scalar_option("jp_pgamma",   opt.penalty));
+		PetscCall(set_string_option("bf_vs_type",  "user"));
+		PetscCall(set_string_option("vs_ksp_type", "preonly"));
+		PetscCall(set_string_option("vs_pc_type",  "lu"));
+
+		if(strcmp(opt.direct_solver_type, "default"))
+		{
+			PetscCall(set_string_option("vs_pc_factor_mat_solver_type", opt.direct_solver_type));
+		}
 
 		if(opt.view_solvers) { PetscCall(set_empty_option("pc_view", "vs")); }
 	}
@@ -343,7 +347,7 @@ PetscErrorCode solverOptionsCheck(SolOptDB &opt)
 
 	if(!(!strcmp(opt.direct_solver_type, "superlu_dist")
 	||   !strcmp(opt.direct_solver_type, "mumps")
-	||   !strcmp(opt.direct_solver_type, "lu")))
+	||   !strcmp(opt.direct_solver_type, "default")))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect direct solver type (direct_solver_type): %s", opt.direct_solver_type);
 	}
@@ -735,8 +739,12 @@ PetscErrorCode set_coarse_options(
 
 	if(!strcmp(opt.coarse_solver, "direct"))
 	{
-		PetscCall(set_string_option("pc_type ",                  "lu",                    prefix));
-		PetscCall(set_string_option("pc_factor_mat_solver_type ", opt.direct_solver_type, prefix));
+		PetscCall(set_string_option("pc_type", "lu", prefix));
+
+		if(strcmp(opt.direct_solver_type, "default"))
+		{
+			PetscCall(set_string_option("pc_factor_mat_solver_type", opt.direct_solver_type, prefix));
+		}
 	}
 	else if(!strcmp(opt.coarse_solver, "hypre"))
 	{
