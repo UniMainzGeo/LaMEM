@@ -71,8 +71,10 @@ c) Add the test to "runtests.jl".
     acc      = ((rtol=1e-7,atol=1e-8), (rtol=1e-5,atol=1e-8), (rtol=1e-4,atol=1e-8));
     
     # Perform test:
-    @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt-p1.expected", 
+    @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt-p1", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
+
+	WARNING! PROVIDE EXPECTED FILE NAME WITHOUT EXTENSION .expected IS ADDED INTERNALLY
 
 	In some cases you may have to first generate a setup (see "t03_Subduction") 
 	or you want to compare the results with those of an analytical solution and/or create plots ("t13_Rheology0D" or "t14_1DStrengthEnvelope")
@@ -87,10 +89,12 @@ d) Create the "expected" file for your new test.
 	julia> keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     julia> acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
 
-	julia> perform_lamem_test(dir,"1D_VP.dat","t14_1D_VP_Direct_opt-p1.expected",
+	julia> perform_lamem_test(dir,"1D_VP.dat","t14_1D_VP_Direct_opt-p1",
                             keywords=keywords, accuracy=acc, cores=1, opt=true,
 							create_expected_file=refresh_expected, clean_dir=clean_files)
 	
+	WARNING! PROVIDE EXPECTED FILE NAME WITHOUT EXTENSION .expected IS ADDED INTERNALLY
+		
 	For designing the test you can set the flags as follows:
 	
 	refresh_expected = true
@@ -115,8 +119,14 @@ d) Create the "expected" file for your new test.
     end
     
     Here clean_files flag has the same meaning as above. You can use it to keep the files while designing/debugging the test.
-	
-	
+    
+    In case that test is failing you can set the flag clean_files=false and compare .out file against .expected
+    
+    e.g.: t14_1D_VP_Direct_opt-p1.out vs. t14_1D_VP_Direct_opt-p1.expected
+    
+	Once you figure our what is wrong and fix the issue, you can again regenerate the expected file as described above.
+    
+
 e) Tests to make sure that it works by running the full test-suite again
 
 f) Commit to LaMEM 

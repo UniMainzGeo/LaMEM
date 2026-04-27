@@ -451,7 +451,7 @@ This performs a LaMEM simulation and compares certain keywords of the logfile wi
 Parameters:
 - `dir`: directory in which the LaMEM `*.dat` ParamFile is located
 - `ParamFile`: name of the LaMEM input file
-- `expectedFile`: name of the file with earlier results, versus which we compare
+- `expectedFile`: name of the file with earlier results, versus which we compare (WARNING! WITHOUT EXTENSION)
 - `keywords`: Tuple with keywords, which contain numerical values
 - `accuracy`: Tuple that contains relative (`rtol`), and (optionally) absolute `atol` tolerances
 - `cores`: Number of cores on which to perform the test
@@ -471,8 +471,8 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
                 cores::Int64=1, args::String="",
                 bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec",
                 split_sign="=", 
-                debug::Bool=false, create_expected_file::Bool=false, clean_dir::Bool=true
-                )
+                debug::Bool=false, create_expected_file::Bool=false, clean_dir::Bool=true)
+
 
     # print info abouy running tests                
     @info "Performing test $ParamFile in directory $dir on $cores cores"
@@ -484,12 +484,14 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     if debug==true
         outfile = "";
     else
-        outfile = "test_$(cores).out";
+        outfile = "$expectedFile.out";
     end
     if create_expected_file==true
-        outfile = expectedFile;
+        outfile = "$expectedFile.expected";
         debug = true;
     end
+	
+	expectedFile = "$expectedFile.expected";
 
     # perform simulation 
     success = run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec);
