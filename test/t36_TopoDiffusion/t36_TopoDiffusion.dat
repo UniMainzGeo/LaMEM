@@ -43,7 +43,7 @@
     surf_corr_phase = 1
     surf_max_angle  = 45.0
 
-    surf_topo_file  = t34_topo.bin
+    surf_topo_file  = t36_topo.bin
 
     topo_diff        = 1
     topo_diffusivity = 1e-5

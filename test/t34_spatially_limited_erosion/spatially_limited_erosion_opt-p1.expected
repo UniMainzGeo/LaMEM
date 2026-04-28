@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Jan 25 2026 - Time: 21:34:41 	    
-     Version : 2.2.0 
+     Compiled: Date: Apr 26 2026 - Time: 19:17:38 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -15,7 +15,7 @@ Scaling parameters:
    Stress      : 1e+09 [Pa] 
 --------------------------------------------------------------------------
 Time stepping parameters:
-   Simulation end time          : 5. [Myr] 
+   Simulation end time          : 0.2 [Myr] 
    Maximum number of steps      : 2 
    Time step                    : 0.01 [Myr] 
    Minimum time step            : 1e-05 [Myr] 
@@ -25,7 +25,6 @@ Time stepping parameters:
    CFLMAX (fixed time steps)    : 0.8 
    Output every [n] steps       : 5 
    Output [n] initial steps     : 1 
-   Save restart every [n] steps : 100 
 --------------------------------------------------------------------------
 Grid parameters:
    Total number of cpu                  : 1 
@@ -61,9 +60,10 @@ Free surface parameters:
    Sedimentation model       : none
    Correct marker phases     @ 
    Maximum surface slope     : 40. [deg]
+   Topographic diffusion     : none
 --------------------------------------------------------------------------
 Boundary condition parameters: 
-   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
    Top boundary temperature                   : 0. [C] 
    Bottom boundary temperature                : 1300. [C] 
 --------------------------------------------------------------------------
@@ -90,25 +90,22 @@ Advection parameters:
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : random noise
 --------------------------------------------------------------------------
-Loading markers in parallel from file(s) <./markers/mdb> ... done (0.0108816 sec)
+Loading markers in parallel from file(s) <./markers/mdb> ... done (0.0113096 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : output 
    Write .pvd file                         : yes 
    Phase                                   @ 
-   Density                                 @ 
    Total effective viscosity               @ 
    Creep effective viscosity               @ 
    Velocity                                @ 
-   Accumulated Plastic Strain (APS)        @ 
-   Plastic dissipation                     @ 
+   Pressure                                @ 
 --------------------------------------------------------------------------
 Surface output parameters:
    Write .pvd file : yes 
---------------------------------------------------------------------------
-AVD output parameters:
-   Write .pvd file       : yes 
-   AVD refinement factor : 3 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Matrix type                   : monolithic
@@ -125,41 +122,41 @@ Solver parameters specified:
   0 SNES Function norm 1.164388320341e+03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 3.166031043503e-05
+  1 SNES Function norm 3.166031154880e-05
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 1
-SNES solution time      : 0.0712109 (sec)
+SNES solution time      : 0.0724181 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.729814209024e-08 
-      |Div|_2   = 4.504980111240e-07 
+      |Div|_inf = 1.729814203786e-08 
+      |Div|_2   = 4.504980097117e-07 
    Momentum: 
-      |mRes|_2  = 3.165710518011e-05 
+      |mRes|_2  = 3.165710629401e-05 
 --------------------------------------------------------------------------
-Saving output ... done (0.0427991 sec)
+Saving output ... done (0.00158932 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.01000000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 9.510369095100e-03
+  0 SNES Function norm 9.510369065858e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 3.214420944436e-12
+  1 SNES Function norm 3.235602868383e-12
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.0492804 (sec)
+SNES solution time      : 0.0491273 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.497795808853e-21 
-      |Div|_2   = 4.575513934453e-20 
+      |Div|_inf = 4.683812305606e-21 
+      |Div|_2   = 5.729187507663e-20 
    Momentum: 
-      |mRes|_2  = 3.214420944436e-12 
+      |mRes|_2  = 3.235602868383e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [Myr] 
 --------------------------------------------------------------------------
@@ -167,30 +164,30 @@ Applying spatially-limited erosion at constant rate (0.100000 [cm/yr]) to intern
   Erosion level:       0.000000e+00 [km]
   X-coordinate range:  [-2.500000e+01, 2.500000e+01] [km]
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.4528e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.6414e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0394977 sec)
+Saving output ... done (0.00149303 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.01100000 [Myr] 
 Tentative time step : 0.01100000 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.214420944436e-12
+  0 SNES Function norm 3.235602868383e-12
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 2.203692926641e-12
+  1 SNES Function norm 2.214910175116e-12
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.04882 (sec)
+SNES solution time      : 0.0486262 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.835584243086e-22 
-      |Div|_2   = 4.861794224749e-21 
+      |Div|_inf = 9.349312291632e-22 
+      |Div|_2   = 4.547463091016e-21 
    Momentum: 
-      |mRes|_2  = 2.203692926641e-12 
+      |mRes|_2  = 2.214910175116e-12 
 --------------------------------------------------------------------------
 Actual time step : 0.01210 [Myr] 
 --------------------------------------------------------------------------
@@ -198,13 +195,13 @@ Applying spatially-limited erosion at constant rate (0.100000 [cm/yr]) to intern
   Erosion level:       0.000000e+00 [km]
   X-coordinate range:  [-2.500000e+01, 2.500000e+01] [km]
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.3863e-03 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 2.5242e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0395421 sec)
+Saving output ... done (0.0015584 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.407622 (sec) 
+Total solution time : 0.295979 (sec) 
 --------------------------------------------------------------------------
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!
