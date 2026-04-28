@@ -943,13 +943,24 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
+	PetscInt        nlmf = 0;
+	PetscBool       mat_free;
 	PetscScalar    	F, *fcconvar, *Par;
 	PetscInt        i;
 	Adjoint_Vecs    Adjoint_Vectors;
 	PetscLogDouble  cputime_start, cputime_end;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// compatibility check
+	PetscCall(PetscOptionsGetInt (NULL, NULL, "-gmg_mat_free_levels", &nlmf, NULL));
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-js_mat_free",                &mat_free));
+
+	if(mat_free || nlmf)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adjoint solver is incompatible with matrix-free options (rescal, -gmg_mat_free_levels, -js_mat_free) \n");
+	}
 
 	PetscTime(&cputime_start);
 

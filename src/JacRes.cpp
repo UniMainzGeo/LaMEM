@@ -33,8 +33,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	BCCtx      *bc;
 	PetscScalar gx, gy, gz;
 	char        gwtype [_str_len_];
-	PetscInt    i, numPhases, temp_int;
+	PetscInt    i, numPhases, temp_int, nlmf;
 	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
+	PetscBool   mat_free;
+	char        pc_type[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -231,6 +233,24 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->initGuess && !ctrl->eta_ref)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify reference viscosity for initial guess (init_guess, eta_ref) \n");
+	}
+
+	if(ctrl->rescal)
+	{
+		PetscCall(PetscOptionsGetInt (NULL, NULL, "-gmg_mat_free_levels", &nlmf, NULL));
+		PetscCall(PetscOptionsHasName(NULL, NULL, "-js_mat_free",                &mat_free));
+
+		if(mat_free || nlmf)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Stencil rescaling is incompatible with matrix-free options (rescal, -gmg_mat_free_levels, -js_mat_free) \n");
+		}
+
+		PetscCall(PetscOptionsGetString(NULL, NULL, "-jp_type", pc_type, _str_len_, NULL));
+
+		if(strcmp(pc_type, "mg"))
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Stencil rescaing is only compatible with coupled multigrid solver (rescal, stokes_solver, -jp_type) \n");
+		}
 	}
 
 	// print summary

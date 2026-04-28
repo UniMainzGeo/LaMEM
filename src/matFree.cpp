@@ -521,7 +521,6 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	PetscScalar ***vKb,  ***vrho,  ***veta, ***vetaxy, ***vetaxz, ***vetayz;
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
 	PetscScalar cf[6];
-//	PetscInt    rescal;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -530,7 +529,6 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	dt     = md->dt;     // time step
 	fssa   = md->fssa;   // density gradient penalty parameter
 	grav   = md->grav;   // gravity acceleration
-//	rescal = md->rescal; // stencil rescaling flag
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -1184,10 +1182,9 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	FDSTAG      *fs;
 	PetscInt    idx[7];
 	PetscScalar v[49];
-	PetscScalar dr;
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    mnx, mny, mnz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, rescal;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar eta, rho, Kb, IKdt, diag, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***vdx,  ***vdy,  ***vdz,  ***vdp;
@@ -1206,7 +1203,6 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	dt     = md->dt;     // time step
 	fssa   = md->fssa;   // density gradient penalty parameter
 	grav   = md->grav;   // gravity acceleration
-	rescal = md->rescal; // stencil rescaling flag
 
 	// initialize index bounds
 	mcx = fs->dsx.tcels - 1;
@@ -1316,10 +1312,6 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 		pdofidx[2] = 3;   cf[2] = bcvy[k][j][i-1];
 		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
 
-		// stencil rescaling
-		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[3], cf[2], dr);
-		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[1], cf[0], dr);
-
 		// compute local matrix
 		//       vx_(j-1)             vx_(j)               vy_(i-1)             vy_(i)
 		v[0]  =  eta/dy/bdy; v[1]  = -eta/dy/bdy; v[2]  =  eta/dx/bdy; v[3]  = -eta/dx/bdy; // fx_(j-1) [sxy]
@@ -1371,10 +1363,6 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 		pdofidx[2] = 3;   cf[2] = bcvz[k][j][i-1];
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
-		// stencil rescaling
-		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[3], cf[2], dr);
-		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[1], cf[0], dr);
-
 		// compute local matrix
 		//       vx_(k-1)             vx_(k)               vz_(i-1)             vz_(i)
 		v[0]  =  eta/dz/bdz; v[1]  = -eta/dz/bdz; v[2]  =  eta/dx/bdz; v[3]  = -eta/dx/bdz; // fx_(k-1) [sxz]
@@ -1425,10 +1413,6 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 		pdofidx[1] = 0;   cf[1] = bcvy[k][j][i];
 		pdofidx[2] = 3;   cf[2] = bcvz[k][j-1][i];
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
-
-		// stencil rescaling
-		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[3], cf[2], dr);
-		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[1], cf[0], dr);
 
 		// compute local matrix
 		//       vy_(k-1)             vy_(k)               vz_(j-1)             vz_(j)
