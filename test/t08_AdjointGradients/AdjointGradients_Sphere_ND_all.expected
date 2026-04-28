@@ -1,3 +1,28 @@
+--------------------------------------------------------------------------
+Parsing input file : AdjointGradients.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-09 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile AdjointGradients.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
 | ------------------------------------------------------------------------- 
 |                                      LaMEM                                
 |                        Adjoint Gradient Framework Active                  
@@ -24,15 +49,11 @@
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
-     Version : 2.1.4 
+     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : t8_AdjointGradients.dat 
-   Adding PETSc option: -snes_type ksponly
-Finished parsing input file 
---------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
    Maximum number of steps      : 1 
@@ -56,9 +77,8 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
    Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Material parameters: 
---------------------------------------------------------------------------
+
    Phase ID : 0     --   Matrix 
    (dens)   : rho = 1. [ ]  
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
@@ -67,7 +87,6 @@ Material parameters:
    (dens)   : rho = 2. [ ]  
    (diff)   : eta = 1000. [ ]  Bd = 0.0005 [ ]  
 
---------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
@@ -85,7 +104,7 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     : 0 0 0 
+   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -93,7 +112,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00208618 sec)
+Reading geometric primitives ... done (0.000373148 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -110,50 +129,60 @@ AVD output parameters:
    AVD refinement factor : 3 
 --------------------------------------------------------------------------
 Preconditioner parameters: 
-   Matrix type                   : monolithic
-   Schur preconditioner type     : inv_eta 
-   Preconditioner type           : user-defined
+   Picard operator type          : assembled
+   Preconditioner type           : block factorization
+   Block factorization type      : upper 
+   Velocity preconditioner       : user-defined
+   Schur preconditioner          : inverse viscosity
+   Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Solver parameters specified: 
-   Outermost Krylov solver       : gmres 
-   Solver type                   : parallel direct/lu 
-   Solver package                : superlu_dist 
---------------------------------------------------------------------------
-Saving output ... done (0.0182186 sec)
+Saving output ... done (0.0167918 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [ ] 
 Tentative time step : 0.01000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.216709541792e+01 
+  0 SNES Function norm 2.216709541792e+01
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
-  1 SNES Function norm 2.608159905000e-05 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.216709541792e+01
+    1 KSP Residual norm 2.204820375243e+01
+    2 KSP Residual norm 6.681261650423e-03
+    3 KSP Residual norm 6.566148059020e-03
+    4 KSP Residual norm 1.374865826848e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
+  1 SNES Function norm 1.374865825053e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.041608 (sec)
+SNES solution time      : 0.0164347 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 9.899833848782e-06 
-      |Div|_2   = 2.477156507298e-05 
+      |Div|_inf = 2.990044098827e-07 
+      |Div|_2   = 1.374865824997e-06 
    Momentum: 
-      |mRes|_2  = 8.162069151884e-06 
+      |mRes|_2  = 1.241944344073e-11 
 --------------------------------------------------------------------------
+    Residual norms for as_ solve.
+    0 KSP Residual norm 4.000000000000e-01
+    1 KSP Residual norm 3.347274949519e-01
+    2 KSP Residual norm 2.290139061598e-05
+    3 KSP Residual norm 2.270963916295e-05
+    4 KSP Residual norm 5.871571619148e-09
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0147152 sec)
+Saving output ... done (0.0146936 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.115697 (sec) 
+Total solution time : 0.0762473 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = -6.5781305498e-04
+| Current Cost function = -6.5781498212e-04
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -161,17 +190,17 @@ Total solution time : 0.115697 (sec)
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 0]            6.580124e-04 
-|  adjoint     2:          eta[ 0]            6.055263e-04 
-|  adjoint     3:          rho[ 1]           -6.577962e-04 
-|  adjoint     4:          eta[ 1]            5.162167e-08 
+|  adjoint     1:          rho[ 0]            6.578093e-04 
+|  adjoint     2:          eta[ 0]            6.055293e-04 
+|  adjoint     3:          rho[ 1]           -6.578107e-04 
+|  adjoint     4:          eta[ 1]            5.162349e-08 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [ ]       
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 1   : [    0.500;     0.500;     0.900]  Vz -4.24800e-02  -6.57813e-04 
+| 1   : [    0.500;     0.500;     0.900]  Vz -4.24800e-02  -6.57815e-04 
 | 
 | 
 | -------------------------------------------------------------------------
@@ -192,11 +221,37 @@ Total solution time : 0.115697 (sec)
 |                  eta[  1]      -0.078           FallingSphere
 |           delta(rho)[  0]      -0.000           Matrix
 |       
-|   Prefactor A               : -1.13116647e-03 
+|   Prefactor A               : -1.13118962e-03 
 |   Reference Density         :  1.00  
-|   Velocity check            : -6.57813055e-04 
+|   Velocity check            : -6.57814982e-04 
 |   Scaling law data saved to :  ScalingLaw_Test.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 0.11641 s                         	 
+| Adjoint computation was successful & took 0.0771038 s                         	 
 | ************************************************************************ 
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-eta[0] 1.00000000000000000000e+00 # (source: code)
+-eta[1] 1.00000000000000000000e+03 # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-09 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile AdjointGradients.dat # (source: code)
+-rho[0] 1.00000000000000000000e+00 # (source: code)
+-rho[1] 2.00000000000000000000e+00 # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: AdjointGradients.dat source: code

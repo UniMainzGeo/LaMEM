@@ -222,13 +222,20 @@
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 1e-14 1e-13  100   # rtol, atol, maxit
-	linear_tolerances    = 1e-16 1e-14  50    # rtol, atol, maxit
-	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	nonlinear_tolerances = 1e-15 -1  20    # rtol, atol, maxit
+	linear_tolerances    = 1e-10 -1  50    # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5  1.2 20    # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps
 
 <SolverOptionsEnd>
+
+<PetscOptionsStart>
+
+	-js_ksp_type gmres
+	-snes_stol 1e-20
+
+<PetscOptionsEnd>
 
 #===============================================================================

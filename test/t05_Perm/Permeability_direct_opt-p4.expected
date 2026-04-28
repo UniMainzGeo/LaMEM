@@ -20,12 +20,12 @@ Total number of options added: 0
 -snes_monitor # (source: code)
 -snes_type ksponly # (source: code)
 -vs_ksp_type preonly # (source: code)
--vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_factor_mat_solver_type superlu_dist # (source: code)
 -vs_pc_type lu # (source: code)
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 14:47:50 	    
+     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
      Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -84,7 +84,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000330237 sec)
+Reading geometric primitives ... done (9.6462e-05 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : permea 
@@ -105,7 +105,7 @@ Preconditioner parameters:
    Schur preconditioner          : inverse viscosity
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.000797808 sec)
+Saving output ... done (0.000666536 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -118,21 +118,21 @@ Tentative time step : 0.20000000 [ ]
     0 KSP Residual norm 3.620386719675e+02
     1 KSP Residual norm 3.504799918841e+02
     2 KSP Residual norm 2.603387172879e-02
-    3 KSP Residual norm 2.588587418641e-02
-    4 KSP Residual norm 3.971370540258e-05
+    3 KSP Residual norm 2.588587418556e-02
+    4 KSP Residual norm 3.971370527383e-05
     Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-  1 SNES Function norm 3.971370377231e-05
+  1 SNES Function norm 3.971370376996e-05
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.209756 (sec)
+SNES solution time      : 0.290826 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.978929485613e-06 
-      |Div|_2   = 3.971370377230e-05 
+      |Div|_inf = 1.978926398935e-06 
+      |Div|_2   = 3.971370376995e-05 
    Momentum: 
-      |mRes|_2  = 3.334585147114e-11 
+      |mRes|_2  = 3.338074061032e-11 
 --------------------------------------------------------------------------
 Actual time step : 0.22000 [ ] 
 --------------------------------------------------------------------------
@@ -140,11 +140,11 @@ Saving output ...
 ==========================================================================
 EFFECTIVE PERMEABILITY CONSTANT: 1.464841E-02 [ ]
 ==========================================================================
-done (0.000658955 sec)
+done (0.000703147 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.229477 (sec) 
+Total solution time : 0.305367 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -bf_vs_type user # (source: code)
@@ -161,7 +161,7 @@ Total solution time : 0.229477 (sec)
 -snes_monitor # (source: code)
 -snes_type ksponly # (source: code)
 -vs_ksp_type preonly # (source: code)
--vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_factor_mat_solver_type superlu_dist # (source: code)
 -vs_pc_type lu # (source: code)
 #End of PETSc Option Table entries
 WARNING! There are options you set that were not used!

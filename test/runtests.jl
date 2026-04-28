@@ -25,25 +25,18 @@ end
   #global use_dynamic_lib=true
 test_mumps=true # if we do this later on windows, we have to deactivate this
 
-if "no_superlu" in ARGS
-    test_superlu=false
-else
-    test_superlu=true
-end
-
 if "is64bit" in ARGS
     global is64bit=true
 else
     global is64bit=false
 end
 
-@show use_dynamic_lib test_superlu test_mumps create_plots
+@show use_dynamic_lib create_plots
 include("test_utils.jl")        # test-framework specific functions
 
 test_dir = pwd()
 
 #---------------------------------------------------------------------------
-
 maintenance = false # set to true when designing/debugging tests
 
 if maintenance
@@ -60,32 +53,26 @@ if maintenance
 		print("WARNING! YOU ARE ABOUT TO OVERWRITE THE EXPECTED FILES\n")
 		print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
 	
-		clean_files = true # clean files when updating expected files
+		clean_files = true # clean files when updating expected
 	else
 		clean_files = false # no noeed to clean files, keep working
 	end
 	
 else
-	# normal mode (do not update anythng and clean all files)
+	# normal mode (do not update the expected files, just clean the output/work files)
 	update_expected = false 
 	clean_files     = true
 end
-
 #---------------------------------------------------------------------------
-
 @testset "LaMEM Testsuite" verbose=true begin
-
-
 #---------------------------------------------------------------------------
 
-@testset "t08_AdjointGradients" begin
-	cd(test_dir)
-	dir = "t08_AdjointGradients";
-	include(joinpath(dir,"AdjointGradients.jl"));
+@testset "t10_Compressibility" begin
+	
+
+
 end
-
-
-
+#---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------
 

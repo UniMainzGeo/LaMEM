@@ -54,6 +54,8 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 
 		PetscCall(set_tolerances("snes", opt.nonlinear_tolerances));
 
+		PetscCall(set_scalar_option ("snes_stol", 1e-32));
+
 		if(opt.use_line_search)
 		{
 			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_type l2"));
