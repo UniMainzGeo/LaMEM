@@ -1,13 +1,13 @@
 using GeophysicalModelGenerator
 
-# Creates the initial topography file for t34_TopoDiffusion.
+# Creates the initial topography file for t36_TopoDiffusion.
 # The topography is a semicircular dome (half-sphere in 2D cross-section):
 #   z_topo(x) = sqrt(R^2 - x^2)  for |x| < R
 #   z_topo(x) = 0                 otherwise
 # where R = 10 km and the sphere centre is at the surface level z = 0.
 # The dome peak is 10 km high; diffusion will visibly smooth its flanks.
 
-function t34_CreateSetup(dir="./", ParamFile="t34_TopoDiffusion.dat";
+function t36_CreateSetup(dir="./", ParamFile="t36_TopoDiffusion.dat";
         NumberCores=1, mpiexec="mpiexec", is64bit=false)
 
     cur_dir = pwd()
@@ -26,7 +26,7 @@ function t34_CreateSetup(dir="./", ParamFile="t34_TopoDiffusion.dat";
     end
 
     Topo = CartData(X_t, Y_t, Z_t, (Topography=Topo_z,))
-    save_LaMEM_topography(Topo, "t34_topo.bin")
+    save_LaMEM_topography(Topo, "t36_topo.bin")
 
     cd(cur_dir)
 end
