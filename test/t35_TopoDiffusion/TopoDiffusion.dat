@@ -26,7 +26,7 @@
     nseg_z = 1
 
     nel_x  = 64
-    nel_y  = 1
+    nel_y  = 2
     nel_z  = 35
 
     coord_x = -100  100

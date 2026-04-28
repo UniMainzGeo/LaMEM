@@ -123,43 +123,16 @@
 # Solver options
 #===============================================================================
 
-	SolverType              =       direct                  # solver [direct or multigrid]
-	DirectSolver            =       superlu_dist                   # mumps/superlu_dist/pastix     
 
 <SolverOptionsStart>
 
-	set_linear_problem = 1
-	monitor_solvers    = 1
-	linear_tolerances  = 1e-6 1e-9 1000  # rtol, atol, maxit
-	num_mg_levels      = 4
-	stokes_solver      = coupled_mg
-	smoother_type      = heavy           # heavy (gmres + bjacobi)
-	coarse_solver      = direct
-	direct_solver_type = mumps
-	coarse_num_cpu     = 1
+	nonlinear_tolerances = 1e-4 1e-6 1        # rtol, atol, maxit
+	linear_tolerances    = 1e-8 1e-9 30       # rtol, atol, maxit
+	monitor_solvers      = 1
+	stokes_solver        = block_direct
+	direct_solver_type   = superlu_dist
 
 <SolverOptionsEnd>
-
-
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-
-	-snes_npicard 2
-	-snes_monitor
-	-snes_max_it 1
-#	-snes_type ksponly  
 	
-## Jacobian solver
-#
-	-js_ksp_type fgmres
-	-js_ksp_max_it 30
-	
-	-objects_dump
-
-<PetscOptionsEnd>
-
 #===============================================================================
 

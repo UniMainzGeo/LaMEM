@@ -224,7 +224,6 @@
 	nonlinear_tolerances = 1e-6 1e-4 50     # rtol, atol, maxit
 	linear_tolerances    = 1e-4 1e-8 40     # rtol, atol, maxit
 	picard_to_newton     = 1e-3 10 1.1 10   # picard rtol, picard minit, newton rtol, newton maxit
-	use_line_search      = 1
 	monitor_solvers      = 1
 	num_mg_levels        = 2
 	stokes_solver        = coupled_mg

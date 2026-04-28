@@ -104,45 +104,15 @@
 #===============================================================================
 # Solver options
 #===============================================================================
-
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 1e-4 -1  50        # rtol, atol, maxit
-	linear_tolerances    = 1e-6 -1  100       # rtol, atol, maxit
-	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	nonlinear_tolerances = 1e-4 1e-6 1        # rtol, atol, maxit
+	linear_tolerances    = 1e-8 1e-9 30       # rtol, atol, maxit
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
-	direct_solver_type   = mumps
+	direct_solver_type   = superlu_dist
 
 <SolverOptionsEnd>
-	
-#===============================================================================
-# Solver options
-#===============================================================================
-
-	SolverType              =       direct                  # solver [direct or multigrid]
-	DirectSolver            =       superlu_dist                   # mumps/superlu_dist/pastix     
-
-
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-
-	-snes_npicard 2
-	-snes_monitor
-	-snes_max_it 1
-#	-snes_type ksponly  
-	
-## Jacobian solver
-#
-	-js_ksp_type fgmres
-	-js_ksp_max_it 30
-	
-	-objects_dump
-
-<PetscOptionsEnd>
 
 #===============================================================================
 

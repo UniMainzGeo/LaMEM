@@ -268,78 +268,23 @@
 
 	<MaterialEnd>
 
-
-
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 		=	multigrid			# solver [direct or multigrid]
-
-
-
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 5e-2 1e-4 200      # rtol, atol, maxit
-	linear_tolerances    = 1e-4 1e-8 50       # rtol, atol, maxit
-	picard_to_newton     = 1e-2  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
-	use_line_search      = 1
+	nonlinear_tolerances = 1e-3 1e-3 30      # rtol, atol, maxit
+	linear_tolerances    = 1e-3 1e-3 30       # rtol, atol, maxit
+	picard_to_newton     = 1e-3  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
-	num_mg_levels        = 2
+	num_mg_levels        = 4
 	stokes_solver        = coupled_mg
-	smoother_type        = light           # richardson+jacobi
+	smoother_type        = light
+	smoother_num_sweeps  = 2
 	coarse_solver        = direct
-	direct_solver_type   = mumps
-
+	direct_solver_type   = superlu_dist
+	coarse_num_cpu       = 1
 <SolverOptionsEnd>
-
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-#	-snes_ksp_ew
-#	-snes_ksp_ew_rtolmax 1e-4
-	-snes_rtol 1e-3					
-	-snes_atol 1e-3					
-	-snes_max_it 30					
-	
-	-snes_PicardSwitchToNewton_rtol 1e-3   # relative tolerance to switch to Newton (1e-2)
-	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
-
-	
-	-js_ksp_type fgmres
-#	-js_ksp_monitor 				# display how the inner iterations converge
-	-js_ksp_max_it 30				# inner
-	-js_ksp_atol 1e-3
-	-js_ksp_rtol 1e-3
-#	 Multigrid preconditioner settings
-	-gmg_pc_type mg
-	-gmg_pc_mg_levels 4    # 3 MG levels, gives coarse grid of 32x16x8
-	-gmg_pc_mg_galerkin
-	-gmg_pc_mg_type multiplicative
-	-gmg_pc_mg_cycle_type v
-	-gmg_pc_mg_log   # monitors time spend in multigrid if using -log_summary @ the end
-
-
-	# RICHARDSON/JACOBI MG Smoothener - [Anton's favorite options]
-	-gmg_mg_levels_ksp_type richardson
-	-gmg_mg_levels_ksp_richardson_scale 0.5
-	-gmg_mg_levels_pc_type jacobi
-	-gmg_mg_levels_ksp_max_it 2
-
-
-	# DIRECT, REDUNDANT COARSE SOLVER
-	# direct solver @ coarse level
-	-crs_ksp_type preonly
-	-crs_pc_type lu
-	-crs_pc_factor_mat_solver_type superlu_dist
-	
-	# redundant solver @ coarse level
-	-crs_pc_type redundant
-	-crs_pc_redundant_number 2
-	-crs_redundant_pc_factor_mat_solver_type superlu_dist
-<PetscOptionsEnd>
 
 #===============================================================================

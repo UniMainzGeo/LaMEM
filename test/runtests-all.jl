@@ -76,17 +76,17 @@ end
     acc      = ((rtol=1e-7,), (rtol=1e-5,), (rtol=1e-4,));
     
     # Perform tests
-    @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt-p1", 
+    @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
-    @test perform_lamem_test(dir,ParamFile,"FB1_b_Direct_deb-p1", 
+    @test perform_lamem_test(dir,ParamFile,"FB1_b_Direct_deb", 
                             keywords=keywords, accuracy=acc, cores=1, deb=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     ParamFile = "FallingBlock_Direct_MUMPS.dat";
 
-    @test perform_lamem_test(dir,ParamFile,"FB1_c_MUMPS_opt-p2", 
+    @test perform_lamem_test(dir,ParamFile,"FB1_c_MUMPS_opt", 
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
@@ -102,7 +102,7 @@ end
     acc      = ((rtol=1e-7,), (rtol=1e-5,), (rtol=1e-4,));
     
     # Perform tests
-    @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt-p1", 
+    @test perform_lamem_test(dir,ParamFile,"FB2_a_CoupledMG_opt", 
                             keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=false,
                                 create_expected_file=update_expected, clean_dir=clean_files)
 end
@@ -123,7 +123,7 @@ end
     # Sub1_a_Direct_opt
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=1, mpiexec=mpiexec)
 
-    @test perform_lamem_test(dir,ParamFile,"Sub1_a_Direct_opt-p1", 
+    @test perform_lamem_test(dir,ParamFile,"Sub1_a_Direct_opt", 
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
@@ -135,7 +135,7 @@ end
     acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
         
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
-    @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt-p4", 
+    @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt", 
                                 args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
                                 create_expected_file=update_expected, clean_dir=clean_files)
@@ -148,7 +148,7 @@ end
     acc      = ((rtol=1e-6,atol=2e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=3e-4));
         
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
-    @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb-p4", 
+    @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb", 
                                 args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
                                 create_expected_file=update_expected, clean_dir=clean_files)
@@ -162,7 +162,7 @@ end
     acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
         
     CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=2, mpiexec=mpiexec,  is64bit=is64bit)
-    @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt-p2", 
+    @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt", 
                                 args="-nstep_max 2",
                                 keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                                 create_expected_file=update_expected, clean_dir=clean_files)    
@@ -182,20 +182,20 @@ end
         # This test has issues on github actions with 64bit but works fine on our machines and with 32bit.
 
         # Loc1_a_MUMPS_VEP_opt
-        @test perform_lamem_test(dir,"localization.dat","Loc1_a_MUMPS_VEP_opt-p4",
+        @test perform_lamem_test(dir,"localization.dat","Loc1_a_MUMPS_VEP_opt",
                                 args="-nstep_max 20", 
                                 keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
                             	create_expected_file=update_expected, clean_dir=clean_files)
-    end
 
+	end
     # Loc1_b_MUMPS_VEP_Reg_opt
-    @test perform_lamem_test(dir,"localization_eta_min_reg.dat","Loc1_b_MUMPS_VEP_Reg_opt-p4",
+    @test perform_lamem_test(dir,"localization_eta_min_reg.dat","Loc1_b_MUMPS_VEP_Reg_opt",
                             args="-nstep_max 20", 
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     # Loc1_c_Direct_VEP_opt                            
-    @test perform_lamem_test(dir,"localization.dat","Loc1_c_Direct_VEP_opt-p1",
+    @test perform_lamem_test(dir,"localization.dat","Loc1_c_Direct_VEP_opt",
                             args="-nstep_max 20", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
@@ -205,7 +205,7 @@ end
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=5e-2,atol=1e-8), (rtol=2e-3,atol=5e-9), (rtol=2e-3,atol=2e-7));
     
-    @test perform_lamem_test(dir,"localization_eta_vp_reg.dat","Loc1_d_MUMPS_VEP_VPReg_opt-p1",
+    @test perform_lamem_test(dir,"localization_eta_vp_reg.dat","Loc1_d_MUMPS_VEP_VPReg_opt",
                             args="-nstep_max 20", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
@@ -221,7 +221,7 @@ end
     acc      = ((rtol=1e-6,), (rtol=1e-5,), (rtol=1e-2,atol=1e-8));
     
     # Permeability_Direct_opt
-    @test perform_lamem_test(dir,ParamFile,"Permeability_direct_opt-p4", 
+    @test perform_lamem_test(dir,ParamFile,"Permeability_direct_opt", 
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
@@ -599,7 +599,7 @@ end
     # Perform tests
 
     # test_a -------
-    @test perform_lamem_test(dir,ParamFile,"Compressibility_opt-p1",
+    @test perform_lamem_test(dir,ParamFile,"Compressibility_opt",
                             keywords=keywords, accuracy=acc, cores=1, opt=true,
                             create_expected_file=update_expected, clean_dir=false)
     
@@ -631,13 +631,13 @@ end
     cd(test_dir)
     dir = "t11_Subgrid";
     
-    ParamFile = "FallingBlock_mono_CoupledMG_RedundantCoarse.dat";
+    ParamFile = "FallingBlockCoupledMG.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
     acc      = ((rtol=1e-1,atol=1e-5), (rtol=1e-5, atol=1e-5), (rtol=1e-4,atol=1e-5));
     
     # Perform tests
-    @test perform_lamem_test(dir,ParamFile,"Subgrid_opt-p1",
+    @test perform_lamem_test(dir,ParamFile,"Subgrid_opt",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                         	create_expected_file=update_expected, clean_dir=clean_files)
 end
@@ -681,7 +681,7 @@ end
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2","|T|_2")
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=5e-11),  (rtol=1e-1,atol=5e-11));
 
-    @test perform_lamem_test(dir,ParamFile,"Temperature_diffusion-p1",
+    @test perform_lamem_test(dir,ParamFile,"Temperature_diffusion",
                 args="-printNorms 1",
                 keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                 create_expected_file=update_expected, clean_dir=clean_files)
@@ -704,7 +704,7 @@ end
 
     # ---
     # Viscoelastic rheology
-    @test perform_lamem_test(dir,"Rheology_VE_0D.dat","Rheology_VE_0D-p1",
+    @test perform_lamem_test(dir,"Rheology_VE_0D.dat","Rheology_VE_0D",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=false)
 
@@ -728,7 +728,7 @@ end
 
     # ---
     # Viscoelastoplastic rheology
-    @test perform_lamem_test(dir,"Rheology_VEP_0D.dat","Rheology_VEP_0D-p1",
+    @test perform_lamem_test(dir,"Rheology_VEP_0D.dat","Rheology_VEP_0D",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=false)
 
@@ -753,7 +753,7 @@ end
 
     # ---
     # Viscoelastoplastic rheology with nonlinear dislocation creep viscosity
-    @test perform_lamem_test(dir,"Rheology_DislocationCreep_VE_0D.dat","Rheology_DislocationCreep_VE_0D-p1",
+    @test perform_lamem_test(dir,"Rheology_DislocationCreep_VE_0D.dat","Rheology_DislocationCreep_VE_0D",
                         keywords=keywords, accuracy=acc, cores=1, opt=true,  mpiexec=mpiexec,
                         create_expected_file=update_expected, clean_dir=false)
                         
@@ -778,7 +778,7 @@ end
     
     # ---
     # Viscoelastoplastic rheology with nonlinear dislocation creep viscosity
-    @test perform_lamem_test(dir,"Rheology_DislocationCreep_VEP_0D.dat","Rheology_DislocationCreep_VEP_0D-p1",
+    @test perform_lamem_test(dir,"Rheology_DislocationCreep_VEP_0D.dat","Rheology_DislocationCreep_VEP_0D",
                         keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                         create_expected_file=update_expected, clean_dir=false)
                         
@@ -855,28 +855,28 @@ end
 
     # ---
     # first test runs visco-plastic setup with dt = 10 ka
-    @test perform_lamem_test(dir,"1D_VP.dat","1D_VP_Direct_opt-p1",
+    @test perform_lamem_test(dir,"1D_VP.dat","1D_VP_Direct_opt",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=false)
     # ---
 
     # ---
     # 2nd test runs visco-elasto-plastic setup with dt = 5 ka
-    @test perform_lamem_test(dir,"1D_VEP5.dat","1D_VEP5_Direct_opt-p2",
+    @test perform_lamem_test(dir,"1D_VEP5.dat","1D_VEP5_Direct_opt",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=false)
     # ---
        
     # ---
     # 3rd test runs visco-elasto-plastic setup with dt = 10 ka
-    @test perform_lamem_test(dir,"1D_VEP10.dat","1D_VEP10_Direct_opt-p3",
+    @test perform_lamem_test(dir,"1D_VEP10.dat","1D_VEP10_Direct_opt",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=false)
     # ---
 
     # ---
     # 4th test runs visco-plastic setup with dt = 50 ka
-    @test perform_lamem_test(dir,"1D_VEP50.dat","1D_VEP50_Direct_opt-p4",
+    @test perform_lamem_test(dir,"1D_VEP50.dat","1D_VEP50_Direct_opt",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=false)
     # ---
@@ -944,7 +944,7 @@ end
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=1e-9));
     
     # Perform tests
-    @test perform_lamem_test(dir,ParamFile,"PhaseTransitions-p1",
+    @test perform_lamem_test(dir,ParamFile,"PhaseTransitions",
                             args="-nstep_max 30",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
@@ -961,12 +961,12 @@ end
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     # Tests phase transitions with X/Z and Box coordinates
-    @test perform_lamem_test(dir,"Plume_PhaseTransitions_Box_XZ.dat","PhaseTransitions-XBox-p1",
+    @test perform_lamem_test(dir,"Plume_PhaseTransitions_Box_XZ.dat","PhaseTransitions-XBox",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     # Tests phase transition triggered by time       
-    @test perform_lamem_test(dir,"TimeTransition.dat","TimeTransition-p1",
+    @test perform_lamem_test(dir,"TimeTransition.dat","TimeTransition",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
                             
@@ -1027,7 +1027,7 @@ end
     acc      = ((rtol=1e-7,atol=1e-8), (rtol=1e-5, atol=2e-8), (rtol=1e-4,atol=2e-5));
 
     # test_xy
-    @test perform_lamem_test(dir,"SimpleShear.dat","SimpleShear_xy-p2",
+    @test perform_lamem_test(dir,"SimpleShear.dat","SimpleShear_xy",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
@@ -1042,14 +1042,14 @@ end
 
     # test_a
     # t19_CompensatedInflow
-    @test perform_lamem_test(dir,"CompensatedInflow_test_2D.dat","CompensatedInflow-p1",
+    @test perform_lamem_test(dir,"CompensatedInflow_test_2D.dat","CompensatedInflow",
                             args="-nstep_max 10",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     # test_b
     # t19_CompensatedInflow3D
-    @test perform_lamem_test(dir,"CompensatedInflow_test_3D.dat","CompensatedInflow3D-p2",
+    @test perform_lamem_test(dir,"CompensatedInflow_test_3D.dat","CompensatedInflow3D",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
@@ -1068,7 +1068,7 @@ end
     acc      = ((rtol=1e-5,atol=1e-5), (rtol=1e-5, atol=1e-5), (rtol=1e-4,atol=1e-4));
 
     # t20_FSSA_1_opt
-    @test perform_lamem_test(dir,"RTI_FSSA.dat","RTI_FSSA_1-p1",
+    @test perform_lamem_test(dir,"RTI_FSSA.dat","RTI_FSSA_1",
                             args="-nstep_max 20 -nel_x 50 -nel_z 100",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
@@ -1137,14 +1137,14 @@ end
 
     # test_a
     t24_CreateMarkers(dir, ParamFile, NumberCores=2, mpiexec=mpiexec, is64bit=is64bit)
-    @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_opt-p8",
+    @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_opt",
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
     # test_b
     t24_CreateMarkers(dir, ParamFile, NumberCores=2, mpiexec=mpiexec, is64bit=is64bit)
-    @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_deb-p8",
+    @test perform_lamem_test(dir,"Erosion_Sedimentation_2D.dat","Erosion_Sedimentation_2D_deb",
                             args="-nstep_max 2",
                             keywords=keywords, accuracy=acc, cores=2, deb=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
@@ -1304,12 +1304,12 @@ end
     acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
 
    # Test if boundaries are pushed from front and back inside the model:
-    @test perform_lamem_test(dir,"BC_velocity_2D_FB.dat","BC_velocity_2D_FB_opt-p1",
+    @test perform_lamem_test(dir,"BC_velocity_2D_FB.dat","BC_velocity_2D_FB_opt",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
     
     # Test if boundaries are pushed from left to right and then from right to left:
-    @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt-p1",
+    @test perform_lamem_test(dir,"BC_velocity_2D_LR.dat","BC_velocity_2D_LR_opt",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
@@ -1374,15 +1374,16 @@ end
     acc      = ((rtol=1e-6,atol=1e-10), (rtol=1e-5,atol=1e-10), (rtol=1e-4,atol=1e-10));
     
     # Test 3D Bezier push block functionality
-    @test perform_lamem_test(dir,ParamFile,"3D_push_block_opt-p1", 
+    @test perform_lamem_test(dir,ParamFile,"3D_push_block_opt", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
 							create_expected_file=update_expected, clean_dir=clean_files)
 
     # Test 2D Bezier push block functionality (push along x-axis only)
     ParamFile = "2D_push_block.dat";
-    @test perform_lamem_test(dir,ParamFile,"2D_push_block_opt-p1", 
+    @test perform_lamem_test(dir,ParamFile,"2D_push_block_opt", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
 							create_expected_file=update_expected, clean_dir=clean_files)
+end
 #---------------------------------------------------------------------------
 @testset "t35_TopoDiffusion" begin
     cd(test_dir)
@@ -1396,7 +1397,7 @@ end
 
     TopoDiffusionCreateSetup(dir, ParamFile; NumberCores=1, mpiexec=mpiexec)
 
-    @test perform_lamem_test(dir, ParamFile, "TopoDiffusion_opt-p1";
+    @test perform_lamem_test(dir, ParamFile, "TopoDiffusion_opt";
         args     = "-nstep_max 3",
         keywords = keywords,
         accuracy = acc,

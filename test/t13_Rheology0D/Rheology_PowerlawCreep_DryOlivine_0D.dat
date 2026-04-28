@@ -154,52 +154,16 @@
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 			=	direct 		# solver [direct or multigrid]
-	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
-
-
 
 <SolverOptionsStart>
 
 	nonlinear_tolerances = 1e-4  1e-7   100  # rtol, atol, maxit
-	linear_tolerances    = 1e-12 1e-10  100  # rtol, atol, maxit
+	linear_tolerances    = 1e-13 1e-10  100  # rtol, atol, maxit
 	picard_to_newton     = 1e-4  5 1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps
 
 <SolverOptionsEnd>
-
-
-#===============================================================================
-# PETSc options
-#===============================================================================
-
-<PetscOptionsStart>
-
-# SNES
-
-	-snes_monitor
-	-snes_atol 1e-7   # 1e-12
-	-snes_rtol 1e-4
-	-snes_stol 1e-6
-	-snes_max_it 100
-	-snes_max_funcs 50000
-
-	-js_ksp_atol 1e-10
-
-	-res_log
-
-	# Linesearch options
-#	-snes_linesearch_monitor
-	-snes_linesearch_max_it 50
-	-snes_linesearch_type l2			#Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType)  [l2 seems to work better with VEP]
-	-snes_linesearch_maxstep 1.0			# very important to prevent the code from "blowing up"
-
-# Jacobian solver
-	-js_ksp_monitor
-
-
-<PetscOptionsEnd>
 
 #===============================================================================

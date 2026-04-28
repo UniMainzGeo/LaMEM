@@ -286,16 +286,16 @@
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances = 1e-4 1e-8 5      # rtol, atol, maxit
-	linear_tolerances    = 1e-5 1e-12 150   # rtol, atol, maxit
-	picard_to_newton     = 1e-5 5 1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
-	use_line_search      = 1
+	nonlinear_tolerances = 1e-4 1e-8  20   # rtol, atol, maxit
+	linear_tolerances    = 1e-5 1e-12 150  # rtol, atol, maxit
+	picard_to_newton     = 1e-5 5 1.2 20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	num_mg_levels        = 3
 	stokes_solver        = coupled_mg
-	smoother_type        = light           # richardson+jacobi
+	smoother_type        = light
 	coarse_solver        = direct
 	direct_solver_type   = mumps
+	coarse_num_cpu       = 1
 
 <SolverOptionsEnd>
 
