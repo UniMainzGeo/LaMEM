@@ -411,7 +411,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	JacRes      *jr;
 	FDSTAG      *fs;
 	PetscInt    I, I1, I2, J, J1, J2;
-	PetscInt    i, j, jj, found, nx, ny, sx, sy, L, mx, my;
+	PetscInt    i, j, jj, found, nx, ny, sx, sy, L, mx, my, periodic;
 	PetscScalar cx[13], cy[13], cz[13];
 	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, Rxx, Ryy, step, gtol;
 	PetscScalar ***advect, ***topo, ***vx, ***vy, ***vz;
@@ -444,13 +444,14 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	PetscFunctionBeginUser;
 
 	// access context
-	jr   = surf->jr;
-	fs   = jr->fs;
-	step = jr->ts->dt;
-	mx   = fs->dsx.tnods;
-	my   = fs->dsy.tnods;
-	L    = (PetscInt)fs->dsz.rank;
-	gtol = fs->gtol;
+	jr       = surf->jr;
+	fs       = jr->fs;
+	step     = jr->ts->dt;
+	mx       = fs->dsx.tnods;
+	my       = fs->dsy.tnods;
+	L        = (PetscInt)fs->dsz.rank;
+	gtol     = fs->gtol;
+	periodic = fs->periodic;
 
 	// get current background strain rates
 	ierr = BCGetBGStrainRates(jr->bc, &Exx, &Eyy, NULL, NULL, &Rxx, &Ryy, NULL); CHKERRQ(ierr);
@@ -477,8 +478,8 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 
 		// get node indices
 		I  = i;
-		I1 = I-1; if(I1 == -1) I1 = I;
-		I2 = I+1; if(I2 == mx) I2 = I;
+		I1 = I-1; if(!periodic && I1 == -1) I1 = I;
+		I2 = I+1; if(!periodic && I2 == mx) I2 = I;
 		J  = j;
 		J1 = J-1; if(J1 == -1) J1 = J;
 		J2 = J+1; if(J2 == my) J2 = J;
@@ -575,7 +576,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	Vec         cellTopo;
 	PetscScalar ***ntopo, ***ctopo;
 	PetscScalar tanMaxAng, zbot, dx, dy, h, t, tmax, cz[4], Ezz, Rzz, step;
-	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my;
+	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my, periodic;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -591,6 +592,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	L         = (PetscInt)fs->dsz.rank;
 	step      = jr->ts->dt;
 	tanMaxAng = PetscTanReal(surf->MaxAngle);
+	periodic  = fs->periodic;
 
 	// get global coordinate bounds
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL); CHKERRQ(ierr);
@@ -684,8 +686,8 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	START_PLANE_LOOP
 	{
 		// check index bounds
-		I1 = i;   if(I1 == mx) I1--;
-		I2 = i-1; if(I2 == -1) I2++;
+		I1 = i;   if(!periodic && I1 == mx) I1--;
+		I2 = i-1; if(!periodic && I2 == -1) I2++;
 		J1 = j;   if(J1 == my) J1--;
 		J2 = j-1; if(J2 == -1) J2++;
 
@@ -1583,7 +1585,6 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	if(Y1+(PetscScalar (nyTopo-1))*DY < ey){
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover northern edge of the LaMEM box!");
 	}
-
 
 	// runs over all LaMEM nodes
 	START_PLANE_LOOP
