@@ -274,7 +274,7 @@ unit_stress      = 1e8
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps
 
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================
 
