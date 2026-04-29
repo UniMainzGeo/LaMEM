@@ -40,8 +40,8 @@ a) Create a new test directory.
 	where txx is the number of the test (please number them consecutively), followed by something
 	that explains the meaning of the test (FallingBlock with direct solvers in this case).
 
-	WARNING! USE t01, t02, ... INSTEAD OF t1, t2, ...
-	WARNING! USE t01, t02, ... ONLY FOR DIRECTORIES, NOT FOR FILES (LITERALLY ALL FILES MUST BE FREE OF THIS PREFIX)
+	USE t01, t02, ... INSTEAD OF t1, t2, ...
+	USE t01, t02, ... ONLY FOR DIRECTORIES, NOT FOR FILES (LITERALLY ALL FILES MUST BE FREE OF THIS PREFIX)
 
 b) Put the relevant LaMEM input file (*.dat) in the new test directory. 
 	If you need to create a more complicated input geometry, you might also have to create a new julia input file. 
@@ -74,8 +74,8 @@ c) Add the test to "runtests.jl".
     @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
-	WARNING! PROVIDE EXPECTED FILE NAME WITHOUT EXTENSION .expected IS ADDED INTERNALLY
-	WARNING! DO NOT USE POSTFIX -p1, -p2, ... INDICATING NUMBER OF MPI PROCESSES (THIS IS ALWAYS BROKEN)
+	PROVIDE EXPECTED FILE NAME WITHOUT EXTENSION .expected IS ADDED INTERNALLY
+	DO NOT USE POSTFIX -p1, -p2, ... INDICATING NUMBER OF MPI PROCESSES (THIS IS ALWAYS BROKEN)
 	
 	In some cases you may have to first generate a setup (see "t03_Subduction") 
 	or you want to compare the results with those of an analytical solution and/or create plots ("t13_Rheology0D" or "t14_1DStrengthEnvelope")
@@ -93,9 +93,7 @@ d) Create the "expected" file for your new test.
 	julia> perform_lamem_test(dir,"1D_VP.dat","t14_1D_VP_Direct_opt",
                             keywords=keywords, accuracy=acc, cores=1, opt=true,
 							create_expected_file=refresh_expected, clean_dir=clean_files)
-	
-	WARNING! PROVIDE EXPECTED FILE NAME WITHOUT EXTENSION .expected IS ADDED INTERNALLY
-		
+			
 	For designing the test you can set the flags as follows:
 	
 	refresh_expected = true
@@ -130,6 +128,7 @@ d) Create the "expected" file for your new test.
 e) Tests to make sure that it works by running the full test-suite again
 
 f) PLEASE DELETE ALL UNUSED FILES BEFORE COMMITTING!
+   MAKE SURE TEST DELETES ALL FILES AFTER RUN (ONLY INPUT, EXPECTED AND SCRIPT FILES SHOULD REMAIN)
 
 g) Commit to LaMEM 
 	Push your new tests to the LaMEM repository (including the changes to runtests and the required input/expected files) 
