@@ -534,27 +534,27 @@ PetscErrorCode  DynamicPhTr_Init(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 
-//------------------------------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------------------------------
 
 PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 {
-
 	Scaling         *scal;
 	PetscInt        it=0;
 
 	PetscErrorCode  ierr;
 	PetscFunctionBeginUser;
 
-	scal    = dbm -> scal;
-	ierr    = getStringParam(fb, _OPTIONAL_, "Name_Clapeyron", ph->Name_clapeyron, "none");  CHKERRQ(ierr);
+	scal = dbm -> scal;
+	ierr = getStringParam(fb, _OPTIONAL_, "Name_Clapeyron", ph->Name_clapeyron, "user-defined");  CHKERRQ(ierr);
 
-	if(strcmp(ph->Name_clapeyron, "none"))
+	if(strcmp(ph->Name_clapeyron, "user-defined"))
 	{
+		// predefined profile
 		ierr = SetClapeyron_Eq(ph); CHKERRQ(ierr);
-		PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Clapeyron \n", (LLD)(ph->ID));
-        PetscPrintf(PETSC_COMM_WORLD,"     Transition law     :   %s\n", ph->Name_clapeyron);
-
-
+	}
+	else
+	{
+		// user-defined profile
         ierr = getIntParam   (fb, _REQUIRED_, "numberofequation",   &ph->neq, 1, 2); CHKERRQ(ierr);
 
         if(ph->neq>2 || ph->neq == 0)
@@ -562,10 +562,14 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
         	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero");
         }
 
-		ierr = getScalarParam(fb, _REQUIRED_, "clapeyron_slope",    ph->clapeyron_slope,ph->neq,    1.0); CHKERRQ(ierr);    // [MPa/K]
-		ierr = getScalarParam(fb, _REQUIRED_, "P0_clapeyron",       ph->P0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // [Pa]
-		ierr = getScalarParam(fb, _REQUIRED_, "T0_clapeyron",       ph->T0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // [Celsius]
+		ierr = getScalarParam(fb, _REQUIRED_, "clapeyron_slope",    ph->clapeyron_slope, ph->neq,    1.0); CHKERRQ(ierr);    // [MPa/K]
+		ierr = getScalarParam(fb, _REQUIRED_, "P0_clapeyron",       ph->P0_clapeyron,    ph->neq,    1.0); CHKERRQ(ierr);    // [Pa]
+		ierr = getScalarParam(fb, _REQUIRED_, "T0_clapeyron",       ph->T0_clapeyron,    ph->neq,    1.0); CHKERRQ(ierr);    // [Celsius]
 	}
+
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Clapeyron \n", (LLD)(ph->ID));
+    PetscPrintf(PETSC_COMM_WORLD,"     Transition law     :   %s\n", ph->Name_clapeyron);
 
     PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %lld    [ P = P0 + gamma*(T-T0) ] \n", (LLD) ph->neq);
         
@@ -1359,7 +1363,7 @@ PetscErrorCode Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P
 		Controls ctrl, PetscInt *ph_out, PetscInt *InAbove)
 {
 	PetscInt 	ph,ip,neq, InAb;
-	PetscScalar 	Pres[2], pShift;
+	PetscScalar Pres[2]={0.0, 0.0}, pShift;
 
 	PetscFunctionBeginUser;
 
