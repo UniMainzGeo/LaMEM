@@ -787,10 +787,12 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				ierr = Check_Phase_above_below(PhaseTrans->PhaseAbove,   P, num_phas, &above); CHKERRQ(ierr);
 			}
 
+			PH1 = P->phase;
+			PH2 = P->phase;
+
 			if  ( (below >= 0) || (above >= 0) )
 			{
-				PH2 = P->phase;
-				PH1 = P->phase;
+
                  // the current phase is indeed involved in a phase transition
 				if      (   (below>=0) && (nphc ==1))
 				{
@@ -880,7 +882,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 				}
 			}
-			else{
+			else
+			{
 				// allow cases in which we only reset T
 				ph 			= P->phase;
 				InsideAbove = 0;
