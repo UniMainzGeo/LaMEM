@@ -124,7 +124,7 @@
 
 	set_linear_problem = 1
 	linear_tolerances  = 1e-4 1e-5 200  # rtol, atol, maxit
-	num_mg_levels      = 3
+	num_mg_levels      = 2
 	stokes_solver      = coupled_mg
 	smoother_type      = light
 	coarse_solver      = direct

@@ -290,7 +290,7 @@
 	linear_tolerances    = 1e-5 1e-12 150  # rtol, atol, maxit
 	picard_to_newton     = 1e-5 5 1.2 20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
-	num_mg_levels        = 3
+	num_mg_levels        = 2
 	stokes_solver        = coupled_mg
 	smoother_type        = light
 	coarse_solver        = direct
