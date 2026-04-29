@@ -35,7 +35,7 @@
 PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)   
 {
 
-        // read all dike parameter blocks from file
+    // read all dike parameter blocks from file periodic
 	Dike     *dike;
 	FDSTAG   *fs;
 	PetscScalar ***gsxx_eff_ave_hist;
@@ -48,6 +48,13 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 	if (!jr->ctrl.actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
  
 	fs = jr->fs;
+
+	// check compatibility with periodic bc
+	if(fs->periodic)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dike implementation has not been tested with periodic boundary condition yet\n");
+	}
+
  	//===============                                                                                                                                               
 	// DIKE PARAMETER                                                                                                               
 	//===============                                                                                                                                               
