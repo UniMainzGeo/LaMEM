@@ -1,0 +1,9 @@
+=============================================
+Running the LaMEM julia testing framework
+=============================================
+make[1]: Entering directory '/home/anton/PROG/LaMEM/src'
+make[1]: Nothing to be done for 'all'.
+make[1]: Leaving directory '/home/anton/PROG/LaMEM/src'
+make[1]: Entering directory '/home/anton/PROG/LaMEM/src'
+make[1]: Nothing to be done for 'all'.
+make[1]: Leaving directory '/home/anton/PROG/LaMEM/src'

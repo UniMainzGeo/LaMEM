@@ -30,7 +30,7 @@ unit_stress      = 1e8
 	CFL       = 0.5		# CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.8		# CFL criterion for elasticity
 	nstep_ini = 10		# save output for n initial steps
-	nstep_max = 50		# maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 30		# maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 2		# save output every n steps
 
 #===============================================================================

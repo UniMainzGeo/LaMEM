@@ -28,8 +28,8 @@
 	dt_max    = 0.1     # maximum time step
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 50     # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 10       # save output every n steps
+	nstep_max = 30      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 2       # save output every n steps
 
 #===============================================================================
 # Grid & discretization parameters
