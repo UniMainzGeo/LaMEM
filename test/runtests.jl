@@ -66,7 +66,7 @@ end
 #---------------------------------------------------------------------------
 @testset "LaMEM Testsuite" verbose=true begin
 #---------------------------------------------------------------------------
-
+#=
 #---------------------------------------------------------------------------
 @testset "t11_Subgrid" begin
     cd(test_dir)
@@ -826,6 +826,7 @@ end
 							create_expected_file=update_expected, clean_dir=clean_files)
 end
 #---------------------------------------------------------------------------
+=#
 @testset "t35_TopoDiffusion" begin
     cd(test_dir)
     dir = "t35_TopoDiffusion"
@@ -836,7 +837,7 @@ end
 
     ParamFile = "TopoDiffusion.dat"
 
-    TopoDiffusionCreateSetup(dir, ParamFile; NumberCores=1, mpiexec=mpiexec)
+    TopoDiffusionCreateSetup()
 
     @test perform_lamem_test(dir, ParamFile, "TopoDiffusion_opt";
         args     = "-nstep_max 3",

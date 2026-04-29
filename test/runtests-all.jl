@@ -1395,7 +1395,7 @@ end
 
     ParamFile = "TopoDiffusion.dat"
 
-    TopoDiffusionCreateSetup(dir, ParamFile; NumberCores=1, mpiexec=mpiexec)
+    TopoDiffusionCreateSetup()
 
     @test perform_lamem_test(dir, ParamFile, "TopoDiffusion_opt";
         args     = "-nstep_max 3",
@@ -1406,6 +1406,7 @@ end
         mpiexec  = mpiexec,
 		create_expected_file=update_expected, clean_dir=clean_files)
 end
+
 #---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------
