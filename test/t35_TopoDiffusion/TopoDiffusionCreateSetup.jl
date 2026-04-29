@@ -7,7 +7,10 @@ using GeophysicalModelGenerator
 # where R = 10 km and the sphere centre is at the surface level z = 0.
 # The dome peak is 10 km high; diffusion will visibly smooth its flanks.
 
-function TopoDiffusionCreateSetup()
+function TopoDiffusionCreateSetup(dir, topo_file)
+
+    cur_dir = pwd()
+    cd(dir)
 
     R      = 10.0                         # dome radius [km]
     x_vals = collect(-100.0:1.0:100.0)    # 201 points covering model x-extent
@@ -22,8 +25,8 @@ function TopoDiffusionCreateSetup()
     end
 
     Topo = CartData(X_t, Y_t, Z_t, (Topography=Topo_z,))
-    save_LaMEM_topography(Topo, "topo.bin")
+    save_LaMEM_topography(Topo, topo_file)
 
-
+    cd(cur_dir)
 end
 

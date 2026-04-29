@@ -836,8 +836,9 @@ end
     acc      = ((rtol=1e-6, atol=1e-6), (rtol=1e-5, atol=5e-5), (rtol=2.5e-4, atol=1e-4))
 
     ParamFile = "TopoDiffusion.dat"
-
-    TopoDiffusionCreateSetup()
+	topo_file = "topo.bin"
+	
+    TopoDiffusionCreateSetup(dir, topo_file)
 
     @test perform_lamem_test(dir, ParamFile, "TopoDiffusion_opt";
         args     = "-nstep_max 3",
@@ -847,6 +848,10 @@ end
         opt      = true,
         mpiexec  = mpiexec,
 		create_expected_file=update_expected, clean_dir=clean_files)
+	
+	if clean_files
+		rm(joinpath(dir,topo_file))
+	end
 end
 
 #---------------------------------------------------------------------------

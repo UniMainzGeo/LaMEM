@@ -37,14 +37,12 @@
 # Free surface
 #===============================================================================
 
-    surf_use        = 1
-    surf_level      = 0
-    surf_air_phase  = 0
-    surf_corr_phase = 1
-    surf_max_angle  = 45.0
-
-    surf_topo_file  = t34_topo.bin
-
+    surf_use         = 1
+    surf_level       = 0
+    surf_air_phase   = 0
+    surf_corr_phase  = 1
+    surf_max_angle   = 45.0
+    surf_topo_file   = topo.bin
     topo_diff        = 1
     topo_diffusivity = 1e-5
 
