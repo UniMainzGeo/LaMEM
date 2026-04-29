@@ -22,9 +22,6 @@
 #include "interpolate.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-// * stair-case type of free surface
-// ...
-//---------------------------------------------------------------------------
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 {
 	Scaling  *scal;
