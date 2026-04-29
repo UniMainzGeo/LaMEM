@@ -40,8 +40,8 @@ a) Create a new test directory.
 	where txx is the number of the test (please number them consecutively), followed by something
 	that explains the meaning of the test (FallingBlock with direct solvers in this case).
 
-	USE t01, t02, ... INSTEAD OF t1, t2, ...
-	USE t01, t02, ... ONLY FOR DIRECTORIES, NOT FOR FILES (LITERALLY ALL FILES MUST BE FREE OF THIS PREFIX)
+	Use t01, t02, ... prefixes instead of t1, t2, ...
+	Use t01, t02, ... only for directories, not for files (literally all files must be free of this prefix)
 
 b) Put the relevant LaMEM input file (*.dat) in the new test directory. 
 	If you need to create a more complicated input geometry, you might also have to create a new julia input file. 
@@ -50,6 +50,9 @@ b) Put the relevant LaMEM input file (*.dat) in the new test directory.
 	./t03_SubductionGMGinput/CreateMarkers_SubductionVEP_parallel.jl 
 	
 	for an example.
+	
+	Make sure the test does not run long. Limit the resolution by 64x64x64 in 3D (or equivalent).
+	Do not use more than 30 time steps, unless it is a 1D test, or heat diffusion problem, or a small domain.
 	
 c) Add the test to "runtests.jl". 
 
@@ -74,8 +77,8 @@ c) Add the test to "runtests.jl".
     @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true)
 
-	PROVIDE EXPECTED FILE NAME WITHOUT EXTENSION .expected IS ADDED INTERNALLY
-	DO NOT USE POSTFIX -p1, -p2, ... INDICATING NUMBER OF MPI PROCESSES (THIS IS ALWAYS BROKEN)
+	Provide expected file name without ".expected" extension. This is is added automatically.
+	Do not use postfix -p1, -p2, ... indicating number of mpi processes (this is always broken).
 	
 	In some cases you may have to first generate a setup (see "t03_Subduction") 
 	or you want to compare the results with those of an analytical solution and/or create plots ("t13_Rheology0D" or "t14_1DStrengthEnvelope")
@@ -127,11 +130,13 @@ d) Create the "expected" file for your new test.
 
 e) Tests to make sure that it works by running the full test-suite again
 
-f) PLEASE DELETE ALL UNUSED FILES BEFORE COMMITTING!
-   MAKE SURE TEST DELETES ALL FILES AFTER RUN (ONLY INPUT, EXPECTED AND SCRIPT FILES SHOULD REMAIN)
+f) Please delete all unused files before committing.
+   Also make sure that test deletes all output files after run
+   Only .dat, .bin, .expected, and .jl files should remain.
+   Temporary .bin, .png, .jpeg files should be also deleted.
 
 g) Commit to LaMEM 
-	Push your new tests to the LaMEM repository (including the changes to runtests and the required input/expected files) 
+	Push your new tests to the LaMEM repository (including the changes to runtests and the required input/expected files).
 	and check that it works on other machines as well.
 
 h) If you do not have writing rights to LaMEM: 
