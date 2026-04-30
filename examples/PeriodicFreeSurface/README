@@ -1,0 +1,16 @@
+This folder contains example that demonstrates periodic boundary condition for 
+the free surface. Initial free surface topography perturbation is unsymmetric, 
+which leads to unequal surface uplifts on both sides of the domain with free 
+slip boundary condition. With periodic boundaries both ends rise with the same rate.
+
+Running the example involves 2 steps:
+
+    1. Create topography file with GeophysiclModelGenerator package
+    
+       julia periodic_create_topo.jl
+
+    2. Run the LaMEM file in parallel
+    
+       mpiexec -np 16 ../../bin/opt/LaMEM -ParamFile periodic_surface_test.dat
+
+And as always, you can use ParaView to visualize the results.
