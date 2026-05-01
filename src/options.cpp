@@ -238,7 +238,7 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 	// transient solver
 	if(act_temp_diff)
 	{
-		PetscCall(set_string_option("ksp_type", "gmres", "ts"));
+		PetscCall(set_string_option("ksp_type", "fgmres", "ts"));
 
 		PetscCall(PetscOptionsInsertString(NULL, "-ts_ksp_converged_reason"));
 
