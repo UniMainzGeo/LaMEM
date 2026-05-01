@@ -943,10 +943,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 {
-	PetscInt        nlmf = 0;
 	PetscBool       mat_free;
 	PetscScalar    	F, *fcconvar, *Par;
-	PetscInt        i, periodic;
+	PetscInt        i, periodic=0, nlmf = 0;
 	Adjoint_Vecs    Adjoint_Vectors;
 	PetscLogDouble  cputime_start, cputime_end;
 
@@ -967,7 +966,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 
 	if(periodic)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adjoint solver is incompatible periodic boundary conditions (periodic) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adjoint solver is incompatible with periodic boundary conditions (periodic) \n");
 	}
 
 	PetscTime(&cputime_start);
