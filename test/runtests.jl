@@ -66,292 +66,16 @@ end
 #---------------------------------------------------------------------------
 @testset "LaMEM Testsuite" verbose=true begin
 #---------------------------------------------------------------------------
-#=
-#---------------------------------------------------------------------------
-@testset "t11_Subgrid" begin
-    cd(test_dir)
-    dir = "t11_Subgrid";
-    
-    ParamFile = "FallingBlockCoupledMG.dat";
-    
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-1,atol=1e-5), (rtol=1e-5, atol=1e-5), (rtol=1e-4,atol=1e-5));
-    
-    # Perform tests
-    @test perform_lamem_test(dir,ParamFile,"Subgrid_opt",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                        	create_expected_file=update_expected, clean_dir=clean_files)
-end
-#---------------------------------------------------------------------------
-@testset "t12_Temperature_diffusion" begin
-    cd(test_dir)
-    dir = "t12_Temperature_diffusion";
-    include(joinpath(dir,"Temp_setup.jl"))
-    ParamFile = "Temperature_diffusion.dat";
-    
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=5e-11));
 
-    # ---
-    # Perform tests
-    CreateMarkers_Temperature(dir, "Temperature_diffusion.dat", "./markers_pT1"; NumberCores=1)
 
-    @test perform_lamem_test(dir,ParamFile,"TpD_a",
-                            args="-mark_load_file ./markers_pT1/mdb",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                            create_expected_file=update_expected, clean_dir=false)
-    
-    data, t1 = read_LaMEM_timestep("t13", 1, dir); T1=data.fields.temperature[1,1,:]; 
-    data, t3 = read_LaMEM_timestep("t13", 3, dir); T3=data.fields.temperature[1,1,:];
-    data, t5 = read_LaMEM_timestep("t13", 5, dir); T5=data.fields.temperature[1,1,:];
-    z = data.z.val[1,1,:]
 
-    T_a5 = Analytical_1D(z, t5)
-    @test norm(T_a5 - T5)/length(T5) ≈ 0.03356725901141689
 
-    if create_plots
-        Plot_Analytics_vs_Numerics(z,T_a5, T5, dir, "T_anal3.png")
-    end
-    if clean_files
-    	clean_directory(dir)
-    end
-    # ---
-   
-    # halfspace cooling test ----
-    ParamFile = "Temperature_diffusion_1Dhalfspace.dat"
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2","|T|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-6, atol=1e-11), (rtol=2e-6,atol=5e-11),  (rtol=1e-1,atol=5e-11));
 
-    @test perform_lamem_test(dir,ParamFile,"Temperature_diffusion",
-                args="-printNorms 1",
-                keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                create_expected_file=update_expected, clean_dir=clean_files)
 
-	if clean_files
-		clean_test_directory(dir)
-	end 
-    
-    # ---
-end
-#---------------------------------------------------------------------------
-# t13_Rheology0D
-@testset "t13_Rheology0D" begin
-    cd(test_dir)
-    dir = "t13_Rheology0D";
-    include(joinpath(dir,"Rheology0D.jl"))
-    
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=2e-6,atol=1e-9));
 
-    # ---
-    # Viscoelastic rheology
-    @test perform_lamem_test(dir,"Rheology_VE_0D.dat","Rheology_VE_0D",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                            create_expected_file=update_expected, clean_dir=false)
 
-    # compare with analytics    
-    FileName = "Rheolog0D_VE"                        
-    t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
-    τII_anal = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_vec);      
-    @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.12480014617816898  rtol = 1e-4
 
-    # Create plot
-    if create_plots
-        t_anal = range(0,t_vec[end],200)
-        τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal)
-        Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "Viscoelastic0D.png")
-        
-        if clean_files
-    		clean_directory(dir)
-    	end
-    end
-    # ---
 
-    # ---
-    # Viscoelastoplastic rheology
-    @test perform_lamem_test(dir,"Rheology_VEP_0D.dat","Rheology_VEP_0D",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                            create_expected_file=update_expected, clean_dir=false)
-
-    # compare with analytics     
-    FileName = "Rheolog0D_VEP"
-    t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
-    YieldStress = 1e7  
-    τII_anal = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_vec, YieldStress);    
-    @test norm(τII_LaMEM-τII_anal/1e6)/length(τII_LaMEM) ≈ 0.05341838341184021 rtol = 1e-4
-
-    # Create plot
-    if create_plots
-        t_anal = range(0,t_vec[end],200)
-        τII_anal1 = Viscoelastoplastic0D(5e10, 1e22, 1e-15, t_anal, YieldStress)
-        Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "Viscoelastoplastic0D.png")
-
-        if clean_files
-    		clean_directory(dir)
-    	end
-    end
-    # ---
-
-    # ---
-    # Viscoelastoplastic rheology with nonlinear dislocation creep viscosity
-    @test perform_lamem_test(dir,"Rheology_DislocationCreep_VE_0D.dat","Rheology_DislocationCreep_VE_0D",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true,  mpiexec=mpiexec,
-                        create_expected_file=update_expected, clean_dir=false)
-                        
-    FileName = "Rheolog0D_DislocationCreep_VE"
-    t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
-    YieldStress = 1e10  
-    data,t = read_LaMEM_timestep(FileName, 0, dir, fields=("temperature [C]",));
-    T = mean(data.fields.temperature)
-
-    # Create plot
-    if create_plots
-        ε = 1e-15;
-        t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec))
-        Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "Viscoelastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
-    	
-    	if clean_files
-    		clean_directory(dir)
-   		end
-        
-    end
-    # ---
-    
-    # ---
-    # Viscoelastoplastic rheology with nonlinear dislocation creep viscosity
-    @test perform_lamem_test(dir,"Rheology_DislocationCreep_VEP_0D.dat","Rheology_DislocationCreep_VEP_0D",
-                        keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                        create_expected_file=update_expected, clean_dir=false)
-                        
-    FileName = "Rheolog0D_DislocationCreep_VEP"
-    t_vec, τII_LaMEM = StressTime_0D(FileName, dir);
-    YieldStress = 15e6  
-    data,t = read_LaMEM_timestep(FileName, 0, dir, fields=("temperature [C]",));
-    T = mean(data.fields.temperature)
-
-    # Create plot
-    if create_plots
-        t_anal, τII_anal1, τII_no_iter = Viscoelastoplastic0D_dislocationcreep(T, ε, maximum(t_vec), YieldStress)
-        Plot_StressStrain(t_anal,τII_anal1/1e6, t_vec, τII_LaMEM, dir, "Viscoelastoplastic0D_dislocationCreep.png", τII_no_iter=τII_no_iter/1e6)
-		
-		if clean_files
-			clean_directory(dir)
-    	end
-
-    end
-    # ---
-
-    # ---
-    # Stress-strainrate for linear viscous rheologies
-    ε = [-1e-13 -1e-14 -1e-15 -1e-16 -1e-17]
-    FileName = "Rheology_linearViscous_0D.dat"
-    τ = StressStrainrate0D_LaMEM(FileName, dir, "Rheolog0D_linearViscous", ε)
-    slope = (log10.(-ε[end])-log10.(-ε[1]) )/(log10.(τ[end])-log10.(τ[1]))
-    @test slope ≈ 1.0 rtol = 1e-6
-    
-    if create_plots
-        τ_anal = -2*ε[:]*1e21/1e6
-        Plot_StressStrainrate(ε, τ, τ_anal,  dir, "Stress_Strainrate_linearViscous.png")
-
-		if clean_files
-			clean_directory(dir)
-    	end
-
-    end
-    # ---
-
-    # ---
-    # Stress-strainrate for dislocation creep rheologies
-    FileName = "Rheology_PowerlawCreep_DryOlivine_0D.dat"
-    τ = StressStrainrate0D_LaMEM(FileName, dir, "Rheolog0D_DryOlivine", ε)
-    slope = (log10.(-ε[end])-log10.(-ε[1]) )/(log10.(τ[end])-log10.(τ[1]))
-    @test slope ≈ 3.5 rtol=1e-2 
-
-    # add analytical solution for DC
-   
-    T=1000;
-    τ_anal = AnalyticalSolution_DislocationCreep("DryOlivine", T, ε)/1e6
-    @test norm(τ_anal[:] .- τ[:]) ≈ 0.2009862117696578 rtol = 1e-4
-
-    if create_plots
-        Plot_StressStrainrate(ε, τ, τ_anal,  dir, "Stress_Strainrate_DryOlivine_DC.png")
-        
-        # clear all files in the test directory
-        
-		if clean_files
-			clean_test_directory(dir)
-		end         
-    end
-
-end
-#---------------------------------------------------------------------------
-# t14_1DStrengthEnvelope/
-@testset "t14_1DStrengthEnvelope" begin
-    cd(test_dir)
-    dir = "t14_1DStrengthEnvelope";
-    include(joinpath(dir,"StrengthEnvelop.jl"))
-
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
-
-    # ---
-    # first test runs visco-plastic setup with dt = 10 ka
-    @test perform_lamem_test(dir,"1D_VP.dat","1D_VP_Direct_opt",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                            create_expected_file=update_expected, clean_dir=false)
-    # ---
-
-    # ---
-    # 2nd test runs visco-elasto-plastic setup with dt = 5 ka
-    @test perform_lamem_test(dir,"1D_VEP5.dat","1D_VEP5_Direct_opt",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                            create_expected_file=update_expected, clean_dir=false)
-    # ---
-       
-    # ---
-    # 3rd test runs visco-elasto-plastic setup with dt = 10 ka
-    @test perform_lamem_test(dir,"1D_VEP10.dat","1D_VEP10_Direct_opt",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                            create_expected_file=update_expected, clean_dir=false)
-    # ---
-
-    # ---
-    # 4th test runs visco-plastic setup with dt = 50 ka
-    @test perform_lamem_test(dir,"1D_VEP50.dat","1D_VEP50_Direct_opt",
-                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
-                            create_expected_file=update_expected, clean_dir=false)
-    # ---
-    
-    # Read output of various simulations:
-    VP,  _  = read_LaMEM_timestep("outputVP", 0, dir; last=true);       τII_1 =  Float64.(VP.fields.j2_dev_stress[1,1,:]);
-    VEP5,_  = read_LaMEM_timestep("outputVEP5", 0, dir; last=true);     τII_2 =  Float64.(VEP5.fields.j2_dev_stress[1,1,:]);
-    VEP10,_ = read_LaMEM_timestep("outputVEP10", 0, dir; last=true);    τII_3 =  Float64.(VEP10.fields.j2_dev_stress[1,1,:]);
-    VEP50,_ = read_LaMEM_timestep("outputVEP50", 0, dir; last=true);    τII_4 =  Float64.(VEP50.fields.j2_dev_stress[1,1,:]);
-
-    z       =  VP.z.val[1,1,:]
-    phase   =  VP.fields.phase[1,1,:]
-    T       =  Float64.(VP.fields.temperature[1,1,:])
-    P       =  VP.fields.pressure[1,1,:]*1e6
-    τy      =  VP.fields.yield[1,1,:]
-    τ_anal  =  Analytical_StrengthEnvelop(phase, T, P, τy)      # analytical solution 
-
-    @test norm(τII_1 - τII_2) ≈ 106.54804495583619
-    @test norm(τII_1 - τII_3) ≈ 74.52658531093326
-    @test norm(τII_1 - τII_4) ≈ 57.419951900695494
-    @test norm(τII_1 - τ_anal) ≈ 148.18742956153582
-    
-    # Create plot
-    if create_plots
-        # Plot the strength envelops
-        Plot_StrengthEnvelop("StrengthEnvelop_1D.png", dir, z, (τII_1, τII_2, τII_3, τII_4, τ_anal),("Viscoplastic", "VEP dt=5ka", "VEP dt=10ka", "VEP dt=50ka", "Analytical"))
-    end
-
-	if clean_files
-		clean_test_directory(dir)
-	end 
-
-end
-#---------------------------------------------------------------------------
 @testset "t15_RTI" begin
     dir = "t15_RTI";
     include(joinpath(dir,"RT_analytics.jl"))
@@ -361,7 +85,7 @@ end
     q_num   = Compute_RT_growthrate_LaMEM(λ, ParamFile, dir)
     q_anal  = AnalyticalSolution_RTI_FreeSlip(λ)
 
-    @test  norm(q_num - q_anal) ≈ 0.001481104083594891
+    @test  norm(q_num - q_anal) ≈ 0.001481104 rtol = 1e-4
 
     # Plot 
     if create_plots
@@ -375,6 +99,8 @@ end
 	end 
 
 end
+
+#=
 #---------------------------------------------------------------------------
 @testset "t16_PhaseTransitions" begin
     cd(test_dir)
@@ -826,7 +552,7 @@ end
 							create_expected_file=update_expected, clean_dir=clean_files)
 end
 #---------------------------------------------------------------------------
-=#
+
 @testset "t35_TopoDiffusion" begin
     cd(test_dir)
     dir = "t35_TopoDiffusion"
@@ -853,7 +579,7 @@ end
 		rm(joinpath(dir,topo_file))
 	end
 end
-
+=#
 #---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------

@@ -52,7 +52,7 @@ b) Put the relevant LaMEM input file (*.dat) in the new test directory.
 	for an example.
 	
 	Make sure the test does not run long. Limit the resolution by 64x64x64 in 3D (or equivalent).
-	Do not use more than 30 time steps, unless it is a 1D test, or heat diffusion problem, or a small domain.
+	Do not use more than 30 time steps, unless it is a 1D test, or heat diffusion problem, or a very small domain.
 	
 c) Add the test to "runtests.jl". 
 
