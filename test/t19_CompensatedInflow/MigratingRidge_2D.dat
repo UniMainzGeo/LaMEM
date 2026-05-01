@@ -67,7 +67,7 @@
 	
 # No-slip boundary flag mask (left right front back bottom top)
 	noslip 				= 	0 0 0 0 1 0
-	open_top_bound 			= 	0
+	open_top_bound 			= 	1
 	open_bot_bound 			= 	1
 	permeable_phase_inflow 	= 	1  # Phase of the inflow material from the bottom # pkongpet chang from 2 to 1
 
@@ -292,7 +292,7 @@
 	monitor_solvers      = 1
 	num_mg_levels        = 2
 	stokes_solver        = coupled_mg
-	smoother_type        = light
+	smoother_type        = intermediate
 	coarse_solver        = direct
 	direct_solver_type   = mumps
 	coarse_num_cpu       = 1
@@ -300,3 +300,11 @@
 <SolverOptionsEnd>
 
 #===============================================================================
+
+<PetscOptionsStart>
+	-snes_linesearch_maxlambda 10
+	-snes_linesearch_maxstep   10
+<PetscOptionsEnd>
+
+#===============================================================================
+
