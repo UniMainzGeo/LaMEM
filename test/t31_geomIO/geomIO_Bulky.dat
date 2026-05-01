@@ -112,7 +112,7 @@
 <SolverOptionsStart>
 
 	set_linear_problem = 1
-	linear_tolerances  = 1e-5 1e-8 200  # rtol, atol, maxit
+	linear_tolerances  = 1e-7 1e-8 200  # rtol, atol, maxit
 	num_mg_levels      = 3
 	stokes_solver      = coupled_mg
 	smoother_type      = light

@@ -12,10 +12,10 @@
 # Time stepping parameters
 #===============================================================================
 
-    dt        = 0.01
-    dt_max    = 0.01
-    nstep_max = 3
-    nstep_out = 1
+    dt        = 0.002
+    dt_max    = 0.002
+    nstep_max = 30
+    nstep_out = 2
 
 #===============================================================================
 # Grid & discretization parameters
@@ -112,8 +112,8 @@
         Name = Air
         rho  = 50
         eta  = 1e19
-        ch   = 1e7
-        fr   = 0.0
+#        ch   = 1e7
+#        fr   = 0.0
     <MaterialEnd>
 
     <MaterialStart>
@@ -121,8 +121,8 @@
         Name = Crust_1
         rho  = 2700
         eta  = 1e22
-        ch   = 3e7
-        fr   = 20.0
+#        ch   = 3e7
+#        fr   = 20.0
     <MaterialEnd>
 
     <MaterialStart>
@@ -130,8 +130,8 @@
         Name = Crust_2
         rho  = 2700
         eta  = 1e22
-        ch   = 3e7
-        fr   = 20.0
+#        ch   = 3e7
+#        fr   = 20.0
     <MaterialEnd>
 
 

@@ -342,7 +342,7 @@
 
 	nonlinear_tolerances = 1e-3 1e-4  50   # rtol, atol, maxit
 	linear_tolerances    = 1e-3 1e-8  20   # rtol, atol, maxit
-	picard_to_newton     = 3e-3 5 1.2 20   # picard rtol, picard minit, newton rtol, newton maxit
+	picard_to_newton     = 1e-5 5 1.2 20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps

@@ -300,6 +300,7 @@
 	monitor_solvers      = 1
 	stokes_solver        = block_direct
 	direct_solver_type   = mumps
+	use_mat_free_jac        =  1
 
 <SolverOptionsEnd>
 

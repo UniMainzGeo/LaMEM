@@ -1,17 +1,48 @@
+--------------------------------------------------------------------------
+Parsing input file : geomIO_Hollow.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Multigrid settings summary: 
+   Number of multigrid levels   : 3 (prescribed)
+   Coarse grid number of cpu    : 1
+   Coarse grid reduction factor : 4
+   Number of blocks on levels   : 1
+   Number of coarse grid blocks : 1
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-gmg_mg_coarse_ksp_type preonly # (source: code)
+-gmg_mg_coarse_pc_telescope_reduction_factor 4 # (source: code)
+-gmg_mg_coarse_pc_type telescope # (source: code)
+-gmg_mg_coarse_telescope_ksp_type preonly # (source: code)
+-gmg_mg_coarse_telescope_pc_factor_mat_solver_type mumps # (source: code)
+-gmg_mg_coarse_telescope_pc_type lu # (source: code)
+-gmg_mg_levels_ksp_max_it 20 # (source: code)
+-gmg_mg_levels_ksp_richardson_scale 0.5 # (source: code)
+-gmg_mg_levels_ksp_type richardson # (source: code)
+-gmg_mg_levels_pc_type jacobi # (source: code)
+-gmg_pc_mg_levels 3 # (source: code)
+-jp_type mg # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 200 # (source: code)
+-js_ksp_rtol 1e-07 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-matmatmatmult_via scalable # (source: code)
+-options_left # (source: code)
+-ParamFile geomIO_Hollow.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+#End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
-     Version : 2.1.4 
+     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : geomIO_Hollow.dat 
-   Adding PETSc option: -snes_rtol 1e-8
-   Adding PETSc option: -js_ksp_rtol 1e-3
-   Adding PETSc option: -js_ksp_atol 1e-5
-   Adding PETSc option: -js_ksp_max_it 20
-Finished parsing input file 
---------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
    Maximum number of steps      : 2 
@@ -35,9 +66,8 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [-100., -100., -100.]
    Upper coordinate bounds [ex, ey, ez] : [100., 100., 100.]
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Material parameters: 
---------------------------------------------------------------------------
+
    Phase ID : 0   
    (dens)   : rho = 1. [ ]  
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
@@ -46,7 +76,6 @@ Material parameters:
    (dens)   : rho = 5. [ ]  
    (diff)   : eta = 100. [ ]  Bd = 0.005 [ ]  
 
---------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
@@ -64,14 +93,14 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     : 0 0 0 
+   Periodic marker advection     @
    Marker setup scheme           : volumes from polygons (geomIO)
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : uniform
 --------------------------------------------------------------------------
-Loading polygons redundantly from file(s) <Polygons_Hollow.bin> ... done (0.101697 sec)
+Loading polygons redundantly from file(s) <Polygons_Hollow.bin> ... done (0.101046 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Hollow 
@@ -87,105 +116,95 @@ AVD output parameters:
    AVD refinement factor : 3 
 --------------------------------------------------------------------------
 Preconditioner parameters: 
-   Matrix type                   : monolithic
-   Schur preconditioner type     : inv_eta 
+   Picard operator type          : assembled
    Preconditioner type           : coupled Galerkin geometric multigrid
-   Global coarse grid [nx,ny,nz] : [8, 8, 8]
+   Global coarse grid [Nx,Ny,Nz] : [8, 8, 8]
    Local coarse grid  [nx,ny,nz] : [8, 4, 4]
    Number of multigrid levels    :  3
+   Number of matrix-free levels  :  0
 --------------------------------------------------------------------------
-Solver parameters specified: 
-   Outermost Krylov solver       : gmres 
-   Solver type                   : multigrid 
-   Multigrid smoother levels KSP : richardson 
-   Multigrid dampening parameter : 0.500000 
-   Multigrid smoother levels PC  : jacobi 
-   Number of smoothening steps   : 20 
-   Coarse level KSP              : preonly 
-   Coarse level PC               : redundant 
-   Number of redundant solvers   : 1 
-   Redundant solver package      : superlu_dist 
 --------------------------------------------------------------------------
-Saving output ... done (0.107105 sec)
+Saving output ... done (0.10705 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [ ] 
 Tentative time step : 0.01000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.232314796416e+02 
+  0 SNES Function norm 3.232314796416e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  1 SNES Function norm 4.857543696305e+01 
-  1 PICARD ||F||/||F0||=1.502807e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 17
-  2 SNES Function norm 1.371680299415e-01 
-  2 MMFD   ||F||/||F0||=4.243647e-04 
-  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
-  3 SNES Function norm 1.108620210475e-03 
-  3 MMFD   ||F||/||F0||=3.429803e-06 
-  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
-  4 SNES Function norm 1.156584127705e-05 
-  4 MMFD   ||F||/||F0||=3.578191e-08 
-  Linear js_ solve converged due to CONVERGED_ATOL iterations 4
-  5 SNES Function norm 6.279585932864e-06 
-  5 MMFD   ||F||/||F0||=1.942752e-08 
-  Linear js_ solve converged due to CONVERGED_ATOL iterations 0
-  6 SNES Function norm 6.279585932864e-06 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 54
+  1 SNES Function norm 3.061480878536e-05
 --------------------------------------------------------------------------
-SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
-Number of iterations    : 6
-SNES solution time      : 2.80211 (sec)
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.62915 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.708148495033e-06 
-      |Div|_2   = 6.276003395262e-06 
+      |Div|_inf = 8.786851800190e-06 
+      |Div|_2   = 2.888728307749e-05 
    Momentum: 
-      |mRes|_2  = 2.120869418099e-07 
+      |mRes|_2  = 1.013860904488e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.00555 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.112335 sec)
+Saving output ... done (0.112714 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00554549 [ ] 
 Tentative time step : 0.00554549 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 5.074794371979e+02 
+  0 SNES Function norm 5.074794495261e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
-  1 SNES Function norm 8.591043633764e-01 
-  1 MMFD   ||F||/||F0||=1.692885e-03 
-  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
-  2 SNES Function norm 2.887907033842e-03 
-  2 MMFD   ||F||/||F0||=5.690688e-06 
-  Linear js_ solve did not converge due to DIVERGED_ITS iterations 20
-  3 SNES Function norm 2.165383647844e-05 
-  3 MMFD   ||F||/||F0||=4.266939e-08 
-  Linear js_ solve converged due to CONVERGED_ATOL iterations 7
-  4 SNES Function norm 5.317174474814e-06 
-  4 MMFD   ||F||/||F0||=1.047762e-08 
-  Linear js_ solve converged due to CONVERGED_ATOL iterations 0
-  5 SNES Function norm 5.317174474814e-06 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 47
+  1 SNES Function norm 4.923487342702e-05
 --------------------------------------------------------------------------
-SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
-Number of iterations    : 5
-SNES solution time      : 2.43349 (sec)
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.32627 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.051341855935e-06 
-      |Div|_2   = 5.304188739750e-06 
+      |Div|_inf = 2.629260366049e-05 
+      |Div|_2   = 4.789215858219e-05 
    Momentum: 
-      |mRes|_2  = 3.713841794116e-07 
+      |mRes|_2  = 1.141989088010e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.00555 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.11776 sec)
+Saving output ... done (0.112619 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 5.88279 (sec) 
+Total solution time : 3.5991 (sec) 
 --------------------------------------------------------------------------
+#PETSc Option Table entries:
+-gmg_mg_coarse_ksp_type preonly # (source: code)
+-gmg_mg_coarse_pc_telescope_reduction_factor 4 # (source: code)
+-gmg_mg_coarse_pc_type telescope # (source: code)
+-gmg_mg_coarse_telescope_ksp_type preonly # (source: code)
+-gmg_mg_coarse_telescope_pc_factor_mat_solver_type mumps # (source: code)
+-gmg_mg_coarse_telescope_pc_type lu # (source: code)
+-gmg_mg_levels_ksp_max_it 20 # (source: code)
+-gmg_mg_levels_ksp_richardson_scale 0.5 # (source: code)
+-gmg_mg_levels_ksp_type richardson # (source: code)
+-gmg_mg_levels_pc_type jacobi # (source: code)
+-gmg_pc_mg_levels 3 # (source: code)
+-jp_type mg # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 200 # (source: code)
+-js_ksp_rtol 1e-07 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-matmatmatmult_via scalable # (source: code)
+-options_left # (source: code)
+-ParamFile geomIO_Hollow.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: geomIO_Hollow.dat source: code

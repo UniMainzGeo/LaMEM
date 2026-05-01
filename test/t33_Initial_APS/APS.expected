@@ -1,13 +1,37 @@
+--------------------------------------------------------------------------
+Parsing input file : initial_aps_setup.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol_auto # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 200 # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-mark_load_file ./markers_APS/mdb # (source: code)
+-options_left # (source: code)
+-out_ptr 1 # (source: code)
+-out_ptr_APS 1 # (source: code)
+-ParamFile initial_aps_setup.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Aug 27 2025 - Time: 12:19:36 	    
-     Version : 2.2.0 
+     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : t33_setup.dat 
-Finished parsing input file 
---------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
    Maximum number of steps      : 2 
@@ -31,9 +55,8 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [-1., -1., -1.]
    Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Material parameters: 
---------------------------------------------------------------------------
+
    Phase ID : 0   
    (dens)   : rho = 1. [ ]  
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
@@ -42,7 +65,6 @@ Material parameters:
    (dens)   : rho = 5. [ ]  
    (diff)   : eta = 100. [ ]  Bd = 0.005 [ ]  
 
---------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
@@ -65,14 +87,14 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Runge-Kutta 2-nd order
-   Periodic marker advection     : 0 0 0 
+   Periodic marker advection     @
    Marker setup scheme           : binary files (MATLAB)
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : subgrid 
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : random noise
 --------------------------------------------------------------------------
-Loading markers in parallel from file(s) <./markers_APS/mdb> ... done (0.00826161 sec)
+Loading markers in parallel from file(s) <./markers_APS/mdb> ... done (0.00391803 sec)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Passive Tracers: 
@@ -103,108 +125,124 @@ Marker output parameters:
 Passive Tracers output parameters:
    Write Passive tracers pvd file  
 --------------------------------------------------------------------------
-Preconditioner parameters: 
-   Matrix type                   : monolithic
-   Penalty parameter (pgamma)    : 1.000000e+04
-   Preconditioner type           : user-defined
 --------------------------------------------------------------------------
-Solver parameters specified: 
-   Outermost Krylov solver       : gmres 
-   Solver type                   : serial direct/lu 
-   Solver package                : petsc 
+Preconditioner parameters: 
+   Picard operator type          : assembled
+   Preconditioner type           : block factorization
+   Block factorization type      : upper 
+   Velocity preconditioner       : user-defined
+   Schur preconditioner          : inverse viscosity
+   Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
   0 SNES Function norm 3.000000000000e+01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 3.447357117050e-13
+  1 SNES Function norm 1.880924429003e-13
 --------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0442286 (sec)
+SNES solution time      : 0.0297426 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.268263780470e-19 
-      |Div|_2   = 2.976369593026e-18 
+      |Div|_inf = 7.376953985489e-16 
+      |Div|_2   = 1.488029397230e-14 
    Momentum: 
-      |mRes|_2  = 3.447357116922e-13 
+      |mRes|_2  = 1.875029171173e-13 
 --------------------------------------------------------------------------
-Saving output ... done (0.0291225 sec)
+Saving output ... done (0.00459587 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [ ] 
 Tentative time step : 0.04000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.447357117050e-13
+  0 SNES Function norm 1.880924429003e-13
   0 PICARD ||F||/||F0||=1.000000e+00 
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.702827803925e-14
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 3
+  1 SNES Function norm 1.705479792878e-14
 --------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0325925 (sec)
+SNES solution time      : 0.0253243 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.000905792098e-30 
-      |Div|_2   = 6.292622793103e-30 
+      |Div|_inf = 2.019935047196e-26 
+      |Div|_2   = 4.072649453716e-25 
    Momentum: 
-      |mRes|_2  = 1.702827803925e-14 
+      |mRes|_2  = 1.705479792878e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.04400 [ ] 
 --------------------------------------------------------------------------
 Advection Passive tracers ... 
  Currently active tracers    :  1000 
-done (0.000209763 sec)
+done (0.000115763 sec)
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 6.1014e-04 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 8.6942e-04 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0280006 sec)
+Saving output ... done (0.00431672 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.04400000 [ ] 
 Tentative time step : 0.04400000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.702827803925e-14
+  0 SNES Function norm 1.705479792878e-14
   0 PICARD ||F||/||F0||=1.000000e+00 
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 2.066419328549e-14
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 3
+  1 SNES Function norm 1.569394182354e-14
 --------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0335445 (sec)
+SNES solution time      : 0.0221738 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.927413515469e-32 
-      |Div|_2   = 1.879127781752e-31 
+      |Div|_inf = 3.521786311186e-28 
+      |Div|_2   = 2.200239318146e-27 
    Momentum: 
-      |mRes|_2  = 2.066419328549e-14 
+      |mRes|_2  = 1.569394182354e-14 
 --------------------------------------------------------------------------
 Actual time step : 0.04840 [ ] 
 --------------------------------------------------------------------------
 Advection Passive tracers ... 
  Currently active tracers    :  1000 
-done (0.000190579 sec)
+done (0.000109463 sec)
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 6.6785e-04 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 9.4530e-04 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0238208 sec)
+Saving output ... done (0.00434651 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.249846 (sec) 
+Total solution time : 0.123197 (sec) 
 --------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol_auto # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 200 # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-mark_load_file ./markers_APS/mdb # (source: code)
+-options_left # (source: code)
+-out_ptr 1 # (source: code)
+-out_ptr_APS 1 # (source: code)
+-ParamFile initial_aps_setup.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!
-There are 5 unused database options. They are:
-Option left: name:-mat_product_algorithm value: scalable source: code
-Option left: name:-matmatmatmult_via value: scalable source: code
-Option left: name:-matmatmult_via value: scalable source: code
-Option left: name:-ParamFile value: t33_setup.dat source: code
+There is one unused database option. It is:
+Option left: name:-ParamFile value: initial_aps_setup.dat source: code

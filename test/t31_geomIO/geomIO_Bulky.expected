@@ -1,17 +1,48 @@
+--------------------------------------------------------------------------
+Parsing input file : geomIO_Bulky.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Multigrid settings summary: 
+   Number of multigrid levels   : 3 (prescribed)
+   Coarse grid number of cpu    : 1
+   Coarse grid reduction factor : 4
+   Number of blocks on levels   : 1
+   Number of coarse grid blocks : 1
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-gmg_mg_coarse_ksp_type preonly # (source: code)
+-gmg_mg_coarse_pc_telescope_reduction_factor 4 # (source: code)
+-gmg_mg_coarse_pc_type telescope # (source: code)
+-gmg_mg_coarse_telescope_ksp_type preonly # (source: code)
+-gmg_mg_coarse_telescope_pc_factor_mat_solver_type mumps # (source: code)
+-gmg_mg_coarse_telescope_pc_type lu # (source: code)
+-gmg_mg_levels_ksp_max_it 20 # (source: code)
+-gmg_mg_levels_ksp_richardson_scale 0.5 # (source: code)
+-gmg_mg_levels_ksp_type richardson # (source: code)
+-gmg_mg_levels_pc_type jacobi # (source: code)
+-gmg_pc_mg_levels 3 # (source: code)
+-jp_type mg # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 200 # (source: code)
+-js_ksp_rtol 1e-07 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-matmatmatmult_via scalable # (source: code)
+-options_left # (source: code)
+-ParamFile geomIO_Bulky.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+#End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
-     Version : 2.1.4 
+     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : geomIO_Bulky.dat 
-   Adding PETSc option: -snes_rtol 1e-8
-   Adding PETSc option: -js_ksp_rtol 1e-3
-   Adding PETSc option: -js_ksp_atol 1e-5
-   Adding PETSc option: -js_ksp_max_it 20
-Finished parsing input file 
---------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 1. [ ] 
    Maximum number of steps      : 2 
@@ -35,9 +66,8 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [-100., -100., -100.]
    Upper coordinate bounds [ex, ey, ez] : [100., 100., 100.]
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Material parameters: 
---------------------------------------------------------------------------
+
    Phase ID : 0   
    (dens)   : rho = 1. [ ]  
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
@@ -46,7 +76,6 @@ Material parameters:
    (dens)   : rho = 5. [ ]  
    (diff)   : eta = 100. [ ]  Bd = 0.005 [ ]  
 
---------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Boundary condition parameters: 
    No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
@@ -64,14 +93,14 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     : 0 0 0 
+   Periodic marker advection     @
    Marker setup scheme           : volumes from polygons (geomIO)
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : uniform
 --------------------------------------------------------------------------
-Loading polygons redundantly from file(s) <Polygons_Bulky.bin> ... done (0.100081 sec)
+Loading polygons redundantly from file(s) <Polygons_Bulky.bin> ... done (0.10121 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Bulky 
@@ -87,93 +116,95 @@ AVD output parameters:
    AVD refinement factor : 3 
 --------------------------------------------------------------------------
 Preconditioner parameters: 
-   Matrix type                   : monolithic
-   Schur preconditioner type     : inv_eta 
+   Picard operator type          : assembled
    Preconditioner type           : coupled Galerkin geometric multigrid
-   Global coarse grid [nx,ny,nz] : [8, 8, 8]
+   Global coarse grid [Nx,Ny,Nz] : [8, 8, 8]
    Local coarse grid  [nx,ny,nz] : [8, 4, 4]
    Number of multigrid levels    :  3
+   Number of matrix-free levels  :  0
 --------------------------------------------------------------------------
-Solver parameters specified: 
-   Outermost Krylov solver       : gmres 
-   Solver type                   : multigrid 
-   Multigrid smoother levels KSP : richardson 
-   Multigrid dampening parameter : 0.500000 
-   Multigrid smoother levels PC  : jacobi 
-   Number of smoothening steps   : 20 
-   Coarse level KSP              : preonly 
-   Coarse level PC               : redundant 
-   Number of redundant solvers   : 1 
-   Redundant solver package      : superlu_dist 
 --------------------------------------------------------------------------
-Saving output ... done (0.109412 sec)
+Saving output ... done (0.107858 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [ ] 
 Tentative time step : 0.01000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.334424388981e+02 
+  0 SNES Function norm 3.334424388981e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
-  1 SNES Function norm 3.380684099779e+01 
-  1 PICARD ||F||/||F0||=1.013873e-01 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  2 SNES Function norm 5.820122560588e-02 
-  2 MMFD   ||F||/||F0||=1.745465e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
-  3 SNES Function norm 1.896870100470e-05 
-  3 MMFD   ||F||/||F0||=5.688748e-08 
-  Linear js_ solve converged due to CONVERGED_ATOL iterations 4
-  4 SNES Function norm 1.857305367837e-06 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 23
+  1 SNES Function norm 2.951227719158e-05
 --------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
-Number of iterations    : 4
-SNES solution time      : 1.39991 (sec)
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 0.821905 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.388561958280e-07 
-      |Div|_2   = 1.823873683192e-06 
+      |Div|_inf = 3.920460651230e-06 
+      |Div|_2   = 2.814039102198e-05 
    Momentum: 
-      |mRes|_2  = 3.508105146056e-07 
+      |mRes|_2  = 8.893418811830e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.00510 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.111131 sec)
+Saving output ... done (0.11295 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00510019 [ ] 
 Tentative time step : 0.00510019 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.976603855709e+02 
+  0 SNES Function norm 4.976603827354e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 2.746403490472e-01 
-  1 MMFD   ||F||/||F0||=5.518630e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 10
-  2 SNES Function norm 2.791543009993e-04 
-  2 MMFD   ||F||/||F0||=5.609333e-07 
-  Linear js_ solve converged due to CONVERGED_ATOL iterations 8
-  3 SNES Function norm 1.522144069705e-06 
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 4.560480753407e-05
 --------------------------------------------------------------------------
-SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
-Number of iterations    : 3
-SNES solution time      : 1.1474 (sec)
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 0.62462 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.765681017536e-07 
-      |Div|_2   = 1.517906569106e-06 
+      |Div|_inf = 4.828797612433e-06 
+      |Div|_2   = 4.260860293987e-05 
    Momentum: 
-      |mRes|_2  = 1.134998519924e-07 
+      |mRes|_2  = 1.625747291960e-05 
 --------------------------------------------------------------------------
 Actual time step : 0.00511 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.117218 sec)
+Saving output ... done (0.113312 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 3.19848 (sec) 
+Total solution time : 2.09916 (sec) 
 --------------------------------------------------------------------------
+#PETSc Option Table entries:
+-gmg_mg_coarse_ksp_type preonly # (source: code)
+-gmg_mg_coarse_pc_telescope_reduction_factor 4 # (source: code)
+-gmg_mg_coarse_pc_type telescope # (source: code)
+-gmg_mg_coarse_telescope_ksp_type preonly # (source: code)
+-gmg_mg_coarse_telescope_pc_factor_mat_solver_type mumps # (source: code)
+-gmg_mg_coarse_telescope_pc_type lu # (source: code)
+-gmg_mg_levels_ksp_max_it 20 # (source: code)
+-gmg_mg_levels_ksp_richardson_scale 0.5 # (source: code)
+-gmg_mg_levels_ksp_type richardson # (source: code)
+-gmg_mg_levels_pc_type jacobi # (source: code)
+-gmg_pc_mg_levels 3 # (source: code)
+-jp_type mg # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 200 # (source: code)
+-js_ksp_rtol 1e-07 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-matmatmatmult_via scalable # (source: code)
+-options_left # (source: code)
+-ParamFile geomIO_Bulky.dat # (source: code)
+-snes_monitor # (source: code)
+-snes_type ksponly # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: geomIO_Bulky.dat source: code
