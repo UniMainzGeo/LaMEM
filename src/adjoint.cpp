@@ -961,7 +961,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adjoint solver is incompatible with matrix-free options (-gmg_mat_free_levels, -js_mat_free) \n");
 	}
 
-	// read periodic grid topolgy flag
+	// read periodic grid topology flag
 	ierr = getIntParam(IOparam->fb, _OPTIONAL_, "periodic", &periodic, 1, 1); CHKERRQ(ierr);
 
 	if(periodic)

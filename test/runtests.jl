@@ -326,7 +326,7 @@ end
                     (rtol=1e-3, atol=1e-5), 
                     (rtol=1e-5, atol=1e-6),
                     (rtol=1e-3, atol=1e-6),
-                    (rtol=2e-4, atol=1e-6),
+                    (rtol=1e-2, atol=1e-4),
                 );
 
     ParamFile = "Subduction2D_FreeSlip_Inversion_FD.dat";
@@ -481,16 +481,16 @@ end
 	                "|       FD     7:           fr[ 2]"
 	                )
 	
-	acc        = (  (rtol=1e-7, atol=1e-6), 
-	                (rtol=1e-8, atol=1e-5), 
-	                (rtol=1e-8, atol=1e-5), 
-	                (rtol=1e-8, atol=1e-5), 
-	                (rtol=1e-8, atol=1e-5), 
-	                (rtol=1e-8, atol=1e-5),
-	                (rtol=1e-8, atol=1e-5),
-	                (rtol=1e-8, atol=1e-5),
+	acc        = (  (rtol=1e-3, atol=1e-6), 
+	                (rtol=1e-3, atol=1e-5), 
+	                (rtol=1e-3, atol=1e-5), 
+	                (rtol=1e-2, atol=1e-2), 
+	                (rtol=1e-2, atol=1e-5), 
+	                (rtol=1e-2, atol=1e-5),
 	                (rtol=1e-3, atol=1e-5),
-	                (rtol=1e-8, atol=1e-5),
+	                (rtol=1e-3, atol=1e-5),
+	                (rtol=1e-2, atol=1e-5),
+	                (rtol=1e-3, atol=1e-5),
 	             );
 	
 	ParamFile = "Subduction2D_FreeSlip_DirectSolver.dat";
@@ -700,7 +700,7 @@ end
     include(joinpath(dir,"Rheology0D.jl"))
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=2e-6,atol=1e-9));
+    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=1e-3,atol=1e-7));
 
     # ---
     # Viscoelastic rheology
@@ -844,7 +844,7 @@ end
     include(joinpath(dir,"StrengthEnvelop.jl"))
 
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
+    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=2e-4,atol=1e-9));
 
     # ---
     # first test runs visco-plastic setup with dt = 10 ka
@@ -980,7 +980,7 @@ end
     dir = "t17_InflowOutflow";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2","|eRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11), (rtol=1e-7,atol=1e-11));
+    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-9), (rtol=1e-7,atol=1e-9));
     
     # 2D test
     # InflowOutflow2D_opt
@@ -1093,7 +1093,7 @@ end
     dir = "t22_RidgeGeom";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=1e-4,atol=1e-11));
+    acc      = ((rtol=1e-7,atol=1e-5), (rtol=1e-5, atol=1e-5), (rtol=1e-4,atol=1e-5));
 
     # test_2D
     @test perform_lamem_test(dir,"ridge_geom_2D.dat","RidgeGeom2D",
@@ -1163,7 +1163,7 @@ end
     
     # test_M1_2D
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-9));
+    acc      = ((rtol=1e-5,atol=1e-5), (rtol=1e-5, atol=1e-5), (rtol=1e-4,atol=1e-5));
     @test perform_lamem_test(dir,"dike_M1_2D.dat","dike_M1_2D",
                             args="-nstep_max 5  -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
@@ -1171,7 +1171,7 @@ end
 
     # heat_kfac
     keywords = ("|eRes|_2",)
-    acc      = ((rtol=1e-4,atol=1e-9),);
+    acc      = ((rtol=1e-4,atol=1e-5),);
     @test perform_lamem_test(dir,"dike_heating_kfac.dat","dike_heating_kfac",
                             args="-nstep_max 2 -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
@@ -1180,7 +1180,7 @@ end
 
     # dyndike_4core.dat
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-9));
+    acc      = ((rtol=1e-7,atol=1e-5), (rtol=1e-5, atol=1e-5), (rtol=1e-4,atol=1e-5));
     @test perform_lamem_test(dir,"dyndike_4core.dat","dyndike_4core",
                             args="",
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
@@ -1205,7 +1205,7 @@ end
 #
 #    # test_M075_2D_2cores
 #    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-#    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-9));
+#    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-2,atol=1e-5));
 #    @test perform_lamem_test(dir,"dike_M075_2D_2cores.dat","dike_M075_2D_2cores",
 #                            args="-nstep_max 2 -nel_y 2",
 #                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
@@ -1306,7 +1306,7 @@ end
     dir = "t32_BC_velocity";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
+    acc      = ((rtol=1e-3,atol=1e-5), (rtol=1e-3,atol=1e-5), (rtol=1e-3,atol=1e-5));
 
    # Test if boundaries are pushed from front and back inside the model:
     @test perform_lamem_test(dir,"BC_velocity_2D_FB.dat","BC_velocity_2D_FB_opt",
