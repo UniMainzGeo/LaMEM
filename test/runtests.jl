@@ -1204,7 +1204,7 @@ end
     @test perform_lamem_test(dir,"dike_M075_2D_2cores.dat","dike_M075_2D_2cores",
                             args="-nstep_max 2 -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
-                            create_expected_file=update_expected, clean_dir=clean_files
+                            create_expected_file=update_expected, clean_dir=clean_files)
 							                           
 end
 #---------------------------------------------------------------------------
