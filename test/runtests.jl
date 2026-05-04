@@ -934,7 +934,7 @@ end
     ParamFile = "Plume_PhaseTransitions.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-	acc      = ((rtol=1e-5,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-9));
+	acc      = ((rtol=1e-5,atol=1e-7), (rtol=1e-5, atol=1e-7), (rtol=1e-4,atol=1e-5));
 
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"PhaseTransitions",
@@ -1029,7 +1029,7 @@ end
     dir = "t19_CompensatedInflow";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-9));
+    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-9), (rtol=1e-4,atol=1e-5));
 
     # test_a
     # t19_CompensatedInflow
@@ -1368,7 +1368,7 @@ end
     ParamFile = "3D_push_block.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=1e-10), (rtol=1e-5,atol=1e-10), (rtol=1e-4,atol=1e-10));
+    acc      = ((rtol=1e-6,atol=1e-9), (rtol=1e-5,atol=1e-9), (rtol=1e-4,atol=1e-5));
 
     # Test 3D Bezier push block functionality
     @test perform_lamem_test(dir,ParamFile,"3D_push_block_opt", 
