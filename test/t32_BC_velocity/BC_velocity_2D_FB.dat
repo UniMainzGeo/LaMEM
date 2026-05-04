@@ -241,7 +241,7 @@
 	picard_to_newton     = 1e-3 5 1.2 10   # picard rtol, picard minit, newton rtol, newton maxit
 	use_eisenstat_walker = 1
 	monitor_solvers      = 1
-	stokes_solver        = block_direct
+	stokes_solver        = coupled_direct
 	direct_solver_type   = mumps
 
 <SolverOptionsEnd>

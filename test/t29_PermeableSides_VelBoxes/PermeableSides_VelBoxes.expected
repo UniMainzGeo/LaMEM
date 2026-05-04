@@ -1,24 +1,51 @@
+--------------------------------------------------------------------------
+Parsing input file : VelBoxes_Permeable_sides.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type user # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-05 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile VelBoxes_Permeable_sides.dat # (source: code)
+-snes_atol 0.0001 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs 1000000000 # (source: code)
+-snes_max_it 30 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 5 # (source: code)
+-snes_picard_rtol 0.0001 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-snes_stol 1e-32 # (source: code)
+-ts_ksp_atol_auto # (source: code)
+-ts_ksp_converged_reason # (source: code)
+-ts_ksp_max_it 500 # (source: code)
+-ts_ksp_monitor # (source: code)
+-ts_ksp_rtol 1e-08 # (source: code)
+-ts_ksp_type fgmres # (source: code)
+#End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct  2 2024 - Time: 12:03:10 	    
-     Version : 2.1.4 
+     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
+     Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : VelBoxes_Permeable_sides.dat 
-   Adding PETSc option: -snes_rtol 1e-4
-   Adding PETSc option: -snes_atol 1e-4
-   Adding PETSc option: -snes_max_it 30
-   Adding PETSc option: -snes_PicardSwitchToNewton_rtol 1e-4
-   Adding PETSc option: -snes_NewtonSwitchToPicard_it 5
-   Adding PETSc option: -js_ksp_type fgmres
-   Adding PETSc option: -js_ksp_max_it 20
-   Adding PETSc option: -js_ksp_atol 1e-8
-   Adding PETSc option: -js_ksp_rtol 1e-5
-   Adding PETSc option: -snes_linesearch_type l2
-   Adding PETSc option: -snes_linesearch_maxstep 10
-Finished parsing input file 
---------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
    Length      : 100000. [m] 
@@ -48,9 +75,8 @@ Grid parameters:
    Lower coordinate bounds [bx, by, bz] : [-2100., -20., -1000.]
    Upper coordinate bounds [ex, ey, ez] : [2100., 20., 0.]
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
 Material parameters: 
---------------------------------------------------------------------------
+
    Phase ID : 0     --   StickyAir 
    (dens)   : rho = 10. [kg/m^3]  
    (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
@@ -172,7 +198,6 @@ Material parameters:
    (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
    (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
 
---------------------------------------------------------------------------
 Phase Transition laws: 
 --------------------------------------------------------------------------
    Phase Transition [0] :   Box 
@@ -294,7 +319,7 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Runge-Kutta 2-nd order
-   Periodic marker advection     : 0 0 0 
+   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : empirical STAGP (STAG + pressure points)
    Marker control type           : subgrid 
@@ -303,7 +328,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.666667 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0114716 sec)
+Reading geometric primitives ... done (0.00707929 sec)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Passive Tracers: 
@@ -347,92 +372,184 @@ AVD output parameters:
    AVD refinement factor : 3 
 --------------------------------------------------------------------------
 Preconditioner parameters: 
-   Matrix type                   : monolithic
-   Penalty parameter (pgamma)    : 1.000000e+04
-   Schur preconditioner type     : inv_eta 
+   Picard operator type          : assembled
    Preconditioner type           : user-defined
+   Penalty parameter (pgamma)    : 1.000000e+03
+Initializing pressure with lithostatic pressure ... done (0.000716488 sec)
 --------------------------------------------------------------------------
-Solver parameters specified: 
-   Outermost Krylov solver       : fgmres 
-   Solver type                   : parallel direct/lu 
-   Solver package                : mumps 
---------------------------------------------------------------------------
-Initializing pressure with lithostatic pressure ... done (0.00106553 sec)
 --------------------------------------------------------------------------
 ============================== INITIAL GUESS =============================
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.849608533268e+02 
+  0 SNES Function norm 2.849608533268e+02
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_ATOL iterations 2
-  1 SNES Function norm 5.909179649446e-09 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.849608533268e+02
+    1 KSP Residual norm 8.299039092964e-01
+    2 KSP Residual norm 5.877852811439e-07
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.222926846309e-03
+  1 KSP Residual norm 1.207327258901e-08
+  2 KSP Residual norm 2.712416522109e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 5.877852811493e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 1
-SNES solution time      : 0.501665 (sec)
+SNES solution time      : 0.943839 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 3.364346247339e-10 
-      |Div|_2   = 5.909179421339e-09 
+      |Div|_inf = 3.348443884405e-08 
+      |Div|_2   = 5.877852811259e-07 
    Momentum: 
-      |mRes|_2  = 1.641903320515e-12 
+      |mRes|_2  = 5.238071484590e-12 
    Energy: 
-      |eRes|_2  = 1.207327899537e-08 
+      |eRes|_2  = 2.736509007265e-13 
 --------------------------------------------------------------------------
-Saving output ... done (0.0828504 sec)
+Saving output ... done (0.0587135 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000000 [Myr] 
 Tentative time step : 0.00100000 [Myr] 
 --------------------------------------------------------------------------
-Phase_Transition ... done (0.0321904 sec)
+Phase_Transition ... done (0.0328519 sec)
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.488892784046e+03 
+  0 SNES Function norm 1.488894896387e+03
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 1.096239222784e+02 
-  1 PICARD ||F||/||F0||=7.362781e-02 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  2 SNES Function norm 3.543390553173e+01 
-  2 PICARD ||F||/||F0||=2.379883e-02 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  3 SNES Function norm 9.023594300706e+00 
-  3 PICARD ||F||/||F0||=6.060607e-03 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  4 SNES Function norm 7.784072913083e-01 
-  4 PICARD ||F||/||F0||=5.228095e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
-  5 SNES Function norm 2.542379010714e-01 
-  5 PICARD ||F||/||F0||=1.707564e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  6 SNES Function norm 4.018478388757e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.488894896387e+03
+    1 KSP Residual norm 1.322883756813e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.222926846309e-03
+  1 KSP Residual norm 1.219214947140e-08
+  2 KSP Residual norm 2.784457409805e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.872505551719e+00
+  1 PICARD ||F||/||F0||=5.287482e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.872505551719e+00
+    1 KSP Residual norm 1.900534196768e-03
+    2 KSP Residual norm 3.921753725472e-04
+    3 KSP Residual norm 1.582862284390e-04
+    4 KSP Residual norm 8.494092890648e-05
+    5 KSP Residual norm 5.290103070968e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 5
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.813052311330e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.455409893369e+00
+  2 PICARD ||F||/||F0||=9.775102e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.455409893369e+00
+    1 KSP Residual norm 8.654218557546e-05
+    2 KSP Residual norm 2.969036557551e-05
+    3 KSP Residual norm 1.770408532521e-05
+    4 KSP Residual norm 1.184009087253e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.813052311330e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  3 SNES Function norm 4.874455975562e-01
+  3 PICARD ||F||/||F0||=3.273875e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.874455975562e-01
+    1 KSP Residual norm 2.676605789010e-05
+    2 KSP Residual norm 1.165114947857e-05
+    3 KSP Residual norm 8.757868100753e-06
+    4 KSP Residual norm 6.969185537886e-06
+    5 KSP Residual norm 5.460163720951e-06
+    6 KSP Residual norm 4.448995979252e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.813052311330e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  4 SNES Function norm 1.965788249925e-01
+  4 PICARD ||F||/||F0||=1.320300e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.965788249925e-01
+    1 KSP Residual norm 1.001199351486e-05
+    2 KSP Residual norm 4.851923831243e-06
+    3 KSP Residual norm 3.724666257043e-06
+    4 KSP Residual norm 3.424279017928e-06
+    5 KSP Residual norm 3.252568501443e-06
+    6 KSP Residual norm 3.064398430573e-06
+    7 KSP Residual norm 2.666833575088e-06
+    8 KSP Residual norm 2.439988138159e-06
+    9 KSP Residual norm 2.236775562532e-06
+   10 KSP Residual norm 2.038935321812e-06
+   11 KSP Residual norm 1.900191332379e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.813052311330e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  5 SNES Function norm 8.797875285684e-02
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
-Number of iterations    : 6
-SNES solution time      : 1.43159 (sec)
+Number of iterations    : 5
+SNES solution time      : 4.06975 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.150328481754e-07 
-      |Div|_2   = 2.326046505627e-06 
+      |Div|_inf = 2.620055632935e-07 
+      |Div|_2   = 1.900191332353e-06 
    Momentum: 
-      |mRes|_2  = 4.018478382025e-02 
+      |mRes|_2  = 8.797875283632e-02 
    Energy: 
-      |eRes|_2  = 4.053093090329e-14 
+      |eRes|_2  = 2.813052311330e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.00110 [Myr] 
 --------------------------------------------------------------------------
 Advection Passive tracers ... 
  Currently active tracers    :  0 
-done (0.00919902 sec)
+done (0.00414547 sec)
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 1 markers and merged 0 markers in 4.2451e-03 s
+Marker control [0]: (subgrid) cloned 1 markers and merged 0 markers in 2.3017e-03 s
 --------------------------------------------------------------------------
-Saving output ... done (0.0787372 sec)
+Saving output ... done (0.0485947 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 2.33528 (sec) 
+Total solution time : 5.29302 (sec) 
 --------------------------------------------------------------------------
+#PETSc Option Table entries:
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type user # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-05 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile VelBoxes_Permeable_sides.dat # (source: code)
+-snes_atol 0.0001 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs 1000000000 # (source: code)
+-snes_max_it 30 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 5 # (source: code)
+-snes_picard_rtol 0.0001 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-snes_stol 1e-32 # (source: code)
+-ts_ksp_atol_auto # (source: code)
+-ts_ksp_converged_reason # (source: code)
+-ts_ksp_max_it 500 # (source: code)
+-ts_ksp_monitor # (source: code)
+-ts_ksp_rtol 1e-08 # (source: code)
+-ts_ksp_type fgmres # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: VelBoxes_Permeable_sides.dat source: code

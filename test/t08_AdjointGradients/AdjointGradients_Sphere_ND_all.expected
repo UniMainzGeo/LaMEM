@@ -6,9 +6,10 @@ Parsing PETSc options
 Total number of options added: 0
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
--bf_vs_type user # (source: code)
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
 -jp_pgamma 1000 # (source: code)
--jp_type bf # (source: code)
+-jp_type user # (source: code)
 -js_ksp_atol 1e-09 # (source: code)
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 20 # (source: code)
@@ -19,9 +20,6 @@ Total number of options added: 0
 -ParamFile AdjointGradients.dat # (source: code)
 -snes_monitor # (source: code)
 -snes_type ksponly # (source: code)
--vs_ksp_type preonly # (source: code)
--vs_pc_factor_mat_solver_type mumps # (source: code)
--vs_pc_type lu # (source: code)
 #End of PETSc Option Table entries
 | ------------------------------------------------------------------------- 
 |                                      LaMEM                                
@@ -49,7 +47,7 @@ Total number of options added: 0
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
+     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
      Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -112,7 +110,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000373148 sec)
+Reading geometric primitives ... done (0.000150876 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -130,13 +128,10 @@ AVD output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Picard operator type          : assembled
-   Preconditioner type           : block factorization
-   Block factorization type      : upper 
-   Velocity preconditioner       : user-defined
-   Schur preconditioner          : inverse viscosity
+   Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0167918 sec)
+Saving output ... done (0.011122 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -147,42 +142,38 @@ Tentative time step : 0.01000000 [ ]
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.216709541792e+01
-    1 KSP Residual norm 2.204820375243e+01
-    2 KSP Residual norm 6.681261650423e-03
-    3 KSP Residual norm 6.566148059020e-03
-    4 KSP Residual norm 1.374865826848e-06
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-  1 SNES Function norm 1.374865825053e-06
+    1 KSP Residual norm 6.681267433234e-03
+    2 KSP Residual norm 1.374865824974e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.374865824974e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0164347 (sec)
+SNES solution time      : 0.0137378 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.990044098827e-07 
-      |Div|_2   = 1.374865824997e-06 
+      |Div|_inf = 2.990046845952e-07 
+      |Div|_2   = 1.374865824974e-06 
    Momentum: 
-      |mRes|_2  = 1.241944344073e-11 
+      |mRes|_2  = 4.344151054867e-13 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
     0 KSP Residual norm 4.000000000000e-01
-    1 KSP Residual norm 3.347274949519e-01
-    2 KSP Residual norm 2.290139061598e-05
-    3 KSP Residual norm 2.270963916295e-05
-    4 KSP Residual norm 5.871571619148e-09
+    1 KSP Residual norm 2.290139064769e-05
+    2 KSP Residual norm 5.871571445208e-09
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0146936 sec)
+Saving output ... done (0.0107406 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0762473 (sec) 
+Total solution time : 0.0571534 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = -6.5781498212e-04
+| Current Cost function = -6.5781498219e-04
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -227,14 +218,15 @@ Total solution time : 0.0762473 (sec)
 |   Scaling law data saved to :  ScalingLaw_Test.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 0.0771038 s                         	 
+| Adjoint computation was successful & took 0.0576646 s                         	 
 | ************************************************************************ 
 #PETSc Option Table entries:
--bf_vs_type user # (source: code)
 -eta[0] 1.00000000000000000000e+00 # (source: code)
 -eta[1] 1.00000000000000000000e+03 # (source: code)
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
 -jp_pgamma 1000 # (source: code)
--jp_type bf # (source: code)
+-jp_type user # (source: code)
 -js_ksp_atol 1e-09 # (source: code)
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 20 # (source: code)
@@ -247,9 +239,6 @@ Total solution time : 0.0762473 (sec)
 -rho[1] 2.00000000000000000000e+00 # (source: code)
 -snes_monitor # (source: code)
 -snes_type ksponly # (source: code)
--vs_ksp_type preonly # (source: code)
--vs_pc_factor_mat_solver_type mumps # (source: code)
--vs_pc_type lu # (source: code)
 #End of PETSc Option Table entries
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!

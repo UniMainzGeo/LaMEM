@@ -6,9 +6,10 @@ Parsing PETSc options
 Total number of options added: 0
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
--bf_vs_type user # (source: code)
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
 -jp_pgamma 1000 # (source: code)
--jp_type bf # (source: code)
+-jp_type user # (source: code)
 -js_ksp_atol 1e-09 # (source: code)
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 20 # (source: code)
@@ -19,9 +20,6 @@ Total number of options added: 0
 -ParamFile AdjointGradients_CompareGradients.dat # (source: code)
 -snes_monitor # (source: code)
 -snes_type ksponly # (source: code)
--vs_ksp_type preonly # (source: code)
--vs_pc_factor_mat_solver_type mumps # (source: code)
--vs_pc_type lu # (source: code)
 #End of PETSc Option Table entries
 | ------------------------------------------------------------------------- 
 |                                      LaMEM                                
@@ -47,7 +45,7 @@ Total number of options added: 0
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
+     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
      Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -110,7 +108,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000217175 sec)
+Reading geometric primitives ... done (0.000291255 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -128,13 +126,10 @@ AVD output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Picard operator type          : assembled
-   Preconditioner type           : block factorization
-   Block factorization type      : upper 
-   Velocity preconditioner       : user-defined
-   Schur preconditioner          : inverse viscosity
+   Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0156745 sec)
+Saving output ... done (0.014668 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -145,31 +140,29 @@ Tentative time step : 0.01000000 [ ]
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.216709541792e+01
-    1 KSP Residual norm 2.204102919783e+01
-    2 KSP Residual norm 3.342910033434e-03
-    3 KSP Residual norm 3.320905917184e-03
-    4 KSP Residual norm 5.957642940108e-07
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-  1 SNES Function norm 5.957642911229e-07
+    1 KSP Residual norm 3.342910842192e-03
+    2 KSP Residual norm 5.957642908527e-07
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 5.957642908527e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0188057 (sec)
+SNES solution time      : 0.011237 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.354163517036e-07 
-      |Div|_2   = 5.957642910709e-07 
+      |Div|_inf = 1.354168622796e-07 
+      |Div|_2   = 5.957642908527e-07 
    Momentum: 
-      |mRes|_2  = 7.877592003014e-12 
+      |mRes|_2  = 2.335993716688e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.014409 sec)
+Saving output ... done (0.00949414 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0726223 (sec) 
+Total solution time : 0.0495437 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************ 
 |                       FINITE DIFFERENCE GRADIENTS                        
@@ -177,7 +170,7 @@ Total solution time : 0.0726223 (sec)
 | Reference objective function: -8.297037e-04 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
+     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
      Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -240,7 +233,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000273796 sec)
+Reading geometric primitives ... done (0.000253864 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -258,13 +251,10 @@ AVD output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Picard operator type          : assembled
-   Preconditioner type           : block factorization
-   Block factorization type      : upper 
-   Velocity preconditioner       : user-defined
-   Schur preconditioner          : inverse viscosity
+   Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0136138 sec)
+Saving output ... done (0.00713383 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -275,37 +265,35 @@ Tentative time step : 0.01000000 [ ]
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.216709541792e+01
-    1 KSP Residual norm 2.204102921002e+01
-    2 KSP Residual norm 3.342910031879e-03
-    3 KSP Residual norm 3.320905930147e-03
-    4 KSP Residual norm 5.957644300154e-07
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-  1 SNES Function norm 5.957644288375e-07
+    1 KSP Residual norm 3.342910840622e-03
+    2 KSP Residual norm 5.957644287520e-07
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 5.957644287515e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0143726 (sec)
+SNES solution time      : 0.00873233 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.354166778407e-07 
-      |Div|_2   = 5.957644287930e-07 
+      |Div|_inf = 1.354168861481e-07 
+      |Div|_2   = 5.957644287514e-07 
    Momentum: 
-      |mRes|_2  = 7.281861287898e-12 
+      |mRes|_2  = 2.343627898640e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0142872 sec)
+Saving output ... done (0.00752771 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0605405 (sec) 
+Total solution time : 0.0346086 (sec) 
 --------------------------------------------------------------------------
 |  Perturbed Misfit value     : -8.297036e-04 
-|  Brute force FD gradient   eta[ 1] = 1.238177e-07, with eps=1.0000e-06 
+|  Brute force FD gradient   eta[ 1] = 1.239824e-07, with eps=1.0000e-06 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
+     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
      Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -368,7 +356,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000193965 sec)
+Reading geometric primitives ... done (0.000130209 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -386,13 +374,10 @@ AVD output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Picard operator type          : assembled
-   Preconditioner type           : block factorization
-   Block factorization type      : upper 
-   Velocity preconditioner       : user-defined
-   Schur preconditioner          : inverse viscosity
+   Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0134994 sec)
+Saving output ... done (0.0069368 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -403,37 +388,35 @@ Tentative time step : 0.01000000 [ ]
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.216709541792e+01
-    1 KSP Residual norm 2.204102918563e+01
-    2 KSP Residual norm 3.342906693791e-03
-    3 KSP Residual norm 3.320902627600e-03
-    4 KSP Residual norm 5.957635590371e-07
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-  1 SNES Function norm 5.957635575180e-07
+    1 KSP Residual norm 3.342907502532e-03
+    2 KSP Residual norm 5.957635574169e-07
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 5.957635574169e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0140083 (sec)
+SNES solution time      : 0.00858111 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.354164344530e-07 
-      |Div|_2   = 5.957635574797e-07 
+      |Div|_inf = 1.354167030506e-07 
+      |Div|_2   = 5.957635574169e-07 
    Momentum: 
-      |mRes|_2  = 6.750877553178e-12 
+      |mRes|_2  = 1.574454419483e-13 
 --------------------------------------------------------------------------
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0134096 sec)
+Saving output ... done (0.00677221 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0579055 (sec) 
+Total solution time : 0.0326098 (sec) 
 --------------------------------------------------------------------------
 |  Perturbed Misfit value     : -8.297030e-04 
-|  Brute force FD gradient   eta[ 0] = 3.525555e-04, with eps=1.0000e-06 
+|  Brute force FD gradient   eta[ 0] = 3.526212e-04, with eps=1.0000e-06 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
+     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
      Version : 2.2.1 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
@@ -496,7 +479,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000189444 sec)
+Reading geometric primitives ... done (0.000157281 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -514,13 +497,10 @@ AVD output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Picard operator type          : assembled
-   Preconditioner type           : block factorization
-   Block factorization type      : upper 
-   Velocity preconditioner       : user-defined
-   Schur preconditioner          : inverse viscosity
+   Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0133402 sec)
+Saving output ... done (0.00700834 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -531,42 +511,38 @@ Tentative time step : 0.01000000 [ ]
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.216709541792e+01
-    1 KSP Residual norm 2.204102919783e+01
-    2 KSP Residual norm 3.342910033434e-03
-    3 KSP Residual norm 3.320905917184e-03
-    4 KSP Residual norm 5.957642940108e-07
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-  1 SNES Function norm 5.957642911229e-07
+    1 KSP Residual norm 3.342910842192e-03
+    2 KSP Residual norm 5.957642908514e-07
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 5.957642908514e-07
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0140085 (sec)
+SNES solution time      : 0.00900713 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.354163517036e-07 
-      |Div|_2   = 5.957642910709e-07 
+      |Div|_inf = 1.354168622791e-07 
+      |Div|_2   = 5.957642908513e-07 
    Momentum: 
-      |mRes|_2  = 7.877592003014e-12 
+      |mRes|_2  = 2.205606411226e-13 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
     0 KSP Residual norm 5.000000000000e-01
-    1 KSP Residual norm 2.508978756442e-01
-    2 KSP Residual norm 9.048869312643e-06
-    3 KSP Residual norm 9.034522854480e-06
-    4 KSP Residual norm 2.137779981080e-09
+    1 KSP Residual norm 9.048869312729e-06
+    2 KSP Residual norm 2.137778031387e-09
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.013169 sec)
+Saving output ... done (0.0067979 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0613281 (sec) 
+Total solution time : 0.0344729 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = -8.2970372500e-04
+| Current Cost function = -8.2970372528e-04
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -574,9 +550,9 @@ Total solution time : 0.0613281 (sec)
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|       FD     1:          eta[ 1]            1.238177e-07 
+|       FD     1:          eta[ 1]            1.239824e-07 
 |  adjoint     2:          eta[ 1]            1.239828e-07 
-|       FD     3:          eta[ 0]            3.525555e-04 
+|       FD     3:          eta[ 0]            3.526212e-04 
 |  adjoint     4:          eta[ 0]            3.526213e-04 
 | 
 | 
@@ -605,19 +581,20 @@ Total solution time : 0.0613281 (sec)
 |                  eta[  1]      -0.149           FallingSphere
 |                  eta[  1]      -0.149           FallingSphere
 |       
-|   Prefactor A               : -2.12132301e-02 
+|   Prefactor A               : -2.12446707e-02 
 |   Velocity check            : -8.29703725e-04 
 |   Scaling law data saved to :  ScalingLaw_Test.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 0.253026 s                         	 
+| Adjoint computation was successful & took 0.15181 s                         	 
 | ************************************************************************ 
 #PETSc Option Table entries:
--bf_vs_type user # (source: code)
 -eta[0] 2.00000000000000000000e+00 # (source: code)
 -eta[1] 1.00000000000000000000e+03 # (source: code)
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
 -jp_pgamma 1000 # (source: code)
--jp_type bf # (source: code)
+-jp_type user # (source: code)
 -js_ksp_atol 1e-09 # (source: code)
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 20 # (source: code)
@@ -628,9 +605,6 @@ Total solution time : 0.0613281 (sec)
 -ParamFile AdjointGradients_CompareGradients.dat # (source: code)
 -snes_monitor # (source: code)
 -snes_type ksponly # (source: code)
--vs_ksp_type preonly # (source: code)
--vs_pc_factor_mat_solver_type mumps # (source: code)
--vs_pc_type lu # (source: code)
 #End of PETSc Option Table entries
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!

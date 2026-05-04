@@ -263,7 +263,7 @@
 	linear_tolerances    =  1e-4 1e-8  20       # rtol, atol, maxit(-1 = automatic setting, only for atol)
 	picard_to_newton     =  1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
-	stokes_solver        = block_direct
+	stokes_solver        = coupled_direct
 	direct_solver_type   = superlu_dist
 
 <SolverOptionsEnd>
