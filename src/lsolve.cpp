@@ -362,11 +362,15 @@ PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, M
 	if(param->sp_type == _SCHUR_WBFBT_)
 	{
 		// create pressure solver
-		ierr = KSPCreate(PETSC_COMM_WORLD, &pc->pksp); CHKERRQ(ierr);
-		ierr = KSPSetDM(pc->pksp, pm->wbfbt->DA_P);    CHKERRQ(ierr);
-		ierr = KSPSetDMActive(pc->pksp, PETSC_FALSE);  CHKERRQ(ierr);
-		ierr = KSPSetOptionsPrefix(pc->pksp,"ks_");    CHKERRQ(ierr);
-		ierr = KSPSetFromOptions(pc->pksp);            CHKERRQ(ierr);
+		ierr = KSPCreate(PETSC_COMM_WORLD, &pc->pksp);                   CHKERRQ(ierr);
+		ierr = KSPSetDM(pc->pksp, pm->wbfbt->DA_P);                      CHKERRQ(ierr);
+#if PETSC_VERSION_LT(3, 25, 0)
+		PetscCall(KSPSetDMActive(pc->pksp,                   PETSC_FALSE));
+#else
+		PetscCall(KSPSetDMActive(pc->pksp, KSP_DMACTIVE_ALL, PETSC_FALSE));
+#endif
+		ierr = KSPSetOptionsPrefix(pc->pksp,"ks_");                      CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(pc->pksp);                              CHKERRQ(ierr);
 	}
 	// set Picard operator
 	if(param->ps_type == _PICARD_MAT_FREE_)

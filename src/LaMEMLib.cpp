@@ -965,7 +965,12 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 
 	// enable geometric multigrid
 	PetscCall(KSPSetDM(tksp, jr->DA_T));
-	PetscCall(KSPSetDMActive(tksp, PETSC_FALSE));
+
+#if PETSC_VERSION_LT(3, 25, 0)
+	PetscCall(KSPSetDMActive(tksp,                   PETSC_FALSE));
+#else
+	PetscCall(KSPSetDMActive(tksp, KSP_DMACTIVE_ALL, PETSC_FALSE));
+#endif
 
 	// set options
 	ierr = KSPSetOptionsPrefix(tksp,"its_");   CHKERRQ(ierr);

@@ -226,7 +226,11 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	// enable geometric multigrid
 	PetscCall(KSPSetDM(jr->tksp, jr->DA_T));
-	PetscCall(KSPSetDMActive(jr->tksp, PETSC_FALSE));
+#if PETSC_VERSION_LT(3, 25, 0)
+	PetscCall(KSPSetDMActive(jr->tksp,                   PETSC_FALSE));
+#else
+	PetscCall(KSPSetDMActive(jr->tksp, KSP_DMACTIVE_ALL, PETSC_FALSE));
+#endif
 
 	// set options
 	PetscCall(KSPSetOptionsPrefix(jr->tksp,"ts_"));
