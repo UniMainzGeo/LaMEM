@@ -177,7 +177,7 @@
 	monitor_solvers    = 1
 	linear_tolerances  = 1e-10 1e-15 100  # rtol, atol, maxit
 	stokes_solver      = coupled_direct
-	direct_solver_type = mumps
+	direct_solver_type = superlu_dist
 	
 <SolverOptionsEnd>
 
