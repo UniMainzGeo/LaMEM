@@ -1043,8 +1043,10 @@ end
     @test perform_lamem_test(dir,"CompensatedInflow_test_3D.dat","CompensatedInflow3D",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
+	
 
     # test_migrating ridge
+	acc = ((rtol=1e-5,atol=1e-3), (rtol=1e-5, atol=1e-3), (rtol=1e-3,atol=1e-3));
     @test perform_lamem_test(dir,"MigratingRidge_2D.dat","MigratingRidge_2D",
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
