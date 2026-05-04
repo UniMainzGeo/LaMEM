@@ -102,7 +102,7 @@ Examples
 	-snes_linesearch_type l2	
 	-snes_linesearch_max_it 5	
 	-snes_linesearch_minlambda 0.05
-	-snes_linesearch_maxstep 1.0
+	-snes_linesearch_maxlambda 1.0
 
 # Eisenstat-Walker
 

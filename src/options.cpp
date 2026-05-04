@@ -61,14 +61,11 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_type l2"));
 			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_max_it 5"));
 			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_minlambda 0.05"));
-			if(PETSC_VERSION_LT(3, 24, 0))
-			{
-				PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_maxstep 1.0"));
-			}
-			else
-			{
-				PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_maxlambda 1.0"));
-			}
+#if	PETSC_VERSION_LT(3, 24, 0)
+			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_maxstep 1.0"));
+#else
+			PetscCall(PetscOptionsInsertString(NULL, "-snes_linesearch_maxlambda 1.0"));
+#endif
 		}
 
 		if(opt.use_eisenstat_walker)
@@ -169,7 +166,20 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 	// PRECONDITIONER
 	//===============
 
-	if(!strcmp(opt.stokes_solver, "block_direct"))
+	if(!strcmp(opt.stokes_solver, "coupled_direct"))
+	{
+		PetscCall(set_string_option("jp_type",     "user"));
+		PetscCall(set_scalar_option("jp_pgamma",   opt.penalty));
+		PetscCall(set_string_option("jp_pc_type",  "lu"));
+
+		if(strcmp(opt.direct_solver_type, "default"))
+		{
+			PetscCall(set_string_option("jp_pc_factor_mat_solver_type", opt.direct_solver_type));
+		}
+
+		if(opt.view_solvers) { PetscCall(set_empty_option("pc_view", "jp")); }
+	}
+	else if(!strcmp(opt.stokes_solver, "block_direct"))
 	{
 		PetscCall(set_string_option("jp_type",     "bf"));
 		PetscCall(set_scalar_option("jp_pgamma",   opt.penalty));
@@ -339,7 +349,8 @@ PetscErrorCode solverOptionsCheck(SolOptDB &opt)
 	PetscFunctionBeginUser;
 
 	// check parameters
-	if(!(!strcmp(opt.stokes_solver, "block_direct")
+	if(!(!strcmp(opt.stokes_solver, "coupled_direct")
+	||   !strcmp(opt.stokes_solver, "block_direct")
 	||   !strcmp(opt.stokes_solver, "coupled_mg")
 	||   !strcmp(opt.stokes_solver, "block_mg")
 	||   !strcmp(opt.stokes_solver, "wbfbt")))

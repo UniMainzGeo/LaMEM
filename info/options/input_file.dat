@@ -857,8 +857,8 @@
 	use_eisenstat_walker    =  0
 	use_mat_free_jac        =  0
 
-	stokes_solver           =  block_direct         # [block_direct, coupled_mg, block_mg, wbfbt]
-	direct_solver_type      =  superlu_dist         # [mumps, superlu_dist, lu]
+	stokes_solver           =  coupled_direct       # [coupled_direct, block_direct, coupled_mg, block_mg, wbfbt]
+	direct_solver_type      =  mumps                # [mumps, superlu_dist, lu]
 	block_tolerances        =  1e-2 30              # rtol, maxit (fgmres settings for block solves in block_mg and wbfbt)
 	penalty                 =  1e3                  # (only for block_direct)
 

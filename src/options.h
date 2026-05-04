@@ -35,8 +35,8 @@ struct SolOptDB
 	PetscInt    use_eisenstat_walker           =  0;
 	PetscInt    use_mat_free_jac               =  0;
 
-	char        stokes_solver[_str_len_]       = "block_direct";             // [block_direct, coupled_mg, block_mg, wbfbt]
-	char        direct_solver_type[_str_len_]  = "superlu_dist";             // [mumps, superlu_dist, default]
+	char        stokes_solver[_str_len_]       = "coupled_direct";           // [coupled_direct, block_direct, coupled_mg, block_mg, wbfbt]
+	char        direct_solver_type[_str_len_]  = "mumps";                    // [mumps, superlu_dist, default]
 	PetscScalar block_tolerances[2]            = { 1e-2, 30 } ;              // rtol, maxit (fgmres settings for block solves in block_mg and wbfbt)
 	PetscScalar penalty                        =  1e3;                       // (only for block_direct)
 
