@@ -176,7 +176,7 @@
 	picard_to_newton     = 1e-4  5  1.2 20    # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = coupled_direct
-	direct_solver_type   = mumps
+	direct_solver_type   = superlu_dist
 
 <SolverOptionsEnd>
 
