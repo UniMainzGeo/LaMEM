@@ -83,7 +83,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	// Phase transition law ID
 	ierr    =   getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
 
-	// get pointer to specified softening law
+	// get pointer to specified phase transition law
 	ph      =   dbm->matPhtr + ID;
 
 	// check ID
@@ -117,8 +117,15 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr    =   Set_NotInAirBox_Phase_Transition(ph, dbm, fb);		CHKERRQ(ierr);
 	}
 	
-	ierr = getIntParam(fb,      _OPTIONAL_, "number_phases", &ph->number_phases,1 ,                     _max_tr_);      CHKERRQ(ierr);
-	if ( ph->Type == _Box_ || ph->Type == _NotInAirBox_){
+	ierr = getIntParam(fb,      _REQUIRED_, "number_phases", &ph->number_phases, 1 ,                     _max_tr_);      CHKERRQ(ierr);
+
+	if(!ph->number_phases)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Phase transition requires nonzero number of phases");
+	}
+
+	if(ph->Type == _Box_ || ph->Type == _NotInAirBox_)
+	{
 		ph->PhaseInside[0] = -1;	// default
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		
@@ -126,7 +133,8 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,	ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		
 	}
-	else{
+	else
+	{
 		ierr = getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		ierr = getIntParam(fb, 	    _OPTIONAL_, "PhaseAbove",       ph->PhaseAbove,     ph->number_phases , _max_num_phases_);  CHKERRQ(ierr);
 		ierr = getScalarParam(fb,   _OPTIONAL_, "DensityBelow",     ph->DensityBelow,   ph->number_phases , 1.0);               CHKERRQ(ierr);
@@ -153,12 +161,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	else if (!strcmp(str_direction, "OutsideToInside")) ph->PhaseDirection  = 2;
 	else if (!strcmp(str_direction, "BothWays"    ))    ph->PhaseDirection  = 0;
 	else{      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Phase direction %s \n", str_direction);  }
-	
-	if (!ph->PhaseAbove || !ph->PhaseBelow)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type (Constant) (Clapeyron) ");
-	}
-    
+
 	if (ph->Type == _Box_ || ph->Type == _NotInAirBox_){
 		
 		if (ph->number_phases>0){
@@ -531,41 +534,42 @@ PetscErrorCode  DynamicPhTr_Init(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 
-//------------------------------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------------------------------
 
 PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 {
-
 	Scaling         *scal;
 	PetscInt        it=0;
 
 	PetscErrorCode  ierr;
 	PetscFunctionBeginUser;
 
-	scal    = dbm -> scal;
-	ierr    = getStringParam(fb, _OPTIONAL_, "Name_Clapeyron", ph->Name_clapeyron, "none");  CHKERRQ(ierr);
-	if (ph->Name_clapeyron)
+	scal = dbm -> scal;
+	ierr = getStringParam(fb, _OPTIONAL_, "Name_Clapeyron", ph->Name_clapeyron, "user-defined");  CHKERRQ(ierr);
+
+	if(strcmp(ph->Name_clapeyron, "user-defined"))
 	{
+		// predefined profile
 		ierr = SetClapeyron_Eq(ph); CHKERRQ(ierr);
-		PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Clapeyron \n", (LLD)(ph->ID));
-        PetscPrintf(PETSC_COMM_WORLD,"     Transition law     :   %s\n", ph->Name_clapeyron);
-    }
-
-	ierr = getIntParam   (fb, _OPTIONAL_, "numberofequation",   &ph->neq,           1,          2.0); CHKERRQ(ierr);
-	if(ph->neq>2 || ph->neq == 0)
+	}
+	else
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero");
+		// user-defined profile
+        ierr = getIntParam   (fb, _REQUIRED_, "numberofequation",   &ph->neq, 1, 2); CHKERRQ(ierr);
 
+        if(ph->neq>2 || ph->neq == 0)
+        {
+        	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero");
+        }
+
+		ierr = getScalarParam(fb, _REQUIRED_, "clapeyron_slope",    ph->clapeyron_slope, ph->neq,    1.0); CHKERRQ(ierr);    // [MPa/K]
+		ierr = getScalarParam(fb, _REQUIRED_, "P0_clapeyron",       ph->P0_clapeyron,    ph->neq,    1.0); CHKERRQ(ierr);    // [Pa]
+		ierr = getScalarParam(fb, _REQUIRED_, "T0_clapeyron",       ph->T0_clapeyron,    ph->neq,    1.0); CHKERRQ(ierr);    // [Celsius]
 	}
 
-	ierr = getScalarParam(fb, _OPTIONAL_, "clapeyron_slope",    ph->clapeyron_slope,ph->neq,    1.0); CHKERRQ(ierr);    // [MPa/K]
-	ierr = getScalarParam(fb, _OPTIONAL_, "P0_clapeyron",       ph->P0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // [Pa]
-	ierr = getScalarParam(fb, _OPTIONAL_, "T0_clapeyron",       ph->T0_clapeyron,   ph->neq,    1.0); CHKERRQ(ierr);    // [Celsius]        
-
-	if((!ph->clapeyron_slope || !ph->T0_clapeyron || !ph->clapeyron_slope   ||  !ph->Name_clapeyron))
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition avaiable you need to specify P0, T0, gamma and the number of equations ( P=(T-T0)*gamma +(P0) ).");
-	}
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Clapeyron \n", (LLD)(ph->ID));
+    PetscPrintf(PETSC_COMM_WORLD,"     Transition law     :   %s\n", ph->Name_clapeyron);
 
     PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %lld    [ P = P0 + gamma*(T-T0) ] \n", (LLD) ph->neq);
         
@@ -783,10 +787,12 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				ierr = Check_Phase_above_below(PhaseTrans->PhaseAbove,   P, num_phas, &above); CHKERRQ(ierr);
 			}
 
+			PH1 = P->phase;
+			PH2 = P->phase;
+
 			if  ( (below >= 0) || (above >= 0) )
 			{
-				PH2 = P->phase;
-				PH1 = P->phase;
+
                  // the current phase is indeed involved in a phase transition
 				if      (   (below>=0) && (nphc ==1))
 				{
@@ -876,7 +882,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 				}
 			}
-			else{
+			else
+			{
 				// allow cases in which we only reset T
 				ph 			= P->phase;
 				InsideAbove = 0;
@@ -1043,7 +1050,7 @@ PetscErrorCode Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,
 
 	ph 		= 0;
 	InAb 	= 0;
-	if((PhaseTrans->Parameter_transition==_T_))   // NOTE: string comparisons can be slow; optimization possibility
+	if(PhaseTrans->Parameter_transition==_T_)  // NOTE: string comparisons can be slow; optimization possibility
 		{
             // Temperature transition
             if ( P->T >= PhaseTrans->ConstantValue)     {   ph = PH2; InAb=1;  	}
@@ -1359,7 +1366,7 @@ PetscErrorCode Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P
 		Controls ctrl, PetscInt *ph_out, PetscInt *InAbove)
 {
 	PetscInt 	ph,ip,neq, InAb;
-	PetscScalar 	Pres[2], pShift;
+	PetscScalar Pres[2]={0.0, 0.0}, pShift;
 
 	PetscFunctionBeginUser;
 

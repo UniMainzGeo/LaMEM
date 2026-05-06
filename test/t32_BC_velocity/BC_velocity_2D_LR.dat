@@ -1,6 +1,6 @@
 # This is an example of variable inflow velocity from left boundary with prescribed time intervals for each stage
 # The model has a viscoelastoplastic rheology and the geometry is created with the build-in 
-# geometry objects. We use a multigrid solver
+# geometry objects. We use a direct solver
 
 #===============================================================================
 # Scaling
@@ -24,8 +24,8 @@
 	inc_dt    = 0.2     # time step increment per time step (fraction of unit)
 	CFL       = 0.5     # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 1.0     # CFL criterion for elasticity
-	nstep_max = 70      # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 5       # save output every n steps
+	nstep_max = 30      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 2       # save output every n steps
 	nstep_rdb = 100     # save restart database every n steps
 
 
@@ -35,7 +35,7 @@
 
 # Number of cells for all segments
 	nel_x = 32
-	nel_y = 1
+	nel_y = 2
 	nel_z = 16
 
 # Coordinates of all segments (including start and end points)
@@ -91,15 +91,7 @@
 	min_cohes      = 1e6            # cohesion lower bound
 	min_fric       = 1.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
-
 	
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	multigrid 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e5
-		
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -237,61 +229,19 @@
 		G   		= 	5e10
 
 	<MaterialEnd>
-	
+
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
+<SolverOptionsStart>
 
-<PetscOptionsStart>
+	nonlinear_tolerances = 1e-3 1e-3  20   # rtol, atol, maxit
+	linear_tolerances    = 1e-7 1e-9  20   # rtol, atol, maxit
+	picard_to_newton     = 1e-3 5 1.2 10   # picard rtol, picard minit, newton rtol, newton maxit
+	use_eisenstat_walker = 1
+	monitor_solvers      = 1
+	stokes_solver        = coupled_direct
+	direct_solver_type   = mumps
 
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_ksp_ew
-	-snes_ksp_ew_rtolmax 1e-3
-	-snes_rtol 1e-3					
-	-snes_atol 1e-3					# following Le Pourhiet et al. (EPSL, 2017)
-	-snes_max_it 20					
-	
-
-	-snes_PicardSwitchToNewton_rtol 1e-3   # relative tolerance to switch to Newton (1e-2)
-	-snes_NewtonSwitchToPicard_it  	10     # number of Newton iterations after which we switch back to Picard
-
-# Jacobian solver
-
-	-js_ksp_max_it 20
-
-#	-js_ksp_monitor # display how the inner iterations converge
-
-         -da_refine_y 1
-#   -gmg_pc_view
-#   -gmg_dump
-#	-gmg_pc_type mg 
-#	-gmg_pc_mg_levels 2 
-#	-gmg_pc_mg_galerkin
-#	-gmg_pc_mg_type multiplicative
-#	-gmg_pc_mg_cycle_type v
-#
-#	-gmg_mg_levels_ksp_type richardson
-#	-gmg_mg_levels_ksp_richardson_scale 0.5
-#	-gmg_mg_levels_ksp_max_it 5
-#	-gmg_mg_levels_pc_type jacobi
-
-	-gmg_pc_type mg 
-	-gmg_pc_mg_levels 3
-	-gmg_pc_mg_galerkin
-	-gmg_pc_mg_type multiplicative
-	-gmg_pc_mg_cycle_type v
-#
-	-gmg_mg_levels_ksp_type richardson
-	-gmg_mg_levels_ksp_richardson_scale 0.5
-	-gmg_mg_levels_ksp_max_it 4
-	-gmg_mg_levels_pc_type jacobi
-#
-
-
-	-crs_ksp_type preonly
-	-crs_pc_type lu
-	#-crs_pc_factor_mat_solver_package superlu_dist
-
-<PetscOptionsEnd>
-
+<SolverOptionsEnd>
 #===============================================================================

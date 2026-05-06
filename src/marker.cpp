@@ -22,6 +22,7 @@
 #include "tools.h"
 #include "bc.h"
 #include "surf.h"
+#include "interpolate.h"
 #include "phase_transition.h"
 
 /*
@@ -649,7 +650,7 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	}
 
 	// clear memory
-	PetscFree(Temp);
+	ierr = PetscFree(Temp); CHKERRQ(ierr);
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
 	PrintDone(t);
@@ -677,6 +678,9 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	AirPhase = -1;
 	Ttop     =  0.0;
 
+	// initialize corners and edges for interpolation
+	PetscCall(SetEdgeCornerCenter(fs, jr->lT));
+
 	if(actx->surf->UseFreeSurf)
 	{
 		AirPhase = actx->surf->AirPhase;
@@ -694,7 +698,7 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	ccz = fs->dsz.ccoor;
 
 	// access temperature vector
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT);  CHKERRQ(ierr);
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -1543,14 +1547,14 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	}
 
 	// free
-	PetscFree(idx);
-	PetscFree(polyin);
-	PetscFree(polyin_sum);
-	PetscFree(X);
-	PetscFree(PolyIdx);
-	PetscFree(PolyLen);
-	PetscFree(PolyX);
-	PetscFree(PolyFile);
+	ierr = PetscFree(idx);        CHKERRQ(ierr);
+	ierr = PetscFree(polyin);     CHKERRQ(ierr);
+	ierr = PetscFree(polyin_sum); CHKERRQ(ierr);
+	ierr = PetscFree(X);          CHKERRQ(ierr);
+	ierr = PetscFree(PolyIdx);    CHKERRQ(ierr);
+	ierr = PetscFree(PolyLen);    CHKERRQ(ierr);
+	ierr = PetscFree(PolyX);      CHKERRQ(ierr);
+	ierr = PetscFree(PolyFile);   CHKERRQ(ierr);
 	
 	if(actx->randNoise)
 	{
@@ -1677,7 +1681,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	FILE          *fp;
     PetscInt       i_pd,j,ij,lineStart,n,found, NumberOfPhaseDiagramProperties;
     PetscScalar    fl[2];
-    char           buf[1000],name[_str_len_];
+    char           buf[1000],name[_str_len_+_str_len_];
     PData         *pd;
     Scaling       *scal;
    

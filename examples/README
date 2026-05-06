@@ -1,0 +1,26 @@
+In this folder, several examples are given of input files for LaMEM
+with different level of complexities.
+
+If you are a new user of LaMEM, we suggest you to look at the files
+in the order given below. Where appropriate, we have added README files 
+in the directories with further info.
+
+1) BuildInSetups
+This folder contains a number of files in which the geometry of the model
+is created from within the LaMEM input file. This is a good starting
+point if you are a new LaMEM user, and explains both how to run the
+code in nondimensional and in dimensional units, for both a simple
+linear viscous rheology and for a more realistic viscoelastoplastic 
+rheology. 
+
+2) SubductionWithParticles
+Example of performing a subduction setup, in which the initial model geometry
+and temperature structure is generated from within a Julia script.
+
+3) Localization
+Example of a 2D shear localization setup, which is an often-used bench-
+mark for plastic rheologies.
+
+4) Scaling tests
+Examples of LaMEM scalability tests on different HPC machines
+

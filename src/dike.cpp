@@ -35,7 +35,7 @@
 PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)   
 {
 
-        // read all dike parameter blocks from file
+    // read all dike parameter blocks from file periodic
 	Dike     *dike;
 	FDSTAG   *fs;
 	PetscScalar ***gsxx_eff_ave_hist;
@@ -48,6 +48,13 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 	if (!jr->ctrl.actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
  
 	fs = jr->fs;
+
+	// check compatibility with periodic bc
+	if(fs->periodic)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dike implementation has not been tested with periodic boundary condition yet\n");
+	}
+
  	//===============                                                                                                                                               
 	// DIKE PARAMETER                                                                                                               
 	//===============                                                                                                                                               
@@ -98,13 +105,13 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 			{
 				// DM for 1D cell center vector. vector is ny+1 long, but for whatever reason that must appear in the first,
 				// not second entry on line 2 below 
-				ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
+				ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
 				fs->dsy.tnods, fs->dsy.nproc, fs->dsz.nproc, 
 				fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
 				0, 0, 0, &dbdike->DA_CELL_1D); CHKERRQ(ierr);
 
 				//DM for 2D cell center vector, with istep_nave planes for time averaging
-				ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
+				ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
 				fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
             	fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
 				0, 0, 0, &dbdike->DA_CELL_2D_tave); CHKERRQ(ierr);
@@ -1584,9 +1591,8 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 }
 
 //---------------------------------------------------------------------------
-PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp)
+PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp, FB *fb)
 {
-	FB              *fb;
 	Controls    *ctrl;
 	Dike        *dike;
 	PetscInt   nD, numDike;
@@ -1597,14 +1603,12 @@ PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *
 	ctrl = &jr->ctrl;
 	if (!ctrl->actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
 
-	ierr = FBLoad(&fb, PETSC_TRUE);
-	ierr = TSSolCreate(ts, fb); 				CHKERRQ(ierr);
+	ierr = TSSolCreate(ts, fb); CHKERRQ(ierr);
 
-	numDike    = dbdike->numDike; // number of dikes
+	numDike = dbdike->numDike; // number of dikes
 
-// create dike database
-	ierr = DBDikeCreate(dbdike, dbm, fb, jr, PETSC_TRUE);   CHKERRQ(ierr);
-	ierr = FBDestroy(&fb); CHKERRQ(ierr);
+	// create dike database
+	ierr = DBDikeCreate(dbdike, dbm, fb, jr, PETSC_TRUE); CHKERRQ(ierr);
 
 	for(nD = 0; nD < numDike; nD++)
 	{
@@ -1615,8 +1619,6 @@ PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *
 			ierr = VecReadRestart(dike->sxx_eff_ave_hist, fp); CHKERRQ(ierr);
 		}
 	}
-
-	
 
 	PetscFunctionReturn(0);
 }

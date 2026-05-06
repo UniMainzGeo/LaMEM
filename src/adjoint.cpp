@@ -89,6 +89,7 @@
 #include "interpolate.h"
 #include "surf.h"
 #include "multigrid.h"
+#include "matData.h"
 #include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
@@ -154,6 +155,8 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 	// Check if there is a command-line option & use that instead
 	asprintf(&dbkey, "-%s[%i]", par_str, (int)ID);
 	PetscOptionsGetScalar(NULL, NULL, dbkey, &val, &found);
+	free(dbkey);
+
 	if (found){
 		value = val;	// found a command-line option
 	}
@@ -325,7 +328,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		ierr = GetProfileName(fb, scal, ndisl, "disl_prof"); CHKERRQ(ierr);
 		if(strlen(ndisl)){
 			ierr = SetDislProfile(&m, ndisl);  CHKERRQ(ierr);
-			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), par_str); CHKERRQ(ierr);
+			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), &par_str); CHKERRQ(ierr);
 
 			// Set parameters 
 			strcpy(par_str,"Bn"); AddParamToList(ID, m.Bn, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
@@ -337,7 +340,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		ierr = GetProfileName(fb, scal, ndiff, "diff_prof"); 	CHKERRQ(ierr);
 		if(strlen(ndiff)){
 			ierr = SetDiffProfile(&m, ndiff);  					CHKERRQ(ierr);
-			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), par_str); CHKERRQ(ierr);
+			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), &par_str); CHKERRQ(ierr);
 
 			// Set parameters 	
 			strcpy(par_str,"Bd"); AddParamToList(ID, m.Bd, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
@@ -432,7 +435,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	
     // Create scaling object
 	ierr = PetscMemzero (&scal, sizeof(Scaling)); CHKERRQ(ierr);
-	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
 
 	// Some general Adjoint Gradient parameters:
     ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_GradientCalculation", str, NULL); CHKERRQ(ierr);  // must have component
@@ -707,6 +710,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 				PetscPrintf(PETSC_COMM_WORLD, "|   %-2lld: %s %s %6s[%-2lld] = %s; bnd=[%s; %s]   \n",(LLD) i+1,adjointstr,logstr,par_str, (LLD) ID,val_str,lb_str,ub_str);
 			}
 			
+			free(ub_str);
+			free(lb_str);
+			free(val_str);
+
 			i = i+1;
 		}
 
@@ -787,12 +794,12 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 
 		// Determine what cost function type is used
 		ierr 	= getStringParam(fb, _REQUIRED_, "Parameter", ParType, NULL); CHKERRQ(ierr);  // must have component
-		if     	(!strcmp(ParType, "Vx") | !strcmp(ParType, "Vy") | !strcmp(ParType, "Vz"))
+		if     	(!strcmp(ParType, "Vx") || !strcmp(ParType, "Vy") || !strcmp(ParType, "Vz"))
 		{    
 			IOparam->MfitType = 0;  ct1++;	// these parameters are compute by projection 
 		}
-		else if	(!strcmp(ParType, "PSD") | !strcmp(ParType, "Exx") | !strcmp(ParType, "Eyy") | !strcmp(ParType, "Ezz" ) | 
-				 !strcmp(ParType, "Exy") | !strcmp(ParType, "Eyz") | !strcmp(ParType, "Exz") | !strcmp(ParType, "E2nd"))
+		else if	(!strcmp(ParType, "PSD") || !strcmp(ParType, "Exx") || !strcmp(ParType, "Eyy") || !strcmp(ParType, "Ezz" ) ||
+				 !strcmp(ParType, "Exy") || !strcmp(ParType, "Eyz") || !strcmp(ParType, "Exz") || !strcmp(ParType, "E2nd"))
 		{    
 			IOparam->MfitType = 1;  ct2++;	// these parameters are compyted @ the center for the FDSTAG point
 		}
@@ -936,13 +943,31 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 {
+	PetscBool       mat_free;
+	PetscScalar    	F, *fcconvar, *Par;
+	PetscInt        i, periodic=0, nlmf = 0;
+	Adjoint_Vecs    Adjoint_Vectors;
+	PetscLogDouble  cputime_start, cputime_end;
+
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	PetscScalar    	F, *fcconvar, *Par;
-	PetscInt        i;
-	Adjoint_Vecs    Adjoint_Vectors;
-	PetscLogDouble  cputime_start, cputime_end;
+	// compatibility check
+	PetscCall(PetscOptionsGetInt (NULL, NULL, "-gmg_mat_free_levels", &nlmf, NULL));
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-js_mat_free",                &mat_free));
+
+	if(mat_free || nlmf)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adjoint solver is incompatible with matrix-free options (-gmg_mat_free_levels, -js_mat_free) \n");
+	}
+
+	// read periodic grid topology flag
+	ierr = getIntParam(IOparam->fb, _OPTIONAL_, "periodic", &periodic, 1, 1); CHKERRQ(ierr);
+
+	if(periodic)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adjoint solver is incompatible with periodic boundary conditions (periodic) \n");
+	}
 
 	PetscTime(&cputime_start);
 
@@ -984,7 +1009,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 		// Only compute a forward model and the corresponding misfit 
 
 		IOparam->BruteForce_FD = PETSC_TRUE;		// to return early w/out cmomputing FD gradients
-		ierr = LaMEMLibMain(IOparam,IOparam->stages); 															CHKERRQ(ierr);
+		ierr = LaMEMLibMain(IOparam, IOparam->fb); 															CHKERRQ(ierr);
 
 		// Print overview of cost function & gradients 
 		ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
@@ -1079,7 +1104,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  	else if(IOparam->use == _syntheticforwardrun_)
  	{
  		// call LaMEM main library function
- 		ierr = LaMEMLibMain(IOparam,IOparam->stages); CHKERRQ(ierr);
+ 		ierr = LaMEMLibMain(IOparam, IOparam->fb); CHKERRQ(ierr);
 
  		// Save output
  		PetscViewer     viewerVel;
@@ -1212,7 +1237,7 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 
 	// Adjoint gradients: Call LaMEM main library function once (computes gradients @ the end)
  	IOparam->BruteForce_FD = PETSC_FALSE;
-	ierr = LaMEMLibMain(IOparam,IOparam->stages); 															CHKERRQ(ierr);
+	ierr = LaMEMLibMain(IOparam, IOparam->fb); 															CHKERRQ(ierr);
 
 	// Print overview of cost function & gradients 
 	ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
@@ -1477,7 +1502,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	char		CurName[_str_len_];
 	
 	IOparam = (ModParam*)ctx;
-	if(tao) tao = NULL;
+	UNUSED(tao);
 
 	// get parameter values
 	VecCopy(P,IOparam->P);
@@ -1554,13 +1579,21 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	PetscFunctionReturn(0);
 }
- //---------------------------------------------------------------------------
- PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf)
- {
+//---------------------------------------------------------------------------
+PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, ModParam *IOparam, SNES snes)
+{
 	// This computes the objective function and adjoint gradients (not the 'brute-force' FD gradients)
+	NLSol    *nl;
+	JacRes   *jr;
+	FreeSurf *surf;
 
- 	PetscErrorCode ierr;
- 	PetscFunctionBeginUser;
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = SNESGetApplicationContext(snes, &nl); CHKERRQ(ierr);
+
+	jr   = nl->jr;
+	surf = jr->surf;
 
 	//========================================
 	// COMPUTE OBJECTIVE FUNCTION & GRADIENT
@@ -1571,14 +1604,15 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	if (IOparam->BruteForce_FD){PetscFunctionReturn(0); }	// in case we compute Brute force FD (or if we only compute the misfit), we can return at this stage
 
- 	// Get the adjoint gradients
- 	ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam);        CHKERRQ(ierr);
+	// Get the adjoint gradients
+	ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam);        CHKERRQ(ierr);
 
- 	PetscFunctionReturn(0);
- }
- //---------------------------------------------------------------------------
- PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOparam, FreeSurf *surf)
- {
+	PetscFunctionReturn(0);
+
+}
+//---------------------------------------------------------------------------
+PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOparam, FreeSurf *surf)
+{
 	// This computes the objective function
 
 	Scaling             *scal;
@@ -1786,8 +1820,8 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	ierr = VecDestroy(&sqrtpro);
 
 
- 	PetscFunctionReturn(0);
- }
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 /* 
 	Brute Force finite difference computation of the gradient, by calling LaMEM twice & perturbing the parameter 
@@ -1800,21 +1834,21 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 	char 			CurName[_str_len_];
 	PetscBool 		flg, FD_Adjoint = PETSC_FALSE;
 
- 	PetscFunctionBeginUser;
+	PetscFunctionBeginUser;
 
 
 	// 0) Retrieve (optional) command-line parameters
 	ierr = PetscOptionsGetScalar(NULL, NULL,"-FD_gradients_eps",&FD_gradients_eps,&flg); CHKERRQ(ierr);
-    if (flg){
+	if (flg){
 		PetscPrintf(PETSC_COMM_WORLD,"| Updated eps used for computing finite difference gradients to: %2.5e  \n",FD_gradients_eps);
-    }
+	}
 
 	// 1) Compute 'reference' state using LaMEM & the current set of parameters
 	// Set parameters as command-line options
 	VecGetArray(IOparam->P,&Par);
 	for(j = 0; j < IOparam->mdN; j++){
 		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
-    }
+	}
 	VecRestoreArray(IOparam->P,&Par);
 
 	// check if we actually need to compute FD gradients
@@ -1827,7 +1861,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 	if (FD_Adjoint){
 
 		// Call LaMEM
-		ierr 		= 	LaMEMLibMain(IOparam,IOparam->stages); CHKERRQ(ierr);		// call LaMEM
+		ierr 		= 	LaMEMLibMain(IOparam, IOparam->fb); CHKERRQ(ierr);		// call LaMEM
 		Misfit_ref	=	IOparam->mfit;
 		
 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
@@ -1863,7 +1897,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 				ierr		=	CopyParameterToLaMEMCommandLine(IOparam, CurVal + Perturb, j);		CHKERRQ(ierr);
 			
 				// Compute solution with updated parameter
-				ierr 		= 	LaMEMLibMain(IOparam,IOparam->stages); 												CHKERRQ(ierr);
+				ierr 		= 	LaMEMLibMain(IOparam, IOparam->fb); 												CHKERRQ(ierr);
 				Misfit_pert = 	IOparam->mfit;
 
 				// FD gradient
@@ -1882,8 +1916,8 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 	}
 
 
- 	PetscFunctionReturn(0);
- }
+	PetscFunctionReturn(0);
+}
 
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam)
@@ -1898,16 +1932,17 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	PetscScalar         grd, Perturb, *Par, CurVal;
 	Vec 				res_pert, sol, psi, psiPar, drdp, res;
 	PC                  ipc_as;
+	Mat                 J, P;
 	Scaling             *scal;
-    PetscBool           flg;
-    char                CurName[_str_len_];
+	PetscBool           flg;
+	char                CurName[_str_len_];
 	BCCtx 				*bc;
 	
-
-	bc = jr->bc;
-
+	bc   = jr->bc;
 	scal = jr->scal;
 	
+	ierr = SNESGetJacobian(snes, &J, &P, NULL, NULL); CHKERRQ(ierr);
+
 	// Create all needed vectors in the same size as the solution vector
 	ierr = VecDuplicate(jr->gsol, &psi);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &psiPar);	 	 CHKERRQ(ierr);
@@ -1925,7 +1960,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	// (A side note that I figured out, ksp still sometimes results in a > 0 gradient even if cost function is zero.. possibly really bad condition number?)
 	if(IOparam->MfitType == 0)
 	{
-
 		ierr = Adjoint_ApplyBCs(aop->dF, bc);			CHKERRQ(ierr);		// apply BC's to dF vector
 
 		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
@@ -1933,22 +1967,22 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
 		ierr = KSPGetPC(ksp_as, &ipc_as);           	CHKERRQ(ierr);
 		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
-		ierr = KSPSetOperators(ksp_as,nl->J,nl->P);		CHKERRQ(ierr);
+		ierr = KSPSetOperators(ksp_as, J, P);		    CHKERRQ(ierr);
 		ierr = KSPSolve(ksp_as,aop->dF,psi);			CHKERRQ(ierr);
 		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
 	}
 	else if(IOparam->MfitType == 1)
- 	{
+	{
 		ierr = Adjoint_ApplyBCs(aop->dPardu, bc);		CHKERRQ(ierr);		// apply BC's to dF vector 
- 		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
- 		ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
- 		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
- 		ierr = KSPGetPC(ksp_as, &ipc_as);            	CHKERRQ(ierr);
- 		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
- 		ierr = KSPSetOperators(ksp_as,nl->J,nl->P);		CHKERRQ(ierr);
- 		ierr = KSPSolve(ksp_as,aop->dPardu,psiPar);		CHKERRQ(ierr);
- 		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
- 	}
+		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
+		ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
+		ierr = KSPGetPC(ksp_as, &ipc_as);            	CHKERRQ(ierr);
+		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
+		ierr = KSPSetOperators(ksp_as, J, P);		    CHKERRQ(ierr);
+		ierr = KSPSolve(ksp_as,aop->dPardu,psiPar);		CHKERRQ(ierr);
+		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
+	}
 
 	// Check error
 	{ 
@@ -1984,7 +2018,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		{
 			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"| Field-based gradients can currently only be computed for a single parameter \n");		// error check
 		}
-		if (!strcmp(CurName,"rho") | !strcmp(CurName,"eta0") | !strcmp(CurName,"n"))		// we need some way to ensure that we do this for one field at a time only
+		if (!strcmp(CurName,"rho") || !strcmp(CurName,"eta0") || !strcmp(CurName,"n"))		// we need some way to ensure that we do this for one field at a time only
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"| Starting computation of Field-based gradients.  \n");	
 			// Compute the gradient
@@ -2042,10 +2076,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB
-				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++)
+				for (i=0; i < nl->jr->dbm->numPhases; i++)
 				{
-					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
-					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
+					ierr =   PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
+					swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);
 				}
 
 				ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
@@ -2059,10 +2093,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB back
-				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++)
+				for (i=0; i < nl->jr->dbm->numPhases; i++)
 				{
-					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
-					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
+					ierr =   PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
+					swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);
 				}
 				
 				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
@@ -2149,7 +2183,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 
 	// retrieve some of the required data
 	ierr = PetscMemzero (&scal, sizeof(Scaling));          CHKERRQ(ierr);
-	ierr = ScalingCreate(&scal, IOparam->fb, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = ScalingCreate(&scal, IOparam->fb); CHKERRQ(ierr);
 
 	if (!(IOparam->use==_inversion_)){
 		// if use==_inversion_, we only compute the misfit & not the gradients	
@@ -2159,7 +2193,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n| ");
 
 		PetscPrintf(PETSC_COMM_WORLD,"\n| Gradients: \n");
-		if ((IOparam->FS==0) ){   
+		if (IOparam->FS==0){
 			PetscPrintf(PETSC_COMM_WORLD,"|                    Parameter             |  Gradient (dimensional)  \n");    
 			PetscPrintf(PETSC_COMM_WORLD,"|                  -----------------------   ------------------------ \n");    
 
@@ -2277,13 +2311,17 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 
 	fs = jr->fs;
 
+	// initialize corners and edges for interpolation
+	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
+	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
+	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
+
 	// create vectors with correct layout (doesn't copy values!)
  	ierr = VecDuplicate(jr->gsol, &pro);             CHKERRQ(ierr);
  	ierr = VecDuplicate(jr->gsol, &xini);            CHKERRQ(ierr);
 	VecZeroEntries(pro);
 	VecZeroEntries(xini);
 	
-
 	// Access the local velocities
 	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
@@ -2844,7 +2882,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	PetscFunctionBeginUser;
 
 	// access context
-	jr = nl->pc->pm->jr;
+	jr = nl->jr;
 
 	// Create stuff
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
@@ -2909,10 +2947,6 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				temprank = 100;
 				aop->Perturb = 1;
 
-
-
-
-
 				// access work vectors
 				ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
 				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
@@ -2937,9 +2971,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// central points
 				//-------------------------------
 				iter = 0;
-				GET_CELL_RANGE(nx, sx, fs->dsx)
-				GET_CELL_RANGE(ny, sy, fs->dsy)
-				GET_CELL_RANGE(nz, sz, fs->dsz)
+
+				ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				START_STD_LOOP
 				{
@@ -3066,9 +3099,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// xy edge points
 				//-------------------------------
 				iter = 0;
-				GET_NODE_RANGE(nx, sx, fs->dsx)
-				GET_NODE_RANGE(ny, sy, fs->dsy)
-				GET_CELL_RANGE(nz, sz, fs->dsz)
+
+				ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				START_STD_LOOP
 				{
@@ -3177,9 +3209,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// xz edge points
 				//-------------------------------
 				iter = 0;
-				GET_NODE_RANGE(nx, sx, fs->dsx)
-				GET_CELL_RANGE(ny, sy, fs->dsy)
-				GET_NODE_RANGE(nz, sz, fs->dsz)
+
+				ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				START_STD_LOOP
 				{
@@ -3287,9 +3318,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// yz edge points
 				//-------------------------------
 				iter = 0;
-				GET_CELL_RANGE(nx, sx, fs->dsx)
-				GET_NODE_RANGE(ny, sy, fs->dsy)
-				GET_NODE_RANGE(nz, sz, fs->dsz)
+
+				ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				START_STD_LOOP
 				{
@@ -3432,9 +3462,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// Compute the gradient
 				ierr = VecDot(res,psi,&grdt);    CHKERRQ(ierr);
 
-				GET_CELL_RANGE(nx, sx, fs->dsx)
-				GET_CELL_RANGE(ny, sy, fs->dsy)
-				GET_CELL_RANGE(nz, sz, fs->dsz)
+				ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 				if (ik >= sx && ik < sx+nx && jk >= sy && jk < sy+ny && kk >= sz && kk < sz+nz)
 				{
@@ -3498,6 +3526,9 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
         PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
     }
 
+    free(option);
+    free(option_value);
+
     PetscFunctionReturn(0);
 }
 
@@ -3554,6 +3585,8 @@ PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscIn
        	PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
     }
 
+    free(option);
+
     PetscFunctionReturn(0);
 }
 
@@ -3576,7 +3609,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 
     // Create scaling object
     ierr = PetscMemzero (&scal, sizeof(Scaling)); CHKERRQ(ierr);
-	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
     
     // Call material database with modified parameters
     ierr = PetscMemzero(&IOparam->dbm_modified, sizeof(DBMat));   CHKERRQ(ierr);
@@ -3775,6 +3808,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			char *Name;	
 			asprintf(&Name, "delta(%s)", CurName);	// w compute w.r.t. Reference Density
 			strcpy(CurName, Name);	// name
+			free(Name);
 		}
 		if (IOparam->par_log10[k]==1){strcpy(logstr, "log10"); }
 		else{strcpy(logstr, "     "); }
@@ -3877,6 +3911,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 				P = P - IOparam->ReferenceDensity;				// Compute with density difference
 				asprintf(&Name, "delta(%s)", CurName);			// clarify that we compute w.r.t. Reference Density
 				strcpy(CurName, Name);							// name
+				free(Name);
 			}	
 
 			if (IOparam->par_log10[k]==1){strcpy(logstr, "log10"); }
@@ -4043,9 +4078,9 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	ierr = VecGetArray(aop->sty,&sty); CHKERRQ(ierr);
 
 	iterat = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
 	START_STD_LOOP
 	{
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -4163,8 +4198,8 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 						// Store observation
 						sty[ii] = phival * (180/3.14159265359);
 					}
-					else if (!strcmp(IOparam->ObsName[ii],"Exx") | !strcmp(IOparam->ObsName[ii],"Eyy") | !strcmp(IOparam->ObsName[ii],"Ezz") | 
-							 !strcmp(IOparam->ObsName[ii],"Exy") | !strcmp(IOparam->ObsName[ii],"Eyz") | !strcmp(IOparam->ObsName[ii],"Exz") | !strcmp(IOparam->ObsName[ii],"E2nd"))
+					else if (!strcmp(IOparam->ObsName[ii],"Exx") || !strcmp(IOparam->ObsName[ii],"Eyy") || !strcmp(IOparam->ObsName[ii],"Ezz") ||
+							 !strcmp(IOparam->ObsName[ii],"Exy") || !strcmp(IOparam->ObsName[ii],"Eyz") || !strcmp(IOparam->ObsName[ii],"Exz") || !strcmp(IOparam->ObsName[ii],"E2nd"))
 					{		
 
 						// Perform computation for strainrate tensor components 

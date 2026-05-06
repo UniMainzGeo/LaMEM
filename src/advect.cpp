@@ -25,6 +25,7 @@
 #include "cvi.h"
 #include "subgrid.h"
 #include "tools.h"
+#include "interpolate.h"
 #include "phase_transition.h"
 #include "passive_tracer.h"
 /*
@@ -254,6 +255,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 {
 	FDSTAG   *fs;
+	BCCtx    *bc;
 	PetscInt maxPhaseID;
 	char     advect[_str_len_];
 
@@ -262,6 +264,7 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 
 	// initialize
 	fs         = actx->fs;
+	bc         = actx->jr->bc;
 	maxPhaseID = actx->dbm->numPhases-1;
 
 	// get advection type
@@ -276,23 +279,26 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "Advection parameters:\n");
 
 	// print advection scheme
- 	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
+	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
 	if     (actx->advect == ADV_NONE)      PetscPrintf(PETSC_COMM_WORLD, "no advection (no markers)\n");
- 	if     (actx->advect == BASIC_EULER)   PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order (basic implementation)\n");
+	if     (actx->advect == BASIC_EULER)   PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order (basic implementation)\n");
 	else if(actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
 	else if(actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
 
- 	if((fs->dsx.periodic || fs->dsy.periodic || fs->dsz.periodic) && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
- 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic_x,y,z)");
- 	}
-	else{
-		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     : %lld %lld %lld \n",(LLD)fs->dsx.periodic,(LLD)fs->dsy.periodic,(LLD)fs->dsz.periodic);
-   		 
-	 }
+	// set periodic advection flag
+	if(fs->periodic || bc->ExyNumPeriods) { actx->periodic = 1; }
 
- 	// apply default setup in case advection is deactivated
- 	if(actx->advect == ADV_NONE)
+ 	if(actx->periodic && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
+ 	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic, exy_num_periods)");
+ 	}
+	else
+	{
+		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     @\n");
+	}
+
+	// apply default setup in case advection is deactivated
+	if(actx->advect == ADV_NONE)
 	{
 		// free surface must be deactivated
 		if(actx->surf->UseFreeSurf)
@@ -610,9 +616,6 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 	// create send and receive buffers for asynchronous MPI communication
 	ierr = ADVCreateMPIBuff(actx); CHKERRQ(ierr);
 
-	// apply periodic marker advection
-	ierr = ADVApplyPeriodic(actx); CHKERRQ(ierr);
-
 	// communicate markers with neighbor processes
 	ierr = ADVExchangeMark(actx); CHKERRQ(ierr);
 
@@ -836,8 +839,6 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 {
 	// update marker positions from current velocities & time step
-	// WARNING! Forward Euler Explicit algorithm
-	// (need to implement more accurate schemes)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
@@ -850,15 +851,6 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
 	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop;
 
-	AirPhase = -1;
-	Ttop     =  0.0;
-
-	if(actx->surf->UseFreeSurf)
-	{
-		AirPhase = actx->surf->AirPhase;
-		Ttop     = actx->jr->bc->Ttop;
-	}
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
@@ -869,6 +861,15 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	// current time step
 	dt = jr->ts->dt;
 
+	AirPhase = -1;
+	Ttop     =  0.0;
+
+	if(actx->surf->UseFreeSurf)
+	{
+		AirPhase = actx->surf->AirPhase;
+		Ttop     = actx->jr->bc->Ttop;
+	}
+
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
 	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
@@ -878,6 +879,11 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+
+	// initialize velocity in the edges and corners
+	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
+	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
+	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
 
 	// access velocity, pressure & temperature vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
@@ -922,8 +928,8 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		svCell = &jr->svCell[ID];
 
 		// update pressure & temperature variables
-		P->p += lp[sz+K][sy+J][sx+I]  	- 	svCell->svBulk.pn;
-		P->T += lT[sz+K][sy+J][sx+I] 	-	svCell->svBulk.Tn;
+		P->p += lp[sz+K][sy+J][sx+I] - svCell->svBulk.pn;
+		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
 
 		// override temperature of air phase
 		if(AirPhase != -1 && P->phase == AirPhase) P->T = Ttop;
@@ -953,6 +959,7 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 {
 	// count number of markers to be sent to each neighbor domain
 
+	PetscScalar *X;
 	PetscInt     i, lrank, cnt;
 	PetscMPIInt  grank;
 	FDSTAG      *fs;
@@ -968,9 +975,12 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 	// scan markers
 	for(i = 0, cnt = 0; i < actx->nummark; i++)
 	{
-		// get global & local ranks of a marker
-		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
+		// get marker coordinates
+		X = actx->markers[i].X;
 
+		// get global & local ranks of a marker
+		ierr = FDSTAGGetPointRanks(fs, X, &lrank, &grank); CHKERRQ(ierr);
+		
 		if(grank == -1)
 		{
 			// count outflow markers
@@ -1042,14 +1052,22 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 
 	// NOTE! Currently the memory allocation model is fully dynamic.
 	// Maybe it makes sense to introduce static model with reallocation.
-	FDSTAG     *fs;
-	PetscInt    i, cnt, lrank;
-	PetscMPIInt grank;
+	FDSTAG      *fs;
+	PetscScalar *X;
+	PetscScalar  bx, ex, dx;
+	PetscInt     i, cnt, lrank;
+	PetscMPIInt  grank;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
+
+	// get current coordinates of the mesh boundaries
+	ierr = FDSTAGGetGlobalBox(fs, &bx, NULL, NULL, &ex, NULL, NULL); CHKERRQ(ierr);
+
+	// get mesh size
+	dx = ex - bx;
 
 	// compute buffer pointers
 	actx->nsend = getPtrCnt(_num_neighb_, actx->nsendm, actx->ptsend);
@@ -1067,8 +1085,18 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	// copy markers to send buffer, store their indices
 	for(i = 0, cnt = 0; i < actx->nummark; i++)
 	{
+		// get marker coordinates
+		X = actx->markers[i].X;
+
 		// get global & local ranks of a marker
-		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
+		ierr = FDSTAGGetPointRanks(fs, X, &lrank, &grank); CHKERRQ(ierr);
+
+		// correct marker position for periodic case
+		if(actx->periodic)
+		{
+			if(X[0] < bx) X[0] += dx;
+			if(X[0] > ex) X[0] -= dx;
+		}
 
 		if(grank == -1)
 		{
@@ -1087,71 +1115,6 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 
 	// rewind send buffer pointers
 	rewindPtr(_num_neighb_, actx->ptsend);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode ADVApplyPeriodic(AdvCtx *actx)
-{
-	// apply periodic marker advection
-
-	FDSTAG      *fs;
-	PetscScalar *X;
-	PetscInt     i;
-	PetscInt     ptx, pty, ptz;
-    PetscScalar  bx,  by, bz;
-    PetscScalar  ex,  ey, ez;
-    PetscScalar  dx,  dy, dz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// access context
-	fs = actx->fs;
-
-	// get periodic topology flags
-	ptx = fs->dsx.periodic;
-	pty = fs->dsy.periodic;
-	ptz = fs->dsz.periodic;
-
-	// get current coordinates of the mesh boundaries
-    ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
-
-    // get mesh sizes
-    dx = ex - bx;
-    dy = ey - by;
-    dz = ez - bz;
-
-    if(ptx)
-    {
-    	for(i = 0; i < actx->nsend; i++)
-    	{
-    		X = actx->sendbuf[i].X;
-
-    		if(X[0] < bx) X[0] += dx;
-    		if(X[0] > ex) X[0] -= dx;
-    	}
-    }
-    if(pty)
-    {
-    	for(i = 0; i < actx->nsend; i++)
-    	{
-    		X = actx->sendbuf[i].X;
-
-    		if(X[1] < by) X[1] += dy;
-    		if(X[1] > ey) X[1] -= dy;
-    	}
-    }
-    if(ptz)
-    {
-    	for(i = 0; i < actx->nsend; i++)
-    	{
-    		X = actx->sendbuf[i].X;
-
-    		if(X[2] < bz) X[2] += dz;
-    		if(X[2] > ez) X[2] -= dz;
-    	}
-    }
 
 	PetscFunctionReturn(0);
 }

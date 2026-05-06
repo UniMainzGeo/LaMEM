@@ -7,6 +7,7 @@
  **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 //---------------------------------------------------------------------------
 //.....................   PRECONDITIONING MATRICES   ........................
 //---------------------------------------------------------------------------
@@ -14,11 +15,96 @@
 #define __matrix_h__
 //---------------------------------------------------------------------------
 
-struct JacRes;
-struct DOFIndex;
+struct MatData;
 
-// WARNING! Add MatSetNearNullSpace for all matrix types
+//---------------------------------------------------------------------------
 
+PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space = 0);
+
+PetscErrorCode PMatAssemble(MatData *md, PetscScalar pgamma, Mat A);
+
+PetscErrorCode PMatDiagComp(MatData *md, PetscScalar pgamma, Mat M);
+
+//---------------------------------------------------------------------------
+//.........................   MONOLITHIC MATRIX   ...........................
+//---------------------------------------------------------------------------
+
+struct PMatMono
+{
+	MatData    *md;     // matrix assembly context
+	PetscScalar pgamma; // penalty parameter
+	Mat         A;      // monolithic matrix
+	Mat         M;      // penalty terms compensation matrix
+	Vec         w;      // work vector for computing Jacobian action
+};
+
+PetscErrorCode PMatMonoCreate(
+		PMatMono    *P,
+		MatData     *md,
+		PetscScalar  pgamma,
+		PetscInt     set_null_space = 0);
+
+PetscErrorCode PMatMonoAssemble(PMatMono *P);
+
+PetscErrorCode PMatMonoDestroy(PMatMono *P);
+
+PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r);
+
+//---------------------------------------------------------------------------
+//...................   wBFBT PRECONDITIONER MATRIX   .......................
+//---------------------------------------------------------------------------
+
+struct wBFBTData
+{
+	MatData *md;   // matrix assembly context
+	DM       DA_P; // cell-based grid
+	Mat      K;    // Schur complement preconditioner matrix
+	Mat      C;    // diagonal viscosity weighting matrix
+	Vec      w;    // work vector in velocity space
+};
+
+PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md);
+
+PetscErrorCode wBFBTDestroy(wBFBTData *P);
+
+PetscErrorCode wBFBTAssemble(wBFBTData *P);
+
+//---------------------------------------------------------------------------
+//...........................   BLOCK MATRIX   ..............................
+//---------------------------------------------------------------------------
+
+struct PMatBlock
+{
+	MatData    *md;         // matrix assembly context
+	PetscScalar pgamma;     // penalty parameter
+	Mat         Avv, Avp;   // velocity sub-matrices
+	Mat         Apv, App;   // pressure sub-matrices
+	Mat         Bvv;        // clean velocity sub-matix
+	Vec         rv, rp;     // residual blocks
+	Vec         xv, xp;     // solution blocks
+	Vec         wv, wp;     // work vectors
+	Mat         iS;         // inverse viscosity preconditioner
+	wBFBTData  *wbfbt;      // wBFB preconditioner
+};
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode PMatBlockCreate(
+		PMatBlock   *P,
+		MatData     *md,
+		PetscScalar  pgamma,
+		PetscInt     buildwBFBT,
+		PetscInt     buildBvv,
+		PetscInt     set_null_space = 0);
+
+PetscErrorCode PMatBlockAssemble(PMatBlock *P);
+
+PetscErrorCode PMatBlockDestroy(PMatBlock *P);
+
+PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec r);
+
+//---------------------------------------------------------------------------
+// SERVICE FUNCTIONS
 //---------------------------------------------------------------------------
 
 PetscErrorCode MatAIJCreate(PetscInt m, PetscInt n, PetscInt d_nz,
@@ -28,119 +114,10 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P);
 
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag);
 
-PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof);
-
-//---------------------------------------------------------------------------
-// preconditioning matrix storage format
-enum PMatType
-{
-	_MONOLITHIC_,
-	_BLOCK_
-
-} ;
-//---------------------------------------------------------------------------
-
-typedef struct _p_PMat *PMat;
-
-typedef struct _p_PMat
-{
-	JacRes     *jr;     // assembly context
-	void       *data;   // type-specific context
-	PMatType    type;   // matrix type
-	PetscScalar pgamma; // penalty parameter
-
-	// operations
-	PetscErrorCode (*Create)  (PMat pm);
-	PetscErrorCode (*Assemble)(PMat pm);
-	PetscErrorCode (*Destroy) (PMat pm);
-	PetscErrorCode (*Picard)  (Mat J, Vec x, Vec y);
-
-	// get cell stiffness matrix
-	void (*getStiffMat)(
-		PetscScalar,  PetscScalar,
-		PetscScalar*, PetscScalar*,
-		PetscScalar,  PetscScalar, PetscScalar,
-		PetscScalar,  PetscScalar, PetscScalar,
-		PetscScalar,  PetscScalar, PetscScalar);
-
-} p_PMat;
-
-// PMat - pointer to an opaque structure (to be used in declarations)
-// sizeof(p_PMat) - size of the opaque structure
-
-//---------------------------------------------------------------------------
-
-PetscErrorCode PMatSetFromOptions(PMat pm);
-
-PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr);
-
-PetscErrorCode PMatAssemble(PMat pm);
-
-PetscErrorCode PMatDestroy(PMat pm);
-
-//---------------------------------------------------------------------------
-//.........................   MONOLITHIC MATRIX   ...........................
-//---------------------------------------------------------------------------
-
-struct PMatMono
-{
-	Mat A; // monolithic matrix
-	Mat M; // penalty terms compensation matrix
-
-	Vec w; // work vector for computing Jacobian action
-
-};
-
-PetscErrorCode PMatMonoCreate(PMat pm);
-
-PetscErrorCode PMatMonoAssemble(PMat pm);
-
-PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
-
-PetscErrorCode PMatMonoDestroy(PMat pm);
-
-//---------------------------------------------------------------------------
-//...........................   BLOCK MATRIX   ..............................
-//---------------------------------------------------------------------------
-
-struct PMatBlock
-{
-	Mat Avv, Avp; // velocity sub-matrices
-	Mat Apv, App; // pressure sub-matrices
-	Mat iS;       // inverse of Schur complement preconditioner
-
-	Vec rv, rp;   // residual blocks
-	Vec xv, xp;   // solution blocks
-	Vec wv, wp;   // work vectors
-
-};
-
-//---------------------------------------------------------------------------
-
-PetscErrorCode PMatBlockCreate(PMat pm);
-
-PetscErrorCode PMatBlockAssemble(PMat pm);
-
-PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec y);
-
-PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec y);
-
-PetscErrorCode PMatBlockDestroy(PMat pm);
-
-//---------------------------------------------------------------------------
-// SERVICE FUNCTIONS
-//---------------------------------------------------------------------------
+PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md);
 
 // compute cell stiffness matrix with deviatoric projection
-void getStiffMatDevProj(
-	PetscScalar eta, PetscScalar diag,
-	PetscScalar *v,  PetscScalar *cf,
-	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
-
-// compute cell stiffness matrix without deviatoric projection
-void getStiffMatClean(
+void getStiffMat(
 	PetscScalar eta, PetscScalar diag,
 	PetscScalar *v,  PetscScalar *cf,
 	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
@@ -180,9 +157,8 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 // set pressure two-point constraint
 #define SET_PRES_TPC(bc, i, j, k, ind, lim, cf) { cf = 1.0; if(ind == lim && bc[k][j][i] != DBL_MAX) cf = 2.0; }
 
-// set pressure two-point constraint
+// compute scaled shear stress stencil for constrained internal velocity case
 #define RESCALE_STENCIL(rescal, d, df, db, cf, cb, dr) { dr = 0.0; if(rescal) { if(cf == DBL_MAX) { dr += df; } if(cb == DBL_MAX) { dr += db; } } if(dr) { d = dr/2.0; } }
 
 //---------------------------------------------------------------------------
-
 #endif

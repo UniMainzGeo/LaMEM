@@ -135,7 +135,7 @@ struct Scaling
 //---------------------------------------------------------------------------
 // scaling routines
 
-PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput);
+PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput = PETSC_FALSE);
 
 //---------------------------------------------------------------------------
 #endif

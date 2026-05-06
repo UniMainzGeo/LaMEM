@@ -1,0 +1,1159 @@
+--------------------------------------------------------------------------
+Parsing input file : localization_eta_min_reg.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-09 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 50 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-nstep_max 20 # (source: code)
+-options_left # (source: code)
+-ParamFile localization_eta_min_reg.dat # (source: code)
+-snes_atol 1e-07 # (source: code)
+-snes_ksp_ew # (source: code)
+-snes_ksp_ew_alpha 2.0 # (source: code)
+-snes_ksp_ew_gamma 0.9 # (source: code)
+-snes_ksp_ew_rtol0 1e-2 # (source: code)
+-snes_ksp_ew_rtolmax 1e-2 # (source: code)
+-snes_ksp_ew_version 3 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxlambda 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs 1000000000 # (source: code)
+-snes_max_it 100 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 3 # (source: code)
+-snes_picard_rtol 0.1 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Apr 27 2026 - Time: 14:47:50 	    
+     Version : 2.2.1 
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Scaling parameters:
+   Temperature : 1. [C/K] 
+   Length      : 10000. [m] 
+   Viscosity   : 1e+20 [Pa*s] 
+   Stress      : 1e+08 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 0.2 [Myr] 
+   Maximum number of steps      : 20 
+   Time step                    : 0.0015 [Myr] 
+   Minimum time step            : 2e-05 [Myr] 
+   Maximum time step            : 0.005 [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.1 
+   CFLMAX (fixed time steps)    : 0.1 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 4 
+   Processor grid  [nx, ny, nz]         : [4, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 2, 16]
+   Number of cells                      :  2048
+   Number of faces                      :  7328
+   Maximum cell aspect ratio            :  3.00000
+   Lower coordinate bounds [bx, by, bz] : [-20., 0., 0.]
+   Upper coordinate bounds [ex, ey, ez] : [20., 0.625, 15.]
+--------------------------------------------------------------------------
+Softening laws: 
+--------------------------------------------------------------------------
+   SoftLaw [0] : A = 0.25, APS1 = 1e-05, APS2 = 0.01
+Material parameters: 
+
+   Phase ID : 0   
+   (dens)   : rho = 2700. [kg/m^3]  
+   (elast)  : G = 5e+10 [Pa]  Kb = 8e+10 [Pa]  E = 1.24138e+11 [Pa]  nu = 0.241379 [ ]  Vp = 7370.28 [m/s]  Vs = 4303.31 [m/s]  
+   (diff)   : eta = 1e+21 [Pa*s]  Bd = 5e-22 [1/Pa/s]  
+   (plast)  : ch = 5e+07 [Pa]  fr = 30. [deg]  frSoftID = 0 chSoftID = 0 
+
+   Phase ID : 1   
+   (dens)   : rho = 2700. [kg/m^3]  
+   (elast)  : G = 5e+10 [Pa]  Kb = 8e+10 [Pa]  E = 1.24138e+11 [Pa]  nu = 0.241379 [ ]  Vp = 7370.28 [m/s]  Vs = 4303.31 [m/s]  
+   (diff)   : eta = 1e+24 [Pa*s]  Bd = 5e-25 [1/Pa/s]  
+   (plast)  : ch = 5e+07 [Pa]  fr = 30. [deg]  frSoftID = 0 chSoftID = 0 
+
+   Phase ID : 2   
+   (dens)   : rho = 100. [kg/m^3]  
+   (elast)  : G = 5e+10 [Pa]  Kb = 8e+10 [Pa]  E = 1.24138e+11 [Pa]  nu = 0.241379 [ ]  Vp = 38297.1 [m/s]  Vs = 22360.7 [m/s]  
+   (diff)   : eta = 1e+21 [Pa*s]  Bd = 5e-22 [1/Pa/s]  
+   (plast)  : ch = 5e+07 [Pa]  fr = 30. [deg]  frSoftID = 0 chSoftID = 0 
+
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+   Number of x-background strain rate periods : 1 
+   Open top boundary                          @ 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -10.] [m/s^2] 
+   Surface stabilization (FSSA)            :  1. 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Limit pressure at first iteration       @ 
+   Minimum viscosity                       : 2e+20 [Pa*s] 
+   Maximum viscosity                       : 1e+27 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+22 [Pa*s] 
+   Minimum cohesion                        : 1e+06 [Pa] 
+   Minimum friction                        : 5. [deg] 
+   Ultimate yield stress                   : 1e+09 [Pa] 
+   Max. melt fraction (viscosity, density) : 1.    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Periodic marker advection     @
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : uniform
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.00291753 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : test_vep_analytical 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Deviatoric stress tensor                @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate tensor           @ 
+   Deviatoric strain rate second invariant @ 
+   Accumulated Plastic Strain (APS)        @ 
+   Plastic dissipation                     @ 
+   Momentum residual                       @ 
+   Continuity residual                     @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 1 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Picard operator type          : assembled
+   Preconditioner type           : block factorization
+   Block factorization type      : upper 
+   Velocity preconditioner       : user-defined
+   Schur preconditioner          : inverse viscosity
+   Penalty parameter (pgamma)    : 1.000000e+03
+Initializing pressure with lithostatic pressure ... done (0.000475191 sec)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.563165582916e+02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.563165582916e+02
+    1 KSP Residual norm 6.291308396377e+01
+    2 KSP Residual norm 6.172903617147e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.856076663240e-01
+  1 PICARD ||F||/||F0||=3.336368e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.856076663240e-01
+    1 KSP Residual norm 1.101954571053e-02
+    2 KSP Residual norm 2.977368425553e-07
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 4.520827473294e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0769316 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.328894532876e-10 
+      |Div|_2   = 8.007074159752e-10 
+   Momentum: 
+      |mRes|_2  = 4.520827472585e-05 
+--------------------------------------------------------------------------
+Saving output ... done (0.0266929 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.00150000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.931655560434e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.931655560434e+00
+    1 KSP Residual norm 2.873933385246e+00
+    2 KSP Residual norm 8.961637899575e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 2.087054799172e-03
+  1 PICARD ||F||/||F0||=4.231956e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.087054799172e-03
+    1 KSP Residual norm 2.086993596455e-03
+    2 KSP Residual norm 5.838194217371e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 6.823486169381e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0381982 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.712353271449e-09 
+      |Div|_2   = 7.118617563575e-08 
+   Momentum: 
+      |mRes|_2  = 6.823114833574e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00150 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0261597 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00150000 [Myr] 
+Tentative time step : 0.00165000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.332472449578e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.332472449578e+00
+    1 KSP Residual norm 1.312017551002e+00
+    2 KSP Residual norm 3.228766266434e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 4.649715737811e-03
+  1 PICARD ||F||/||F0||=1.993471e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.649715737811e-03
+    1 KSP Residual norm 3.201414125185e-03
+    2 KSP Residual norm 1.329123111909e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 3.916320336346e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.034782 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.128416705088e-09 
+      |Div|_2   = 7.102822741964e-08 
+   Momentum: 
+      |mRes|_2  = 3.915676182703e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00165 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0260836 sec)
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00315000 [Myr] 
+Tentative time step : 0.00181500 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.844107477374e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.844107477374e+00
+    1 KSP Residual norm 6.446381769513e-01
+    2 KSP Residual norm 2.983056160052e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 4.770319782916e-03
+  1 PICARD ||F||/||F0||=1.677264e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.770319782916e-03
+    1 KSP Residual norm 2.609365023246e-03
+    2 KSP Residual norm 2.113249678839e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 4.209519944479e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0354433 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.461595718930e-09 
+      |Div|_2   = 8.842653458317e-08 
+   Momentum: 
+      |mRes|_2  = 4.208591083836e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00182 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0263039 sec)
+--------------------------------------------------------------------------
+================================= STEP 4 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00496500 [Myr] 
+Tentative time step : 0.00199650 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.284026768762e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.284026768762e+00
+    1 KSP Residual norm 4.517317125538e-01
+    2 KSP Residual norm 3.006413582866e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 5.092965354893e-03
+  1 PICARD ||F||/||F0||=1.550829e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.092965354893e-03
+    1 KSP Residual norm 2.200110272926e-03
+    2 KSP Residual norm 3.718455489957e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 5.463392171482e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0357065 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.601016064062e-09 
+      |Div|_2   = 8.475408099544e-08 
+   Momentum: 
+      |mRes|_2  = 5.462734733186e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00200 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0263441 sec)
+--------------------------------------------------------------------------
+================================= STEP 5 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00696150 [Myr] 
+Tentative time step : 0.00219615 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.739348177075e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.739348177075e+00
+    1 KSP Residual norm 3.984385247020e-01
+    2 KSP Residual norm 3.410268673325e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 5.641395442767e-03
+  1 PICARD ||F||/||F0||=1.508657e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.641395442767e-03
+    1 KSP Residual norm 2.082745711956e-03
+    2 KSP Residual norm 3.612290700787e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 6.520652323148e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0352219 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.004893760376e-09 
+      |Div|_2   = 5.198815896815e-08 
+   Momentum: 
+      |mRes|_2  = 6.520445073053e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00220 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0262976 sec)
+--------------------------------------------------------------------------
+================================= STEP 6 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00915765 [Myr] 
+Tentative time step : 0.00241577 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.224003877819e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.224003877819e+00
+    1 KSP Residual norm 3.567654268636e-01
+    2 KSP Residual norm 3.991649556440e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 6.322294492396e-03
+  1 PICARD ||F||/||F0||=1.496754e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.322294492396e-03
+    1 KSP Residual norm 2.274439963593e-03
+    2 KSP Residual norm 3.873555945020e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 7.605456722924e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0347984 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.585471053832e-09 
+      |Div|_2   = 4.199216042334e-08 
+   Momentum: 
+      |mRes|_2  = 7.605340795963e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00242 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0261289 sec)
+--------------------------------------------------------------------------
+================================= STEP 7 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01157342 [Myr] 
+Tentative time step : 0.00265734 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.727323468837e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.727323468837e+00
+    1 KSP Residual norm 3.146765844095e-01
+    2 KSP Residual norm 4.565807774641e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 7.014523434875e-03
+  1 PICARD ||F||/||F0||=1.483826e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.014523434875e-03
+    1 KSP Residual norm 2.560566868656e-03
+    2 KSP Residual norm 4.615176535848e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 8.878363979281e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0349415 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.800530046508e-09 
+      |Div|_2   = 4.339504581486e-08 
+   Momentum: 
+      |mRes|_2  = 8.878257927014e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00266 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0260093 sec)
+--------------------------------------------------------------------------
+================================= STEP 8 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01423076 [Myr] 
+Tentative time step : 0.00292308 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.293675802567e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.293675802567e+00
+    1 KSP Residual norm 2.654104441038e-01
+    2 KSP Residual norm 5.546374511276e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 8.069717119292e-03
+  1 PICARD ||F||/||F0||=1.524407e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.069717119292e-03
+    1 KSP Residual norm 2.882574068483e-03
+    2 KSP Residual norm 5.956774664406e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 1.027328019817e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0348281 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.918799865289e-09 
+      |Div|_2   = 4.464560198873e-08 
+   Momentum: 
+      |mRes|_2  = 1.027318318733e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00292 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0259816 sec)
+--------------------------------------------------------------------------
+================================= STEP 9 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01715383 [Myr] 
+Tentative time step : 0.00321538 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.881411400752e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.881411400752e+00
+    1 KSP Residual norm 2.245526997594e-01
+    2 KSP Residual norm 6.405035359090e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 9.049833224480e-03
+  1 PICARD ||F||/||F0||=1.538718e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 9.049833224480e-03
+    1 KSP Residual norm 3.235149962739e-03
+    2 KSP Residual norm 7.263032843079e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 1.204287513024e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0348832 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.192859403768e-09 
+      |Div|_2   = 4.718079145946e-08 
+   Momentum: 
+      |mRes|_2  = 1.204278270897e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00322 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0260644 sec)
+--------------------------------------------------------------------------
+================================ STEP 10 =================================
+--------------------------------------------------------------------------
+Current time        : 0.02036922 [Myr] 
+Tentative time step : 0.00353692 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.501169304789e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.501169304789e+00
+    1 KSP Residual norm 1.985244268415e-01
+    2 KSP Residual norm 7.058054905976e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 9.911490383915e-03
+  1 PICARD ||F||/||F0||=1.524570e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 9.911490383915e-03
+    1 KSP Residual norm 3.612280652104e-03
+    2 KSP Residual norm 8.773313821368e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 1.412877929514e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0351701 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.487974302850e-09 
+      |Div|_2   = 4.908817948632e-08 
+   Momentum: 
+      |mRes|_2  = 1.412869402037e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00354 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0270392 sec)
+--------------------------------------------------------------------------
+================================ STEP 11 =================================
+--------------------------------------------------------------------------
+Current time        : 0.02390614 [Myr] 
+Tentative time step : 0.00389061 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.207201354057e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.207201354057e+00
+    1 KSP Residual norm 1.630136631872e-01
+    2 KSP Residual norm 8.932820541717e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.181955888396e-02
+  1 PICARD ||F||/||F0||=1.639965e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.181955888396e-02
+    1 KSP Residual norm 3.981544133383e-03
+    2 KSP Residual norm 1.117715169507e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 1.575209015843e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0355872 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.729704863482e-09 
+      |Div|_2   = 5.544793567642e-08 
+   Momentum: 
+      |mRes|_2  = 1.575199256874e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00389 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0265853 sec)
+--------------------------------------------------------------------------
+================================ STEP 12 =================================
+--------------------------------------------------------------------------
+Current time        : 0.02779675 [Myr] 
+Tentative time step : 0.00427968 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 7.931275689441e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.931275689441e+00
+    1 KSP Residual norm 1.384142098227e-01
+    2 KSP Residual norm 1.015553990121e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.319281109472e-02
+  1 PICARD ||F||/||F0||=1.663391e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.319281109472e-02
+    1 KSP Residual norm 4.481993738471e-03
+    2 KSP Residual norm 1.305905282758e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 1.884298420189e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0356601 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.059735591856e-09 
+      |Div|_2   = 5.696709547738e-08 
+   Momentum: 
+      |mRes|_2  = 1.884289808874e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00428 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0260261 sec)
+--------------------------------------------------------------------------
+================================ STEP 13 =================================
+--------------------------------------------------------------------------
+Current time        : 0.03207643 [Myr] 
+Tentative time step : 0.00470764 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.722030725405e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.722030725405e+00
+    1 KSP Residual norm 1.239200649548e-01
+    2 KSP Residual norm 1.181810108041e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.500572362124e-02
+  1 PICARD ||F||/||F0||=1.720439e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.500572362124e-02
+    1 KSP Residual norm 4.968413568872e-03
+    2 KSP Residual norm 1.564512796537e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 2.169548520311e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0351942 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.383655569478e-09 
+      |Div|_2   = 6.119922970750e-08 
+   Momentum: 
+      |mRes|_2  = 2.169539888669e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00471 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0259811 sec)
+--------------------------------------------------------------------------
+================================ STEP 14 =================================
+--------------------------------------------------------------------------
+Current time        : 0.03678407 [Myr] 
+Tentative time step : 0.00500000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 9.421362572395e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 9.421362572395e+00
+    1 KSP Residual norm 2.949105679533e-01
+    2 KSP Residual norm 1.287942343026e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.612331556703e-02
+  1 PICARD ||F||/||F0||=1.711357e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.612331556703e-02
+    1 KSP Residual norm 5.248270046659e-03
+    2 KSP Residual norm 1.727971645536e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 2.395967409201e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 2
+SNES solution time      : 0.0355832 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.323484019623e-09 
+      |Div|_2   = 5.866984195587e-08 
+   Momentum: 
+      |mRes|_2  = 2.395960225974e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00500 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0260237 sec)
+--------------------------------------------------------------------------
+================================ STEP 15 =================================
+--------------------------------------------------------------------------
+Current time        : 0.04178407 [Myr] 
+Tentative time step : 0.00500000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.068315275124e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.068315275124e+00
+    1 KSP Residual norm 1.873757748643e+00
+    2 KSP Residual norm 1.272936874676e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 3.586138747422e+00
+  1 PICARD ||F||/||F0||=4.444718e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.586138747422e+00
+    1 KSP Residual norm 3.666164504462e-01
+    2 KSP Residual norm 3.547064672464e-04
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 8.330216801212e-01
+  2 PICARD ||F||/||F0||=1.032460e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.330216801212e-01
+    1 KSP Residual norm 2.802763781851e-01
+    2 KSP Residual norm 1.953168850748e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 2.087292724467e-02
+  3 MMFD   ||F||/||F0||=2.587024e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.087292724467e-02
+    1 KSP Residual norm 5.895148010268e-03
+    2 KSP Residual norm 2.055890552604e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  4 SNES Function norm 2.055888998821e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 4
+SNES solution time      : 0.0783783 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 7.712253963100e-10 
+      |Div|_2   = 4.421254276758e-09 
+   Momentum: 
+      |mRes|_2  = 2.055884244792e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00500 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0261956 sec)
+--------------------------------------------------------------------------
+================================ STEP 16 =================================
+--------------------------------------------------------------------------
+Current time        : 0.04678407 [Myr] 
+Tentative time step : 0.00500000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 9.973336225261e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 9.973336225261e+00
+    1 KSP Residual norm 6.663192082799e+00
+    2 KSP Residual norm 1.258443861379e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 5.258885201826e-01
+  1 PICARD ||F||/||F0||=5.272945e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.258885201826e-01
+    1 KSP Residual norm 1.878091911206e-01
+    2 KSP Residual norm 2.510839365263e-04
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 3.213286970463e-01
+  2 PICARD ||F||/||F0||=3.221878e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.213286970463e-01
+    1 KSP Residual norm 1.227661835079e-01
+    2 KSP Residual norm 1.644670337345e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 1.908801753026e-01
+  3 MMFD   ||F||/||F0||=1.913905e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.908801753026e-01
+    1 KSP Residual norm 1.668069370226e-01
+    2 KSP Residual norm 2.601447941301e-02
+    3 KSP Residual norm 6.346947682663e-03
+    4 KSP Residual norm 1.476375571138e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
+  4 SNES Function norm 1.476140025584e-03
+  4 MMFD   ||F||/||F0||=1.480086e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.476140025584e-03
+    1 KSP Residual norm 1.175391588341e-03
+    2 KSP Residual norm 6.805761921523e-04
+    3 KSP Residual norm 2.360458334971e-04
+    4 KSP Residual norm 2.184712309346e-04
+    5 KSP Residual norm 5.931447247409e-05
+    6 KSP Residual norm 3.614240551789e-05
+    7 KSP Residual norm 1.656546219729e-05
+    8 KSP Residual norm 7.188831326920e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+  5 SNES Function norm 7.185963083283e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 5
+SNES solution time      : 0.122117 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.048921750875e-09 
+      |Div|_2   = 1.836783764694e-08 
+   Momentum: 
+      |mRes|_2  = 7.185939608489e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00500 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0259813 sec)
+--------------------------------------------------------------------------
+================================ STEP 17 =================================
+--------------------------------------------------------------------------
+Current time        : 0.05178407 [Myr] 
+Tentative time step : 0.00500000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.277009704516e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.277009704516e+00
+    1 KSP Residual norm 2.558748429097e+00
+    2 KSP Residual norm 1.243052123661e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 2.828402226514e+00
+  1 PICARD ||F||/||F0||=3.417179e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.828402226514e+00
+    1 KSP Residual norm 6.784434252116e-01
+    2 KSP Residual norm 3.918744555914e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 6.180770404098e-01
+  2 PICARD ||F||/||F0||=7.467395e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.180770404098e-01
+    1 KSP Residual norm 2.273694215912e-01
+    2 KSP Residual norm 3.086440196623e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 1.820984833480e-01
+  3 MMFD   ||F||/||F0||=2.200052e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.820984833480e-01
+    1 KSP Residual norm 1.455186844916e-01
+    2 KSP Residual norm 3.007474376189e-02
+    3 KSP Residual norm 5.913225761337e-03
+    4 KSP Residual norm 5.912829268680e-03
+    5 KSP Residual norm 1.804026050214e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 5
+  4 SNES Function norm 1.796529330849e-03
+  4 MMFD   ||F||/||F0||=2.170505e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.796529330849e-03
+    1 KSP Residual norm 1.597580153777e-03
+    2 KSP Residual norm 5.545820028190e-04
+    3 KSP Residual norm 3.785537571554e-04
+    4 KSP Residual norm 1.932388553007e-04
+    5 KSP Residual norm 7.053566150013e-05
+    6 KSP Residual norm 4.208090649703e-05
+    7 KSP Residual norm 1.572805528141e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+  5 SNES Function norm 1.572550655742e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 5
+SNES solution time      : 0.119284 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.687840641782e-09 
+      |Div|_2   = 3.314087203410e-08 
+   Momentum: 
+      |mRes|_2  = 1.572547163586e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00500 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0262251 sec)
+--------------------------------------------------------------------------
+================================ STEP 18 =================================
+--------------------------------------------------------------------------
+Current time        : 0.05678407 [Myr] 
+Tentative time step : 0.00500000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 9.447180062402e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 9.447180062402e+00
+    1 KSP Residual norm 5.692846775347e+00
+    2 KSP Residual norm 1.220402754456e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.008558153238e+00
+  1 PICARD ||F||/||F0||=1.067576e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.008558153238e+00
+    1 KSP Residual norm 4.229512603137e-01
+    2 KSP Residual norm 5.497931899526e-04
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 5.958513721227e-01
+  2 PICARD ||F||/||F0||=6.307188e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.958513721227e-01
+    1 KSP Residual norm 2.271491844073e-01
+    2 KSP Residual norm 2.722058605592e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 3.418041316861e-01
+  3 MMFD   ||F||/||F0||=3.618055e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.418041316861e-01
+    1 KSP Residual norm 2.744094441768e-01
+    2 KSP Residual norm 7.511692572030e-02
+    3 KSP Residual norm 2.007923018329e-02
+    4 KSP Residual norm 7.690446152293e-03
+    5 KSP Residual norm 5.917195450640e-03
+    6 KSP Residual norm 2.775235569804e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  4 SNES Function norm 2.692344186678e-03
+  4 MMFD   ||F||/||F0||=2.849892e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.692344186678e-03
+    1 KSP Residual norm 2.216001831105e-03
+    2 KSP Residual norm 1.244279824314e-03
+    3 KSP Residual norm 7.979872561393e-04
+    4 KSP Residual norm 5.197623196494e-04
+    5 KSP Residual norm 2.905139395317e-04
+    6 KSP Residual norm 2.063807928505e-04
+    7 KSP Residual norm 1.141451883716e-04
+    8 KSP Residual norm 5.466845359809e-05
+    9 KSP Residual norm 3.770846922002e-05
+   10 KSP Residual norm 2.110201876873e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+  5 SNES Function norm 2.110750001098e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 5
+SNES solution time      : 0.129171 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.023831793596e-09 
+      |Div|_2   = 1.562086188691e-08 
+   Momentum: 
+      |mRes|_2  = 2.110749423078e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00500 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0261432 sec)
+--------------------------------------------------------------------------
+================================ STEP 19 =================================
+--------------------------------------------------------------------------
+Current time        : 0.06178407 [Myr] 
+Tentative time step : 0.00500000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.769592643986e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.769592643986e+00
+    1 KSP Residual norm 2.741938869265e+00
+    2 KSP Residual norm 1.218592394421e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 2.246348254711e+00
+  1 PICARD ||F||/||F0||=2.561519e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.246348254711e+00
+    1 KSP Residual norm 7.266544387171e-01
+    2 KSP Residual norm 3.878976800346e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 7.269711765149e-01
+  2 PICARD ||F||/||F0||=8.289680e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.269711765149e-01
+    1 KSP Residual norm 2.630605118882e-01
+    2 KSP Residual norm 2.680781660363e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 2.531517730602e-01
+  3 MMFD   ||F||/||F0||=2.886699e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.531517730602e-01
+    1 KSP Residual norm 2.009487523996e-01
+    2 KSP Residual norm 8.011106395305e-02
+    3 KSP Residual norm 1.993000607535e-02
+    4 KSP Residual norm 1.731997999438e-02
+    5 KSP Residual norm 8.182187717925e-03
+    6 KSP Residual norm 4.709831143407e-03
+    7 KSP Residual norm 2.624187540710e-03
+    8 KSP Residual norm 1.115161498945e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+  4 SNES Function norm 1.327122450339e-03
+  4 MMFD   ||F||/||F0||=1.513323e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.327122450339e-03
+    1 KSP Residual norm 1.222776366328e-03
+    2 KSP Residual norm 5.597649283401e-04
+    3 KSP Residual norm 4.143431728745e-04
+    4 KSP Residual norm 2.249099329111e-04
+    5 KSP Residual norm 1.656689173426e-04
+    6 KSP Residual norm 9.687080400962e-05
+    7 KSP Residual norm 6.352845735687e-05
+    8 KSP Residual norm 4.009468399541e-05
+    9 KSP Residual norm 2.418397537292e-05
+   10 KSP Residual norm 1.572434653912e-05
+   11 KSP Residual norm 9.602305184098e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+  5 SNES Function norm 9.602787936899e-06
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 5
+SNES solution time      : 0.121867 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 6.516459445675e-10 
+      |Div|_2   = 5.574612801679e-09 
+   Momentum: 
+      |mRes|_2  = 9.602786318812e-06 
+--------------------------------------------------------------------------
+Actual time step : 0.00500 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0261128 sec)
+--------------------------------------------------------------------------
+================================ STEP 20 =================================
+--------------------------------------------------------------------------
+Current time        : 0.06678407 [Myr] 
+Tentative time step : 0.00500000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.888308089569e+00
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.888308089569e+00
+    1 KSP Residual norm 5.023787098995e+00
+    2 KSP Residual norm 1.212279811207e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.444565979284e+00
+  1 PICARD ||F||/||F0||=1.625243e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.444565979284e+00
+    1 KSP Residual norm 5.366742382959e-01
+    2 KSP Residual norm 9.131656651022e-04
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 8.365173071408e-01
+  2 PICARD ||F||/||F0||=9.411435e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.365173071408e-01
+    1 KSP Residual norm 3.116770562226e-01
+    2 KSP Residual norm 3.929511627197e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 5.156188104905e-01
+  3 MMFD   ||F||/||F0||=5.801091e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.156188104905e-01
+    1 KSP Residual norm 4.504674104215e-01
+    2 KSP Residual norm 1.834261965316e-01
+    3 KSP Residual norm 1.342276558810e-01
+    4 KSP Residual norm 7.405929549083e-02
+    5 KSP Residual norm 4.247881750466e-02
+    6 KSP Residual norm 2.712326571593e-02
+    7 KSP Residual norm 1.780471977292e-02
+    8 KSP Residual norm 1.161788727318e-02
+    9 KSP Residual norm 7.366053032236e-03
+   10 KSP Residual norm 5.599705546670e-03
+   11 KSP Residual norm 3.577263229177e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+  4 SNES Function norm 1.433932031724e-01
+  4 MMFD   ||F||/||F0||=1.613279e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.433932031724e-01
+    1 KSP Residual norm 1.266063944068e-01
+    2 KSP Residual norm 4.460718522774e-02
+    3 KSP Residual norm 3.678116294918e-02
+    4 KSP Residual norm 1.806181691408e-02
+    5 KSP Residual norm 1.127165077637e-02
+    6 KSP Residual norm 7.214310295044e-03
+    7 KSP Residual norm 4.473076997146e-03
+    8 KSP Residual norm 3.024099960152e-03
+    9 KSP Residual norm 1.744877381551e-03
+   10 KSP Residual norm 1.318430814689e-03
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 10
+  5 SNES Function norm 1.348383806355e-03
+  5 MMFD   ||F||/||F0||=1.517031e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.348383806355e-03
+    1 KSP Residual norm 1.107182088816e-03
+    2 KSP Residual norm 7.676036657218e-04
+    3 KSP Residual norm 6.229374019783e-04
+    4 KSP Residual norm 3.585140634983e-04
+    5 KSP Residual norm 2.374473583125e-04
+    6 KSP Residual norm 1.735502797279e-04
+    7 KSP Residual norm 1.020569988007e-04
+    8 KSP Residual norm 5.866082906854e-05
+    9 KSP Residual norm 3.777982887066e-05
+   10 KSP Residual norm 2.500868954562e-05
+   11 KSP Residual norm 1.758878677637e-05
+   12 KSP Residual norm 1.141773247783e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 12
+  6 SNES Function norm 1.141638574510e-05
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 6
+SNES solution time      : 0.181878 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 6.424168378389e-10 
+      |Div|_2   = 4.601269172709e-09 
+   Momentum: 
+      |mRes|_2  = 1.141638481785e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00500 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0260927 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 2.19961 (sec) 
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-bf_vs_type user # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type bf # (source: code)
+-js_ksp_atol 1e-09 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 50 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-06 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-nstep_max 20 # (source: code)
+-options_left # (source: code)
+-ParamFile localization_eta_min_reg.dat # (source: code)
+-snes_atol 1e-07 # (source: code)
+-snes_ksp_ew # (source: code)
+-snes_ksp_ew_alpha 2.0 # (source: code)
+-snes_ksp_ew_gamma 0.9 # (source: code)
+-snes_ksp_ew_rtol0 1e-2 # (source: code)
+-snes_ksp_ew_rtolmax 1e-2 # (source: code)
+-snes_ksp_ew_version 3 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxlambda 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs 1000000000 # (source: code)
+-snes_max_it 100 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 3 # (source: code)
+-snes_picard_rtol 0.1 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-vs_ksp_type preonly # (source: code)
+-vs_pc_factor_mat_solver_type mumps # (source: code)
+-vs_pc_type lu # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: localization_eta_min_reg.dat source: code

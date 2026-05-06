@@ -33,8 +33,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	BCCtx      *bc;
 	PetscScalar gx, gy, gz;
 	char        gwtype [_str_len_];
-	PetscInt    i, numPhases, temp_int;
+	PetscInt    i, numPhases, temp_int, nlmf;
 	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
+	PetscBool   mat_free;
+	char        pc_type[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -49,7 +51,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;
 	ctrl->FSSA         =  1.0;
-	ctrl->FSSA_allVel  =  0;
 	ctrl->AdiabHeat    =  0.0;
 	ctrl->shearHeatEff =  1.0;
 	ctrl->biot         =  1.0;
@@ -72,7 +73,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// read from options
 	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",          ctrl->grav,           3, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1);              CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "FSSA_allVel",     &ctrl->FSSA_allVel,    1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0);            CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0);            CHKERRQ(ierr);
@@ -195,11 +195,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	gy = ctrl->grav[1];
 	gz = ctrl->grav[2];
 
-	if(gx || gy)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Horizontal gravity components are currently not supported (grav)");
-	}
-
 	if(ctrl->FSSA < 0.0 || ctrl->FSSA > 1.0)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Free surface stabilization parameter must be between 0 and 1 (FSSA)");
@@ -238,6 +233,24 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->initGuess && !ctrl->eta_ref)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify reference viscosity for initial guess (init_guess, eta_ref) \n");
+	}
+
+	if(ctrl->rescal)
+	{
+		PetscCall(PetscOptionsGetInt (NULL, NULL, "-gmg_mat_free_levels", &nlmf, NULL));
+		PetscCall(PetscOptionsHasName(NULL, NULL, "-js_mat_free",                &mat_free));
+
+		if(mat_free || nlmf)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Stencil rescaling is incompatible with matrix-free options (rescal, -gmg_mat_free_levels, -js_mat_free) \n");
+		}
+
+		PetscCall(PetscOptionsGetString(NULL, NULL, "-jp_type", pc_type, _str_len_, NULL));
+
+		if(strcmp(pc_type, "mg"))
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Stencil rescaing is only compatible with coupled multigrid solver (rescal, stokes_solver, -jp_type) \n");
+		}
 	}
 
 	// print summary
@@ -326,6 +339,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	FDSTAG         *fs;
 	DOFIndex       *dof;
 	PetscScalar    *svBuff;
+	DMBoundaryType BC_TYPE_X;
 	const PetscInt *lx, *ly;
 	PetscInt        i, n, svBuffSz, numPhases;
 
@@ -336,6 +350,10 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	dof       = &fs->dof;
 	numPhases =  jr->dbm->numPhases;
 	
+	// set boundary type in x direction
+	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
+	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     }
+
 	// If any phase involves phase diagram initialize the data
 	for(i=0; i<jr->dbm->numPhases; i++)
 	{
@@ -353,9 +371,9 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 
 	// coupled solution vectors
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gsol); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(jr->gsol); 									 	CHKERRQ(ierr);
+	ierr = VecSetFromOptions(jr->gsol);                                         CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gres); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(jr->gres); 									 	CHKERRQ(ierr);
+	ierr = VecSetFromOptions(jr->gres);                                         CHKERRQ(ierr);
 	
 	// zero out global vectors
 	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
@@ -387,19 +405,6 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = DMCreateGlobalVector(fs->DA_XY,  &jr->gdxy); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(fs->DA_XZ,  &jr->gdxz); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(fs->DA_YZ,  &jr->gdyz); CHKERRQ(ierr);
-
-	// velocity gradient tensor components   // control structure to create and destroy them
-
-	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvxdx); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvydy); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->dvzdz); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvxdy); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_XY,  &jr->dvydx); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvxdz); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_XZ,  &jr->dvzdx); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvydz); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_YZ,  &jr->dvzdy); CHKERRQ(ierr);
-
 
 	// pressure
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gp);      CHKERRQ(ierr);
@@ -463,8 +468,8 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, NULL); CHKERRQ(ierr);
 
 	// create 2D cell center grid
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
+		BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_BOX,
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
@@ -546,18 +551,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->phi);     CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
-
-	// velocity gradient tensor components   // control structure to create and destroy them
-
-	ierr = VecDestroy(&jr->dvxdx); CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->dvydy); CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->dvzdz); CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->dvxdy); CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->dvydx); CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->dvxdz); CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->dvzdx); CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->dvydz); CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->dvzdy); CHKERRQ(ierr);
 
 	// solution variables
 	ierr = PetscFree(jr->svCell);    CHKERRQ(ierr);
@@ -737,9 +730,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	PetscScalar dx, dy, dz, xx, yy, zz, xy, xz, yz, theta, tr;
 	PetscScalar ***vx,  ***vy,  ***vz;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz;
-	PetscScalar ***vx_x,***vy_y,***vz_z;
-	PetscScalar ***vx_y,***vx_z,***vz_x;
-	PetscScalar ***vy_x,***vy_z,***vz_y;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -759,25 +749,11 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
 
-
-	// access the velocity gradient tensor
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
-
 	//-------------------------------
 	// central points (dxx, dyy, dzz)
 	//-------------------------------
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -795,10 +771,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		xx = (vx[k][j][i+1] - vx[k][j][i])/dx;
 		yy = (vy[k][j+1][i] - vy[k][j][i])/dy;
 		zz = (vz[k+1][j][i] - vz[k][j][i])/dz;
-
-			vx_x[k][j][i] = xx;
-			vy_y[k][j][i] = yy;
-			vz_z[k][j][i] = zz;
 
 		// compute & store volumetric strain rate
 		theta = xx + yy + zz;
@@ -826,9 +798,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	// xy edge points (dxy)
 	//-------------------------------
 	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -844,10 +815,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		dvxdy = (vx[k][j][i] - vx[k][j-1][i])/dy;
 		dvydx = (vy[k][j][i] - vy[k][j][i-1])/dx;
 
-
-			vx_y[k][j][i] = dvxdy;
-			vy_x[k][j][i] = dvydx;
-
 		// compute & store total strain rate
 		xy = 0.5*(dvxdy + dvydx);
 		svEdge->d = xy;
@@ -862,9 +829,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	// xz edge points (dxz)
 	//-------------------------------
 	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -880,12 +846,9 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		dvxdz = (vx[k][j][i] - vx[k-1][j][i])/dz;
 		dvzdx = (vz[k][j][i] - vz[k][j][i-1])/dx;
 
-			vx_z[k][j][i] = dvxdz;
-			vz_x[k][j][i] = dvzdx;
-
 		// compute & store total strain rate
-        xz = 0.5*(dvxdz + dvzdx);
-        svEdge->d = xz;
+		xz = 0.5*(dvxdz + dvzdx);
+		svEdge->d = xz;
 
 		// compute & store effective deviatoric strain rate
 		dxz[k][j][i] = xz + svEdge->h*svDev->I2Gdt;
@@ -897,9 +860,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	// yz edge points (dyz)
 	//-------------------------------
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -912,13 +874,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		dz = SIZE_NODE(k, sz, fs->dsz);
 
 		// compute velocity gradients
-
-
 		dvydz = (vy[k][j][i] - vy[k-1][j][i])/dz;
 		dvzdy = (vz[k][j][i] - vz[k][j-1][i])/dy;
-
-		vy_z[k][j][i] = dvydz;
-		vz_y[k][j][i] = dvzdy;
 
 		// compute & store total strain rate
 		yz = 0.5*(dvydz + dvzdy);
@@ -941,7 +898,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
 
-
 	// communicate boundary strain-rate values
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
@@ -949,29 +905,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	LOCAL_TO_LOCAL(fs->DA_XY,  jr->ldxy);
 	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->ldxz);
 	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->ldyz);
-
-
-	// access the velocity gradient tensor
-
-		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvxdx, &vx_x); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->dvxdy, &vx_y); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->dvxdz, &vx_z); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XY,  jr->dvydx, &vy_x); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvydy, &vy_y); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->dvydz, &vy_z); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_XZ,  jr->dvzdx, &vz_x); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_YZ,  jr->dvzdy, &vz_y); CHKERRQ(ierr);
-		ierr =DMDAVecRestoreArray(fs->DA_CEN, jr->dvzdz, &vz_z); CHKERRQ(ierr);
-
-		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvxdx);
-		LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvxdy);
-		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvxdz);
-		LOCAL_TO_LOCAL(fs->DA_XY,  jr->dvydx);
-		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvydy);
-		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvydz);
-		LOCAL_TO_LOCAL(fs->DA_XZ,  jr->dvzdx);
-		LOCAL_TO_LOCAL(fs->DA_YZ,  jr->dvzdy);
-		LOCAL_TO_LOCAL(fs->DA_CEN, jr->dvzdz);
 
 	PetscFunctionReturn(0);
 }
@@ -1006,9 +939,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	// xy edge points (wz)
 	//-------------------------------
 
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1024,9 +955,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	// xz edge points (wy)
 	//-------------------------------
 
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1042,9 +971,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	// yz edge points (wx)
 	//-------------------------------
 
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1088,7 +1015,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	ConstEqCtx  ctx;
-	PetscInt    iter, fssa_allVel;
+	PetscInt    iter;
+	PetscInt    periodic;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
@@ -1121,11 +1049,12 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz  = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	fssa   			=  	jr->ctrl.FSSA; 			// Density gradient penalty parameter
-	fssa_allVel		=	jr->ctrl.FSSA_allVel; 	// Use all velocity components for FSSA or only Vz? 
+	fssa = jr->ctrl.FSSA; // Density gradient penalty parameter
+	grav = jr->ctrl.grav; // gravity acceleration
+	dt   = jr->ts->dt;    // time step
 
-	grav   			=  	jr->ctrl.grav; // gravity acceleration
-	dt     			=  	jr->ts->dt;    // time step
+	// set periodic flag
+	periodic = fs->periodic;
 
 	// setup constitutive equation evaluation context parameters
 	ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
@@ -1160,10 +1089,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// central points
 	//-------------------------------
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
 
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1175,23 +1102,23 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//=================
 		if (jr->ctrl.actDike)
 		{
+			y_c = COORD_CELL(j,sy,fs->dsy);
 
-		  y_c = COORD_CELL(j,sy,fs->dsy);
-		  
-		  dikeRHS = 0.0;
-		  // function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
-		  ierr = GetDikeContr(&ctx, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy);  CHKERRQ(ierr);
-		  
-		  // remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
-		  dxx[k][j][i] -= (2.0/3.0) * dikeRHS;
-		  dyy[k][j][i] -= - (1.0/3.0) * dikeRHS;
-		  dzz[k][j][i] -= - (1.0/3.0) * dikeRHS;
+			dikeRHS = 0.0;
+
+			// function that computes dikeRHS (additional divergence due to dike) depending on the phase ratio
+			ierr = GetDikeContr(&ctx, svCell->phRat, jr->surf->AirPhase, dikeRHS, y_c, j-sy);  CHKERRQ(ierr);
+
+			// remove dike contribution to strain rate from deviatoric strain rate (for xx, yy and zz components) prior to computing momentum equation
+			dxx[k][j][i] -=  (2.0/3.0) * dikeRHS;
+			dyy[k][j][i] -= -(1.0/3.0) * dikeRHS;
+			dzz[k][j][i] -= -(1.0/3.0) * dikeRHS;
 		}
 
 		// access strain rates
 		XX = dxx[k][j][i];
-                YY = dyy[k][j][i];
-                ZZ = dzz[k][j][i];
+		YY = dyy[k][j][i];
+		ZZ = dzz[k][j][i];
 		
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];
@@ -1270,17 +1197,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// momentum
-		if (fssa_allVel){
-			fx[k][j][i] -= (sxx + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1] + vy[k][j][i+1] + vz[k][j][i+1])*tx)/fdx - gx/2.0;
-			fy[k][j][i] -= (syy + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vx[k][j+1][i] + vy[k][j+1][i] + vz[k][j+1][i])*ty)/fdy - gy/2.0;
-			fz[k][j][i] -= (szz + (vx[k][j][i] + vy[k][j][i] + vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vx[k+1][j][i] + vy[k+1][j][i] + vz[k+1][j][i])*tz)/fdz - gz/2.0;
-		}
-		else{
-			fx[k][j][i] -= (sxx + (vx[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1])*tx)/fdx - gx/2.0;
-			fy[k][j][i] -= (syy + (vy[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vy[k][j+1][i])*ty)/fdy - gy/2.0;
-			fz[k][j][i] -= (szz + (vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vz[k+1][j][i])*tz)/fdz - gz/2.0;
-		}
-
+		fx[k][j][i] -= (sxx + (vx[k][j][i])*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + (vx[k][j][i+1])*tx)/fdx - gx/2.0;
+		fy[k][j][i] -= (syy + (vy[k][j][i])*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + (vy[k][j+1][i])*ty)/fdy - gy/2.0;
+		fz[k][j][i] -= (szz + (vz[k][j][i])*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + (vz[k+1][j][i])*tz)/fdz - gz/2.0;
 
 		// pressure boundary constraints
 		if(i == 0   && bcp[k][j][i-1] != DBL_MAX) fx[k][j][i]   += -p[k][j][i-1]/bdx;
@@ -1300,9 +1219,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// xy edge points
 	//-------------------------------
 	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1314,10 +1232,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//=================
 
 		// check index bounds
-		I1 = i;   if(I1 == mx) I1--;
-		I2 = i-1; if(I2 == -1) I2++;
-		J1 = j;   if(J1 == my) J1--;
-		J2 = j-1; if(J2 == -1) J2++;
+		I1 = i;   if(!periodic && I1 == mx) I1--;
+		I2 = i-1; if(!periodic && I2 == -1) I2++;
+		J1 = j;   if(             J1 == my) J1--;
+		J2 = j-1; if(             J2 == -1) J2++;
 
 		// access strain rates
 		XY = dxy[k][j][i];
@@ -1409,9 +1327,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// xz edge points
 	//-------------------------------
 	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1422,11 +1339,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// SECOND INVARIANT
 		//=================
 
-		// check index bounds
-		I1 = i;   if(I1 == mx) I1--;
-		I2 = i-1; if(I2 == -1) I2++;
-		K1 = k;   if(K1 == mz) K1--;
-		K2 = k-1; if(K2 == -1) K2++;
+		I1 = i;   if(!periodic && I1 == mx) I1--;
+		I2 = i-1; if(!periodic && I2 == -1) I2++;
+		K1 = k;   if(             K1 == mz) K1--;
+		K2 = k-1; if(             K2 == -1) K2++;
 
 		// access strain rates
 		XZ = dxz[k][j][i];
@@ -1518,9 +1434,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// yz edge points
 	//-------------------------------
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -1674,8 +1589,9 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 
 	FDSTAG           *fs;
 	BCCtx            *bc;
+	PetscInt          periodic;
 	PetscInt          mcx, mcy, mcz;
-	PetscInt          I, J, K, fi, fj, fk;
+	PetscInt          I, J, K;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar       ***bcvx,  ***bcvy,  ***bcvz;
 	PetscScalar       ***lvx, ***lvy, ***lvz;
@@ -1698,6 +1614,9 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	ierr = VecGetArray    (jr->gvy, &vy);  CHKERRQ(ierr);
 	ierr = VecGetArray    (jr->gvz, &vz);  CHKERRQ(ierr);
 	ierr = VecGetArrayRead(x,       &sol); CHKERRQ(ierr);
+
+	// set periodic flag
+	periodic = fs->periodic;
 
 	// copy vectors component-wise
 	iter = sol;
@@ -1738,7 +1657,6 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	//---------
 	// X points
 	//---------
-
 	GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
 	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
 	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
@@ -1747,21 +1665,13 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	{
 		pmdof = lvx[k][j][i];
 
-		J = j; fj = 0;
-		K = k; fk = 0;
+		J = j;
+		K = k;
 
-		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
-		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
-
-		if(fj && fk) SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
-
-        /* 
-            Note: a special case occurs for 2D setups, in which nel_y==1
-        */
-       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fj && fk )  SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
+		if(j == 0)   { J = j-1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
+		if(j == mcy) { J = j+1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
+		if(k == 0)   { K = k-1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
+		if(k == mcz) { K = k+1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
 	}
 	END_STD_LOOP
 
@@ -1776,19 +1686,15 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	{
 		pmdof = lvy[k][j][i];
 
-		I = i; fi = 0;
-		K = k; fk = 0;
+		I = i;
+		K = k;
 
-		if(i == 0)   { fi = 1; I = i-1; SET_TPC(bcvy, lvy, k, j, I, pmdof) }
-		if(i == mcx) { fi = 1; I = i+1; SET_TPC(bcvy, lvy, k, j, I, pmdof) }
-		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
-
-		if(fi && fk) SET_EDGE_CORNER(n, lvy, K, j, I, k, j, i, pmdof)
-
+		if(i == 0)   { I = i-1; if(!periodic) { SET_TPC(bcvy, lvy, k, j, I, pmdof) } }
+		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvy, lvy, k, j, I, pmdof) } }
+		if(k == 0)   { K = k-1;                 SET_TPC(bcvy, lvy, K, j, i, pmdof) }
+		if(k == mcz) { K = k+1;                 SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 	}
 	END_STD_LOOP
-
 
 	//---------
 	// Z points
@@ -1801,20 +1707,13 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 	{
 		pmdof = lvz[k][j][i];
 
-		I = i; fi = 0;
-		J = j; fj = 0;
+		I = i;
+		J = j;
 
-		if(i == 0)   { fi = 1; I = i-1; SET_TPC(bcvz, lvz, k, j, I, pmdof) }
-		if(i == mcx) { fi = 1; I = i+1; SET_TPC(bcvz, lvz, k, j, I, pmdof) }
-		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
-
-		/* 
-            Note: a special case occurs for 2D setups with nel_y==1
-        */
-       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fi && fj) SET_EDGE_CORNER(n, lvz, k, J, I, k, j, i, pmdof)
-
+		if(i == 0 )  { I = i-1; if(!periodic) { SET_TPC(bcvz, lvz, k, j, I, pmdof) } }
+		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvz, lvz, k, j, I, pmdof) } }
+		if(j == 0)   { J = j-1;                 SET_TPC(bcvz, lvz, k, J, i, pmdof) }
+		if(j == mcy) { J = j+1;                 SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 	}
 	END_STD_LOOP
 
@@ -1835,8 +1734,8 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 
 	FDSTAG            *fs;
 	BCCtx             *bc;
+	PetscInt          periodic;
 	PetscInt          mcx, mcy, mcz;
-	PetscInt          I, J, K, fi, fj, fk;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar       ***bcp;
 	PetscScalar       ***lp;
@@ -1848,6 +1747,9 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 
 	fs  =  jr->fs;
 	bc  =  jr->bc;
+
+	// set periodic flag
+	periodic = fs->periodic;
 
 	// initialize maximal index in all directions
 	mcx = fs->dsx.tcels - 1;
@@ -1891,35 +1793,12 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 	{
 		pmdof = lp[k][j][i];
 
-		I = i; fi = 0;
-		J = j; fj = 0;
-		K = k; fk = 0;
-
-		if(i == 0)   { fi = 1; I = i-1; SET_TPC(bcp, lp, k, j, I, pmdof) }
-		if(i == mcx) { fi = 1; I = i+1; SET_TPC(bcp, lp, k, j, I, pmdof) }
-		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcp, lp, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcp, lp, k, J, i, pmdof) }
-		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcp, lp, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcp, lp, K, j, i, pmdof) }
-
-		if(fi && fj)       SET_EDGE_CORNER(n, lp, k, J, I, k, j, i, pmdof)
-		if(fi && fk)       SET_EDGE_CORNER(n, lp, K, j, I, k, j, i, pmdof)
-		if(fj && fk)       SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk) SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
-
-		 /* 
-            Note: a special case occurs for 2D setups with nel_y==1
-            In that we need to split the setting of edges & corners in two parts 
-            to ensure that both front & back side are accounted for.
-        */
-       	J = j; fj = 0;  if(j == 0)   { fj = 1; J = j-1; }
-        if(fi && fj )           SET_EDGE_CORNER(n, lp, k, J, I, k, j, i, pmdof)
-        if(fj && fk )           SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk   )   SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
-
-
-
-
+		if(i == 0)   { if(!periodic) { SET_TPC(bcp, lp, k,   j,   i-1, pmdof) } }
+		if(i == mcx) { if(!periodic) { SET_TPC(bcp, lp, k,   j,   i+1, pmdof) } }
+		if(j == 0)   {                 SET_TPC(bcp, lp, k,   j-1, i,   pmdof) }
+		if(j == mcy) {                 SET_TPC(bcp, lp, k,   j+1, i,   pmdof) }
+		if(k == 0)   {                 SET_TPC(bcp, lp, k-1, j,   i,   pmdof) }
+		if(k == mcz) {                 SET_TPC(bcp, lp, k+1, j,   i,   pmdof) }
 	}
 	END_STD_LOOP
 
@@ -1931,7 +1810,6 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 }
 //---------------------------------------------------------------------------
 PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts)
-
 {
 	FDSTAG            *fs;
 	
@@ -2263,17 +2141,17 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f)
 	fs  = jr->fs;
 
 	// access vectors
-	ierr = VecGetArray(jr->gc,  &c);  CHKERRQ(ierr);
-	ierr = VecGetArray(f, &res);      CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gc, &c);   CHKERRQ(ierr);
+	ierr = VecGetArray(f,      &res); CHKERRQ(ierr);
 
 	// copy vectors component-wise
 	iter = res + fs->dof.lnv;
 
-	ierr = PetscMemcpy(c,  iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr = PetscMemcpy(c, iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
 
 	// restore access
-	ierr = VecRestoreArray(jr->gc,   &c);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(f, &res);       CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gc, &c);   CHKERRQ(ierr);
+	ierr = VecRestoreArray(f,      &res); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -2309,10 +2187,9 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	if(jr->ctrl.actTemp)
 	{
-		ierr = JacResGetTempRes(jr,jr->ts->dt);         CHKERRQ(ierr);
-		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
-		ierr = VecNorm(jr->lT, NORM_2, &T2); CHKERRQ(ierr);
-		
+		ierr = JacResGetTempRes(jr,jr->ts->dt); CHKERRQ(ierr);
+		ierr = VecNorm(jr->ge, NORM_2, &e2);    CHKERRQ(ierr);
+		ierr = VecNorm(jr->lT, NORM_2, &T2);    CHKERRQ(ierr);
 	}
 
 	// print
@@ -2323,7 +2200,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "   Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "      |mRes|_2  = %12.12e \n", f2);
 
-	if (jr->ctrl.printNorms)
+	if(jr->ctrl.printNorms)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Velocity: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "      |Vx|_2    = %12.12e \n", vx2);

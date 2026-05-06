@@ -115,13 +115,7 @@
 	min_cohes       = 1e6            # cohesion lower bound  [Pa]
 	min_fric        = 1.0            # friction lower bound  [degree]
 	tau_ult         = 1e9            # ultimate yield stress [Pa]
-	
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	multigrid	# solver [direct or multigrid]
-#	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
-	
+
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -201,33 +195,25 @@
                 G               =       5e10
         <MaterialEnd>
 
+
+	
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
 
-        # LINEAR & NONLINEAR SOLVER OPTIONS
-#        -snes_ksp_ew
-#        -snes_ksp_ew_rtolmax 1e-4
-        -snes_rtol 1e-4
-        -snes_atol 1e-4            
-        -snes_max_it 50
+	nonlinear_tolerances = 1e-4 1e-4  50   # rtol, atol, maxit
+	linear_tolerances    = 1e-4 1e-8  20   # rtol, atol, maxit
+	picard_to_newton     = 1e-4 5 1.2 20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	num_mg_levels        = 3
+	stokes_solver        = coupled_mg
+	smoother_type        = light           # richardson+jacobi
+	coarse_solver        = direct
+	direct_solver_type   = mumps
 
-        -snes_PicardSwitchToNewton_rtol 1e-4   # relative tolerance to switch to Newton (1e-2) 1e-4
-        -snes_NewtonSwitchToPicard_it   20     # number of Newton iterations after which we switch back to Picard
-
-        -js_ksp_type fgmres
-        -js_ksp_monitor                                 # display how the inner iterations converge
-        -js_ksp_max_it 20                               # inner
-        -js_ksp_atol 1e-8
-        -js_ksp_rtol 1e-4
-
-        -snes_linesearch_type l2
-        -snes_linesearch_monitor
-        -snes_linesearch_maxstep 10
-
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================
 

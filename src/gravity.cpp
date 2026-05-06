@@ -18,7 +18,7 @@ PetscErrorCode GRVSurveyCreate(GravitySurvey *survey)
 {
 	PetscFunctionBeginUser;
 
-	if(survey) survey = NULL;
+	UNUSED(survey);
 
 /*
 	PetscInt            n, i, j;

@@ -95,13 +95,6 @@ unit_stress      = 1e9
 	T_ref          = 20             # reference temperature
 	
 #===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 			=	direct 		# solver [direct or multigrid]
-	DirectSolver 		=	mumps		# mumps/superlu_dist/pastix	
-	DirectPenalty 		=	1e4			# penalty parameter [employed if we use a direct solver]
-
-#===============================================================================
 # Model setup & advection
 #===============================================================================
 
@@ -266,42 +259,22 @@ unit_stress      = 1e9
 # End of defining material properties for all phases ----------------------------------------
 
 
+#===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances    =  1e-5 5e-4 50       # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	linear_tolerances       =  1e-5 1e-6 30       # rtol, atol, maxit(-1 = automatic setting, only for atol)
+	picard_to_newton        =  1e-7  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	
+	monitor_solvers    = 1
+	stokes_solver      = block_direct
+	direct_solver_type = mumps
+
+<SolverOptionsEnd>
 
 #===============================================================================
-# PETSc options
-#===============================================================================
-<PetscOptionsStart>
-	
-# SNES
-	
-	-snes_npicard 5
-	-snes_max_it 50
-	-snes_rtol 1e-5
-	-snes_atol 5e-4
-	-snes_PicardSwitchToNewton_rtol 1e-7
-	-snes_NewtonSwitchToPicard_it   5       # number of Newton iterations after which we switch back to Picard
-#	-snes_monitor
-#	-snes_linesearch_monitor	
-
-# Jacobian solver
-	-js_ksp_type fgmres 
-	-js_ksp_monitor	
-	-js_ksp_max_it 30
-	-js_ksp_rtol 1e-5
-	-js_ksp_atol 1e-6
-#	-js_ksp_monitor_true_residual
-
-#	-its_ksp_monitor
-#	-ts_ksp_monitor
-
-# Multigrid
-#	-gmg_pc_mg_galerkin
-#	-gmg_pc_mg_type multiplicative
-#	-gmg_pc_mg_cycle_type v
-	
-
-<PetscOptionsEnd>
-
-
 
 

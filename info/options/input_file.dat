@@ -1,0 +1,900 @@
+# PLEASE DON'T USE TABS ANYWERE EXCEPT THE FIRST CHARACTERS IN A ROW (LOOKS UGLY)
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+    units = geo
+
+    unit_temperature = 1.0
+    unit_length      = 1e3
+    unit_viscosity   = 1e18
+    unit_stress      = 1e6
+    unit_density     = 1e3
+
+# units = none - input & output is non-dimensional
+# units = si   - input & output is in SI units
+# units = geo  - input & output is in SI units, except:
+#
+#    time        - Myr
+#    length      - km
+#    velocity    - cm/yr
+#    stress      - MPa
+#    heat_flux   - mW/m^2
+#    Temperature - C
+#
+# NOTE:
+#
+# * characteristic values must ALWAYS be provided in SI units
+# * material parameters must ALWAYS be provided in SI units
+# * in all dimensional cases (si & geo) angles are measured in degrees
+#   angular velocities are measured in degrees per unit time
+# * number of primary units is one more than usual
+#   Newton's 2nd law can be violated for quasi-static problems
+#   If density is not provided, Newton's 2nd law is enforced
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+    time_end        = 1.0            # simulation end time
+    dt              = 0.05           # time step
+    dt_min          = 0.01           # minimum time step (declare divergence if lower value is attempted)
+    dt_max          = 0.2            # maximum time step
+    dt_out          = 0.2            # output step (output at least at fixed time intervals)
+    inc_dt          = 0.1            # time step increment per time step (fraction of unit)
+    num_dt_periods  = 4              # number of time stepping periods
+    time_dt_periods = 0 20 50 60 100 # timestamps where timestep should be fixed (first entry has to 0)
+    step_dt_periods = 1 5 5 2 3      # target timesteps ar timestamps above 
+    CFL             = 0.5            # CFL (Courant-Friedrichs-Lewy) criterion
+    CFLMAX          = 0.8            # CFL criterion for elasticity
+    nstep_max       = 50             # maximum allowed number of steps (lower bound: time_end/dt_max)
+    nstep_out       = -1             # save output every n steps. Set this to -1 to deactivate saving output
+    nstep_ini       = 5              # save output for n initial steps
+    nstep_rdb       = 5              # save restart database every n steps
+    time_tol        = 1e-8           # relative tolerance for time comparisons
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# relative geometry tolerance for grid manipuations (default 1e-6)
+
+    gtol = 1e-6
+
+# Number of processes
+# If not provided, calculated internally
+# If all values are provided they must be a factorization of number MPI processes
+# Use this if you really know what you are doing (this is fine tuning)
+
+    cpu_x = 1
+    cpu_y = 1
+    cpu_z = 1
+
+# Number of segments (default is 1)
+# Use this if you have variable grid spacing with more than one segment
+
+    nseg_x = 1
+    nseg_y = 1
+    nseg_z = 1
+
+# Number of cells for all segments
+
+    nel_x = 32
+    nel_y = 32
+    nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+    coord_x = 0.0 1.0
+    coord_y = 0.0 1.0
+    coord_z = 0.0 1.0
+
+# Bias ratios for all segments (default is 1.0 - uniform grid)
+# Bias ratio is the size in the END divided by the size in the BEGINNING
+# It is LESS than unit for DECREASING cell size
+# It is MORE than unit for INCREASING cell size
+
+    bias_x = 1.0
+    bias_y = 1.0
+    bias_z = 1.0
+    
+# WARNING! Biased meshes perform terrible on practice. Therefore bias option is deprecated.
+# An attempt to specify a non-unit bias ratio will generate an error. 
+    
+
+# Periodic grid topology flag (affects all solvers)
+# WARNING! only implemented for x-direction
+# WARNING! automatically activates periodic advection in x direction
+	
+	periodic = 1
+	
+# EXAMPLE:
+# segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)
+# segment 2: [0.7 0.8), 4 cells,  uniform spacing
+# segment 3: [0.8 1.0], 2 cells,  increasing spacing  (sz.end/ sz.beg = 3.0)
+
+#   nseg_x  = 3
+#   nel_x   = 10 4 2
+#   coord_x = 0.0 0.7 0.8 1.0
+#   bias_x  = 0.3 1.0 3.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+    surf_use           = 1                # free surface activation flag
+    surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+    surf_level         = 0.5              # initial level
+    surf_air_phase     = 0                # phase ID of sticky air layer
+    surf_max_angle     = 45.0             # maximum angle with horizon (smoothed if larger)
+    surf_topo_file     = ./input/topo.dat # initial topography file (redundant)
+    
+    erosion_model      = 2                # erosion model [0-none (default), 1-infinitely fast, 2-prescribed rate with given level, 3-spatially limited]
+    er_num_phases      = 3                # number of erosion phases
+    er_time_delims     = 0.5   2.5        # erosion time delimiters (one less than number)
+    er_rates           = 0.2 0.1 0.2      # constant erosion rates in different time periods
+    er_levels          = 1   2   1        # levels above which we apply constant erosion rates in different time periods
+    er_x_min           = -10 -10 -10      # minimum x-coordinates for erosion (model 3 only, one per phase)
+    er_x_max           = 10  10  10       # maximum x-coordinates for erosion (model 3 only, one per phase)
+
+    sediment_model     = 1                # sedimentation model [0-none (dafault), 1-prescribed rate with given level, 2-cont. margin]
+    sed_num_layers     = 3                # number of sediment layers
+    sed_time_delims    = 0.5   2.5        # sediment layers time delimiters (one less than number)
+    sed_rates          = 0.3 0.2 0.3      # sediment rates in different time periods
+    sed_levels         = -5  -2  -2       # levels below which we apply constant sediment rates in different time periods 
+    sed_phases         = 1   2   3        # sediment layers phase numbers in different time periods
+
+    marginO            = 0.0 0.0          # lateral coordinates of continental margin - origin
+    marginE            = 10.0 10.0        # lateral coordinates of continental margin - 2nd point
+    hUp                = 1.5              # up dip thickness of sediment cover (onshore)
+    hDown              = 0.1              # down dip thickness of sediment cover (off shore)
+    dTrans             = 1.0              # half of transition zone
+
+    # Topographic diffusion (runs after erosion/sedimentation each time step)
+    topo_diff          = 0                # topographic diffusion flag [0-none (default), 1-active]
+  # topo_diffusivity   = 1e-5            # topographic diffusivity [m^2/s] (required when topo_diff=1)
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default conditions on all the boundaries:
+# * (mechanical): free-slip with zero normal velocity
+# * (thermal)   : zero heat flux
+
+# Background strain rate parameters
+
+    exx_num_periods  = 3                 # number intervals of constant strain rate (x-axis)
+    exx_time_delims  = 0.1 5.0           # time delimiters (one less than number of intervals, not required for one interval)
+    exx_strain_rates = 1e-15 2e-15 1e-15 # strain rates for each interval
+
+    eyy_num_periods  = 2                 # ... same for y-axis
+    eyy_time_delims  = 1.0
+    eyy_strain_rates = 1e-15 2e-15
+
+    exy_num_periods  = 2                 # same for simple shear components in x/y direction
+    exy_time_delims  = 1.0
+    exy_strain_rates = 1e-15 2e-15
+
+# WARNING! exy strain rate activates periodic advection in x direction
+
+    bg_ref_point     = 0.0 0.0 0.0       # background strain rate reference point (fixed)
+
+# Bezier blocks (single entry per block)
+# path_dim = 2 (default): 2D path in x-y plane, path contains (x,y) coordinates
+# path_dim = 3: 3D path, path contains (x,y,z) coordinates
+    <BCBlockStart>
+        npath    =  2                                 # Number of path points of Bezier curve (path-points only!)
+        path_dim =  2                                 # Path dimension: 2 = x-y plane (default), 3 = x-y-z
+        theta    =  0.0 5.0                           # Orientation angles at path points (counter-clockwise positive)
+        time     =  1.0 2.0                           # Times at path points
+        path     =  0.0 0.0 0.0 10.0                  # Path points x-y coordinates (or x-y-z if path_dim=3)
+        npoly    =  4                                 # Number of polygon vertices
+        poly     =  0.0 0.0 0.1 0.0 0.1 0.1 0.0 0.1   # Polygon x-y coordinates at initial time
+        bot      =  0.0                               # Polygon bottom coordinate
+        top      =  0.1                               # Polygon top coordinate
+    <BCBlockEnd>
+
+# Internal velocity box(es)
+    <VelBoxStart>
+    	cenX     =   1.0  # X-coordinate of center of box
+    	cenY     =   1.0  # Y-coordinate of center of box
+    	cenZ     =   1.0  # Z-coordinate of center of box
+   		widthX   =   1.0  # Width of box in x-direction
+    	widthY   =   2.0  # Width of box in y-direction
+    	widthZ   =   0.1  # Width of box in z-direction
+    	vx       =   1.0  # Vx velocity of box (default is unconstrained)
+    	vy       =   0.0  # Vy velocity of box (default is unconstrained)
+    	vz       =   0.0  # Vz velocity of box (default is unconstrained) 
+    	advect   =   0    # box advection flag
+    <VelBoxEnd>
+    
+# Internal velocity cylinder(s)
+    <VelCylinderStart>
+        baseX    =   1.0      # X-coordinate of base of cylinder
+        baseY    =   1.0      # Y-coordinate of base of cylinder
+        baseZ    =   1.0      # Z-coordinate of base of cylinder
+        capX     =   1.0      # X-coordinate of cap of cylinder
+        capY     =   1.0      # Y-coordinate of cap of cylinder
+        capZ     =   1.0      # Z-coordinate of cap of cylinder
+        radius   =   1.0      # radius of cylinder
+        vx       =   1.0      # Vx velocity of cylinder (default is unconstrained)
+        vy       =   0.0      # Vy velocity of cylinder (default is unconstrained)
+        vz       =   0.0      # Vz velocity of cylinder (default is unconstrained) 
+        advect   =   0        # cylinder advection flag
+        vmag     =   1.0      # magnitude of velocity applied along the cylinder's axis of orientation
+        type     =   uniform  # velocity profile [uniform or parabolic]
+    <VelCylinderEnd>
+    
+# Inflow velocity boundary condition
+
+    bvel_face                 =         Left                         # Face identifier  (Left; Right; Front; Back; CompensatingInflow)
+    bvel_face_out             =         1                            # Velocity on opposite side: -1 for inverted velocity; 0 for no velocity; 1 for the same direction of velocity
+    bvel_bot                  =        -20.0                         # bottom coordinate of inflow window
+    bvel_top                  =        -10.0                         # top coordinate of inflow window
+	velin_num_periods         =         3                            # Number of periods when velocity changes (Optional)
+    velin_time_delims         =            2.0     5.0               # Change velocity at 2 and 5 Myrs (one less than number of intervals, not required for one interval) (Optional)
+    bvel_velin                =         1.0    0.0    -1.0           # inflow velocity for each time interval(Multiple values required if  velin_num_periods>1)
+    bvel_velout               =         0.0                          # outflow velocity (if not specified, computed from mass balance)
+    bvel_relax_d              =         100                          # vert.distance from bvel_bot and bvel_top over which velocity is reduced linearly
+    bvel_velbot               =         0   	                     # bottom inflow velocity for use with bvel_face=CompensatingInflow
+    bvel_veltop               =         0                            # top inflow velocity for use with bvel_face=CompensatingInflow
+    bvel_temperature_inflow   =        Fixed_thermal_age             # Thermal age of the plate is constant
+                              =        Constant_T_inflow             # Temperature of the inflow material is constant everywhere
+    bvel_thermal_age          =        10                            # In dimensional unit. If the user specify this value, he needs to specify the temperature of the mantle and top as well
+    bvel_temperature_mantle   =        1400                          # In dimensional unit. Temperature of the mantle
+    bvel_temperature_top      =        20                            # In dimensional unit. temperature of the top
+    bvel_temperature_constant =        100                           # Constant temperature inflow. 
+    bvel_num_phase            =        3                             # Imposes a stratigraphy of phase injected in the inflow boundary [if undefined, it uses the phase close to the boundary]
+    bvel_phase                =        3 2 1 0                       # phase number of inflow material [if undefined, it uses the phase close to the boundary] from bottom to top
+    bvel_phase_interval       =       -120 -100 -10 0                # Depth interval of injection of the phase (the interval is defined by num_phase+1 coordinates)
+                                       
+# Free surface top boundary flag
+
+    open_top_bound = 1
+
+# Permeable lower boundary flag
+
+    open_bot_bound = 0
+    permeable_phase_inflow = 1 # Phase of the inflow material from the bottom (The temperature of the inflow phase it is the same of the bottom boundary)
+    
+# No-slip boundary flag mask (left right front back bottom top)
+
+    noslip = 0 0 1 1 0 0
+
+# fixed phase (no-flow condition)
+
+    fix_phase = 1
+
+# fixed cells (no-flow condition)
+    
+    fix_cell = 1
+    
+# fixed cells input file (extension is .xxxxxxxx.dat)
+
+    fix_cell_file = ./bc/cdb 
+    
+# temperature on the top & bottom boundaries [usually constant]
+
+    temp_top                =   0.0
+    temp_bot                =   1300.0                              # if only one value is given, it is assumed to be constant with time
+
+    temp_bot_num_periods    =   2                                   # How many periods with different temp_bot do we have? 
+    temp_bot_time_delim     =   1.2                                 # At which time do we switch from one to the next period?
+
+# temperature initial guess flag
+# linear profile between temp_top and temp_bot
+
+    init_temp = 1;
+
+# Optional plume inflow @ bottom boundary
+    Plume_InflowBoundary    =   1           # have a plume-like inflow boundary @ bottom
+    Plume_Type              =   Inflow_Type          # Inflow_type or Pressure_type (circular)	
+                            =   Permeable_Type       # Combine the open bot boundary with the plume boundary condition (the option herein listed overwrite open_bot, so do not activate) 	
+    Plume_Dimension         =   2D          # 2D or 3D (circular)		
+    Plume_areaFrac          =   1.0         # how much of the plume is actually in the model. This usually 1 (default) but lower if the plume is in a corner of a symmetric setup and matters for the outflow
+    Plume_Phase             =   4           # phase of plume
+    Plume_Depth             =   1885        # depth of provenience of the plume (i.e. how far from the bottom of the model the plume source is) 
+    Plume_Mantle_Phase      =   1           # Astenosphere phase (if the inflow occurs outside the plume radius)
+    Plume_Temperature       =   1600        # temperature of inflow plume
+    Plume_Inflow_Velocity   =   15          # Inflow velocity	(not required if Pressure_Type)
+    Plume_VelocityType      =   Gaussian    # Gaussian or Poiseuille; [note that Gaussian (default) is smoother & often works better (not required if Pressure_Type) 			
+    Plume_Center            =   0 50        # [X,Y] of center  (2nd only in case of 3D plume)
+    Plume_Radius            =   100         # Width/Radius of plume
+    Plume_Phase_Mantle      =   1			# Inflow phase. If the velocity happens to be positive in the domain, the inflow material has a constant phase and the temperature of the bottom 
+
+# Pressure on the top & bottom boundaries
+
+    pres_top = 0.0
+    pres_bot = 10.0;
+
+# pressure initial guess flag
+# linear profile between pres_top and pres_bot in the unconstrained cells
+
+    init_pres = 1
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+    gravity         = 0.0 0.0 -10.0  # gravity vector
+    FSSA            = 1.0            # free surface stabilization parameter [0 - 1]
+    shear_heat_eff  = 1.0            # shear heating efficiency parameter   [0 - 1]
+    Adiabatic_Heat  = 0.0            # Adiabatic Heating activaction flag and efficiency. [0.0 - 1.0] (e.g. 0.5 means that only 50% of the potential adiabatic heating affects the energy equation)   
+    act_temp_diff   = 1              # temperature diffusion activation flag
+    act_therm_exp   = 1              # thermal expansion activation flag
+    act_steady_temp = 1              # steady-state temperature initial guess activation flag
+    steady_temp_t   = 0.0            # time for (quasi-)steady-state temperature initial guess
+    nstep_steady    = 1              # number of steps for (quasi-)steady-state temperature initial guess (default = 1)
+    act_heat_rech   = 1              # recharge heat in anomalous bodies after (quasi-)steady-state temperature initial guess (=2: recharge after every diffusion step of initial guess)
+    init_lith_pres  = 1              # initial pressure with lithostatic pressure (stabilizes compressible setups in the first steps)
+    init_guess      = 1              # initial guess flag
+    p_litho_visc    = 1              # use lithostatic pressure for creep laws
+    p_litho_plast   = 1              # use lithostatic pressure for plasticity
+    p_lim_plast     = 1              # limit pressure at first iteration for plasticity
+    p_shift         = 0              # constant [MPa] added to the total pressure field, before evaluating plasticity (e.g., when the domain is located @ some depth within the crust)  	
+    act_p_shift     = 1              # pressure shift activation flag (enforce zero pressure on average in the top cell layer); note: this overwrites p_shift above!
+    
+    eta_min         = 1e18           # viscosity lower bound [Pas]
+    eta_max         = 1e25           # viscosity upper limit [Pas]
+    eta_ref         = 1e20           # reference viscosity (initial guess) [Pas]
+    T_ref           = 20.0           # reference temperature [C]
+    RUGC            = 8.31           # universal gas constant (required only for non-dimensional setups)
+    min_cohes       = 2e7            # cohesion lower bound  [Pa]
+    min_fric        = 5.0            # friction lower bound  [degree]
+    tau_ult         = 1e9            # ultimate yield stress [Pa]
+    rho_fluid       = 1e3            # fluid density for depth-dependent density model
+    gw_level_type   = top            # ground water level type for pore pressure computation (see below)
+    gw_level        = 10.0           # ground water level at the free surface (if defined)
+    biot            = 0.7            # Biot pressure parameter
+    get_permea      = 1              # effective permeability computation activation flag
+    rescal          = 1              # stencil rescaling flag (for internal constraints, for example while computing permeability)
+    mfmax           = 0.1            # maximum melt fraction affecting viscosity reduction
+    lmaxit          = 25             # maximum number of local rheology iterations 
+    lrtol           = 1e-6           # local rheology iterations relative tolerance
+    act_dike        = 1              # dike activation flag (additonal term in divergence)
+    useTk           = 1              # switch to use T-dependent conductivity, 0: not active
+    dikeHeat        = 1		     # switch to use Behn & Ito heat source in the dike
+    adiabatic_gradient = 1.0         # activate adiabatic gradient in dike region
+    Compute_velocity_gradient = 1    # compute the velocity gradient tensor 1: active, 0: not active. If active, it automatically activates the output in the .pvd file
+    Phasetrans      = 0              # take phase transitions on particles into account (see  <PhaseTransitionStart>/ <PhaseTransitionEnd> below)
+    Passive_Tracer  = 0              # take passive tracers into account (see below for definition)
+
+# Groundwater level type specification:
+
+# gw_level_type = none  # don't compute pore pressure (default)
+# gw_level_type = top   # GW level is top of the domain
+# gw_level_type = surf  # GW level is free surface average level (surface must be enabled)
+# gw_level_type = level # GW level is fixed (gw_level parameter must be specified)
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+    msetup          = geom              # setup type
+    nmark_x         = 2                 # markers per cell in x-direction
+    nmark_y         = 2                 # ...                 y-direction
+    nmark_z         = 2                 # ...                 z-direction
+    rand_noise      = 1                 # random noise flag
+    rand_noiseGP    = 1                 # random noise flag, subsequently applied to geometric primitives
+    bg_phase        = 1                 # background phase ID
+    save_mark       = 1                 # save marker to disk flag
+    mark_load_file  = ./markers/mdb     # marker input file (extension is .xxxxxxxx.dat)
+    mark_save_file  = ./markers/mdb     # marker output file (extension is .xxxxxxxx.dat)
+    poly_file       = ./input/poly.dat  # polygon geometry file    (redundant)
+    temp_file       = ./input/temp.dat  # initial temperature file (redundant)
+    advect          = basic             # advection scheme
+    interp          = stag              # velocity interpolation scheme
+    stagp_a         = 0.7               # STAG_P velocity interpolation parameter
+    mark_ctrl       = none              # marker control type
+    nmark_lim       = 10 100            # min/max number per cell (marker control)
+    nmark_avd       = 3 3 3             # x-y-z AVD refinement factors (avd marker control)
+    nmark_sub       = 1                 # max number of same phase markers per subcell (subgrid marker control)
+
+# Advection types:
+
+#	advect = none  # no advection (no markers)
+#	advect = basic # basic (Euler classic implementation)
+#	advect = euler # Euler explicit in time
+#	advect = rk2   # Runge-Kutta 2nd order in space
+
+# Velocity interpolation types (only for euler & rk2):
+
+#	interp = stag   # trilinear interpolation from FDSTAG points
+#	interp = minmod # MINMOD interpolation to nodes, trilinear interpolation to markers + correction
+#	interp = stagp  # STAG_P empirical approach (T. Gerya)
+
+# Setup type specification:
+
+#	msetup = geom     # default input (phases are assigned from geometric primitives)
+#	msetup = files    # MATLAB input (requires mark_load_path and mark_load_name parameters)
+#	msetup = polygons # geomIO input (requires poly_file parameter)
+
+# Marker control type specification:
+
+#	mark_ctrl = none    # no marker control
+#	mark_ctrl = basic   # AVD for cells + corner insertion
+#	mark_ctrl = avd     # pure AVD for all control volumes
+#	mark_ctrl = subgrid # simple marker control enforced over fine scale grid
+
+# Geometric primitives:
+
+    <SphereStart>
+        phase       = 1
+        radius      = 1.5
+        center      = 1.0 2.0 3.0
+        Temperature = constant # optional: Temperature of the sphere. possibilities: [constant]
+        cstTemp     = 1000     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+    <SphereEnd>
+
+    <EllipsoidStart>
+        phase       = 1
+        axes        = 2.0 1.5 1.0  # semi-axes of ellipsoid in x, y and z
+        center      = 1.0 2.0 3.0
+        Temperature = constant     # optional: Temperature of the sphere. possibilities: [constant]
+        cstTemp     = 1000         # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+    <EllipsoidEnd>
+
+    <BoxStart>
+        phase       = 1
+        bounds      = 1.0 2.0 1.0 2.0 1.0 2.0 # box bound coordinates: left, right, front, back, bottom, top
+        Temperature = linear  # optional: Temperature structure. possibilities: [constant, linear, halfspace]
+        cstTemp     = 1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+        topTemp     = 0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
+        botTemp     = 1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
+        thermalAge  = 70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
+    <BoxEnd>
+
+    <RidgeSegStart>
+        phase       = 1
+        bounds      = 1.0 2.0 1.0 2.0 1.0 2.0   # box bound coordinates: left, right, front, back, bottom, top [top is seafloor]
+        ridgeseg_x  = 1.5 1.5                   # coordinate order: left, right [can be different for oblique ridge]
+        ridgeseg_y  = 1.0 2.0                   # coordinate order: front, back [needs to be the same as the front and back of bounds]
+        topTemp     = 0                         # required: temperature @ top [in Celcius in case of GEO units]
+        botTemp     = 1300                      # required: temperature @ bottom [in Celcius in case of GEO units]
+        Temperature = halfspace_age             # initial temperature structure [ridge must be set to halfspace_age --> setTemp=4]
+        age0        = 0.001                     # minimum age of seafloor at ridge [in Myr in case of GEO units]
+        maxAge      = 60                        # [optional] parameter that indicates the maximum thermal age of a plate 
+        v_spread    = 1                         # [optional] parameter that indicates the spreading velocity of the plate; if not defined it uses bvel_velin specified above
+    <RidgeSegEnd>
+
+    <HexStart>
+        phase = 1
+        coord = 0.25 0.25 0.25   0.5 0.2 0.2   0.6 0.7 0.25   0.3 0.5 0.3   0.2 0.3 0.75   0.6 0.15 0.75   0.5 0.6 0.80   0.2 0.4 0.75
+        # x-y-z coordinates for each of 8 nodes (24 parameters)
+        # (counter)-clockwise for an arbitrary face, followed by the opposite face
+    <HexEnd>
+
+    <LayerStart>
+        phase       = 1
+        top         = 5.0
+        bottom      = 3.0
+        cosine      = 0         # optional: add a cosine perturbation on top of the interface (if 1)
+        wavelength  = 1         # required if cosine: wavelength in x-direction
+        amplitude   = 0.1       # required if cosine: amplitude of perturbation         
+        Temperature = halfspace # optional: Temperature structure. possibilities: [constant, linear, halfspace]
+        cstTemp     = 1000      # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+        topTemp     = 0         # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
+        botTemp     = 1300      # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
+        thermalAge  = 70        # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
+    <LayerEnd>
+
+    <CylinderStart>
+        phase       = 1
+        radius      = 1.5
+        base        = 1.0 2.0 3.0
+        cap         = 3.0 5.0 7.0
+        Temperature = constant # optional: Temperature of the cylinder. possibilities: [constant]
+        cstTemp     = 1000     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+    <CylinderEnd>
+
+
+#===========================================================================
+# Passive Tracers 
+#===========================================================================
+
+    Passive_Tracer              = 1                               # Activate passive tracers?
+    PassiveTracer_Box           =  -600 600 -1 1 -300 -50         # Dimensions of Box in which we disttribute passive tracers  
+    PassiveTracer_Resolution    =  100 1 100                      # The number of passive tracers in every direction
+    PassiveTracer_ActiveType    =  Always                  		  # Under which condition are they activated? []  
+    PassiveTracer_ActiveValue   =  0.1                            # When this value is exceeded the tracers are being activated 
+    
+    # Passive Tracer activation type specification:
+
+        #	PassiveTracer_ActiveType = Always               # always actve
+        #	PassiveTracer_ActiveType = Melt_Fraction        
+        #	PassiveTracer_ActiveType = Temperature         
+        #	PassiveTracer_ActiveType = Pressure             
+        #	PassiveTracer_ActiveType = Time                
+ 
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+    out_file_name       = output # output file name
+    out_pvd             = 1      # activate writing .pvd file
+    out_phase           = 1
+    out_density         = 1
+    out_visc_total      = 1
+    out_visc_creep      = 1
+    out_velocity        = 1
+    out_pressure        = 1
+    out_tot_press       = 1
+    out_eff_press       = 1
+    out_over_press      = 1
+    out_litho_press     = 1
+    out_pore_press      = 1
+    out_temperature     = 1
+    out_dev_stress      = 1
+    out_j2_dev_stress   = 1
+    out_strain_rate     = 1
+    out_j2_strain_rate  = 1
+    out_shmax           = 1
+    out_ehmax           = 1
+    out_yield           = 1
+    out_rel_dif_rate    = 1     # relative proportion of diffusion creep strainrate
+    out_rel_dis_rate    = 1     # relative proportion of dislocation creep strainrate
+    out_rel_prl_rate    = 1     # relative proportion of peierls creep strainrate
+    out_rel_pl_rate     = 1     # relative proportion of plastic strainrate
+    out_plast_strain    = 1     # accumulated plastic strain
+    out_plast_dissip    = 1     # plastic dissipation
+    out_tot_displ       = 1
+    out_moment_res      = 1
+    out_cont_res        = 1
+    out_energ_res       = 1
+    out_melt_fraction   = 1
+    out_fluid_density   = 1
+    out_conductivity    = 1
+    out_vel_gr_tensor   = 1 
+# Phase aggregate output paramter
+# Phase ratios of listed phases are summed up and output as a scalar vector
+# Phase aggregate can consist of a single phase
+
+    <PhaseAggStart>
+        name     = crust  # phase aggregate output vector name
+        numPhase = 3      # number of phases to aggregate
+        phaseID  = 1 5 15 # list of phase IDs to aggregate
+    <PhaseAggEnd>
+
+# Free surface output options (can be activated only if surface tracking is enabled)
+
+    out_surf            = 1 # activate surface output
+    out_surf_pvd        = 1 # activate writing .pvd file
+    out_surf_velocity   = 1
+    out_surf_topography = 1
+    out_surf_amplitude  = 1
+
+# Marker output options (requires activation)
+
+    out_mark     = 1 # activate marker output
+    out_mark_pvd = 1 # activate writing .pvd file
+
+# AVD phase viewer output options (requires activation)
+
+    out_avd     = 1 # activate AVD phase output
+    out_avd_pvd = 1 # activate writing .pvd file
+    out_avd_ref = 3 # AVD grid refinement factor
+    
+# Passive Tracers viewer output option (if the Passive Tracers are active, 
+# X,Y,Z, P, T & ID are automatically activated) 
+    out_ptr              = 1    # activate  
+    out_ptr_ID           = 1    # ID of the passive tracers
+    out_ptr_phase        = 1    # phase of the passive tracers
+    out_ptr_Pressure     = 1    # interpolated pressure
+    out_ptr_Temperature  = 1    # temperature
+    out_ptr_MeltFraction = 1    # melt fraction computed using P-T of the marker 
+    out_ptr_Active       = 1    # option that highlight the marker that are currently active
+    out_ptr_Grid_Mf      = 1    # option that allow to store the melt fraction seen within the cell 
+
+
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+# Define softening laws (maximum 10)
+
+    <SofteningStart>
+        ID          =   0       # softening law ID
+        APS1        =   0.1     # begin of softening APS
+        APS2        =   1.0     # end of softening APS
+        APSheal2    =   1.0     # APS when healTau2 activates
+        A           =   0.7     # reduction ratio
+        Lm          =   0.2     # material length scale (in selected units, e.g. km in geo)
+        healTau     =   1e-3    # healing timescale parameter [Myr]  
+        healTau2     =   1e-3    # healing timescale parameter [Myr]  starting at APS=APSheal2
+    <SofteningEnd>
+    
+# Define Phase Transition laws (maximum 10)
+    
+    <PhaseTransitionStart>
+        ID                      =   0         #     Phase_transition law ID
+        Type                    =   Constant  #     [Constant, Clapeyron]: Constant - the phase transition occurs only at a fixed value of the parameter
+        Parameter_transition    =   T         #     [T = Temperature, P = Pressure, Depth = z-coord, X=x-coord, Y=y-coord, APS = accumulated plastic strain, MeltFraction, t = time] parameter that triggers the phase transition
+        ConstantValue           =   1200      #     Value of the parameter [unit of T,P,z, APS]
+        number_phases           =   1         #     The number of involved phases [default=1]
+        PhaseAbove              =   1         #     Above the chosen value the phase is 1, below it, the value is PhaseBelow
+        PhaseBelow              =   3         #       
+        PhaseDirection          =   BothWays  #     [BothWays=default; BelowToAbove; AboveToBelow] Direction in which transition works
+        ResetParam              =   APS       #     [APS] Parameter to reset on particles below PT or within box
+    <PhaseTransitionEnd>
+
+    <PhaseTransitionStart>
+        ID                      =   1                           # Phase_transition law ID
+        Type                    =   Clapeyron                   # Use the pressure retrieved by the clapeyron linear equation to trigger the phase transition
+        Name_Clapeyron          =   Mantle_Transition_660km     # predefined profiles; see SetClapeyron_Eq in phase_transition.cpp for options 
+        number_phases           =   3
+        PhaseAbove              =   4 5 7                       # phase ID after transition
+        PhaseBelow              =   1 2 3                       # phase ID before transition
+        clapeyron_slope         =   2.0                         # overwrite clapeyron_slope [MPa/K]
+        P0_clapeyron            =   15e9                        # overwrite reference pressure [Pa]
+        T0_clapeyron            =   1600                        # overwrite reference temperature [C]
+    <PhaseTransitionEnd>
+
+    # Box-like region with T-condition
+    <PhaseTransitionStart>
+        ID                      =   2                               # Phase_transition law ID
+        Type                    =   Box                             # A box-like region
+        PTBox_Bounds            =   200 400 -100 100 -1000 -500     # box bound coordinates: [left, right, front, back, bottom, top]
+        BoxVicinity             =   1                               # 1: only check particles in the vicinity of the box boundaries (*2 in all directions)
+        
+        number_phases           =   1
+        PhaseInside             =   7                               # Phase within the box  [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   -1                              # Phase outside the box [use -1 if you don't want to change the phase outside the box. If combined with OutsideToInside, all phases that come in are set to PhaseInside]
+        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
+
+        PTBox_TempType          =   linear                          # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_topTemp           =   20                              # Temp @ top of box [for linear & halfspace]
+        PTBox_botTemp           =   1300                            # Temp @ bottom of box [for linear & halfspace]
+        
+        PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
+        PTBox_cstTemp          	=   1200                            # Temp within box [only for constant T]
+    <PhaseTransitionEnd>
+
+# Box-like region with T-condition: same as above but material particles are turned into air particle if they are above the free surface
+# and the phase box in the air part is not re-set after the solve
+    <PhaseTransitionStart>
+        ID                      =   2                               # Phase_transition law ID
+        Type                    =   NotInAirBox                     # A box-like region
+        PTBox_Bounds            =   200 400 -100 100 -1000 -500     # For a single box: define the bounding coordinates: [left, right, front, back, bottom, top]
+        nsegs                   =   2                               # For multiple boxes (works with 1 box too) nseg=number of such boxes 
+        xbounds                 =   200 400 400 600                 # left1 right1 left2 right2, etc
+        ybounds                 =   -100  100  100 200              # front1 back1 front2 back2, etc
+        zbounds                 =   -1000 -500 -600  0              # bottom1 top1 bottom2 top2, etc
+        
+        number_phases           =   1
+        PhaseInside             =   7                               # Phase within the box  [use -1 if you don't want to change the phase inside the box]
+        PhaseOutside            =   3                               # Phase outside the box [use -1 if you don't want to change the phase outside the box]
+        PhaseDirection          =   BothWays                        # [BothWays=default; OutsideToInside; InsideToOutside]
+
+        PTBox_TempType          =   linear                          # Temperature condition witin the box [none, constant, linear, halfspace]
+        PTBox_topTemp           =   20                              # Temp @ top of box [for linear & halfspace]
+        PTBox_botTemp           =   1300                            # Temp @ bottom of box [for linear & halfspace]
+
+        PTBox_thermalAge        =   100                             # Thermal age, usually in geo-units [Myrs] [only in case of halfspace]
+        PTBox_cstTemp           =   1200                            # Temp within box [only for constant T]
+
+        PhaseTransLinkRight	    =   2                               # [optional] Link the x-coord of current NotInAirbox to another (here 2) that is to the right and moves dynamically
+        PhaseTransLinkLeft	    =   4                               # [optional] Link the x-coord of current NotInAirbox to another (here 4) that is to the left and moves dynamically
+        v_box                   =   0.2                             # [optional] only for NotInAirBox, velocity with which box moves in cm/yr  
+        t0_box                  =   0.002                           # [optional] beginning time of movemen in Myr
+        t1_box                  =   0.1                             # [optional] end time of movement in Myr
+    <PhaseTransitionEnd>
+
+# Define properties for the dike (additional source term/RHS in the continuity equation):
+# Define the associated phase, the amount of magma-accommodated extension on the front (Mf) and on the back (Mb) of the box and set its ID
+
+    <DikeStart>
+        ID = 0
+        Mf = 0.5		# value for dike/magma- accommodated extension, between 0 and 1, in the front of the box, for phase dike
+        Mc = 0.5		# [optional] value for dike/magma- accommodate extension, between 0 and 1, for dike phase, 
+                                # M is linearly interpolated between Mf & Mc and Mc & Mb, if not set, Mc default is set to -1 so it is not used
+        y_Mc = 0.5		# [optional], location for Mc, must be between front and back boundaries of dike box, if not set, default value to 0.0, but not used
+        Mb = 0.5		# value for dike/magma- accommodated extension, between 0 and 1, in the back of the box, for phase dike
+        PhaseID = 0		# material phase InsideToOutside	
+        PhaseTransID = 0	# Must point to a NotInAirbox phase transition
+        dyndike_start = 201	# activate dynamic dike at this timestep
+        filtx = 0.75		# Smoothing of stress is done with moving window, weighted as elliptical Gaussian 
+        filty = 4.0 		# filtx, filty, are 1-sigma widths perpendicular and parallel to local dike zone in km
+        zmax_magma = -10.00     # Maximum depth of magma pooling for adding magma pressure
+        drhomagma = 00	        # Density contrast of magma from asthenosphere for adding magma pressure with zmax_magma 
+        istep_nave = 2	        # Smoothing stress (sxx_eff) is done by averaging sxx_eff every istep_nave timesteps when Locate_Dike_Zones is called
+        nstep_locate = 1        # Locate_Dike_Zones is called every nstep_locate timesteps. Each time a dike shifts location, 
+							 #elastic stresses become large causing large fluctiations in stress,
+							 #which is why smoothing must be done. I'm experimenting with this to see if allowing a couple of timestep
+							 #in between when the dike is shifted allows the stresses to smooth naturally. 
+        magPfac = 1              # Magma pressure is also multiplied by a Gaussian function of x distance from previous dike location
+        magPwidth = 1000  	 # magPfac is the maximum of the function, magPwidth is the 1-sigma width of the Gaussian. 
+                                 # magPwidth=1000 km means magma pressure is present everywhere and does not decay (much) from prior location
+        out_dikeloc = 1		 # output dike location to stdout every time Set_dike_zones is called. 
+        out_stress = 0           # output stresses to std before and after smoothing.  Turn this off or else std gets really large 
+    <DikeEnd>
+
+    <DikeStart>
+        ID = 1
+        Mf = 1.0
+        Mc = 0.0
+        Mb = 0.5 
+        PhaseID = 3
+        PhasetransID = 1
+    <DikeEnd>
+
+# Define material properties for all phases (maximum 32)
+# By default all rheological mechanisms are deactivated
+# List only active parameters in the material data block
+
+    <MaterialStart>
+        ID        = 0
+        rho       = 1e2
+        eta       = 1e18
+    <MaterialEnd>
+
+    <MaterialStart>
+        ID         = 1      # material phase ID
+        Name       = Slab   # description of the phase
+        visID      = 10     # material ID for phase visualization (default is ID)
+        diff_prof  = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003 # DIFFUSION creep profile
+        disl_prof  = Granite-Tirel_et_al_2008                    # DISLOCATION creep profile
+        peir_prof  = Olivine_Peierls-Kameyama_1999               # PEIERLS creep profile
+        rho        = 3e3    # reference density
+        rho_n      = 0.5    # depth-dependent density model parameter
+        rho_c      = 1e-4   # depth-dependent density model parameter
+        beta       = 1e-11  # pressure-dependent density model parameter
+        G          = 4e10   # shear modulus
+        Kb         = 6e10   # bulk modulus
+        E          = 6e10   # Young's modulus
+        nu         = 0.25   # Poisson's ratio
+        Kp         = 5.0    # pressure dependence parameter
+        eta        = 1e23   # NEWTONIAN viscosity
+        Bd         = 1.5e9  # DIFFUSION creep pre-exponential constant
+        Ed         = 375e3  # activation energy
+        Vd         = 5e-6   # activation volume
+        eta0       = 1e23   # POWER LAW reference viscosity
+        e0         = 1e-15  # reference strain rate
+        Bn         = 2.5e4  # DISLOCATION creep pre-exponential constant
+        En         = 532e3  # activation energy
+        Vn         = 17e-6  # activation volume
+        n          = 3.5    # power law exponent
+        Bp         = 5.7e11 # PEIERLS creep pre-exponential constant
+        Ep         = 5.4e5  # activation energy
+        Vp         = 0.0    # activation volume
+        taup       = 8.5e9  # scaling stress
+        gamma      = 0.1    # approximation parameter
+        q          = 2.0    # stress-dependence parameter
+        eta_fk     = 1e20   # reference viscosity for Frank-Kamenetzky viscosity
+        gamma_fk   = 1e-3   # gamma parameter for Frank-Kamenetzky viscosity
+        TRef_fk    = 1000.0 # reference Temperature for Frank-Kamenetzky viscosity (if not set it is 0°C) 
+        ch         = 2e7    # cohesion
+        fr         = 30.0   # friction angle
+        eta_st     = 1e19   # stabilization viscosity (minimum viscosity for this phase; default is eta_min)
+        eta_vp     = 1e19   # viscoplastic regularisation viscosity (increases yield stress as tau_y += eta_vp*DIIpl where DIIpl is the plastic strainrate)
+        rp         = 0.7    # pore-pressure ratio
+        chSoftID   = 0      # friction softening law ID
+        frSoftID   = 0      # cohesion softening law ID
+        healID     = 0	    # healing ID, points to healTau in Softening
+        alpha      = 3e-5   # thermal expansivity
+        Cp         = 1.2e3  # specific heat (capacity), J⋅K−1⋅kg−1
+        k          = 2.5    # thermal conductivity
+        A          = 1e-9   # radiogenic heat production
+        T          = 100.0  # optional temperature to set within the phase
+        Latent_hx  = 5e5    # optional, used for dike heating, J/kg
+        T_liq      = 1300   # optional, used for dike heating, liquidus temperature of material, celsius
+        T_sol      = 1000   # optional, used for dike heating, solidus temperature of material, celsius  
+        T_Nu       = 600    # default value for thermal conductivity boundary
+        nu_k       = 5      # optional parameter, Nusselt number for use with conductivity
+        rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
+        rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
+        mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar)
+    <MaterialEnd>
+
+#===============================================================================
+# Adjoint gradients (and inversion) options (ALL OPTIONAL - defaults are applied)
+#===============================================================================
+    
+    # General
+    Adjoint_mode                        =   AdjointGradients        # options: [None; AdjointGradients, GradientDescent; GenericInversion]
+    Adjoint_ObservationPoints           =   1                       # options: [1=several points; 2=whole domain; 3=surface]
+    Adjoint_AdvectPoint                 =   0                       # 1=advect points with flow?
+    Adjoint_ObjectiveFunctionDef        =   1                       # options: [1-defined by hand;]
+    Adjoint_GradientCalculation         =   Solution                # options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+    Adjoint_FieldSensitivity            =   0                       # calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
+    Adjoint_ScaleCostFunction           =   None                    # Scale cost function: [None=no; Mean=average values; Var=variance]
+    Adjoint_PrintScalingLaws            =   1                       # Output scaling laws?
+    Adjoint_ScalingLawFilename          =   ScalingLaw_Test.dat     
+    Adjoint_ReferenceDensity            =   2800                    # Reference density 
+    Adjoint_DII_ref                     =   1e-15                   # Reference strain rate (needed for sensitivity kernels & powerlaw viscosity)
+    
+    // Some general Adjoint Gradient parameters:
+    Inversion_EmployTAO                 =   1                       # 0=build-in gradient descent methods; 1=TAO solvers
+    Inversion_rtol                      =   1e-7                    # relative tolerance of misfit function to stop
+    Inversion_maxit                     =   200                     # max. number of iterations	
+    Inversion_maxit_linesearch          =   100                     # max. number of line searches
+    Inversion_ApplyBounds               =   0                       # 0=no, 1=apply bounds
+    Inversion_factor_linesearch         =   1.1                     # factor in the line search that multiplies current line search parameter if GD update was successful (increases convergence speed)
+    Inversion_maxfac                    =   5                       # limit on the factor (only used without tao)
+    Inversion_facB                      =   0.4                     # backtrack factor that multiplies current line search parameter if GD update was not successful
+    Inversion_Scale_Grad                =   1                       # Magnitude of initial parameter update (factor_initial = Scale_Grad/Grad)
+
+    <AdjointParameterStart>
+        Type            =   AllMaterialParameters                   # All parameters indicated in file	
+        ExcludePhase    =   eta[1]                                  # This excludes "eta" of phase 1 
+    <AdjointParameterEnd>
+
+    <AdjointParameterStart>
+        ID              =   0                                       # phase of the parameter
+        Type            =   n                                       # can be any of the material parameters
+        InitGuess       =   2e0                                     # initial guess value
+        LowerBound      =   0.1                                     # lower boundary (for inversion)
+        UpperBound      =   3                                       # upper boundary
+        FD_gradient     =   1                                       # Compute gradient by finite differences? dG/dp = (G(p+eps*p)-G(p))/eps
+        FD_eps          =   1e-5                                    # epsilon 
+        log10           =   0                                       # Employ logarithm of value?
+    <AdjointParameterEnd>
+
+    <AdjointObservationPointStart>
+        Coordinate          =   0.5 0.5 0.5	                        # coordinates    
+        Parameter           =   Vz                                  # options: [Vx, Vy, Vz] (Velocities), [PSD] (principal stress directions in degree), [Exx,Eyy,Ezz,Exz,Exy,Eyz] (strain rates)
+        Value               =   -0.04248                            # values
+    <AdjointObservationPointEnd>
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+<SolverOptionsStart>
+	
+	skip_defaults           = 0                     # specify solver options explicitly
+	view_solvers            = 0                     # show linear solver configuration
+	monitor_solvers         = 0                     # show linear iteration convergence
+	set_linear_problem      = 0                     # linear problem activation flag (skip nonlinear iteration)
+
+	nonlinear_tolerances    =  1e-5 -1   50         # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	linear_tolerances       =  1e-6 -1   200        # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	picard_to_newton        =  1e-2  5  1.2  20     # picard rtol, picard minit, newton rtol, newton maxit
+	use_line_search         =  1
+	use_eisenstat_walker    =  0
+	use_mat_free_jac        =  0
+
+	stokes_solver           =  coupled_direct       # [coupled_direct, block_direct, coupled_mg, block_mg, wbfbt]
+	direct_solver_type      =  mumps                # [mumps, superlu_dist, lu]
+	block_tolerances        =  1e-2 30              # rtol, maxit (fgmres settings for block solves in block_mg and wbfbt)
+	penalty                 =  1e3                  # (only for block_direct)
+
+	num_mg_levels           = -1                    # (-1 = automatic setting)
+	num_mat_free_levels     =  0                    # (only for coupled_mg)
+
+	smoother_type           =  heavy                # [light (richardson + jacobi), intermediate (chebyshev + sor), heavy (gmres + bjacobi)]
+	smoother_ksp            =  gmres                # [richardson, chebyshev, gmres]
+	smoother_pc             =  bjacobi              # [jacobi, sor, bjacobi, asm]
+	smoother_damping        =  0.5                  # (only for richardson)
+	smoother_omega          =  1.0                  # (only for sor)
+	smoother_num_sweeps     =  20
+
+	coarse_num_cpu          =  0                    # number of cpu for coarse solve (-1 = automatic setting) (0 = all cpus) (NOTE: can be assigned differently)
+	coarse_cells_per_cpu    =  4096                 # (only for coarse_num_cpu = -1)
+	coarse_solver           =  direct               # [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use fgmres)
+	coarse_tolerances       =  1e-2 30              # rtol, maxit (fgmres settings for hypre, bjacobi and asm)
+
+	subdomain_num_per_cpu   =  1                    # number of subdomians per cpu (only for bjacobi and asm) (-1 = automatic setting)
+	subdomain_cells_per_cpu =  2048                 # (only for subdomain_num_per_cpu = -1)
+	subdomain_overlap       =  1                    # (only for asm)
+	subdomain_ilu_levels    =  0                    # (only for bjacobi and asm)
+	
+	init_thermal_solver     =  mg                   # [mg, default]
+	thermal_tolerances      =  1e-8 -1   500        # rtol, atol, maxit (-1 = automatic setting, only for atol)
+
+<SolverOptionsEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# see solver_options.txt for details
+
+<PetscOptionsEnd>
+
+#===============================================================================

@@ -18,86 +18,6 @@
 #include "Tensor.h"
 #include "parsing.h"
 //---------------------------------------------------------------------------
-#define gradComp(v, dx, bdx1, fdx1, bdx2, fdx2, dvdx, dvdx1, dvdx2, vc) \
-	dvdx  = ( v[9] - v[4])/dx; \
-	dvdx1 = ((v[4] - v[0] + v[9] - v[5])/bdx1 + (v[1] - v[4] + v[6] - v[9])/fdx1)/4.0; \
-	dvdx2 = ((v[4] - v[2] + v[9] - v[7])/bdx2 + (v[3] - v[4] + v[8] - v[9])/fdx2)/4.0; \
-	vc    = ( v[9] + v[4])/2.0;
-//---------------------------------------------------------------------------
-PetscErrorCode getGradientVel(
-	FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
-	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz,
-	Tensor2RN *L, PetscScalar *vel, PetscScalar *pvnrm)
-{
-	// compute velocity gradient and normalized velocities at cell center
-
-	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
-	PetscScalar vnrm, vx[10], vy[10], vz[10], vxc, vyc, vzc;
-
-	PetscFunctionBeginUser;
-
-	// get cell sizes
-	dx = SIZE_CELL(i, sx, fs->dsx);   bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
-	dy = SIZE_CELL(j, sy, fs->dsy);   bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
-	dz = SIZE_CELL(k, sz, fs->dsz);   bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
-
-	// vx - stencil
-	vx[0] = lvx[k]  [j-1][i];
-	vx[1] = lvx[k]  [j+1][i];
-	vx[2] = lvx[k-1][j]  [i];
-	vx[3] = lvx[k+1][j]  [i];
-	vx[4] = lvx[k]  [j]  [i];
-	vx[5] = lvx[k]  [j-1][i+1];
-	vx[6] = lvx[k]  [j+1][i+1];
-	vx[7] = lvx[k-1][j]  [i+1];
-	vx[8] = lvx[k+1][j]  [i+1];
-	vx[9] = lvx[k]  [j]  [i+1];
-
-	// vy - stencil
-	vy[0] = lvy[k]  [j]  [i-1];
-	vy[1] = lvy[k]  [j]  [i+1];
-	vy[2] = lvy[k-1][j]  [i];
-	vy[3] = lvy[k+1][j]  [i];
-	vy[4] = lvy[k]  [j]  [i];
-	vy[5] = lvy[k]  [j+1][i-1];
-	vy[6] = lvy[k]  [j+1][i+1];
-	vy[7] = lvy[k-1][j+1][i];
-	vy[8] = lvy[k+1][j+1][i];
-	vy[9] = lvy[k]  [j+1][i];
-
-	// vz - stencil
-	vz[0] = lvz[k]  [j]  [i-1];
-	vz[1] = lvz[k]  [j]  [i+1];
-	vz[2] = lvz[k]  [j-1][i];
-	vz[3] = lvz[k]  [j+1][i];
-	vz[4] = lvz[k]  [j]  [i];
-	vz[5] = lvz[k+1][j]  [i-1];
-	vz[6] = lvz[k+1][j]  [i+1];
-	vz[7] = lvz[k+1][j-1][i];
-	vz[8] = lvz[k+1][j+1][i];
-	vz[9] = lvz[k+1][j]  [i];
-
-	gradComp(vx, dx, bdy, fdy, bdz, fdz, L->xx, L->xy, L->xz, vxc)
-	gradComp(vy, dy, bdx, fdx, bdz, fdz, L->yy, L->yx, L->yz, vyc)
-	gradComp(vz, dz, bdx, fdx, bdy, fdy, L->zz, L->zx, L->zy, vzc)
-
-	// get normalized velocities
-	vnrm = vxc*vxc + vyc*vyc + vzc*vzc;
-
-	if(vnrm)
-	{
-		vnrm = sqrt(vnrm);
-
-		vel[0] = vxc/vnrm;
-		vel[1] = vyc/vnrm;
-		vel[2] = vzc/vnrm;
-	}
-
-	if(pvnrm) (*pvnrm) = vnrm;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 PetscErrorCode JacResGetSHmax(JacRes *jr)
 {
 	// compute maximum horizontal compressive stress (SHmax) orientation
@@ -176,6 +96,7 @@ PetscErrorCode JacResGetSHmax(JacRes *jr)
 //---------------------------------------------------------------------------
 PetscErrorCode JacResGetEHmax(JacRes *jr)
 {
+
 	// compute maximum horizontal extension rate (EHmax) orientation
 
 	FDSTAG      *fs;
@@ -497,7 +418,6 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 	PetscScalar ***vz, nZFace, lvel, gvel, dp, eta, ks, bz, ez;
 	char        path[_str_len_];
 
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
@@ -585,6 +505,138 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 		PetscPrintf(PETSC_COMM_WORLD,"==========================================================================\n");
 		
 	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode JacResGetVelGrad(JacRes *jr,
+		Vec dvxdx, Vec dvxdy, Vec dvxdz,
+		Vec dvydx, Vec dvydy, Vec dvydz,
+		Vec dvzdx, Vec dvzdy, Vec dvzdz)
+{
+	// compute velocity gradients for output
+
+	FDSTAG     *fs;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar dx, dy, dz;
+	PetscScalar ***vx,  ***vy,  ***vz;
+	PetscScalar ***dxx, ***dxy, ***dxz;
+	PetscScalar ***dyx, ***dyy, ***dyz;
+	PetscScalar ***dzx, ***dzy, ***dzz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	fs = jr->fs;
+
+	// access velocity and gradients
+	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, dvxdx, &dxx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, dvydy, &dyy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, dvzdz, &dzz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  dvxdy, &dxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  dvydx, &dyx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  dvxdz, &dxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  dvzdx, &dzx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  dvydz, &dyz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  dvzdy, &dzy); CHKERRQ(ierr);
+
+	//-------------------------------
+	// central points (dxx, dyy, dzz)
+	//-------------------------------
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get mesh steps
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+		dz = SIZE_CELL(k, sz, fs->dsz);
+
+		// compute velocity gradients
+		dxx[k][j][i] = (vx[k][j][i+1] - vx[k][j][i])/dx;
+		dyy[k][j][i] = (vy[k][j+1][i] - vy[k][j][i])/dy;
+		dzz[k][j][i] = (vz[k+1][j][i] - vz[k][j][i])/dz;
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// xy edge points (dxy)
+	//-------------------------------
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get mesh steps
+		dx = SIZE_NODE(i, sx, fs->dsx);
+		dy = SIZE_NODE(j, sy, fs->dsy);
+
+		// compute velocity gradients
+		dxy[k][j][i] = (vx[k][j][i] - vx[k][j-1][i])/dy;
+		dyx[k][j][i] = (vy[k][j][i] - vy[k][j][i-1])/dx;
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// xz edge points (dxz)
+	//-------------------------------
+	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get mesh steps
+		dx = SIZE_NODE(i, sx, fs->dsx);
+		dz = SIZE_NODE(k, sz, fs->dsz);
+
+		// compute velocity gradients
+		dxz[k][j][i] = (vx[k][j][i] - vx[k-1][j][i])/dz;
+		dzx[k][j][i] = (vz[k][j][i] - vz[k][j][i-1])/dx;
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// yz edge points (dyz)
+	//-------------------------------
+	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get mesh steps
+		dy = SIZE_NODE(j, sy, fs->dsy);
+		dz = SIZE_NODE(k, sz, fs->dsz);
+
+		// compute velocity gradients
+		dyz[k][j][i] = (vy[k][j][i] - vy[k-1][j][i])/dz;
+		dzy[k][j][i] = (vz[k][j][i] - vz[k][j-1][i])/dy;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, dvxdx, &dxx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, dvydy, &dyy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, dvzdz, &dzz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  dvxdy, &dxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  dvydx, &dyx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  dvxdz, &dxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  dvzdx, &dzx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  dvydz, &dyz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  dvzdy, &dzy); CHKERRQ(ierr);
+
+	// communicate boundary strain-rate values
+	LOCAL_TO_LOCAL(fs->DA_CEN, dvxdx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, dvydy);
+	LOCAL_TO_LOCAL(fs->DA_CEN, dvzdz);
+	LOCAL_TO_LOCAL(fs->DA_XY,  dvxdy);
+	LOCAL_TO_LOCAL(fs->DA_XY,  dvydx);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  dvxdz);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  dvzdx);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  dvydz);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  dvzdy);
 
 	PetscFunctionReturn(0);
 }

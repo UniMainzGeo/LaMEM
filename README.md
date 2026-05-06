@@ -15,7 +15,7 @@ quasi-Newton solvers (provided through the PETSc interface).
 
 LaMEM has been tested on a variety of machines ranging from laptops to a massively parallel cluster with 458'752 cores.
 
- ![Getting Started](./docs/src/assets/img/LaMEM_overview.png)
+ ![Getting Started](./doc/src/assets/img/LaMEM_overview.png)
 
 ## Getting started
 

@@ -31,6 +31,7 @@
 #include "surf.h"
 #include "subgrid.h"
 #include "tssolve.h"
+#include "interpolate.h"
 
 // allocate storage for the passive tracers
 // create initial distribution of markers (every processors knows everything)
@@ -529,6 +530,13 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	begz = fs->dsz.gcrdbeg;
 	endz = fs->dsz.gcrdend;
 
+	// initialize corners and edges for interpolation
+	PetscCall(SetEdgeCornerXFace (fs, jr->lvx));
+	PetscCall(SetEdgeCornerYFace (fs, jr->lvy));
+	PetscCall(SetEdgeCornerZFace (fs, jr->lvz));
+	PetscCall(SetEdgeCornerCenter(fs, jr->lp));
+	PetscCall(SetEdgeCornerCenter(fs, jr->lT));
+
 	// access velocity, pressure & temperature vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
@@ -600,7 +608,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			  //check if the original phase saved is one that has a phase/melt law associated
 
 
-				if(mat[PetscInt(phase[jj])].pdn)
+				if(mat[PetscInt(phase[jj])].pdn[0] != '\0')
 				{
 					ierr = setDataPhaseDiagram(Pd, Pr[jj], T[jj], mat[PetscInt(phase[jj])].pdn); CHKERRQ(ierr);
 					mf_ptr[jj]= Pd->mf;
@@ -626,7 +634,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 						X[1]  = yp;
 						X[2]  = zp;
 
-						if (mat[actx->markers[ii].phase].pdn)
+						if(mat[actx->markers[ii].phase].pdn[0] != '\0')
 						{
 							d.first  = EDIST(Xm, X);
 							d.second = id_m;

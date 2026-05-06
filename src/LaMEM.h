@@ -152,6 +152,12 @@
 // maximum number of control polygons
 #define _max_ctrl_poly_ 20
 
+// maximum number of multigrid levels
+#define _max_num_mg_levels_ 16
+
+// maximum number of matrix-free levels
+#define _max_num_mat_free_levels_ 8
+
 // cast macros
 #define LLD long long int
 
@@ -184,12 +190,20 @@ typedef pair <PetscScalar, PetscInt> spair;
 typedef pair <PetscInt,    PetscInt> ipair;
 
 //-----------------------------------------------------------------------------
+// UNUSED PARAMETERS MACRO
+//-----------------------------------------------------------------------------
+
+#define UNUSED(x) (void)(x)
+
+//-----------------------------------------------------------------------------
 // PROTOTYPES
 //-----------------------------------------------------------------------------
 
+struct FB;
+
 // LaMEM library main function
 
-PetscErrorCode LaMEMLibMain(void *param,PetscLogStage stages[4]);
+PetscErrorCode LaMEMLibMain(void *param, FB *fb);
 
 //-----------------------------------------------------------------------------
 #endif

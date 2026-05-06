@@ -852,4 +852,49 @@ PetscInt solveBisect(
 	// return convergence flag
 	return PetscAbsScalar(fx) <= tol;
 }
+//---------------------------------------------------------------------------
+// Solver viewer
+//---------------------------------------------------------------------------
+PetscErrorCode ViewSolver(KSP ksp)
+{
+	PC          pc;
+	PetscBool   flg;
+	const char *prefix;
+	char       *opt;
+
+	PetscFunctionBeginUser;
+
+	// get prefix
+	PetscCall(KSPGetOptionsPrefix(ksp, &prefix));
+
+	asprintf(&opt, "-%s%s", prefix, "pc_view");
+
+	PetscCall(PetscOptionsHasName(NULL, NULL, opt, &flg));
+
+	free(opt);
+
+	if(flg == PETSC_TRUE)
+	{
+		PetscCall(KSPGetPC(ksp, &pc));
+
+		PetscCall(PCView(pc, PETSC_VIEWER_STDOUT_WORLD));
+	}
+
+	PetscFunctionReturn(0);
+}
 //-----------------------------------------------------------------------------
+PetscErrorCode DMDAGetLocalGridSize(DM DA, PetscInt &nnods)
+{
+	PetscInt nx, ny, nz;
+
+	PetscFunctionBeginUser;
+
+	PetscCall(DMDAGetCorners(DA, NULL, NULL, NULL, &nx, &ny, &nz));
+
+	nnods = nx*ny*nz;
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+
+

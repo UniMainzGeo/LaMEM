@@ -8,556 +8,676 @@
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------
-//...................   LINEAR PRECONDITIONER ROUTINES   ....................
+//......................   PRECONDITIONER ROUTINES   ........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "fdstag.h"
+#include "matData.h"
 #include "matrix.h"
+#include "matFree.h"
 #include "multigrid.h"
 #include "lsolve.h"
 #include "JacRes.h"
+#include "tools.h"
+#include "parsing.h"
 //---------------------------------------------------------------------------
-// * implement preconditioners in PETSc
-// * add default solver options
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
+PetscErrorCode PCParamSetFromOptions(PCParam *p)
 {
-	PetscBool found;
-	char      pname[_str_len_];
+	PetscBool mat_free;
+	char      pc_type   [_str_len_], bf_type[_str_len_];
+	char      vs_type   [_str_len_], sp_type[_str_len_];
+	char      vs_pc_type[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = PetscOptionsGetString(NULL, NULL,"-jp_type", pname, _str_len_, &found); CHKERRQ(ierr);
-
-	if(found == PETSC_TRUE)
-	{
-		if(!strcmp(pname, "bf"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : block factorization\n");
-			pc->type = _STOKES_BF_;
-		}
-		else if(!strcmp(pname, "mg"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : coupled Galerkin geometric multigrid\n");
-			pc->type = _STOKES_MG_;
-		}
-		else if(!strcmp(pname, "user"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
-			pc->type = _STOKES_USER_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Jacobian preconditioner type: %s", pname);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
-		pc->type = _STOKES_USER_;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
-{
-	//========================================================================
-	// create Stokes preconditioner context
-	//========================================================================
-
-	PCStokes pc;
-	PMatType pm_type;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// allocate space
-	ierr = PetscMalloc(sizeof(p_PCStokes), &pc); CHKERRQ(ierr);
-
-	// clear object
-	ierr = PetscMemzero(pc, sizeof(p_PCStokes)); CHKERRQ(ierr);
+	// set defaults
+	sprintf(pc_type,    "user");
+	sprintf(bf_type,    "upper");
+	sprintf(vs_type,    "user");
+	sprintf(vs_pc_type, "general");
+	sprintf(sp_type,    "inv_eta");
+	p->pgamma = 1.0;
 
 	// read options
-	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
-	pm_type = _BLOCK_;
-	if(pc->type == _STOKES_BF_)
+	ierr = PetscOptionsHasName  (NULL, NULL, "-js_mat_free",   &mat_free);                   CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-jp_type",       pc_type,    _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-bf_type",       bf_type,    _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-bf_vs_type",    vs_type,    _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-vs_pc_type",    vs_pc_type, _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-bf_schur_type", sp_type,    _str_len_, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-jp_pgamma",     &p->pgamma,            NULL);  CHKERRQ(ierr);
+
+	if     (!strcmp(pc_type, "mg"))   p->pc_type = _STOKES_MG_;
+	else if(!strcmp(pc_type, "bf"))   p->pc_type = _STOKES_BF_;
+	else if(!strcmp(pc_type, "user")) p->pc_type = _STOKES_USER_;
+	else    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect preconditioner type (jp_type): %s", pc_type);
+
+	if     (!strcmp(bf_type, "upper")) p->bf_type = _BF_UPPER_;
+	else if(!strcmp(bf_type, "lower")) p->bf_type = _BF_LOWER_;
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect block factorization type (bf_type): %s", bf_type);
+
+	if     (!strcmp(vs_type, "mg"))   p->vs_type = _VEL_MG_;
+	else if(!strcmp(vs_type, "user")) p->vs_type = _VEL_USER_;
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type (bf_vs_type): %s", vs_type);
+
+	if(!strcmp(vs_pc_type, "lu")) p->vu_type = _VEL_USER_DIRECT_;
+	else                          p->vu_type = _VEL_USER_GENERAL_;
+
+	if     (!strcmp(sp_type, "inv_eta")) p->sp_type = _SCHUR_INV_ETA_;
+	else if(!strcmp(sp_type, "wbfbt"))   p->sp_type = _SCHUR_WBFBT_;
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Schur preconditioner type (bf_schur_type): %s", sp_type);
+
+	// set assembly flag
+	if(mat_free) p->ps_type =_PICARD_MAT_FREE_;
+	else         p->ps_type =_PICARD_ASSEMBLED_;
+
+	// check errors
+	if(p->pgamma < 1.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Penalty parameter is less than unit (jp_pgamma)");
+
+	if(p->pc_type == _STOKES_MG_ && p->pgamma != 1.0)
 	{
-		// Block Factorization
-		pc->Create  = PCStokesBFCreate;
-		pc->Setup   = PCStokesBFSetup;
-		pc->Destroy = PCStokesBFDestroy;
-		pc->Apply   = PCStokesBFApply;
-		pm_type     = _BLOCK_;
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Coupled geometric multigrid is incompatible with matrix penalty (jp_type, jp_pgamma)");
 	}
-	else if(pc->type == _STOKES_MG_)
+
+	if(p->vs_type == _VEL_MG_ && p->pgamma != 1.0)
 	{
-		// Galerkin multigrid
-		pc->Create  = PCStokesMGCreate;
-		pc->Setup   = PCStokesMGSetup;
-		pc->Destroy = PCStokesMGDestroy;
-		pc->Apply   = PCStokesMGApply;
-		pm_type     = _MONOLITHIC_;
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Velocity geometric multigrid is incompatible with matrix penalty (bf_vs_type, jp_pgamma)");
 	}
-	else if(pc->type == _STOKES_USER_)
+
+	if(p->sp_type && p->pgamma != 1.0)
 	{
-		// user-defined
-		pc->Create  = PCStokesUserCreate;
-		pc->Setup   = PCStokesUserSetup;
-		pc->Destroy = PCStokesUserDestroy;
-		pc->Apply   = PCStokesUserApply;
-		pm_type     = _MONOLITHIC_;
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "wBFBT preconditioner is incompatible with matrix penalty (bf_schur_type, jp_pgamma)");
 	}
 
-	// check matrix type
-	if(pm->type != pm_type) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner matrix type used");
-
-	// set matrix
-	pc->pm = pm;
-
-	// create preconditioner
-	ierr = pc->Create(pc); CHKERRQ(ierr);
-
-	// return preconditioner
-	(*p_pc) = pc;
+	// print parameters
+	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
+	if     (p->ps_type == _PICARD_ASSEMBLED_) PetscPrintf(PETSC_COMM_WORLD, "   Picard operator type          : assembled\n");
+	else if(p->ps_type == _PICARD_MAT_FREE_)  PetscPrintf(PETSC_COMM_WORLD, "   Picard operator type          : matrix-free\n");
+	if     (p->pc_type == _STOKES_MG_)        PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : coupled Galerkin geometric multigrid\n");
+	else if(p->pc_type == _STOKES_BF_)        PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : block factorization\n");
+	else if(p->pc_type == _STOKES_USER_)      PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
+	if     (p->pc_type == _STOKES_BF_)
+	{
+		if     (p->bf_type == _BF_UPPER_)         PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type      : upper \n");
+		else if(p->bf_type == _BF_LOWER_)         PetscPrintf(PETSC_COMM_WORLD, "   Block factorization type      : lower \n");
+		if     (p->vs_type == _VEL_MG_)           PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner       : Galerkin geometric multigrid\n");
+		else if(p->vs_type == _VEL_USER_)         PetscPrintf(PETSC_COMM_WORLD, "   Velocity preconditioner       : user-defined\n");
+		if     (p->sp_type == _SCHUR_INV_ETA_)    PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner          : inverse viscosity\n");
+		else if(p->sp_type == _SCHUR_WBFBT_)      PetscPrintf(PETSC_COMM_WORLD, "   Schur preconditioner          : wBFBT\n");
+	}
+	if     (p->pgamma > 1.0)                  PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", p->pgamma);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesSetup(PCStokes pc)
+PetscErrorCode PCDataCreate(PCData *pc, JacRes *jr, Mat J, Mat P)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = pc->Setup(pc); CHKERRQ(ierr);
+	PCParam *param = &pc->param;
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesDestroy(PCStokes pc)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
+	ierr = PCParamSetFromOptions(param); CHKERRQ(ierr);
 
-	ierr = pc->Destroy(pc); CHKERRQ(ierr);
-	ierr = PetscFree(pc);   CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-//........................... BLOCK FACTORIZATION ...........................
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesBFCreate(PCStokes pc)
-{
-	PC          vpc;
-	PCStokesBF *bf;
-	JacRes     *jr;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// allocate space
-	ierr = PetscMalloc(sizeof(PCStokesBF), (void**)&bf); CHKERRQ(ierr);
-
-	// clear object
-	ierr = PetscMemzero(bf, sizeof(PCStokesBF)); CHKERRQ(ierr);
-
-	// store context
-	pc->data = (void*)bf;
-
-	// read options
-	ierr = PCStokesBFSetFromOptions(pc); CHKERRQ(ierr);
-
-	// access context
-	jr = pc->pm->jr;
-
-	// create velocity solver
-	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->vksp); CHKERRQ(ierr);
-	ierr = KSPSetOptionsPrefix(bf->vksp,"vs_");    CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(bf->vksp);            CHKERRQ(ierr);
-
-	// create & set velocity multigrid preconditioner
-	if(bf->vtype == _VEL_MG_)
+	if(param->pc_type == _STOKES_MG_)
 	{
-		ierr = MGCreate(&bf->vmg, jr);           CHKERRQ(ierr);
-		ierr = KSPGetPC(bf->vksp, &vpc);         CHKERRQ(ierr);
-		ierr = PCSetType(vpc, PCSHELL);          CHKERRQ(ierr);
-		ierr = PCShellSetContext(vpc, &bf->vmg); CHKERRQ(ierr);
-		ierr = PCShellSetApply(vpc, MGApply);    CHKERRQ(ierr);
+		PCDataMG *data;
+
+		ierr = PetscMalloc(sizeof(PCDataMG), &data); CHKERRQ(ierr);
+		ierr = PetscMemzero(data, sizeof(PCDataMG)); CHKERRQ(ierr);
+
+		ierr = PCDataMGCreate(data, param, jr, J, P); CHKERRQ(ierr);
+
+		pc->data = (void*)data;
 	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
-{
-	PCStokesBF *bf;
-
-	PetscBool   flg;
-	char        pname[_str_len_];
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// access context
-	bf = (PCStokesBF*)pc->data;
-
-	// set factorization type
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_type", pname, _str_len_, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
+	else if(param->pc_type == _STOKES_BF_)
 	{
-		if(!strcmp(pname, "upper"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
+		PCDataBF *data;
 
-			bf->type = _UPPER_;
-		}
-		else if(!strcmp(pname, "lower"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : lower \n");
+		ierr = PetscMalloc(sizeof(PCDataBF), &data); CHKERRQ(ierr);
+		ierr = PetscMemzero(data, sizeof(PCDataBF)); CHKERRQ(ierr);
 
-			bf->type = _LOWER_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect block factorization type: %s", pname);
+		ierr = PCDataBFCreate(data, param, jr, J, P); CHKERRQ(ierr);
+
+		pc->data = (void*)data;
 	}
-	else
+	else if(param->pc_type == _STOKES_USER_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
+		PCDataUser *data;
 
-		bf->type = _UPPER_;
-	}
+		ierr = PetscMalloc(sizeof(PCDataUser), &data); CHKERRQ(ierr);
+		ierr = PetscMemzero(data, sizeof(PCDataUser)); CHKERRQ(ierr);
 
-	// set velocity solver type
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_vs_type", pname, _str_len_, &flg); CHKERRQ(ierr);
+		ierr = PCDataUserCreate(data, param, jr, J, P); CHKERRQ(ierr);
 
-	if(flg == PETSC_TRUE)
-	{
-		if(!strcmp(pname, "mg"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : Galerkin geometric multigrid\n");
-
-			bf->vtype = _VEL_MG_;
-		}
-		else if(!strcmp(pname, "user"))
-		{
-			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
-
-			bf->vtype = _VEL_USER_;
-		}
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type: %s", pname);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
-
-		bf->vtype = _VEL_USER_;
+		pc->data = (void*)data;
 	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesBFDestroy(PCStokes pc)
+PetscErrorCode PCDataDestroy(PCData *pc)
 {
-	PCStokesBF *bf;
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// access context
-	bf = (PCStokesBF*)pc->data;
+	PCParam *param = &pc->param;
 
-	ierr = KSPDestroy(&bf->vksp);  CHKERRQ(ierr);
-
-	if(bf->vtype == _VEL_MG_)
+	if(param->pc_type == _STOKES_MG_)
 	{
-		ierr = MGDestroy(&bf->vmg); CHKERRQ(ierr);
+		PCDataMG *data = (PCDataMG*)pc->data;
+
+		ierr = PCDataMGDestroy(data); CHKERRQ(ierr);
+		ierr = PetscFree      (data); CHKERRQ(ierr);
+
 	}
 
-	ierr = PetscFree(bf); CHKERRQ(ierr);
+	else if(param->pc_type == _STOKES_BF_)
+	{
+		PCDataBF *data = (PCDataBF*)pc->data;
+
+		ierr = PCDataBFDestroy(data); CHKERRQ(ierr);
+		ierr = PetscFree      (data); CHKERRQ(ierr);
+	}
+
+	else if(param->pc_type == _STOKES_USER_)
+	{
+		PCDataUser *data = (PCDataUser*)pc->data;
+
+		ierr = PCDataUserDestroy(data); CHKERRQ(ierr);
+		ierr = PetscFree        (data); CHKERRQ(ierr);
+	}
+
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesBFSetup(PCStokes pc)
+PetscErrorCode PCDataSetup(PCData *pc, JacRes *jr)
 {
-	PCStokesBF *bf;
-	PMatBlock  *P;
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// access context
-	bf = (PCStokesBF*)pc->data;
-	P  = (PMatBlock*) pc->pm->data;
+	PCParam *param = &pc->param;
 
-	ierr = KSPSetOperators(bf->vksp, P->Avv, P->Avv); CHKERRQ(ierr);
-
-	if(bf->vtype == _VEL_MG_)
+	if(param->pc_type == _STOKES_MG_)
 	{
-		ierr = MGSetup(&bf->vmg, P->Avv); CHKERRQ(ierr);
+		ierr = PCDataMGSetup((PCDataMG*)pc->data, jr); CHKERRQ(ierr);
 	}
-
-	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
-{
-	//======================================================================
-	// r - residual vector      (input)
-	// x - approximate solution (output)
-	//======================================================================
-
-	PCStokes    pc;
-	PCStokesBF *bf;
-	PMatBlock  *P;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// access context
-	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
-
-	bf = (PCStokesBF*)pc->data;
-	P  = (PMatBlock*) pc->pm->data;
-
-	// extract residual blocks
-	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
-
-	if(bf->type == _UPPER_)
+	else if(param->pc_type == _STOKES_BF_)
 	{
-		//=======================
-		// BLOCK UPPER TRIANGULAR
-		//=======================
-
-		// Schur complement already contains negative sign (no negative sign here)
-		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
-
-		ierr = MatMult(P->Avp, P->xp, P->wv);    CHKERRQ(ierr); // wv = Avp*xp
-
-		ierr = VecAXPY(P->rv, -1.0, P->wv);      CHKERRQ(ierr); // rv = rv - wv
-
-		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+		ierr = PCDataBFSetup((PCDataBF*)pc->data, jr); CHKERRQ(ierr);
 	}
-	else if(bf->type == _LOWER_)
+	else if(param->pc_type == _STOKES_USER_)
 	{
-		//=======================
-		// BLOCK LOWER TRIANGULAR
-		//=======================
-
-		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
-
-		ierr = MatMult(P->Apv, P->xv, P->wp);    CHKERRQ(ierr); // wp = Apv*xv
-
-		ierr = VecAXPY(P->rp, -1.0, P->wp);      CHKERRQ(ierr); // rp = rp - wp
-
-		// Schur complement already contains negative sign (no negative sign here)
-		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
+		ierr = PCDataUserSetup((PCDataUser*)pc->data, jr); CHKERRQ(ierr);
 	}
-
-	// compose approximate solution
-	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 //....................... COUPLED GALERKIN MULTIGRID ........................
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesMGCreate(PCStokes pc)
+PetscErrorCode PCDataMGCreate(PCDataMG *pc, PCParam *param, JacRes *jr, Mat J, Mat P)
 {
-	PCStokesMG *mg;
-	JacRes     *jr;
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// allocate space
-	ierr = PetscMalloc(sizeof(PCStokesMG), (void**)&mg); CHKERRQ(ierr);
+	// set parameters
+	pc->param = param;
 
-	// store context
-	pc->data = (void*)mg;
+	// create matrix evaluation context
+	ierr = MatDataCreate(&pc->md, jr, _IDX_COUPLED_); CHKERRQ(ierr);
 
-	// access context
-	jr = pc->pm->jr;
+	// create matrix
+	PMatMono *pm = &pc->pm;
 
-	// create context
-	ierr = MGCreate(&mg->mg, jr); CHKERRQ(ierr);
+	if(param->ps_type == _PICARD_ASSEMBLED_)
+	{
+		ierr = PMatMonoCreate(pm, &pc->md, param->pgamma); CHKERRQ(ierr);
+	}
+
+	// create multigrid context
+	ierr = MGCreate(&pc->mg, &pc->md, pm->A); CHKERRQ(ierr);
+
+	// set Picard operator
+	if(param->ps_type == _PICARD_MAT_FREE_)
+	{
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))MatFreeApplyPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, (void*)(&pc->md));                                CHKERRQ(ierr);
+	}
+	else if(param->ps_type == _PICARD_ASSEMBLED_)
+	{
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))PMatMonoPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, (void*)(&pc->pm));                            CHKERRQ(ierr);
+	}
+
+	// set application operator
+	ierr = MatShellSetOperation(P, MATOP_MULT, (void(*)(void))PCDataMGApply); CHKERRQ(ierr);
+	ierr = MatShellSetContext(P, (void*)pc);                                  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesMGDestroy(PCStokes pc)
+PetscErrorCode PCDataMGDestroy(PCDataMG *pc)
 {
-	PCStokesMG *mg;
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// access context
-	mg = (PCStokesMG*)pc->data;
+	ierr = MatDataDestroy(&pc->md); CHKERRQ(ierr);
 
-	ierr = MGDestroy(&mg->mg); CHKERRQ(ierr);
-	ierr = PetscFree(mg);      CHKERRQ(ierr);
+	if(pc->param->ps_type == _PICARD_ASSEMBLED_)
+	{
+		ierr = PMatMonoDestroy(&pc->pm); CHKERRQ(ierr);
+	}
+
+	ierr = MGDestroy(&pc->mg); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesMGSetup(PCStokes pc)
+PetscErrorCode PCDataMGSetup(PCDataMG *pc, JacRes *jr)
 {
-	PCStokesMG *mg;
-	PMatMono   *P;
-
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// acces context
-	mg = (PCStokesMG*)pc->data;
-	P  = (PMatMono*)  pc->pm->data;
+	ierr = MatDataSetup(&pc->md, jr); CHKERRQ(ierr);
 
-	ierr = MGSetup(&mg->mg, P->A); CHKERRQ(ierr);
+	if(pc->param->ps_type == _PICARD_ASSEMBLED_)
+	{
+		ierr = PMatMonoAssemble(&pc->pm); CHKERRQ(ierr);
+	}
+
+	ierr = MGSetup(&pc->mg); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y)
+PetscErrorCode PCDataMGApply(Mat P, Vec r, Vec x)
 {
-	PCStokes    pc;
-	PCStokesMG *mg;
+	PCDataMG *pc;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
+	ierr = MatShellGetContext(P, (void**)&pc); CHKERRQ(ierr);
 
-	mg = (PCStokesMG*)pc->data;
+	MG *mg = &pc->mg;
 
-	// apply multigrid preconditioner
-	ierr = PCApply(mg->mg.pc, x, y); CHKERRQ(ierr);
+	ierr = PCApply(mg->pc, r, x); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+//........................... BLOCK FACTORIZATION ...........................
+//---------------------------------------------------------------------------
+PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, Mat P)
+{
+	PC        vpc;
+	PetscInt  buildwBFBT, buildBvv, set_null_space;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// set parameters
+	pc->param = param;
+
+	// create matrix evaluation context
+	ierr = MatDataCreate(&pc->md, jr, _IDX_BLOCK_); CHKERRQ(ierr);
+
+	// set assembly flags
+	if(param->sp_type == _SCHUR_WBFBT_) buildwBFBT = 1;
+	else                                buildwBFBT = 0;
+
+	if     (param->ps_type == _PICARD_MAT_FREE_) buildBvv = 0;
+	else if(param->pgamma > 1.0)                 buildBvv = 1;
+	else                                         buildBvv = 0;
+
+	// set null space flag
+	if(param->vs_type == _VEL_USER_
+	&& param->vu_type != _VEL_USER_DIRECT_) set_null_space = 1;
+	else                                    set_null_space = 0;
+
+	// create matrix
+	PMatBlock *pm = &pc->pm;
+
+	ierr = PMatBlockCreate(pm, &pc->md, param->pgamma, buildwBFBT, buildBvv, set_null_space); CHKERRQ(ierr);
+
+	// create velocity solver
+	ierr = KSPCreate(PETSC_COMM_WORLD, &pc->vksp); CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(pc->vksp,"vs_");    CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(pc->vksp);            CHKERRQ(ierr);
+
+	// create & set velocity multigrid preconditioner
+	if(param->vs_type == _VEL_MG_)
+	{
+		ierr = MGCreate(&pc->vmg, &pc->md, pm->Avv); CHKERRQ(ierr);
+		ierr = KSPGetPC(pc->vksp, &vpc);             CHKERRQ(ierr);
+		ierr = PCSetType(vpc, PCSHELL);              CHKERRQ(ierr);
+		ierr = PCShellSetContext(vpc, &pc->vmg);     CHKERRQ(ierr);
+		ierr = PCShellSetApply(vpc, MGApply);        CHKERRQ(ierr);
+	}
+
+	// create & set pressure Schur complement solver
+	if(param->sp_type == _SCHUR_WBFBT_)
+	{
+		// create pressure solver
+		ierr = KSPCreate(PETSC_COMM_WORLD, &pc->pksp);                   CHKERRQ(ierr);
+		ierr = KSPSetDM(pc->pksp, pm->wbfbt->DA_P);                      CHKERRQ(ierr);
+#if PETSC_VERSION_LT(3, 25, 0)
+		PetscCall(KSPSetDMActive(pc->pksp,                   PETSC_FALSE));
+#else
+		PetscCall(KSPSetDMActive(pc->pksp, KSP_DMACTIVE_ALL, PETSC_FALSE));
+#endif
+		ierr = KSPSetOptionsPrefix(pc->pksp,"ks_");                      CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(pc->pksp);                              CHKERRQ(ierr);
+	}
+	// set Picard operator
+	if(param->ps_type == _PICARD_MAT_FREE_)
+	{
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))MatFreeApplyPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, (void*)(&pc->md));                                CHKERRQ(ierr);
+	}
+	else if(param->ps_type == _PICARD_ASSEMBLED_)
+	{
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))PMatBlockPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, (void*)(&pc->pm));                             CHKERRQ(ierr);
+	}
+
+	// set application operator
+	ierr = MatShellSetOperation(P, MATOP_MULT, (void(*)(void))PCDataBFApply); CHKERRQ(ierr);
+	ierr = MatShellSetContext(P, (void*)pc);                                  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode PCDataBFDestroy(PCDataBF *pc)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = MatDataDestroy(&pc->md); CHKERRQ(ierr);
+
+	ierr = PMatBlockDestroy(&pc->pm); CHKERRQ(ierr);
+
+	PetscCall(ViewSolver(pc->vksp));
+
+	ierr = KSPDestroy(&pc->vksp);  CHKERRQ(ierr);
+
+	if(pc->param->vs_type == _VEL_MG_)
+	{
+		ierr = MGDestroy(&pc->vmg); CHKERRQ(ierr);
+	}
+
+	if(pc->param->sp_type == _SCHUR_WBFBT_)
+	{
+		PetscCall(ViewSolver(pc->pksp));
+
+		ierr = KSPDestroy(&pc->pksp); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode PCDataBFSetup(PCDataBF *pc, JacRes *jr)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	PMatBlock *pm = &pc->pm;
+
+	ierr = MatDataSetup(&pc->md, jr); CHKERRQ(ierr);
+
+	ierr = PMatBlockAssemble(pm); CHKERRQ(ierr);
+
+	ierr = KSPSetOperators(pc->vksp, pm->Avv, pm->Avv); CHKERRQ(ierr);
+
+	if(pc->param->vs_type == _VEL_MG_)
+	{
+		ierr = MGSetup(&pc->vmg); CHKERRQ(ierr);
+	}
+
+	ierr = KSPSetUp(pc->vksp); CHKERRQ(ierr);
+
+	if(pc->param->sp_type == _SCHUR_WBFBT_)
+	{
+		ierr = KSPSetOperators(pc->pksp, pm->wbfbt->K, pm->wbfbt->K); CHKERRQ(ierr);
+		ierr = KSPSetUp(pc->pksp);                                    CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode PCDataBFApply(Mat P, Vec r, Vec x)
+{
+	//======================================================================
+	// r - residual vector      (input)
+	// x - approximate solution (output)
+	//======================================================================
+
+	PCDataBF *pc;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	ierr = MatShellGetContext(P, (void**)&pc); CHKERRQ(ierr);
+
+	PMatBlock *pm = &pc->pm;
+
+	// extract residual blocks
+	ierr = VecScatterBlockToMonolithic(pm->rv, pm->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
+
+	if(pc->param->bf_type == _BF_UPPER_)
+	{
+		//=======================
+		// BLOCK UPPER TRIANGULAR
+		//=======================
+
+		// Schur complement applies negative sign internally (no negative sign here)
+		if(pc->param->sp_type == _SCHUR_WBFBT_)
+		{
+			ierr = PCDataBFBTApply(pc, pm->rp, pm->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+		}
+		else if(pc->param->sp_type == _SCHUR_INV_ETA_)
+		{
+			ierr = MatMult(pm->iS, pm->rp, pm->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+		}
+
+		ierr = MatMult(pm->Avp, pm->xp, pm->wv);    CHKERRQ(ierr); // wv = Avp*xp
+
+		ierr = VecAXPY(pm->rv, -1.0, pm->wv);      CHKERRQ(ierr); // rv = rv - wv
+
+		ierr = KSPSolve(pc->vksp, pm->rv, pm->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+	}
+
+	else if(pc->param->bf_type == _BF_LOWER_)
+	{
+		//=======================
+		// BLOCK LOWER TRIANGULAR
+		//=======================
+
+		ierr = KSPSolve(pc->vksp, pm->rv, pm->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+
+		ierr = MatMult(pm->Apv, pm->xv, pm->wp);    CHKERRQ(ierr); // wp = Apv*xv
+
+		ierr = VecAXPY(pm->rp, -1.0, pm->wp);      CHKERRQ(ierr); // rp = rp - wp
+
+		// Schur complement applies negative sign internally (no negative sign here)
+		if(pc->param->sp_type == _SCHUR_WBFBT_)
+		{
+			ierr = PCDataBFBTApply(pc, pm->rp, pm->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+		}
+		else if(pc->param->sp_type == _SCHUR_INV_ETA_)
+		{
+			ierr = MatMult(pm->iS, pm->rp, pm->xp); CHKERRQ(ierr); // xp = (S^-1)*rp
+		}
+	}
+
+	// compose approximate solution
+	ierr = VecScatterBlockToMonolithic(pm->xv, pm->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode PCDataBFBTApply(PCDataBF *pc, Vec x, Vec y)
+{
+	//============================
+	// wBFBT preconditioner action
+	//============================
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	PMatBlock *pm = &pc->pm;
+	wBFBTData *sp = pm->wbfbt;
+
+	// y   = -(S^⁻1)*x
+	// S⁻1 =  (K^⁻1)*B*C*A*C*B^T*(K^⁻1)
+	// K   =  B*C*B^T
+
+	ierr = KSPSolve(pc->pksp, x, pm->wp);    CHKERRQ(ierr); // wp = (K^⁻1)*x
+
+	ierr = MatMult(pm->Avp, pm->wp, pm->wv); CHKERRQ(ierr); // wv = Avp*wp
+
+	ierr = MatMult(sp->C, pm->wv, sp->w);    CHKERRQ(ierr); // w = C*wv
+
+	ierr = MatMult(pm->Avv, sp->w, pm->wv);  CHKERRQ(ierr); // wv = Avv * w
+
+	ierr = MatMult(sp->C, pm->wv, sp->w);    CHKERRQ(ierr); // w = C*wv
+
+	ierr = MatMult(pm->Apv, sp->w, pm->wp);  CHKERRQ(ierr); // wp = Apv*w
+
+	ierr = KSPSolve(pc->pksp, pm->wp, y);    CHKERRQ(ierr); // y = (K^⁻1)*wp
+
+	ierr = VecScale(y, -1.0);                CHKERRQ(ierr); // y = -y
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 //............................. USER-DEFINED ................................
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesUserCreate(PCStokes pc)
+PetscErrorCode PCDataUserCreate(PCDataUser *pc, PCParam *param, JacRes *jr, Mat J, Mat P)
 {
-	PCStokesUser *user;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// allocate space
-	ierr = PetscMalloc(sizeof(PCStokesUser), (void**)&user); CHKERRQ(ierr);
-
-	// store context
-	pc->data = (void*)user;
-
 	// create user-defined preconditioner
-	// attach index sets in case fieldsplit preconditioner needs to be used
-	// set additional options (whatever with -jp_ prefix)
-	ierr = PCCreate(PETSC_COMM_WORLD, &user->pc); CHKERRQ(ierr);
-	ierr = PCSetOptionsPrefix(user->pc, "jp_");   CHKERRQ(ierr);
-	ierr = PCStokesUserAttachIS(pc);              CHKERRQ(ierr);
-	ierr = PCSetFromOptions(user->pc);            CHKERRQ(ierr);
+	// attach index sets to activate fieldsplit
+	// set additional options with -jp_ prefix
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
-{
-	PCStokesUser *user;
-	JacRes       *jr;
-	DOFIndex     *dof;
-	PetscInt      st, lnv, lnp;
+	MatData  *md;
+	DOFIndex *dof;
+	IS        isv, isp;
+	PetscInt  set_null_space;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
+
+	// set parameters
+	pc->param = param;
+
+	// create matrix evaluation context
+	ierr = MatDataCreate(&pc->md, jr, _IDX_COUPLED_); CHKERRQ(ierr);
 
 	// access context
-	user = (PCStokesUser*)pc->data;
-	jr   =  pc->pm->jr;
-	dof  = &jr->fs->dof;
-	st   =  dof->st;
-	lnv  =  dof->lnv;
-	lnp  =  dof->lnp;
+	md  = &pc->md;
+	dof = &md->fs->dof;
+
+	// create matrix
+	ierr = PMatMonoCreate(&pc->pm, &pc->md, param->pgamma, set_null_space = 1); CHKERRQ(ierr);
+
+	// create preconditioner context
+	ierr = PCCreate(PETSC_COMM_WORLD, &pc->pc); CHKERRQ(ierr);
+	ierr = PCSetOptionsPrefix(pc->pc, "jp_");   CHKERRQ(ierr);
 
 	// create index sets
-	ierr = ISCreateStride(PETSC_COMM_WORLD, lnv, st,     1, &user->isv); CHKERRQ(ierr);
-	ierr = ISCreateStride(PETSC_COMM_WORLD, lnp, st+lnv, 1, &user->isp); CHKERRQ(ierr);
+	ierr = ISCreateStride(PETSC_COMM_WORLD, dof->lnv, dof->st,            1, &isv); CHKERRQ(ierr);
+	ierr = ISCreateStride(PETSC_COMM_WORLD, dof->lnp, dof->st + dof->lnv, 1, &isp); CHKERRQ(ierr);
 
-	// this needs to be defined before index sets can be attached
-	ierr = PCSetType(user->pc, PCFIELDSPLIT); CHKERRQ(ierr);
+	// activate fieldsplit preconditioner
+	ierr = PCSetType(pc->pc, PCFIELDSPLIT); CHKERRQ(ierr);
 
 	// attach index sets
-	ierr = PCFieldSplitSetIS(user->pc, "v", user->isv); CHKERRQ(ierr);
-	ierr = PCFieldSplitSetIS(user->pc, "p", user->isp); CHKERRQ(ierr);
+	ierr = PCFieldSplitSetIS(pc->pc, "v", isv); CHKERRQ(ierr);
+	ierr = PCFieldSplitSetIS(pc->pc, "p", isp); CHKERRQ(ierr);
 
-    PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode PCStokesUserDestroy(PCStokes pc)
-{
-	PCStokesUser *user;
+	// destroy index sets
+	ierr = ISDestroy(&isv); CHKERRQ(ierr);
+	ierr = ISDestroy(&isp); CHKERRQ(ierr);
 
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
+	// configure preconditioner
+	ierr = PCSetFromOptions(pc->pc); CHKERRQ(ierr);
 
-	// get context
-	user = (PCStokesUser*)pc->data;
+	// set Picard operator
+	if(param->ps_type == _PICARD_MAT_FREE_)
+	{
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))MatFreeApplyPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, (void*)(&pc->md));                                CHKERRQ(ierr);
+	}
+	else if(param->ps_type == _PICARD_ASSEMBLED_)
+	{
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))PMatMonoPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, (void*)(&pc->pm));                            CHKERRQ(ierr);
+	}
 
-	// cleanup
-	ierr = PCDestroy(&user->pc);  CHKERRQ(ierr);
-	ierr = ISDestroy(&user->isv); CHKERRQ(ierr);
-	ierr = ISDestroy(&user->isp); CHKERRQ(ierr);
-	ierr = PetscFree(user);       CHKERRQ(ierr);
+	// set application operator
+	ierr = MatShellSetOperation(P, MATOP_MULT, (void(*)(void))PCDataUserApply); CHKERRQ(ierr);
+	ierr = MatShellSetContext(P, (void*)pc);                                    CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesUserSetup(PCStokes pc)
+PetscErrorCode PCDataUserDestroy(PCDataUser *pc)
 {
-	PetscBool    flg;
-	PCStokesUser *user;
-	PMatMono     *P;
+	PetscBool flg;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	// access context
-	user = (PCStokesUser*)pc->data;
-	P    = (PMatMono*)    pc->pm->data;
-
-	// compute preconditioner
-	ierr = PCSetOperators(user->pc, P->A, P->A);  CHKERRQ(ierr);
-	ierr = PCSetUp(user->pc);                     CHKERRQ(ierr);
-
-	// inspect preconditioner if requested
+	// view preconditioner
 	ierr = PetscOptionsHasName(NULL, NULL, "-pc_view", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
-		ierr = PCView(user->pc, PETSC_VIEWER_STDOUT_SELF); CHKERRQ(ierr);
+		ierr = PCView(pc->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
 	}
+
+	ierr = MatDataDestroy(&pc->md); CHKERRQ(ierr);
+
+	ierr = PMatMonoDestroy(&pc->pm); CHKERRQ(ierr);
+
+	ierr = PCDestroy(&pc->pc);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y)
+PetscErrorCode PCDataUserSetup(PCDataUser *pc, JacRes *jr)
 {
-	PCStokes      pc;
-	PCStokesUser *user;
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	PMatMono *P = &pc->pm;
+
+	ierr = MatDataSetup(&pc->md, jr); CHKERRQ(ierr);
+
+	ierr = PMatMonoAssemble(P); CHKERRQ(ierr);
+
+	ierr = PCSetOperators(pc->pc, P->A, P->A); CHKERRQ(ierr);
+
+	ierr = PCSetUp(pc->pc); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode PCDataUserApply(Mat P, Vec r, Vec x)
+{
+	PCDataUser *pc;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
+	ierr = MatShellGetContext(P, (void**)&pc); CHKERRQ(ierr);
 
-	user = (PCStokesUser*)pc->data;
-
-	// apply user-defined preconditioner
-	ierr = PCApply(user->pc, x, y); CHKERRQ(ierr);
+	ierr = PCApply(pc->pc, r, x); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 

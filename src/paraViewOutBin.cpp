@@ -369,7 +369,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
 
-
 	// read phase aggregates
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseAggStart>", "<PhaseAggEnd>"); CHKERRQ(ierr);
 
@@ -377,8 +376,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase aggregates specified! Max allowed: %lld", (LLD)_max_num_phase_agg_);
 	}
-
-
 
 	omask->num_agg = fb->nblocks;
 
@@ -392,7 +389,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 		omask->agg_num_phase[i] = np;
 
 		fb->blockID++;
-
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -455,7 +451,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 
 		PetscPrintf(PETSC_COMM_WORLD, ">\n");
 	}
-
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// count active output vectors
@@ -530,7 +525,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3, NULL);
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL);
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1, NULL);
-	if(omask->vel_gr_tensor)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "vel_gr_tensor",  scal->lbl_strain_rate,      &PVOutWriteVelocityGr,   9, NULL);
+	if(omask->vel_gr_tensor)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "vel_gr_tensor",  scal->lbl_strain_rate,      &PVOutWriteVelGrad,      9, NULL);
 
 
 	// setup phase aggregate output vectors
@@ -549,7 +544,7 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 	PetscFunctionBeginUser;
 
 	// output vectors
-	PetscFree(pvout->outvecs);
+	ierr = PetscFree(pvout->outvecs); CHKERRQ(ierr);
 
 	// output buffer
 	ierr = OutBufDestroy(&pvout->outbuf); CHKERRQ(ierr);

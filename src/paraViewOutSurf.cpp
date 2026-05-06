@@ -98,12 +98,13 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 {
+	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
-	PetscFree(pvsurf->buff);
+	ierr = PetscFree(pvsurf->buff); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

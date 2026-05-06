@@ -29,7 +29,6 @@ struct MeshSeg1D
 	PetscScalar biases[_max_num_segs_  ]; // biases for each segment
 	PetscInt    tcels;                    // total number of cells
 	PetscInt    uniform;                  // uniform grid flag
-	PetscInt    periodic;                 // periodic topology flag
 
 };
 
@@ -55,37 +54,36 @@ PetscErrorCode MeshSeg1DGenCoord(
 // finite difference discretization / domain decomposition data for single direction
 struct Discret1D
 {
-	PetscInt      nproc;    // number of processors
-	PetscMPIInt   rank;     // rank of current processor
+	PetscInt      nproc;     // number of processors
+	PetscMPIInt   rank;      // rank of current processor
 
-	PetscInt     *starts;   // index of first node (cell) on all processors + last index
-	PetscInt      pstart;   // index of first node (cell) on this processors
+	PetscInt     *starts;    // index of first node (cell) on all processors + last index
+	PetscInt      pstart;    // index of first node (cell) on this processors
 
-	PetscInt      tnods;    // total number of nodes
-	PetscInt      tcels;    // total number of cells (tnods-1)
+	PetscInt      tnods;     // total number of nodes
+	PetscInt      tcels;     // total number of cells (tnods-1)
 
-	PetscInt      nnods;    // number of local nodes
-	PetscInt      ncels;    // number of local cells
+	PetscInt      nnods;     // number of local nodes
+	PetscInt      ncels;     // number of local cells
 
-	PetscScalar  *ncoor;    // coordinates of local nodes (+ 1 layer of ghost points)
-	PetscScalar  *ccoor;    // coordinates of local cells (+ 1 layer of ghost points)
-	PetscScalar  *nbuff;    // memory buffer for node coordinates
-	PetscScalar  *cbuff;    // memory buffer for cells coordinates
-	PetscInt      bufsz;    // size of node buffer
+	PetscScalar  *ncoor;     // coordinates of local nodes (+ 1 layer of ghost points)
+	PetscScalar  *ccoor;     // coordinates of local cells (+ 1 layer of ghost points)
+	PetscScalar  *nbuff;     // memory buffer for node coordinates
+	PetscScalar  *cbuff;     // memory buffer for cells coordinates
 
-	PetscMPIInt   grprev;   // global rank of previous process (-1 for first processor)
-	PetscMPIInt   grnext;   // global rank of next process (-1 for last processor)
+	PetscMPIInt   grprev;    // global rank of previous process (-1 for first processor)
+	PetscMPIInt   grnext;    // global rank of next process (-1 for last processor)
 
-	PetscMPIInt   color;    // color of processor column in base direction
-	MPI_Comm      comm;     // column communicator
+	PetscMPIInt   color;     // color of processor column in base direction
+	MPI_Comm      comm;      // column communicator
 
-	PetscInt      uniform;  // uniform grid flag
-	PetscInt      periodic; // periodic topology flag
+	PetscInt      uniform;   // uniform grid flag
 
 	PetscScalar   gcrdbeg;  // global grid coordinate bound (begin)
 	PetscScalar   gcrdend;  // global grid coordinate bound (end)
 
 	PetscScalar   gtol;     // geometric tolerance
+	PetscInt      periodic; // periodic topology flag
 };
 
 //---------------------------------------------------------------------------
@@ -93,14 +91,16 @@ struct Discret1D
 //---------------------------------------------------------------------------
 
 PetscErrorCode Discret1DCreate(
-	Discret1D  *ds,
-	PetscInt    nproc,     // number of processors
-	PetscInt    rank,      // processor rank
-	PetscInt   *nnodProc,  // number of nodes per processor
-	PetscInt    color,     // column color
-	PetscMPIInt grprev,    // global rank of previous process
-	PetscMPIInt grnext,    // global rank of next process
-	PetscScalar gtol);     // geometric tolerance
+		Discret1D  *ds,
+		PetscInt    nproc,         // number of processors
+		PetscInt    rank,          // processor rank
+		PetscInt   *nnodProc,      // number of nodes per processor
+		PetscInt    color,         // column color
+		PetscMPIInt grprev,        // global rank of previous process
+		PetscMPIInt grnext,        // global rank of next process
+		PetscScalar gtol,          // geometric tolerance
+		const char *dir,           // direction label
+		PetscInt    periodic = 0); // periodic topology flag
 
 PetscErrorCode Discret1DDestroy(Discret1D *ds);
 
@@ -113,6 +113,12 @@ PetscErrorCode Discret1DGetNumCells(Discret1D  *ds, PetscInt **ncelProc);
 
 // generate local coordinates
 PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
+
+// coarsen fine grid coordinates
+PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine);
+
+// generate ghost points and cell center coordinates
+PetscErrorCode Discret1DCompleteCoord(Discret1D *ds);
 
 // stretch grid with constant stretch factor about reference point
 PetscErrorCode Discret1DStretch(Discret1D *ds,  PetscScalar eps, PetscScalar ref);
@@ -139,37 +145,19 @@ PetscErrorCode Discret1DFindPoint(Discret1D *ds, PetscScalar x, PetscInt &ID);
 
 //---------------------------------------------------------------------------
 
-enum idxtype { IDXNONE, IDXCOUPLED, IDXUNCOUPLED };
-
-// global indexing of the DOF
 struct DOFIndex
 {
-	//=====================================================================
-	//
-	// index vectors contain global DOF numbers
-	// boundary ghost points are marked by -1
-	//
-	//=====================================================================
-
-	idxtype  idxmod;            // indexing mode
-	DM       DA_CEN;            // central points
-	DM       DA_X, DA_Y, DA_Z;  // face points
-	PetscInt lnvx, lnvy, lnvz;  // local number of DOF
-	PetscInt lnv, lnp, ln;      // ...
+	PetscInt lnvx, lnvy, lnvz;  // local number of dof for each velocity component
+	PetscInt lnv, lnp, ln;      // local number of velocity, pressure, and total dof
 	PetscInt stv, stp, st;      // starting indices (stv & stp - decoupled layout)
-	Vec      ivx, ivy, ivz, ip; // index vectors (ghosted)
-
 };
 
 //---------------------------------------------------------------------------
 // DOFIndex functions
 //---------------------------------------------------------------------------
 
+// compute number of local dof and starting indices
 PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z);
-
-PetscErrorCode DOFIndexDestroy(DOFIndex *dof);
-
-PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod);
 
 //---------------------------------------------------------------------------
 // staggered grid data structure
@@ -192,7 +180,6 @@ struct FDSTAG
 
 	// local number of local grid points
 	PetscInt nCells;  // cells
-	PetscInt nCorns;  // corners
 	PetscInt nXYEdg;  // XY-edges
 	PetscInt nXZEdg;  // XZ-edges
 	PetscInt nYZEdg;  // YZ-edges
@@ -201,16 +188,15 @@ struct FDSTAG
 	PetscInt nZFace;  // Z-faces
 
 	PetscMPIInt neighb[_num_neighb_]; // global ranks of neighboring process
-
-	PetscScalar gtol; // relative geometry tolerance
-
+	PetscScalar gtol;                 // relative geometry tolerance
+	PetscInt    periodic;             // periodic topology flag
 };
 
 //---------------------------------------------------------------------------
 // FDSTAG functions
 //---------------------------------------------------------------------------
 
-PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb);
+PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build = 1);
 
 PetscErrorCode FDSTAGDestroy(FDSTAG *fs);
 
@@ -218,10 +204,17 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp);
 
 PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp);
 
-PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
+PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine);
+
+PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine);
+
+PetscErrorCode FDSTAGCreateDMDA(FDSTAG   *fs,
 	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
 	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
 	PetscInt *lx, PetscInt *ly, PetscInt *lz);
+
+// set number of local grid points
+PetscErrorCode FDSTAGSetNum(FDSTAG *fs);
 
 // return an array with the global ranks of adjacent processes (including itself)
 PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs);
@@ -246,18 +239,32 @@ PetscErrorCode FDSTAGGetGlobalBox(FDSTAG *fs,
 // save grid coordinates and processor partitioning to disk
 PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 
+// get maximum possible number of coarsening steps
+PetscErrorCode FDSTAGCheckMG(FDSTAG *fs, PetscInt &ncors);
+
+// get 2D coarsening flag
+PetscErrorCode FDSTAGCheckMG2D(FDSTAG *fs, PetscInt &MG2D);
+
+// compute global and local size of the coarse grid
+PetscErrorCode FDSTAGGetCoarseGridSize(
+		FDSTAG   *fs,
+		PetscInt nlevels,
+		PetscInt &nx, PetscInt &ny, PetscInt &nz,
+		PetscInt &Nx, PetscInt &Ny, PetscInt &Nz);
+
+// compute local grid size on all levels
+PetscErrorCode FDSTAGGetLevelsLocalGridSize(
+		FDSTAG   *fs,
+		PetscInt nlevels,
+		PetscInt levels_num_local_cells[],
+		PetscInt &coarse_num_local_cells);
+
 //---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------
 
 // get sub-domain ranks, starting node IDs, and number of nodes for output
 #define GET_OUTPUT_RANGE(r, n, s, ds) { r = ds.rank; s = ds.starts[r]; n = ds.starts[r+1] - s + 1; }
-
-// get loop bounds for node discretization
-#define GET_NODE_RANGE(n, s, ds) { n = ds.nnods; s = ds.pstart; }
-
-// get loop bounds for cell discretization
-#define GET_CELL_RANGE(n, s, ds) { n = ds.ncels; s = ds.pstart; }
 
 // get loop bounds for node discretization (including INTERNAL ghost points)
 #define GET_NODE_RANGE_GHOST_INT(n, s, ds) { n = ds.nnods + 2; s = ds.pstart - 1; if(ds.grprev == -1) { s++; n--; } if(ds.grnext == -1) n--; }
@@ -274,7 +281,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 #define COORD_NODE(i, s, ds) (ds.ncoor[(i-s)])
 
 // get coordinate of i-th CELL (ghost nodes)
-#define COORD_CELL_GHOST(i,ds) (ds.ccoor[(i-ds.pstart)])
+#define COORD_CELL_GHOST(i, ds) (ds.ccoor[(i-ds.pstart)])
 
 // get size of i-th CELL control volume (distance between two bounding nodes)
 #define SIZE_CELL(i, s, ds) (ds.ncoor[(i-s)+1] - ds.ncoor[(i-s)])
@@ -365,12 +372,18 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 // WRAPPERS
 //-----------------------------------------------------------------------------
 
-PetscErrorCode DMDACreate3dSetUp(MPI_Comm comm,
+PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
 	DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,
 	PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,
 	PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da);
 
 
 //---------------------------------------------------------------------------
+
+
+// PetscErrorCode TestPeriodic(DM DA_X);
+
+//---------------------------------------------------------------------------
+
 #endif
 

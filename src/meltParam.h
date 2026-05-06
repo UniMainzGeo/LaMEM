@@ -24,7 +24,7 @@
 #ifndef __meltParam_h__
 #define __meltParam_h__
 
-#define UNUSED    1e20
+#define UNUSED_VAL    1e20
 #define MAXITS    60
 #define X_ACC     0.00001
 #define SIG(x,y) ( (y)>=0.0 ? fabs(x) : -fabs(x) )
