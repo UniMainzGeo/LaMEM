@@ -858,9 +858,9 @@
 	use_mat_free_jac        =  0
 
 	stokes_solver           =  coupled_direct       # [coupled_direct, block_direct, coupled_mg, block_mg, wbfbt]
-	direct_solver_type      =  mumps                # [mumps, superlu_dist, lu]
+	direct_solver_type      =  mumps                # [mumps, superlu_dist, default]
 	block_tolerances        =  1e-2 30              # rtol, maxit (fgmres settings for block solves in block_mg and wbfbt)
-	penalty                 =  1e3                  # (only for block_direct)
+	penalty                 =  1e3                  # (only for direct solver)
 
 	num_mg_levels           = -1                    # (-1 = automatic setting)
 	num_mat_free_levels     =  0                    # (only for coupled_mg)

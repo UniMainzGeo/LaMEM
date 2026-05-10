@@ -36,9 +36,9 @@ struct SolOptDB
 	PetscInt    use_mat_free_jac               =  0;
 
 	char        stokes_solver[_str_len_]       = "coupled_direct";           // [coupled_direct, block_direct, coupled_mg, block_mg, wbfbt]
-	char        direct_solver_type[_str_len_]  = "mumps";                    // [mumps, superlu_dist, default]
+	char        direct_solver_type[_str_len_]  = "mumps";                    // [mumps, superlu_dist, default (PETSc built-in, sequential only)]
 	PetscScalar block_tolerances[2]            = { 1e-2, 30 } ;              // rtol, maxit (fgmres settings for block solves in block_mg and wbfbt)
-	PetscScalar penalty                        =  1e3;                       // (only for block_direct)
+	PetscScalar penalty                        =  1e3;                       // (only for direct solvers)
 
 	PetscInt    num_mg_levels                  = -1;                         // (-1 = automatic setting)
 	PetscInt    num_mat_free_levels            =  0;                         // (only for coupled_mg)
