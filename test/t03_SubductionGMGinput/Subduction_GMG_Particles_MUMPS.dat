@@ -238,7 +238,7 @@
 	linear_tolerances    = 1e-5 1e-5  50   # rtol, atol, maxit
 	picard_to_newton     = 5e-2 2 1.1 20   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
-	stokes_solver        = block_direct
+	stokes_solver        = coupled_direct
 	direct_solver_type   = mumps
 		
 <SolverOptionsEnd>
