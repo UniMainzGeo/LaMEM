@@ -70,15 +70,15 @@ LAMEM_FLAGS = -std=c++17 -Wall -Wextra -Wconversion \
               -Wundef -Wnon-virtual-dtor -Wno-unused-result -Wunused-but-set-variable
 
 # tune compiler flags
-ifeq ($(CXX_COMPILER), icpx)
-   LAMEM_FLAGS += -Wimplicit-fallthrough -Wno-sign-conversion \
-   -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
-else ifeq ($(CXX_COMPILER), g++)
-   LAMEM_FLAGS += -Wduplicated-cond -Wduplicated-branches\
-                   -Wlogical-op -Wnull-dereference -Wuseless-cast 
-else ifeq ($(CXX_COMPILER), clang++)
+ifeq ($(findstring clang++, $(CXX_COMPILER)), clang++)
    LAMEM_FLAGS += -Wimplicit-fallthrough \
                   -Wshorten-64-to-32 -Wnewline-eof
+else ifeq ($(findstring icpx, $(CXX_COMPILER)), icpx)
+   LAMEM_FLAGS += -Wimplicit-fallthrough -Wno-sign-conversion \
+                  -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
+else ifeq ($(findstring g++, $(CXX_COMPILER)), g++)
+   LAMEM_FLAGS += -Wduplicated-cond -Wduplicated-branches\
+                  -Wlogical-op -Wnull-dereference -Wuseless-cast 
 else
     $(error Unsupported compiler)
 endif
