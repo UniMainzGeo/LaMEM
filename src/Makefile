@@ -80,7 +80,7 @@ else ifeq ($(findstring g++, $(CXX_COMPILER)), g++)
    LAMEM_FLAGS += -Wduplicated-cond -Wduplicated-branches\
                   -Wlogical-op -Wnull-dereference -Wuseless-cast 
 else
-    $(error Unsupported compiler)
+    $(error Unsupported compiler: $(CXX_COMPILER))
 endif
 
 # add debuggiing flag if in debug mode
