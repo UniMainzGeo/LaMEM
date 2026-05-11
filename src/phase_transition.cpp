@@ -1190,7 +1190,7 @@ PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Ma
             // Global Domain thickness used to define dz
             Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
 			depth = PetscAbs(Z_Top - P->X[2]);
-			nsteps=(PetscInt)((depth/Ztot)*(jr->fs->dsz.tcels/2))+1;
+			nsteps=(PetscInt)((depth/Ztot)*((PetscScalar)jr->fs->dsz.tcels/2.0)) + 1;
             dz = depth/(PetscScalar)(nsteps);
 
             // Start with the temperature T (potential temperature from TempType)
@@ -1330,7 +1330,7 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
             // Global Domain thickness used to define dz
             Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
 			depth = PetscAbs(Z_Top - P->X[2]);
-			nsteps=(PetscInt)((depth/Ztot)*(jr->fs->dsz.tcels/2))+1;
+			nsteps=(PetscInt)((depth/Ztot)*((PetscScalar)jr->fs->dsz.tcels/2.0))+1;
             dz = depth/(PetscScalar)(nsteps);
 
             // Start with the temperature T (potential temperature from TempType)

@@ -466,6 +466,9 @@ PetscErrorCode Discret1DCompleteCoord(Discret1D *ds)
 	PetscFunctionBeginUser;
 
 	// compute ghost cell sizes
+	D0 = 0.0;
+	DN = 0.0;
+
 	if(ds->grprev == -1)
 	{
 		D0 = ds->ncoor[1] - ds->ncoor[0];
@@ -487,8 +490,8 @@ PetscErrorCode Discret1DCompleteCoord(Discret1D *ds)
 			{
 				SN = D0;
 
-				PetscCall(MPI_Isend(&SN, 1, MPIU_SCALAR, ds->nproc-1, 800, ds->comm, &request[0]));
-				PetscCall(MPI_Irecv(&RN, 1, MPIU_SCALAR, ds->nproc-1, 800, ds->comm, &request[1]));
+				PetscCall(MPI_Isend(&SN, 1, MPIU_SCALAR, (PetscMPIInt)ds->nproc-1, 800, ds->comm, &request[0]));
+				PetscCall(MPI_Irecv(&RN, 1, MPIU_SCALAR, (PetscMPIInt)ds->nproc-1, 800, ds->comm, &request[1]));
 
 				PetscCall(MPI_Waitall(2, request, MPI_STATUSES_IGNORE));
 

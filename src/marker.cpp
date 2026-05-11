@@ -1756,7 +1756,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	{
 		if(j==0)
 		{
-			fscanf(fp, "%i,", &pd->numProps[i_pd]);
+			fscanf(fp, "%" PetscInt_FMT ",", &pd->numProps[i_pd]);
 		}
 		else
 		{
@@ -1769,13 +1769,13 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	pd->minT[i_pd] 			=	pd->minT[i_pd]/scal->temperature;							// non-dimensionalize
 	fscanf(fp, "%lf,",&pd->dT[i_pd]);														// Temperature increment
 	pd->dT[i_pd] 			=	pd->dT[i_pd]/scal->temperature;								// non-dimensionalize
-	fscanf(fp, "%i,", &pd->nT[i_pd]);														// # of temperature points in diagram 
+	fscanf(fp, "%" PetscInt_FMT ",", &pd->nT[i_pd]);														// # of temperature points in diagram
 	pd->maxT[i_pd] 	 		=	pd->minT[i_pd] + (PetscScalar)(pd->nT[i_pd])*pd->dT[i_pd];	// maximum T of diagram
 	fscanf(fp, "%lf,",&pd->minP[i_pd]);														// minimum P of diagram [in bar]
 	pd->minP[i_pd] 			=	(pd->minP[i_pd]*1e5)/scal->stress_si;						// non-dimensionalize
 	fscanf(fp, "%lf,",&pd->dP[i_pd]);														// Pressure increment
 	pd->dP[i_pd] 			=	(pd->dP[i_pd]*1e5)/scal->stress_si;							// non-dimensionalize
-	fscanf(fp, "%i,",&pd->nP[i_pd]);														// # of pressure points in diagram 
+	fscanf(fp, "%" PetscInt_FMT ",",&pd->nP[i_pd]);														// # of pressure points in diagram
 	pd->maxP[i_pd] 	 		=	pd->minP[i_pd] + (PetscScalar)(pd->nP[i_pd])*pd->dP[i_pd];	// maximum P of diagram
 	
 	n = pd->nT[i_pd]*pd->nP[i_pd]; // number of points

@@ -1638,7 +1638,7 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	// Prints an overview of the material properties specified for a certain phase (for debugging)
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %i with visId=%i : \n",MatProp->ID, MatProp->visID);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %" PetscInt_FMT " with visId=%" PetscInt_FMT " : \n",MatProp->ID, MatProp->visID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Density:          rho   = %1.7e,  rho_n = %1.7e,    rho_c = %1.7e,   beta = %1.7e \n",  MatProp->rho,MatProp->rho_c, MatProp->rho_c, MatProp->beta);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Elasticity:       Kb    = %1.7e,  Kp    = %1.7e,    G     = %1.7e \n",                MatProp->Kb, MatProp->Kp, MatProp->G);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Diffusion Cr.:    Bd    = %1.7e,  Ed    = %1.7e,    Vd    = %1.7e \n",                MatProp->Bd, MatProp->Ed, MatProp->Vd);
@@ -1647,7 +1647,7 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	PetscPrintf(PETSC_COMM_WORLD,">>> dc Cr.:           Bdc   = %1.7e,  Edc   = %1.7e,    Rdc   = %1.7e,    mu  = %1.7e \n", MatProp->Bdc, MatProp->Edc, MatProp->Rdc, MatProp->mu);
     PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
     
-    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_vp= %1.7e,    eta_st= %1.7e, rp= %1.7e,    frSoftID = %i,  chSoftID = %i,   healID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->eta_vp, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
+    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_vp= %1.7e,    eta_st= %1.7e, rp= %1.7e,    frSoftID = %" PetscInt_FMT ",  chSoftID = %" PetscInt_FMT ",   healID = %" PetscInt_FMT " \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->eta_vp, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
 	PetscPrintf(PETSC_COMM_WORLD,"          			nu_k  = %1.7e,  T_Nu  = %1.7e,   \n", MatProp->nu_k, MatProp->T_Nu);
 	PetscPrintf(PETSC_COMM_WORLD,"          			T_sol = %1.7e, T_liq  = %1.7e,   Latent_hx= %1.7e,    \n", MatProp->T_sol, MatProp->T_liq, MatProp->Latent_hx);
