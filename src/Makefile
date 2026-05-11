@@ -45,7 +45,7 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 PLATFORM = $(shell uname -m)
 
 # check if platform is supported
-ifneq ($(findstring $PLATFORM, x86_64 arm64 aarch64 armv6l armv7l i686 powerpc64le amd64),)
+ifneq ($(findstring $(PLATFORM), x86_64 arm64 aarch64 armv6l armv7l i686 powerpc64le amd64), $(PLATFORM))
    $(error Unsupported platform)
 endif
 
@@ -70,13 +70,13 @@ LAMEM_FLAGS = -std=c++17 -Wall -Wextra -Wconversion \
               -Wundef -Wnon-virtual-dtor -Wno-unused-result -Wunused-but-set-variable
 
 # tune compiler flags
-ifeq ($(findstring $CXX_COMPILER, icpx),)
+ifeq ($(CXX_COMPILER), icpx)
    LAMEM_FLAGS += -Wimplicit-fallthrough -Wno-sign-conversion \
    -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
-else ifeq ($(findstring $CXX_COMPILER, g++),)
+else ifeq ($(CXX_COMPILER), g++)
    LAMEM_FLAGS += -Wduplicated-cond -Wduplicated-branches\
                    -Wlogical-op -Wnull-dereference -Wuseless-cast 
-else ifeq ($(findstring $CXX_COMPILER, clang++),)
+else ifeq ($(CXX_COMPILER), clang++)
    LAMEM_FLAGS += -Wimplicit-fallthrough \
                   -Wshorten-64-to-32 -Wnewline-eof
 else
