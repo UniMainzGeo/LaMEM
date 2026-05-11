@@ -59,7 +59,8 @@ MPI_COMPILER_SHOW := $(shell \
 	$(MPI_COMPILER) --show 2>/dev/null || \
 	$(MPI_COMPILER) -show 2>/dev/null )
 
-CXX_COMPILER := $(word 1, $(filter-out ccache,$(MPI_COMPILER_SHOW)))
+CXX_COMMAND  := $(word 1, $(filter-out ccache,$(MPI_COMPILER_SHOW)))
+CXX_COMPILER := $(shell readlink -f $$(which $(CXX_COMMAND)))
 
 # set dependency flag (should be supported by all compilers)
 DEPEN_FLAGS = -MM
@@ -77,10 +78,9 @@ else ifeq ($(findstring icpx, $(CXX_COMPILER)), icpx)
    LAMEM_FLAGS += -Wimplicit-fallthrough -Wno-sign-conversion \
                   -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
 else ifeq ($(findstring g++, $(CXX_COMPILER)), g++)
-   LAMEM_FLAGS += -Wduplicated-cond -Wduplicated-branches\
-                  -Wlogical-op -Wnull-dereference -Wuseless-cast 
+   LAMEM_FLAGS += -Wduplicated-cond -Wlogical-op -Wnull-dereference
 else
-    $(error Unsupported compiler: $(CXX_COMPILER) $(MPI_COMPILER) $(shell $(CXX_COMPILER) --version))
+    $(error Unsupported compiler: $(CXX_COMPILER))
 endif
 
 # add debuggiing flag if in debug mode
