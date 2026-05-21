@@ -214,6 +214,10 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space)
 	// create matrix
 	ierr = MatAIJCreate(ln, ln, 0, d_nnz, 0, o_nnz, A); CHKERRQ(ierr);
 
+	// free counter arrays
+	ierr = PetscFree(d_nnz); CHKERRQ(ierr);
+	ierr = PetscFree(o_nnz); CHKERRQ(ierr);
+
 	// attach near null space
 	if(set_null_space)
 	{
