@@ -30,9 +30,6 @@ int main(int argc, char **argv)
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
 
 	// set default to be a forward run and overwrite it with input file options
-	ierr = PetscMalloc(sizeof(ModParam), &IOparam);  CHKERRQ(ierr);
-	ierr = PetscMemzero(&IOparam, sizeof(ModParam)); CHKERRQ(ierr);
-
 	IOparam.use = _none_;
 
 	// load and parse input file
