@@ -295,3 +295,10 @@
 <SolverOptionsEnd>
 
 #===============================================================================
+
+<PetscOptionsStart>
+
+	-js_ksp_type gmres
+
+<PetscOptionsEnd>
+
