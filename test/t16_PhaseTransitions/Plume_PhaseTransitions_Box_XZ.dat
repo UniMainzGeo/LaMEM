@@ -400,6 +400,7 @@
 	monitor_solvers      = 1
 	stokes_solver        = coupled_direct
 	direct_solver_type   = superlu_dist
+	penalty              = 1e2
 
 <SolverOptionsEnd>
 

@@ -290,15 +290,10 @@
 	picard_to_newton     = 1e-2 5 1.1 20  # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
 	stokes_solver        = coupled_direct
-	direct_solver_type   = superlu_dist
+	direct_solver_type   = mumps
+	penalty              = 1e2
 
 <SolverOptionsEnd>
 
 #===============================================================================
-
-<PetscOptionsStart>
-
-	-js_ksp_type gmres
-
-<PetscOptionsEnd>
 
