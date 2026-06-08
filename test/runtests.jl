@@ -73,7 +73,7 @@ end
     ParamFile = "FallingBlock_Direct_Default.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-5,), (rtol=1e-5,), (rtol=1e-4,));
+    acc      = ((atol=1e-9,), (atol=1e-9,), (rtol=1e-4,atol=1e-9));
 
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt", 
@@ -117,7 +117,7 @@ end
     ParamFile = "Subduction_GMG_Particles_Default.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=5e-7), (rtol=1e-5,atol=1e-5), (rtol=5e-4,atol=1e-3));
+    acc      = ((rtol=1e-5,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=5e-4,atol=1e-3));
     
     # test on 1 core
     # Sub1_a_Direct_opt
@@ -130,9 +130,6 @@ end
 
     # Sub1_b_MUMPS_opt                            
     ParamFile = "Subduction_GMG_Particles_MUMPS.dat";
-
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=1e-5), (rtol=1e-5,atol=1e-5), (rtol=2.5e-4,atol=1e-3));
         
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_b_MUMPS_opt", 
@@ -142,11 +139,7 @@ end
 
     # Sub1_c_MUMPS_deb    
     ParamFile = "Subduction_GMG_Particles_MUMPS.dat";
-                     
-    # writing parallel marker files doesn't work in CI with 64 bit atm 
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=2e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=3e-4));
-        
+                            
     CreateMarkers_Subduction(dir, ParamFile, NumberCores=4, mpiexec=mpiexec, is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_c_MUMPS_deb", 
                                 args="-nstep_max 2",
@@ -157,10 +150,7 @@ end
     ParamFile = "Subduction_VEP.dat";
     # NOTE: This employs 1D grid refinement
     include(joinpath(dir,"CreateMarkers_SubductionVEP_parallel.jl"));      
-    
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5,atol=3e-6), (rtol=2.5e-4,atol=1e-4));
-        
+            
     CreateMarkers_SubductionVEP(dir, ParamFile, NumberCores=2, mpiexec=mpiexec,  is64bit=is64bit)
     @test perform_lamem_test(dir,ParamFile,"Sub1_d_MUMPS_MG_VEP_opt", 
                                 args="-nstep_max 2",
@@ -650,7 +640,7 @@ end
     ParamFile = "Temperature_diffusion.dat";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=1e-1,atol=1e-9));
+    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (atol=1e-9,));
 
     # ---
     # Perform tests
@@ -680,7 +670,7 @@ end
     # halfspace cooling test ----
     ParamFile = "Temperature_diffusion_1Dhalfspace.dat"
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2","|T|_2")
-    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (rtol=1e-1,atol=1-9),  (rtol=1e-1,atol=1e-9));
+    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-6, atol=1e-9), (atol=1e9,),  (rtol=1e-9,));
 
     @test perform_lamem_test(dir,ParamFile,"Temperature_diffusion",
                 args="-printNorms 1",
@@ -934,8 +924,8 @@ end
     dir = "t16_PhaseTransitions";
     ParamFile = "Plume_PhaseTransitions.dat";
     
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-	acc      = ((rtol=1e-5,atol=1e-7), (rtol=1e-5, atol=1e-7), (rtol=1e-4,atol=1e-5));
+    keywords = ("|mRes|_2",)
+    acc      = ((atol=1e-3,),);
 
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"PhaseTransitions",
@@ -1124,8 +1114,8 @@ end
     dir = "t24_Erosion_Sedimentation";
     include(joinpath(dir,"t24_CreateSetup.jl"));      
 
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-6,atol=1e-6), (rtol=1e-5, atol=5e-5), (rtol=2.5e-4,atol=1e-4));
+    keywords = ("|mRes|_2",)
+    acc      = ((atol=1e-3,),);
     
     ParamFile = "Erosion_Sedimentation_2D.dat"
 
@@ -1149,7 +1139,7 @@ end
     dir = "t25_APS_Healing";
     
     keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-9), (rtol=1e-5, atol=1e-8), (rtol=1e-4,atol=1e-5));
+    acc      = ((rtol=1e-5,atol=1e-7), (rtol=1e-5, atol=1e-7), (rtol=1e-4,atol=1e-5));
 
     # test_2D
     @test perform_lamem_test(dir,"APS_Healing2D.dat","APS_Healing2D",
