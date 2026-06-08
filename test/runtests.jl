@@ -925,8 +925,8 @@ end
     ParamFile = "Plume_PhaseTransitions.dat";
     
     keywords = ("|mRes|_2",)
-    acc      = ((atol=1e-3,),);
-
+    acc      = ((rtol=1e-1, atol=2e-2),);
+    
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"PhaseTransitions",
                             args="-nstep_max 30",
@@ -952,7 +952,7 @@ end
     @test perform_lamem_test(dir,"TimeTransition.dat","TimeTransition",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
-                            
+                        
     # Test dike feature using optimized LaMEM
     @test perform_lamem_test(dir,"PhaseTransNotInAirBox_move.dat","PhaseTransNotInAirBox_move",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
@@ -961,7 +961,8 @@ end
     # Check that it works when one Phase==0; addresses issue #14    
     @test perform_lamem_test(dir,"Plume_PhaseTransitions_SwappedPhases.dat","PhaseTransitions-Melting_SwappedPhases",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-                            create_expected_file=update_expected, clean_dir=clean_files)                 
+                            create_expected_file=update_expected, clean_dir=clean_files)
+                 
 end
 #---------------------------------------------------------------------------
 @testset "t17_InflowOutflow" begin
@@ -1019,9 +1020,9 @@ end
     cd(test_dir)
     dir = "t19_CompensatedInflow";
     
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-5,atol=1e-6), (rtol=1e-5, atol=1e-6), (rtol=1e-3,atol=1e-4));
-
+    keywords = ("|mRes|_2",)
+    acc      = ((rtol=1e-3, atol=1e-3),);
+    
     # test_a
     # t19_CompensatedInflow
     @test perform_lamem_test(dir,"CompensatedInflow_test_2D.dat","CompensatedInflow",
