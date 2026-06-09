@@ -24,14 +24,14 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 	PetscScalar angle, area, volume, energy, power;
 	PetscScalar yr, Myr, km, cm, cm_yr, MPa, mW;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// set unit scaling
 	scal->unit = 1.0; sprintf(scal->lbl_unit, "[ ]");
 
 	// read units type
-	ierr = getStringParam(fb, _OPTIONAL_, "units", utype, "none"); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "units", utype, "none"));
 
 	// set units type
 	if     (!strcmp(utype, "none")) scal->utype = _NONE_;
@@ -98,11 +98,11 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 	stress      = 1.0;
 	density     = 0.0;
 
-	ierr = getScalarParam(fb, _REQUIRED_, "unit_temperature", &temperature, 1, 1.0);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "unit_length",      &length ,     1, 1.0);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "unit_viscosity",   &viscosity,   1, 1.0);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "unit_stress",      &stress,      1, 1.0);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "unit_density",     &density,     1, 1.0);  CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _REQUIRED_, "unit_temperature", &temperature, 1, 1.0));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "unit_length",      &length ,     1, 1.0));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "unit_viscosity",   &viscosity,   1, 1.0));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "unit_stress",      &stress,      1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "unit_density",     &density,     1, 1.0));
 
 	// print summary
 	if (PrintOutput){

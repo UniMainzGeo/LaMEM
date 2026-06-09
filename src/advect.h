@@ -14,15 +14,12 @@
 #define __advect_h__
 //---------------------------------------------------------------------------
 
-#include "Tensor.h" // required for Marker declaration
-#include "passive_tracer.h"
-//---------------------------------------------------------------------------
-
 struct FB;
 struct FDSTAG;
 struct JacRes;
 struct FreeSurf;
 struct DBMat;
+struct P_Tr;
 
 //---------------------------------------------------------------------------
 //............   Material marker (history variables advection)   ............
@@ -269,8 +266,6 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx);
 PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase);
 
 // inject or delete markers
-PetscErrorCode ADVMarkControl(AdvCtx *actx);
-
 PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 
 // check marker phases

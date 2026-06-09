@@ -352,7 +352,7 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs  =  jr->fs;
@@ -422,7 +422,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar ***vx,***vy,***vz;
 	PetscScalar y;
 	
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access residual context variables
@@ -594,7 +594,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar ***lk, ***bcT, ***buff, ***lT;
 	PetscScalar y;
 	
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access residual context variables

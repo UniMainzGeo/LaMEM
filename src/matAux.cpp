@@ -23,24 +23,24 @@ PetscErrorCode MatAIJCreate(
 	PetscInt o_nz, const PetscInt o_nnz[],
 	Mat *P)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// create matrix
-	ierr = MatCreate(PETSC_COMM_WORLD, P); CHKERRQ(ierr);
-	ierr = MatSetType((*P), MATAIJ); CHKERRQ(ierr);
-	ierr = MatSetSizes((*P), m, n, PETSC_DETERMINE, PETSC_DETERMINE); CHKERRQ(ierr);
+	PetscCall(MatCreate(PETSC_COMM_WORLD, P));
+	PetscCall(MatSetType((*P), MATAIJ));
+	PetscCall(MatSetSizes((*P), m, n, PETSC_DETERMINE, PETSC_DETERMINE));
 
 	// preallocate matrix
-	ierr = MatSeqAIJSetPreallocation((*P), d_nz, d_nnz); CHKERRQ(ierr);
-	ierr = MatMPIAIJSetPreallocation((*P), d_nz, d_nnz, o_nz, o_nnz); CHKERRQ(ierr);
+	PetscCall(MatSeqAIJSetPreallocation((*P), d_nz, d_nnz));
+	PetscCall(MatMPIAIJSetPreallocation((*P), d_nz, d_nnz, o_nz, o_nnz));
 
 	// read custom options (required to resolve SuperLU_DIST issue)
-	ierr = MatSetFromOptions((*P)); CHKERRQ(ierr);
+	PetscCall(MatSetFromOptions((*P)));
 
 	// throw an error if preallocation fails
-	ierr = MatSetOption((*P), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE); CHKERRQ(ierr);
-	ierr = MatSetUp((*P)); CHKERRQ(ierr);
+	PetscCall(MatSetOption((*P), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE));
+	PetscCall(MatSetUp((*P)));
 
 	PetscFunctionReturn(0);
 }
@@ -49,11 +49,11 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 {
 	PetscInt i, ii;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// preallocate
-	ierr = MatAIJCreate(m, m, 1, NULL, 0, NULL, P); CHKERRQ(ierr);
+	PetscCall(MatAIJCreate(m, m, 1, NULL, 0, NULL, P));
 
 	// put explicit zeroes on the diagonal
 	for(i = 0; i < m; i++)
@@ -61,33 +61,33 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 		// get global row index
 		ii = istart + i;
 
-		ierr = MatSetValue((*P), ii, ii, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValue((*P), ii, ii, 0.0, INSERT_VALUES));
 	}
 
-	ierr = MatSetFromOptions((*P)); CHKERRQ(ierr);
+	PetscCall(MatSetFromOptions((*P)));
 
 	// assemble
-	ierr = MatAIJAssemble((*P), 0, NULL, 0.0); CHKERRQ(ierr);
+	PetscCall(MatAIJAssemble((*P), 0, NULL, 0.0));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = MatSetOption(P, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = MatAssemblyBegin(P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-	ierr = MatAssemblyEnd  (P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	PetscCall(MatSetOption(P, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_FALSE));
+	PetscCall(MatAssemblyBegin(P, MAT_FINAL_ASSEMBLY));
+	PetscCall(MatAssemblyEnd  (P, MAT_FINAL_ASSEMBLY));
 
 	// freeze nonzero structure, constrain rows only locally
-	ierr = MatSetOption(P, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE); CHKERRQ(ierr);
-	ierr = MatSetOption(P, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);     CHKERRQ(ierr);
-	ierr = MatSetOption(P, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);    CHKERRQ(ierr);
+	PetscCall(MatSetOption(P, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE));
+	PetscCall(MatSetOption(P, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE));
+	PetscCall(MatSetOption(P, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE));
 
 	// zero out constrained rows, form unit diagonal for the constrained block
-	ierr = MatZeroRows(P, numRows, rows, diag, NULL, NULL); CHKERRQ(ierr);
+	PetscCall(MatZeroRows(P, numRows, rows, diag, NULL, NULL));
 
 	PetscFunctionReturn(0);
 }
@@ -100,7 +100,7 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 	PetscScalar *v;
 	PetscInt     i, j, sz, ln, iter, nullsp_sz, lbsz[_max_nullsp_sz_];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -123,34 +123,34 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 	for(i = 0; i < nullsp_sz; i++)
 	{
 		// create
-		ierr = VecCreateMPI(PETSC_COMM_WORLD, ln, PETSC_DETERMINE, &nullsp_vecs[i]); CHKERRQ(ierr);
-		ierr = VecSetFromOptions(nullsp_vecs[i]);   CHKERRQ(ierr);
-		ierr = VecZeroEntries   (nullsp_vecs[i]);   CHKERRQ(ierr);
+		PetscCall(VecCreateMPI(PETSC_COMM_WORLD, ln, PETSC_DETERMINE, &nullsp_vecs[i]));
+		PetscCall(VecSetFromOptions(nullsp_vecs[i]));
+		PetscCall(VecZeroEntries   (nullsp_vecs[i]));
 
 		// initialize
-		ierr = VecZeroEntries (nullsp_vecs[i]);     CHKERRQ(ierr);
-		ierr = VecGetArray    (nullsp_vecs[i], &v); CHKERRQ(ierr);
+		PetscCall(VecZeroEntries (nullsp_vecs[i]));
+		PetscCall(VecGetArray    (nullsp_vecs[i], &v));
 
 		for(j = 0, sz = lbsz[i]; j < sz; j++) v[iter++] = 1.0;
 
-		ierr = VecRestoreArray(nullsp_vecs[i], &v); CHKERRQ(ierr);
+		PetscCall(VecRestoreArray(nullsp_vecs[i], &v));
 
 		// normalize
-		ierr = VecNormalize(nullsp_vecs[i], NULL); CHKERRQ(ierr);
+		PetscCall(VecNormalize(nullsp_vecs[i], NULL));
 	}
 
 	// create near null space
-	ierr = MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_FALSE, nullsp_sz, (const Vec*)nullsp_vecs, &nullsp); CHKERRQ(ierr);
+	PetscCall(MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_FALSE, nullsp_sz, (const Vec*)nullsp_vecs, &nullsp));
 
 	// attach near null space to the matrix
-	ierr = MatSetNearNullSpace(P, nullsp); CHKERRQ(ierr);
+	PetscCall(MatSetNearNullSpace(P, nullsp));
 
 	// clear storage
-	ierr = MatNullSpaceDestroy(&nullsp); CHKERRQ(ierr);
+	PetscCall(MatNullSpaceDestroy(&nullsp));
 
 	for(i = 0; i < nullsp_sz; i++)
 	{
-		ierr = VecDestroy(&nullsp_vecs[i]); CHKERRQ(ierr);
+		PetscCall(VecDestroy(&nullsp_vecs[i]));
 	}
 
 	PetscFunctionReturn(0);
@@ -331,13 +331,13 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 	PetscInt     fs,  gs,  bs;
 	PetscScalar *fp, *gp;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// get sizes of the blocks
-	ierr = VecGetLocalSize(f, &fs); CHKERRQ(ierr);
-	ierr = VecGetLocalSize(g, &gs); CHKERRQ(ierr);
-	ierr = VecGetLocalSize(b, &bs); CHKERRQ(ierr);
+	PetscCall(VecGetLocalSize(f, &fs));
+	PetscCall(VecGetLocalSize(g, &gs));
+	PetscCall(VecGetLocalSize(b, &bs));
 
 	if(bs != fs+gs)
 	{
@@ -345,39 +345,39 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 	}
 
 	// access vectors
-	ierr = VecGetArray(f, &fp); CHKERRQ(ierr);
-	ierr = VecGetArray(g, &gp); CHKERRQ(ierr);
+	PetscCall(VecGetArray(f, &fp));
+	PetscCall(VecGetArray(g, &gp));
 
 	if(mode == SCATTER_FORWARD)
 	{
 		PetscScalar *bp;
 
-		ierr = VecGetArray(b, &bp); CHKERRQ(ierr);
+		PetscCall(VecGetArray(b, &bp));
 
 		// block-to-monolithic
-		ierr = PetscMemcpy(bp,    fp, (size_t)fs*sizeof(PetscScalar)); CHKERRQ(ierr);
-		ierr = PetscMemcpy(bp+fs, gp, (size_t)gs*sizeof(PetscScalar)); CHKERRQ(ierr);
+		PetscCall(PetscMemcpy(bp,    fp, (size_t)fs*sizeof(PetscScalar)));
+		PetscCall(PetscMemcpy(bp+fs, gp, (size_t)gs*sizeof(PetscScalar)));
 
-		ierr = VecRestoreArray(b, &bp); CHKERRQ(ierr);
+		PetscCall(VecRestoreArray(b, &bp));
 
 	}
 	if(mode == SCATTER_REVERSE)
 	{
 		const PetscScalar *bp;
 
-		ierr = VecGetArrayRead(b, &bp); CHKERRQ(ierr);
+		PetscCall(VecGetArrayRead(b, &bp));
 
 		// monolithic-to-block
-		ierr = PetscMemcpy(fp, bp,    (size_t)fs*sizeof(PetscScalar)); CHKERRQ(ierr);
-		ierr = PetscMemcpy(gp, bp+fs, (size_t)gs*sizeof(PetscScalar)); CHKERRQ(ierr);
+		PetscCall(PetscMemcpy(fp, bp,    (size_t)fs*sizeof(PetscScalar)));
+		PetscCall(PetscMemcpy(gp, bp+fs, (size_t)gs*sizeof(PetscScalar)));
 
-		ierr = VecRestoreArrayRead(b, &bp); CHKERRQ(ierr);
+		PetscCall(VecRestoreArrayRead(b, &bp));
 
 	}
 
 	// restore access
-	ierr = VecRestoreArray(f, &fp); CHKERRQ(ierr);
-	ierr = VecRestoreArray(g, &gp); CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(f, &fp));
+	PetscCall(VecRestoreArray(g, &gp));
 
 	PetscFunctionReturn(0);
 }

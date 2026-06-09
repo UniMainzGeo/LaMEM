@@ -36,6 +36,7 @@
 #include "parsing.h"
 #include "scaling.h"
 #include "fdstag.h"
+#include "Tensor.h"
 #include "advect.h"
 #include "JacRes.h"
 #include "tools.h"
@@ -159,14 +160,14 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 	PetscInt       nx, ny, nz;
 	PetscInt       i, count, claimed;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
 	fs = actx->fs;
 
 	// compute local grid resolution
-	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+	PetscCall(FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez));
 
 	nx = refine*fs->dsx.ncels;
 	ny = refine*fs->dsy.ncels;
@@ -177,13 +178,13 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 
 	AVD3DSetDomainSize(avd3D, bx, ex, by, ey, bz, ez);
 
-	ierr = AVD3DSetParallelExtent(avd3D, fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc); CHKERRQ(ierr);
+	PetscCall(AVD3DSetParallelExtent(avd3D, fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc));
 
-	ierr = AVD3DLoadPoints(avd3D, actx); CHKERRQ(ierr);
+	PetscCall(AVD3DLoadPoints(avd3D, actx));
 
 	AVD3DResetCells(avd3D);
 
-	ierr = AVD3DInit(avd3D); CHKERRQ(ierr);
+	PetscCall(AVD3DInit(avd3D));
 
 	// assign all cells to points
 	count   = avd3D->npoints;
@@ -279,7 +280,7 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 {
 	PetscInt *tmp;
 	PetscInt pid,i,j,k,sum;
-	PetscErrorCode ierr;
+	
 
 	PetscFunctionBeginUser;
 
@@ -295,7 +296,7 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 	A->ownership_ranges_k = (PetscInt*) malloc( sizeof(PetscInt)*(size_t)(A->P+1) );
 
 	memset(tmp,0,sizeof(PetscInt)*(size_t)(A->M*A->N*A->P+1));
-	ierr = MPI_Allgather(&A->mx,1,MPIU_INT,tmp,1,MPIU_INT,PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Allgather(&A->mx,1,MPIU_INT,tmp,1,MPIU_INT,PETSC_COMM_WORLD));
 	j = k = 0;
 	sum = 0;
 	for (i=0; i<A->M; i++) {
@@ -305,7 +306,7 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 	} A->ownership_ranges_i[i] = sum;
 
 	memset(tmp,0,sizeof(PetscInt)*(size_t)(A->M*A->N*A->P+1));
-	ierr = MPI_Allgather(&A->my,1,MPIU_INT,tmp,1,MPIU_INT,PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Allgather(&A->my,1,MPIU_INT,tmp,1,MPIU_INT,PETSC_COMM_WORLD));
 	i = k = 0;
 	sum = 0;
 	for (j=0; j<A->N; j++) {
@@ -315,7 +316,7 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 	} A->ownership_ranges_j[j] = sum;
 
 	memset(tmp,0,sizeof(PetscInt)*(size_t)(A->M*A->N*A->P+1));
-	ierr = MPI_Allgather(&A->mz,1,MPIU_INT,tmp,1,MPIU_INT,PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Allgather(&A->mz,1,MPIU_INT,tmp,1,MPIU_INT,PETSC_COMM_WORLD));
 	i = j = 0;
 	sum = 0;
 	for (k=0; k<A->P; k++) {
@@ -649,14 +650,14 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 {
 	char filename[_str_len_];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check advection type
 	if(pvavd->actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
 	// check activation
-	ierr = getIntParam(fb, _OPTIONAL_, "out_avd", &pvavd->outavd, 1, 1); CHKERRQ(ierr);
+	PetscCall(getIntParam(fb, _OPTIONAL_, "out_avd", &pvavd->outavd, 1, 1));
 
 	if(!pvavd->outavd) PetscFunctionReturn(0);
 
@@ -665,9 +666,9 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 	pvavd->refine = 2; // Voronoi Diagram refinement factor
 
 	// read
-	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name", filename,                  "output"); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_avd_pvd",   &pvavd->outpvd,                1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_avd_ref",   &pvavd->refine, 1, _max_avd_refine_); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "out_file_name", filename,                  "output"));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_avd_pvd",   &pvavd->outpvd,                1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_avd_ref",   &pvavd->refine, 1, _max_avd_refine_));
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "AVD output parameters:\n");
@@ -687,20 +688,20 @@ PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar
 
 	AVD3D A;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(!pvavd->outavd) PetscFunctionReturn(0);
 
 	// create Approximate Voronoi Diagram from particles
-	ierr = AVDViewCreate(&A, pvavd->actx, pvavd->refine); CHKERRQ(ierr);
+	PetscCall(AVDViewCreate(&A, pvavd->actx, pvavd->refine));
 
 	// update .pvd file if necessary
-	ierr = UpdatePVDFile(dirName, pvavd->outfile, "pvtr", &pvavd->offset, ttime, pvavd->outpvd); CHKERRQ(ierr);
+	PetscCall(UpdatePVDFile(dirName, pvavd->outfile, "pvtr", &pvavd->offset, ttime, pvavd->outpvd));
 
-	ierr = PVAVDWritePVTR(pvavd, A, dirName); CHKERRQ(ierr);
+	PetscCall(PVAVDWritePVTR(pvavd, A, dirName));
 
-	ierr = PVAVDWriteVTR(pvavd, A, dirName); CHKERRQ(ierr);
+	PetscCall(PVAVDWriteVTR(pvavd, A, dirName));
 
 	// cleanup
 	AVD3DDestroy(&A);
@@ -720,8 +721,8 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
-	MPI_Comm_size(PETSC_COMM_WORLD, &inproc); nproc = (PetscInt)inproc;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &irank);  rank  = (PetscInt)irank;
+	PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &inproc)); nproc = (PetscInt)inproc;
+	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &irank));  rank  = (PetscInt)irank;
 
 	// open outfile.pvts file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvtr", dirName, pvavd->outfile);
@@ -799,7 +800,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	// access context
 	chLen = pvavd->actx->jr->scal->length;
 
-	MPI_Comm_rank(PETSC_COMM_WORLD, &irank);  rank = (PetscInt)irank;
+	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &irank));  rank = (PetscInt)irank;
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
 	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvavd->outfile, (LLD)rank);

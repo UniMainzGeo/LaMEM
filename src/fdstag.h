@@ -342,31 +342,31 @@ PetscErrorCode FDSTAGGetLevelsLocalGridSize(
 
 // scatter operation (two-vectors)
 #define GLOBAL_TO_LOCAL(dm, gvec, lvec) \
-	ierr = DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr); \
-	ierr = DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr);
+	PetscCall(DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec)); \
+	PetscCall(DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec));
 
 // scatter operation (one-vector)
 #define LOCAL_TO_LOCAL(dm, lvec) \
-	ierr = DMLocalToLocalBegin(dm, lvec, INSERT_VALUES, lvec); CHKERRQ(ierr); \
-	ierr = DMLocalToLocalEnd  (dm, lvec, INSERT_VALUES, lvec); CHKERRQ(ierr);
+	PetscCall(DMLocalToLocalBegin(dm, lvec, INSERT_VALUES, lvec)); \
+	PetscCall(DMLocalToLocalEnd  (dm, lvec, INSERT_VALUES, lvec));
 
 // assembly operation
 #define LOCAL_TO_GLOBAL(dm, lvec, gvec) \
-	ierr = VecZeroEntries(gvec); CHKERRQ(ierr); \
-	ierr = DMLocalToGlobalBegin(dm, lvec, ADD_VALUES, gvec); CHKERRQ(ierr); \
-	ierr = DMLocalToGlobalEnd  (dm, lvec, ADD_VALUES, gvec); CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(gvec)); \
+	PetscCall(DMLocalToGlobalBegin(dm, lvec, ADD_VALUES, gvec)); \
+	PetscCall(DMLocalToGlobalEnd  (dm, lvec, ADD_VALUES, gvec));
 
 // create and initialize local vector, scatter ghost values, access array
 #define GET_INIT_LOCAL_VECTOR(dm, gvec, lvec, array) \
-	ierr = DMGetLocalVector(dm, &lvec); CHKERRQ(ierr); \
-	ierr = DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr); \
-	ierr = DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr); \
-	ierr = DMDAVecGetArray(dm, lvec, &array); CHKERRQ(ierr);
+	PetscCall(DMGetLocalVector(dm, &lvec)); \
+	PetscCall(DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec)); \
+	PetscCall(DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec)); \
+	PetscCall(DMDAVecGetArray(dm, lvec, &array));
 
 // close access & return local vector
 #define RESTORE_LOCAL_VECTOR(dm, lvec, array) \
-	ierr = DMDAVecRestoreArray(dm, lvec, &array); CHKERRQ(ierr); \
-	ierr = DMRestoreLocalVector(dm, &lvec);
+	PetscCall(DMDAVecRestoreArray(dm, lvec, &array)); \
+	PetscCall(DMRestoreLocalVector(dm, &lvec));
 
 //-----------------------------------------------------------------------------
 // WRAPPERS

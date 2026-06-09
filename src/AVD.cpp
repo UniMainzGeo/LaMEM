@@ -17,6 +17,7 @@
 
 #include "LaMEM.h"
 #include "AVD.h"
+#include "Tensor.h"
 #include "advect.h"
 #include "scaling.h"
 #include "JacRes.h"
@@ -34,7 +35,7 @@ PetscErrorCode AVDCreate(AVD *A)
 	PetscScalar x[3], dx[3];
 	PetscScalar s[3];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// initialize variables
@@ -54,8 +55,8 @@ PetscErrorCode AVDCreate(AVD *A)
 	//   AVD CELLS
 	// --------------
 	// allocate memory for cells plus one layer of boundary cells
-	ierr = PetscMalloc((size_t)(mx*my*mz)*sizeof(AVDCell), &A->cell); CHKERRQ(ierr);
-	ierr = PetscMemzero(A->cell, (size_t)(mx*my*mz)*sizeof(AVDCell)); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)(mx*my*mz)*sizeof(AVDCell), &A->cell));
+	PetscCall(PetscMemzero(A->cell, (size_t)(mx*my*mz)*sizeof(AVDCell)));
 
 	for (k=0; k<mz; k++)
 	{
@@ -99,8 +100,8 @@ PetscErrorCode AVDCreate(AVD *A)
 	npoints   = A->npoints;
 
 	// allocate memory for chains
-	ierr = PetscMalloc((size_t)(npoints)*sizeof(AVDChain), &A->chain); CHKERRQ(ierr);
-	ierr = PetscMemzero(A->chain, (size_t)(npoints)*sizeof(AVDChain)); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)(npoints)*sizeof(AVDChain), &A->chain));
+	PetscCall(PetscMemzero(A->chain, (size_t)(npoints)*sizeof(AVDChain)));
 
 	for (p=0; p < npoints; p++)
 	{
@@ -113,19 +114,19 @@ PetscErrorCode AVDCreate(AVD *A)
 		A->chain[p].iclaim  = A->buffer;
 		A->chain[p].ibound = A->buffer;
 
-		ierr = PetscMalloc(sizeof(PetscInt)*(size_t)(A->chain[p].iclaim + A->buffer), &A->chain[p].claim); CHKERRQ(ierr);
-		ierr = PetscMemzero(A->chain[p].claim, sizeof(PetscInt)*(size_t)(A->chain[p].iclaim + A->buffer)); CHKERRQ(ierr);
+		PetscCall(PetscMalloc(sizeof(PetscInt)*(size_t)(A->chain[p].iclaim + A->buffer), &A->chain[p].claim));
+		PetscCall(PetscMemzero(A->chain[p].claim, sizeof(PetscInt)*(size_t)(A->chain[p].iclaim + A->buffer)));
 
-		ierr = PetscMalloc(sizeof(PetscInt)*(size_t)(A->chain[p].ibound + A->buffer), &A->chain[p].bound); CHKERRQ(ierr);
-		ierr = PetscMemzero(A->chain[p].bound, sizeof(PetscInt)*(size_t)(A->chain[p].ibound + A->buffer)); CHKERRQ(ierr);
+		PetscCall(PetscMalloc(sizeof(PetscInt)*(size_t)(A->chain[p].ibound + A->buffer), &A->chain[p].bound));
+		PetscCall(PetscMemzero(A->chain[p].bound, sizeof(PetscInt)*(size_t)(A->chain[p].ibound + A->buffer)));
 	}
 
 	// --------------
 	//   AVD POINTS
 	// --------------
 	// allocate memory for points
-	ierr = PetscMalloc((size_t)(npoints)*sizeof(Marker), &A->points); CHKERRQ(ierr);
-	ierr = PetscMemzero(A->points, (size_t)(npoints)*sizeof(Marker)); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)(npoints)*sizeof(Marker), &A->points));
+	PetscCall(PetscMemzero(A->points, (size_t)(npoints)*sizeof(Marker)));
 
 	PetscFunctionReturn(0);
 }
@@ -134,28 +135,28 @@ PetscErrorCode AVDDestroy(AVD *A)
 {
 	PetscInt p;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// --------------
 	//   AVD CELLS
 	// --------------
-	ierr = PetscFree(A->cell); CHKERRQ(ierr);
+	PetscCall(PetscFree(A->cell));
 
 	// --------------
 	//   AVD CHAIN
 	// --------------
 	for (p = 0; p < A->npoints; p++)
 	{
-		if (A->chain[p].claim ) { ierr = PetscFree(A->chain[p].claim ); CHKERRQ(ierr); }
-		if (A->chain[p].bound ) { ierr = PetscFree(A->chain[p].bound ); CHKERRQ(ierr); }
+		if (A->chain[p].claim ) { PetscCall(PetscFree(A->chain[p].claim )); }
+		if (A->chain[p].bound ) { PetscCall(PetscFree(A->chain[p].bound )); }
 	}
-	ierr = PetscFree(A->chain ); CHKERRQ(ierr);
+	PetscCall(PetscFree(A->chain ));
 
 	// --------------
 	//   AVD POINTS
 	// --------------
-	ierr = PetscFree(A->points); CHKERRQ(ierr);
+	PetscCall(PetscFree(A->points));
 
 	PetscFunctionReturn(0);
 }
@@ -167,7 +168,7 @@ PetscErrorCode AVDCellInit(AVD *A)
 	PetscInt    p,i,j,k;
 	PetscInt    mx,my,mz,ind;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// initialize variables
@@ -206,7 +207,7 @@ PetscErrorCode AVDCellInit(AVD *A)
 		A->chain[p].claim[1]             = -1;        // mark end of claimed_cells list with -1
 
 		// update initial chain
-		ierr = AVDUpdateChain(A,p); CHKERRQ(ierr);
+		PetscCall(AVDUpdateChain(A,p));
 	}
 	PetscFunctionReturn(0);
 }
@@ -221,7 +222,7 @@ PetscErrorCode AVDClaimCells(AVD *A, const PetscInt ip)
 	PetscInt    cell_num0;
 	PetscInt    buffer;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	buffer = A->buffer;
@@ -239,7 +240,7 @@ PetscErrorCode AVDClaimCells(AVD *A, const PetscInt ip)
 		if (cells[cell_num0].p == AVD_CELL_UNCLAIMED)
 		{
 			// re-alloc, note that we need one space more than the number of points to terminate the list
-			if( count == bchain->iclaim-1 ) { ierr = AVDReAlloc(bchain, buffer); CHKERRQ(ierr); }
+			if( count == bchain->iclaim-1 ) { PetscCall(AVDReAlloc(bchain, buffer)); }
 
 			// claim cell
 			bchain->claim[count] = cell_num0;
@@ -298,7 +299,7 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 	AVDCell  *cells,*cell0;
 	PetscInt mx,my,buffer;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	buffer = A->buffer;
@@ -339,7 +340,7 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 				if ( (cells[cell_num1].p != ip) && (!cells[cell_num1].done) )
 				{
 					// re-alloc - we need one space more than the number of points to terminate the list
-					if (count == bchain->ibound-1 ) { ierr = AVDReAlloc(bchain, buffer); CHKERRQ(ierr); }
+					if (count == bchain->ibound-1 ) { PetscCall(AVDReAlloc(bchain, buffer)); }
 
 					// add new cell to boundary
 					bchain->bound[count] = cell_num1;
@@ -367,30 +368,30 @@ PetscErrorCode AVDReAlloc(AVDChain *chain, PetscInt buffer)
 {
 	PetscInt *temp;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// 1. allocate memory for claimed cells
-	ierr = makeIntArray(&temp, NULL, chain->iclaim + buffer); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&temp, NULL, chain->iclaim + buffer));
 
 	// copy current data
-	ierr = PetscMemcpy(temp, chain->claim, (size_t)(chain->nclaimed + buffer)*sizeof(PetscInt)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(temp, chain->claim, (size_t)(chain->nclaimed + buffer)*sizeof(PetscInt)));
 
 	// delete previous storage
-	ierr = PetscFree(chain->claim); CHKERRQ(ierr);
+	PetscCall(PetscFree(chain->claim));
 
 	// save new capacity & storage
 	chain->claim      = temp;
 	chain->iclaim    += buffer;
 
 	// 2. allocate memory for boundary cells
-	ierr = makeIntArray(&temp, NULL, chain->ibound + buffer); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&temp, NULL, chain->ibound + buffer));
 
 	// copy current data
-	ierr = PetscMemcpy(temp, chain->bound, (size_t)(chain->length + buffer)*sizeof(PetscInt)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(temp, chain->bound, (size_t)(chain->length + buffer)*sizeof(PetscInt)));
 
 	// delete previous storage
-	ierr = PetscFree(chain->bound); CHKERRQ(ierr);
+	PetscCall(PetscFree(chain->bound));
 
 	// save new capacity & storage
 	chain->bound      = temp;
@@ -431,7 +432,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 	PetscScalar xp[3], xc[3], xh[3];
 	PetscInt    *area, *sind, axis;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	bc = actx->jr->bc;
@@ -445,8 +446,8 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 	else if (npoints > A->mmax) new_nmark = npoints - A->mmax;
 
 	// allocate memory for sorting
-	ierr = makeIntArray(&area, NULL, npoints); CHKERRQ(ierr);
-	ierr = makeIntArray(&sind, NULL, npoints); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&area, NULL, npoints));
+	PetscCall(makeIntArray(&sind, NULL, npoints));
 	
 
 	// compute dominant axis
@@ -553,7 +554,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 	}
 
 	// sort in ascending order
-	ierr = PetscSortIntWithArray(npoints,area,sind); CHKERRQ(ierr);
+	PetscCall(PetscSortIntWithArray(npoints,area,sind));
 	
 
 	// inject markers
@@ -574,7 +575,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 			actx->recvbuf[actx->cinj+i].X[2] = A->chain [num_chain].xc[2];
 
 			// override marker phase (if necessary)
-			ierr = BCOverridePhase(bc, cellID, actx->recvbuf + actx->cinj + i); CHKERRQ(ierr);
+			PetscCall(BCOverridePhase(bc, cellID, actx->recvbuf + actx->cinj + i));
 
 			ind--;
 		}
@@ -597,8 +598,8 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 	
 
 	// free memory
-	ierr = PetscFree(area); CHKERRQ(ierr);
-	ierr = PetscFree(sind); CHKERRQ(ierr);
+	PetscCall(PetscFree(area));
+	PetscCall(PetscFree(sind));
 
 	PetscFunctionReturn(0);
 }
@@ -609,7 +610,7 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 	AVD          A;
 	PetscInt       i,claimed;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// initialize some parameters
@@ -635,13 +636,13 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 	A.dz = (xe[2]-xs[2])/(PetscScalar)A.nz;
 
 	// AVD structures
-	ierr = AVDCreate(&A); CHKERRQ(ierr);
+	PetscCall(AVDCreate(&A));
 
 	// load particles
-	ierr = AVDLoadPoints(actx,&A,ind); CHKERRQ(ierr);
+	PetscCall(AVDLoadPoints(actx,&A,ind));
 
 	// initialize AVD cells
-	ierr = AVDCellInit(&A); CHKERRQ(ierr);
+	PetscCall(AVDCellInit(&A));
 
 	// AVD algorithm
 	claimed = 1;
@@ -650,17 +651,17 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 		claimed = 0;
 		for (i = 0; i < npoints; i++)
 		{
-			ierr = AVDClaimCells(&A,i); CHKERRQ(ierr);
+			PetscCall(AVDClaimCells(&A,i));
 			claimed += A.chain[i].nclaimed;
-			ierr = AVDUpdateChain(&A,i); CHKERRQ(ierr);
+			PetscCall(AVDUpdateChain(&A,i));
 		}
 	}
 
 	// inject/delete markers
-	ierr = AVDInjectDeletePoints(actx, &A, ind); CHKERRQ(ierr);
+	PetscCall(AVDInjectDeletePoints(actx, &A, ind));
 
 	// destroy AVD structure
-	ierr = AVDDestroy(&A); CHKERRQ(ierr);
+	PetscCall(AVDDestroy(&A));
 
 	PetscFunctionReturn(0);
 }
@@ -671,17 +672,17 @@ PetscErrorCode AVDMarkerControl(AdvCtx *actx)
 {
 	// check marker distribution and delete or inject markers if necessary
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// AVD routine for every control volume
-	ierr = AVDMarkerControlMV(actx, _CELL_); CHKERRQ(ierr); // CELLS
+	PetscCall(AVDMarkerControlMV(actx, _CELL_)); // CELLS
 
-	ierr = AVDMarkerControlMV(actx, _XYED_); CHKERRQ(ierr); // XY Edge
+	PetscCall(AVDMarkerControlMV(actx, _XYED_)); // XY Edge
 
-	ierr = AVDMarkerControlMV(actx, _XZED_); CHKERRQ(ierr); // XZ Edge
+	PetscCall(AVDMarkerControlMV(actx, _XZED_)); // XZ Edge
 
-	ierr = AVDMarkerControlMV(actx, _YZED_); CHKERRQ(ierr); // YZ Edge
+	PetscCall(AVDMarkerControlMV(actx, _YZED_)); // YZ Edge
 
 	PetscFunctionReturn(0);
 }
@@ -691,7 +692,7 @@ PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype)
 	MarkerVolume  mv;
 	PetscInt      dir = -1;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if      (vtype == _CELL_) dir = -1;
@@ -700,16 +701,16 @@ PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype)
 	else if (vtype == _YZED_) dir =  0;
 
 	// create MarkerVolume
-	ierr = AVDCreateMV(actx, &mv, dir); CHKERRQ(ierr);
+	PetscCall(AVDCreateMV(actx, &mv, dir));
 
 	// map markers
-	ierr = AVDMapMarkersMV(actx, &mv, dir); CHKERRQ(ierr);
+	PetscCall(AVDMapMarkersMV(actx, &mv, dir));
 
 	// main marker control routine
-	ierr = AVDCheckCellsMV(actx, &mv, dir); CHKERRQ(ierr);
+	PetscCall(AVDCheckCellsMV(actx, &mv, dir));
 
 	// free MarkerVolume
-	ierr = AVDDestroyMV(&mv); CHKERRQ(ierr);
+	PetscCall(AVDDestroyMV(&mv));
 
 	PetscFunctionReturn(0);
 }
@@ -723,11 +724,11 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	PetscLogDouble t0,t1;
 	char           lbl[_lbl_sz_];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// record time
-	ierr = PetscTime(&t0); CHKERRQ(ierr);
+	PetscCall(PetscTime(&t0));
 
 	// get number of cells
 	M = mv->M;
@@ -768,8 +769,8 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	actx->ndel  = ndel;
 
 	// allocate memory
-	if(ninj) { ierr = PetscMalloc((size_t)actx->nrecv*sizeof(Marker),   &actx->recvbuf); CHKERRQ(ierr); }
-	if(ndel) { ierr = PetscMalloc((size_t)actx->ndel *sizeof(PetscInt), &actx->idel   ); CHKERRQ(ierr); }
+	if(ninj) { PetscCall(PetscMalloc((size_t)actx->nrecv*sizeof(Marker),   &actx->recvbuf)); }
+	if(ndel) { PetscCall(PetscMalloc((size_t)actx->ndel *sizeof(PetscInt), &actx->idel   )); }
 
 	actx->cinj = 0;
 	actx->cdel = 0;
@@ -799,20 +800,20 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 			// inject/delete markers
 			if ((n < nmin) || (n > actx->nmax))
 			{
-				ierr = AVDAlgorithmMV(actx, mv, n, xs, xe, ind, nmin); CHKERRQ(ierr);
+				PetscCall(AVDAlgorithmMV(actx, mv, n, xs, xe, ind, nmin));
 			}
 		}
 	}
 
 	// store new markers
-	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
+	PetscCall(ADVCollectGarbage(actx));
 
 	// clear
-	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
-	ierr = PetscFree(actx->idel);    CHKERRQ(ierr);
+	PetscCall(PetscFree(actx->recvbuf));
+	PetscCall(PetscFree(actx->idel));
 
 	// print info
-	ierr = PetscTime(&t1); CHKERRQ(ierr);
+	PetscCall(PetscTime(&t1));
 
 	if      (dir==-1) sprintf(lbl,"CELL");
 	else if (dir== 0) sprintf(lbl,"XYED");
@@ -861,7 +862,7 @@ PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	PetscInt     i, ID, I, J, K;
 	PetscInt    *numMarkCell, *m, p;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -907,7 +908,7 @@ PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	}
 
 	// allocate marker counter array
-	ierr = makeIntArray(&numMarkCell, NULL, mv->ncells); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&numMarkCell, NULL, mv->ncells));
 
 	// count number of markers in the cells
 	for(i = 0; i < actx->nummark; i++) numMarkCell[mv->cellnum[i]]++;
@@ -917,7 +918,7 @@ PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	for(i = 1; i < mv->ncells+1; i++) mv->markstart[i] = mv->markstart[i-1]+numMarkCell[i-1];
 
 	// allocate memory for id offset
-	ierr = makeIntArray(&m, NULL, mv->ncells); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&m, NULL, mv->ncells));
 
 	// store marker indices belonging to a cell
 	for(i = 0; i < actx->nummark; i++)
@@ -928,8 +929,8 @@ PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	}
 
 	// free memory
-	ierr = PetscFree(m);           CHKERRQ(ierr);
-	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
+	PetscCall(PetscFree(m));
+	PetscCall(PetscFree(numMarkCell));
 
 	PetscFunctionReturn(0);
 }
@@ -939,7 +940,7 @@ PetscErrorCode AVDCreateMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	// allocate memory and info to marker volume control structure
 	FDSTAG      *fs;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -955,18 +956,18 @@ PetscErrorCode AVDCreateMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	mv->ncells = mv->M * mv->N * mv->P;
 
 	// allocate memory for host cell numbers
-	ierr = makeIntArray(&mv->cellnum, NULL, actx->markcap); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&mv->cellnum, NULL, actx->markcap));
 
 	// allocate memory for id marker arranging per cell
-	ierr = makeIntArray(&mv->markind, NULL, actx->markcap); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&mv->markind, NULL, actx->markcap));
 
 	// memory for starting indices
-	ierr = makeIntArray(&mv->markstart, NULL, mv->ncells+1); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&mv->markstart, NULL, mv->ncells+1));
 
 	// allocate memory for local coordinates
-	ierr = makeScalArray(&mv->xcoord, NULL, mv->M+1); CHKERRQ(ierr);
-	ierr = makeScalArray(&mv->ycoord, NULL, mv->N+1); CHKERRQ(ierr);
-	ierr = makeScalArray(&mv->zcoord, NULL, mv->P+1); CHKERRQ(ierr);
+	PetscCall(makeScalArray(&mv->xcoord, NULL, mv->M+1));
+	PetscCall(makeScalArray(&mv->ycoord, NULL, mv->N+1));
+	PetscCall(makeScalArray(&mv->zcoord, NULL, mv->P+1));
 
 	PetscFunctionReturn(0);
 }
@@ -974,16 +975,16 @@ PetscErrorCode AVDCreateMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 PetscErrorCode AVDDestroyMV(MarkerVolume *mv)
 {
 	// free memory
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = PetscFree(mv->cellnum);    CHKERRQ(ierr);
-	ierr = PetscFree(mv->markind);    CHKERRQ(ierr);
-	ierr = PetscFree(mv->markstart);  CHKERRQ(ierr);
+	PetscCall(PetscFree(mv->cellnum));
+	PetscCall(PetscFree(mv->markind));
+	PetscCall(PetscFree(mv->markstart));
 
-	ierr = PetscFree(mv->xcoord);    CHKERRQ(ierr);
-	ierr = PetscFree(mv->ycoord);    CHKERRQ(ierr);
-	ierr = PetscFree(mv->zcoord);    CHKERRQ(ierr);
+	PetscCall(PetscFree(mv->xcoord));
+	PetscCall(PetscFree(mv->ycoord));
+	PetscCall(PetscFree(mv->zcoord));
 
 	PetscFunctionReturn(0);
 }
@@ -1021,7 +1022,7 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 	PetscScalar xp[3], xc[3], xh[3];
 	PetscInt    *area, *sind, axis;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	bc = actx->jr->bc;
@@ -1031,8 +1032,8 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 	n  = (A->nx+2)*(A->ny+2)*(A->nz+2);
 
 	// allocate memory for sorting
-	ierr = makeIntArray(&area, NULL, npoints); CHKERRQ(ierr);
-	ierr = makeIntArray(&sind, NULL, npoints); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&area, NULL, npoints));
+	PetscCall(makeIntArray(&sind, NULL, npoints));
 
 	// compute dominant axis
 	for (i = 0; i < npoints; i++)
@@ -1138,7 +1139,7 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 	}
 
 	// sort in ascending order
-	ierr = PetscSortIntWithArray(npoints,area,sind); CHKERRQ(ierr);
+	PetscCall(PetscSortIntWithArray(npoints,area,sind));
 
 	// do not insert more markers than available voronoi domains
 	new_nmark = A->mmin - npoints;
@@ -1165,7 +1166,7 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 		GET_CELL_ID(cellID, I, J, K, fs->dsx.ncels, fs->dsy.ncels);
 
 		// override marker phase (if necessary) - need to calculate cellID
-		ierr = BCOverridePhase(bc, cellID, actx->recvbuf + actx->cinj + i); CHKERRQ(ierr);
+		PetscCall(BCOverridePhase(bc, cellID, actx->recvbuf + actx->cinj + i));
 		// -----------------------------------------------------------------------------------------
 
 		ind--;
@@ -1174,8 +1175,8 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 	actx->cinj +=new_nmark;
 
 	// free memory
-	ierr = PetscFree(area); CHKERRQ(ierr);
-	ierr = PetscFree(sind); CHKERRQ(ierr);
+	PetscCall(PetscFree(area));
+	PetscCall(PetscFree(sind));
 
 	PetscFunctionReturn(0);
 }
@@ -1187,15 +1188,15 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 	PetscInt    npoints, new_nmark = 0;
 	PetscInt    *area, *sind;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	npoints = A->npoints;
 	new_nmark = npoints - A->mmax;
 
 	// allocate memory for sorting
-	ierr = makeIntArray(&area, NULL, npoints); CHKERRQ(ierr);
-	ierr = makeIntArray(&sind, NULL, npoints); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&area, NULL, npoints));
+	PetscCall(makeIntArray(&sind, NULL, npoints));
 
 	// initialize variables for sorting
 	for (i = 0; i < npoints; i++)
@@ -1205,7 +1206,7 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 	}
 
 	// sort in ascending order
-	ierr = PetscSortIntWithArray(npoints,area,sind); CHKERRQ(ierr);
+	PetscCall(PetscSortIntWithArray(npoints,area,sind));
 
 		ind = 0;
 		for (i = 0; i < new_nmark; i++)
@@ -1219,8 +1220,8 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 		actx->cdel +=new_nmark;
 
 	// free memory
-	ierr = PetscFree(area); CHKERRQ(ierr);
-	ierr = PetscFree(sind); CHKERRQ(ierr);
+	PetscCall(PetscFree(area));
+	PetscCall(PetscFree(sind));
 
 	PetscFunctionReturn(0);
 }
@@ -1231,7 +1232,7 @@ PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, 
 	AVD          A;
 	PetscInt     i,claimed;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// initialize some parameters
@@ -1257,13 +1258,13 @@ PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, 
 	A.dz = (xe[2]-xs[2])/(PetscScalar)A.nz;
 
 	// create AVD structure
-	ierr = AVDCreate(&A); CHKERRQ(ierr);
+	PetscCall(AVDCreate(&A));
 
 	// load particles
-	ierr = AVDLoadPointsMV(actx,mv,&A,ind); CHKERRQ(ierr);
+	PetscCall(AVDLoadPointsMV(actx,mv,&A,ind));
 
 	// initialize AVD cells
-	ierr = AVDCellInit(&A); CHKERRQ(ierr);
+	PetscCall(AVDCellInit(&A));
 
 	// do AVD algorithm
 	claimed = 1;
@@ -1272,20 +1273,20 @@ PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, 
 		claimed = 0;
 		for (i = 0; i < npoints; i++)
 		{
-			ierr = AVDClaimCells(&A,i); CHKERRQ(ierr);
+			PetscCall(AVDClaimCells(&A,i));
 			claimed += A.chain[i].nclaimed;
-			ierr = AVDUpdateChain(&A,i); CHKERRQ(ierr);
+			PetscCall(AVDUpdateChain(&A,i));
 		}
 	}
 
 	// inject markers
-	if (A.npoints < A.mmin) { ierr = AVDInjectPointsMV(actx, &A); CHKERRQ(ierr); }
+	if (A.npoints < A.mmin) { PetscCall(AVDInjectPointsMV(actx, &A)); }
 
 	// delete markers
-	if (A.npoints > A.mmax) { ierr = AVDDeletePointsMV(actx, &A); CHKERRQ(ierr); }
+	if (A.npoints > A.mmax) { PetscCall(AVDDeletePointsMV(actx, &A)); }
 
 	// destroy AVD structure
-	ierr = AVDDestroy(&A); CHKERRQ(ierr);
+	PetscCall(AVDDestroy(&A));
 
 	PetscFunctionReturn(0);
 }

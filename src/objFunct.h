@@ -13,8 +13,6 @@
 #ifndef __objFunct_h__
 #define __objFunct_h__
 //---------------------------------------------------------------------------
-#include "parsing.h"	// filebuffer
-#include "adjoint.h"    // defines the global variables _MAX_PAR_ and _MAX_OBS_, which we need here
 
 struct FB;
 struct FreeSurf;
@@ -39,22 +37,6 @@ enum InvTypes// List of inversion types
 {
 	_none_, _inversion_, _adjointgradients_, _gradientdescent_, _syntheticforwardrun_, 
 };
-
-/*
-const char *PTypesName[] ={
-		// -- material model parameter types --
-		"rho0","rho_n","rho_c",                        // density
-		"eta","Bd","Ed","Vd",                          // newtonian linear diffiusion
-		"eta0","e0","Bn","n","En","Vn",                // power-law (dislocation) creep
-		"Bp","taup","gamma","q","Ep","Vp",             // Peierls creep
-		"shear","bulk","Kp",                           // elasticity
-		"cohesion","friction","chSoftID","frSoftID",   // plasticity (Drucker Prager)
-		"alpha","cp","k","A"                           // energy
-
-		// -- others --
-		// ... (geometry, pushing box , etc. ...)
-};
-*/
 
 //-----------------------------------------------------------------------------
 // Structure that holds inversion parameters

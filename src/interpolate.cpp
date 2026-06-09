@@ -22,7 +22,7 @@ PetscErrorCode SetEdgeCornerCenter(FDSTAG *fs, Vec Center)
 	PetscInt    I, J, K, fi, fj, fk;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// set index boundaries in all directions
@@ -31,7 +31,7 @@ PetscErrorCode SetEdgeCornerCenter(FDSTAG *fs, Vec Center)
 	mcz = fs->dsz.tcels - 1;
 
 	// access vector
-	ierr = DMDAVecGetArray(fs->DA_CEN, Center, &lCenter);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, Center, &lCenter));
 
 	//---------------
 	// central points
@@ -65,7 +65,7 @@ PetscErrorCode SetEdgeCornerCenter(FDSTAG *fs, Vec Center)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, Center, &lCenter);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, Center, &lCenter));
 
 	PetscFunctionReturn(0);
 }
@@ -78,7 +78,7 @@ PetscErrorCode SetEdgeCornerXFace (FDSTAG *fs, Vec XFace)
 	PetscScalar       ***lXFace;
 	PetscScalar       pmdof;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// initialize maximal index in tangential directions
@@ -86,7 +86,7 @@ PetscErrorCode SetEdgeCornerXFace (FDSTAG *fs, Vec XFace)
 	mcz = fs->dsz.tcels - 1;
 
 	// access vector
-	ierr = DMDAVecGetArray(fs->DA_X, XFace, &lXFace); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X, XFace, &lXFace));
 
 	//---------
 	// X points
@@ -113,7 +113,7 @@ PetscErrorCode SetEdgeCornerXFace (FDSTAG *fs, Vec XFace)
 
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X, XFace, &lXFace); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_X, XFace, &lXFace));
 
 	PetscFunctionReturn(0);
 }
@@ -126,7 +126,7 @@ PetscErrorCode SetEdgeCornerYFace (FDSTAG *fs, Vec YFace)
 	PetscScalar       ***lYFace;
 	PetscScalar       pmdof;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// initialize maximal index in tangential directions
@@ -134,7 +134,7 @@ PetscErrorCode SetEdgeCornerYFace (FDSTAG *fs, Vec YFace)
 	mcz = fs->dsz.tcels - 1;
 
 	// access local solution vectors
-	ierr = DMDAVecGetArray(fs->DA_Y, YFace, &lYFace); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_Y, YFace, &lYFace));
 
 	//---------
 	// Y points
@@ -160,7 +160,7 @@ PetscErrorCode SetEdgeCornerYFace (FDSTAG *fs, Vec YFace)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_Y, YFace, &lYFace);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y, YFace, &lYFace));
 
 	PetscFunctionReturn(0);
 }
@@ -173,7 +173,7 @@ PetscErrorCode SetEdgeCornerZFace (FDSTAG *fs, Vec ZFace)
 	PetscScalar       ***lZFace;
 	PetscScalar       pmdof;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// initialize maximal index in tangential directions
@@ -181,7 +181,7 @@ PetscErrorCode SetEdgeCornerZFace (FDSTAG *fs, Vec ZFace)
 	mcy = fs->dsy.tcels - 1;
 
 	// access local solution vectors
-	ierr = DMDAVecGetArray(fs->DA_Z, ZFace, &lZFace); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_Z, ZFace, &lZFace));
 
 	//---------
 	// Z points
@@ -208,7 +208,7 @@ PetscErrorCode SetEdgeCornerZFace (FDSTAG *fs, Vec ZFace)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_Z, ZFace, &lZFace);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, ZFace, &lZFace));
 
 	PetscFunctionReturn(0);
 }
@@ -218,7 +218,7 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags 
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, my, mz;
 	PetscScalar cf, ***lXFace, ***lCorner, A1, A2, A3, A4, B1, B2, E1, E2;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(iflag.use_bound)
@@ -227,15 +227,15 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags 
 	}
 
 	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   XFace,  &lXFace);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X,   XFace,  &lXFace));
+	PetscCall(DMDAVecGetArray(fs->DA_COR, Corner, &lCorner));
 
 	// set index boundaries in Y & Z directions
 	my = fs->dsy.tnods - 1;
 	mz = fs->dsz.tnods - 1;
 
 	// interpolate x-face vector to corners
-	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -269,8 +269,8 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags 
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   XFace,  &lXFace);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   XFace,  &lXFace));
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner));
 
 	PetscFunctionReturn(0);
 }
@@ -280,7 +280,7 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags 
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, mz;
 	PetscScalar cf, ***lYFace, ***lCorner, A1, A2, A3, A4, B1, B2, E1, E2;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(iflag.use_bound)
@@ -289,15 +289,15 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags 
 	}
 
 	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_Y,   YFace,  &lYFace);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   YFace,  &lYFace));
+	PetscCall(DMDAVecGetArray(fs->DA_COR, Corner, &lCorner));
 
 	// set index boundaries in X & Z directions
 	mx = fs->dsx.tnods - 1;
 	mz = fs->dsz.tnods - 1;
 
 	// interpolate y-face vector to corners
-	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -331,8 +331,8 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags 
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   YFace,  &lYFace);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   YFace,  &lYFace));
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner));
 
 	PetscFunctionReturn(0);
 }
@@ -342,7 +342,7 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags 
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my;
 	PetscScalar cf, ***lZFace, ***lCorner, A1, A2, A3, A4, B1, B2, E1, E2;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(iflag.use_bound)
@@ -351,15 +351,15 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags 
 	}
 
 	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_Z,   ZFace,  &lZFace);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   ZFace,  &lZFace));
+	PetscCall(DMDAVecGetArray(fs->DA_COR, Corner, &lCorner));
 
 	// set index boundaries in X & Y directions
 	mx = fs->dsx.tnods - 1;
 	my = fs->dsy.tnods - 1;
 
 	// interpolate z-face vector to corners
-	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -393,8 +393,8 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags 
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   ZFace,  &lZFace);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   ZFace,  &lZFace));
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner));
 
 	PetscFunctionReturn(0);
 }
@@ -406,7 +406,7 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlag
 	PetscScalar ***lCenter, ***lCorner;
 	PetscScalar cf, A1, A2, A3, A4, A5, A6, A7, A8, B1, B2, B3, E1, E2, E3;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(iflag.use_bound)
@@ -415,8 +415,8 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlag
 	}
 
 	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, Center, &lCenter); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, Center, &lCenter));
+	PetscCall(DMDAVecGetArray(fs->DA_COR, Corner, &lCorner));
 
 	// set index boundaries in all directions
 	mx = fs->dsx.tnods - 1;
@@ -424,7 +424,7 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlag
 	mz = fs->dsz.tnods - 1;
 
 	// interpolate center vector to corners
-	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -474,8 +474,8 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlag
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, Center, &lCenter);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, Center, &lCenter));
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner));
 
 	PetscFunctionReturn(0);
 }
@@ -485,18 +485,18 @@ PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, InterpFlag
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mz, K1, K2;
 	PetscScalar cf, ***lXYEdge, ***lCorner, A1, A2, B1, E1;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_XY,  XYEdge, &lXYEdge); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  XYEdge, &lXYEdge));
+	PetscCall(DMDAVecGetArray(fs->DA_COR, Corner, &lCorner));
 
 	// set index boundaries in Z direction
 	mz = fs->dsz.tnods - 1;
 
 	// interpolate xy-edge vector to corners
-	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -522,8 +522,8 @@ PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, InterpFlag
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  XYEdge, &lXYEdge);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  XYEdge, &lXYEdge));
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner));
 
 
 	PetscFunctionReturn(0);
@@ -534,18 +534,18 @@ PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, InterpFlag
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, my, J1, J2;
 	PetscScalar cf, ***lXZEdge, ***lCorner, A1, A2, B1, E1;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_XZ,  XZEdge, &lXZEdge); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  XZEdge, &lXZEdge));
+	PetscCall(DMDAVecGetArray(fs->DA_COR, Corner, &lCorner));
 
 	// set index boundaries in Y direction
 	my = fs->dsy.tnods - 1;
 
 	// interpolate xz-edge vector to corners
-	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -571,8 +571,8 @@ PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, InterpFlag
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  XZEdge, &lXZEdge);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  XZEdge, &lXZEdge));
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner));
 
 
 	PetscFunctionReturn(0);
@@ -583,18 +583,18 @@ PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlag
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, I1, I2;
 	PetscScalar cf, ***lYZEdge, ***lCorner, A1, A2, B1, E1;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_YZ,  YZEdge, &lYZEdge); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_COR, Corner, &lCorner); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  YZEdge, &lYZEdge));
+	PetscCall(DMDAVecGetArray(fs->DA_COR, Corner, &lCorner));
 
 	// set index boundaries in X direction
 	mx = fs->dsx.tnods - 1;
 
 	// interpolate yz-edge vector to corners
-	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -620,8 +620,8 @@ PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlag
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  YZEdge, &lYZEdge);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  YZEdge, &lYZEdge));
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR, Corner, &lCorner));
 
 
 	PetscFunctionReturn(0);

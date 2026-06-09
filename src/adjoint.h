@@ -36,13 +36,9 @@ struct FB;
 struct ConstEqCtx;
 struct SolVarCell;
 struct SolVarEdge;
+struct BCCtx;
 
-#include "phase.h"
-#include "bc.h"
-
-// Some global maxes on parameter and index numbers
-#define _MAX_PAR_ 100
-#define _MAX_OBS_ 100
+//---------------------------------------------------------------------------
 
 // Structure that holds parameters for the adjoint gradient computation
 struct AdjGrad
@@ -56,11 +52,15 @@ struct AdjGrad
 	Vec              gradfield;                // Used if gradient at every point is computed (same size as jr->p)
 };
 
+//---------------------------------------------------------------------------
+
 // Structure that holds vectors required by TAO
 struct Adjoint_Vecs
 {
 	Vec             val, Ub, Lb, grad, P;
 };
+
+//---------------------------------------------------------------------------
 
 // Adjoint optimization driving routines
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
@@ -129,5 +129,7 @@ PetscErrorCode edgeConstEqFD(ConstEqCtx  *ctx,    SolVarEdge  *svEdge, PetscScal
 
 // Helper functions
 PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B);
+
+//---------------------------------------------------------------------------
 
 #endif
