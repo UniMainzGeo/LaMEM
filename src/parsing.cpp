@@ -22,18 +22,18 @@ PetscErrorCode FBLoad(FB **pfb)
 	PetscBool found;
 	char      filename[_str_len_];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = PetscMalloc(sizeof(FB), &fb); CHKERRQ(ierr);
-	ierr = PetscMemzero(fb, sizeof(FB)); CHKERRQ(ierr);
+	PetscCall(PetscMalloc(sizeof(FB), &fb));
+	PetscCall(PetscMemzero(fb, sizeof(FB)));
 
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 		// check whether input file is specified
-		ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
+		PetscCall(PetscOptionsGetCheckString("-ParamFile", filename, &found));
 
 		if(found != PETSC_TRUE)
 		{
@@ -59,7 +59,7 @@ PetscErrorCode FBLoad(FB **pfb)
 		rewind(fp);
 
 		// read entire file into buffer
-		ierr = PetscMalloc((sz + 1)*sizeof(char), &fb->fbuf); CHKERRQ(ierr);
+		PetscCall(PetscMalloc((sz + 1)*sizeof(char), &fb->fbuf));
 
 		fread(fb->fbuf, sz*sizeof(char), 1, fp);
 
@@ -75,21 +75,21 @@ PetscErrorCode FBLoad(FB **pfb)
 	// broadcast
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Bcast(&fb->nchar, 1, MPIU_INT, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		PetscCallMPI(MPI_Bcast(&fb->nchar, 1, MPIU_INT, 0, PETSC_COMM_WORLD));
 	}
 
 	if(!ISRankZero(PETSC_COMM_WORLD))
 	{
-		ierr = PetscMalloc((size_t)fb->nchar*sizeof(char), &fb->fbuf); CHKERRQ(ierr);
+		PetscCall(PetscMalloc((size_t)fb->nchar*sizeof(char), &fb->fbuf));
 	}
 
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Bcast(fb->fbuf, (PetscMPIInt)fb->nchar, MPI_CHAR, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		PetscCallMPI(MPI_Bcast(fb->fbuf, (PetscMPIInt)fb->nchar, MPI_CHAR, 0, PETSC_COMM_WORLD));
 	}
 	
 	// parse buffer
-	ierr = FBParseBuffer(fb); CHKERRQ(ierr);
+	PetscCall(FBParseBuffer(fb));
 
 	// print message
 	PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file \n");
@@ -106,7 +106,7 @@ PetscErrorCode FBDestroy(FB **pfb)
 {
 	FB *fb;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// get pointer
@@ -114,12 +114,12 @@ PetscErrorCode FBDestroy(FB **pfb)
 
 	if(!fb) PetscFunctionReturn(0);
 
-	ierr = PetscFree(fb->fbuf);    CHKERRQ(ierr);
-	ierr = PetscFree(fb->lbuf);    CHKERRQ(ierr);
-	ierr = PetscFree(fb->pfLines); CHKERRQ(ierr);
-	ierr = PetscFree(fb->pbLines); CHKERRQ(ierr);
-	ierr = FBFreeBlocks(fb);       CHKERRQ(ierr);
-	ierr = PetscFree(fb);          CHKERRQ(ierr);
+	PetscCall(PetscFree(fb->fbuf));
+	PetscCall(PetscFree(fb->lbuf));
+	PetscCall(PetscFree(fb->pfLines));
+	PetscCall(PetscFree(fb->pbLines));
+	PetscCall(FBFreeBlocks(fb));
+	PetscCall(PetscFree(fb));
 
 	// clear pointer
 	(*pfb) = NULL;
@@ -133,7 +133,7 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	size_t    len, maxlen;
 	PetscInt  i, nchar, nlines, comment, cnt, block, *fblock;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// process buffer
@@ -182,7 +182,7 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	}
 
 	// collect garbage
-	ierr = PetscMemzero(b + cnt, (size_t)(nchar - cnt)*sizeof(char)); CHKERRQ(ierr);
+	PetscCall(PetscMemzero(b + cnt, (size_t)(nchar - cnt)*sizeof(char)));
 
 	// store actual number of characters
 	fb->nchar = cnt;
@@ -192,7 +192,7 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	fb->nfLines = 0;
 	maxlen      = 0;
 
-	ierr = makeIntArray(&fblock, NULL, nlines); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&fblock, NULL, nlines));
 
 	for(i = 0, line = b, block = 0; i < nlines; i++)
 	{
@@ -210,12 +210,12 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	}
 
 	// allocate line buffer
-	ierr = PetscMalloc((maxlen + 1)*sizeof(char), &fb->lbuf);         CHKERRQ(ierr);
-	ierr = PetscMemzero(fb->lbuf, (size_t)(maxlen + 1)*sizeof(char)); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((maxlen + 1)*sizeof(char), &fb->lbuf));
+	PetscCall(PetscMemzero(fb->lbuf, (size_t)(maxlen + 1)*sizeof(char)));
 
 	// setup line pointers
-	ierr = PetscMalloc((size_t)fb->nbLines*sizeof(char*), &fb->pbLines); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)fb->nfLines*sizeof(char*), &fb->pfLines); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)fb->nbLines*sizeof(char*), &fb->pbLines));
+	PetscCall(PetscMalloc((size_t)fb->nfLines*sizeof(char*), &fb->pfLines));
 
 	fb->nbLines = 0;
 	fb->nfLines = 0;
@@ -228,7 +228,7 @@ PetscErrorCode FBParseBuffer(FB *fb)
 		line += strlen(line) + 1;
 	}
 
-	ierr = PetscFree(fblock); CHKERRQ(ierr);
+	PetscCall(PetscFree(fblock));
 
 	PetscFunctionReturn(0);
 }
@@ -239,7 +239,7 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 
 	PetscInt i, nbeg, nend;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	nbeg = 0;
@@ -267,8 +267,8 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 	}
 
 	// find & store block line ranges
-	ierr = makeIntArray(&fb->blBeg, NULL, fb->nblocks); CHKERRQ(ierr);
-	ierr = makeIntArray(&fb->blEnd, NULL, fb->nblocks); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&fb->blBeg, NULL, fb->nblocks));
+	PetscCall(makeIntArray(&fb->blEnd, NULL, fb->nblocks));
 
 	nbeg = 0;
 	nend = 0;
@@ -293,14 +293,14 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 //---------------------------------------------------------------------------
 PetscErrorCode FBFreeBlocks(FB *fb)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fb->nblocks = 0;
 	fb->blockID = 0;
 
-	ierr = PetscFree(fb->blBeg); CHKERRQ(ierr);
-	ierr = PetscFree(fb->blEnd); CHKERRQ(ierr);
+	PetscCall(PetscFree(fb->blBeg));
+	PetscCall(PetscFree(fb->blEnd));
 
 	PetscFunctionReturn(0);
 }
@@ -521,7 +521,7 @@ PetscErrorCode getIntParam(
 	PetscBool found;
 	char     *dbkey;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(num < 1) PetscFunctionReturn(0);
@@ -539,13 +539,13 @@ PetscErrorCode getIntParam(
 
 	nval = num;
 
-	ierr = PetscOptionsGetIntArray(NULL, NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
+	PetscCall(PetscOptionsGetIntArray(NULL, NULL, dbkey, val, &nval, &found));
 
 	free(dbkey);
 
 	if(found != PETSC_TRUE && fb)
 	{
-		ierr = FBGetIntArray(fb, key, &nval, val, num, &found); CHKERRQ(ierr);
+		PetscCall(FBGetIntArray(fb, key, &nval, val, num, &found));
 	}
 
 	// check whether parameter is set
@@ -587,7 +587,7 @@ PetscErrorCode getScalarParam(
 	PetscBool found;
 	char     *dbkey;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(num < 1) PetscFunctionReturn(0);
@@ -605,14 +605,14 @@ PetscErrorCode getScalarParam(
 	
 	nval = num;
 
-	ierr = PetscOptionsGetScalarArray(NULL, NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
+	PetscCall(PetscOptionsGetScalarArray(NULL, NULL, dbkey, val, &nval, &found));
 	
 	free(dbkey);
 
 	
 	if(found != PETSC_TRUE && fb)
 	{
-		ierr = FBGetScalarArray(fb, key, &nval, val, num, &found); CHKERRQ(ierr);
+		PetscCall(FBGetScalarArray(fb, key, &nval, val, num, &found));
 	}
 
 	// check data item exists
@@ -645,7 +645,7 @@ PetscErrorCode getStringParam(
 	PetscBool found;
 	char     *dbkey;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	found = PETSC_FALSE;
@@ -663,13 +663,13 @@ PetscErrorCode getStringParam(
 		asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
 	}
 	
-	ierr = PetscOptionsGetCheckString(dbkey, str, &found); CHKERRQ(ierr);
+	PetscCall(PetscOptionsGetCheckString(dbkey, str, &found));
 
 	free(dbkey);
 
 	if(found != PETSC_TRUE && fb)
 	{
-		ierr = FBGetString(fb, key, str, &found);  CHKERRQ(ierr);
+		PetscCall(FBGetString(fb, key, str, &found));
 	}
 
 	// check data item exists
@@ -689,10 +689,10 @@ PetscErrorCode  PetscOptionsGetCheckString(
 {
 	// prohibit empty parameters & check for overruns (two null characters are reserved in the end)
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = PetscOptionsGetString(NULL, NULL, key, str, _str_len_, set); CHKERRQ(ierr);
+	PetscCall(PetscOptionsGetString(NULL, NULL, key, str, _str_len_, set));
 
 	if(*set && !strlen(str))
 	{

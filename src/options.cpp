@@ -457,7 +457,7 @@ PetscErrorCode get_coarse_reduction_factor(
 	PetscFunctionBeginUser;
 
 	// get number of ranks
-	MPI_Comm_size(PETSC_COMM_WORLD, &size);
+	PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &size));
 
 	total_num_cpu = (PetscInt)size;
 

@@ -69,19 +69,18 @@ PetscErrorCode VecReadRestart(Vec x, FILE *fp)
 	PetscInt     size;
 	PetscScalar *xarr;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
+	PetscCall(VecGetLocalSize(x, &size));
 
 	// get vector array
-	ierr = VecGetArray(x, &xarr); CHKERRQ(ierr);
+	PetscCall(VecGetArray(x, &xarr));
 
 	// write to file
 	fread(xarr, sizeof(PetscScalar), (size_t)size, fp);
 
 	// restore vector array
-	ierr = VecRestoreArray(x, &xarr); CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(x, &xarr));
 
 	PetscFunctionReturn(0);
 }
@@ -91,19 +90,18 @@ PetscErrorCode VecWriteRestart(Vec x, FILE *fp)
 	PetscInt     size;
 	PetscScalar *xarr;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
+	PetscCall(VecGetLocalSize(x, &size));
 
 	// get vector array
-	ierr = VecGetArray(x, &xarr); CHKERRQ(ierr);
+	PetscCall(VecGetArray(x, &xarr));
 
 	// write to file
 	fwrite(xarr, sizeof(PetscScalar), (size_t)size, fp);
 
 	// restore vector array
-	ierr = VecRestoreArray(x, &xarr); CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(x, &xarr));
 
 	PetscFunctionReturn(0);
 }
@@ -125,7 +123,6 @@ PetscScalar getVar(PetscScalar *data, PetscInt n)
 	PetscInt    k;
     PetscScalar mean = getArthMean(data,n);
     PetscScalar temp = 0.0;
-//	PetscPrintf(PETSC_COMM_WORLD,"mean=%g \n",mean);
     for (k=0; k<n; k++)
         temp += (mean-data[k])*(mean-data[k]);
     return (temp/(PetscScalar)n);
@@ -140,16 +137,15 @@ PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const
 {
 	PetscMPIInt    *tmp;
 	size_t          sz;
-	PetscErrorCode 	ierr;
 	PetscFunctionBeginUser;
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscMPIInt);
 	// allocate space
-	ierr = PetscMalloc(sz, &tmp); CHKERRQ(ierr);
+	PetscCall(PetscMalloc(sz, &tmp));
 	// initialize memory from vector (if required)
-	if(init) { ierr = PetscMemcpy(tmp, init, sz); CHKERRQ(ierr); }
+	if(init) { PetscCall(PetscMemcpy(tmp, init, sz)); }
 	// or just clear memory
-	else { ierr = PetscMemzero(tmp, sz); CHKERRQ(ierr); }
+	else { PetscCall(PetscMemzero(tmp, sz)); }
 	// return pointer
 	*arr = tmp;
 	PetscFunctionReturn(0);
@@ -157,8 +153,7 @@ PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const
 //---------------------------------------------------------------------------
 PetscErrorCode clearIntArray(PetscInt *arr, const PetscInt n)
 {
-	size_t          sz;
-	PetscErrorCode 	ierr;
+	size_t sz;
 
 	PetscFunctionBeginUser;
 
@@ -166,7 +161,7 @@ PetscErrorCode clearIntArray(PetscInt *arr, const PetscInt n)
 	sz = (size_t)n*sizeof(PetscInt);
 
 	// clear memory
-	ierr = PetscMemzero(arr, sz); CHKERRQ(ierr);
+	PetscCall(PetscMemzero(arr, sz));
 
 	PetscFunctionReturn(0);
 }
@@ -175,16 +170,15 @@ PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt
 {
 	PetscInt       *tmp;
 	size_t          sz;
-	PetscErrorCode 	ierr;
 	PetscFunctionBeginUser;
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscInt);
 	// allocate space
-	ierr = PetscMalloc(sz, &tmp); CHKERRQ(ierr);
+	PetscCall(PetscMalloc(sz, &tmp));
 	// initialize memory from vector (if required)
-	if(init) { ierr = PetscMemcpy(tmp, init, sz); CHKERRQ(ierr); }
+	if(init) { PetscCall(PetscMemcpy(tmp, init, sz)); }
 	// or just clear memory
-	else { ierr = PetscMemzero(tmp, sz); CHKERRQ(ierr); }
+	else { PetscCall(PetscMemzero(tmp, sz)); }
 	// return pointer
 	*arr = tmp;
 	PetscFunctionReturn(0);
@@ -194,16 +188,15 @@ PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const P
 {
 	PetscScalar    *tmp;
 	size_t          sz;
-	PetscErrorCode 	ierr;
 	PetscFunctionBeginUser;
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscScalar);
 	// allocate space
-	ierr = PetscMalloc(sz, &tmp); CHKERRQ(ierr);
+	PetscCall(PetscMalloc(sz, &tmp));
 	// initialize memory from vector (if required)
-	if(init) { ierr = PetscMemcpy(tmp, init, sz); CHKERRQ(ierr); }
+	if(init) { PetscCall(PetscMemcpy(tmp, init, sz)); }
 	// or just clear memory
-	else { ierr = PetscMemzero(tmp, sz); CHKERRQ(ierr); }
+	else { PetscCall(PetscMemzero(tmp, sz)); }
 	// return pointer
 	*arr = tmp;
 	PetscFunctionReturn(0);
@@ -265,7 +258,6 @@ PetscErrorCode DirMake(const char *name)
 {
 	int status;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// create a new directory on rank zero
@@ -287,7 +279,7 @@ PetscErrorCode DirMake(const char *name)
 	}
 
 	// synchronize
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
 	PetscFunctionReturn(0);
 }
@@ -296,11 +288,10 @@ PetscErrorCode DirRemove(const char *name)
 {
 	int status;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// synchronize
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
 	// remove directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
@@ -320,11 +311,10 @@ PetscErrorCode DirRename(const char *old_name, const char *new_name)
 {
 	int status;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// synchronize
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
 	// rename directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
@@ -346,7 +336,6 @@ PetscErrorCode DirCheck(const char *name, PetscInt *exists)
 	int         status;
 	PetscInt    check;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// check directory on rank zero
@@ -361,7 +350,7 @@ PetscErrorCode DirCheck(const char *name, PetscInt *exists)
 	// synchronize
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Bcast(&check, 1, MPIU_INT, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		PetscCallMPI(MPI_Bcast(&check, 1, MPIU_INT, 0, PETSC_COMM_WORLD));
 	}
 
 	(*exists) = check;

@@ -15,6 +15,7 @@
 #include "paraViewOutBin.h"
 #include "parsing.h"
 #include "scaling.h"
+#include "Tensor.h"
 #include "advect.h"
 #include "JacRes.h"
 #include "tools.h"
@@ -23,14 +24,14 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 {
 	char filename[_str_len_];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check advection type
 	if(pvmark->actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
 	// check activation
-	ierr = getIntParam(fb, _OPTIONAL_, "out_mark", &pvmark->outmark, 1, 1); CHKERRQ(ierr);
+	PetscCall(getIntParam(fb, _OPTIONAL_, "out_mark", &pvmark->outmark, 1, 1));
 
 	if(!pvmark->outmark) PetscFunctionReturn(0);
 
@@ -38,8 +39,8 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 	pvmark->outpvd = 1;
 
 	// read
-	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name", filename,    "output"); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_mark_pvd",  &pvmark->outpvd, 1, 1); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "out_file_name", filename,    "output"));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_mark_pvd",  &pvmark->outpvd, 1, 1));
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Marker output parameters:\n");
@@ -54,20 +55,20 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 //---------------------------------------------------------------------------
 PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvmark->outmark) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, pvmark->outpvd); CHKERRQ(ierr);
+	PetscCall(UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, pvmark->outpvd));
 
 	// write parallel data .pvtu file
-	ierr = PVMarkWritePVTU(pvmark, dirName); CHKERRQ(ierr);
+	PetscCall(PVMarkWritePVTU(pvmark, dirName));
 
 	// write sub-domain data .vtu files
-	ierr = PVMarkWriteVTU(pvmark, dirName); CHKERRQ(ierr);
+	PetscCall(PVMarkWriteVTU(pvmark, dirName));
 
 	PetscFunctionReturn(0);
 }

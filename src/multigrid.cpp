@@ -24,7 +24,7 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md, Mat A)
 {
 	PetscInt ln=0, lnfine=0;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	//===================
@@ -39,11 +39,11 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md, Mat A)
 	else
 	{
 		// allocate evaluation context
-		ierr = PetscMalloc(sizeof(MatData), &lvl->md); CHKERRQ(ierr);
-		ierr = PetscMemzero(lvl->md, sizeof(MatData)); CHKERRQ(ierr);
+		PetscCall(PetscMalloc(sizeof(MatData), &lvl->md));
+		PetscCall(PetscMemzero(lvl->md, sizeof(MatData)));
 
 		// coarsen evaluation context
-		ierr = MatDataCoarsen(lvl->md, fine->md); CHKERRQ(ierr);
+		PetscCall(MatDataCoarsen(lvl->md, fine->md));
 	}
 
 	//=============
@@ -66,22 +66,22 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md, Mat A)
 	if(lvl->type == _LVL_MAT_FREE_)
 	{
 		// create matrix-free preconditioner evaluation context
-		ierr = PetscMalloc(sizeof(MatDataPC), &lvl->mdpc); CHKERRQ(ierr);
-		ierr = PetscMemzero(lvl->mdpc, sizeof(MatDataPC)); CHKERRQ(ierr);
+		PetscCall(PetscMalloc(sizeof(MatDataPC), &lvl->mdpc));
+		PetscCall(PetscMemzero(lvl->mdpc, sizeof(MatDataPC)));
 
-		ierr = MatDataPCCreate(lvl->mdpc, lvl->md); CHKERRQ(ierr);
+		PetscCall(MatDataPCCreate(lvl->mdpc, lvl->md));
 
 		// create preconditioner operator
-		ierr = MatCreateShell(PETSC_COMM_WORLD, ln, ln, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->A); CHKERRQ(ierr);
-		ierr = MatSetUp(lvl->A); CHKERRQ(ierr);
+		PetscCall(MatCreateShell(PETSC_COMM_WORLD, ln, ln, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->A));
+		PetscCall(MatSetUp(lvl->A));
 
-		ierr = MatShellSetOperation(lvl->A, MATOP_MULT,         (void(*)(void))MatFreeApplyPreconditioner); CHKERRQ(ierr);
-		ierr = MatShellSetOperation(lvl->A, MATOP_GET_DIAGONAL, (void(*)(void))MatFreeGetDiagonal);         CHKERRQ(ierr);
+		PetscCall(MatShellSetOperation(lvl->A, MATOP_MULT,         (void(*)(void))MatFreeApplyPreconditioner));
+		PetscCall(MatShellSetOperation(lvl->A, MATOP_GET_DIAGONAL, (void(*)(void))MatFreeGetDiagonal));
 
-		ierr = MatShellSetContext(lvl->A, (void*)(lvl->mdpc)); CHKERRQ(ierr);
+		PetscCall(MatShellSetContext(lvl->A, (void*)(lvl->mdpc)));
 
-		ierr = MatAssemblyBegin(lvl->A, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-		ierr = MatAssemblyEnd  (lvl->A, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+		PetscCall(MatAssemblyBegin(lvl->A, MAT_FINAL_ASSEMBLY));
+		PetscCall(MatAssemblyEnd  (lvl->A, MAT_FINAL_ASSEMBLY));
 	}
 	else if(lvl->type == _LVL_ASSEMBLED_)
 	{
@@ -92,7 +92,7 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md, Mat A)
 		}
 		else
 		{
-			ierr = PMatCreate(lvl->md, &lvl->A); CHKERRQ(ierr);
+			PetscCall(PMatCreate(lvl->md, &lvl->A));
 		}
 	}
 
@@ -107,42 +107,42 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md, Mat A)
 		if(lvl->type == _LVL_MAT_FREE_ || lvl->type == _LVL_ASSEMBLED_)
 		{
 			// create interpolation context
-			ierr = PetscMalloc(sizeof(MGInterp), &lvl->mgi); CHKERRQ(ierr);
-			ierr = PetscMemzero(lvl->mgi, sizeof(MGInterp)); CHKERRQ(ierr);
+			PetscCall(PetscMalloc(sizeof(MGInterp), &lvl->mgi));
+			PetscCall(PetscMemzero(lvl->mgi, sizeof(MGInterp)));
 
-			ierr = MGInterpCreate(lvl->mgi, lvl->md, fine->md); CHKERRQ(ierr);
+			PetscCall(MGInterpCreate(lvl->mgi, lvl->md, fine->md));
 
 			// create restriction operator
-			ierr = MatCreateShell(PETSC_COMM_WORLD, ln, lnfine, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->R); CHKERRQ(ierr);
-			ierr = MatSetUp(lvl->R); CHKERRQ(ierr);
+			PetscCall(MatCreateShell(PETSC_COMM_WORLD, ln, lnfine, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->R));
+			PetscCall(MatSetUp(lvl->R));
 
-			ierr = MatShellSetOperation(lvl->R, MATOP_MULT,     (void(*)(void))MatFreeApplyRestrict);  CHKERRQ(ierr);
-			ierr = MatShellSetOperation(lvl->R, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateRestrict); CHKERRQ(ierr);
+			PetscCall(MatShellSetOperation(lvl->R, MATOP_MULT,     (void(*)(void))MatFreeApplyRestrict));
+			PetscCall(MatShellSetOperation(lvl->R, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateRestrict));
 
-			ierr = MatShellSetContext(lvl->R, (void*)lvl->mgi); CHKERRQ(ierr);
+			PetscCall(MatShellSetContext(lvl->R, (void*)lvl->mgi));
 
-			ierr = MatAssemblyBegin(lvl->R, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-			ierr = MatAssemblyEnd  (lvl->R, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+			PetscCall(MatAssemblyBegin(lvl->R, MAT_FINAL_ASSEMBLY));
+			PetscCall(MatAssemblyEnd  (lvl->R, MAT_FINAL_ASSEMBLY));
 
 			// create prolongation operator
-			ierr = MatCreateShell(PETSC_COMM_WORLD, lnfine, ln, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->P); CHKERRQ(ierr);
-			ierr = MatSetUp(lvl->P); CHKERRQ(ierr);
+			PetscCall(MatCreateShell(PETSC_COMM_WORLD, lnfine, ln, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &lvl->P));
+			PetscCall(MatSetUp(lvl->P));
 
-			ierr = MatShellSetOperation(lvl->P, MATOP_MULT,     (void(*)(void))MatFreeApplyProlong);  CHKERRQ(ierr);
-			ierr = MatShellSetOperation(lvl->P, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateProlong); CHKERRQ(ierr);
+			PetscCall(MatShellSetOperation(lvl->P, MATOP_MULT,     (void(*)(void))MatFreeApplyProlong));
+			PetscCall(MatShellSetOperation(lvl->P, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateProlong));
 
-			ierr = MatShellSetContext(lvl->P, (void*)lvl->mgi); CHKERRQ(ierr);
+			PetscCall(MatShellSetContext(lvl->P, (void*)lvl->mgi));
 
-			ierr = MatAssemblyBegin(lvl->P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-			ierr = MatAssemblyEnd  (lvl->P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+			PetscCall(MatAssemblyBegin(lvl->P, MAT_FINAL_ASSEMBLY));
+			PetscCall(MatAssemblyEnd  (lvl->P, MAT_FINAL_ASSEMBLY));
 		}
 		else if (lvl->type == _LVL_GALERKIN_)
 		{
 			// WARNING! CONSTANT SIZE PREALLOCATION (ADD VARIABLE PREALLOCATION)
 
 			// preallocate restriction & prolongation matrices
-			ierr = MatAIJCreate(ln,     lnfine, 12, NULL, 4, NULL, &lvl->R); CHKERRQ(ierr);
-			ierr = MatAIJCreate(lnfine, ln,     8,  NULL, 7, NULL, &lvl->P); CHKERRQ(ierr);
+			PetscCall(MatAIJCreate(ln,     lnfine, 12, NULL, 4, NULL, &lvl->R));
+			PetscCall(MatAIJCreate(lnfine, ln,     8,  NULL, 7, NULL, &lvl->P));
 		}
 	}
 
@@ -151,36 +151,36 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md, Mat A)
 //---------------------------------------------------------------------------
 PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(lvl->md->coarsened)
 	{
-		ierr = MatDataDestroy(lvl->md); CHKERRQ(ierr);
-		ierr = PetscFree     (lvl->md); CHKERRQ(ierr);
+		PetscCall(MatDataDestroy(lvl->md));
+		PetscCall(PetscFree     (lvl->md));
 	}
 
 	if(lvl->mgi)
 	{
-		ierr = MGInterpDestroy(lvl->mgi); CHKERRQ(ierr);
-		ierr = PetscFree      (lvl->mgi); CHKERRQ(ierr);
+		PetscCall(MGInterpDestroy(lvl->mgi));
+		PetscCall(PetscFree      (lvl->mgi));
 	}
 	if(lvl->mdpc)
 	{
-		ierr = MatDataPCDestroy(lvl->mdpc); CHKERRQ(ierr);
-		ierr = PetscFree       (lvl->mdpc); CHKERRQ(ierr);
+		PetscCall(MatDataPCDestroy(lvl->mdpc));
+		PetscCall(PetscFree       (lvl->mdpc));
 	}
 	if(lvl->R)
 	{
-		ierr = MatDestroy(&lvl->R); CHKERRQ(ierr);
+		PetscCall(MatDestroy(&lvl->R));
 	}
 	if(lvl->P)
 	{
-		ierr = MatDestroy(&lvl->P); CHKERRQ(ierr);
+		PetscCall(MatDestroy(&lvl->P));
 	}
 	if(!lvl->ext_op)
 	{
-		ierr = MatDestroy(&lvl->A); CHKERRQ(ierr);
+		PetscCall(MatDestroy(&lvl->A));
 	}
 
 	PetscFunctionReturn(0);
@@ -190,7 +190,7 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 //---------------------------------------------------------------------------
 PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// set evaluation context
@@ -198,22 +198,22 @@ PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine)
 	mgi->fine   = fine;
 
 	// create work vectors
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, coarse->fs->dof.ln, PETSC_DETERMINE, &mgi->wc); CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, fine->fs->dof.ln,   PETSC_DETERMINE, &mgi->wf); CHKERRQ(ierr);
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, coarse->fs->dof.ln, PETSC_DETERMINE, &mgi->wc));
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, fine->fs->dof.ln,   PETSC_DETERMINE, &mgi->wf));
 
-	ierr = VecSetFromOptions(mgi->wc); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(mgi->wf); CHKERRQ(ierr);
+	PetscCall(VecSetFromOptions(mgi->wc));
+	PetscCall(VecSetFromOptions(mgi->wf));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MGInterpDestroy(MGInterp *mgi)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = VecDestroy(&mgi->wc); CHKERRQ(ierr);
-	ierr = VecDestroy(&mgi->wf); CHKERRQ(ierr);
+	PetscCall(VecDestroy(&mgi->wc));
+	PetscCall(VecDestroy(&mgi->wf));
 
 	PetscFunctionReturn(0);
 }
@@ -222,25 +222,25 @@ PetscErrorCode MGInterpDestroy(MGInterp *mgi)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataPCCreate(MatDataPC *mdpc, MatData *md)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// set evaluation context
 	mdpc->md = md;
 
 	// reserve storage for matrix diagonal
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, md->fs->dof.ln, PETSC_DETERMINE, &mdpc->D); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(mdpc->D);                                                CHKERRQ(ierr);
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, md->fs->dof.ln, PETSC_DETERMINE, &mdpc->D));
+	PetscCall(VecSetFromOptions(mdpc->D));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataPCDestroy(MatDataPC *mdpc)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = VecDestroy(&mdpc->D); CHKERRQ(ierr);
+	PetscCall(VecDestroy(&mdpc->D));
 
 	PetscFunctionReturn(0);
 }
@@ -252,18 +252,18 @@ PetscErrorCode MGCreate(MG *mg, MatData *md, Mat A)
 	PetscInt i;
 	MGLevel  *fine;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// clear object
-	ierr = PetscMemzero(mg, sizeof(MG)); CHKERRQ(ierr);
+	PetscCall(PetscMemzero(mg, sizeof(MG)));
 
 	// check multigrid mesh restrictions & get actual number of levels
-	ierr = MGGetNumLevels(mg, md); CHKERRQ(ierr);
+	PetscCall(MGGetNumLevels(mg, md));
 
 	// allocate levels
-	ierr = PetscMalloc(sizeof(MGLevel)*(size_t)mg->nlvl, &mg->lvls); CHKERRQ(ierr);
-	ierr = PetscMemzero(mg->lvls, sizeof(MGLevel)*(size_t)mg->nlvl); CHKERRQ(ierr);
+	PetscCall(PetscMalloc(sizeof(MGLevel)*(size_t)mg->nlvl, &mg->lvls));
+	PetscCall(PetscMemzero(mg->lvls, sizeof(MGLevel)*(size_t)mg->nlvl));
 
 	// set level types
 	for(i = 0; i < mg->nlvl; i++) { mg->lvls[i].type = _LVL_GALERKIN_; }
@@ -275,20 +275,20 @@ PetscErrorCode MGCreate(MG *mg, MatData *md, Mat A)
 
 	for(i = 0; i < mg->nlvl; i++)
 	{
-		ierr = MGLevelCreate(&mg->lvls[i], fine, md, A); CHKERRQ(ierr);
+		PetscCall(MGLevelCreate(&mg->lvls[i], fine, md, A));
 
 		fine = &mg->lvls[i];
 	}
 
 	// create Galerkin multigrid preconditioner
-	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc);          CHKERRQ(ierr);
-	ierr = PCSetOptionsPrefix(mg->pc, "gmg_");           CHKERRQ(ierr);
-	ierr = PCSetType(mg->pc, PCMG);                      CHKERRQ(ierr);
-	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);        CHKERRQ(ierr);
-	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE);    CHKERRQ(ierr);
-	ierr = PCMGSetCycleType(mg->pc, PC_MG_CYCLE_V);      CHKERRQ(ierr);
-	ierr = PCSetFromOptions(mg->pc);                     CHKERRQ(ierr);
-	ierr = PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_NONE); CHKERRQ(ierr);
+	PetscCall(PCCreate(PETSC_COMM_WORLD, &mg->pc));
+	PetscCall(PCSetOptionsPrefix(mg->pc, "gmg_"));
+	PetscCall(PCSetType(mg->pc, PCMG));
+	PetscCall(PCMGSetLevels(mg->pc, mg->nlvl, NULL));
+	PetscCall(PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE));
+	PetscCall(PCMGSetCycleType(mg->pc, PC_MG_CYCLE_V));
+	PetscCall(PCSetFromOptions(mg->pc));
+	PetscCall(PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_NONE));
 
 	// set coarse solver setup flag
 	mg->crs_setup = 0;
@@ -301,25 +301,25 @@ PetscErrorCode MGDestroy(MG *mg)
 	PetscInt  i;
 	PetscBool flg;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// view preconditioner if required
-	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-gmg_pc_view", &flg));
 
 	if(flg == PETSC_TRUE)
 	{
-		ierr = PCView(mg->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
+		PetscCall(PCView(mg->pc, PETSC_VIEWER_STDOUT_WORLD));
 	}
 
 	for(i = 0; i < mg->nlvl; i++)
 	{
-		ierr = MGLevelDestroy(&mg->lvls[i]); CHKERRQ(ierr);
+		PetscCall(MGLevelDestroy(&mg->lvls[i]));
 	}
 
-	ierr = PetscFree(mg->lvls); CHKERRQ(ierr);
+	PetscCall(PetscFree(mg->lvls));
 
-	ierr = PCDestroy(&mg->pc); CHKERRQ(ierr);
+	PetscCall(PCDestroy(&mg->pc));
 
 	PetscFunctionReturn(0);
 }
@@ -330,7 +330,7 @@ PetscErrorCode MGSetup(MG *mg)
 	MGLevel *lvl, *fine;
 	PetscInt i, petsc_mg_level;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	for(i = 0, petsc_mg_level = mg->nlvl-1; i < mg->nlvl; i++, petsc_mg_level--)
@@ -343,65 +343,65 @@ PetscErrorCode MGSetup(MG *mg)
 			fine = &mg->lvls[i-1];
 
 			// restrict evaluation context
-			ierr = MatDataRestrict(lvl->md, fine->md, mg->MG2D); CHKERRQ(ierr);
+			PetscCall(MatDataRestrict(lvl->md, fine->md, mg->MG2D));
 
 			if(lvl->type == _LVL_GALERKIN_)
 			{
 				// assemble restriction and prolongation matrices
 				if(mg->MG2D)
 				{
-					ierr = MGLevelSetupRestrict2D(lvl, fine); CHKERRQ(ierr);
-					ierr = MGLevelSetupProlong2D (lvl, fine); CHKERRQ(ierr);
+					PetscCall(MGLevelSetupRestrict2D(lvl, fine));
+					PetscCall(MGLevelSetupProlong2D (lvl, fine));
 				}
 				else
 				{
-					ierr = MGLevelSetupRestrict3D(lvl, fine); CHKERRQ(ierr);
-					ierr = MGLevelSetupProlong3D (lvl, fine); CHKERRQ(ierr);
+					PetscCall(MGLevelSetupRestrict3D(lvl, fine));
+					PetscCall(MGLevelSetupProlong3D (lvl, fine));
 				}
 
 				// compute coarse grid operator
 				if(lvl->A)
 				{
-					ierr = MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_REUSE_MATRIX, PETSC_DETERMINE, &lvl->A); CHKERRQ(ierr);
+					PetscCall(MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_REUSE_MATRIX, PETSC_DETERMINE, &lvl->A));
 				}
 				else
 				{
-					ierr = MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_INITIAL_MATRIX, PETSC_DETERMINE, &lvl->A); CHKERRQ(ierr);
+					PetscCall(MatMatMatMult(lvl->R, fine->A, lvl->P, MAT_INITIAL_MATRIX, PETSC_DETERMINE, &lvl->A));
 				}
 			}
 
 			// attach restriction/prolongation matrices to the preconditioner
-			ierr = PCMGSetRestriction  (mg->pc, petsc_mg_level+1, mg->lvls[i].R); CHKERRQ(ierr);
-			ierr = PCMGSetInterpolation(mg->pc, petsc_mg_level+1, mg->lvls[i].P); CHKERRQ(ierr);
+			PetscCall(PCMGSetRestriction  (mg->pc, petsc_mg_level+1, mg->lvls[i].R));
+			PetscCall(PCMGSetInterpolation(mg->pc, petsc_mg_level+1, mg->lvls[i].P));
 		}
 
 		if(lvl->type == _LVL_MAT_FREE_)
 		{
 			// compute matrix diagonal on matrix-free levels
-			ierr = MatFreeComputeDiagonal(lvl->md, lvl->mdpc->D); CHKERRQ(ierr);
+			PetscCall(MatFreeComputeDiagonal(lvl->md, lvl->mdpc->D));
 		}
 		else if(lvl->type == _LVL_ASSEMBLED_ && !lvl->ext_op)
 		{
 			// assemble entire matrix
-			ierr = PMatAssemble(lvl->md, 1.0, lvl->A); CHKERRQ(ierr);
+			PetscCall(PMatAssemble(lvl->md, 1.0, lvl->A));
 		}
 
 		if(mg->crs_setup == PETSC_FALSE && i == mg->nlvl-1)
 		{
 			// attach near null space to coarse grid operator
-			ierr = MatAIJSetNullSpace(lvl->A, lvl->md); CHKERRQ(ierr);
+			PetscCall(MatAIJSetNullSpace(lvl->A, lvl->md));
 
 			// set coarse solver setup flag
 			mg->crs_setup = PETSC_TRUE;
 		}
 
 		// set operators in PCMG
-		ierr = PCMGGetSmoother(mg->pc, petsc_mg_level, &ksp);  CHKERRQ(ierr);
-		ierr = KSPSetOperators(ksp,lvl->A, lvl->A);            CHKERRQ(ierr);
+		PetscCall(PCMGGetSmoother(mg->pc, petsc_mg_level, &ksp));
+		PetscCall(KSPSetOperators(ksp,lvl->A, lvl->A));
 	}
 
 	// set top-level operators
-	ierr = PCSetOperators(mg->pc, mg->lvls[0].A, mg->lvls[0].A); CHKERRQ(ierr);
+	PetscCall(PCSetOperators(mg->pc, mg->lvls[0].A, mg->lvls[0].A));
 
 	PetscFunctionReturn(0);
 }
@@ -410,13 +410,13 @@ PetscErrorCode MGApply(PC pc, Vec x, Vec y)
 {
 	MG *mg;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = PCShellGetContext(pc, (void**)&mg); CHKERRQ(ierr);
+	PetscCall(PCShellGetContext(pc, (void**)&mg));
 
 	// apply multigrid preconditioner
-	ierr = PCApply(mg->pc, x, y); CHKERRQ(ierr);
+	PetscCall(PCApply(mg->pc, x, y));
 
 	PetscFunctionReturn(0);
 }
@@ -429,19 +429,19 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	PetscBool opt_set;
 	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, nlmf;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
 
 	// get maximum possible number of coarsening steps
-	ierr = FDSTAGCheckMG(fs, ncors); CHKERRQ(ierr);
+	PetscCall(FDSTAGCheckMG(fs, ncors));
 
 	// set 2D coarsening flag
-	ierr = FDSTAGCheckMG2D(fs, mg->MG2D); CHKERRQ(ierr);
+	PetscCall(FDSTAGCheckMG2D(fs, mg->MG2D));
 
 	// check number of levels requested on the command line
-	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
+	PetscCall(PetscOptionsGetInt(NULL, NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set));
 
 	if(opt_set != PETSC_TRUE)
 	{
@@ -453,7 +453,7 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	}
 
 	// check number of matrix-free levels requested on the command line
-	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_mat_free_levels", &nlmf, &opt_set); CHKERRQ(ierr);
+	PetscCall(PetscOptionsGetInt(NULL, NULL, "-gmg_mat_free_levels", &nlmf, &opt_set));
 
 	if(opt_set == PETSC_TRUE)
 	{
@@ -478,13 +478,13 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	}
 
 	// get coarse grid size
-	ierr = FDSTAGGetCoarseGridSize(fs, nlevels, nx, ny, nz, Nx, Ny, Nz); CHKERRQ(ierr);
+	PetscCall(FDSTAGGetCoarseGridSize(fs, nlevels, nx, ny, nz, Nx, Ny, Nz));
 
 	// print grid statistics
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [Nx,Ny,Nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);                           CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of matrix-free levels  :  %lld\n", (LLD)nlmf);                              CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [Nx,Ny,Nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of matrix-free levels  :  %lld\n", (LLD)nlmf);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
@@ -509,7 +509,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	R      = lvl->R;
@@ -517,25 +517,25 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 	mdfine = fine->md;
 
 	// clear restriction matrix coefficients
-	ierr = MatZeroEntries(R); CHKERRQ(ierr);
+	PetscCall(MatZeroEntries(R));
 
 	// access index vectors in fine grid
-	ierr = DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip);    CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip));
 
 	// access boundary condition vectors in fine grid
-	ierr = DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp));
 
 	// access boundary condition vectors in coarse grid
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp));
 
 	// get global index of the first row in coarse grid
 	if     (mdlvl->idxmod == _IDX_COUPLED_) { row = mdlvl->fs->dof.st;  }
@@ -568,7 +568,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	// X-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(mdlvl->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdlvl->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -609,7 +609,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 		getRowRestrict(cbcvx[k][j][i], 12, idx, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(R, 1, &row, 12, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(R, 1, &row, 12, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -619,7 +619,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	// Y-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(mdlvl->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdlvl->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -660,7 +660,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 		getRowRestrict(cbcvy[k][j][i], 12, idx, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(R, 1, &row, 12, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(R, 1, &row, 12, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -670,7 +670,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	// Z-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(mdlvl->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdlvl->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -711,7 +711,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 		getRowRestrict(cbcvz[k][j][i], 12, idx, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(R, 1, &row, 12, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(R, 1, &row, 12, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -723,7 +723,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 		//-----------------------
 		// P-points (coarse grid)
 		//-----------------------
-		ierr = DMDAGetCorners(mdlvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		PetscCall(DMDAGetCorners(mdlvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 		START_STD_LOOP
 		{
@@ -756,7 +756,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 			getRowRestrict(cbcp[k][j][i], 8, idx, bc, v, ps);
 
 			// store full matrix row
-			ierr = MatSetValues(R, 1, &row, 8, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+			PetscCall(MatSetValues(R, 1, &row, 8, idx, v, INSERT_VALUES));
 
 			// increment row number
 			row++;
@@ -766,23 +766,23 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip);    CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip));
 
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp));
 
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,    mdlvl->bcvx, &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,    mdlvl->bcvy, &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,    mdlvl->bcvz, &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN,  mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_X,    mdlvl->bcvx, &cbcvx));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Y,    mdlvl->bcvy, &cbcvy));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Z,    mdlvl->bcvz, &cbcvz));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_CEN,  mdlvl->bcp,  &cbcp));
 
 	// assemble restriction matrix
-	ierr = MatAIJAssemble(R, 0, NULL, 0.0); CHKERRQ(ierr);
+	PetscCall(MatAIJAssemble(R, 0, NULL, 0.0));
 
 	PetscFunctionReturn(0);
 }
@@ -799,7 +799,7 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	P      = lvl->P;
@@ -807,25 +807,25 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 	mdfine = fine->md;
 
 	// clear prolongation matrix coefficients
-	ierr = MatZeroEntries(P); CHKERRQ(ierr);
+	PetscCall(MatZeroEntries(P));
 
 	// access index vectors in coarse grid
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->ip,  &ip);    CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->ivx, &ivx));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->ivy, &ivy));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->ivz, &ivz));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->ip,  &ip));
 
 	// access boundary condition vectors in fine grid
-	ierr = DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp));
 
 	// access boundary condition vectors in coarse grid
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx,  &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy,  &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz,  &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,   &cbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx,  &cbcvx));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy,  &cbcvy));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz,  &cbcvz));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,   &cbcp));
 
 	// get global index of the first row in the fine grid
 	if     (mdfine->idxmod == _IDX_COUPLED_) { row = mdfine->fs->dof.st;  }
@@ -853,7 +853,7 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 	//---------------------
 	// X-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(mdfine->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdfine->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -897,7 +897,7 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 		getRowProlong(row, fbcvx[k][j][i], n, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -907,7 +907,7 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 	//---------------------
 	// Y-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(mdfine->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdfine->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -951,7 +951,7 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 		getRowProlong(row, fbcvy[k][j][i], n, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -961,7 +961,7 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 	//---------------------
 	// Z-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(mdfine->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdfine->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1005,7 +1005,7 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 		getRowProlong(row, fbcvz[k][j][i], n, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -1017,7 +1017,7 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 		//---------------------
 		// P-points (fine grid)
 		//---------------------
-		ierr = DMDAGetCorners(mdfine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		PetscCall(DMDAGetCorners(mdfine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 		START_STD_LOOP
 		{
@@ -1033,7 +1033,7 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 			getRowProlong(row, fbcp[k][j][i], 1, bc, v, ps);
 
 			// store full matrix row
-			ierr = MatSetValues(P, 1, &row, 1, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+			PetscCall(MatSetValues(P, 1, &row, 1, idx, v, INSERT_VALUES));
 
 			// increment row number
 			row++;
@@ -1042,23 +1042,23 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,  mdlvl->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,  mdlvl->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,  mdlvl->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN,mdlvl->ip,  &ip);    CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_X,  mdlvl->ivx, &ivx));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Y,  mdlvl->ivy, &ivy));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Z,  mdlvl->ivz, &ivz));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_CEN,mdlvl->ip,  &ip));
 
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp));
 
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp));
 
 	// assemble prolongation matrix
-	ierr = MatAIJAssemble(P, 0, NULL, 0.0); CHKERRQ(ierr);
+	PetscCall(MatAIJAssemble(P, 0, NULL, 0.0));
 
 	PetscFunctionReturn(0);
 }
@@ -1075,7 +1075,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	R      = lvl->R;
@@ -1083,25 +1083,25 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 	mdfine = fine->md;
 
 	// clear restriction matrix coefficients
-	ierr = MatZeroEntries(R); CHKERRQ(ierr);
+	PetscCall(MatZeroEntries(R));
 
 	// access index vectors in fine grid
-	ierr = DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip);    CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip));
 
 	// access boundary condition vectors in fine grid
-	ierr = DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp));
 
 	// access boundary condition vectors in coarse grid
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp));
 
 	// get global index of the first row in coarse grid
 	if     (mdlvl->idxmod == _IDX_COUPLED_) { row = mdlvl->fs->dof.st;  }
@@ -1130,7 +1130,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	// X-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(mdlvl->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdlvl->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1159,7 +1159,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 		getRowRestrict(cbcvx[k][j][i], 6, idx, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(R, 1, &row, 6, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(R, 1, &row, 6, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -1169,7 +1169,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	// Y-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(mdlvl->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdlvl->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1194,7 +1194,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 		getRowRestrict(cbcvy[k][j][i], 4, idx, bc, v, vsd);
 
 		// store full matrix row
-		ierr = MatSetValues(R, 1, &row, 4, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(R, 1, &row, 4, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -1204,7 +1204,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	// Z-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(mdlvl->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdlvl->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1233,7 +1233,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 		getRowRestrict(cbcvz[k][j][i], 6, idx, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(R, 1, &row, 6, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(R, 1, &row, 6, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -1245,7 +1245,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 		//-----------------------
 		// P-points (coarse grid)
 		//-----------------------
-		ierr = DMDAGetCorners(mdlvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		PetscCall(DMDAGetCorners(mdlvl->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 		START_STD_LOOP
 		{
@@ -1270,7 +1270,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 			getRowRestrict(cbcp[k][j][i], 4, idx, bc, v, ps);
 
 			// store full matrix row
-			ierr = MatSetValues(R, 1, &row, 4, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+			PetscCall(MatSetValues(R, 1, &row, 4, idx, v, INSERT_VALUES));
 
 			// increment row number
 			row++;
@@ -1280,23 +1280,23 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip);    CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->ivx, &ivx));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->ivy, &ivy));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->ivz, &ivz));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->ip,  &ip));
 
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp));
 
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,    mdlvl->bcvx, &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,    mdlvl->bcvy, &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,    mdlvl->bcvz, &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN,  mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_X,    mdlvl->bcvx, &cbcvx));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Y,    mdlvl->bcvy, &cbcvy));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Z,    mdlvl->bcvz, &cbcvz));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_CEN,  mdlvl->bcp,  &cbcp));
 
 	// assemble restriction matrix
-	ierr = MatAIJAssemble(R, 0, NULL, 0.0); CHKERRQ(ierr);
+	PetscCall(MatAIJAssemble(R, 0, NULL, 0.0));
 
 	PetscFunctionReturn(0);
 }
@@ -1313,7 +1313,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	P      = lvl->P;
@@ -1321,25 +1321,25 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 	mdfine = fine->md;
 
 	// clear prolongation matrix coefficients
-	ierr = MatZeroEntries(P); CHKERRQ(ierr);
+	PetscCall(MatZeroEntries(P));
 
 	// access index vectors in coarse grid
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->ip,  &ip);    CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->ivx, &ivx));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->ivy, &ivy));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->ivz, &ivz));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->ip,  &ip));
 
 	// access boundary condition vectors in fine grid
-	ierr = DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz));
+	PetscCall(DMDAVecGetArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp));
 
 	// access boundary condition vectors in coarse grid
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx,  &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy,  &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz,  &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,   &cbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_X,   mdlvl->bcvx,  &cbcvx));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Y,   mdlvl->bcvy,  &cbcvy));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_Z,   mdlvl->bcvz,  &cbcvz));
+	PetscCall(DMDAVecGetArray(mdlvl->fs->DA_CEN, mdlvl->bcp,   &cbcp));
 
 	// get global index of the first row in the fine grid
 	if     (mdfine->idxmod == _IDX_COUPLED_) { row = mdfine->fs->dof.st;  }
@@ -1367,7 +1367,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 	//---------------------
 	// X-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(mdfine->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdfine->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1402,7 +1402,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 		getRowProlong(row, fbcvx[k][j][i], n, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -1412,7 +1412,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 	//---------------------
 	// Y-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(mdfine->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdfine->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1438,7 +1438,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 		getRowProlong(row, fbcvy[k][j][i], 4, bc, v, vsd);
 
 		// store full matrix row
-		ierr = MatSetValues(P, 1, &row, 4, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(P, 1, &row, 4, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -1448,7 +1448,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 	//---------------------
 	// Z-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(mdfine->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(mdfine->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1483,7 +1483,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 		getRowProlong(row, fbcvz[k][j][i], n, bc, v, vs);
 
 		// store full matrix row
-		ierr = MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValues(P, 1, &row, n, idx, v, INSERT_VALUES));
 
 		// increment row number
 		row++;
@@ -1495,7 +1495,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 		//---------------------
 		// P-points (fine grid)
 		//---------------------
-		ierr = DMDAGetCorners(mdfine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		PetscCall(DMDAGetCorners(mdfine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 		START_STD_LOOP
 		{
@@ -1511,7 +1511,7 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 			getRowProlong(row, fbcp[k][j][i], 1, bc, v, ps);
 
 			// store full matrix row
-			ierr = MatSetValues(P, 1, &row, 1, idx, v, INSERT_VALUES); CHKERRQ(ierr);
+			PetscCall(MatSetValues(P, 1, &row, 1, idx, v, INSERT_VALUES));
 
 			// increment row number
 			row++;
@@ -1520,23 +1520,23 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,  mdlvl->ivx, &ivx);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,  mdlvl->ivy, &ivy);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,  mdlvl->ivz, &ivz);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN,mdlvl->ip,  &ip);    CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_X,  mdlvl->ivx, &ivx));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Y,  mdlvl->ivy, &ivy));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Z,  mdlvl->ivz, &ivz));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_CEN,mdlvl->ip,  &ip));
 
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_X,   mdfine->bcvx, &fbcvx));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Y,   mdfine->bcvy, &fbcvy));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_Z,   mdfine->bcvz, &fbcvz));
+	PetscCall(DMDAVecRestoreArray(mdfine->fs->DA_CEN, mdfine->bcp,  &fbcp));
 
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_X,   mdlvl->bcvx, &cbcvx));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Y,   mdlvl->bcvy, &cbcvy));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_Z,   mdlvl->bcvz, &cbcvz));
+	PetscCall(DMDAVecRestoreArray(mdlvl->fs->DA_CEN, mdlvl->bcp,  &cbcp));
 
 	// assemble prolongation matrix
-	ierr = MatAIJAssemble(P, 0, NULL, 0.0); CHKERRQ(ierr);
+	PetscCall(MatAIJAssemble(P, 0, NULL, 0.0));
 
 	PetscFunctionReturn(0);
 }
@@ -1620,14 +1620,14 @@ PetscErrorCode compareVecs(Vec va, Vec vb)
 	Vec       diff;
 	PetscReal nrm;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = VecDuplicate(va, &diff); CHKERRQ(ierr);
+	PetscCall(VecDuplicate(va, &diff));
 
-	ierr = VecWAXPY(diff, -1.0, va, vb);
+	PetscCall(VecWAXPY(diff, -1.0, va, vb));
 
-	ierr = VecNorm(diff, NORM_2, &nrm); CHKERRQ(ierr);
+	PetscCall(VecNorm(diff, NORM_2, &nrm));
 
 	PetscPrintf(PETSC_COMM_WORLD, "   *** \n");
 	PetscPrintf(PETSC_COMM_WORLD, "   *** \n");
@@ -1635,7 +1635,7 @@ PetscErrorCode compareVecs(Vec va, Vec vb)
 
 	PetscPrintf(PETSC_COMM_WORLD, "   Difference            :  %g\n", nrm);
 
-	ierr = VecDestroy(&diff); CHKERRQ(ierr);
+	PetscCall(VecDestroy(&diff));
 
 	PetscFunctionReturn(0);
 }
@@ -1644,16 +1644,16 @@ PetscErrorCode genRandVec(MatData *md, Vec *v)
 {
 	PetscRandom  rctx;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
+	PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &rctx));
 
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, md->fs->dof.ln, PETSC_DETERMINE, v); CHKERRQ(ierr);
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, md->fs->dof.ln, PETSC_DETERMINE, v));
 
-	ierr = VecSetRandom((*v), rctx); CHKERRQ(ierr);
+	PetscCall(VecSetRandom((*v), rctx));
 
-	ierr = PetscRandomDestroy(&rctx);CHKERRQ(ierr);
+	PetscCall(PetscRandomDestroy(&rctx));
 
 	PetscFunctionReturn(0);
 }
@@ -1663,10 +1663,10 @@ PetscErrorCode VecSetBC(MatData *md, Vec v)
 	PetscInt     i, num, *list;
 	PetscScalar  *va;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = VecGetArray(v, &va); CHKERRQ(ierr);
+	PetscCall(VecGetArray(v, &va));
 
 	// zero out constrained residuals (velocity)
 	num   = md->vNumSPC;
@@ -1680,7 +1680,7 @@ PetscErrorCode VecSetBC(MatData *md, Vec v)
 
 	for(i = 0; i < num; i++) va[list[i]] = 0.0;
 
-	ierr = VecRestoreArray(v, &va); CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(v, &va));
 
 	PetscFunctionReturn(0);
 }
@@ -1695,83 +1695,83 @@ PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P)
 	PetscInt nc, nf;
 	MGInterp mgi;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	nc = coarse->fs->dof.ln;
 	nf = fine->fs->dof.ln;
 
-	ierr = MGInterpCreate(&mgi, coarse, fine); CHKERRQ(ierr);
+	PetscCall(MGInterpCreate(&mgi, coarse, fine));
 
 	// create restriction operator
-	ierr = MatCreateShell(PETSC_COMM_WORLD, nc, nf, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &RMF); CHKERRQ(ierr);
-	ierr = MatSetUp(RMF); CHKERRQ(ierr);
+	PetscCall(MatCreateShell(PETSC_COMM_WORLD, nc, nf, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &RMF));
+	PetscCall(MatSetUp(RMF));
 
-	ierr = MatShellSetOperation(RMF, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateRestrict); CHKERRQ(ierr);
-	ierr = MatShellSetContext(RMF, (void*)&mgi); CHKERRQ(ierr);
+	PetscCall(MatShellSetOperation(RMF, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateRestrict));
+	PetscCall(MatShellSetContext(RMF, (void*)&mgi));
 
-	ierr = MatAssemblyBegin(RMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-	ierr = MatAssemblyEnd  (RMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	PetscCall(MatAssemblyBegin(RMF, MAT_FINAL_ASSEMBLY));
+	PetscCall(MatAssemblyEnd  (RMF, MAT_FINAL_ASSEMBLY));
 
 	// create prolongation operator
-	ierr = MatCreateShell(PETSC_COMM_WORLD, nf, nc, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &PMF); CHKERRQ(ierr);
-	ierr = MatSetUp(PMF); CHKERRQ(ierr);
+	PetscCall(MatCreateShell(PETSC_COMM_WORLD, nf, nc, PETSC_DETERMINE, PETSC_DETERMINE, NULL, &PMF));
+	PetscCall(MatSetUp(PMF));
 
-	ierr = MatShellSetOperation(PMF, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateProlong); CHKERRQ(ierr);
-	ierr = MatShellSetContext(PMF, (void*)&mgi); CHKERRQ(ierr);
+	PetscCall(MatShellSetOperation(PMF, MATOP_MULT_ADD, (void(*)(void))MatFreeUpdateProlong));
+	PetscCall(MatShellSetContext(PMF, (void*)&mgi));
 
-	ierr = MatAssemblyBegin(PMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-	ierr = MatAssemblyEnd  (PMF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	PetscCall(MatAssemblyBegin(PMF, MAT_FINAL_ASSEMBLY));
+	PetscCall(MatAssemblyEnd  (PMF, MAT_FINAL_ASSEMBLY));
 
 	// zero
-	ierr = VecDuplicate(mgi.wc, &zc); CHKERRQ(ierr);
-	ierr = VecDuplicate(mgi.wf, &zf); CHKERRQ(ierr);
+	PetscCall(VecDuplicate(mgi.wc, &zc));
+	PetscCall(VecDuplicate(mgi.wf, &zf));
 
-	ierr = VecZeroEntries(zc); CHKERRQ(ierr);
-	ierr = VecZeroEntries(zf); CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(zc));
+	PetscCall(VecZeroEntries(zf));
 
 	// random
-	ierr = VecDuplicate(mgi.wc, &rc); CHKERRQ(ierr);
-	ierr = VecDuplicate(mgi.wf, &rf); CHKERRQ(ierr);
+	PetscCall(VecDuplicate(mgi.wc, &rc));
+	PetscCall(VecDuplicate(mgi.wf, &rf));
 
-	ierr = genRandVec(coarse, &rc); CHKERRQ(ierr);
-	ierr = genRandVec(fine  , &rf); CHKERRQ(ierr);
+	PetscCall(genRandVec(coarse, &rc));
+	PetscCall(genRandVec(fine  , &rf));
 
-	ierr = VecSetBC(coarse, rc); CHKERRQ(ierr);
-	ierr = VecSetBC(fine,   rf); CHKERRQ(ierr);
+	PetscCall(VecSetBC(coarse, rc));
+	PetscCall(VecSetBC(fine,   rf));
 
 	// work
-	ierr = VecDuplicate(mgi.wc, &wc); CHKERRQ(ierr);
-	ierr = VecDuplicate(mgi.wf, &wf); CHKERRQ(ierr);
+	PetscCall(VecDuplicate(mgi.wc, &wc));
+	PetscCall(VecDuplicate(mgi.wf, &wf));
 
-	ierr = VecDuplicate(mgi.wc, &wcmf); CHKERRQ(ierr);
-	ierr = VecDuplicate(mgi.wf, &wfmf); CHKERRQ(ierr);
+	PetscCall(VecDuplicate(mgi.wc, &wcmf));
+	PetscCall(VecDuplicate(mgi.wf, &wfmf));
 
 	// restriction
-	ierr = MatMult   (R,   rf,     wc);   CHKERRQ(ierr);
-	ierr = MatMultAdd(RMF, rf, zc, wcmf); CHKERRQ(ierr);
+	PetscCall(MatMult   (R,   rf,     wc));
+	PetscCall(MatMultAdd(RMF, rf, zc, wcmf));
 
 	// prolongation
-	ierr = MatMult   (P,   rc,     wf);   CHKERRQ(ierr);
-	ierr = MatMultAdd(PMF, rc, zf, wfmf); CHKERRQ(ierr);
+	PetscCall(MatMult   (P,   rc,     wf));
+	PetscCall(MatMultAdd(PMF, rc, zf, wfmf));
 
 	// comparison
-	ierr = compareVecs(wc, wcmf); CHKERRQ(ierr);
-	ierr = compareVecs(wf, wfmf); CHKERRQ(ierr);
+	PetscCall(compareVecs(wc, wcmf));
+	PetscCall(compareVecs(wf, wfmf));
 
-	ierr = MGInterpDestroy(&mgi); CHKERRQ(ierr);
+	PetscCall(MGInterpDestroy(&mgi));
 
-	ierr = MatDestroy(&RMF); CHKERRQ(ierr);
-	ierr = MatDestroy(&PMF); CHKERRQ(ierr);
+	PetscCall(MatDestroy(&RMF));
+	PetscCall(MatDestroy(&PMF));
 
-	ierr = VecDestroy(&zc);   CHKERRQ(ierr);
-	ierr = VecDestroy(&zf);   CHKERRQ(ierr);
-	ierr = VecDestroy(&rc);   CHKERRQ(ierr);
-	ierr = VecDestroy(&rf);   CHKERRQ(ierr);
-	ierr = VecDestroy(&wc);   CHKERRQ(ierr);
-	ierr = VecDestroy(&wf);   CHKERRQ(ierr);
-	ierr = VecDestroy(&wcmf); CHKERRQ(ierr);
-	ierr = VecDestroy(&wfmf); CHKERRQ(ierr);
+	PetscCall(VecDestroy(&zc));
+	PetscCall(VecDestroy(&zf));
+	PetscCall(VecDestroy(&rc));
+	PetscCall(VecDestroy(&rf));
+	PetscCall(VecDestroy(&wc));
+	PetscCall(VecDestroy(&wf));
+	PetscCall(VecDestroy(&wcmf));
+	PetscCall(VecDestroy(&wfmf));
 
 	PetscFunctionReturn(0);
 }
@@ -1783,37 +1783,37 @@ PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat P)
 	Vec rc, rcbc;
 	Vec wf, wfbc;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = MGInterpCreate(&mgi, coarse, fine); CHKERRQ(ierr);
+	PetscCall(MGInterpCreate(&mgi, coarse, fine));
 
-	ierr = genRandVec(coarse, &rc); CHKERRQ(ierr);
+	PetscCall(genRandVec(coarse, &rc));
 
-	ierr = VecDuplicate(rc, &rcbc); CHKERRQ(ierr);
+	PetscCall(VecDuplicate(rc, &rcbc));
 
-	ierr = VecCopy(rc, rcbc); CHKERRQ(ierr);
+	PetscCall(VecCopy(rc, rcbc));
 
-	ierr = VecSetBC(coarse, rcbc); CHKERRQ(ierr);
+	PetscCall(VecSetBC(coarse, rcbc));
 
-	ierr = VecDuplicate(mgi.wf, &wf); CHKERRQ(ierr);
-	ierr = VecDuplicate(mgi.wf, &wfbc); CHKERRQ(ierr);
+	PetscCall(VecDuplicate(mgi.wf, &wf));
+	PetscCall(VecDuplicate(mgi.wf, &wfbc));
 
 
-	ierr = MatMult(P, rc,   wf);   CHKERRQ(ierr);
-	ierr = MatMult(P, rcbc, wfbc); CHKERRQ(ierr);
+	PetscCall(MatMult(P, rc,   wf));
+	PetscCall(MatMult(P, rcbc, wfbc));
 
-	ierr = VecSetBC(fine, wf);   CHKERRQ(ierr);
-	ierr = VecSetBC(fine, wfbc); CHKERRQ(ierr);
+	PetscCall(VecSetBC(fine, wf));
+	PetscCall(VecSetBC(fine, wfbc));
 
-	ierr = compareVecs(wf, wfbc); CHKERRQ(ierr);
+	PetscCall(compareVecs(wf, wfbc));
 
-	ierr = VecDestroy(&rc);   CHKERRQ(ierr);
-	ierr = VecDestroy(&rcbc); CHKERRQ(ierr);
-	ierr = VecDestroy(&wf);    CHKERRQ(ierr);
-	ierr = VecDestroy(&wfbc); CHKERRQ(ierr);
+	PetscCall(VecDestroy(&rc));
+	PetscCall(VecDestroy(&rcbc));
+	PetscCall(VecDestroy(&wf));
+	PetscCall(VecDestroy(&wfbc));
 
-	ierr = MGInterpDestroy(&mgi); CHKERRQ(ierr);
+	PetscCall(MGInterpDestroy(&mgi));
 
 	PetscFunctionReturn(0);
 }

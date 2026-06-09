@@ -30,7 +30,7 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 	FDSTAG   *fs;
 	PetscInt rx, ry, rz, sx, sy, sz, nx, ny, nz;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
@@ -46,7 +46,7 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
 
 	// allocate output buffer
-	ierr = PetscMalloc((size_t)(_max_num_comp_*nx*ny*nz)*sizeof(float), &outbuf->buff); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)(_max_num_comp_*nx*ny*nz)*sizeof(float), &outbuf->buff));
 
 	// set pointers to center, corner & edge buffers (reuse from JacRes object)
 	outbuf->lbcen = jr->ldxx;
@@ -60,11 +60,11 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 //---------------------------------------------------------------------------
 PetscErrorCode OutBufDestroy(OutBuf *outbuf)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// free output buffer
-	ierr = PetscFree(outbuf->buff); CHKERRQ(ierr);
+	PetscCall(PetscFree(outbuf->buff));
 
 	PetscFunctionReturn(0);
 }
@@ -138,7 +138,7 @@ PetscErrorCode OutBufPut3DVecComp(
 	PetscScalar ***arr;
 	PetscInt    i, j, k, rx, ry, rz, sx, sy, sz, nx, ny, nz, cnt;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access grid layout & buffer
@@ -149,7 +149,7 @@ PetscErrorCode OutBufPut3DVecComp(
 	LOCAL_TO_LOCAL(fs->DA_COR, outbuf->lbcor)
 
 	// access local buffer vector
-	ierr = DMDAVecGetArray(fs->DA_COR, outbuf->lbcor, &arr); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_COR, outbuf->lbcor, &arr));
 
 	// get sub-domain ranks, starting node IDs, and number of nodes
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
@@ -192,7 +192,7 @@ PetscErrorCode OutBufPut3DVecComp(
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_COR, outbuf->lbcor, &arr); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR, outbuf->lbcor, &arr));
 
 	// update number of elements in the buffer
 	outbuf->cn += nx*ny*nz;
@@ -313,7 +313,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	OutMask *omask;
 	PetscInt i, j, np, numPhases, maxPhaseID;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -327,50 +327,47 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	OutMaskSetDefault(omask);
 
 	// read
-	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       pvout->outfile, "output");       CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_pvd",            &pvout->outpvd,            1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_phase",          &omask->phase,             1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_density",        &omask->density,           1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_total",     &omask->visc_total,        1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_creep",     &omask->visc_creep,        1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_velocity",       &omask->velocity,          1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_pressure",       &omask->pressure,          1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_gradient",       &omask->gradient,          1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_eff_press",      &omask->eff_press,         1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_over_press",     &omask->over_press,        1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_litho_press",    &omask->litho_press,       1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_pore_press",     &omask->pore_press,        1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_press",      &omask->tot_pressure,      1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_temperature",    &omask->temperature,       1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_conductivity",   &omask->conductivity,      1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_dev_stress",     &omask->dev_stress,        1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_j2_dev_stress",  &omask->j2_dev_stress,     1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_strain_rate",    &omask->strain_rate,       1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_j2_strain_rate", &omask->j2_strain_rate,    1, 1); CHKERRQ(ierr);
-//	ierr = getIntParam   (fb, _OPTIONAL_, "out_vol_rate",       &omask->vol_rate,          1, 1); CHKERRQ(ierr);
-//	ierr = getIntParam   (fb, _OPTIONAL_, "out_vorticity",      &omask->vorticity,         1, 1); CHKERRQ(ierr);
-//	ierr = getIntParam   (fb, _OPTIONAL_, "out_ang_vel_mag",    &omask->ang_vel_mag,       1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_shmax",          &omask->SHmax,             1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_stangle",        &omask->StAngle,           1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ehmax",          &omask->EHmax,             1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_yield",          &omask->yield,             1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_dif_rate",   &omask->DIIdif,            1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_dis_rate",   &omask->DIIdis,            1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_prl_rate",   &omask->DIIprl,            1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_pl_rate",    &omask->DIIpl,             1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_strain",     &omask->tot_strain,        1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_strain",   &omask->plast_strain,      1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_dissip",   &omask->plast_dissip,      1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_displ",      &omask->tot_displ,         1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_moment_res",     &omask->moment_res,        1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_cont_res",       &omask->cont_res,          1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "out_file_name",       pvout->outfile, "output"));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_pvd",            &pvout->outpvd,            1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_phase",          &omask->phase,             1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_density",        &omask->density,           1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_visc_total",     &omask->visc_total,        1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_visc_creep",     &omask->visc_creep,        1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_velocity",       &omask->velocity,          1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_pressure",       &omask->pressure,          1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_gradient",       &omask->gradient,          1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_eff_press",      &omask->eff_press,         1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_over_press",     &omask->over_press,        1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_litho_press",    &omask->litho_press,       1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_pore_press",     &omask->pore_press,        1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_tot_press",      &omask->tot_pressure,      1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_temperature",    &omask->temperature,       1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_conductivity",   &omask->conductivity,      1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_dev_stress",     &omask->dev_stress,        1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_j2_dev_stress",  &omask->j2_dev_stress,     1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_strain_rate",    &omask->strain_rate,       1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_j2_strain_rate", &omask->j2_strain_rate,    1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_shmax",          &omask->SHmax,             1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_stangle",        &omask->StAngle,           1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ehmax",          &omask->EHmax,             1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_yield",          &omask->yield,             1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_rel_dif_rate",   &omask->DIIdif,            1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_rel_dis_rate",   &omask->DIIdis,            1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_rel_prl_rate",   &omask->DIIprl,            1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_rel_pl_rate",    &omask->DIIpl,             1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_tot_strain",     &omask->tot_strain,        1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_plast_strain",   &omask->plast_strain,      1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_plast_dissip",   &omask->plast_dissip,      1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_tot_displ",      &omask->tot_displ,         1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_moment_res",     &omask->moment_res,        1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_cont_res",       &omask->cont_res,          1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_vel_gr_tensor",  &omask->vel_gr_tensor,     1, 1));
 
 	// read phase aggregates
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseAggStart>", "<PhaseAggEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<PhaseAggStart>", "<PhaseAggEnd>"));
 
 	if(fb->nblocks > _max_num_phase_agg_)
 	{
@@ -381,9 +378,9 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 
 	for(i = 0; i < fb->nblocks; i++)
 	{
-		ierr = getStringParam(fb, _REQUIRED_, "name",      omask->agg_name[i],      NULL);            CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "numPhase", &np,                      1,  numPhases);   CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "phaseID",   omask->agg_phase_ID[i],  np, maxPhaseID);  CHKERRQ(ierr);
+		PetscCall(getStringParam(fb, _REQUIRED_, "name",      omask->agg_name[i],      NULL));
+		PetscCall(getIntParam   (fb, _REQUIRED_, "numPhase", &np,                      1,  numPhases));
+		PetscCall(getIntParam   (fb, _REQUIRED_, "phaseID",   omask->agg_phase_ID[i],  np, maxPhaseID));
 
 		// store number of phases
 		omask->agg_num_phase[i] = np;
@@ -391,7 +388,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 		fb->blockID++;
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	// check
 	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0; // heat diffusion is deactivated
@@ -457,7 +454,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	pvout->nvec = OutMaskCountActive(omask);
 
 	// create output buffer and vectors
-	ierr = PVOutCreateData(pvout); CHKERRQ(ierr);
+	PetscCall(PVOutCreateData(pvout));
 
 	PetscFunctionReturn(0);
 }
@@ -470,7 +467,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	OutMask  *omask;
 	PetscInt  i, iter;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	jr     =  pvout->jr;
@@ -480,11 +477,11 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	iter   =  0;
 
 	// create output buffer
-	ierr = OutBufCreate(&pvout->outbuf, jr); CHKERRQ(ierr);
+	PetscCall(OutBufCreate(&pvout->outbuf, jr));
 
 	// create vectors
-	ierr = PetscMalloc(sizeof(OutVec)*(size_t)pvout->nvec, &pvout->outvecs); CHKERRQ(ierr);
-	ierr = PetscMemzero(pvout->outvecs, sizeof(OutVec)*(size_t)pvout->nvec); CHKERRQ(ierr);
+	PetscCall(PetscMalloc(sizeof(OutVec)*(size_t)pvout->nvec, &pvout->outvecs));
+	PetscCall(PetscMemzero(pvout->outvecs, sizeof(OutVec)*(size_t)pvout->nvec));
 
 	if(omask->phase)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "phase",          scal->lbl_unit,             &PVOutWritePhase,        1, NULL);
 	if(omask->density)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "density",        scal->lbl_density,          &PVOutWriteDensity,      1, NULL);
@@ -540,31 +537,31 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 PetscErrorCode PVOutDestroy(PVOut *pvout)
 {
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// output vectors
-	ierr = PetscFree(pvout->outvecs); CHKERRQ(ierr);
+	PetscCall(PetscFree(pvout->outvecs));
 
 	// output buffer
-	ierr = OutBufDestroy(&pvout->outbuf); CHKERRQ(ierr);
+	PetscCall(OutBufDestroy(&pvout->outbuf));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// update .pvd file if necessary
-	ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, pvout->outpvd); CHKERRQ(ierr);
+	PetscCall(UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, pvout->outpvd));
 
 	// write parallel data .pvtr file
-	ierr = PVOutWritePVTR(pvout, dirName); CHKERRQ(ierr);
+	PetscCall(PVOutWritePVTR(pvout, dirName));
 
 	// write sub-domain data .vtr files
-	ierr = PVOutWriteVTR(pvout, dirName); CHKERRQ(ierr);
+	PetscCall(PVOutWriteVTR(pvout, dirName));
 
 	PetscFunctionReturn(0);
 }
@@ -623,7 +620,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	fprintf(fp, "\t\t</PPointData>\n");
 
 	// get total number of sub-domains
-	MPI_Comm_size(PETSC_COMM_WORLD, &nproc);
+	PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &nproc));
 
 	// write local grid sizes (extents) and data file names for all sub-domains
 	for(iproc = 0; iproc < nproc; iproc++)
@@ -659,11 +656,11 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	PetscMPIInt    rank;
 	size_t         offset = 0;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// get global sub-domain rank
-	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
 
 	// access output buffer object & staggered grid layout
 	outbuf = &pvout->outbuf;
@@ -744,7 +741,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	for(i = 0; i < pvout->nvec; i++)
 	{
 		// compute each output vector using its own setup function
-		ierr = outvecs[i].OutVecWrite(&outvecs[i]); CHKERRQ(ierr);
+		PetscCall(outvecs[i].OutVecWrite(&outvecs[i]));
 		// write vector to output file
 		OutBufDump(outbuf);
 	}
@@ -779,7 +776,7 @@ PetscErrorCode UpdatePVDFile(
 	FILE        *fp;
 	char        *fname;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check whether pvd is requested
@@ -807,7 +804,7 @@ PetscErrorCode UpdatePVDFile(
 	else
 	{
 		// put the file pointer on the next entry
-		ierr = fseek(fp, (*offset), SEEK_SET); CHKERRQ(ierr);
+		PetscCall(fseek(fp, (*offset), SEEK_SET));
 	}
 
 	// add entry to .pvd file

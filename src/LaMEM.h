@@ -161,6 +161,10 @@
 // cast macros
 #define LLD long long int
 
+// adjoint parameter limits
+#define _MAX_PAR_ 100
+#define _MAX_OBS_ 100
+
 //-----------------------------------------------------------------------------
 // EXTERNAL INCLUDES
 //-----------------------------------------------------------------------------

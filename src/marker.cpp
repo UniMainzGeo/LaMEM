@@ -14,6 +14,7 @@
 #include "LaMEM.h"
 #include "marker.h"
 #include "parsing.h"
+#include "Tensor.h"
 #include "advect.h"
 #include "fdstag.h"
 #include "scaling.h"
@@ -36,7 +37,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	PetscInt  nmarkx, nmarky, nmarkz, nummark;
 	PetscBool LoadPhaseDiagrams;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -51,7 +52,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 		nummark = nmarkx*nmarky*nmarkz;
 
 		// allocate storage
-		ierr = ADVReAllocStorage(actx, nummark); CHKERRQ(ierr);
+		PetscCall(ADVReAllocStorage(actx, nummark));
 
 		// set number of markers
 		actx->nummark = nummark;
@@ -61,24 +62,24 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	if(actx->msetup != _FILES_
 	&& actx->msetup != _POLYGONS_)
 	{
-		ierr = ADVMarkInitCoord(actx); CHKERRQ(ierr);
+		PetscCall(ADVMarkInitCoord(actx));
 	}
 
 	// initialize markers
-	if     (actx->msetup == _GEOM_)       { ierr = ADVMarkInitGeom    (actx, fb); CHKERRQ(ierr); }
-	else if(actx->msetup == _FILES_)      { ierr = ADVMarkInitFiles   (actx, fb); CHKERRQ(ierr); }
-	else if(actx->msetup == _POLYGONS_)   { ierr = ADVMarkInitPolygons(actx, fb); CHKERRQ(ierr); }
+	if     (actx->msetup == _GEOM_)       { PetscCall(ADVMarkInitGeom    (actx, fb)); }
+	else if(actx->msetup == _FILES_)      { PetscCall(ADVMarkInitFiles   (actx, fb)); }
+	else if(actx->msetup == _POLYGONS_)   { PetscCall(ADVMarkInitPolygons(actx, fb)); }
 
 	// set temperature (optional methods)
 
 	// linear gradient
-	ierr = ADVMarkSetTempGrad(actx); CHKERRQ(ierr);
+	PetscCall(ADVMarkSetTempGrad(actx));
 
 	// from file
-	ierr = ADVMarkSetTempFile(actx, fb); CHKERRQ(ierr);
+	PetscCall(ADVMarkSetTempFile(actx, fb));
 
 	// phase-based
-	ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
+	PetscCall(ADVMarkSetTempPhase(actx));
 
 	// Load phase diagrams for the phases where it is required + interpolate the reference density for the first timestep
 	LoadPhaseDiagrams = PETSC_FALSE;
@@ -104,7 +105,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"        %lld:  ", (LLD) i);
 
-			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
+			PetscCall(LoadPhaseDiagram(actx, actx->jr->dbm->phases, i));
 		}
 	}
 
@@ -129,15 +130,15 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 	PetscRandom  rctx;
 	PetscScalar  cf_rand;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 
 	if(actx->randNoise)
 	{
-		ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
-		ierr = PetscRandomSetFromOptions(rctx);           CHKERRQ(ierr);
+		PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rctx));
+		PetscCall(PetscRandomSetFromOptions(rctx));
 	}
 
 	// marker counter
@@ -182,11 +183,11 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 							{
 								// add random noise
 								// decrease/increase amount of noise by changing A in: (cf_rand-0.5)*dx/A
-								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+								PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
 								actx->markers[imark].X[0] += (cf_rand - 0.5)*dx/1;
-								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+								PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
 								actx->markers[imark].X[1] += (cf_rand - 0.5)*dy/1;
-								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+								PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
 								actx->markers[imark].X[2] += (cf_rand - 0.5)*dz/1;
 							}
 
@@ -202,7 +203,7 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 	// destroy random context
 	if(actx->randNoise)
 	{
-		ierr = PetscRandomDestroy(&rctx); CHKERRQ(ierr);
+		PetscCall(PetscRandomDestroy(&rctx));
 	}
 
 	PetscFunctionReturn(0);
@@ -217,7 +218,7 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 	PetscRandom  rctx;
 	PetscScalar  cf_rand;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// return if not set
@@ -228,8 +229,8 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 	fs = actx->fs;
 
 	// get random number context
-	ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
-	ierr = PetscRandomSetFromOptions(rctx);           CHKERRQ(ierr);
+	PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rctx));
+	PetscCall(PetscRandomSetFromOptions(rctx));
 
 	// get number of cells
 	nx = fs->dsx.ncels;
@@ -253,16 +254,16 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 		dz = SIZE_CELL(K, 0, fs->dsz)/(PetscScalar)actx->NumPartZ;
 
 		// Perturb marker location
-		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+		PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
 		X[0] += (cf_rand - 0.5)*dx;
-		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+		PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
 		X[1] += (cf_rand - 0.5)*dy;
-		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+		PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
 		X[2] += (cf_rand - 0.5)*dz;
 	}
 
 	// destroy random context
-	ierr = PetscRandomDestroy(&rctx); CHKERRQ(ierr);
+	PetscCall(PetscRandomDestroy(&rctx));
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	PetscFunctionReturn(0);
@@ -278,7 +279,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	char           *filename, path[_str_len_];
 	PetscScalar    *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
@@ -297,20 +298,20 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	strcpy(path, actx->saveFile); (*strrchr(path, '/')) = '\0';
 
 	// create directory
-	ierr = DirMake(path); CHKERRQ(ierr);
+	PetscCall(DirMake(path));
 
 	// compile file name
 	asprintf(&filename, "%s.%1.8lld.dat", actx->saveFile, (LLD)actx->iproc);
 
 	// open file for binary output
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_WRITE, &view_out); CHKERRQ(ierr);
-	ierr = PetscViewerBinaryGetDescriptor(view_out, &fd);                                CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_WRITE, &view_out));
+	PetscCall(PetscViewerBinaryGetDescriptor(view_out, &fd));
 
 	// initialize file header for MATLAB compatibility
 	header = -1;
 
 	// create write buffer
-	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf));
 
 	// copy data from storage into buffer
 	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 5)
@@ -325,16 +326,16 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 
 	// write binary output
 	s_nummark = (PetscScalar)actx->nummark;
-	ierr = PetscBinaryWrite(fd, &header,    1,               PETSC_SCALAR); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, &s_nummark, 1,               PETSC_SCALAR); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, markbuf,    5*actx->nummark, PETSC_SCALAR); CHKERRQ(ierr);
+	PetscCall(PetscBinaryWrite(fd, &header,    1,               PETSC_SCALAR));
+	PetscCall(PetscBinaryWrite(fd, &s_nummark, 1,               PETSC_SCALAR));
+	PetscCall(PetscBinaryWrite(fd, markbuf,    5*actx->nummark, PETSC_SCALAR));
 
 	// destroy file handle & file name
-	ierr = PetscViewerDestroy(&view_out); CHKERRQ(ierr);
+	PetscCall(PetscViewerDestroy(&view_out));
 	free(filename);
 
 	// destroy buffer
-	ierr = PetscFree(markbuf); CHKERRQ(ierr);
+	PetscCall(PetscFree(markbuf));
 
 	PrintDone(t);
 
@@ -352,7 +353,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	PetscInt     *numMarkCell, rbuf[4], sbuf[4];
 	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numWrong, refMarkCell;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -364,10 +365,10 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	refMarkCell = actx->NumPartX*actx->NumPartY*actx->NumPartZ;
 
 	// get local coordinate bounds
-	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+	PetscCall(FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez));
 
 	// allocate marker counter array
-	ierr = makeIntArray(&numMarkCell, NULL, fs->nCells); CHKERRQ(ierr);
+	PetscCall(makeIntArray(&numMarkCell, NULL, fs->nCells));
 
 	// clear error flag
 	error = 0;
@@ -404,7 +405,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	}
 
 	// clear
-	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
+	PetscCall(PetscFree(numMarkCell));
 
 	// get global figures
 	if(actx->nproc != 1)
@@ -414,7 +415,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 		sbuf[2] = numEmpty;
 		sbuf[3] = numWrong;
 
-		ierr = MPI_Allreduce(sbuf, rbuf, 4, MPIU_INT, MPI_SUM, actx->icomm); CHKERRQ(ierr);
+		PetscCallMPI(MPI_Allreduce(sbuf, rbuf, 4, MPIU_INT, MPI_SUM, actx->icomm));
 
 		NumInvalidPhase = rbuf[0];
 		numNonLocal     = rbuf[1];
@@ -425,25 +426,25 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	// print diagnostics
 	if(NumInvalidPhase)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of markers with invalid phase ID: %lld\n", (LLD)NumInvalidPhase); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "Number of markers with invalid phase ID: %lld\n", (LLD)NumInvalidPhase);
 		error = 1;
 	}
 
 	if(numNonLocal)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of non-local markers: %lld\n", (LLD)numNonLocal); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "Number of non-local markers: %lld\n", (LLD)numNonLocal);
 		error = 1;
 	}
 
 	if(numEmpty)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of exactly empty cells: %lld\n", (LLD)numEmpty); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "Number of exactly empty cells: %lld\n", (LLD)numEmpty);
 		error = 1;
 	}
 
 	if(numWrong)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of cells with incorrect number of markers (nmark_x*nmark_y*nmark_z): %lld\n", (LLD)numWrong); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "Number of cells with incorrect number of markers (nmark_x*nmark_y*nmark_z): %lld\n", (LLD)numWrong);
 		error = 1;
 	}
 
@@ -465,7 +466,6 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	PetscInt     imark, nummark;
 	PetscScalar  dTdz, zbot, ztop, zp, Tbot;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	bc      = actx->jr->bc;
@@ -476,10 +476,10 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	if(!bc->initTemp) PetscFunctionReturn(0);
 
 	// get time-dependent Tbot
-	ierr 			= 	BCGetTempBound(bc, &Tbot);					CHKERRQ(ierr);		
+	PetscCall(BCGetTempBound(bc, &Tbot));		
 	
 	// get grid coordinate bounds in z-direction
-	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
+	PetscCall(FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop));
 
 	// override top boundary with free surface level
 	if(actx->surf->UseFreeSurf)
@@ -504,7 +504,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 		else          P->T = Tbot + dTdz*(zp - zbot);
 	}
 
-	PetscFunctionReturn(ierr);
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx)
@@ -560,11 +560,11 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	PetscInt       Ix, Iy, Iz;
 	PetscScalar    chTemp, Tshift;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "temp_file", filename, NULL); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "temp_file", filename, NULL));
 
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);
@@ -577,14 +577,14 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	Tshift = actx->jr->scal->Tshift;
 
 	// open and read the file
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
-	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in));
+	PetscCall(PetscViewerBinaryGetDescriptor(view_in, &fd));
 
 	// read (and ignore) the silent undocumented file header
-	ierr = PetscBinaryRead(fd, &header, 1, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	PetscCall(PetscBinaryRead(fd, &header, 1, NULL, PETSC_SCALAR));
 
 	// read grid dimensions
-	ierr = PetscBinaryRead(fd, &dim, 3, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	PetscCall(PetscBinaryRead(fd, &dim, 3, NULL, PETSC_SCALAR));
 
 	// compute grid size
 	nx = (PetscInt)dim[0];
@@ -593,13 +593,13 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	GridSize = nx * ny * nz;
 
 	// allocate space for entire file & initialize counter
-	ierr = PetscMalloc((size_t)GridSize*sizeof(PetscScalar), &Temp); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)GridSize*sizeof(PetscScalar), &Temp));
 
 	// read entire file
-	ierr = PetscBinaryRead(fd, Temp, GridSize, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	PetscCall(PetscBinaryRead(fd, Temp, GridSize, NULL, PETSC_SCALAR));
 
 	// get mesh extents
-	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+	PetscCall(FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez));
 
 	// get grid spacing
 	DX = (ex - bx)/(dim[0] - 1.0);
@@ -650,12 +650,12 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	}
 
 	// clear memory
-	ierr = PetscFree(Temp); CHKERRQ(ierr);
-	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+	PetscCall(PetscFree(Temp));
+	PetscCall(PetscViewerDestroy(&view_in));
 
 	PrintDone(t);
 
-	PetscFunctionReturn(ierr);
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
@@ -667,7 +667,7 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	PetscScalar    *ccx, *ccy, *ccz, ***lT;
 	PetscScalar    xc, yc, zc, xp, yp, zp, Ttop;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -698,7 +698,7 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	ccz = fs->dsz.ccoor;
 
 	// access temperature vector
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT));
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -735,7 +735,7 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT));
 
 	PetscFunctionReturn(0);
 }
@@ -752,11 +752,11 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscScalar    *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
 	PetscInt       imark, nummark, nfields;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_file", file, "./markers/mdb"); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "mark_load_file", file, "./markers/mdb"));
 
 	PrintStart(&t, "Loading markers in parallel from", file);
 
@@ -764,11 +764,11 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	asprintf(&filename, "%s.%1.8lld.dat", file, (LLD)actx->iproc);
 
 	// open file
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
-	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in));
+	PetscCall(PetscViewerBinaryGetDescriptor(view_in, &fd));
 
 	// the file header signals the version of the marker file
-	ierr = PetscBinaryRead(fd, &header, 1, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	PetscCall(PetscBinaryRead(fd, &header, 1, NULL, PETSC_SCALAR));
 	if((PetscInt)header == 1211215) {
 		// version with APS as a field
 		nfields = 6;
@@ -778,23 +778,23 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	}
 
 	// read number of local of markers
-	ierr = PetscBinaryRead(fd, &s_nummark, 1, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	PetscCall(PetscBinaryRead(fd, &s_nummark, 1, NULL, PETSC_SCALAR));
 	nummark = (PetscInt)s_nummark;
 
 	// allocate marker storage
-	ierr = ADVReAllocStorage(actx, nummark); CHKERRQ(ierr);
+	PetscCall(ADVReAllocStorage(actx, nummark));
 
 	// set number of markers
 	actx->nummark = nummark;
 
 	// allocate marker buffer
-	ierr = PetscMalloc((size_t)(nfields*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)(nfields*actx->nummark)*sizeof(PetscScalar), &markbuf));
 
 	// read markers into buffer
-	ierr = PetscBinaryRead(fd, markbuf, nfields*actx->nummark, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	PetscCall(PetscBinaryRead(fd, markbuf, nfields*actx->nummark, NULL, PETSC_SCALAR));
 
 	// destroy file handle & file name
-	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+	PetscCall(PetscViewerDestroy(&view_in));
 	free(filename);
 
 	// get characteristic length & temperature
@@ -818,7 +818,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	}
 
 	// free marker buffer
-	ierr = PetscFree(markbuf); CHKERRQ(ierr);
+	PetscCall(PetscFree(markbuf));
 
 	PrintDone(t);
 
@@ -838,7 +838,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	map<PetscInt, GeomPrim*> cgeom;
 	map<PetscInt, GeomPrim*>::iterator it, ie;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	ngeom      = 0;
@@ -847,8 +847,8 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	chTime     = actx->jr->scal->time;
 
 	// clear storage
-	ierr = PetscMemzero(geom,  sizeof(GeomPrim) *(size_t)_max_geom_); CHKERRQ(ierr);
-	ierr = PetscMemzero(pgeom, sizeof(GeomPrim*)*(size_t)_max_geom_); CHKERRQ(ierr);
+	PetscCall(PetscMemzero(geom,  sizeof(GeomPrim) *(size_t)_max_geom_));
+	PetscCall(PetscMemzero(pgeom, sizeof(GeomPrim*)*(size_t)_max_geom_));
 
 	PrintStart(&t, "Reading geometric primitives", NULL);
 
@@ -856,54 +856,54 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	// LAYERS
 	//=======
 
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<LayerStart>", "<LayerEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<LayerStart>", "<LayerEnd>"));
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
 		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(layer, geom, ngeom, _max_geom_);
 
-		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &layer->phase,  1, maxPhaseID); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "top",    &layer->top,    1, chLen);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bottom", &layer->bot,    1, chLen);      CHKERRQ(ierr);
+		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",  &layer->phase,  1, maxPhaseID));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "top",    &layer->top,    1, chLen));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "bottom", &layer->bot,    1, chLen));
 
 		// optional sinusoidal perturbation of layer interface:
 		//  (adds amplitude*sin(2*pi/wavelength*x) to the interface)
 		layer->cosine = 0;
-		ierr = getIntParam   (fb, _OPTIONAL_, "cosine",  &layer->cosine,  1, maxPhaseID); CHKERRQ(ierr);
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "cosine",  &layer->cosine,  1, maxPhaseID));
 		if (layer->cosine==1){
-			ierr = getScalarParam   (fb, _REQUIRED_, "wavelength",  &layer->wavelength,  1, chLen    ); CHKERRQ(ierr);
-			ierr = getScalarParam   (fb, _REQUIRED_, "amplitude",   &layer->amplitude,   1, chLen    ); CHKERRQ(ierr);
+			PetscCall(getScalarParam   (fb, _REQUIRED_, "wavelength",  &layer->wavelength,  1, chLen    ));
+			PetscCall(getScalarParam   (fb, _REQUIRED_, "amplitude",   &layer->amplitude,   1, chLen    ));
 		}
 
 		// random noise
 		layer->rand_amplitude = 0.0;
-		ierr = getScalarParam   (fb, _OPTIONAL_, "rand_ampl",  &layer->rand_amplitude,  1, (PetscScalar) maxPhaseID); CHKERRQ(ierr);
+		PetscCall(getScalarParam   (fb, _OPTIONAL_, "rand_ampl",  &layer->rand_amplitude,  1, (PetscScalar) maxPhaseID));
 
 		// Optional temperature options:
 		layer->setTemp = 0;
-		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
 		if 		(!strcmp(TemperatureStructure, "constant"))	    {layer->setTemp=1;}
 		else if (!strcmp(TemperatureStructure, "linear"))	    {layer->setTemp=2;}
 		else if (!strcmp(TemperatureStructure, "halfspace"))    {layer->setTemp=3;}
 		
 		// Depending on temperature options, get required input parameters
 		if (layer->setTemp==1){
-			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&layer->cstTemp, 1, 1);     CHKERRQ(ierr); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&layer->cstTemp, 1, 1)); 
 		
 			// take potential shift C->K into account	
 			layer->cstTemp = (layer->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
 		}
 		if (layer->setTemp>1){
-			ierr = getScalarParam(fb, _REQUIRED_, "topTemp", 	&layer->topTemp, 1, 1);     CHKERRQ(ierr); 
-			ierr = getScalarParam(fb, _REQUIRED_, "botTemp", 	&layer->botTemp, 1, 1);     CHKERRQ(ierr); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "topTemp", 	&layer->topTemp, 1, 1)); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "botTemp", 	&layer->botTemp, 1, 1)); 
 
 			// take potential shift C->K into account	
 			layer->topTemp = (layer->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
 			layer->botTemp = (layer->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 		}
 		if (layer->setTemp==3){
-			ierr 			= getScalarParam(fb, _REQUIRED_, "thermalAge", &layer->thermalAge, 1, chTime); CHKERRQ(ierr); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "thermalAge", &layer->thermalAge, 1, chTime)); 
 			layer->kappa    = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s	
 		}
 
@@ -912,13 +912,13 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], layer));
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	//========
 	// SPHERES
 	//========
 
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SphereStart>", "<SphereEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<SphereStart>", "<SphereEnd>"));
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
@@ -926,18 +926,18 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		
 		GET_GEOM(sphere, geom, ngeom, _max_geom_);
 		
-		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &sphere->phase,  1, maxPhaseID); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "radius", &sphere->radius, 1, chLen);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "center",  sphere->center, 3, chLen);      CHKERRQ(ierr);
+		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",  &sphere->phase,  1, maxPhaseID));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "radius", &sphere->radius, 1, chLen));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "center",  sphere->center, 3, chLen));
 
 		// Optional temperature options:
 		sphere->setTemp = 0;
-		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
 		if 		(!strcmp(TemperatureStructure, "constant"))	    {sphere->setTemp=1;}
 		
 		// Depending on temperature options, get required input parameters
 		if (sphere->setTemp==1){
-			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&sphere->cstTemp, 1, 1);     CHKERRQ(ierr); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&sphere->cstTemp, 1, 1)); 
 		
 			// take potential shift C->K into account	
 			sphere->cstTemp = (sphere->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
@@ -948,30 +948,30 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], sphere));
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	//===========
 	// ELLIPSOIDS
 	//===========
 
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<EllipsoidStart>", "<EllipsoidEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<EllipsoidStart>", "<EllipsoidEnd>"));
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
 		GET_GEOM(ellipsoid, geom, ngeom, _max_geom_);
 
-		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &ellipsoid->phase,  1, maxPhaseID); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "axes",    ellipsoid->axes,   3, chLen);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "center",  ellipsoid->center, 3, chLen);      CHKERRQ(ierr);
+		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",  &ellipsoid->phase,  1, maxPhaseID));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "axes",    ellipsoid->axes,   3, chLen));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "center",  ellipsoid->center, 3, chLen));
 
 		// Optional temperature options:
 		ellipsoid->setTemp = 0;
-		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
 		if 		(!strcmp(TemperatureStructure, "constant"))	    {ellipsoid->setTemp=1;}
 		
 		// Depending on temperature options, get required input parameters
 		if (ellipsoid->setTemp==1){
-			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&ellipsoid->cstTemp, 1, 1);     CHKERRQ(ierr); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&ellipsoid->cstTemp, 1, 1)); 
 		
 			// take potential shift C->K into account	
 			ellipsoid->cstTemp = (ellipsoid->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
@@ -982,13 +982,13 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ellipsoid));	
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	//======
 	// BOXES
 	//======
 
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<BoxStart>", "<BoxEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<BoxStart>", "<BoxEnd>"));
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
@@ -996,28 +996,28 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		GET_GEOM(box, geom, ngeom, _max_geom_);
 
 		box->setTemp = 0;	//default is no	
-		ierr = getIntParam   (fb, _REQUIRED_, "phase",  	&box->phase,   1, maxPhaseID); 	CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bounds",  	 box->bounds,  6, chLen);      	CHKERRQ(ierr);
+		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",  	&box->phase,   1, maxPhaseID));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "bounds",  	 box->bounds,  6, chLen));
 		box->bot = box->bounds[4]; box->top = box->bounds[5];
 
 		// Optional temperature options:
 		box->setTemp = 0;
-		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",        TemperatureStructure,       NULL );          CHKERRQ(ierr);
+		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",        TemperatureStructure,       NULL ));
 		if 		(!strcmp(TemperatureStructure, "constant"))	    {box->setTemp=1;}
 		else if (!strcmp(TemperatureStructure, "linear"))	    {box->setTemp=2;}
 		else if (!strcmp(TemperatureStructure, "halfspace"))    {box->setTemp=3;}
 		
 		// Depending on temperature options, get required input parameters
 		if (box->setTemp==1){
-			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&box->cstTemp, 1, 1);     CHKERRQ(ierr); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&box->cstTemp, 1, 1)); 
 			
 			// take potential shift C->K into account	
 			box->cstTemp = (box->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
 
 		}
 		if (box->setTemp>1){
-			ierr = getScalarParam(fb, _REQUIRED_, "topTemp", 	&box->topTemp, 1, 1);     CHKERRQ(ierr); 
-			ierr = getScalarParam(fb, _REQUIRED_, "botTemp", 	&box->botTemp, 1, 1);     CHKERRQ(ierr); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "topTemp", 	&box->topTemp, 1, 1)); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "botTemp", 	&box->botTemp, 1, 1)); 
 
 			// take potential shift C->K into account	
 			box->topTemp = (box->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
@@ -1026,7 +1026,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		}
 		if (box->setTemp==3){
 			
-			ierr = getScalarParam(fb, _REQUIRED_, "thermalAge", &box->thermalAge, 1, chTime); CHKERRQ(ierr); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "thermalAge", &box->thermalAge, 1, chTime)); 
 
 			box->kappa      = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s	
 		}
@@ -1036,14 +1036,14 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], box));
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 
 	//========
 	// RIDGES
 	//========
 
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<RidgeSegStart>", "<RidgeSegEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<RidgeSegStart>", "<RidgeSegEnd>"));
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	  {
@@ -1054,13 +1054,13 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	    ridge->setTemp 	= 0;       	//	default is no
 		v_spread   	   	= 0.0;
 		maxAge 			= 1e20;		// max. thermal age a plate can have 		
-	    ierr = getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID);    					CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen);         					CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen);     					CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen);     					CHKERRQ(ierr);
-	    ierr = getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime);          					CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _OPTIONAL_, "v_spread",       &v_spread,    1, actx->jr->scal->velocity);         CHKERRQ(ierr);
-        ierr = getScalarParam(fb, _OPTIONAL_, "maxAge",       	&maxAge,      1, actx->jr->scal->time);      		CHKERRQ(ierr);
+	    PetscCall(getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID));
+	    PetscCall(getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen));
+	    PetscCall(getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen));
+        PetscCall(getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen));
+	    PetscCall(getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime));
+        PetscCall(getScalarParam(fb, _OPTIONAL_, "v_spread",       &v_spread,    1, actx->jr->scal->velocity));
+        PetscCall(getScalarParam(fb, _OPTIONAL_, "maxAge",       	&maxAge,      1, actx->jr->scal->time));
 		
 	    ridge->bot 		= ridge->bounds[4];
 	    ridge->top 		= ridge->bounds[5];
@@ -1074,13 +1074,13 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		}
 	    
 	    // Temperature options (actually required to be setTemp==4)
-	    ierr = getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL );    CHKERRQ(ierr);
+	    PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL ));
 	    
 	    if (!strcmp(TemperatureStructure, "halfspace_age"))    {ridge->setTemp=4;}
 	    
 	    if (ridge->setTemp==4){
-	      ierr = getScalarParam(fb, _REQUIRED_, "topTemp",  &ridge->topTemp, 1, 1);            CHKERRQ(ierr);
-	      ierr = getScalarParam(fb, _REQUIRED_, "botTemp",  &ridge->botTemp, 1, 1);            CHKERRQ(ierr);
+	      PetscCall(getScalarParam(fb, _REQUIRED_, "topTemp",  &ridge->topTemp, 1, 1));
+	      PetscCall(getScalarParam(fb, _REQUIRED_, "botTemp",  &ridge->botTemp, 1, 1));
 	      
 	      // take potential shift C->K into account
 	      ridge->topTemp = (ridge->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
@@ -1095,22 +1095,22 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	    
 	  }
 	
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	
 	//======
 	// HEXES
 	//======
 
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<HexStart>", "<HexEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<HexStart>", "<HexEnd>"));
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
 		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(hex, geom, ngeom, _max_geom_);
 
-		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &hex->phase, 1,  maxPhaseID); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "coord",   hex->coord, 24, chLen);      CHKERRQ(ierr);
+		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",  &hex->phase, 1,  maxPhaseID));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "coord",   hex->coord, 24, chLen));
 
 		// compute bounding box
 		HexGetBoundingBox(hex->coord, hex->bounds);
@@ -1120,32 +1120,32 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], hex));
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	//==========
 	// CYLINDERS
 	//==========
 
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<CylinderStart>", "<CylinderEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<CylinderStart>", "<CylinderEnd>"));
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
 		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(cylinder, geom, ngeom, _max_geom_);
 
-		ierr = getIntParam   (fb, _REQUIRED_, "phase",   &cylinder->phase,  1, maxPhaseID); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "radius",  &cylinder->radius, 1, chLen);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "base",     cylinder->base,   3, chLen);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "cap",      cylinder->cap,    3, chLen);      CHKERRQ(ierr);
+		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",   &cylinder->phase,  1, maxPhaseID));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "radius",  &cylinder->radius, 1, chLen));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "base",     cylinder->base,   3, chLen));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "cap",      cylinder->cap,    3, chLen));
 
 		// Optional temperature options:
 		cylinder->setTemp = 0;
-		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
 		if 		(!strcmp(TemperatureStructure, "constant"))	    {cylinder->setTemp=1;}
 		
 		// Depending on temperature options, get required input parameters
 		if (cylinder->setTemp==1){
-			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&cylinder->cstTemp, 1, 1);     CHKERRQ(ierr); 
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&cylinder->cstTemp, 1, 1)); 
 		
 			// take potential shift C->K into account	
 			cylinder->cstTemp = (cylinder->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
@@ -1156,7 +1156,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], cylinder));
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	// store pointers to primitives in the order of appearance in the file
 	for(it = cgeom.begin(), ie = cgeom.end(), ngeom = 0; it != ie; it++)
@@ -1217,11 +1217,11 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	CtrlP          CtrlPoly;
 	PetscInt       VolID, nCP;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "poly_file", filename, "./input/poly.dat"); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "poly_file", filename, "./input/poly.dat"));
 
 	PrintStart(&t, "Loading polygons redundantly from", filename);
 
@@ -1233,8 +1233,8 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	// initialize the random number generator
 	if(actx->randNoise)
 	{
-		ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
-		ierr = PetscRandomSetFromOptions(rctx);           CHKERRQ(ierr);
+		PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rctx));
+		PetscCall(PetscRandomSetFromOptions(rctx));
 	}
 
 	//===========================
@@ -1298,11 +1298,11 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				if(actx->randNoise)
 				{
 					// add random noise
-					ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+					PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
 					actx->markers[imark].X[0] += (cf_rand-0.5)*dx/( (PetscScalar) actx->NumPartX);
-					ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+					PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
 					actx->markers[imark].X[1] += (cf_rand-0.5)*dy/( (PetscScalar) actx->NumPartY);
-					ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+					PetscCall(PetscRandomGetValueReal(rctx, &cf_rand));
 					actx->markers[imark].X[2] += (cf_rand-0.5)*dz/( (PetscScalar) actx->NumPartZ);
 				}
 
@@ -1338,19 +1338,19 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	nidx[2] = nmark[0] * nmark[1]; if (nidx[2] > nidxmax) nidxmax = nidx[2];
 
 	// read file
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
-	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in));
+	PetscCall(PetscViewerBinaryGetDescriptor(view_in, &fd));
 
 	// read (and ignore) the silent undocumented file header & size of file
-	ierr = PetscBinaryRead(fd, &header, 2, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	PetscCall(PetscBinaryRead(fd, &header, 2, NULL, PETSC_SCALAR));
 	Fsize = (PetscInt)(header[1]);
 
 	// allocate space for entire file & initialize counter
-	ierr = PetscMalloc((size_t)Fsize  *sizeof(PetscScalar),&PolyFile); CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)Fsize  *sizeof(PetscScalar),&PolyFile));
 	Fcount = 0;
 
 	// read entire file 
-	ierr = PetscBinaryRead(fd, PolyFile, Fsize, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+	PetscCall(PetscBinaryRead(fd, PolyFile, Fsize, NULL, PETSC_SCALAR));
 
 	// read number of volumes
 	VolN = (PetscInt)(PolyFile[Fcount]); Fcount++;
@@ -1358,19 +1358,19 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	Lmax = (PetscInt)(PolyFile[Fcount]); Fcount++;
 
     // allocate space for index array & the coordinates of the largest polygon
-	ierr = PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyLen); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyIdx); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)Lmax*2*sizeof(PetscScalar),&PolyX);   CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyLen));
+	PetscCall(PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyIdx));
+	PetscCall(PetscMalloc((size_t)Lmax*2*sizeof(PetscScalar),&PolyX));
 
 	// allocate temporary arrays
-	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&idx);         CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&polyin);      CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&polyin_sum);  CHKERRQ(ierr);
-	ierr = PetscMemzero(polyin_sum, (size_t)nidxmax*sizeof(PetscInt)); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X);      CHKERRQ(ierr);
+	PetscCall(PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&idx));
+	PetscCall(PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&polyin));
+	PetscCall(PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&polyin_sum));
+	PetscCall(PetscMemzero(polyin_sum, (size_t)nidxmax*sizeof(PetscInt)));
+	PetscCall(PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X));
 
 	// read geometry variations
-	ierr = ADVMarkReadCtrlPoly(fb, &CtrlPoly, VolID, nCP); CHKERRQ(ierr);
+	PetscCall(ADVMarkReadCtrlPoly(fb, &CtrlPoly, VolID, nCP));
 
 	// --- loop over all volumes ---
 	for(kvol = 0; kvol < VolN; kvol++)
@@ -1542,41 +1542,41 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 					}
 				}
 			}
-			ierr = PetscMemzero(polyin_sum, (size_t)nidxmax*sizeof(PetscInt)); CHKERRQ(ierr);
+			PetscCall(PetscMemzero(polyin_sum, (size_t)nidxmax*sizeof(PetscInt)));
 		}
 	}
 
 	// free
-	ierr = PetscFree(idx);        CHKERRQ(ierr);
-	ierr = PetscFree(polyin);     CHKERRQ(ierr);
-	ierr = PetscFree(polyin_sum); CHKERRQ(ierr);
-	ierr = PetscFree(X);          CHKERRQ(ierr);
-	ierr = PetscFree(PolyIdx);    CHKERRQ(ierr);
-	ierr = PetscFree(PolyLen);    CHKERRQ(ierr);
-	ierr = PetscFree(PolyX);      CHKERRQ(ierr);
-	ierr = PetscFree(PolyFile);   CHKERRQ(ierr);
+	PetscCall(PetscFree(idx));
+	PetscCall(PetscFree(polyin));
+	PetscCall(PetscFree(polyin_sum));
+	PetscCall(PetscFree(X));
+	PetscCall(PetscFree(PolyIdx));
+	PetscCall(PetscFree(PolyLen));
+	PetscCall(PetscFree(PolyX));
+	PetscCall(PetscFree(PolyFile));
 	
 	if(actx->randNoise)
 	{
-		ierr = PetscRandomDestroy(&rctx); CHKERRQ(ierr);
+		PetscCall(PetscRandomDestroy(&rctx));
 	}
 
-	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+	PetscCall(PetscViewerDestroy(&view_in));
 
 	PrintDone(t);
 
-	PetscFunctionReturn(ierr);
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, PetscInt &nCP)
 {
 	PetscInt       jj;
 	
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// find blocks
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<vG_ControlPolyStart>", "<vG_ControlPolyEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<vG_ControlPolyStart>", "<vG_ControlPolyEnd>"));
 	nCP  = fb->nblocks;
 
 	// check number of control polygons
@@ -1590,11 +1590,11 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	{
 		fb->ID  = jj;								// allows command-line parsing
 
-		ierr = getIntParam   (fb, _REQUIRED_, "PolyID",  &CtrlPoly->ID[jj],    1, 0);   CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "VolID",   &CtrlPoly->VolID[jj], 1, 0);   CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "PolyPos", &CtrlPoly->Pos[jj],   1, 0);   CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "Sx",      &CtrlPoly->Sx[jj],    1, 1);   CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "Sy",      &CtrlPoly->Sy[jj],    1, 1);   CHKERRQ(ierr);
+		PetscCall(getIntParam   (fb, _REQUIRED_, "PolyID",  &CtrlPoly->ID[jj],    1, 0));
+		PetscCall(getIntParam   (fb, _REQUIRED_, "VolID",   &CtrlPoly->VolID[jj], 1, 0));
+		PetscCall(getIntParam   (fb, _REQUIRED_, "PolyPos", &CtrlPoly->Pos[jj],   1, 0));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "Sx",      &CtrlPoly->Sx[jj],    1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "Sy",      &CtrlPoly->Sy[jj],    1, 1));
 
 		if (CtrlPoly->VolID[jj] != CtrlPoly->VolID[0])
 		{
@@ -1604,7 +1604,7 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 		fb->blockID++;
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	if (nCP > 0)
 	{
@@ -1614,9 +1614,8 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	{
 		VolID = -1;
 	}
-	
 
-	PetscFunctionReturn(ierr);
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)

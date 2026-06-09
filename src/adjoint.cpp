@@ -96,7 +96,6 @@
 #include "objFunct.h"
 #include "constEq.h"
 #include "parsing.h"
-#include "gravity.h"
 #include <petscsys.h> 
 //-----------------------------------------------------------------------------
 // A bit stupid that this has to be twice declared, but the original function is only in AVD.cpp and not in a header file anymore ...
@@ -161,17 +160,16 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 		value = val;	// found a command-line option
 	}
 
-
 	Par[iP] 		=  	value;
 	Parameter_SetFDgrad_Option(&FDgrad[iP], type_name[iP]);	
 	FDeps[iP] 		=	0.0;
 }
 
 //---------------------------------------------------------------------------
-/* 
-	This (optionally) reads in all material parameters of the ParamFile for 
-	which we will compute gradients
-*/
+
+//	This (optionally) reads in all material parameters of the ParamFile for
+//	which we will compute gradients
+
 PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt *iP, 
 		char type_name[][_str_len_],
 		PetscInt 	*phsar,
@@ -180,7 +178,6 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		PetscScalar *FDeps)
 {
 	PetscFunctionBeginUser;
-	PetscErrorCode 	ierr;
 	PetscInt 		i, jj, ID;
 	PetscBool 		ReadAllMatParams=PETSC_FALSE, AddParamToGradient;
 	char 			par_str[_str_len_], adjointstr[_str_len_];
@@ -189,7 +186,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	PetscInt 		ExcludedPhase[_MAX_PAR_], numExcludedPhases=0;
 	Material_t 		m;
 	
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"));
 
 	// error checking
 	if(fb->nblocks > _MAX_PAR_)
@@ -204,7 +201,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	// Loop over all AdjointParameterBlocks to scan for the keyword 
 	for(i = 0; i < fb->nblocks; i++)
 	{
-		ierr = getStringParam(fb, _OPTIONAL_, "Type", par_str, NULL); CHKERRQ(ierr);
+		PetscCall(getStringParam(fb, _OPTIONAL_, "Type", par_str, NULL));
 		if (!strcmp(par_str,"AllMaterialParameters")){ 
 			ReadAllMatParams=PETSC_TRUE;	
 			
@@ -238,13 +235,11 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 						size_t len_end = pch - par_str;
 
 						// copy name over to separate string
-						ierr = PetscStrncpy(ExcludedPhaseName[numExcludedPhases], par_str, 		  		len_start);				CHKERRQ(ierr);
-						ierr = PetscStrncpy(par_val, par_str+len_start,   len_end-len_start+1);	CHKERRQ(ierr);
+						PetscCall(PetscStrncpy(ExcludedPhaseName[numExcludedPhases], par_str, 		  		len_start));
+						PetscCall(PetscStrncpy(par_val, par_str+len_start,   len_end-len_start+1));
 					
 						// extract integer of the phase & store it
 						ExcludedPhase[numExcludedPhases] = (PetscInt) strtol(par_val, NULL, 10);
-
-						//PetscPrintf(PETSC_COMM_WORLD,"|    Excluding parameter: %- 5s of phase %i \n", ExcludedPhaseName[numExcludedPhases], ExcludedPhase[numExcludedPhases]);
 						
 						numExcludedPhases++;
 					}
@@ -254,7 +249,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		}
 
 	}
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	if (!ReadAllMatParams){ PetscFunctionReturn(0); }		// only continue if the keyword is present
 
@@ -263,7 +258,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	PetscPrintf(PETSC_COMM_WORLD,"| Adjoint: using all listed material parameters to compute gradients:   \n");
 
 	// setup block access mode
-	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"));
 
 	// read each individual phase
 	for(jj = 0; jj < fb->nblocks; jj++)
@@ -272,7 +267,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		PetscInt  	i, j, lnbeg, lnend;
 		PetscScalar value;
 			
-		ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, _max_num_phases_); CHKERRQ(ierr); // phase ID
+		PetscCall(getIntParam(fb, _REQUIRED_, "ID", &ID, 1, _max_num_phases_)); // phase ID
 
 		// get line buffer & pointers
 		line  	= fb->lbuf;
@@ -325,10 +320,10 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 
 
 		// We need to treat creep profiles in a different manner, as they set several material parameters at once
-		ierr = GetProfileName(fb, scal, ndisl, "disl_prof"); CHKERRQ(ierr);
+		PetscCall(GetProfileName(fb, scal, ndisl, "disl_prof"));
 		if(strlen(ndisl)){
-			ierr = SetDislProfile(&m, ndisl);  CHKERRQ(ierr);
-			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), &par_str); CHKERRQ(ierr);
+			PetscCall(SetDislProfile(&m, ndisl));
+			PetscCall(PetscMalloc((size_t)_str_len_*sizeof(char), &par_str));
 
 			// Set parameters 
 			strcpy(par_str,"Bn"); AddParamToList(ID, m.Bn, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
@@ -337,10 +332,10 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 			strcpy(par_str,"Vn"); AddParamToList(ID, m.Vn, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
 		}
 
-		ierr = GetProfileName(fb, scal, ndiff, "diff_prof"); 	CHKERRQ(ierr);
+		PetscCall(GetProfileName(fb, scal, ndiff, "diff_prof"));
 		if(strlen(ndiff)){
-			ierr = SetDiffProfile(&m, ndiff);  					CHKERRQ(ierr);
-			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), &par_str); CHKERRQ(ierr);
+			PetscCall(SetDiffProfile(&m, ndiff));
+			PetscCall(PetscMalloc((size_t)_str_len_*sizeof(char), &par_str));
 
 			// Set parameters 	
 			strcpy(par_str,"Bd"); AddParamToList(ID, m.Bd, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
@@ -348,10 +343,10 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 			strcpy(par_str,"Vd"); AddParamToList(ID, m.Vd, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
 		}
 
-		ierr = GetProfileName(fb, scal, npeir, "peir_prof"); 	CHKERRQ(ierr);
+		PetscCall(GetProfileName(fb, scal, npeir, "peir_prof"));
 		if(strlen(npeir)){
-			ierr = SetPeirProfile(&m, npeir);         			CHKERRQ(ierr);
-			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), &par_str); CHKERRQ(ierr);
+			PetscCall(SetPeirProfile(&m, npeir));
+			PetscCall(PetscMalloc((size_t)_str_len_*sizeof(char), &par_str));
 
 			// Set parameters 	
 			strcpy(par_str,"Bp"); 		AddParamToList(ID, m.Bp,    par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
@@ -366,7 +361,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	// Print overview & indicate which parameters are not specified
 	for(jj = 0; jj < *iP; jj++){
@@ -388,19 +383,15 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many inverse parameters specified! Max allowed: %lld", (LLD)  _MAX_PAR_);
 	}
 	
-
-
 	PetscFunctionReturn(0);
 }
 
 //---------------------------------------------------------------------------
-/* This reads the input parameters from the file/command-line & sets default 
-values. Also performs error-checking
-*/
+// This reads the input parameters from the file/command-line & sets default values. Also performs error-checking
+
 PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs *Adjoint_Vectors)
 {
 	PetscFunctionBeginUser;
-	PetscErrorCode 	ierr;
 	FB 				*fb;
 	PetscScalar     *gradar, *Ubar, *Lbar, ts, *Par, mean, var;
 	PetscInt         i, j, ti, ID, iStart, p, ct1, ct2;
@@ -434,47 +425,47 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	IOparam->DII_ref 			= 0.0;	
 	
     // Create scaling object
-	ierr = PetscMemzero (&scal, sizeof(Scaling)); CHKERRQ(ierr);
-	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
+	PetscCall(PetscMemzero (&scal, sizeof(Scaling)));
+	PetscCall(ScalingCreate(&scal, fb));
 
 	// Some general Adjoint Gradient parameters:
-    ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_GradientCalculation", str, NULL); CHKERRQ(ierr);  // must have component
+    PetscCall(getStringParam(fb, _OPTIONAL_, "Adjoint_GradientCalculation", str, NULL));  // must have component
     if     	(!strcmp(str, "CostFunction"))      IOparam->Gr=0;
 	else if (!strcmp(str, "Solution"))          IOparam->Gr=1;
 	else{	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Solution; CostFunction] as parameter for Adjoint_GradientCalculation, not %s",str);} 
 
-	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_ScaleCostFunction", str, NULL); CHKERRQ(ierr);  // must have component
+	PetscCall(getStringParam(fb, _OPTIONAL_, "Adjoint_ScaleCostFunction", str, NULL));  // must have component
     if     	(!strcmp(str, "None"))      IOparam->SCF=0;
 	else if (!strcmp(str, "Mean"))      IOparam->SCF=1;
 	else if (!strcmp(str, "Var"))       IOparam->SCF=2;
 	else{	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [None; Mean; Var] as parameter for Adjoint_ScaleCostFunction, not %s",str);} 
 
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"         , &IOparam->FS,        		1, 1 ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObservationPoints"        , &IOparam->Ap,        		1, 3 ); CHKERRQ(ierr);  // 1 = several indices ; 2 = the whole domain ; 3 = surface
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_AdvectPoint"              , &IOparam->Adv,       		1, 1 ); CHKERRQ(ierr);  // 1 = advect the point
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef"     , &IOparam->OFdef,     		1, 1 ); CHKERRQ(ierr);  // Objective function defined by hand?
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_PrintScalingLaws"     	 , &IOparam->ScalLaws,  		1, 1 ); CHKERRQ(ierr);  // Print scaling laws (combined with AdjointGradients)
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_UseInitialAdjointParams"  , &IOparam->SetInitAdjParam,  	1, 1 ); CHKERRQ(ierr);  // Use InitialGuess specified in AdjointParamsStart/End as initial value?
-	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename"     	 , str,  "ScalingLaw.dat"  ); 		   CHKERRQ(ierr);  // Scaling law filename
-	ierr = getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref"       			 , &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);  // Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"         , &IOparam->FS,        		1, 1 ));  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_ObservationPoints"        , &IOparam->Ap,        		1, 3 ));  // 1 = several indices ; 2 = the whole domain ; 3 = surface
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_AdvectPoint"              , &IOparam->Adv,       		1, 1 ));  // 1 = advect the point
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef"     , &IOparam->OFdef,     		1, 1 ));  // Objective function defined by hand?
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_PrintScalingLaws"     	 , &IOparam->ScalLaws,  		1, 1 ));  // Print scaling laws (combined with AdjointGradients)
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_UseInitialAdjointParams"  , &IOparam->SetInitAdjParam,  	1, 1 ));  // Use InitialGuess specified in AdjointParamsStart/End as initial value?
+	PetscCall(getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename"     	 , str,  "ScalingLaw.dat"  ));  // Scaling law filename
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref"       			 , &IOparam->DII_ref,   1, 1        ));  // Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
 	if (IOparam->DII_ref==0.0 && IOparam->FS)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld For Kernel calculation you have to explicitly set DII_ref (equal to the one in forward LaMEM) with 'Adjoint_DII_ref'",(LLD) 1);
 	}
-	ierr  = PetscMemcpy(IOparam->ScalLawFilename, 	str,   (size_t)_str_len_*sizeof(char) ); 		  	 		   CHKERRQ(ierr); 
+	PetscCall(PetscMemcpy(IOparam->ScalLawFilename, 	str,   (size_t)_str_len_*sizeof(char) )); 
    
-  	ierr = getScalarParam(fb, _OPTIONAL_, "Adjoint_ReferenceDensity"       	 , &IOparam->ReferenceDensity, 1, 1 ); CHKERRQ(ierr);  // Reference density (density parameters are computed w.r.t. this)
+  	PetscCall(getScalarParam(fb, _OPTIONAL_, "Adjoint_ReferenceDensity"       	 , &IOparam->ReferenceDensity, 1, 1 ));  // Reference density (density parameters are computed w.r.t. this)
 	
 	// If we do inversion, additional parameters can be specified:
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit"     			, &IOparam->maxit,     1, 1500     ); CHKERRQ(ierr);  // maximum number of inverse iterations
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit_linesearch"   	, &IOparam->maxitLS,   1, 1500     ); CHKERRQ(ierr);  // maximum number of backtracking	
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_ApplyBounds"        	, &IOparam->Ab,        1, 1        ); CHKERRQ(ierr);  // Apply bounds?
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_EmployTAO"       		, &IOparam->Tao,       1, 1        ); CHKERRQ(ierr);  // Use TAO?
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_rtol"       			, &IOparam->tol,       1, 1        ); CHKERRQ(ierr);  // tolerance for F/Fini after which code has converged
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_factor_linesearch"     , &IOparam->facLS,     1, 1        ); CHKERRQ(ierr);  // factor in the line search that multiplies current line search parameter if GD update was successful (increases convergence speed)
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_facB"      			, &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not successful
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_maxfac"    			, &IOparam->maxfac,    1, 1        ); CHKERRQ(ierr);  // limit on the factor (only used without tao)
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_Scale_Grad"			, &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Inversion_maxit"     			, &IOparam->maxit,     1, 1500     ));  // maximum number of inverse iterations
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Inversion_maxit_linesearch"   	, &IOparam->maxitLS,   1, 1500     ));  // maximum number of backtracking	
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Inversion_ApplyBounds"        	, &IOparam->Ab,        1, 1        ));  // Apply bounds?
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "Inversion_EmployTAO"       		, &IOparam->Tao,       1, 1        ));  // Use TAO?
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Inversion_rtol"       			, &IOparam->tol,       1, 1        ));  // tolerance for F/Fini after which code has converged
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Inversion_factor_linesearch"     , &IOparam->facLS,     1, 1        ));  // factor in the line search that multiplies current line search parameter if GD update was successful (increases convergence speed)
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Inversion_facB"      			, &IOparam->facB,      1, 1        ));  // backtrack factor that multiplies current line search parameter if GD update was not successful
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Inversion_maxfac"    			, &IOparam->maxfac,    1, 1        ));  // limit on the factor (only used without tao)
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Inversion_Scale_Grad"			, &IOparam->Scale_Grad,1, 1        ));  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
 
 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"|                                      LaMEM                                \n");
@@ -547,8 +538,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "\n| Use = %lld not known; should be within [0-4]\n",(LLD) IOparam->use);
 	}
 	
-	ierr = AdjointVectorsCreate(Adjoint_Vectors, IOparam);      CHKERRQ(ierr);
-	//ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->maxit, PETSC_DETERMINE, &IOparam->fcconv);   CHKERRQ(ierr);   // 1500 is the maximum inversion iterations that are accepted
+	PetscCall(AdjointVectorsCreate(Adjoint_Vectors, IOparam));
 
 	// TEMPORARY VARIABLES
 	PetscInt		phsar[_MAX_PAR_];
@@ -563,14 +553,11 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscInt        Av[  _MAX_OBS_];
 	PetscScalar     Ae[  _MAX_OBS_];
 	char 			ObsName[_MAX_OBS_][5];
-	VecGetArray(Adjoint_Vectors->P,&Par);
+	PetscCall(VecGetArray(Adjoint_Vectors->P,&Par));
 	
     // Read material input parameters from file
-    ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
+    PetscCall(FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"));
     
-	// initialize ID for consistency checks
-	//for(jj = 0; jj < _max_num_phases_; jj++) dbm.phases[jj].ID = -1;
-
 	// error checking
 	if(fb->nblocks > _max_num_phases_)
 	{
@@ -582,12 +569,12 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 
 	// 1) Check whether we want to take ALL material parameters into account
 	iStart 	= 0;
-	ierr 	= Adjoint_ScanForMaterialParameters(fb, &scal, &iStart, type_name, phsar, Par, FDgrad, FDeps); CHKERRQ(ierr);
+	PetscCall(Adjoint_ScanForMaterialParameters(fb, &scal, &iStart, type_name, phsar, Par, FDgrad, FDeps));
 	for(j = 0; j < iStart; j++){vec_log10[j]=0; }	// initialize (no log10 in LaMEM material parameters)
 
 	// 2) Check the AdjointParameter blocks for additional parameters
 	// Get parameter / typ / etc.
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"));
 
 	// error checking
 	if(fb->nblocks > _MAX_PAR_)
@@ -606,32 +593,32 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 
 
 	// Read parameters which we will use in the inversion, or for which we will compute gradients
-    VecGetArray(Adjoint_Vectors->Ub,&Ubar);
-	VecGetArray(Adjoint_Vectors->Lb,&Lbar);
-	VecGetArray(Adjoint_Vectors->grad,&gradar);
+	PetscCall(VecGetArray(Adjoint_Vectors->Ub,&Ubar));
+	PetscCall(VecGetArray(Adjoint_Vectors->Lb,&Lbar));
+	PetscCall(VecGetArray(Adjoint_Vectors->grad,&gradar));
 	fb->blockID = 0;
 	i 			= iStart;
 	//PetscPrintf(PETSC_COMM_WORLD, "| \n|    # of adjoint parameter blocks found      : %i   \n", fb->nblocks);
 	for(j = 0; j < fb->nblocks; j++)
 	{
 		// Retrieve name of the parameter
-		ierr = getStringParam(fb, _OPTIONAL_, "Type", par_str, NULL); CHKERRQ(ierr);
+		PetscCall(getStringParam(fb, _OPTIONAL_, "Type", par_str, NULL));
 		
 		if (strcmp(par_str,"AllMaterialParameters")){
 			// If it is not the keyword mentioned above
 			strcpy(type_name[i], par_str);
 
-			ierr 		= getIntParam   (fb, _REQUIRED_, "ID" , &ID, 1, _max_num_phases_); CHKERRQ(ierr);		// phase at which it applies
+			PetscCall(getIntParam   (fb, _REQUIRED_, "ID" , &ID, 1, _max_num_phases_));		// phase at which it applies
 			phsar[i]  	= ID;                    // PHASE
 
 			// Parameter value
 			par_val     = 0;
-			ierr        = getScalarParam(fb, _OPTIONAL_, "InitGuess", &par_val, 1, 1); CHKERRQ(ierr);
+			PetscCall(getScalarParam(fb, _OPTIONAL_, "InitGuess", &par_val, 1, 1));
 			Par[i]      = par_val;                   
 
 			// Upper bound    
 			ts = 0;
-			ierr = getScalarParam(fb, _OPTIONAL_, "UpperBound", &ts, 1, 1 ); CHKERRQ(ierr);
+			PetscCall(getScalarParam(fb, _OPTIONAL_, "UpperBound", &ts, 1, 1 ));
 			if (ts){
 				asprintf(&ub_str, "%-9.4g", ts);
 				Ubar[i]   = ts;  
@@ -644,7 +631,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 
 			// Lower bound 
 			ts = 0;
-			ierr = getScalarParam(fb, _OPTIONAL_, "LowerBound", &ts, 1, 1 ); CHKERRQ(ierr);
+			PetscCall(getScalarParam(fb, _OPTIONAL_, "LowerBound", &ts, 1, 1 ));
 			if (ts){
 				asprintf(&lb_str, "%-9.4g", ts);
 				Lbar[i]   	= ts;  
@@ -657,10 +644,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 			
 			// Compute gradient by finite differences (optional)
 			grad = -1;
-			ierr = getIntParam(fb, _OPTIONAL_, "FD_gradient", &grad, 1,1); CHKERRQ(ierr);  // must have component
+			PetscCall(getIntParam(fb, _OPTIONAL_, "FD_gradient", &grad, 1,1));  // must have component
 			if (grad<0){
 				// Retrieve scaling for the parameter
-				ierr = Parameter_SetFDgrad_Option(&FDgrad[i], par_str);	CHKERRQ(ierr);
+				PetscCall(Parameter_SetFDgrad_Option(&FDgrad[i], par_str));
 			}
 			else{
 				FDgrad[i] = grad;
@@ -668,11 +655,11 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 
 			// do we cpmpute with the log10(param) internally (implying that the parameter value )
 			p 		=	0;
-			ierr 	= getIntParam(fb, _OPTIONAL_, "log10", &p, 1, 1 ); CHKERRQ(ierr);	// eps for brute force FD gradients
+			PetscCall(getIntParam(fb, _OPTIONAL_, "log10", &p, 1, 1 ));	// eps for brute force FD gradients
 			vec_log10[i] = p;
 
 			ts 		= 0;
-			ierr 	= getScalarParam(fb, _OPTIONAL_, "FD_eps", &ts, 1, 1 ); CHKERRQ(ierr);	// eps for brute force FD gradients
+			PetscCall(getScalarParam(fb, _OPTIONAL_, "FD_eps", &ts, 1, 1 ));	// eps for brute force FD gradients
 			FDeps[i] = ts;
 
 			gradar[i]    = 0.0;                     // GRADIENTS
@@ -684,9 +671,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 				if (IOparam->SetInitAdjParam==1){
 
 					// Add option to options database, unless we do a Generic Inversion, where this is set outside the adjoint framework
-					ierr = AddMaterialParameterToCommandLineOptions(par_str, ID, par_val); CHKERRQ(ierr);
+					PetscCall(AddMaterialParameterToCommandLineOptions(par_str, ID, par_val));
 				
-				//	PetscPrintf(PETSC_COMM_WORLD,"| Adding parameter to Options Database: %s %s \n", par_str, val_str);
 				}
 				
 				
@@ -720,18 +706,18 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		fb->blockID++;
 	}
 	
-    ierr  = PetscMemcpy(IOparam->grd,       	gradar,      (size_t)_MAX_PAR_*sizeof(PetscScalar) ); 				CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->type_name, 	type_name,   (size_t)_MAX_PAR_*(size_t)_str_len_*sizeof(char) ); 	CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->phs,       	phsar,       (size_t)_MAX_PAR_*sizeof(PetscInt)     ); 				CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->FD_gradient, 	FDgrad,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); 				CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->FD_eps,       	FDeps,       (size_t)_MAX_PAR_*sizeof(PetscScalar) ); 				CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->par_log10,     vec_log10,   (size_t)_MAX_PAR_*sizeof(PetscInt) ); 					CHKERRQ(ierr);
+    PetscCall(PetscMemcpy(IOparam->grd,       	gradar,      (size_t)_MAX_PAR_*sizeof(PetscScalar) ));
+    PetscCall(PetscMemcpy(IOparam->type_name, 	type_name,   (size_t)_MAX_PAR_*(size_t)_str_len_*sizeof(char) ));
+    PetscCall(PetscMemcpy(IOparam->phs,       	phsar,       (size_t)_MAX_PAR_*sizeof(PetscInt)     ));
+    PetscCall(PetscMemcpy(IOparam->FD_gradient, 	FDgrad,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ));
+    PetscCall(PetscMemcpy(IOparam->FD_eps,       	FDeps,       (size_t)_MAX_PAR_*sizeof(PetscScalar) ));
+    PetscCall(PetscMemcpy(IOparam->par_log10,     vec_log10,   (size_t)_MAX_PAR_*sizeof(PetscInt) ));
 
 
-	VecRestoreArray(Adjoint_Vectors->P,&Par);
-	VecRestoreArray(Adjoint_Vectors->Ub,&Ubar);
-	VecRestoreArray(Adjoint_Vectors->Lb,&Lbar);
-	VecRestoreArray(Adjoint_Vectors->grad,&gradar);
+    PetscCall(VecRestoreArray(Adjoint_Vectors->P,&Par));
+    PetscCall(VecRestoreArray(Adjoint_Vectors->Ub,&Ubar));
+    PetscCall(VecRestoreArray(Adjoint_Vectors->Lb,&Lbar));
+    PetscCall(VecRestoreArray(Adjoint_Vectors->grad,&gradar));
 	IOparam->mdN = i;
 
 	// Count # of FD gradients vs adjoint gradients and display it
@@ -750,11 +736,11 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	}
 
 	
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	// LOCATIONS
 	// Get location / value / etc.
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointObservationPointStart>", "<AdjointObservationPointEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<AdjointObservationPointStart>", "<AdjointObservationPointEnd>"));
 
 	// error checking
 	if(fb->nblocks >   _MAX_OBS_)
@@ -787,13 +773,13 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
     for(i = 0; i < fb->nblocks; i++)
 	{
 		// retrieve the coordinates of the sample points	
-		ierr 	= getScalarParam(fb, _OPTIONAL_, "Coordinate",  IOparam->Coord, 3, 1);        CHKERRQ(ierr);       // not required if we compute 
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "Coordinate",  IOparam->Coord, 3, 1));       // not required if we compute 
 		Ax[i] 	= (IOparam->Coord[0])/scal.length;
 		Ay[i] 	= (IOparam->Coord[1])/scal.length;
 		Az[i] 	= (IOparam->Coord[2])/scal.length;
 
 		// Determine what cost function type is used
-		ierr 	= getStringParam(fb, _REQUIRED_, "Parameter", ParType, NULL); CHKERRQ(ierr);  // must have component
+		PetscCall(getStringParam(fb, _REQUIRED_, "Parameter", ParType, NULL));  // must have component
 		if     	(!strcmp(ParType, "Vx") || !strcmp(ParType, "Vy") || !strcmp(ParType, "Vz"))
 		{    
 			IOparam->MfitType = 0;  ct1++;	// these parameters are compute by projection 
@@ -820,11 +806,11 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		
 			if (IOparam->Gr==0)
 			{
-		    	ierr = getScalarParam(fb, _REQUIRED_, "Value", &ts, 1, 1 ); CHKERRQ(ierr);
+		    	PetscCall(getScalarParam(fb, _REQUIRED_, "Value", &ts, 1, 1 ));
 			}
 			else
 			{
-				ierr = getScalarParam(fb, _OPTIONAL_, "Value", &ts, 1, 1 ); CHKERRQ(ierr);
+				PetscCall(getScalarParam(fb, _OPTIONAL_, "Value", &ts, 1, 1 ));
 			}
 			Ae[i] = ts /scal.velocity;     // VELOCITY VALUE
 
@@ -846,11 +832,11 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		{
 			if (IOparam->Gr==0 )
 			{
-				ierr = getScalarParam(fb, _REQUIRED_, "Value", &ts, 1, 1 ); CHKERRQ(ierr);
+				PetscCall(getScalarParam(fb, _REQUIRED_, "Value", &ts, 1, 1 ));
 			}
 			else
 			{
-				ierr = getScalarParam(fb, _OPTIONAL_, "Value", &ts, 1, 1 ); CHKERRQ(ierr);
+				PetscCall(getScalarParam(fb, _OPTIONAL_, "Value", &ts, 1, 1 ));
 			}
 			if   (!strcmp(ParType, "PSD")){ 
 				Ae[i] = ts * 0.01745329251;     // PSD VALUE is given in degree; transfer to radians
@@ -891,12 +877,12 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	}
 	PetscPrintf(PETSC_COMM_WORLD, "| \n");
 
-    ierr  = PetscMemcpy(IOparam->Ax, 		Ax, 		(size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->Ay, 		Ay, 		(size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->Az, 		Az,			(size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->Av, 		Av, 		(size_t)_MAX_OBS_*sizeof(PetscInt));    CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->Ae, 		Ae, 		(size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
-	ierr  = PetscMemcpy(IOparam->ObsName, 	ObsName,   	(size_t)_MAX_OBS_*5*sizeof(char) ); 	CHKERRQ(ierr);
+    PetscCall(PetscMemcpy(IOparam->Ax, 		Ax, 		(size_t)_MAX_OBS_*sizeof(PetscScalar)));
+    PetscCall(PetscMemcpy(IOparam->Ay, 		Ay, 		(size_t)_MAX_OBS_*sizeof(PetscScalar)));
+    PetscCall(PetscMemcpy(IOparam->Az, 		Az,			(size_t)_MAX_OBS_*sizeof(PetscScalar)));
+    PetscCall(PetscMemcpy(IOparam->Av, 		Av, 		(size_t)_MAX_OBS_*sizeof(PetscInt)));
+    PetscCall(PetscMemcpy(IOparam->Ae, 		Ae, 		(size_t)_MAX_OBS_*sizeof(PetscScalar)));
+	PetscCall(PetscMemcpy(IOparam->ObsName, 	ObsName,   	(size_t)_MAX_OBS_*5*sizeof(char) ));
 
 	IOparam->mdI = i;
 
@@ -929,7 +915,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	}
 
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	// Error checking
 	if (IOparam->use != 0 && !IOparam->Ap)
@@ -949,7 +935,6 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	Adjoint_Vecs    Adjoint_Vectors;
 	PetscLogDouble  cputime_start, cputime_end;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// compatibility check
@@ -962,7 +947,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	}
 
 	// read periodic grid topology flag
-	ierr = getIntParam(IOparam->fb, _OPTIONAL_, "periodic", &periodic, 1, 1); CHKERRQ(ierr);
+	PetscCall(getIntParam(IOparam->fb, _OPTIONAL_, "periodic", &periodic, 1, 1));
 
 	if(periodic)
 	{
@@ -975,7 +960,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	F              = 1e100;
 
 	// Read input parameters
-    ierr = LaMEMAdjointReadInputSetDefaults(IOparam, &Adjoint_Vectors); 			CHKERRQ(ierr);
+    PetscCall(LaMEMAdjointReadInputSetDefaults(IOparam, &Adjoint_Vectors));
 
 	// Copy adjoint parameters to command-line	options
 	if (IOparam->SetInitAdjParam==1){
@@ -983,13 +968,13 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 		// set the initial values on the command-line, unless we employ use=inversion, 
 		// in which case the parameters are set in an external code (as command-line options)
 		
-		VecCopy(Adjoint_Vectors.P,IOparam->P);		// Copy 
-		VecGetArray(IOparam->P,&Par);
+		PetscCall(VecCopy(Adjoint_Vectors.P,IOparam->P));		// Copy
+		PetscCall(VecGetArray(IOparam->P,&Par));
 		for(i=0;i<IOparam->mdN;i++)
 		{
-			ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+			PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i));
 		}
-		VecRestoreArray(IOparam->P,&Par);
+		PetscCall(VecRestoreArray(IOparam->P,&Par));
 	}
 
 	//===========================================================
@@ -999,23 +984,23 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	if(IOparam->use == _adjointgradients_)
  	{
 		// Compute Gradients 
-		ierr = ComputeGradientsAndObjectiveFunction(Adjoint_Vectors.P, &F, Adjoint_Vectors.grad, IOparam);	CHKERRQ(ierr);
+		PetscCall(ComputeGradientsAndObjectiveFunction(Adjoint_Vectors.P, &F, Adjoint_Vectors.grad, IOparam));
 
 		// Print scaling laws
-		ierr = PrintScalingLaws(IOparam);	CHKERRQ(ierr);
+		PetscCall(PrintScalingLaws(IOparam));
  	}
 	else if(IOparam->use == _inversion_)
  	{	
 		// Only compute a forward model and the corresponding misfit 
 
 		IOparam->BruteForce_FD = PETSC_TRUE;		// to return early w/out cmomputing FD gradients
-		ierr = LaMEMLibMain(IOparam, IOparam->fb); 															CHKERRQ(ierr);
+		PetscCall(LaMEMLibMain(IOparam, IOparam->fb));
 
 		// Print overview of cost function & gradients 
-		ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
-		ierr = PrintGradientsAndObservationPoints(IOparam); CHKERRQ(ierr);
+		PetscCall(PrintCostFunction(IOparam));
+		PetscCall(PrintGradientsAndObservationPoints(IOparam));
 
-		ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); 
+		PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD)); 
 	
 	}
 
@@ -1028,46 +1013,46 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  	 		Tao tao;
 			TaoLineSearch ls;
 
- 	 		ierr = TaoCreate(PETSC_COMM_WORLD,&tao); CHKERRQ(ierr);
+ 	 		PetscCall(TaoCreate(PETSC_COMM_WORLD,&tao));
 
 			PetscPrintf(PETSC_COMM_WORLD,"| TAO: IOparam->Ab bounds = %lld \n",(LLD) IOparam->Ab);	
 
  	 	 	// 1.Check if bounds are available and sets them
  	 		if (IOparam->Ab == 1)
  	 		{
- 	 	 	 	ierr = TaoSetVariableBounds(tao,Adjoint_Vectors.Lb,Adjoint_Vectors.Ub);	 								CHKERRQ(ierr);
- 	 	 	 	ierr = TaoSetType(tao,TAOBLMVM);CHKERRQ(ierr);
+ 	 	 	 	PetscCall(TaoSetVariableBounds(tao,Adjoint_Vectors.Lb,Adjoint_Vectors.Ub));
+ 	 	 	 	PetscCall(TaoSetType(tao,TAOBLMVM));
  	 		}
  	 		else
  	 		{
- 	 			ierr = TaoSetType(tao,TAOLMVM);CHKERRQ(ierr);                    // TAOLMVM, TAOBLMVM, TAOBMRM (bad), TAOCG (all 4), TAOTRON (might crash but is fast)
+ 	 			PetscCall(TaoSetType(tao,TAOLMVM));                    // TAOLMVM, TAOBLMVM, TAOBMRM (bad), TAOCG (all 4), TAOTRON (might crash but is fast)
  	 		}
 
  	 		// 2. Set up Tao
- 	 	 	ierr = TaoSetObjectiveAndGradient(tao, NULL, AdjointOptimisationTAO, IOparam);	 	CHKERRQ(ierr);  // sets the forward routine as well
- 	 	 	ierr = TaoSetSolution(tao,Adjoint_Vectors.P);	 							        CHKERRQ(ierr);
- 	 	 	ierr = TaoSetTolerances(tao,1e-30,1e-30,1e-30);	                                    CHKERRQ(ierr);
- 	 	 	ierr = TaoSetFunctionLowerBound(tao,1e-10);                                         CHKERRQ(ierr);
- 	 	 	ierr = TaoSetFromOptions(tao);	 										            CHKERRQ(ierr);
+ 	 	 	PetscCall(TaoSetObjectiveAndGradient(tao, NULL, AdjointOptimisationTAO, IOparam));  // sets the forward routine as well
+ 	 	 	PetscCall(TaoSetSolution(tao,Adjoint_Vectors.P));
+ 	 	 	PetscCall(TaoSetTolerances(tao,1e-30,1e-30,1e-30));
+ 	 	 	PetscCall(TaoSetFunctionLowerBound(tao,1e-10));
+ 	 	 	PetscCall(TaoSetFromOptions(tao));
 			
 			// Line-Search
-			ierr = TaoGetLineSearch(tao, &ls);                                                  CHKERRQ(ierr);
-			ierr = TaoLineSearchSetFromOptions(ls);                                             CHKERRQ(ierr);
+			PetscCall(TaoGetLineSearch(tao, &ls));
+			PetscCall(TaoLineSearchSetFromOptions(ls));
 
  	 	 	// 3. Solve Tao & view result
- 	 	 	ierr = TaoSolve(tao);	 												            CHKERRQ(ierr);
+ 	 	 	PetscCall(TaoSolve(tao));
  	 	 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
 	
  	 	 	TaoView(tao,PETSC_VIEWER_STDOUT_WORLD);
  	 	 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
 	
  	 	 	// 4. Clean
- 	 	 	ierr = TaoDestroy(&tao);
+ 	 	 	PetscCall(TaoDestroy(&tao));
  		}
  		else
  		{
             // Without TAO try our own implementation of a line search tuned gradient descent
-			ierr = AdjointOptimisation(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);
+ 			PetscCall(AdjointOptimisation(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam));
  		}
 
  		PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
@@ -1075,16 +1060,16 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 		PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
 		PetscPrintf(PETSC_COMM_WORLD,"| Number of inversion iterations: %lld\n",(LLD) IOparam->count);
  		PetscPrintf(PETSC_COMM_WORLD,"| F/Fini:\n");
- 		VecGetArray(IOparam->fcconv,&fcconvar);
+ 		PetscCall(VecGetArray(IOparam->fcconv,&fcconvar));
  		for(i=1;i<IOparam->count;i++)
  		{
  			PetscPrintf(PETSC_COMM_WORLD,"| %.5e\n",fcconvar[i]);
  		}
- 		VecRestoreArray(IOparam->fcconv,&fcconvar);
+ 		PetscCall(VecRestoreArray(IOparam->fcconv,&fcconvar));
  		PetscPrintf(PETSC_COMM_WORLD,"| \n| Final cost function:\n");
  		PetscPrintf(PETSC_COMM_WORLD,"| %.5e\n",IOparam->mfit);
  		PetscPrintf(PETSC_COMM_WORLD,"| \n| Final Parameters: \n");
-		VecGetArray(IOparam->P,&Par);
+ 		PetscCall(VecGetArray(IOparam->P,&Par));
 		for(i=0;i<IOparam->mdN;i++)
 		{
 			
@@ -1096,7 +1081,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 
 			PetscPrintf(PETSC_COMM_WORLD,"| %s[%lld] = %.5e\n",CurName, (LLD) CurPhase, Par[i]);
 		}
-		VecRestoreArray(IOparam->P,&Par);
+		PetscCall(VecRestoreArray(IOparam->P,&Par));
  		PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n\n");
 		
  	}
@@ -1104,21 +1089,21 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  	else if(IOparam->use == _syntheticforwardrun_)
  	{
  		// call LaMEM main library function
- 		ierr = LaMEMLibMain(IOparam, IOparam->fb); CHKERRQ(ierr);
+ 		PetscCall(LaMEMLibMain(IOparam, IOparam->fb));
 
  		// Save output
  		PetscViewer     viewerVel;
- 		PetscViewerCreate(PETSC_COMM_WORLD,&viewerVel);
- 		PetscViewerSetType(viewerVel,PETSCVIEWERBINARY);
- 		PetscViewerFileSetMode(viewerVel,FILE_MODE_WRITE);
- 		PetscViewerFileSetName(viewerVel,"Forward_Solution_Vel.bin");
- 	 	VecView(IOparam->xini,viewerVel);
- 	 	PetscViewerDestroy(&viewerVel);
+ 		PetscCall(PetscViewerCreate(PETSC_COMM_WORLD,&viewerVel));
+ 		PetscCall(PetscViewerSetType(viewerVel,PETSCVIEWERBINARY));
+ 		PetscCall(PetscViewerFileSetMode(viewerVel,FILE_MODE_WRITE));
+ 		PetscCall(PetscViewerFileSetName(viewerVel,"Forward_Solution_Vel.bin"));
+ 		PetscCall(VecView(IOparam->xini,viewerVel));
+ 		PetscCall(PetscViewerDestroy(&viewerVel));
 
  	 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------\n|         Forward Solution successfully saved\n| ------------------------------------------\n");
  	}
 
-	ierr = AdjointVectorsDestroy(&Adjoint_Vectors, IOparam); CHKERRQ(ierr);
+	PetscCall(AdjointVectorsDestroy(&Adjoint_Vectors, IOparam));
 
 	PetscTime(&cputime_end);
     PetscPrintf(PETSC_COMM_WORLD,"| Adjoint computation was successful & took %g s                         	 \n",cputime_end - cputime_start);
@@ -1130,18 +1115,17 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOparam)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// VECTORS
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Lb);      CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Ub);      CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->val);     CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->P);       CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->grad);    CHKERRQ(ierr);
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Lb));
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Ub));
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->val));
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->P));
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->grad));
 
-	ierr = VecDuplicate(Adjoint_Vectors->P,&IOparam->P);											CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->maxit, PETSC_DETERMINE, &IOparam->fcconv);  	 	CHKERRQ(ierr); 
+	PetscCall(VecDuplicate(Adjoint_Vectors->P,&IOparam->P));
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, IOparam->maxit, PETSC_DETERMINE, &IOparam->fcconv)); 
 
 
 	PetscFunctionReturn(0);
@@ -1149,60 +1133,53 @@ PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOp
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_Vectors, ModParam *IOparam)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = VecDestroy(&Adjoint_Vectors->Lb);      	CHKERRQ(ierr);
-	ierr = VecDestroy(&Adjoint_Vectors->Ub);      	CHKERRQ(ierr);
-	ierr = VecDestroy(&Adjoint_Vectors->val);     	CHKERRQ(ierr);
-	ierr = VecDestroy(&Adjoint_Vectors->P);       	CHKERRQ(ierr);
-	ierr = VecDestroy(&Adjoint_Vectors->grad);    	CHKERRQ(ierr);
+	PetscCall(VecDestroy(&Adjoint_Vectors->Lb));
+	PetscCall(VecDestroy(&Adjoint_Vectors->Ub));
+	PetscCall(VecDestroy(&Adjoint_Vectors->val));
+	PetscCall(VecDestroy(&Adjoint_Vectors->P));
+	PetscCall(VecDestroy(&Adjoint_Vectors->grad));
 
-	ierr = VecDestroy(&IOparam->P);					CHKERRQ(ierr);
-	ierr = VecDestroy(&IOparam->fcconv);			CHKERRQ(ierr);
+	PetscCall(VecDestroy(&IOparam->P));
+	PetscCall(VecDestroy(&IOparam->fcconv));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// Create everything
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vx);  CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vy);  CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vz);  CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->sty); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &aop->gradfield);      CHKERRQ(ierr);
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vx));
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vy));
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vz));
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->sty));
+	PetscCall(DMCreateLocalVector (jr->fs->DA_CEN, &aop->gradfield));
 
-	ierr = VecDuplicate(jr->gsol, &aop->dPardu);          CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &aop->dF);              CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &aop->pro);             CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &IOparam->xini);  	  CHKERRQ(ierr);  // create a new one
+	PetscCall(VecDuplicate(jr->gsol, &aop->dPardu));
+	PetscCall(VecDuplicate(jr->gsol, &aop->dF));
+	PetscCall(VecDuplicate(jr->gsol, &aop->pro));
+	PetscCall(VecDuplicate(jr->gsol, &IOparam->xini));  // create a new one
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	
-	ierr = VecDestroy(&aop->vx);         CHKERRQ(ierr);
-	ierr = VecDestroy(&aop->vy);         CHKERRQ(ierr);
-	ierr = VecDestroy(&aop->vz);         CHKERRQ(ierr);
-	ierr = VecDestroy(&aop->sty);        CHKERRQ(ierr);
-	ierr = VecDestroy(&aop->gradfield);  CHKERRQ(ierr);
+	PetscCall(VecDestroy(&aop->vx));
+	PetscCall(VecDestroy(&aop->vy));
+	PetscCall(VecDestroy(&aop->vz));
+	PetscCall(VecDestroy(&aop->sty));
+	PetscCall(VecDestroy(&aop->gradfield));
 
-	ierr = VecDestroy(&aop->dPardu);     CHKERRQ(ierr);
-	ierr = VecDestroy(&aop->dF);         CHKERRQ(ierr);
-	ierr = VecDestroy(&aop->pro);        CHKERRQ(ierr);
-	ierr = VecDestroy(&IOparam->xini); 	 CHKERRQ(ierr); 
-
-	// Destroy the Adjoint gradients structures
-	// ierr = PetscMemzero(aop, sizeof(AdjGrad)); CHKERRQ(ierr);
+	PetscCall(VecDestroy(&aop->dPardu));
+	PetscCall(VecDestroy(&aop->dF));
+	PetscCall(VecDestroy(&aop->pro));
+	PetscCall(VecDestroy(&IOparam->xini)); 
 
 	PetscFunctionReturn(0);
 }
@@ -1210,48 +1187,47 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam)
 //---------------------------------------------------------------------------
 PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar *ObjectiveValue, Vec Gradient, ModParam *IOparam)
 {
-	/* 
-		This computes the objective & gradients (either adjoint or finite difference 
-		or a combination of both)
-	*/
-	PetscErrorCode 	ierr;
+
+	//	This computes the objective & gradients (either adjoint or finite difference
+	//	or a combination of both)
+
 	PetscScalar 	*Par, *Grad;
 	PetscInt 		i;
 
 	PetscFunctionBeginUser;
 
 	// Copy adjoint parameters to command-line	options
-	VecCopy(Parameters,IOparam->P);		// Copy 
-	VecGetArray(IOparam->P,&Par);
+	PetscCall(VecCopy(Parameters,IOparam->P));		// Copy
+	PetscCall(VecGetArray(IOparam->P,&Par));
 	for(i=0;i<IOparam->mdN;i++)
 	{
-		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+		PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i));
     }
-	VecRestoreArray(IOparam->P,&Par);
+	PetscCall(VecRestoreArray(IOparam->P,&Par));
 
-	/* 	FD gradients: call the FD gradient routine (& LaMEM many times) for those parameters for which we request it 
-		Note: should be computed first, before computing adjoint to ensure that the cost function is computed for the standard (and nt perturbed) parameters
-	*/
+	// 	FD gradients: call the FD gradient routine (& LaMEM many times) for those parameters for which we request it
+	//	Note: should be computed first, before computing adjoint to ensure that the cost function is computed for the standard (and nt perturbed) parameters
+
 	IOparam->BruteForce_FD = PETSC_TRUE;
-	ierr = AdjointFiniteDifferenceGradients(IOparam);	CHKERRQ(ierr);
+	PetscCall(AdjointFiniteDifferenceGradients(IOparam));
 
 	// Adjoint gradients: Call LaMEM main library function once (computes gradients @ the end)
  	IOparam->BruteForce_FD = PETSC_FALSE;
-	ierr = LaMEMLibMain(IOparam, IOparam->fb); 															CHKERRQ(ierr);
+	PetscCall(LaMEMLibMain(IOparam, IOparam->fb));
 
 	// Print overview of cost function & gradients 
-	ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
-	ierr = PrintGradientsAndObservationPoints(IOparam); CHKERRQ(ierr);
+	PetscCall(PrintCostFunction(IOparam));
+	PetscCall(PrintGradientsAndObservationPoints(IOparam));
 
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); 
+	PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD)); 
 
 	// Copy back gradients from IOparam   
 	// Gradient info is thus in IOparam & as vectors
-	VecGetArray(Gradient,&Grad);
+	PetscCall(VecGetArray(Gradient,&Grad));
 	for(i=0;i<IOparam->mdN;i++){
 		Grad[i] = IOparam->grd[i];		// Gradient
 	}
-	VecRestoreArray(Gradient,&Grad);
+	PetscCall(VecRestoreArray(Gradient,&Grad));
 
 	*ObjectiveValue = IOparam->mfit;		// Objective function
 
@@ -1260,7 +1236,6 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// initialize
@@ -1272,13 +1247,13 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	Vec         	dP,dgrad,Pold,gradold,r;
 
 	// get parameter values
-	VecDuplicate(IOparam->P,&dP);
-	VecDuplicate(IOparam->P,&Pold);
-	VecDuplicate(grad,&gradold);
-	VecDuplicate(grad,&dgrad);
-	VecDuplicate(grad,&r);
-	VecCopy(P,IOparam->P);
-	VecCopy(P,Pold);
+	PetscCall(VecDuplicate(IOparam->P,&dP));
+	PetscCall(VecDuplicate(IOparam->P,&Pold));
+	PetscCall(VecDuplicate(grad,&gradold));
+	PetscCall(VecDuplicate(grad,&dgrad));
+	PetscCall(VecDuplicate(grad,&r));
+	PetscCall(VecCopy(P,IOparam->P));
+	PetscCall(VecCopy(P,Pold));
 
 	// Initialize cost functions
 	F 		= 1e100;
@@ -1293,20 +1268,14 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	{
 		
 		// Give the updated values to the code
-		VecCopy(P,IOparam->P);		
-		//VecGetArray(P,&Par);
-		//for(i=0;i<IOparam->mdN;i++)
-		//{
-		//	ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
-    	//}
-		//VecRestoreArray(P,&Par);
+		PetscCall(VecCopy(P,IOparam->P));
+
 
 		// Reset line search counter
 		LScount = 1;
 
 		// call LaMEM main library function
-		//ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
-		ierr = ComputeGradientsAndObjectiveFunction(P, &F, grad, IOparam);	CHKERRQ(ierr);
+		PetscCall(ComputeGradientsAndObjectiveFunction(P, &F, grad, IOparam));
 				
 		// Save initial cost function & create initial Hessian
 		if(IOparam->count==1)
@@ -1317,8 +1286,8 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		// Save cost function
 		F = IOparam->mfit;
 
-		VecGetArray(P,&Par);
-		VecGetArray(grad,&gradar);
+		PetscCall(VecGetArray(P,&Par));
+		PetscCall(VecGetArray(grad,&gradar));
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			gradar[j] = IOparam->grd[j];
@@ -1327,8 +1296,8 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 				IOparam->factor2array[j] = fabs((IOparam->Scale_Grad*Par[j])/fabs(gradar[j]));
 			}
 		}
-		VecRestoreArray(grad,&gradar);
-		VecRestoreArray(P,&Par);
+		PetscCall(VecRestoreArray(grad,&gradar));
+		PetscCall(VecRestoreArray(P,&Par));
 
 		PetscPrintf(PETSC_COMM_WORLD,"| AdjointOptimisation: Gradients. [0]=%e, [1]=%e \n", IOparam->grd[0], IOparam->grd[1]);
 		
@@ -1345,38 +1314,21 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			PetscPrintf(PETSC_COMM_WORLD,"\n| - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
 			PetscPrintf(PETSC_COMM_WORLD,"|               LINE SEARCH IT %lld                       \n",(LLD) LScount);
 
-			VecGetArray(P,&Par);
-			VecGetArray(Pold,&Paroldar);
-			VecGetArray(gradold,&gradoldar);
-
-			/*VecGetArray(dP,&dPtemp);
-			for(i=0;i<IOparam->mdN;i++)
-			{
-				for(j=0;j<IOparam->mdN;j++)
-				{
-					dPtemp[i] = dPtemp[i]*LSalpha;
-				}
-			}
-			*/
+			PetscCall(VecGetArray(P,&Par));
+			PetscCall(VecGetArray(Pold,&Paroldar));
+			PetscCall(VecGetArray(gradold,&gradoldar));
 
 			// Update parameter
 			for(i=0;i<IOparam->mdN;i++)
 			{
-				Par[i] 	= 	Paroldar[i] - gradoldar[i] * IOparam->factor2array[i] ;
-			//	ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+				Par[i] = Paroldar[i] - gradoldar[i] * IOparam->factor2array[i] ;
     		}
-			VecRestoreArray(P,&Par);
-			VecRestoreArray(Pold,&Paroldar);
-			VecRestoreArray(gradold,&gradoldar);
-			//VecRestoreArray(dP,&dPtemp);
-
-			// Store the updated values (now done inside the routine below)
-			//VecCopy(P,IOparam->P);  
+			PetscCall(VecRestoreArray(P,&Par));
+			PetscCall(VecRestoreArray(Pold,&Paroldar));
+			PetscCall(VecRestoreArray(gradold,&gradoldar));
 
 			// call LaMEM main library function
-			//ierr 	= LaMEMLibMain(IOparam); CHKERRQ(ierr);
-			ierr = ComputeGradientsAndObjectiveFunction(P, &F, grad, IOparam);	CHKERRQ(ierr);
-			//F 		= IOparam->mfit;
+			PetscCall(ComputeGradientsAndObjectiveFunction(P, &F, grad, IOparam));
 
 			LScount+=1;
 			if(LScount>IOparam->maxitLS)
@@ -1386,13 +1338,13 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 				PetscPrintf(PETSC_COMM_WORLD,"| ******************************************************\n\n");
 
 				// Return parameters for final output
-				VecCopy(P,IOparam->P);
+				PetscCall(VecCopy(P,IOparam->P));
 
-				VecDestroy(&dP);
-				VecDestroy(&Pold);
-				VecDestroy(&gradold);
-				VecDestroy(&dgrad);
-				VecDestroy(&r);
+				PetscCall(VecDestroy(&dP));
+				PetscCall(VecDestroy(&Pold));
+				PetscCall(VecDestroy(&gradold));
+				PetscCall(VecDestroy(&dgrad));
+				PetscCall(VecDestroy(&r));
 
 				PetscFunctionReturn(0);
 			}
@@ -1406,13 +1358,12 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		PetscPrintf(PETSC_COMM_WORLD,"| %lld. IT INVERSION RESULT: line search its = %lld ; F / FINI = %.5e\n| \n",(LLD) IOparam->count,(LLD) LScount-1,IOparam->mfit/IOparam->mfitini);
 		PetscPrintf(PETSC_COMM_WORLD,"| Fold = %.5e \n|    F = %.5e\n| \n",Fold,F);
 
-		VecGetArray(grad,&gradar);
-		VecGetArray(P,&Par);
-		// VecGetArray(dP,&dPtemp);
+		PetscCall(VecGetArray(grad,&gradar));
+		PetscCall(VecGetArray(P,&Par));
 
 		// Store old values in case we overshoot next time
-		VecCopy(P,Pold);
-		VecCopy(grad,gradold);
+		PetscCall(VecCopy(P,Pold));
+		PetscCall(VecCopy(grad,gradold));
 		Fold = F;
 
 		// Display the current state of the parameters
@@ -1430,31 +1381,30 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			if(F>IOparam->tol)
 			{
 				Par[i] 	= 	Par[i] -gradar[i] * IOparam->factor2array[i];
-				ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+				PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i));
     		}
 		}
-		VecRestoreArray(grad,&gradar);
-		VecRestoreArray(P,&Par);
-		// VecRestoreArray(dP,&dPtemp);
+		PetscCall(VecRestoreArray(grad,&gradar));
+		PetscCall(VecRestoreArray(P,&Par));
 
 		// Display the current state of the parameters
-		VecGetArray(P,&Par);
+		PetscCall(VecGetArray(P,&Par));
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"| %lld Parameter value = %.5e\n",(LLD) j+1,Par[j]);
 		}
-		VecRestoreArray(P,&Par);
+		PetscCall(VecRestoreArray(P,&Par));
 
 
 		PetscPrintf(PETSC_COMM_WORLD,"| -------------------------------------------------------------------------\n\n");
 		
 
 		// Give the updated values to the code  (actually unfortunately necessary here and at the top of this function - need to rearrange that)
-		VecCopy(P,IOparam->P);
+		PetscCall(VecCopy(P,IOparam->P));
 
-		VecGetArray(IOparam->fcconv,&fcconvar);
+		PetscCall(VecGetArray(IOparam->fcconv,&fcconvar));
 		fcconvar[IOparam->count] = IOparam->mfit/IOparam->mfitini;
-		VecRestoreArray(IOparam->fcconv,&fcconvar);
+		PetscCall(VecRestoreArray(IOparam->fcconv,&fcconvar));
 
 		// Increase line search alpha after succesful iteration
 		for(i=0;	i<IOparam->mdN;	i++)
@@ -1479,20 +1429,18 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	}
 
 	// clean up vectors
-	VecDestroy(&dP);
-	VecDestroy(&Pold);
-	VecDestroy(&gradold);
-	VecDestroy(&dgrad);
-	VecDestroy(&r);
-
+	PetscCall(VecDestroy(&dP));
+	PetscCall(VecDestroy(&Pold));
+	PetscCall(VecDestroy(&gradold));
+	PetscCall(VecDestroy(&dgrad));
+	PetscCall(VecDestroy(&r));
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// initialize
@@ -1505,36 +1453,25 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	UNUSED(tao);
 
 	// get parameter values
-	VecCopy(P,IOparam->P);
+	PetscCall(VecCopy(P,IOparam->P));
 
 	// Print parameters
 	PetscPrintf(PETSC_COMM_WORLD,"| \n");
 	PetscPrintf(PETSC_COMM_WORLD,"| *************************************************************************\n");
 	PetscPrintf(PETSC_COMM_WORLD,"| TAO start iteration %lld: \n", (LLD) IOparam->count);
 	PetscPrintf(PETSC_COMM_WORLD,"| Currently employed parameters: \n");
-	VecGetArray(IOparam->P,&Par);
-	for(j = 0; j < IOparam->mdN; j++){
-	
-		//ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
-    
+	PetscCall(VecGetArray(IOparam->P,&Par));
+	for(j = 0; j < IOparam->mdN; j++)
+	{
 	    strcpy(CurName, IOparam->type_name[j]);	// name
 		PetscPrintf(PETSC_COMM_WORLD,"|  %s[%lld]=%10.10e \n",CurName,(LLD) IOparam->phs[j],Par[j]);
 	}
-	VecRestoreArray(IOparam->P,&Par);
+	PetscCall(VecRestoreArray(IOparam->P,&Par));
 	PetscPrintf(PETSC_COMM_WORLD,"| \n");
 
 	// Compute gradient & objective function for the parameters P
-	ierr = ComputeGradientsAndObjectiveFunction(P, &Fmisfit, grad, IOparam);	CHKERRQ(ierr);
+	PetscCall(ComputeGradientsAndObjectiveFunction(P, &Fmisfit, grad, IOparam));
 		
-	//ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
-
-	// Print the gradient & misfit
-	for(j = 0; j < IOparam->mdN; j++)
-	{
-	//	gradar[j] = IOparam->grd[j];
-		
-	}
-
 	*F = IOparam->mfit;  // objective function
 
 	// Save initial cost function
@@ -1546,28 +1483,25 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	PetscPrintf(PETSC_COMM_WORLD,"| \n");
 	PetscPrintf(PETSC_COMM_WORLD,"| Parameter values: \n");
 	
-	VecGetArray(IOparam->P,&Par);
-	VecGetArray(grad,&gradar);
+	PetscCall(VecGetArray(IOparam->P,&Par));
+	PetscCall(VecGetArray(grad,&gradar));
 	for(j = 0; j < IOparam->mdN; j++)
 	{
-	//	ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
-
 		strcpy(CurName, IOparam->type_name[j]);	// name
 
 		PetscPrintf(PETSC_COMM_WORLD,"|   %lld %s[%lld] = %- 10.5e, gradient=%- 10.5e\n",(LLD) j+1,CurName,(LLD) IOparam->phs[j],Par[j],gradar[j]);
-		
 	}
-	VecRestoreArray(grad,&gradar);
-	VecRestoreArray(IOparam->P,&Par);
+	PetscCall(VecRestoreArray(grad,&gradar));
+	PetscCall(VecRestoreArray(IOparam->P,&Par));
 
 	// Print cost function 
 	PetscPrintf(PETSC_COMM_WORLD,"| \n");
 	PetscPrintf(PETSC_COMM_WORLD,"| misfit           = %2.8e \n",IOparam->mfit);
 	PetscPrintf(PETSC_COMM_WORLD,"| misfit / misfit0 = %2.8e\n| ------------------------------------------\n\n",IOparam->mfit/IOparam->mfitini);
 
-	VecGetArray(IOparam->fcconv,&fcconvar);
+	PetscCall(VecGetArray(IOparam->fcconv,&fcconvar));
 	fcconvar[IOparam->count] = IOparam->mfit/IOparam->mfitini;
-	VecRestoreArray(IOparam->fcconv,&fcconvar);
+	PetscCall(VecRestoreArray(IOparam->fcconv,&fcconvar));
 
 	// count
 	IOparam->count += 1;
@@ -1587,10 +1521,10 @@ PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, ModParam *IOpar
 	JacRes   *jr;
 	FreeSurf *surf;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = SNESGetApplicationContext(snes, &nl); CHKERRQ(ierr);
+	PetscCall(SNESGetApplicationContext(snes, &nl));
 
 	jr   = nl->jr;
 	surf = jr->surf;
@@ -1600,12 +1534,13 @@ PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, ModParam *IOpar
 	//========================================
 
 	// Get the cost function and derivative
-	ierr = AdjointObjectiveFunction(aop, jr, IOparam, surf); CHKERRQ(ierr);
+	PetscCall(AdjointObjectiveFunction(aop, jr, IOparam, surf));
 
-	if (IOparam->BruteForce_FD){PetscFunctionReturn(0); }	// in case we compute Brute force FD (or if we only compute the misfit), we can return at this stage
+	// in case we compute Brute force FD (or if we only compute the misfit), we can return at this stage
+	if (IOparam->BruteForce_FD) { PetscFunctionReturn(0); }
 
 	// Get the adjoint gradients
-	ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam);        CHKERRQ(ierr);
+	PetscCall(AdjointComputeGradients(jr, aop, nl, snes, IOparam));
 
 	PetscFunctionReturn(0);
 
@@ -1626,7 +1561,7 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 
 	PetscScalar    		*rbuf1=NULL;
 
- 	PetscErrorCode ierr;
+ 	
  	PetscFunctionBeginUser;
 
  	scal = jr->scal;
@@ -1634,16 +1569,16 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 	dt = jr->ts->dt;
 
 	// Create projection vector
-	ierr = VecDuplicate(jr->gsol, &xini);           CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &sqrtpro);           CHKERRQ(ierr);
+	PetscCall(VecDuplicate(jr->gsol, &xini));
+	PetscCall(VecDuplicate(jr->gsol, &sqrtpro));
 
 	//========================================
 	// COMPUTE OBJECTIVE FUNCTION
 	//========================================
 	// Put the proportion into the Projection vector where the user defined the computation coordinates (P) & get the velocities
-	ierr = AdjointPointInPro(jr, aop, IOparam, surf); 	CHKERRQ(ierr);
+	PetscCall(AdjointPointInPro(jr, aop, IOparam, surf));
 
-	ierr = VecCopy(IOparam->xini,xini);             	CHKERRQ(ierr);
+	PetscCall(VecCopy(IOparam->xini,xini));
 	
 	
 	if (IOparam->Gr == 1)		// Gradients w.r.t. Solution
@@ -1655,15 +1590,15 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 			// Velocity
 
 			// -------- Only get gradients with respect to the solution --------
-			ierr = VecCopy(aop->pro,aop->dF); 				CHKERRQ(ierr); // dF/dx = P
+			PetscCall(VecCopy(aop->pro,aop->dF)); // dF/dx = P
 
-			ierr = VecDot(aop->pro, jr->gsol,&value);     	CHKERRQ(ierr);
+			PetscCall(VecDot(aop->pro, jr->gsol,&value));
 			IOparam->mfit 	   = value*scal->velocity;    
 		}
 		else if(IOparam->MfitType == 1)
 		{
 			// principal stress direction
-			ierr 				= AdjointGet_F_dFdu_Center(jr, aop, IOparam);                       CHKERRQ(ierr);
+			PetscCall(AdjointGet_F_dFdu_Center(jr, aop, IOparam));
 
 			if (!strcmp(IOparam->ObsName[0],"PSD")){
 				IOparam->mfit 	  	= 	IOparam->mfitCenter; 						// stress angle is nondimensional
@@ -1682,34 +1617,34 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 
 		if(IOparam->MfitType == 0)
 		{
-			ierr = VecCopy(aop->pro,sqrtpro);             	CHKERRQ(ierr);
+			PetscCall(VecCopy(aop->pro,sqrtpro));
 
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr = 	VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
-			ierr = 	VecScale(xini,sqrt(1/IOparam->vel_scale));                   	CHKERRQ(ierr);
+			PetscCall(VecAYPX(xini,-1,jr->gsol));
+			PetscCall(VecScale(xini,sqrt(1/IOparam->vel_scale)));
 
-			ierr =  VecSqrtAbs(sqrtpro);  CHKERRQ(ierr);
+			PetscCall(VecSqrtAbs(sqrtpro));
 
-			ierr = 	VecPointwiseMult(xini, xini,sqrtpro);                           CHKERRQ(ierr);
+			PetscCall(VecPointwiseMult(xini, xini,sqrtpro));
 			
 			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr 	           = VecDot(xini,xini,&Ad);
+			PetscCall(VecDot(xini,xini,&Ad));
 			Ad 		          /= 2;
 			IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
 
-			ierr = VecCopy(IOparam->xini,xini);             	CHKERRQ(ierr);
+			PetscCall(VecCopy(IOparam->xini,xini));
 
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
-			ierr = VecScale(xini,1/IOparam->vel_scale);                             CHKERRQ(ierr);
-			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
+			PetscCall(VecAYPX(xini,-1,jr->gsol));
+			PetscCall(VecScale(xini,1/IOparam->vel_scale));
+			PetscCall(VecPointwiseMult(xini, xini,aop->pro));
 
 			// Compute it's derivative (dF/dx = P*x-P*x_ini)
-			ierr = VecCopy(xini,aop->dF); 	
+			PetscCall(VecCopy(xini,aop->dF));
 		}
 		if(IOparam->MfitType == 1)
 		{
-			ierr 				= 	AdjointGet_F_dFdu_Center(jr, aop, IOparam);                       CHKERRQ(ierr);
+			PetscCall(AdjointGet_F_dFdu_Center(jr, aop, IOparam));
 			if (!strcmp(IOparam->ObsName[0],"PSD")){
 				IOparam->mfit 	  	= 	IOparam->mfitCenter; 								// stress angle is nondimensional
 			}
@@ -1729,16 +1664,15 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 	{
 
 		// get the current velocities at the observation point
-		ierr = AdjointPointInPro(jr, aop, IOparam, surf);    CHKERRQ(ierr);
+		PetscCall(AdjointPointInPro(jr, aop, IOparam, surf));
 
-		VecGetArray(aop->vx,&vx);
-		VecGetArray(aop->vy,&vy);
-		VecGetArray(aop->vz,&vz);
+		PetscCall(VecGetArray(aop->vx,&vx));
+		PetscCall(VecGetArray(aop->vy,&vy));
+		PetscCall(VecGetArray(aop->vz,&vz));
 
 		// Print the solution variable at the user defined index (if there are sufficiently few)
 		for (i=0; i<IOparam->mdI; i++)
 		{
-
 			coord_local[0] 				= 	IOparam->Ax[i];
 			coord_local[1] 				= 	IOparam->Ay[i];
 			coord_local[2] 				= 	IOparam->Az[i];
@@ -1746,7 +1680,7 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 				
 
 			// get global & local ranks of a marker
-			ierr = FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank); CHKERRQ(ierr);
+			PetscCall(FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank));
 
 			IOparam->Avel_num[i]	= 0.0;
 			
@@ -1768,9 +1702,9 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 				}
 				else if (IOparam->MfitType == 1)
 				{
-					VecGetArray(aop->sty,&sty);
+					PetscCall(VecGetArray(aop->sty,&sty));
 					IOparam->Avel_num[i]  = sty[i];
-					VecRestoreArray(aop->sty,&sty);
+					PetscCall(VecRestoreArray(aop->sty,&sty));
 				}
 
 				if (IOparam->Adv == 1)     // advect the point? - Note that this should be done only once per timestep; need to ensure that this is still the case if 
@@ -1782,14 +1716,14 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 			}
 		}
 
-		VecRestoreArray(aop->vx,&vx);
-		VecRestoreArray(aop->vy,&vy);
-		VecRestoreArray(aop->vz,&vz);
+		PetscCall(VecRestoreArray(aop->vx,&vx));
+		PetscCall(VecRestoreArray(aop->vy,&vy));
+		PetscCall(VecRestoreArray(aop->vz,&vz));
 
 		// Send velocity array to rank 0 (sum over all arrays), to deal with points residing on different processors
 		{
 
-			MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
+			PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
 
 			if ( rank == 0) 
 			{ 
@@ -1797,15 +1731,15 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
        		} 
 
 			// send from all processors -> rank 0
-			MPI_Reduce( IOparam->Avel_num, rbuf1, _MAX_PAR_, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD);
+			PetscCallMPI(MPI_Reduce( IOparam->Avel_num, rbuf1, _MAX_PAR_, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD));
    			
 			if ( rank == 0)
 			{ 
-				ierr  = PetscMemcpy(IOparam->Avel_num,   rbuf1,  (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);		// copy array to correct point
+				PetscCall(PetscMemcpy(IOparam->Avel_num,   rbuf1,  (size_t)_MAX_PAR_*sizeof(PetscScalar) ));		// copy array to correct point
 			}
 
 			// send from rank 0 to all other processors
-			MPI_Bcast(IOparam->Avel_num, _MAX_PAR_, MPIU_SCALAR, 0, PETSC_COMM_WORLD);	
+			PetscCallMPI(MPI_Bcast(IOparam->Avel_num, _MAX_PAR_, MPIU_SCALAR, 0, PETSC_COMM_WORLD));
 
 			if ( rank == 0)
 			{ 
@@ -1816,19 +1750,16 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
  
 
 	// Destroy
-	ierr = VecDestroy(&xini);
-	ierr = VecDestroy(&sqrtpro);
-
+	PetscCall(VecDestroy(&xini));
+	PetscCall(VecDestroy(&sqrtpro));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/* 
-	Brute Force finite difference computation of the gradient, by calling LaMEM twice & perturbing the parameter 
-*/
+
+// Brute Force finite difference computation of the gradient, by calling LaMEM twice & perturbing the parameter
 PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 {
-	PetscErrorCode 	ierr;
 	PetscInt 		j;
 	PetscScalar 	*Par, Perturb, Misfit_ref, Misfit_pert, FD_gradients_eps=1e-6, FD_eps, Grad; 
 	char 			CurName[_str_len_];
@@ -1838,18 +1769,18 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 
 
 	// 0) Retrieve (optional) command-line parameters
-	ierr = PetscOptionsGetScalar(NULL, NULL,"-FD_gradients_eps",&FD_gradients_eps,&flg); CHKERRQ(ierr);
+	PetscCall(PetscOptionsGetScalar(NULL, NULL,"-FD_gradients_eps",&FD_gradients_eps,&flg));
 	if (flg){
 		PetscPrintf(PETSC_COMM_WORLD,"| Updated eps used for computing finite difference gradients to: %2.5e  \n",FD_gradients_eps);
 	}
 
 	// 1) Compute 'reference' state using LaMEM & the current set of parameters
 	// Set parameters as command-line options
-	VecGetArray(IOparam->P,&Par);
+	PetscCall(VecGetArray(IOparam->P,&Par));
 	for(j = 0; j < IOparam->mdN; j++){
-		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
+		PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j));
 	}
-	VecRestoreArray(IOparam->P,&Par);
+	PetscCall(VecRestoreArray(IOparam->P,&Par));
 
 	// check if we actually need to compute FD gradients
 	for(j = 0; j < IOparam->mdN; j++){
@@ -1861,7 +1792,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 	if (FD_Adjoint){
 
 		// Call LaMEM
-		ierr 		= 	LaMEMLibMain(IOparam, IOparam->fb); CHKERRQ(ierr);		// call LaMEM
+		PetscCall(LaMEMLibMain(IOparam, IOparam->fb));		// call LaMEM
 		Misfit_ref	=	IOparam->mfit;
 		
 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
@@ -1873,7 +1804,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 		// 2) Loop over all parameters & compute a solution  with the perturbed parameters
 		
 		// Set parameters as command-line options
-		VecGetArray(IOparam->P,&Par);
+		PetscCall(VecGetArray(IOparam->P,&Par));
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			PetscInt 	CurPhase;
@@ -1894,10 +1825,10 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 				// Only execute this for those parameters for which we want to know the FD gradient (to be added here)
 				Perturb 	= 	CurVal*FD_eps;
 
-				ierr		=	CopyParameterToLaMEMCommandLine(IOparam, CurVal + Perturb, j);		CHKERRQ(ierr);
+				PetscCall(CopyParameterToLaMEMCommandLine(IOparam, CurVal + Perturb, j));
 			
 				// Compute solution with updated parameter
-				ierr 		= 	LaMEMLibMain(IOparam, IOparam->fb); 												CHKERRQ(ierr);
+				PetscCall(LaMEMLibMain(IOparam, IOparam->fb));
 				Misfit_pert = 	IOparam->mfit;
 
 				// FD gradient
@@ -1905,13 +1836,13 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 				IOparam->grd[j] = 	Grad;									// store gradient
 
 				// Set back parameter
-				ierr			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);		CHKERRQ(ierr);
+				PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j));
 			
 				PetscPrintf(PETSC_COMM_WORLD,"|  Perturbed Misfit value     : %- 2.6e \n", Misfit_pert);
 				PetscPrintf(PETSC_COMM_WORLD,"|  Brute force FD gradient %5s[%2lld] = %e, with eps=%1.4e \n", CurName, (LLD) CurPhase, Grad, FD_eps);
 			}
 		}
-		VecRestoreArray(IOparam->P,&Par);
+		PetscCall(VecRestoreArray(IOparam->P,&Par));
 		IOparam->mfit = Misfit_ref; // reset value, just in case it is overwritten by a perturbed value
 	}
 
@@ -1922,8 +1853,6 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam)
 {
-	
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	KSP                 ksp_as;
@@ -1941,17 +1870,17 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	bc   = jr->bc;
 	scal = jr->scal;
 	
-	ierr = SNESGetJacobian(snes, &J, &P, NULL, NULL); CHKERRQ(ierr);
+	PetscCall(SNESGetJacobian(snes, &J, &P, NULL, NULL));
 
 	// Create all needed vectors in the same size as the solution vector
-	ierr = VecDuplicate(jr->gsol, &psi);	 	 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &psiPar);	 	 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gres, &res_pert);    CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &sol); 		 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
-	ierr = VecCopy(jr->gsol,sol); 				 CHKERRQ(ierr);
-	ierr = VecCopy(jr->gres,res); 				 CHKERRQ(ierr);;
+	PetscCall(VecDuplicate(jr->gsol, &psi));
+	PetscCall(VecDuplicate(jr->gsol, &psiPar));
+	PetscCall(VecDuplicate(jr->gres, &res_pert));
+	PetscCall(VecDuplicate(jr->gres, &res));
+	PetscCall(VecDuplicate(jr->gsol, &sol));
+	PetscCall(VecDuplicate(jr->gsol, &drdp));
+	PetscCall(VecCopy(jr->gsol,sol));
+	PetscCall(VecCopy(jr->gres,res));;
 
 	//========
 	// SOLVE
@@ -1960,34 +1889,34 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	// (A side note that I figured out, ksp still sometimes results in a > 0 gradient even if cost function is zero.. possibly really bad condition number?)
 	if(IOparam->MfitType == 0)
 	{
-		ierr = Adjoint_ApplyBCs(aop->dF, bc);			CHKERRQ(ierr);		// apply BC's to dF vector
+		PetscCall(Adjoint_ApplyBCs(aop->dF, bc));		// apply BC's to dF vector
 
-		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
-		ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
-		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
-		ierr = KSPGetPC(ksp_as, &ipc_as);           	CHKERRQ(ierr);
-		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
-		ierr = KSPSetOperators(ksp_as, J, P);		    CHKERRQ(ierr);
-		ierr = KSPSolve(ksp_as,aop->dF,psi);			CHKERRQ(ierr);
-		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
+		PetscCall(SNESGetKSP(snes, &ksp_as));
+		PetscCall(KSPSetOptionsPrefix(ksp_as,"as_"));
+		PetscCall(KSPSetFromOptions(ksp_as));
+		PetscCall(KSPGetPC(ksp_as, &ipc_as));
+		PetscCall(PCSetType(ipc_as, PCMAT));
+		PetscCall(KSPSetOperators(ksp_as, J, P));
+		PetscCall(KSPSolve(ksp_as,aop->dF,psi));
+		PetscCall(KSPGetConvergedReason(ksp_as,&reason));
 	}
 	else if(IOparam->MfitType == 1)
 	{
-		ierr = Adjoint_ApplyBCs(aop->dPardu, bc);		CHKERRQ(ierr);		// apply BC's to dF vector 
-		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
-		ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
-		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
-		ierr = KSPGetPC(ksp_as, &ipc_as);            	CHKERRQ(ierr);
-		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
-		ierr = KSPSetOperators(ksp_as, J, P);		    CHKERRQ(ierr);
-		ierr = KSPSolve(ksp_as,aop->dPardu,psiPar);		CHKERRQ(ierr);
-		ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
+		PetscCall(Adjoint_ApplyBCs(aop->dPardu, bc));		// apply BC's to dF vector 
+		PetscCall(SNESGetKSP(snes, &ksp_as));
+		PetscCall(KSPSetOptionsPrefix(ksp_as,"as_"));
+		PetscCall(KSPSetFromOptions(ksp_as));
+		PetscCall(KSPGetPC(ksp_as, &ipc_as));
+		PetscCall(PCSetType(ipc_as, PCMAT));
+		PetscCall(KSPSetOperators(ksp_as, J, P));
+		PetscCall(KSPSolve(ksp_as,aop->dPardu,psiPar));
+		PetscCall(KSPGetConvergedReason(ksp_as,&reason));
 	}
 
 	// Check error
 	{ 
 		PetscBool 	flag;
-	 	ierr =  SNESKSPGetUseEW(snes, &flag); 			CHKERRQ(ierr);
+	 	PetscCall(SNESKSPGetUseEW(snes, &flag));
 		if (flag){
 			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"|     Adjoint: Cannot combine adjoint method with Eisenstatt-Walker! \n");
 		}
@@ -1996,7 +1925,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
     // Set the FD step-size for computing dr/dp (or override it with a command-line option, which is more for advanced users/testing)
     aop->FD_epsilon = 1e-6;
-    ierr = PetscOptionsGetScalar(NULL, NULL,"-FD_epsilon_adjoint",&aop->FD_epsilon,&flg); CHKERRQ(ierr);
+    PetscCall(PetscOptionsGetScalar(NULL, NULL,"-FD_epsilon_adjoint",&aop->FD_epsilon,&flg));
     if (flg)
     {
         PetscPrintf(PETSC_COMM_WORLD,"|     Finite difference step size for Adjoint dr/dp calculation set to %e \n", aop->FD_epsilon);
@@ -2006,10 +1935,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	// Field sensitivity (aka geodynamic sensitivity kernels) or 'classic' phase based gradients?
  	if(IOparam->FS == 1)
 	{
-        /*  This plots the sensitivity of the solution to incremental changes in the parameter (density here) at 
-             every point in the computational domain. This allows a visual inspection of where changes in density have the largest impact 
-             on say, surface velocity
-        */
+        //  This plots the sensitivity of the solution to incremental changes in the parameter (density here) at
+        //  every point in the computational domain. This allows a visual inspection of where changes in density have the largest impact
+        //  on say, surface velocity
 
 		// Compute residual with the converged Jacobian analytically
 		
@@ -2025,7 +1953,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			if(IOparam->MfitType == 0)
 			{
 				aop->CurScal   = (scal->velocity)/(1);
-				ierr = AdjointFormResidualFieldFD(snes, sol, psi, nl, aop, IOparam);          CHKERRQ(ierr);
+				PetscCall(AdjointFormResidualFieldFD(snes, sol, psi, nl, aop, IOparam));
 			}
 			else if(IOparam->MfitType == 1)
 			{
@@ -2038,7 +1966,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 					aop->CurScal =    (1.0/scal->time_si);	
 				}
 
-				ierr = AdjointFormResidualFieldFD(snes, sol, psiPar, nl, aop, IOparam);          CHKERRQ(ierr);
+				PetscCall(AdjointFormResidualFieldFD(snes, sol, psiPar, nl, aop, IOparam));
 			}
 			PetscPrintf(PETSC_COMM_WORLD,"| Finished gradient computation & added it to VTK\n");
 			PetscPrintf(PETSC_COMM_WORLD,"| Add '-out_gradient = 1' to your parameter file. \n");
@@ -2053,13 +1981,13 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
  		//=================
 		// PARAMETER LOOP
 		//=================
-		VecGetArray(IOparam->P,&Par);
+		PetscCall(VecGetArray(IOparam->P,&Par));
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			if (!IOparam->FD_gradient[j]){	// only if we want to compute an adjoint gradient for this parameter
 
 				// Get the initial residual since it is overwritten in VecAYPX
-				ierr = VecCopy(jr->gres,res); 			CHKERRQ(ierr);
+				PetscCall(VecCopy(jr->gres,res));
 
 				// Get current phase and parameter which is being perturbed
 				//CurPhase 		= 	IOparam->phs[j];
@@ -2069,40 +1997,38 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				// Perturb parameter
 				Perturb 		= 	aop->FD_epsilon*CurVal;
 
-				//PetscPrintf(PETSC_COMM_WORLD,"| *** dr/dp: Perturbing parameter %s[%i]=%e to value %e  \n",CurName,CurVal, CurVal + Perturb);
-
 				// Set as command-line option & create updated material database
-				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j);			CHKERRQ(ierr);
-				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
+				PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j));
+				PetscCall(CreateModifiedMaterialDatabase(IOparam));			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB
 				for (i=0; i < nl->jr->dbm->numPhases; i++)
 				{
-					ierr =   PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
-					swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);
+					PetscCall(PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t)));
+					PetscCall(swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]));
 				}
 
-				ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
-				ierr 			=	VecAYPX(res,-1.0,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
-				ierr 			=	VecScale(res,1.0/Perturb);                      					CHKERRQ(ierr);        // res = (res_perturbed-res)/Perturb
+				PetscCall(FormResidual(snes, sol, res_pert, nl));        // compute the residual with the perturbed parameter
+				PetscCall(VecAYPX(res,-1.0,res_pert));        // res = (res_perturbed-res)
+				PetscCall(VecScale(res,1.0/Perturb));        // res = (res_perturbed-res)/Perturb
 				
-				ierr 			=	VecCopy(res,drdp);														CHKERRQ(ierr);        
+				PetscCall(VecCopy(res,drdp));        
 				
 				// Reset parameter again
-				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);					CHKERRQ(ierr);
-				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
+				PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j));
+				PetscCall(CreateModifiedMaterialDatabase(IOparam));			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB back
 				for (i=0; i < nl->jr->dbm->numPhases; i++)
 				{
-					ierr =   PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
-					swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);
+					PetscCall(PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t)));
+					PetscCall(swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]));
 				}
 				
 				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 				if (IOparam->MfitType == 0)
 				{
-					ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
+					PetscCall(VecDot(drdp,psi,&grd));
 					if (IOparam->Gr == 1)	
 					{
 						aop->CurScal = scal->velocity;
@@ -2114,7 +2040,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				}
 				else if (IOparam->MfitType == 1)		// PSD or strainrate 
 				{
-					ierr          	=   VecDot(drdp,psiPar,&grd);                       CHKERRQ(ierr);
+					PetscCall(VecDot(drdp,psiPar,&grd));
 				
 					if (!strcmp(IOparam->ObsName[0],"PSD")){
 						// PSD is dimensionless
@@ -2133,27 +2059,24 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 			}
 		}
-		VecRestoreArray(IOparam->P,&Par);
+		PetscCall(VecRestoreArray(IOparam->P,&Par));
 	}
 
- 	// Print overview of gradients (if requested @ this stage)
-	//ierr = PrintGradientsAndObservationPoints(IOparam); CHKERRQ(ierr);
-
 	// Clean
-	ierr = VecDestroy(&psi);
-	ierr = VecDestroy(&psiPar);
-	ierr = VecDestroy(&sol);
-	ierr = VecDestroy(&drdp);
-	ierr = VecDestroy(&res_pert);
-	ierr = VecDestroy(&res);
+	PetscCall(VecDestroy(&psi));
+	PetscCall(VecDestroy(&psiPar));
+	PetscCall(VecDestroy(&sol));
+	PetscCall(VecDestroy(&drdp));
+	PetscCall(VecDestroy(&res_pert));
+	PetscCall(VecDestroy(&res));
 
 	PetscFunctionReturn(0);
 }
 
 //---------------------------------------------------------------------------
-/*
-    This prints the current value of the objective function
-*/
+
+// This prints the current value of the objective function
+
 PetscErrorCode PrintCostFunction(ModParam *IOparam)
 {
 	PetscFunctionBeginUser;
@@ -2168,12 +2091,11 @@ PetscErrorCode PrintCostFunction(ModParam *IOparam)
 }
 
 //---------------------------------------------------------------------------
-/*
-    This prints an overview of the gradients (adjoint & fd) and the velocity values
-*/
+
+// This prints an overview of the gradients (adjoint & fd) and the velocity values
+
 PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 {
-	PetscErrorCode 	ierr;
 	char 			CurName[_str_len_], logstr[_str_len_];
 	PetscInt 		j, CurPhase;
 	PetscScalar 	*Par;
@@ -2182,10 +2104,11 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 	PetscFunctionBeginUser;
 
 	// retrieve some of the required data
-	ierr = PetscMemzero (&scal, sizeof(Scaling));          CHKERRQ(ierr);
-	ierr = ScalingCreate(&scal, IOparam->fb); CHKERRQ(ierr);
+	PetscCall(PetscMemzero (&scal, sizeof(Scaling)));
+	PetscCall(ScalingCreate(&scal, IOparam->fb));
 
-	if (!(IOparam->use==_inversion_)){
+	if (!(IOparam->use==_inversion_))
+	{
 		// if use==_inversion_, we only compute the misfit & not the gradients	
 		
 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
@@ -2197,7 +2120,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 			PetscPrintf(PETSC_COMM_WORLD,"|                    Parameter             |  Gradient (dimensional)  \n");    
 			PetscPrintf(PETSC_COMM_WORLD,"|                  -----------------------   ------------------------ \n");    
 
-			VecGetArray(IOparam->P,&Par);
+			PetscCall(VecGetArray(IOparam->P,&Par));
 			for(j = 0; j < IOparam->mdN; j++){
 				// Get current phase and parameter which is being perturbed
 				CurPhase 		= 	IOparam->phs[j];
@@ -2220,7 +2143,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 				}
 
 			}
-			VecRestoreArray(IOparam->P,&Par);
+			PetscCall(VecRestoreArray(IOparam->P,&Par));
 		}
 		else{
 			PetscPrintf(PETSC_COMM_WORLD,"|    Computed field-based gradients \n");    
@@ -2288,13 +2211,12 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
-    AdjointPointInPro creates a projection vector which projects the requested velocity component(s) 
-        from the global solution vector to the observation point(s), assuming linear interpolation
-*/
+
+// AdjointPointInPro creates a projection vector which projects the requested velocity component(s)
+// from the global solution vector to the observation point(s), assuming linear interpolation
+
 PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, FreeSurf *surf)
 {
-	PetscErrorCode      ierr;
 	FDSTAG              *fs;
 	Vec                 lproX, lproY, lproZ, gproX, gproY, gproZ, pro, xini, lxiniX, lxiniY, lxiniZ, gxiniX, gxiniY, gxiniZ;
 	PetscScalar         coord_local[3], *temppro, ***llproX, ***llproY, ***llproZ, *dggproX, *dggproY, *dggproZ, *tempxini, ***llxiniX, ***llxiniY, ***llxiniZ, *dggxiniX, *dggxiniY, *dggxiniZ;
@@ -2306,7 +2228,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	InterpFlags         iflag;
 	PetscMPIInt			grank;
 
-
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
@@ -2317,53 +2238,53 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
 
 	// create vectors with correct layout (doesn't copy values!)
- 	ierr = VecDuplicate(jr->gsol, &pro);             CHKERRQ(ierr);
- 	ierr = VecDuplicate(jr->gsol, &xini);            CHKERRQ(ierr);
-	VecZeroEntries(pro);
-	VecZeroEntries(xini);
+ 	PetscCall(VecDuplicate(jr->gsol, &pro));
+ 	PetscCall(VecDuplicate(jr->gsol, &xini));
+ 	PetscCall(VecZeroEntries(pro));
+ 	PetscCall(VecZeroEntries(xini));
 	
 	// Access the local velocities
-	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz));
 
-	ierr = DMCreateGlobalVector(fs->DA_X, &gproX);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Y, &gproY);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Z, &gproZ);   CHKERRQ(ierr);
+	PetscCall(DMCreateGlobalVector(fs->DA_X, &gproX));
+	PetscCall(DMCreateGlobalVector(fs->DA_Y, &gproY));
+	PetscCall(DMCreateGlobalVector(fs->DA_Z, &gproZ));
 
-	ierr = DMCreateLocalVector (fs->DA_X, &lproX);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Y, &lproY);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Z, &lproZ);   CHKERRQ(ierr);
+	PetscCall(DMCreateLocalVector (fs->DA_X, &lproX));
+	PetscCall(DMCreateLocalVector (fs->DA_Y, &lproY));
+	PetscCall(DMCreateLocalVector (fs->DA_Z, &lproZ));
 
-	ierr = DMCreateGlobalVector(fs->DA_X, &gxiniX);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Y, &gxiniY);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Z, &gxiniZ);   CHKERRQ(ierr);
+	PetscCall(DMCreateGlobalVector(fs->DA_X, &gxiniX));
+	PetscCall(DMCreateGlobalVector(fs->DA_Y, &gxiniY));
+	PetscCall(DMCreateGlobalVector(fs->DA_Z, &gxiniZ));
 
-	ierr = DMCreateLocalVector (fs->DA_X, &lxiniX);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Y, &lxiniY);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Z, &lxiniZ);   CHKERRQ(ierr);
+	PetscCall(DMCreateLocalVector (fs->DA_X, &lxiniX));
+	PetscCall(DMCreateLocalVector (fs->DA_Y, &lxiniY));
+	PetscCall(DMCreateLocalVector (fs->DA_Z, &lxiniZ));
 
 	// Zero out entries
-	VecZeroEntries(gproX);
-	VecZeroEntries(gproY);
-	VecZeroEntries(gproZ);
-	VecZeroEntries(lproX);
-	VecZeroEntries(lproY);
-	VecZeroEntries(lproZ);
+	PetscCall(VecZeroEntries(gproX));
+	PetscCall(VecZeroEntries(gproY));
+	PetscCall(VecZeroEntries(gproZ));
+	PetscCall(VecZeroEntries(lproX));
+	PetscCall(VecZeroEntries(lproY));
+	PetscCall(VecZeroEntries(lproZ));
 
-	VecZeroEntries(gxiniX);
-	VecZeroEntries(gxiniY);
-	VecZeroEntries(gxiniZ);
-	VecZeroEntries(lxiniX);
-	VecZeroEntries(lxiniY);
-	VecZeroEntries(lxiniZ);
+	PetscCall(VecZeroEntries(gxiniX));
+	PetscCall(VecZeroEntries(gxiniY));
+	PetscCall(VecZeroEntries(gxiniZ));
+	PetscCall(VecZeroEntries(lxiniX));
+	PetscCall(VecZeroEntries(lxiniY));
+	PetscCall(VecZeroEntries(lxiniZ));
 
 	// If we want only a few observation points we need to interpolate velocity from the grid to the observation point
 	if(IOparam->Ap == 1)
 	{
-		ierr = VecGetArray(aop->vx,&vx); CHKERRQ(ierr);
-		ierr = VecGetArray(aop->vy,&vy); CHKERRQ(ierr);
-		ierr = VecGetArray(aop->vz,&vz); CHKERRQ(ierr);
+		PetscCall(VecGetArray(aop->vx,&vx));
+		PetscCall(VecGetArray(aop->vy,&vy));
+		PetscCall(VecGetArray(aop->vz,&vz));
 
 		//============================================
 		// INDEXING LOOP OVER ALL OBSERVATION POINTS
@@ -2376,7 +2297,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 			coord_local[2] = IOparam->Az[ii];
 
 			// get global & local ranks (processor) of the point
-			ierr = FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank); CHKERRQ(ierr);
+			PetscCall(FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank));
 
 			// If lrank is not 13 the point is not on this processor
 			if(lrank == 13)
@@ -2406,9 +2327,9 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				if(coord_local[1] > yc) { JJ = J; } else { JJ = J-1; }
 				if(coord_local[2] > zc) { KK = K; } else { KK = K-1; }
 
-				ierr = DMDAVecGetArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
+				PetscCall(DMDAVecGetArray(fs->DA_X, lproX, &llproX));
+				PetscCall(DMDAVecGetArray(fs->DA_Y, lproY, &llproY));
+				PetscCall(DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ));
 
 				if(IOparam->Av[ii] == 1) // Vx velocity
 				{
@@ -2432,7 +2353,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 
 					if(IOparam->OFdef == 1 ) 
 					{
-						ierr = DMDAVecGetArray(fs->DA_X, lxiniX, &llxiniX);      CHKERRQ(ierr);
+						PetscCall(DMDAVecGetArray(fs->DA_X, lxiniX, &llxiniX));
 
 						f1 = vx[ii]/lvx[sz+KK  ][sy+JJ  ][sx+I  ];
 						f2 = vx[ii]/lvx[sz+KK  ][sy+JJ  ][sx+I+1];
@@ -2452,7 +2373,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 						llxiniX[sz+KK+1][sy+JJ+1][sx+I  ] = IOparam->Ae[ii]/f7;
 						llxiniX[sz+KK+1][sy+JJ+1][sx+I+1] = IOparam->Ae[ii]/f8;
 
-						ierr = DMDAVecRestoreArray(fs->DA_X, lxiniX, &llxiniX);      CHKERRQ(ierr);
+						PetscCall(DMDAVecRestoreArray(fs->DA_X, lxiniX, &llxiniX));
 					}
 				}
 				else if(IOparam->Av[ii] == 2) // Vy velocity
@@ -2477,7 +2398,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 
 					if(IOparam->OFdef == 1 )
 					{
-						ierr = DMDAVecGetArray(fs->DA_Y, lxiniY, &llxiniY);      CHKERRQ(ierr);
+						PetscCall(DMDAVecGetArray(fs->DA_Y, lxiniY, &llxiniY));
 
 						f1 = vy[ii]/lvy[sz+KK  ][sy+J  ][sx+II  ];
 						f2 = vy[ii]/lvy[sz+KK  ][sy+J  ][sx+II+1];
@@ -2497,7 +2418,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 						llxiniY[sz+KK+1][sy+J+1][sx+II  ] = IOparam->Ae[ii]/f7;
 						llxiniY[sz+KK+1][sy+J+1][sx+II+1] = IOparam->Ae[ii]/f8;
 
-						ierr = DMDAVecRestoreArray(fs->DA_Y, lxiniY, &llxiniY);      CHKERRQ(ierr);
+						PetscCall(DMDAVecRestoreArray(fs->DA_Y, lxiniY, &llxiniY));
 					}
 				}
 				else if(IOparam->Av[ii] == 3) // Vz velocity
@@ -2523,7 +2444,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 
 					if(IOparam->OFdef == 1 )
 					{
-						ierr = DMDAVecGetArray(fs->DA_Z, lxiniZ, &llxiniZ);      CHKERRQ(ierr);
+						PetscCall(DMDAVecGetArray(fs->DA_Z, lxiniZ, &llxiniZ));
 
 						f1 = vz[ii]/lvz[sz+K  ][sy+JJ  ][sx+II  ];
 						f2 = vz[ii]/lvz[sz+K  ][sy+JJ  ][sx+II+1];
@@ -2543,20 +2464,20 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 						llxiniZ[sz+K+1][sy+JJ+1][sx+II  ] = IOparam->Ae[ii]/f7;
 						llxiniZ[sz+K+1][sy+JJ+1][sx+II+1] = IOparam->Ae[ii]/f8;
 
-						ierr = DMDAVecRestoreArray(fs->DA_Z, lxiniZ, &llxiniZ);      CHKERRQ(ierr);
+						PetscCall(DMDAVecRestoreArray(fs->DA_Z, lxiniZ, &llxiniZ));
 					}
 				}
 
-				ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
+				PetscCall(DMDAVecRestoreArray(fs->DA_X, lproX, &llproX));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Z, lproZ, &llproZ));
 			}
 
 		}
 
-		ierr = VecRestoreArray(aop->vx,&vx);        CHKERRQ(ierr);
-		ierr = VecRestoreArray(aop->vy,&vy);        CHKERRQ(ierr);
-		ierr = VecRestoreArray(aop->vz,&vz);        CHKERRQ(ierr);
+		PetscCall(VecRestoreArray(aop->vx,&vx));
+		PetscCall(VecRestoreArray(aop->vy,&vy));
+		PetscCall(VecRestoreArray(aop->vz,&vz));
 	}
 
 	// We want the whole domain as comparison
@@ -2566,15 +2487,15 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 		{
 			if(IOparam->Av[ii] == 1)        // vx velocity
 			{
-				ierr = VecSet(lproX,1);
+				PetscCall(VecSet(lproX,1));
 			}
 			else if(IOparam->Av[ii] == 2)  // vy velocity
 			{
-				ierr = VecSet(lproY,1);
+				PetscCall(VecSet(lproY,1));
 			}
 			else if(IOparam->Av[ii] == 3)  // Vz velocity
 			{
-				ierr = VecSet(lproZ,1);
+				PetscCall(VecSet(lproZ,1));
 			}
 		}
 	}
@@ -2588,28 +2509,28 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				level = dsz->rank;
 			
 				// create column communicator
-				ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+				PetscCall(Discret1DGetColumnComm(dsz));
 			
 				// set interpolation flags
 				iflag.update    = PETSC_FALSE;
 				iflag.use_bound = PETSC_TRUE;
 			
-				ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx);   CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
+				PetscCall(DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx));
+				PetscCall(DMDAVecGetArray(fs->DA_X, lproX, &llproX));
 				
 				// interpolate velocity component from grid faces to corners
-				ierr = InterpXFaceCorner(fs, jr->lvx, jr->lbcor, iflag); CHKERRQ(ierr);
+				PetscCall(InterpXFaceCorner(fs, jr->lvx, jr->lbcor, iflag));
 			
 				// load ghost values
 				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
 			
 				// access topograpy, grid and surface velocity
-				ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+				PetscCall(DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf));
+				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo));
 			
 				// scan all free surface local points
-				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+				PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL));
 			
 				START_PLANE_LOOP
 				{
@@ -2633,11 +2554,11 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				END_PLANE_LOOP
 	
 				// restore access
-				ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);            CHKERRQ(ierr);
+				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
+				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
+				PetscCall(DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx));
+				PetscCall(DMDAVecRestoreArray(fs->DA_X, lproX, &llproX));
 				
 			}
 			else if (IOparam->Av[ii] == 2)
@@ -2646,28 +2567,28 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				level = dsz->rank;
 			
 				// create column communicator
-				ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+				PetscCall(Discret1DGetColumnComm(dsz));
 			
 				// set interpolation flags
 				iflag.update    = PETSC_FALSE;
 				iflag.use_bound = PETSC_TRUE;
 			
-				ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy);   CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
+				PetscCall(DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy));
+				PetscCall(DMDAVecGetArray(fs->DA_Y, lproY, &llproY));
 				
 				// interpolate velocity component from grid faces to corners
-				ierr = InterpYFaceCorner(fs, jr->lvy, jr->lbcor, iflag); CHKERRQ(ierr);
+				PetscCall(InterpYFaceCorner(fs, jr->lvy, jr->lbcor, iflag));
 			
 				// load ghost values
 				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
 			
 				// access topograpy, grid and surface velocity
-				ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+				PetscCall(DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf));
+				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo));
 			
 				// scan all free surface local points
-				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+				PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL));
 			
 				START_PLANE_LOOP
 				{
@@ -2690,11 +2611,11 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				END_PLANE_LOOP
 	
 				// restore access
-				ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY);            CHKERRQ(ierr);
+				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
+				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
+				PetscCall(DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY));
 			}
 			else if (IOparam->Av[ii] == 3)
 			{
@@ -2702,28 +2623,28 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				level = dsz->rank;
 			
 				// create column communicator
-				ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+				PetscCall(Discret1DGetColumnComm(dsz));
 			
 				// set interpolation flags
 				iflag.update    = PETSC_FALSE;
 				iflag.use_bound = PETSC_TRUE;
 				
-				ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz);   CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
+				PetscCall(DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz));
+				PetscCall(DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ));
 				
 				// interpolate velocity component from grid faces to corners
-				ierr = InterpZFaceCorner(fs, jr->lvz, jr->lbcor, iflag); CHKERRQ(ierr);
+				PetscCall(InterpZFaceCorner(fs, jr->lvz, jr->lbcor, iflag));
 			
 				// load ghost values
 				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
 			
 				// access topograpy, grid and surface velocity
-				ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+				PetscCall(DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf));
+				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo));
 			
 				// scan all free surface local points
-				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+				PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL));
 			
 				START_PLANE_LOOP
 				{
@@ -2746,11 +2667,11 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				END_PLANE_LOOP
 	
 				// restore access
-				ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_Z, lproZ, &llproZ);            CHKERRQ(ierr);
+				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
+				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
+				PetscCall(DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Z, lproZ, &llproZ));
 			}
 		}
 		
@@ -2764,81 +2685,81 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	LOCAL_TO_GLOBAL(fs->DA_Y, lxiniY, gxiniY);
 	LOCAL_TO_GLOBAL(fs->DA_Z, lxiniZ, gxiniZ);
 
-	ierr = VecGetArray(gproX, &dggproX);      CHKERRQ(ierr);
-	ierr = VecGetArray(gproY, &dggproY);      CHKERRQ(ierr);
-	ierr = VecGetArray(gproZ, &dggproZ);      CHKERRQ(ierr);
+	PetscCall(VecGetArray(gproX, &dggproX));
+	PetscCall(VecGetArray(gproY, &dggproY));
+	PetscCall(VecGetArray(gproZ, &dggproZ));
 
-	ierr = VecGetArray(gxiniX, &dggxiniX);      CHKERRQ(ierr);
-	ierr = VecGetArray(gxiniY, &dggxiniY);      CHKERRQ(ierr);
-	ierr = VecGetArray(gxiniZ, &dggxiniZ);      CHKERRQ(ierr);
+	PetscCall(VecGetArray(gxiniX, &dggxiniX));
+	PetscCall(VecGetArray(gxiniY, &dggxiniY));
+	PetscCall(VecGetArray(gxiniZ, &dggxiniZ));
 
 	// Put the proportion into the Projection vector where the user defined the computation coordinates (P)
-	ierr = VecGetArray(pro, &temppro);        CHKERRQ(ierr);
+	PetscCall(VecGetArray(pro, &temppro));
 	iter = temppro;
 
-	ierr  = PetscMemcpy(iter, dggproX, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggproX, (size_t)fs->nXFace*sizeof(PetscScalar)));
 	iter += fs->nXFace;
 
-	ierr  = PetscMemcpy(iter, dggproY, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggproY, (size_t)fs->nYFace*sizeof(PetscScalar)));
 	iter += fs->nYFace;
 
-	ierr  = PetscMemcpy(iter, dggproZ, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggproZ, (size_t)fs->nZFace*sizeof(PetscScalar)));
 	iter += fs->nZFace;
 
 	// restore & destroy
-	ierr = VecRestoreArray(pro,  &temppro);         CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(pro,  &temppro));
 
 	// Put the proportion into the comparison solution vector where the user defined the computation coordinates (P)
-	ierr = VecGetArray(xini, &tempxini);        CHKERRQ(ierr);
+	PetscCall(VecGetArray(xini, &tempxini));
 	iter = tempxini;
 
-	ierr  = PetscMemcpy(iter, dggxiniX, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggxiniX, (size_t)fs->nXFace*sizeof(PetscScalar)));
 	iter += fs->nXFace;
 
-	ierr  = PetscMemcpy(iter, dggxiniY, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggxiniY, (size_t)fs->nYFace*sizeof(PetscScalar)));
 	iter += fs->nYFace;
 
-	ierr  = PetscMemcpy(iter, dggxiniZ, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggxiniZ, (size_t)fs->nZFace*sizeof(PetscScalar)));
 	iter += fs->nZFace;
 
 	// restore & destroy
-	ierr = VecRestoreArray(xini, &tempxini);         CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(xini, &tempxini));
 
-	ierr = VecRestoreArray(gproX, &dggproX);       CHKERRQ(ierr);
-	ierr = VecRestoreArray(gproY, &dggproY);       CHKERRQ(ierr);
-	ierr = VecRestoreArray(gproZ, &dggproZ);       CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(gproX, &dggproX));
+	PetscCall(VecRestoreArray(gproY, &dggproY));
+	PetscCall(VecRestoreArray(gproZ, &dggproZ));
 
-	ierr = VecRestoreArray(gxiniX, &dggxiniX);       CHKERRQ(ierr);
-	ierr = VecRestoreArray(gxiniY, &dggxiniY);       CHKERRQ(ierr);
-	ierr = VecRestoreArray(gxiniZ, &dggxiniZ);       CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(gxiniX, &dggxiniX));
+	PetscCall(VecRestoreArray(gxiniY, &dggxiniY));
+	PetscCall(VecRestoreArray(gxiniZ, &dggxiniZ));
 
-	ierr = VecCopy(pro, aop->pro);
+	PetscCall(VecCopy(pro, aop->pro));
 
 	// If it is 0 we want to keep the initially loaded solution and just ignore copying
 	if(IOparam->OFdef == 1)
 	{
-		ierr = VecCopy(xini,IOparam->xini);       CHKERRQ(ierr);        // This is a projection vector, whch projects 
+		PetscCall(VecCopy(xini,IOparam->xini));        // This is a projection vector, whch projects 
 	}
 
-	ierr = VecDestroy(&lproX);
-	ierr = VecDestroy(&lproY);
-	ierr = VecDestroy(&lproZ);
-	ierr = VecDestroy(&gproX);
-	ierr = VecDestroy(&gproY);
-	ierr = VecDestroy(&gproZ);
-	ierr = VecDestroy(&pro);
+	PetscCall(VecDestroy(&lproX));
+	PetscCall(VecDestroy(&lproY));
+	PetscCall(VecDestroy(&lproZ));
+	PetscCall(VecDestroy(&gproX));
+	PetscCall(VecDestroy(&gproY));
+	PetscCall(VecDestroy(&gproZ));
+	PetscCall(VecDestroy(&pro));
 
-	ierr = VecDestroy(&lxiniX);
-	ierr = VecDestroy(&lxiniY);
-	ierr = VecDestroy(&lxiniZ);
-	ierr = VecDestroy(&gxiniX);
-	ierr = VecDestroy(&gxiniY);
-	ierr = VecDestroy(&gxiniZ);
-	ierr = VecDestroy(&xini);
+	PetscCall(VecDestroy(&lxiniX));
+	PetscCall(VecDestroy(&lxiniY));
+	PetscCall(VecDestroy(&lxiniZ));
+	PetscCall(VecDestroy(&gxiniX));
+	PetscCall(VecDestroy(&gxiniY));
+	PetscCall(VecDestroy(&gxiniZ));
+	PetscCall(VecDestroy(&xini));
 
-	ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz));
 	
 	PetscFunctionReturn(0);
 }
@@ -2878,26 +2799,19 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	Vec         rpl, res;
 	char 		CurName[_str_len_];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
 	jr = nl->jr;
 
 	// Create stuff
-	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gres, &rpl);		 CHKERRQ(ierr);
+	PetscCall(VecDuplicate(jr->gres, &res));
+	PetscCall(VecDuplicate(jr->gres, &rpl));
 	
-	ierr = VecZeroEntries(jr->lgradfield);	 	 CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(jr->lgradfield));
 
 	strcpy(CurName, IOparam->type_name[0]);	// name
-
-
-	/*// apply pressure limit at the first visco-plastic timestep and iteration
-    if(jr->ts->istep == 1 && jr->ctrl->pLimPlast == PETSC_TRUE)
-    {
-    	jr->matLim.presLimFlg = PETSC_TRUE;
-	}*/
 
 	// access context
 	fs  = jr->fs;
@@ -2917,13 +2831,13 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	dt     =  jr->ts->dt;    // time step
 
 	// recompute residual (necessary to correctly initialize fields; also copies global->local vectors!!)
-	ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
+	PetscCall(FormResidual(snes, x, res, nl));
 
 	// Recompute correct strainrates (necessary!!)
-	ierr =  JacResGetEffStrainRate(jr);					CHKERRQ(ierr);
+	PetscCall(JacResGetEffStrainRate(jr));
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lgradfield,&llgradfield);      CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lgradfield,&llgradfield));
 
 	for(kk=0;kk<fs->dsx.tcels;kk++)
 	{
@@ -2933,46 +2847,46 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 			{
 
 				// compute global residual again		
-				ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
+				PetscCall(FormResidual(snes, x, res, nl));
 			
 
 				// setup constitutive equation evaluation context parameters
-				ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
+				PetscCall(setUpConstEq(&ctx, jr));
 
 				// clear local residual vectors
-				ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
-				ierr = VecZeroEntries(jr->lfy); CHKERRQ(ierr);
-				ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
-				ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
+				PetscCall(VecZeroEntries(jr->lfx));
+				PetscCall(VecZeroEntries(jr->lfy));
+				PetscCall(VecZeroEntries(jr->lfz));
+				PetscCall(VecZeroEntries(jr->gc));
 				temprank = 100;
 				aop->Perturb = 1;
 
 				// access work vectors
-				ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc));
+				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p));
+				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T));
+				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx));
+				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy));
+				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz));
+				PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy));
+				PetscCall(DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz));
+				PetscCall(DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz));
+				PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lfx,     &fx));
+				PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lfy,     &fy));
+				PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lfz,     &fz));
+				PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx));
+				PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy));
+				PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz));
+				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith));
+				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore));
+				PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp));
 
 				//-------------------------------
 				// central points
 				//-------------------------------
 				iter = 0;
 
-				ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+				PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 				START_STD_LOOP
 				{
@@ -3041,10 +2955,10 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 					Le = sqrt(dx*dx + dy*dy + dz*dz);
 
 					// setup control volume parameters
-					ierr = setUpCtrlVol(&ctx, svCell->phRat, &svCell->svDev, &svCell->svBulk, pc, pc_lith, pc_pore, Tc, DII, z, Le); CHKERRQ(ierr);
+					PetscCall(setUpCtrlVol(&ctx, svCell->phRat, &svCell->svDev, &svCell->svBulk, pc, pc_lith, pc_pore, Tc, DII, z, Le));
 
 					// evaluate constitutive equations on the cell
-					ierr = cellConstEqFD(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, aop, IOparam,  i,  j,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+					PetscCall(cellConstEqFD(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, aop, IOparam,  i,  j,  k,  ik,  jk,  kk));
 
 					// Set perturbation paramter for the finite differences
 					if (!strcmp(CurName,"rho"))
@@ -3100,7 +3014,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				//-------------------------------
 				iter = 0;
 
-				ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+				PetscCall(DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz));
 
 				START_STD_LOOP
 				{
@@ -3183,12 +3097,11 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 					Le = sqrt(dx*dx + dy*dy + dz*dz);
 
 					// setup control volume parameters
-					ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le); CHKERRQ(ierr);
+					PetscCall(setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le));
 
 
 					// evaluate constitutive equations on the edge
-					ierr = edgeConstEqFD(&ctx, svEdge, XY, sxy, aop, IOparam,  i,  j,  k,  ik,  jk,  kk); CHKERRQ(ierr);
-					// ierr = edgeConstEq(&ctx, svEdge, XY, sxy); CHKERRQ(ierr);
+					PetscCall(edgeConstEqFD(&ctx, svEdge, XY, sxy, aop, IOparam,  i,  j,  k,  ik,  jk,  kk));
 
 					//=========
 					// RESIDUAL
@@ -3210,7 +3123,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				//-------------------------------
 				iter = 0;
 
-				ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+				PetscCall(DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz));
 
 				START_STD_LOOP
 				{
@@ -3293,11 +3206,10 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 					Le = sqrt(dx*dx + dy*dy + dz*dz);
 
 					// setup control volume parameters
-					ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le); CHKERRQ(ierr);
+					PetscCall(setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le));
 
 					// evaluate constitutive equations on the edge
-					ierr = edgeConstEqFD(&ctx, svEdge, XZ, sxz, aop, IOparam,  i,  j,  k,  ik,  jk,  kk); CHKERRQ(ierr);
-					// ierr = edgeConstEq(&ctx, svEdge, XZ, sxz); CHKERRQ(ierr);
+					PetscCall(edgeConstEqFD(&ctx, svEdge, XZ, sxz, aop, IOparam,  i,  j,  k,  ik,  jk,  kk));
 
 					//=========
 					// RESIDUAL
@@ -3319,7 +3231,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				//-------------------------------
 				iter = 0;
 
-				ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+				PetscCall(DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz));
 
 				START_STD_LOOP
 				{
@@ -3402,11 +3314,10 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 					Le = sqrt(dx*dx + dy*dy + dz*dz);
 
 					// setup control volume parameters
-					ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le); CHKERRQ(ierr);
+					PetscCall(setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le));
 
 					// evaluate constitutive equations on the edge
-					ierr = edgeConstEqFD(&ctx, svEdge, YZ, syz, aop, IOparam,  i,  j,  k,  ik,  jk,  kk); CHKERRQ(ierr);
-					// ierr = edgeConstEq(&ctx, svEdge, YZ, syz); CHKERRQ(ierr);
+					PetscCall(edgeConstEqFD(&ctx, svEdge, YZ, syz, aop, IOparam,  i,  j,  k,  ik,  jk,  kk));
 
 					//=========
 					// RESIDUAL
@@ -3424,24 +3335,24 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				END_STD_LOOP
 
 				// restore vectors
-				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc));
+				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p));
+				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T));
+				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx));
+				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy));
+				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz));
+				PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy));
+				PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz));
+				PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz));
+				PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lfx,     &fx));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,     &fy));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,     &fz));
+				PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz));
+				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith));
+				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore));
+				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp));
 
 				// assemble global residuals from local contributions
 				LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
@@ -3449,20 +3360,18 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
 
 				// check convergence of constitutive equations
-				ierr = checkConvConstEq(&ctx); CHKERRQ(ierr);
+				PetscCall(checkConvConstEq(&ctx));
 
 				// copy residuals to global vector
-				ierr = JacResCopyRes(jr, rpl); CHKERRQ(ierr);
-
-			//	ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
+				PetscCall(JacResCopyRes(jr, rpl));
 				
-				ierr = VecAYPX(res,-1,rpl);                           CHKERRQ(ierr);
-				ierr = VecScale(res,1/aop->Perturb);   CHKERRQ(ierr);
+				PetscCall(VecAYPX(res,-1,rpl));
+				PetscCall(VecScale(res,1/aop->Perturb));
 
 				// Compute the gradient
-				ierr = VecDot(res,psi,&grdt);    CHKERRQ(ierr);
+				PetscCall(VecDot(res,psi,&grdt));
 
-				ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+				PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 				if (ik >= sx && ik < sx+nx && jk >= sy && jk < sy+ny && kk >= sz && kk < sz+nz)
 				{
@@ -3479,37 +3388,31 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 					llgradfield[kk][jk][ik] = -grdt*aop->CurScal;
 				}
 				
-				ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+				PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 			}
 		}
 	}
 
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lgradfield,&llgradfield);CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lgradfield,&llgradfield));
 
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lgradfield);
 
 	// give it back to the adjoint context
-	ierr = VecCopy(jr->lgradfield,aop->gradfield);
+	PetscCall(VecCopy(jr->lgradfield,aop->gradfield));
 
 	// display norm (partly also for testing purposes)
-	ierr = VecNorm(aop->gradfield, NORM_1, &nrm); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"|   Norm of field gradient vector : %2.15e \n",nrm); CHKERRQ(ierr);
+	PetscCall(VecNorm(aop->gradfield, NORM_1, &nrm));
+	PetscPrintf(PETSC_COMM_WORLD,"|   Norm of field gradient vector : %2.15e \n",nrm);
 
-	// deactivate pressure limit after it has been activated
-	// jr->matLim.presLimFlg = PETSC_FALSE;
-
-	ierr = VecDestroy(&rpl);   CHKERRQ(ierr);
-	ierr = VecDestroy(&res);   CHKERRQ(ierr);
-
+	PetscCall(VecDestroy(&rpl));
+	PetscCall(VecDestroy(&res));
 
 	PetscFunctionReturn(0);
-
 }
 //---------------------------------------------------------------------------
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val)
 {
-    PetscErrorCode  ierr;
 	char            *option, *option_value;
     PetscBool       PrintOutput=PETSC_FALSE;
     
@@ -3518,7 +3421,7 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 	else{ 		asprintf(&option, "-%s[%lld]", name, (LLD) ID); }
 	asprintf(&option_value, "%10.20e", val);
 
-	ierr = PetscOptionsSetValue(NULL, option, option_value);    CHKERRQ(ierr);   // this
+	PetscCall(PetscOptionsSetValue(NULL, option, option_value));   // this
     
     PrintOutput = PETSC_FALSE;
     if (PrintOutput){
@@ -3531,13 +3434,10 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 
     PetscFunctionReturn(0);
 }
-
-
 //---------------------------------------------------------------------------
 // Copies a parameter to the LaMEM command-line database
 PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j)
 {
-    PetscErrorCode  ierr;
     PetscBool       PrintOutput=PETSC_FALSE;
 	PetscInt 		CurPhase;
 	PetscScalar 	val;
@@ -3548,14 +3448,14 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
 	CurPhase = 	IOparam->phs[j];			// phase of the parameter
     strcpy(CurName, IOparam->type_name[j]);	// name
 
-	ierr = DeleteMaterialParameterFromCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
+	PetscCall(DeleteMaterialParameterFromCommandLineOptions(CurName, CurPhase));
 
 	if (IOparam->par_log10[j]==1){
 		val = pow(10,CurVal);
-		ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, val); 	CHKERRQ(ierr);
+		PetscCall(AddMaterialParameterToCommandLineOptions(CurName, CurPhase, val));
 	}
 	else{
-		ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
+		PetscCall(AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal));
 	}
 	
 	//PrintOutput=PETSC_TRUE;
@@ -3565,19 +3465,16 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
 
     PetscFunctionReturn(0);
 }
-
-
 //---------------------------------------------------------------------------
 PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscInt ID)
 {
-    PetscErrorCode  ierr;
 	char            *option;
     PetscBool       PrintOutput=PETSC_FALSE;
     
     PetscFunctionBeginUser;
     
     asprintf(&option, "-%s[%lld]", name, (LLD) ID); 
-    ierr = PetscOptionsClearValue(NULL, option);    CHKERRQ(ierr);  
+    PetscCall(PetscOptionsClearValue(NULL, option));  
     
   //  PrintOutput = PETSC_TRUE;
     if (PrintOutput){
@@ -3590,33 +3487,32 @@ PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscIn
     PetscFunctionReturn(0);
 }
 
+//---------------------------------------------------------------------------
+//	This will re-compute the Material options DB, based on the latest command-line
+//	parameters and store the result in IOparam->dbm_modified, which is passed to
+//	LaMEM @ can be used there
+//---------------------------------------------------------------------------
 
-/*---------------------------------------------------------------------------
-	This will re-compute the Material options DB, based on the latest command-line 
-	parameters and store the result in IOparam->dbm_modified, which is passed to 
-	LaMEM @ can be used there 
-*/
 PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 {
 	PetscBool       PrintOutput=PETSC_FALSE;
     Scaling         scal;
     FB             *fb;
 
-    PetscErrorCode  ierr;
 	PetscFunctionBeginUser;
 
     fb = IOparam->fb;
 
     // Create scaling object
-    ierr = PetscMemzero (&scal, sizeof(Scaling)); CHKERRQ(ierr);
-	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
+    PetscCall(PetscMemzero (&scal, sizeof(Scaling)));
+	PetscCall(ScalingCreate(&scal, fb));
     
     // Call material database with modified parameters
-    ierr = PetscMemzero(&IOparam->dbm_modified, sizeof(DBMat));   CHKERRQ(ierr);
+    PetscCall(PetscMemzero(&IOparam->dbm_modified, sizeof(DBMat)));
 
 	IOparam->dbm_modified.scal = &scal;
 
-	ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); CHKERRQ(ierr);
+	PetscCall(DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE));
 
     //PrintOutput = PETSC_TRUE;
     if (PrintOutput){
@@ -3626,10 +3522,11 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
     PetscFunctionReturn(0);
 }
 
-/*---------------------------------------------------------------------------
-	This computes the scaling and sets a default FD method (adjoi nt or not) 
-	for a material parameter
-*/
+//---------------------------------------------------------------------------
+//	This computes the scaling and sets a default FD method (adjoi nt or not)
+//	for a material parameter
+//---------------------------------------------------------------------------
+
 PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 {
  	PetscFunctionBeginUser;
@@ -3704,13 +3601,11 @@ PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 	PetscFunctionReturn(0);
 }
 
-/*---------------------------------------------------------------------------
-	This prints scaling laws
-*/
+//---------------------------------------------------------------------------
+// This prints scaling laws
 PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 {
  	PetscFunctionBeginUser;
-	PetscErrorCode 	ierr;
 	FILE        	*db;
 	PetscInt 		j, k=0, CurPhase, _idx[IOparam->mdN], maxNum=10;
 	PetscScalar 	_Exponent[IOparam->mdN], ExpMag[IOparam->mdN], P, grad, *Par, F, A, Vel_check, b;
@@ -3719,7 +3614,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 
 	if (!IOparam->ScalLaws){ PetscFunctionReturn(0);}  // do we want to print them?
 
-	ierr 			= 	CreateModifiedMaterialDatabase(IOparam); CHKERRQ(ierr);			// to retrieve phase descriptions
+	PetscCall(CreateModifiedMaterialDatabase(IOparam));			// to retrieve phase descriptions
 	// Should be adjoint Gradients
 	if (!(IOparam->use == _adjointgradients_ )) { PetscFunctionReturn(0);}  // do we want to print them?
 
@@ -3743,17 +3638,10 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 
 	if (IOparam->mdN<10){	PetscPrintf(PETSC_COMM_WORLD,"|   Results: \n"); maxNum = IOparam->mdN;	}
 	else{					PetscPrintf(PETSC_COMM_WORLD,"|   Results (10 most important): \n"); 	}
-	/* 	Compute exponents of scaling laws
-	 	We assume that velocity is given by
-			Vz = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ..
-		with 
-				p[0] - parameters	
-				b[0] - exponent
-				A    - prefactor of scaling law
-	*/
+
 	F = IOparam->mfit;		// velocity value
 	A = F;
-	VecGetArray(IOparam->P,&Par);
+	PetscCall(VecGetArray(IOparam->P,&Par));
 	for(j = 0; j < IOparam->mdN; j++)
 	{
 		grad 		= 	IOparam->grd[j];					// gradient
@@ -3790,7 +3678,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			}
 		}
 	}
-	VecRestoreArray(IOparam->P,&Par);
+	PetscCall(VecRestoreArray(IOparam->P,&Par));
 
 	// Sort according to magnitude
 	PetscSortRealWithPermutation(IOparam->mdN,ExpMag,_idx);
@@ -3834,7 +3722,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 
 	// Check that velocity is indeed computed
 	Vel_check = A;
-	VecGetArray(IOparam->P,&Par);
+	PetscCall(VecGetArray(IOparam->P,&Par));
 	for(j = 0; j < IOparam->mdN; j++)
 	{
 		P    		= 	Par[j];	
@@ -3849,7 +3737,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			Vel_check	*=  PetscPowScalar(P,b);
 		}
 	}
-	VecRestoreArray(IOparam->P,&Par);
+	PetscCall(VecRestoreArray(IOparam->P,&Par));
 	PetscPrintf(PETSC_COMM_WORLD,"|   Velocity check            : %- 2.8e \n",Vel_check);
 		
 
@@ -3859,10 +3747,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	{
 		char filename[_str_len_];
 		strcpy(filename, "ScalingLaw.dat");	// name
-		//if (IOparam->ScalLawFilename)
-		//{
-			PetscMemcpy(filename, IOparam->ScalLawFilename,   (size_t)_str_len_*sizeof(char) ); 		
-		//}
+		PetscMemcpy(filename, IOparam->ScalLawFilename,   (size_t)_str_len_*sizeof(char) );
 
 		db = fopen(filename, "wb");
 
@@ -3890,13 +3775,11 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		fprintf(db,"#  \n");
 		fprintf(db,"#  \n");
 		
-
-
 		// Print Scaling laws info
 		fprintf(db,"# Scaling law parameters:\n");
 		fprintf(db,"# Parameter             Phase    Exponent b[]       Value p[]          Type     Gradient           Phase Description   \n");
 		fprintf(db,"# --------------------  -------  -----------------  -----------------  -------  -----------------  --------------------\n");
-		VecGetArray(IOparam->P,&Par);
+		PetscCall(VecGetArray(IOparam->P,&Par));
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			k 				= 	_idx[j];	
@@ -3923,7 +3806,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			fprintf(db,"  %s %13s    %3lld     %- 18.9e %- 18.9e  %s %- 18.9e %s \n",logstr, CurName, (LLD) CurPhase, _Exponent[k],P, adjointstr, IOparam->grd[k], PhaseDescription);
 
 		}
-		VecRestoreArray(IOparam->P,&Par);
+		PetscCall(VecRestoreArray(IOparam->P,&Par));
 		fclose(db);
 		PetscPrintf(PETSC_COMM_WORLD,"|   Scaling law data saved to :  %s \n",IOparam->ScalLawFilename);
 		
@@ -3940,7 +3823,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 {
 	// Compute derivative of stress objective function with respect to the solution (dF/du) (dF/dst = (P*st-P*st_ini) * dphi/de * de/du)       
 	// dphi/de = (1/(2*pow(exx-eyy,2)) * (-2*exy,2exy,exx-eyy)); e = deviatoric strainrate
-
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
@@ -3963,7 +3845,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscMPIInt grank;
 	Scaling 	*scal;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
@@ -3971,7 +3852,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	scal 	= jr->scal;
 
 	// Initialize vector to store observations:
-	ierr = VecZeroEntries(aop->sty);         CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(aop->sty));
 
 	// Initialize the cost function
 	IOparam->mfitCenter = 	0.0;
@@ -3991,7 +3872,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 		coord_local[1] = IOparam->Ay[ii];
 		coord_local[2] = IOparam->Az[ii];
 
-		ierr = FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank); CHKERRQ(ierr);
+		PetscCall(FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank));
 
 		if(lrank == 13) // point is located on the current processor
 		{
@@ -4017,69 +3898,66 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	}
 
 	// clear local residual vectors
-	ierr = VecZeroEntries(jr->phi);         CHKERRQ(ierr);
-	ierr = VecZeroEntries(aop->dPardu); CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(jr->phi));
+	PetscCall(VecZeroEntries(aop->dPardu));
 
-	ierr = DMCreateGlobalVector(fs->DA_X, &gxPar);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Y, &gyPar);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Z, &gzPar);   CHKERRQ(ierr);
+	PetscCall(DMCreateGlobalVector(fs->DA_X, &gxPar));
+	PetscCall(DMCreateGlobalVector(fs->DA_Y, &gyPar));
+	PetscCall(DMCreateGlobalVector(fs->DA_Z, &gzPar));
 
-	ierr = DMCreateLocalVector (fs->DA_X, &lxPar);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Y, &lyPar);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Z, &lzPar);   CHKERRQ(ierr);
+	PetscCall(DMCreateLocalVector (fs->DA_X, &lxPar));
+	PetscCall(DMCreateLocalVector (fs->DA_Y, &lyPar));
+	PetscCall(DMCreateLocalVector (fs->DA_Z, &lzPar));
 
-	VecZeroEntries(gxPar);
-	VecZeroEntries(gyPar);
-	VecZeroEntries(gzPar);
+	PetscCall(VecZeroEntries(gxPar));
+	PetscCall(VecZeroEntries(gyPar));
+	PetscCall(VecZeroEntries(gzPar));
 
-	VecZeroEntries(lxPar);
-	VecZeroEntries(lyPar);
-	VecZeroEntries(lzPar);
+	PetscCall(VecZeroEntries(lxPar));
+	PetscCall(VecZeroEntries(lyPar));
+	PetscCall(VecZeroEntries(lzPar));
 
-	ierr = DMCreateGlobalVector(fs->DA_X, &gxdPardu);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Y, &gydPardu);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Z, &gzdPardu);   CHKERRQ(ierr);
+	PetscCall(DMCreateGlobalVector(fs->DA_X, &gxdPardu));
+	PetscCall(DMCreateGlobalVector(fs->DA_Y, &gydPardu));
+	PetscCall(DMCreateGlobalVector(fs->DA_Z, &gzdPardu));
 
-	ierr = DMCreateLocalVector (fs->DA_X, &lxdPardu);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Y, &lydPardu);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Z, &lzdPardu);   CHKERRQ(ierr);
+	PetscCall(DMCreateLocalVector (fs->DA_X, &lxdPardu));
+	PetscCall(DMCreateLocalVector (fs->DA_Y, &lydPardu));
+	PetscCall(DMCreateLocalVector (fs->DA_Z, &lzdPardu));
 
-	VecZeroEntries(gxdPardu);
-	VecZeroEntries(gydPardu);
-	VecZeroEntries(gzdPardu);
+	PetscCall(VecZeroEntries(gxdPardu));
+	PetscCall(VecZeroEntries(gydPardu));
+	PetscCall(VecZeroEntries(gzdPardu));
 
-	VecZeroEntries(lxdPardu);
-	VecZeroEntries(lydPardu);
-	VecZeroEntries(lzdPardu);
-
-	// Recompute correct strainrates 
-	// ierr =  JacResGetEffStrainRate(jr);
+	PetscCall(VecZeroEntries(lxdPardu));
+	PetscCall(VecZeroEntries(lydPardu));
+	PetscCall(VecZeroEntries(lzdPardu));
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    	CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy);    	CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz);    	CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy);    	CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz);    	CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz);    	CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz));
 	
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx); 		CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy); 		CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz); 		CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz));
 
-	ierr = DMDAVecGetArray(fs->DA_X, lxPar,    &xPar);    		CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, lyPar,    &yPar);    		CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, lzPar,    &zPar);    		CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X, lxPar,    &xPar));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, lyPar,    &yPar));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, lzPar,    &zPar));
 
-	ierr = DMDAVecGetArray(fs->DA_X, lxdPardu, &xdPardu); 		CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, lydPardu, &ydPardu); 		CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, lzdPardu, &zdPardu); 		CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X, lxdPardu, &xdPardu));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, lydPardu, &ydPardu));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, lzdPardu, &zdPardu));
 
-	ierr = VecGetArray(aop->sty,&sty); CHKERRQ(ierr);
+	PetscCall(VecGetArray(aop->sty,&sty));
 
 	iterat = 0;
 
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -4144,7 +4022,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 				coord_local[1] = IOparam->Ay[ii];
 				coord_local[2] = IOparam->Az[ii];
 
-				ierr = FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank); CHKERRQ(ierr);
+				PetscCall(FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank));
 				if(lrank == 13)
 				{
 					/* Retrieve parameter */
@@ -4331,11 +4209,11 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	}
 	END_STD_LOOP
 
-	ierr = VecRestoreArray(aop->sty,&sty); CHKERRQ(ierr);
-	ierr = PetscBarrier((PetscObject)aop->sty); CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(aop->sty,&sty));
+	PetscCall(PetscBarrier((PetscObject)aop->sty));
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Allreduce(&mfitParam, &IOparam->mfitCenter, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		PetscCallMPI(MPI_Allreduce(&mfitParam, &IOparam->mfitCenter, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD));
 	}
 	else
 	{
@@ -4347,93 +4225,93 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	}
 
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx);    	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy);    	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz);    	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy);    	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz);    	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz);    	CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz));
 
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx);     	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy);     	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz);     	CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz));
 
-	ierr = DMDAVecRestoreArray(fs->DA_X, lxPar,    &xPar);    		CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, lyPar,    &yPar);    		CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, lzPar,    &zPar);    		CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_X, lxPar,    &xPar));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y, lyPar,    &yPar));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, lzPar,    &zPar));
 
-	ierr = DMDAVecRestoreArray(fs->DA_X, lxdPardu, &xdPardu); 		CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, lydPardu, &ydPardu); 		CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, lzdPardu, &zdPardu); 		CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_X, lxdPardu, &xdPardu));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y, lydPardu, &ydPardu));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, lzdPardu, &zdPardu));
 
 	LOCAL_TO_GLOBAL(fs->DA_X, lxPar, gxPar);
 	LOCAL_TO_GLOBAL(fs->DA_Y, lyPar, gyPar);
 	LOCAL_TO_GLOBAL(fs->DA_Z, lzPar, gzPar);
 
-	ierr = VecGetArray(gxPar, &dggxPar);      CHKERRQ(ierr);
-	ierr = VecGetArray(gyPar, &dggyPar);      CHKERRQ(ierr);
-	ierr = VecGetArray(gzPar, &dggzPar);      CHKERRQ(ierr);
+	PetscCall(VecGetArray(gxPar, &dggxPar));
+	PetscCall(VecGetArray(gyPar, &dggyPar));
+	PetscCall(VecGetArray(gzPar, &dggzPar));
 
-	ierr = VecGetArray(jr->phi, &tempPar);        CHKERRQ(ierr);
+	PetscCall(VecGetArray(jr->phi, &tempPar));
 	iter = tempPar;
 
-	ierr  = PetscMemcpy(iter, dggxPar, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggxPar, (size_t)fs->nXFace*sizeof(PetscScalar)));
 	iter += fs->nXFace;
 
-	ierr  = PetscMemcpy(iter, dggyPar, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggyPar, (size_t)fs->nYFace*sizeof(PetscScalar)));
 	iter += fs->nYFace;
 
-	ierr  = PetscMemcpy(iter, dggzPar, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggzPar, (size_t)fs->nZFace*sizeof(PetscScalar)));
 	iter += fs->nZFace;
 
-	ierr = VecRestoreArray(jr->phi, &tempPar);         CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(jr->phi, &tempPar));
 
-	ierr = VecRestoreArray(gxPar, &dggxPar);      CHKERRQ(ierr);
-	ierr = VecRestoreArray(gyPar, &dggyPar);      CHKERRQ(ierr);
-	ierr = VecRestoreArray(gzPar, &dggzPar);      CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(gxPar, &dggxPar));
+	PetscCall(VecRestoreArray(gyPar, &dggyPar));
+	PetscCall(VecRestoreArray(gzPar, &dggzPar));
 
 	LOCAL_TO_GLOBAL(fs->DA_X, lxdPardu, gxdPardu);
 	LOCAL_TO_GLOBAL(fs->DA_Y, lydPardu, gydPardu);
 	LOCAL_TO_GLOBAL(fs->DA_Z, lzdPardu, gzdPardu);
 
-	ierr = VecGetArray(gxdPardu, &dggxdPardu);      CHKERRQ(ierr);
-	ierr = VecGetArray(gydPardu, &dggydPardu);      CHKERRQ(ierr);
-	ierr = VecGetArray(gzdPardu, &dggzdPardu);      CHKERRQ(ierr);
+	PetscCall(VecGetArray(gxdPardu, &dggxdPardu));
+	PetscCall(VecGetArray(gydPardu, &dggydPardu));
+	PetscCall(VecGetArray(gzdPardu, &dggzdPardu));
 
-	ierr = VecGetArray(aop->dPardu, &tempdPardu);        CHKERRQ(ierr);
+	PetscCall(VecGetArray(aop->dPardu, &tempdPardu));
 	iter = tempdPardu;
 
-	ierr  = PetscMemcpy(iter, dggxdPardu, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggxdPardu, (size_t)fs->nXFace*sizeof(PetscScalar)));
 	iter += fs->nXFace;
 
-	ierr  = PetscMemcpy(iter, dggydPardu, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggydPardu, (size_t)fs->nYFace*sizeof(PetscScalar)));
 	iter += fs->nYFace;
 
-	ierr  = PetscMemcpy(iter, dggzdPardu, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, dggzdPardu, (size_t)fs->nZFace*sizeof(PetscScalar)));
 	iter += fs->nZFace;
 
-	ierr = VecRestoreArray(aop->dPardu, &tempdPardu);         CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(aop->dPardu, &tempdPardu));
 
-	ierr = VecRestoreArray(gxdPardu, &dggxdPardu);      CHKERRQ(ierr);
-	ierr = VecRestoreArray(gydPardu, &dggydPardu);      CHKERRQ(ierr);
-	ierr = VecRestoreArray(gzdPardu, &dggzdPardu);      CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(gxdPardu, &dggxdPardu));
+	PetscCall(VecRestoreArray(gydPardu, &dggydPardu));
+	PetscCall(VecRestoreArray(gzdPardu, &dggzdPardu));
 
 	// Destroy
-	ierr = VecDestroy(&gxPar);   CHKERRQ(ierr);
-	ierr = VecDestroy(&gyPar);   CHKERRQ(ierr);
-	ierr = VecDestroy(&gzPar);   CHKERRQ(ierr);
+	PetscCall(VecDestroy(&gxPar));
+	PetscCall(VecDestroy(&gyPar));
+	PetscCall(VecDestroy(&gzPar));
 
-	ierr = VecDestroy(&lxPar);   CHKERRQ(ierr);
-	ierr = VecDestroy(&lyPar);   CHKERRQ(ierr);
-	ierr = VecDestroy(&lzPar);   CHKERRQ(ierr);
+	PetscCall(VecDestroy(&lxPar));
+	PetscCall(VecDestroy(&lyPar));
+	PetscCall(VecDestroy(&lzPar));
 
-	ierr = VecDestroy(&gxdPardu);   CHKERRQ(ierr);
-	ierr = VecDestroy(&gydPardu);   CHKERRQ(ierr);
-	ierr = VecDestroy(&gzdPardu);   CHKERRQ(ierr);
+	PetscCall(VecDestroy(&gxdPardu));
+	PetscCall(VecDestroy(&gydPardu));
+	PetscCall(VecDestroy(&gzdPardu));
 
-	ierr = VecDestroy(&lxdPardu);   CHKERRQ(ierr);
-	ierr = VecDestroy(&lydPardu);   CHKERRQ(ierr);
-	ierr = VecDestroy(&lzdPardu);   CHKERRQ(ierr);
+	PetscCall(VecDestroy(&lxdPardu));
+	PetscCall(VecDestroy(&lydPardu));
+	PetscCall(VecDestroy(&lzdPardu));
 
 	PetscFunctionReturn(0);
 }
@@ -4465,7 +4343,7 @@ PetscErrorCode cellConstEqFD(
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -4474,10 +4352,10 @@ PetscErrorCode cellConstEqFD(
 	ctrl   = ctx->ctrl;
 
 	// evaluate deviatoric constitutive equation
-	ierr = devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+	PetscCall(devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk));
 
 	// evaluate volumetric constitutive equation
-	ierr = volConstEq(ctx); CHKERRQ(ierr);
+	PetscCall(volConstEq(ctx));
 
 	// get stabilization viscosity
 	if(ctrl->initGuess) eta_st = 0.0;
@@ -4557,9 +4435,7 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 	PetscScalar  Inin=1.0,Inieta=1.0,ViscTemp=1.0;
-
-
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -4579,7 +4455,7 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 	if(mat->pdAct == 1)
 	{
 		// compute melt fraction from phase diagram
-		ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
+		PetscCall(setDataPhaseDiagram(Pd, p, T, mat->pdn));
 
 		// store melt fraction
 		mf = Pd->mf;
@@ -4794,7 +4670,7 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 	Material_t  *phases;
 	PetscInt     i, numPhases;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -4833,10 +4709,10 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 		if(phRat[i])
 		{
 			// setup phase parameters
-			ierr = setUpPhaseFD(ctx, i, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+			PetscCall(setUpPhaseFD(ctx, i, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk));
 
 			// compute phase viscosities and strain rate partitioning
-			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
+			PetscCall(getPhaseVisc(ctx, i));
 
 			// update stabilization viscosity
 			svDev->eta_st += phRat[i]*phases->eta_st;
@@ -4874,14 +4750,14 @@ PetscErrorCode edgeConstEqFD(
 	SolVarDev   *svDev;
 	PetscScalar  t, eta_st;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
 	svDev = &svEdge->svDev;
 
 	// evaluate deviatoric constitutive equation
-	ierr = devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+	PetscCall(devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk));
 
 	// get stabilization viscosity
 	if(ctx->ctrl->initGuess) eta_st = 0.0;
@@ -4916,16 +4792,14 @@ PetscErrorCode edgeConstEqFD(
 
 //---------------------------------------------------------------------------
 PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
-
 {
 	PetscScalar 	*vals, *dF_vec;
 	PetscInt  		i, num, *list;
-	PetscErrorCode ierr;
 	
 	PetscFunctionBeginUser;
 	
 	// Apply BC's to dF vector
-	ierr = VecGetArray(dF, &dF_vec); CHKERRQ(ierr);
+	PetscCall(VecGetArray(dF, &dF_vec));
 
 	//============================================
 	// enforce single point constraints (velocity)
@@ -4947,9 +4821,7 @@ PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
 	list  = bc->pSPCList;
 	vals  = bc->pSPCVals;
 
-	//for(i = 0; i < num; i++) dF_vec[list[i]] = 0; //vals[i];
-
-	ierr = VecRestoreArray(dF, &dF_vec); CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(dF, &dF_vec));
 
 	PetscFunctionReturn(0);
 }	

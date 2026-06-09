@@ -29,16 +29,16 @@ PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f)
 	MatData     *md;
 	PetscScalar  cfInvEta;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(A, (void**)&md); CHKERRQ(ierr);
+	PetscCall(MatShellGetContext(A, (void**)&md));
 
 	// do not add inverse viscosity term to pressure diagonal matrix (Picard operator)
 	cfInvEta = 0.0;
 
-	ierr = MatFreeComputeLinearOperator(md, x, f, cfInvEta); CHKERRQ(ierr);
+	PetscCall(MatFreeComputeLinearOperator(md, x, f, cfInvEta));
 
 	PetscFunctionReturn(0);
 }
@@ -50,16 +50,16 @@ PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f)
 	MatDataPC   *mdpc;
 	PetscScalar  cfInvEta;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(A, (void**)&mdpc); CHKERRQ(ierr);
+	PetscCall(MatShellGetContext(A, (void**)&mdpc));
 
 	// add inverse viscosity term to pressure diagonal matrix (preconditioner operator)
 	cfInvEta = 1.0;
 
-	ierr = MatFreeComputeLinearOperator(mdpc->md, x, f, cfInvEta); CHKERRQ(ierr);
+	PetscCall(MatFreeComputeLinearOperator(mdpc->md, x, f, cfInvEta));
 
 	PetscFunctionReturn(0);
 }
@@ -70,12 +70,12 @@ PetscErrorCode MatFreeGetDiagonal(Mat A, Vec v)
 
 	MatDataPC *mdpc;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = MatShellGetContext(A, (void**)&mdpc); CHKERRQ(ierr);
+	PetscCall(MatShellGetContext(A, (void**)&mdpc));
 
-	ierr = VecCopy(mdpc->D, v); CHKERRQ(ierr);
+	PetscCall(VecCopy(mdpc->D, v));
 
 	PetscFunctionReturn(0);
 }
@@ -86,13 +86,13 @@ PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vc)
 
 	MGInterp *mgi;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(R, (void**)&mgi); CHKERRQ(ierr);
+	PetscCall(MatShellGetContext(R, (void**)&mgi));
 
-	ierr = MatFreeComputeRestrict(mgi, vf, vc); CHKERRQ(ierr);
+	PetscCall(MatFreeComputeRestrict(mgi, vf, vc));
 
 	PetscFunctionReturn(0);
 }
@@ -103,22 +103,22 @@ PetscErrorCode MatFreeUpdateRestrict(Mat R, Vec vf, Vec vcb, Vec vc)
 
 	MGInterp *mgi;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(R, (void**)&mgi); CHKERRQ(ierr);
+	PetscCall(MatShellGetContext(R, (void**)&mgi));
 
-	ierr = MatFreeComputeRestrict(mgi, vf, mgi->wc); CHKERRQ(ierr);
+	PetscCall(MatFreeComputeRestrict(mgi, vf, mgi->wc));
 
 	// update coarse grid base vector
 	if(vcb == vc)
 	{
-		ierr = VecAXPY(vc, 1.0, mgi->wc); CHKERRQ(ierr);
+		PetscCall(VecAXPY(vc, 1.0, mgi->wc));
 	}
 	else
 	{
-		ierr = VecWAXPY(vc, 1.0, vcb, mgi->wc); CHKERRQ(ierr);
+		PetscCall(VecWAXPY(vc, 1.0, vcb, mgi->wc));
 	}
 
 	PetscFunctionReturn(0);
@@ -130,13 +130,13 @@ PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vf)
 
 	MGInterp *mgi;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(P, (void**)&mgi); CHKERRQ(ierr);
+	PetscCall(MatShellGetContext(P, (void**)&mgi));
 
-	ierr = MatFreeComputeProlong(mgi, vc, vf);
+	PetscCall(MatFreeComputeProlong(mgi, vc, vf));
 
 	PetscFunctionReturn(0);
 }
@@ -147,22 +147,22 @@ PetscErrorCode MatFreeUpdateProlong(Mat P, Vec vc, Vec vfb, Vec vf)
 
 	MGInterp *mgi;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
-	ierr = MatShellGetContext(P, (void**)&mgi); CHKERRQ(ierr);
+	PetscCall(MatShellGetContext(P, (void**)&mgi));
 
-	ierr = MatFreeComputeProlong(mgi, vc, mgi->wf);
+	PetscCall(MatFreeComputeProlong(mgi, vc, mgi->wf));
 
 	// update fine grid base vector
 	if(vfb == vf)
 	{
-		ierr = VecAXPY(vf, 1.0, mgi->wf); CHKERRQ(ierr);
+		PetscCall(VecAXPY(vf, 1.0, mgi->wf));
 	}
 	else
 	{
-		ierr = VecWAXPY(vf, 1.0, vfb, mgi->wf); CHKERRQ(ierr);
+		PetscCall(VecWAXPY(vf, 1.0, vfb, mgi->wf));
 	}
 
 	PetscFunctionReturn(0);
@@ -176,42 +176,42 @@ PetscErrorCode MatFreeComputeLinearOperator(MatData *md, Vec x, Vec f, PetscScal
 	Vec      vx, vy, vz, p;
 	Vec      fx, fy, fz, c;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
 	fs = md->fs;
 
 	// get temporary solution vectors
-	ierr = DMGetLocalVector (fs->DA_X,   &vx); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (fs->DA_Y,   &vy); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (fs->DA_Z,   &vz); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fs->DA_CEN, &p);  CHKERRQ(ierr);
+	PetscCall(DMGetLocalVector (fs->DA_X,   &vx));
+	PetscCall(DMGetLocalVector (fs->DA_Y,   &vy));
+	PetscCall(DMGetLocalVector (fs->DA_Z,   &vz));
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &p));
 
 	// get temporary residual vectors
-	ierr = DMGetLocalVector (fs->DA_X,   &fx); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (fs->DA_Y,   &fy); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (fs->DA_Z,   &fz); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fs->DA_CEN, &c);  CHKERRQ(ierr);
+	PetscCall(DMGetLocalVector (fs->DA_X,   &fx));
+	PetscCall(DMGetLocalVector (fs->DA_Y,   &fy));
+	PetscCall(DMGetLocalVector (fs->DA_Z,   &fz));
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &c));
 
 	// split solution vector
-	ierr = MatFreeSplitVec(md, x, vx, vy, vz, p); CHKERRQ(ierr);
+	PetscCall(MatFreeSplitVec(md, x, vx, vy, vz, p));
 
 	// compute matrix-vector product
-	ierr = MatFreeEvaluateLinearOperator(md, vx, vy, vz, p, fx, fy, fz, c, cfInvEta); CHKERRQ(ierr);
+	PetscCall(MatFreeEvaluateLinearOperator(md, vx, vy, vz, p, fx, fy, fz, c, cfInvEta));
 
 	// assemble residual
-	ierr = MatFreeAssembleVec(md, f, fx, fy, fz, c); CHKERRQ(ierr);
+	PetscCall(MatFreeAssembleVec(md, f, fx, fy, fz, c));
 
 	// restore temporary vectors
-	ierr = DMRestoreLocalVector (fs->DA_X,   &vx); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (fs->DA_Y,   &vy); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (fs->DA_Z,   &vz); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fs->DA_CEN, &p);  CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (fs->DA_X,   &fx); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (fs->DA_Y,   &fy); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (fs->DA_Z,   &fz); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fs->DA_CEN, &c);  CHKERRQ(ierr);
+	PetscCall(DMRestoreLocalVector (fs->DA_X,   &vx));
+	PetscCall(DMRestoreLocalVector (fs->DA_Y,   &vy));
+	PetscCall(DMRestoreLocalVector (fs->DA_Z,   &vz));
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &p));
+	PetscCall(DMRestoreLocalVector (fs->DA_X,   &fx));
+	PetscCall(DMRestoreLocalVector (fs->DA_Y,   &fy));
+	PetscCall(DMRestoreLocalVector (fs->DA_Z,   &fz));
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &c));
 
 	PetscFunctionReturn(0);
 }
@@ -222,7 +222,7 @@ PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc)
 	Vec       fx, fy, fz, fp;
 	Vec       cx, cy, cz, cp;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -230,35 +230,35 @@ PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc)
 	fine   = mgi->fine;
 
 	// get temporary fine grid vectors
-	ierr = DMGetLocalVector (fine->fs->DA_X,     &fx); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (fine->fs->DA_Y,     &fy); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (fine->fs->DA_Z,     &fz); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fine->fs->DA_CEN,   &fp); CHKERRQ(ierr);
+	PetscCall(DMGetLocalVector (fine->fs->DA_X,     &fx));
+	PetscCall(DMGetLocalVector (fine->fs->DA_Y,     &fy));
+	PetscCall(DMGetLocalVector (fine->fs->DA_Z,     &fz));
+	PetscCall(DMGetGlobalVector(fine->fs->DA_CEN,   &fp));
 
 	// get temporary coarse grid vectors
-	ierr = DMGetGlobalVector(coarse->fs->DA_X,   &cx); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(coarse->fs->DA_Y,   &cy); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(coarse->fs->DA_Z,   &cz); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(coarse->fs->DA_CEN, &cp); CHKERRQ(ierr);
+	PetscCall(DMGetGlobalVector(coarse->fs->DA_X,   &cx));
+	PetscCall(DMGetGlobalVector(coarse->fs->DA_Y,   &cy));
+	PetscCall(DMGetGlobalVector(coarse->fs->DA_Z,   &cz));
+	PetscCall(DMGetGlobalVector(coarse->fs->DA_CEN, &cp));
 
 	// split fine grid vector
-	ierr = MatFreeSplitVec(fine, vf, fx, fy, fz, fp); CHKERRQ(ierr);
+	PetscCall(MatFreeSplitVec(fine, vf, fx, fy, fz, fp));
 
 	// compute restriction to coarse grid
-	ierr =  MatFreeEvaluateRestrict(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp); CHKERRQ(ierr);
+	PetscCall(MatFreeEvaluateRestrict(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp));
 
 	// combine coarse grid vector
-	ierr = MatFreeCombineVec(coarse, vc, cx, cy, cz, cp); CHKERRQ(ierr);
+	PetscCall(MatFreeCombineVec(coarse, vc, cx, cy, cz, cp));
 
 	// restore temporary vectors
-	ierr = DMRestoreLocalVector (fine->fs->DA_X,     &fx); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (fine->fs->DA_Y,     &fy); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (fine->fs->DA_Z,     &fz); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fine->fs->DA_CEN,   &fp); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(coarse->fs->DA_X,   &cx); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(coarse->fs->DA_Y,   &cy); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(coarse->fs->DA_Z,   &cz); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(coarse->fs->DA_CEN, &cp); CHKERRQ(ierr);
+	PetscCall(DMRestoreLocalVector (fine->fs->DA_X,     &fx));
+	PetscCall(DMRestoreLocalVector (fine->fs->DA_Y,     &fy));
+	PetscCall(DMRestoreLocalVector (fine->fs->DA_Z,     &fz));
+	PetscCall(DMRestoreGlobalVector(fine->fs->DA_CEN,   &fp));
+	PetscCall(DMRestoreGlobalVector(coarse->fs->DA_X,   &cx));
+	PetscCall(DMRestoreGlobalVector(coarse->fs->DA_Y,   &cy));
+	PetscCall(DMRestoreGlobalVector(coarse->fs->DA_Z,   &cz));
+	PetscCall(DMRestoreGlobalVector(coarse->fs->DA_CEN, &cp));
 
 	PetscFunctionReturn(0);
 }
@@ -269,7 +269,7 @@ PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf)
 	Vec       fx, fy, fz, fp;
 	Vec       cx, cy, cz, cp;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -277,35 +277,35 @@ PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf)
 	fine   = mgi->fine;
 
 	// get temporary fine grid vectors
-	ierr = DMGetGlobalVector(fine->fs->DA_X,     &fx); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fine->fs->DA_Y,     &fy); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fine->fs->DA_Z,     &fz); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fine->fs->DA_CEN,   &fp); CHKERRQ(ierr);
+	PetscCall(DMGetGlobalVector(fine->fs->DA_X,     &fx));
+	PetscCall(DMGetGlobalVector(fine->fs->DA_Y,     &fy));
+	PetscCall(DMGetGlobalVector(fine->fs->DA_Z,     &fz));
+	PetscCall(DMGetGlobalVector(fine->fs->DA_CEN,   &fp));
 
 	// get temporary coarse grid vectors
-	ierr = DMGetLocalVector (coarse->fs->DA_X,   &cx); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (coarse->fs->DA_Y,   &cy); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (coarse->fs->DA_Z,   &cz); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(coarse->fs->DA_CEN, &cp); CHKERRQ(ierr);
+	PetscCall(DMGetLocalVector (coarse->fs->DA_X,   &cx));
+	PetscCall(DMGetLocalVector (coarse->fs->DA_Y,   &cy));
+	PetscCall(DMGetLocalVector (coarse->fs->DA_Z,   &cz));
+	PetscCall(DMGetGlobalVector(coarse->fs->DA_CEN, &cp));
 
 	// split coarse grid vector
-	ierr = MatFreeSplitVec(coarse, vc, cx, cy, cz, cp); CHKERRQ(ierr);
+	PetscCall(MatFreeSplitVec(coarse, vc, cx, cy, cz, cp));
 
 	// compute prolongation on fine grid
-	ierr = MatFreeEvaluateProlong(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp); CHKERRQ(ierr);
+	PetscCall(MatFreeEvaluateProlong(coarse, fine, fx, fy, fz, fp, cx, cy, cz, cp));
 
 	// combine fine grid vector
-	ierr = MatFreeCombineVec(fine, vf, fx, fy, fz, fp); CHKERRQ(ierr);
+	PetscCall(MatFreeCombineVec(fine, vf, fx, fy, fz, fp));
 
 	// restore temporary vectors
-	ierr = DMRestoreGlobalVector(fine->fs->DA_X,     &fx); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fine->fs->DA_Y,     &fy); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fine->fs->DA_Z,     &fz); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fine->fs->DA_CEN,   &fp); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (coarse->fs->DA_X,   &cx); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (coarse->fs->DA_Y,   &cy); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (coarse->fs->DA_Z,   &cz); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(coarse->fs->DA_CEN, &cp); CHKERRQ(ierr);
+	PetscCall(DMRestoreGlobalVector(fine->fs->DA_X,     &fx));
+	PetscCall(DMRestoreGlobalVector(fine->fs->DA_Y,     &fy));
+	PetscCall(DMRestoreGlobalVector(fine->fs->DA_Z,     &fz));
+	PetscCall(DMRestoreGlobalVector(fine->fs->DA_CEN,   &fp));
+	PetscCall(DMRestoreLocalVector (coarse->fs->DA_X,   &cx));
+	PetscCall(DMRestoreLocalVector (coarse->fs->DA_Y,   &cy));
+	PetscCall(DMRestoreLocalVector (coarse->fs->DA_Z,   &cz));
+	PetscCall(DMRestoreGlobalVector(coarse->fs->DA_CEN, &cp));
 
 	PetscFunctionReturn(0);
 }
@@ -315,29 +315,29 @@ PetscErrorCode MatFreeComputeDiagonal(MatData *md, Vec d)
 	FDSTAG  *fs;
 	Vec      dx, dy, dz, dp;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
 	fs = md->fs;
 
 	// get temporary diagoanal vectors
-	ierr = DMGetLocalVector (fs->DA_X,   &dx); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (fs->DA_Y,   &dy); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (fs->DA_Z,   &dz); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fs->DA_CEN, &dp);  CHKERRQ(ierr);
+	PetscCall(DMGetLocalVector (fs->DA_X,   &dx));
+	PetscCall(DMGetLocalVector (fs->DA_Y,   &dy));
+	PetscCall(DMGetLocalVector (fs->DA_Z,   &dz));
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &dp));
 
 	// compute diagonal entries
-	ierr = MatFreeEvaluateDiagonal(md, dx, dy, dz, dp); CHKERRQ(ierr);
+	PetscCall(MatFreeEvaluateDiagonal(md, dx, dy, dz, dp));
 
 	// assemble diagonal
-	ierr = MatFreeAssembleVec(md, d, dx, dy, dz, dp, 1.0); CHKERRQ(ierr);
+	PetscCall(MatFreeAssembleVec(md, d, dx, dy, dz, dp, 1.0));
 
 	// restore temporary vectors
-	ierr = DMRestoreLocalVector (fs->DA_X,   &dx); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (fs->DA_Y,   &dy); CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector (fs->DA_Z,   &dz); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fs->DA_CEN, &dp); CHKERRQ(ierr);
+	PetscCall(DMRestoreLocalVector (fs->DA_X,   &dx));
+	PetscCall(DMRestoreLocalVector (fs->DA_Y,   &dy));
+	PetscCall(DMRestoreLocalVector (fs->DA_Z,   &dz));
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &dp));
 
 	PetscFunctionReturn(0);
 }
@@ -353,47 +353,47 @@ PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Ve
 	Vec                gvx, gvy, gvz;
 	const PetscScalar *va, *iter;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
 
 	// get temporary vectors
-	ierr = DMGetGlobalVector(fs->DA_X, &gvx); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fs->DA_Y, &gvy); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fs->DA_Z, &gvz); CHKERRQ(ierr);
+	PetscCall(DMGetGlobalVector(fs->DA_X, &gvx));
+	PetscCall(DMGetGlobalVector(fs->DA_Y, &gvy));
+	PetscCall(DMGetGlobalVector(fs->DA_Z, &gvz));
 
 	// access temporary vectors
-	ierr = VecGetArray    (gvx, &vx); CHKERRQ(ierr);
-	ierr = VecGetArray    (gvy, &vy); CHKERRQ(ierr);
-	ierr = VecGetArray    (gvz, &vz); CHKERRQ(ierr);
-	ierr = VecGetArray    (gvp, &vp); CHKERRQ(ierr);
-	ierr = VecGetArrayRead(v,   &va); CHKERRQ(ierr);
+	PetscCall(VecGetArray    (gvx, &vx));
+	PetscCall(VecGetArray    (gvy, &vy));
+	PetscCall(VecGetArray    (gvz, &vz));
+	PetscCall(VecGetArray    (gvp, &vp));
+	PetscCall(VecGetArrayRead(v,   &va));
 
 	// copy vectors component-wise
 	iter = va;
 
-	ierr  = PetscMemcpy(vx, iter, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(vx, iter, (size_t)fs->nXFace*sizeof(PetscScalar)));
 	iter += fs->nXFace;
 
-	ierr  = PetscMemcpy(vy, iter, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(vy, iter, (size_t)fs->nYFace*sizeof(PetscScalar)));
 	iter += fs->nYFace;
 
-	ierr  = PetscMemcpy(vz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(vz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)));
 	iter += fs->nZFace;
 
-	ierr = PetscMemcpy(vp,  iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(vp,  iter, (size_t)fs->nCells*sizeof(PetscScalar)));
 
 	// restore access
-	ierr = VecRestoreArray    (gvx, &vx);  CHKERRQ(ierr);
-	ierr = VecRestoreArray    (gvy, &vy);  CHKERRQ(ierr);
-	ierr = VecRestoreArray    (gvz, &vz);  CHKERRQ(ierr);
-	ierr = VecRestoreArray    (gvp, &vp);  CHKERRQ(ierr);
-	ierr = VecRestoreArrayRead(v,   &va);  CHKERRQ(ierr);
+	PetscCall(VecRestoreArray    (gvx, &vx));
+	PetscCall(VecRestoreArray    (gvy, &vy));
+	PetscCall(VecRestoreArray    (gvz, &vz));
+	PetscCall(VecRestoreArray    (gvp, &vp));
+	PetscCall(VecRestoreArrayRead(v,   &va));
 
-	ierr = VecZeroEntries(lvx); CHKERRQ(ierr);
-	ierr = VecZeroEntries(lvy); CHKERRQ(ierr);
-	ierr = VecZeroEntries(lvz); CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(lvx));
+	PetscCall(VecZeroEntries(lvy));
+	PetscCall(VecZeroEntries(lvz));
 
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_X, gvx, lvx)
@@ -401,9 +401,9 @@ PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Ve
 	GLOBAL_TO_LOCAL(fs->DA_Z, gvz, lvz)
 
 	// restore temporary global vectors
-	ierr = DMRestoreGlobalVector(fs->DA_X, &gvx); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fs->DA_Y, &gvy); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fs->DA_Z, &gvz); CHKERRQ(ierr);
+	PetscCall(DMRestoreGlobalVector(fs->DA_X, &gvx));
+	PetscCall(DMRestoreGlobalVector(fs->DA_Y, &gvy));
+	PetscCall(DMRestoreGlobalVector(fs->DA_Z, &gvz));
 
 	PetscFunctionReturn(0);
 }
@@ -415,15 +415,15 @@ PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz,
 	FDSTAG *fs;
 	Vec     gvx, gvy, gvz;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
 
 	// get temporary global vectors
-	ierr = DMGetGlobalVector(fs->DA_X, &gvx); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fs->DA_Y, &gvy); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(fs->DA_Z, &gvz); CHKERRQ(ierr);
+	PetscCall(DMGetGlobalVector(fs->DA_X, &gvx));
+	PetscCall(DMGetGlobalVector(fs->DA_Y, &gvy));
+	PetscCall(DMGetGlobalVector(fs->DA_Z, &gvz));
 
 	// assemble ghost point contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, lvx, gvx)
@@ -431,12 +431,12 @@ PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz,
 	LOCAL_TO_GLOBAL(fs->DA_Z, lvz, gvz)
 
 	// combine vector blocks
-	ierr = MatFreeCombineVec(md, v, gvx, gvy, gvz, gvp, setVal); CHKERRQ(ierr);
+	PetscCall(MatFreeCombineVec(md, v, gvx, gvy, gvz, gvp, setVal));
 
 	// restore temporary global vectors
-	ierr = DMRestoreGlobalVector(fs->DA_X, &gvx); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fs->DA_Y, &gvy); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(fs->DA_Z, &gvz); CHKERRQ(ierr);
+	PetscCall(DMRestoreGlobalVector(fs->DA_X, &gvx));
+	PetscCall(DMRestoreGlobalVector(fs->DA_Y, &gvy));
+	PetscCall(DMRestoreGlobalVector(fs->DA_Z, &gvz));
 
 	PetscFunctionReturn(0);
 }
@@ -449,31 +449,31 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 	PetscInt     i, num, *list;
 	PetscScalar *vx, *vy, *vz, *vp, *va, *iter;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
 
 	// access vectors
-	ierr = VecGetArray(gvx, &vx); CHKERRQ(ierr);
-	ierr = VecGetArray(gvy, &vy); CHKERRQ(ierr);
-	ierr = VecGetArray(gvz, &vz); CHKERRQ(ierr);
-	ierr = VecGetArray(gvp, &vp); CHKERRQ(ierr);
-	ierr = VecGetArray(v,   &va); CHKERRQ(ierr);
+	PetscCall(VecGetArray(gvx, &vx));
+	PetscCall(VecGetArray(gvy, &vy));
+	PetscCall(VecGetArray(gvz, &vz));
+	PetscCall(VecGetArray(gvp, &vp));
+	PetscCall(VecGetArray(v,   &va));
 
 	// copy vectors component-wise
 	iter = va;
 
-	ierr  = PetscMemcpy(iter, vx, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, vx, (size_t)fs->nXFace*sizeof(PetscScalar)));
 	iter += fs->nXFace;
 
-	ierr  = PetscMemcpy(iter, vy, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, vy, (size_t)fs->nYFace*sizeof(PetscScalar)));
 	iter += fs->nYFace;
 
-	ierr  = PetscMemcpy(iter, vz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, vz, (size_t)fs->nZFace*sizeof(PetscScalar)));
 	iter += fs->nZFace;
 
-	ierr  = PetscMemcpy(iter, vp,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+	PetscCall(PetscMemcpy(iter, vp,  (size_t)fs->nCells*sizeof(PetscScalar)));
 
 	// zero out constrained residuals (velocity)
 	num   = md->vNumSPC;
@@ -488,11 +488,11 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 	for(i = 0; i < num; i++) va[list[i]] = setVal;
 
 	// restore access
-	ierr = VecRestoreArray(gvx, &vx); CHKERRQ(ierr);
-	ierr = VecRestoreArray(gvy, &vy); CHKERRQ(ierr);
-	ierr = VecRestoreArray(gvz, &vz); CHKERRQ(ierr);
-	ierr = VecRestoreArray(gvp, &vp); CHKERRQ(ierr);
-	ierr = VecRestoreArray(v,   &va); CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(gvx, &vx));
+	PetscCall(VecRestoreArray(gvy, &vy));
+	PetscCall(VecRestoreArray(gvz, &vz));
+	PetscCall(VecRestoreArray(gvp, &vp));
+	PetscCall(VecRestoreArray(v,   &va));
 
 	PetscFunctionReturn(0);
 }
@@ -522,7 +522,7 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
 	PetscScalar cf[6];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	fs     = md->fs;     // grid context
@@ -539,38 +539,38 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	mnz = fs->dsz.tnods - 1;
 
     // clear residual components
-	ierr = VecZeroEntries(lfx); CHKERRQ(ierr);
-	ierr = VecZeroEntries(lfy); CHKERRQ(ierr);
-	ierr = VecZeroEntries(lfz); CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(lfx));
+	PetscCall(VecZeroEntries(lfy));
+	PetscCall(VecZeroEntries(lfz));
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   lfx,  &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   lfy,  &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   lfz,  &fz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, gc,   &c);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, gp,   &p);   CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lvx,  &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lvy,  &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lvz,  &vz));
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lfx,  &fx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lfy,  &fy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lfz,  &fz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, gc,   &c));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, gp,   &p));
 
 	// access boundary constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp);   CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp));
 
 	// access parameter vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz));
 
 	//-------------------------------
 	// central points
 	//-------------------------------
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -638,7 +638,7 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	//-------------------------------
 	// xy edge points
 	//-------------------------------
-	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -682,7 +682,7 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	//-------------------------------
 	// xz edge points
 	//-------------------------------
-	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -725,7 +725,7 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	//-------------------------------
 	// yz edge points
 	//-------------------------------
-	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -766,24 +766,24 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   lvx,       &vx);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   lvy,       &vy);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   lvz,       &vz);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   lfx,       &fx);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   lfy,       &fy);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   lfz,       &fz);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, gc,        &c);      CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, gp,        &p);      CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   md->bcvx,  &bcvx);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->bcvy,  &bcvy);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->bcvz,  &bcvz);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->bcp,   &bcp);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lvx,       &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lvy,       &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lvz,       &vz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lfx,       &fx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lfy,       &fy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lfz,       &fz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, gc,        &c));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, gp,        &p));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   md->bcvx,  &bcvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   md->bcvy,  &bcvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   md->bcvz,  &bcvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->bcp,   &bcp));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->Kb,    &vKb));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->rho,   &vrho));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->eta,   &veta));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &vetaxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz));
 
 	PetscFunctionReturn(0);
 }
@@ -799,20 +799,20 @@ PetscErrorCode MatFreeEvaluateRestrict(
 	PetscScalar ***fxa, ***fya, ***fza, ***fpa;
 	PetscScalar ***cxa, ***cya, ***cza, ***cpa;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access vectors in fine grid
-	ierr = DMDAVecGetArray(fine->fs->DA_X,   fx, &fxa);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_Y,   fy, &fya);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_Z,   fz, &fza);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_CEN, fp, &fpa);   CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fine->fs->DA_X,   fx, &fxa));
+	PetscCall(DMDAVecGetArray(fine->fs->DA_Y,   fy, &fya));
+	PetscCall(DMDAVecGetArray(fine->fs->DA_Z,   fz, &fza));
+	PetscCall(DMDAVecGetArray(fine->fs->DA_CEN, fp, &fpa));
 
 	// access vectors in coarse grid
-	ierr = DMDAVecGetArray(coarse->fs->DA_X,   cx, &cxa); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(coarse->fs->DA_Y,   cy, &cya); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(coarse->fs->DA_Z,   cz, &cza); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(coarse->fs->DA_CEN, cp, &cpa); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(coarse->fs->DA_X,   cx, &cxa));
+	PetscCall(DMDAVecGetArray(coarse->fs->DA_Y,   cy, &cya));
+	PetscCall(DMDAVecGetArray(coarse->fs->DA_Z,   cz, &cza));
+	PetscCall(DMDAVecGetArray(coarse->fs->DA_CEN, cp, &cpa));
 
 	// set velocity weights
 	vs[0 ] = 1.0/16.0;
@@ -831,7 +831,7 @@ PetscErrorCode MatFreeEvaluateRestrict(
 	//-----------------------
 	// X-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(coarse->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(coarse->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -862,7 +862,7 @@ PetscErrorCode MatFreeEvaluateRestrict(
 	//-----------------------
 	// Y-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(coarse->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(coarse->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -893,7 +893,7 @@ PetscErrorCode MatFreeEvaluateRestrict(
 	//-----------------------
 	// Z-points (coarse grid)
 	//-----------------------
-	ierr = DMDAGetCorners(coarse->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(coarse->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -935,7 +935,7 @@ PetscErrorCode MatFreeEvaluateRestrict(
 	vs[6] = 1.0/8.0;
 	vs[7] = 1.0/8.0;
 
-	ierr = DMDAGetCorners(coarse->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(coarse->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -960,15 +960,15 @@ PetscErrorCode MatFreeEvaluateRestrict(
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fine->fs->DA_X,   fx, &fxa);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Y,   fy, &fya);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Z,   fz, &fza);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_CEN, fp, &fpa);   CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fine->fs->DA_X,   fx, &fxa));
+	PetscCall(DMDAVecRestoreArray(fine->fs->DA_Y,   fy, &fya));
+	PetscCall(DMDAVecRestoreArray(fine->fs->DA_Z,   fz, &fza));
+	PetscCall(DMDAVecRestoreArray(fine->fs->DA_CEN, fp, &fpa));
 
-	ierr = DMDAVecRestoreArray(coarse->fs->DA_X,   cx, &cxa); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(coarse->fs->DA_Y,   cy, &cya); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(coarse->fs->DA_Z,   cz, &cza); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(coarse->fs->DA_CEN, cp, &cpa); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(coarse->fs->DA_X,   cx, &cxa));
+	PetscCall(DMDAVecRestoreArray(coarse->fs->DA_Y,   cy, &cya));
+	PetscCall(DMDAVecRestoreArray(coarse->fs->DA_Z,   cz, &cza));
+	PetscCall(DMDAVecRestoreArray(coarse->fs->DA_CEN, cp, &cpa));
 
 	PetscFunctionReturn(0);
 }
@@ -984,20 +984,20 @@ PetscErrorCode MatFreeEvaluateProlong(
 	PetscScalar ***fxa, ***fya, ***fza, ***fpa;
 	PetscScalar ***cxa, ***cya, ***cza, ***cpa;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access vectors in fine grid
-	ierr = DMDAVecGetArray(fine->fs->DA_X,   fx, &fxa);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_Y,   fy, &fya);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_Z,   fz, &fza);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->fs->DA_CEN, fp, &fpa);   CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fine->fs->DA_X,   fx, &fxa));
+	PetscCall(DMDAVecGetArray(fine->fs->DA_Y,   fy, &fya));
+	PetscCall(DMDAVecGetArray(fine->fs->DA_Z,   fz, &fza));
+	PetscCall(DMDAVecGetArray(fine->fs->DA_CEN, fp, &fpa));
 
 	// access vectors in coarse grid
-	ierr = DMDAVecGetArray(coarse->fs->DA_X,   cx, &cxa); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(coarse->fs->DA_Y,   cy, &cya); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(coarse->fs->DA_Z,   cz, &cza); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(coarse->fs->DA_CEN, cp, &cpa); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(coarse->fs->DA_X,   cx, &cxa));
+	PetscCall(DMDAVecGetArray(coarse->fs->DA_Y,   cy, &cya));
+	PetscCall(DMDAVecGetArray(coarse->fs->DA_Z,   cz, &cza));
+	PetscCall(DMDAVecGetArray(coarse->fs->DA_CEN, cp, &cpa));
 
 	// set reduced velocity stencil coefficients (even)
 	vsr[0] = 9.0/16.0;
@@ -1018,7 +1018,7 @@ PetscErrorCode MatFreeEvaluateProlong(
 	//---------------------
 	// X-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(fine->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fine->fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1060,7 +1060,7 @@ PetscErrorCode MatFreeEvaluateProlong(
 	//---------------------
 	// Y-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(fine->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fine->fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1102,7 +1102,7 @@ PetscErrorCode MatFreeEvaluateProlong(
 	//---------------------
 	// Z-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(fine->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fine->fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1145,7 +1145,7 @@ PetscErrorCode MatFreeEvaluateProlong(
 	//---------------------
 	// P-points (fine grid)
 	//---------------------
-	ierr = DMDAGetCorners(fine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fine->fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1161,15 +1161,15 @@ PetscErrorCode MatFreeEvaluateProlong(
 
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fine->fs->DA_X,   fx, &fxa);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Y,   fy, &fya);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_Z,   fz, &fza);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->fs->DA_CEN, fp, &fpa);   CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fine->fs->DA_X,   fx, &fxa));
+	PetscCall(DMDAVecRestoreArray(fine->fs->DA_Y,   fy, &fya));
+	PetscCall(DMDAVecRestoreArray(fine->fs->DA_Z,   fz, &fza));
+	PetscCall(DMDAVecRestoreArray(fine->fs->DA_CEN, fp, &fpa));
 
-	ierr = DMDAVecRestoreArray(coarse->fs->DA_X,   cx, &cxa); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(coarse->fs->DA_Y,   cy, &cya); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(coarse->fs->DA_Z,   cz, &cza); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(coarse->fs->DA_CEN, cp, &cpa); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(coarse->fs->DA_X,   cx, &cxa));
+	PetscCall(DMDAVecRestoreArray(coarse->fs->DA_Y,   cy, &cya));
+	PetscCall(DMDAVecRestoreArray(coarse->fs->DA_Z,   cz, &cza));
+	PetscCall(DMDAVecRestoreArray(coarse->fs->DA_CEN, cp, &cpa));
 
 	PetscFunctionReturn(0);
 }
@@ -1193,7 +1193,7 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -1213,34 +1213,34 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	mnz = fs->dsz.tnods - 1;
 
     // clear diagonal components
-	ierr = VecZeroEntries(ldx); CHKERRQ(ierr);
-	ierr = VecZeroEntries(ldy); CHKERRQ(ierr);
-	ierr = VecZeroEntries(ldz); CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(ldx));
+	PetscCall(VecZeroEntries(ldy));
+	PetscCall(VecZeroEntries(ldz));
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   ldx,  &vdx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   ldy,  &vdy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   ldz,  &vdz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, gdp,  &vdp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X,   ldx,  &vdx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   ldy,  &vdy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   ldz,  &vdz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, gdp,  &vdp));
 
 	// access boundary constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp);   CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X,   md->bcvx,  &bcvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   md->bcvy,  &bcvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   md->bcvz,  &bcvz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->bcp,   &bcp));
 
 	// access parameter vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->Kb,    &vKb));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->rho,   &vrho));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->eta,   &veta));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  md->etaxy, &vetaxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  md->etaxz, &vetaxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  md->etayz, &vetayz));
 
 	//---------------
 	// central points
 	//---------------
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1291,7 +1291,7 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	//---------------
 	// xy edge points
 	//---------------
-	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1342,7 +1342,7 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	//---------------
 	// xz edge points
 	//---------------
-	ierr = DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1393,7 +1393,7 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	//---------------
 	// yz edge points
 	//---------------
-	ierr = DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -1442,22 +1442,22 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   ldx,  &vdx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   ldy,  &vdy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   ldz,  &vdz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, gdp,  &vdp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   ldx,  &vdx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   ldy,  &vdy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   ldz,  &vdz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, gdp,  &vdp));
 
-	ierr = DMDAVecRestoreArray(fs->DA_X,   md->bcvx,  &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->bcvy,  &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->bcvz,  &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->bcp,   &bcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   md->bcvx,  &bcvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   md->bcvy,  &bcvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   md->bcvz,  &bcvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->bcp,   &bcp));
 
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->Kb,    &vKb);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->rho,   &vrho);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->eta,   &veta);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &vetaxy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->Kb,    &vKb));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->rho,   &vrho));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->eta,   &veta));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &vetaxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz));
 
 	PetscFunctionReturn(0);
 }

@@ -11,17 +11,19 @@
 //.................   COMPUTATION OF OBJECTIVE FUNCTION    ..................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "objFunct.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "fdstag.h"
 #include "surf.h"
 #include "JacRes.h"
 #include "tools.h"
+#include "phase.h"
+#include "objFunct.h"
+
 //---------------------------------------------------------------------------
 PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 {
-	PetscErrorCode ierr;
+	
 	PetscInt       k;
 	PetscFunctionBeginUser;
 
@@ -32,8 +34,8 @@ PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 	{
 		if (objf->otUse[k] == 1)
 		{
-			ierr = VecDestroy(&objf->obs[k]); CHKERRQ(ierr);
-			ierr = VecDestroy(&objf->qul[k]); CHKERRQ(ierr);
+			PetscCall(VecDestroy(&objf->obs[k]));
+			PetscCall(VecDestroy(&objf->qul[k]));
 		}
 	}
 
@@ -66,7 +68,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	const char           *isa_name="isa";
 	const char           *shmax_name="shmax";
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// compute misift?
@@ -91,7 +93,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	on[_SHMAX_] = shmax_name;
 
 	// read options
-	ierr = ObjFunctReadFromOptions(objf, on, fb); CHKERRQ(ierr);
+	PetscCall(ObjFunctReadFromOptions(objf, on, fb));
 	if(objf->otN != 0)
 	{
 
@@ -100,11 +102,11 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 		{
 			// load observations file
 			PetscPrintf(PETSC_COMM_WORLD," Load observations: %s \n", objf->infile);
-			ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, objf->infile, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
-			ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
+			PetscCall(PetscViewerBinaryOpen(PETSC_COMM_SELF, objf->infile, FILE_MODE_READ, &view_in));
+			PetscCall(PetscViewerBinaryGetDescriptor(view_in, &fd));
 
 			// read (and ignore) the silent undocumented file header & size of file
-			ierr = PetscBinaryRead(fd, &header, 2+_max_num_obs_, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+			PetscCall(PetscBinaryRead(fd, &header, 2+_max_num_obs_, NULL, PETSC_SCALAR));
 			Fsize = (PetscInt)(header[1]);
 
 			for (k = 0; k <_max_num_obs_; k++)
@@ -135,7 +137,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 		if (ISParallel(PETSC_COMM_WORLD))
 		{
 			objf->otUse[_max_num_obs_] = objf->otN;
-			ierr = MPI_Bcast(objf->otUse, (PetscMPIInt)(_max_num_obs_+1), MPIU_2INT,(PetscMPIInt)0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+			PetscCallMPI(MPI_Bcast(objf->otUse, (PetscMPIInt)(_max_num_obs_+1), MPIU_2INT,(PetscMPIInt)0, PETSC_COMM_WORLD));
 			objf->otN = objf->otUse[_max_num_obs_];
 		}
 
@@ -160,29 +162,29 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 		}
 
 		// allocate input buffer
-		ierr = PetscMalloc((size_t)(buffsize)*sizeof(PetscScalar), &readbuff); CHKERRQ(ierr);
+		PetscCall(PetscMalloc((size_t)(buffsize)*sizeof(PetscScalar), &readbuff));
 
 
 
 		if(ISRankZero(PETSC_COMM_WORLD))
 		{
 			// read observations into the buffer
-			ierr = PetscBinaryRead(fd, readbuff, buffsize, NULL, PETSC_SCALAR); CHKERRQ(ierr);
+			PetscCall(PetscBinaryRead(fd, readbuff, buffsize, NULL, PETSC_SCALAR));
 
 			// destroy
-			ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+			PetscCall(PetscViewerDestroy(&view_in));
 		}
 
 		// broadcast buffer to all cpus
 		if (ISParallel(PETSC_COMM_WORLD))
 		{
-			ierr = MPI_Bcast(readbuff, (PetscMPIInt)buffsize, MPIU_SCALAR,(PetscMPIInt)0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+			PetscCallMPI(MPI_Bcast(readbuff, (PetscMPIInt)buffsize, MPIU_SCALAR,(PetscMPIInt)0, PETSC_COMM_WORLD));
 		}
 
 
 
 		// get local output grid sizes
-		ierr = DMDAGetCorners(surf->DA_SURF, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+		PetscCall(DMDAGetCorners(surf->DA_SURF, &sx, &sy, NULL, &nx, &ny, NULL));
 		L=fs->dsz.rank;
 
 		// fill vectors with observations and respective quality weights
@@ -196,8 +198,8 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 			if(objf->otUse[k] == 1)
 			{
 				// access buffer within local domain
-				ierr = DMDAVecGetArray(surf->DA_SURF, objf->obs[k],  &field);  CHKERRQ(ierr);
-				ierr = DMDAVecGetArray(surf->DA_SURF, objf->qul[k],  &qual );  CHKERRQ(ierr);
+				PetscCall(DMDAVecGetArray(surf->DA_SURF, objf->obs[k],  &field));
+				PetscCall(DMDAVecGetArray(surf->DA_SURF, objf->qul[k],  &qual ));
 
 				// access buffer within local domain
 				START_PLANE_LOOP
@@ -214,15 +216,15 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 				END_PLANE_LOOP
 
 				// restore access
-				ierr = DMDAVecRestoreArray(surf->DA_SURF, objf->obs[k],  &field);  CHKERRQ(ierr);
-				ierr = DMDAVecRestoreArray(surf->DA_SURF, objf->qul[k],  &qual );  CHKERRQ(ierr);
+				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, objf->obs[k],  &field));
+				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, objf->qul[k],  &qual ));
 
 				cnt++;
 			}
 		}
 
 		// free buffer
-		ierr = PetscFree(readbuff); CHKERRQ(ierr);
+		PetscCall(PetscFree(readbuff));
 	}
 	else
 	{
@@ -233,7 +235,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	}
 
 	// compute error
-	ierr = ObjFunctCompErr(objf);  CHKERRQ(ierr);
+	PetscCall(ObjFunctCompErr(objf));
 
 	PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
 
@@ -245,14 +247,14 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 //---------------------------------------------------------------------------
 PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 {
-	PetscErrorCode ierr;
+	
 	PetscBool      found, exists;
 	PetscInt       k;
 	char           otname [_str_len_];
 	PetscFunctionBeginUser;
 
 	// read filename of observation file
-	ierr = getStringParam(fb, _OPTIONAL_, "objf_obsfile", otname, "obs.bin"); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "objf_obsfile", otname, "obs.bin"));
 
 	// number of fields to be read into the buffer
 	objf->otN    = 0;
@@ -264,15 +266,15 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 
 		// read output flags and allocate memory
 		sprintf(otname,"-objf_use_%s",on[k]);
-		ierr = PetscOptionsGetBool(NULL, NULL, otname, &exists, &found); CHKERRQ(ierr);
+		PetscCall(PetscOptionsGetBool(NULL, NULL, otname, &exists, &found));
 		if (found)
 		{
 			objf->otUse[k] = 1;
 			objf->otN++;
-			ierr = VecDuplicate(objf->surf->gtopo,&objf->obs[k]); CHKERRQ(ierr);
-			ierr = VecDuplicate(objf->surf->gtopo,&objf->qul[k]); CHKERRQ(ierr);
-			ierr = VecSet(objf->obs[k],0.0);  CHKERRQ(ierr);
-			ierr = VecSet(objf->qul[k],0.0);  CHKERRQ(ierr);
+			PetscCall(VecDuplicate(objf->surf->gtopo,&objf->obs[k]));
+			PetscCall(VecDuplicate(objf->surf->gtopo,&objf->qul[k]));
+			PetscCall(VecSet(objf->obs[k],0.0));
+			PetscCall(VecSet(objf->qul[k],0.0));
 		}
 	}
 
@@ -281,7 +283,6 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 //---------------------------------------------------------------------------
 PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar scal)
 {
-	PetscErrorCode    ierr;
 	PetscScalar       ***lfield,***gfield;
 	Vec               err;
 	FreeSurf          *surf;
@@ -294,21 +295,21 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 	surf = objf->surf;
 
 	// create vector to store errors
-	ierr = VecDuplicate(objf->obs[field],&err);  CHKERRQ(ierr);
+	PetscCall(VecDuplicate(objf->obs[field],&err));
 
 	// initialize
-	ierr = VecSet(err, 0.0);  CHKERRQ(ierr);
+	PetscCall(VecSet(err, 0.0));
 	objf->err[field] = 0.0;
 
 	// get local output grid sizes
-	ierr = DMDAGetCorners(surf->DA_SURF, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(surf->DA_SURF, &sx, &sy, NULL, &nx, &ny, NULL));
 	L=fs->dsz.rank;
 
-	ierr = VecSet(surf->vpatch, 0.0);  CHKERRQ(ierr);
+	PetscCall(VecSet(surf->vpatch, 0.0));
 
 	// access buffer within local domain
-	ierr = DMDAVecGetArray(surf->DA_SURF, mod,          &lfield);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vpatch,  &gfield );  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, mod,          &lfield));
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vpatch,  &gfield ));
 
 	// access buffer within local domain
 	START_PLANE_LOOP
@@ -319,22 +320,22 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 	END_PLANE_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, mod,         &lfield);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &gfield );  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, mod,         &lfield));
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &gfield ));
 
 	// err = -scal*mod + obs
-	ierr = VecWAXPY(err, -scal, surf->vpatch, objf->obs[field]);  CHKERRQ(ierr);
+	PetscCall(VecWAXPY(err, -scal, surf->vpatch, objf->obs[field]));
 
 	// err^2
-	ierr = VecPow(err, 2.0);  CHKERRQ(ierr);
+	PetscCall(VecPow(err, 2.0));
 
 	// err = err * qual
-	ierr = VecPointwiseMult(err, err, objf->qul[field]);  CHKERRQ(ierr);
+	PetscCall(VecPointwiseMult(err, err, objf->qul[field]));
 
 	// sum
-	ierr = VecSum(err, &objf->err[field]);  CHKERRQ(ierr);
+	PetscCall(VecSum(err, &objf->err[field]));
 
-	ierr = VecDestroy(&err);  CHKERRQ(ierr);
+	PetscCall(VecDestroy(&err));
 
 	PetscFunctionReturn(0);
 }
@@ -343,7 +344,6 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 {
 
 	FreeSurf         *surf;
-	PetscErrorCode    ierr;
 	PetscInt          k;
 	PetscScalar       velScal;
 	PetscFunctionBeginUser;
@@ -355,10 +355,10 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	velScal = surf->jr->scal->velocity;
 
 	// compute weighted error of surface fields
-	if (objf->otUse[_VELX_])	{ ierr = VecErrSurf(surf->vx,    objf, _VELX_,velScal);  CHKERRQ(ierr); }
-	if (objf->otUse[_VELY_])	{ ierr = VecErrSurf(surf->vy,    objf, _VELY_,velScal);  CHKERRQ(ierr); }
-	if (objf->otUse[_VELZ_])	{ ierr = VecErrSurf(surf->vz,    objf, _VELZ_,velScal);  CHKERRQ(ierr);	}
-	if (objf->otUse[_TOPO_])	{ ierr = VecErrSurf(surf->ltopo, objf, _TOPO_,velScal);  CHKERRQ(ierr); }
+	if (objf->otUse[_VELX_])	{ PetscCall(VecErrSurf(surf->vx,    objf, _VELX_,velScal)); }
+	if (objf->otUse[_VELY_])	{ PetscCall(VecErrSurf(surf->vy,    objf, _VELY_,velScal)); }
+	if (objf->otUse[_VELZ_])	{ PetscCall(VecErrSurf(surf->vz,    objf, _VELZ_,velScal));	}
+	if (objf->otUse[_TOPO_])	{ PetscCall(VecErrSurf(surf->ltopo, objf, _TOPO_,velScal)); }
 
 /*
 	// BOUGUER
@@ -368,29 +368,29 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 
 
 /*
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_obs.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
-	ierr = VecView(objf->obs[_VELX_],view_out);														CHKERRQ(ierr);
-	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_obs.bin", FILE_MODE_WRITE, &view_out));
+	PetscCall(VecView(objf->obs[_VELX_],view_out));
+	PetscCall(PetscViewerDestroy(&view_out));
 
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_mod.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
-	ierr = VecView(surf->vx,view_out);																CHKERRQ(ierr);
-	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_mod.bin", FILE_MODE_WRITE, &view_out));
+	PetscCall(VecView(surf->vx,view_out));
+	PetscCall(PetscViewerDestroy(&view_out));
 
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"err_mod.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
-	ierr = VecView(err_vx,view_out);																CHKERRQ(ierr);
-	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"err_mod.bin", FILE_MODE_WRITE, &view_out));
+	PetscCall(VecView(err_vx,view_out));
+	PetscCall(PetscViewerDestroy(&view_out));
 
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_obsvy.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
-	ierr = VecView(objf->obs[_VELY_],view_out);														CHKERRQ(ierr);
-	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_obsvy.bin", FILE_MODE_WRITE, &view_out));
+	PetscCall(VecView(objf->obs[_VELY_],view_out));
+	PetscCall(PetscViewerDestroy(&view_out));
 
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_modvy.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
-	ierr = VecView(surf->vy,view_out);																CHKERRQ(ierr);
-	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_modvy.bin", FILE_MODE_WRITE, &view_out));
+	PetscCall(VecView(surf->vy,view_out));
+	PetscCall(PetscViewerDestroy(&view_out));
 
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"err_modvy.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
-	ierr = VecView(err_vy,view_out);																CHKERRQ(ierr);
-	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
+	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"err_modvy.bin", FILE_MODE_WRITE, &view_out));
+	PetscCall(VecView(err_vy,view_out));
+	PetscCall(PetscViewerDestroy(&view_out));
 */
 
 	// total least squares error 

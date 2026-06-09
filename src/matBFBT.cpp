@@ -29,7 +29,7 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 	PetscInt       lnv, stv;
 	const PetscInt *lx, *ly, *lz;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// store evaluation context
@@ -45,51 +45,51 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 	periodic = fs->periodic;
 
 	// get cell center grid partitioning
-	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
+	PetscCall(DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz));
 
 	// set boundary type in x direction
 	if(periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
 	else         { BC_TYPE_X = DM_BOUNDARY_NONE;     }
 
 	// create DMDA
-	ierr = DMDACreate3DSetUp(PETSC_COMM_WORLD,
+	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
 		BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_STAR,
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-		1, 1, lx, ly, lz, &P->DA_P); CHKERRQ(ierr);
+		1, 1, lx, ly, lz, &P->DA_P));
 
 	// set proper interpolation type for multigrid
-	ierr = DMDASetInterpolationType(P->DA_P, DMDA_Q0); CHKERRQ(ierr);
+	PetscCall(DMDASetInterpolationType(P->DA_P, DMDA_Q0));
 
 	// create matrix
-	ierr = DMCreateMatrix(P->DA_P, &P->K); CHKERRQ(ierr);
+	PetscCall(DMCreateMatrix(P->DA_P, &P->K));
 
 	// set matrix options (development)
-	ierr = MatSetOption(P->K, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE); CHKERRQ(ierr);
-	ierr = MatSetOption(P->K, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE);   CHKERRQ(ierr);
-	ierr = MatSetOption(P->K, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);       CHKERRQ(ierr);
-	ierr = MatSetOption(P->K, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);      CHKERRQ(ierr);
+	PetscCall(MatSetOption(P->K, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE));
+	PetscCall(MatSetOption(P->K, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE));
+	PetscCall(MatSetOption(P->K, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE));
+	PetscCall(MatSetOption(P->K, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE));
 
 	// create scaling matrix
-	ierr = MatAIJCreateDiag(lnv, stv, &P->C); CHKERRQ(ierr);
+	PetscCall(MatAIJCreateDiag(lnv, stv, &P->C));
 
 	// allocate work vector
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->w); CHKERRQ(ierr);
-	ierr = VecSetFromOptions(P->w);                                     CHKERRQ(ierr);
+	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->w));
+	PetscCall(VecSetFromOptions(P->w));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode wBFBTDestroy(wBFBTData *P)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = DMDestroy (&P->DA_P); CHKERRQ(ierr);
-	ierr = MatDestroy(&P->K); 	 CHKERRQ(ierr);
-	ierr = MatDestroy(&P->C); 	 CHKERRQ(ierr);
-	ierr = VecDestroy(&P->w);    CHKERRQ(ierr);
+	PetscCall(DMDestroy (&P->DA_P));
+	PetscCall(MatDestroy(&P->K));
+	PetscCall(MatDestroy(&P->C));
+	PetscCall(VecDestroy(&P->w));
 
 	PetscFunctionReturn(0);
 }
@@ -108,7 +108,7 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 	PetscScalar ***eta, ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context variables
@@ -131,71 +131,71 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 	// SCALING MATRIX
 	//===============
 
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->eta, &eta); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->eta, &eta));
 
 	// set iterator
 	iter = fs->dof.stv;
 
 	// X-points
-	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
 		I1 = i;   if(I1 == mnx) { if(!periodic) I1--; }
 		I2 = i-1; if(I2 == -1)  { if(!periodic) I2++; }
 
-		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[k][j][I1] + eta[k][j][I2])/2.0), INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[k][j][I1] + eta[k][j][I2])/2.0), INSERT_VALUES));
 
 		iter++;
 	}
 	END_STD_LOOP
 
 	// Y-points
-	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
 		J1 = j;   if(J1 == mny) J1--;
 		J2 = j-1; if(J2 == -1)  J2++;
 
-		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[k][J1][i] + eta[k][J2][i])/2.0), INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[k][J1][i] + eta[k][J2][i])/2.0), INSERT_VALUES));
 
 		iter++;
 	}
 	END_STD_LOOP
 
 	// Z-points
-	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
 		K1 = k;   if(K1 == mnz) K1--;
 		K2 = k-1; if(K2 == -1)  K2++;
 
-		ierr = MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[K1][j][i] + eta[K2][j][i])/2.0), INSERT_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValue(P->C, iter, iter, 1.0/sqrt((eta[K1][j][i] + eta[K2][j][i])/2.0), INSERT_VALUES));
 
 		iter++;
 	}
 	END_STD_LOOP
 
 	// assemble scaling matrix
-	ierr = MatAIJAssemble(P->C, md->vNumSPC, md->vSPCListMat, 1.0); CHKERRQ(ierr);
+	PetscCall(MatAIJAssemble(P->C, md->vNumSPC, md->vSPCListMat, 1.0));
 
 	//=======================
 	// PRECONDITIONING MATRIX
 	//=======================
 
 	// clear matrix
-	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
+	PetscCall(MatZeroEntries(P->K));
 
 	// access boundary constraints
-	ierr = DMDAVecGetArray(fs->DA_X,   md->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   md->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   md->bcvz, &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, md->bcp,  &bcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_X,   md->bcvx, &bcvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   md->bcvy, &bcvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   md->bcvz, &bcvz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, md->bcp,  &bcp));
 
 	iter = 0;
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -264,20 +264,20 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 		col[6].k = k;   col[6].j = j;   col[6].i = i;   col[6].c = 0;
 
 		// set matrix coefficients
-		ierr = MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
+		PetscCall(MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES));
 
 	}
 	END_STD_LOOP
 
 	// assemble preconditioning matrix
-	ierr = MatAIJAssemble(P->K, md->pNumSPC, md->pSPCListMat, 1.0); CHKERRQ(ierr);
+	PetscCall(MatAIJAssemble(P->K, md->pNumSPC, md->pSPCListMat, 1.0));
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->eta, &eta); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   md->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   md->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   md->bcvz, &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, md->bcp,  &bcp);  CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->eta, &eta));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   md->bcvx, &bcvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   md->bcvy, &bcvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   md->bcvz, &bcvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, md->bcp,  &bcp));
 
 	PetscFunctionReturn(0);
 }

@@ -14,6 +14,7 @@
 #include "paraViewOutBin.h"
 #include "parsing.h"
 #include "scaling.h"
+#include "Tensor.h"
 #include "advect.h"
 #include "JacRes.h"
 #include "paraViewOutPassiveTracers.h"
@@ -25,11 +26,11 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 {
 	char filename[_str_len_];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check activation
-	ierr = getIntParam(fb, _OPTIONAL_, "out_ptr", &pvptr->actx->jr->ctrl.Passive_Tracer, 1, 1); CHKERRQ(ierr);
+	PetscCall(getIntParam(fb, _OPTIONAL_, "out_ptr", &pvptr->actx->jr->ctrl.Passive_Tracer, 1, 1));
 
 
 	// check advection type
@@ -45,15 +46,15 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 	pvptr->outptr      = 1;
 	pvptr->outpvd      = 1;
 	// read
-	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",           filename,    "output"); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_ID",              &pvptr->ID,   1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Temperature",     &pvptr->Temperature, 1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Pressure",        &pvptr->Pressure,  1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_phase",           &pvptr->Phase,   1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_MeltFraction",    &pvptr->MeltFraction, 1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Active",          &pvptr->Active   , 1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_Grid_Mf",         &pvptr->Grid_mf   , 1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_ptr_APS",             &pvptr->APS       , 1, 1); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "out_file_name",           filename,    "output"));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_ID",              &pvptr->ID,   1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_Temperature",     &pvptr->Temperature, 1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_Pressure",        &pvptr->Pressure,  1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_phase",           &pvptr->Phase,   1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_MeltFraction",    &pvptr->MeltFraction, 1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_Active",          &pvptr->Active   , 1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_Grid_Mf",         &pvptr->Grid_mf   , 1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_APS",             &pvptr->APS       , 1, 1));
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Passive Tracers output parameters:\n");
@@ -68,20 +69,20 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 //---------------------------------------------------------------------------
 PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar ttime)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check activation
 	if(pvptr->actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	ierr = UpdatePVDFile(dirName, pvptr->outfile, "pvtu", &pvptr->offset, ttime, pvptr->outpvd); CHKERRQ(ierr);
+	PetscCall(UpdatePVDFile(dirName, pvptr->outfile, "pvtu", &pvptr->offset, ttime, pvptr->outpvd));
 
 	// write parallel data .pvtu file
-	ierr = PVPtrWritePVTU(pvptr, dirName); CHKERRQ(ierr);
+	PetscCall(PVPtrWritePVTU(pvptr, dirName));
 
 	// write sub-domain data .vtu files
-	ierr = PVPtrWriteVTU(pvptr, dirName); CHKERRQ(ierr);
+	PetscCall(PVPtrWriteVTU(pvptr, dirName));
 
 	PetscFunctionReturn(0);
 }
@@ -100,7 +101,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	PetscScalar *xp,*yp,*zp,*buf;
 	size_t      offset = 0;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// get context
@@ -247,9 +248,9 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	// scaling length
 		scal_length = pvptr->actx->jr->scal->length;
 
-		ierr = VecGetArray(ptr->x, &xp)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(ptr->y, &yp)           ; CHKERRQ(ierr);
-		ierr = VecGetArray(ptr->z, &zp)           ; CHKERRQ(ierr);
+		PetscCall(VecGetArray(ptr->x, &xp));
+		PetscCall(VecGetArray(ptr->y, &yp));
+		PetscCall(VecGetArray(ptr->z, &zp));
 
 
 
@@ -263,9 +264,9 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 		Xp[2] = (float)(zp[i]*scal_length);
 		fwrite( Xp, sizeof(float), (size_t)3, fp );
 	}
-	ierr = VecRestoreArray(ptr->x, &xp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(ptr->y, &yp)           ; CHKERRQ(ierr);
-	ierr = VecRestoreArray(ptr->z, &zp)           ; CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(ptr->x, &xp));
+	PetscCall(VecRestoreArray(ptr->y, &yp));
+	PetscCall(VecRestoreArray(ptr->z, &zp));
 
 
 
@@ -275,7 +276,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	// -------------------
 	if(pvptr->Phase)
 	{
-		ierr = VecGetArray(ptr->phase, &buf)           ; CHKERRQ(ierr);
+		PetscCall(VecGetArray(ptr->phase, &buf));
 
 		length = (uint64_t)sizeof(int)*(ptr->nummark);
 		fwrite( &length,sizeof(uint64_t),1, fp);
@@ -286,14 +287,14 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 			fwrite( &var_int, sizeof(int),1, fp );
 		}
 	// -------------------
-		ierr = VecRestoreArray(ptr->phase, &buf)           ; CHKERRQ(ierr);
+		PetscCall(VecRestoreArray(ptr->phase, &buf));
 
 
 	}
 
 	if(pvptr->Temperature)
 		{
-			ierr = VecGetArray(ptr->T, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecGetArray(ptr->T, &buf));
 
 			length = (uint64_t)sizeof(float)*(ptr->nummark);
 			fwrite( &length,sizeof(uint64_t),1, fp);
@@ -304,7 +305,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 				fwrite( &var, sizeof(float),1, fp );
 			}
 		// -------------------
-			ierr = VecRestoreArray(ptr->T, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecRestoreArray(ptr->T, &buf));
 
 			// end header
 
@@ -313,7 +314,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 	if(pvptr->Pressure)
 		{
-			ierr = VecGetArray(ptr->p, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecGetArray(ptr->p, &buf));
 
 			length = (uint64_t)sizeof(float)*(ptr->nummark);
 			fwrite( &length,sizeof(uint64_t),1, fp);
@@ -324,14 +325,14 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 				fwrite( &var, sizeof(float),1, fp );
 			}
 		// -------------------
-			ierr = VecRestoreArray(ptr->p, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecRestoreArray(ptr->p, &buf));
 
 
 		}
 
 	if(pvptr->MeltFraction)
 		{
-			ierr = VecGetArray(ptr->Melt_fr, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecGetArray(ptr->Melt_fr, &buf));
 
 			length = (uint64_t)sizeof(float)*(ptr->nummark);
 			fwrite( &length,sizeof(uint64_t),1, fp);
@@ -342,14 +343,14 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 				fwrite( &var, sizeof(float),1, fp );
 			}
 		// -------------------
-			ierr = VecRestoreArray(ptr->Melt_fr, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecRestoreArray(ptr->Melt_fr, &buf));
 
 
 		}
 
 	if(pvptr->Grid_mf)
 		{
-			ierr = VecGetArray(ptr->Melt_Grid, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecGetArray(ptr->Melt_Grid, &buf));
 
 			length = (uint64_t)sizeof(float)*(ptr->nummark);
 			fwrite( &length,sizeof(uint64_t),1, fp);
@@ -360,14 +361,14 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 				fwrite( &var, sizeof(float),1, fp );
 			}
 		// -------------------
-			ierr = VecRestoreArray(ptr->Melt_Grid, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecRestoreArray(ptr->Melt_Grid, &buf));
 
 
 		}
 
 	if(pvptr->APS)
 		{
-			ierr = VecGetArray(ptr->APS, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecGetArray(ptr->APS, &buf));
 
 			length = (uint64_t)sizeof(float)*(ptr->nummark);
 			fwrite( &length,sizeof(uint64_t),1, fp);
@@ -378,14 +379,14 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 				fwrite( &var, sizeof(float),1, fp );
 			}
 		// -------------------
-			ierr = VecRestoreArray(ptr->APS, &buf)           ; CHKERRQ(ierr);
+			PetscCall(VecRestoreArray(ptr->APS, &buf));
 
 
 		}
 
 	if(pvptr->ID)
 			{
-				ierr = VecGetArray(ptr->ID, &buf)           ; CHKERRQ(ierr);
+				PetscCall(VecGetArray(ptr->ID, &buf));
 
 				length = (uint64_t)sizeof(int)*(ptr->nummark);
 				fwrite( &length,sizeof(uint64_t),1, fp);
@@ -396,14 +397,14 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 					fwrite( &var_int, sizeof(int),1, fp );
 				}
 			// -------------------
-				ierr = VecRestoreArray(ptr->ID, &buf)           ; CHKERRQ(ierr);
+				PetscCall(VecRestoreArray(ptr->ID, &buf));
 
 
 			}
 
 	if(pvptr->Active)
 			{
-				ierr = VecGetArray(ptr->C_advection, &buf)           ; CHKERRQ(ierr);
+				PetscCall(VecGetArray(ptr->C_advection, &buf));
 
 				length = (uint64_t)sizeof(int)*(ptr->nummark);
 				fwrite( &length,sizeof(uint64_t),1, fp);
@@ -414,7 +415,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 					fwrite( &var_int, sizeof(int),1, fp );
 				}
 
-				ierr = VecRestoreArray(ptr->C_advection, &buf)           ; CHKERRQ(ierr);
+				PetscCall(VecRestoreArray(ptr->C_advection, &buf));
 
 			}
 

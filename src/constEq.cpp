@@ -114,7 +114,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
@@ -136,7 +135,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(mat->pdAct == 1)
 	{
 		// compute melt fraction from phase diagram
-		ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn);CHKERRQ(ierr);
+		PetscCall(setDataPhaseDiagram(Pd, p, T, mat->pdn));
 
 		// store melt fraction
 		mf = Pd->mf;
@@ -328,7 +327,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	Material_t  *mat;
 	PetscInt     i, numPhases;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
@@ -367,10 +365,10 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 		if(phRat[i])
 		{
 			// setup phase parameters
-			ierr = setUpPhase(ctx, i); CHKERRQ(ierr);
+			PetscCall(setUpPhase(ctx, i));
 
 			// compute phase viscosities and strain rate partitioning
-			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
+			PetscCall(getPhaseVisc(ctx, i));
 
 			// update stabilization and viscoplastic viscosity
 			mat            = ctx->phases + i;
@@ -636,7 +634,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	PetscInt     i, numPhases;
 	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
@@ -674,7 +671,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			if(mat->pdAct == 1)
 			{
 				// compute melt fraction from phase diagram
-				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
+				PetscCall(setDataPhaseDiagram(Pd, p, T, mat->pdn));
 
 				svBulk->mf     += phRat[i]*Pd->mf;
 
@@ -780,7 +777,6 @@ PetscErrorCode cellConstEq(
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
@@ -789,10 +785,10 @@ PetscErrorCode cellConstEq(
 	ctrl   = ctx->ctrl;
 
 	// evaluate deviatoric constitutive equation
-	ierr = devConstEq(ctx); CHKERRQ(ierr);
+	PetscCall(devConstEq(ctx));
 
 	// evaluate volumetric constitutive equation
-	ierr = volConstEq(ctx); CHKERRQ(ierr);
+	PetscCall(volConstEq(ctx));
 
 	// get stabilization viscosity
 	if(ctrl->initGuess) eta_st = 0.0;
@@ -881,14 +877,13 @@ PetscErrorCode edgeConstEq(
 	SolVarDev   *svDev;
 	PetscScalar  t, eta_st;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context
 	svDev = &svEdge->svDev;
 
 	// evaluate deviatoric constitutive equation
-	ierr = devConstEq(ctx); CHKERRQ(ierr);
+	PetscCall(devConstEq(ctx));
 
 	// get stabilization viscosity
 	if(ctx->ctrl->initGuess) eta_st = 0.0;
@@ -927,12 +922,11 @@ PetscErrorCode checkConvConstEq(ConstEqCtx *ctx)
 	LLD         ndiv, nit;
 	PetscScalar stats[3] = {1.0, 1.0, 1.0};
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// exchange convergence statistics
 	// total number of [starts, successes, iterations]
-	ierr = MPI_Reduce(stats, ctx->stats, 3, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Reduce(stats, ctx->stats, 3, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD));
 
 	// compute number of diverged equations and average iteration count
 	ndiv = (LLD)(stats[0] - stats[1]);

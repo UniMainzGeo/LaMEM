@@ -24,14 +24,14 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 {
 	char filename[_str_len_];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// free surface cases only
 	if(!pvsurf->surf->UseFreeSurf) PetscFunctionReturn(0);
 
 	// check activation
-	ierr = getIntParam(fb, _OPTIONAL_, "out_surf", &pvsurf->outsurf, 1, 1); CHKERRQ(ierr);
+	PetscCall(getIntParam(fb, _OPTIONAL_, "out_surf", &pvsurf->outsurf, 1, 1));
 
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
@@ -43,11 +43,11 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	
 
 	// read
-	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       filename,        "output"); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_pvd",        &pvsurf->outpvd,     1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_velocity",   &pvsurf->velocity,   1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_topography", &pvsurf->topography, 1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_amplitude",  &pvsurf->amplitude,  1, 1); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "out_file_name",       filename,        "output"));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_surf_pvd",        &pvsurf->outpvd,     1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_surf_velocity",   &pvsurf->velocity,   1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_surf_topography", &pvsurf->topography, 1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_surf_amplitude",  &pvsurf->amplitude,  1, 1));
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Surface output parameters:\n");
@@ -63,7 +63,7 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	sprintf(pvsurf->outfile, "%s_surf", filename);
 
 	// create output buffer
-	ierr = PVSurfCreateData(pvsurf); CHKERRQ(ierr);
+	PetscCall(PVSurfCreateData(pvsurf));
 
 	PetscFunctionReturn(0);
 }
@@ -73,7 +73,7 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 	FDSTAG   *fs;
 	PetscInt  rx, ry, sx, sy, nx, ny;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -90,7 +90,7 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 	if(!fs->dsz.rank)
 	{
 		// allocate output buffer
-		ierr = PetscMalloc((size_t)(_max_num_comp_surf_*nx*ny)*sizeof(float), &pvsurf->buff); CHKERRQ(ierr);
+		PetscCall(PetscMalloc((size_t)(_max_num_comp_surf_*nx*ny)*sizeof(float), &pvsurf->buff));
 	}
 
 	PetscFunctionReturn(0);
@@ -98,33 +98,33 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
-	ierr = PetscFree(pvsurf->buff); CHKERRQ(ierr);
+	PetscCall(PetscFree(pvsurf->buff));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check activation
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	ierr = UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &pvsurf->offset, ttime, pvsurf->outpvd); CHKERRQ(ierr);
+	PetscCall(UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &pvsurf->offset, ttime, pvsurf->outpvd));
 
 	// write parallel data .pvts file
-	ierr = PVSurfWritePVTS(pvsurf, dirName); CHKERRQ(ierr);
+	PetscCall(PVSurfWritePVTS(pvsurf, dirName));
 
 	// write sub-domain data .vts files
-	ierr = PVSurfWriteVTS(pvsurf, dirName); CHKERRQ(ierr);
+	PetscCall(PVSurfWriteVTS(pvsurf, dirName));
 
 	PetscFunctionReturn(0);
 }
@@ -227,7 +227,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	PetscInt   rx, ry, sx, sy, nx, ny;
 	size_t     offset = 0;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -314,12 +314,12 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	}
 
 	// write point coordinates
-	ierr = PVSurfWriteCoord (pvsurf, fp); CHKERRQ(ierr);
+	PetscCall(PVSurfWriteCoord (pvsurf, fp));
 
 	// write output vectors
-	if(pvsurf->velocity)   { ierr = PVSurfWriteVel      (pvsurf, fp); CHKERRQ(ierr); }
-	if(pvsurf->topography) { ierr = PVSurfWriteTopo     (pvsurf, fp); CHKERRQ(ierr); }
-	if(pvsurf->amplitude)  { ierr = PVSurfWriteAmplitude(pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->velocity)   { PetscCall(PVSurfWriteVel      (pvsurf, fp)); }
+	if(pvsurf->topography) { PetscCall(PVSurfWriteTopo     (pvsurf, fp)); }
+	if(pvsurf->amplitude)  { PetscCall(PVSurfWriteAmplitude(pvsurf, fp)); }
 
 	if(!fs->dsz.rank)
 	{
@@ -362,7 +362,7 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	PetscScalar ***topo, cf;
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	L    = 0;
@@ -375,7 +375,7 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo));
 
 	if(!fs->dsz.rank)
 	{
@@ -389,7 +389,7 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 		END_PLANE_LOOP
 	}
 
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo));
 
 	OutputBufferWrite(fp, buff, cn);
 
@@ -404,7 +404,7 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	PetscScalar ***vx, ***vy, ***vz, cf;
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	L    = 0;
@@ -417,9 +417,9 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vx, &vx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vy, &vy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vz, &vz); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vx, &vx));
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vy, &vy));
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vz, &vz));
 
 	if(!fs->dsz.rank)
 	{
@@ -433,9 +433,9 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 		END_PLANE_LOOP
 	}
 
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vx, &vx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vy, &vy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vz, &vz); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vx, &vx));
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vy, &vy));
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vz, &vz));
 
 	OutputBufferWrite(fp, buff, cn);
 
@@ -450,7 +450,7 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	PetscScalar ***topo, cf;
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	L    = 0;
@@ -463,7 +463,7 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo));
 
 	if(!fs->dsz.rank)
 	{
@@ -475,7 +475,7 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 		END_PLANE_LOOP
 	}
 
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo));
 
 	OutputBufferWrite(fp, buff, cn);
 
@@ -490,7 +490,7 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	PetscScalar ***topo, avg_topo, cf;
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	L    = 0;
@@ -506,7 +506,7 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo));
 
 	if(!fs->dsz.rank)
 	{
@@ -518,7 +518,7 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 		END_PLANE_LOOP
 	}
 
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo));
 
 	OutputBufferWrite(fp, buff, cn);
 
