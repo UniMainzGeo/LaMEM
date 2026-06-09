@@ -45,7 +45,7 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 PLATFORM = $(shell uname -m)
 
 # check if platform is supported
-ifneq ($(findstring $PLATFORM, x86_64 arm64 aarch64 armv6l armv7l i686 powerpc64le amd64),)
+ifneq ($(findstring $(PLATFORM), x86_64 arm64 aarch64 armv6l armv7l i686 powerpc64le amd64), $(PLATFORM))
    $(error Unsupported platform)
 endif
 
@@ -59,7 +59,8 @@ MPI_COMPILER_SHOW := $(shell \
 	$(MPI_COMPILER) --show 2>/dev/null || \
 	$(MPI_COMPILER) -show 2>/dev/null )
 
-CXX_COMPILER := $(word 1, $(filter-out ccache,$(MPI_COMPILER_SHOW)))
+CXX_COMMAND  := $(word 1, $(filter-out ccache,$(MPI_COMPILER_SHOW)))
+CXX_COMPILER := $(shell readlink -f $$(which $(CXX_COMMAND)))
 
 # set dependency flag (should be supported by all compilers)
 DEPEN_FLAGS = -MM
@@ -70,17 +71,16 @@ LAMEM_FLAGS = -std=c++17 -Wall -Wextra -Wconversion \
               -Wundef -Wnon-virtual-dtor -Wno-unused-result -Wunused-but-set-variable
 
 # tune compiler flags
-ifeq ($(findstring $CXX_COMPILER, icpx),)
-   LAMEM_FLAGS += -Wimplicit-fallthrough -Wno-sign-conversion \
-   -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
-else ifeq ($(findstring $CXX_COMPILER, g++),)
-   LAMEM_FLAGS += -Wduplicated-cond -Wduplicated-branches\
-                   -Wlogical-op -Wnull-dereference -Wuseless-cast 
-else ifeq ($(findstring $CXX_COMPILER, clang++),)
+ifeq ($(findstring clang++, $(CXX_COMPILER)), clang++)
    LAMEM_FLAGS += -Wimplicit-fallthrough \
                   -Wshorten-64-to-32 -Wnewline-eof
+else ifeq ($(findstring icpx, $(CXX_COMPILER)), icpx)
+   LAMEM_FLAGS += -Wimplicit-fallthrough -Wno-sign-conversion \
+                  -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
+else ifeq ($(findstring g++, $(CXX_COMPILER)), g++)
+   LAMEM_FLAGS += -Wduplicated-cond -Wlogical-op -Wnull-dereference
 else
-    $(error Unsupported compiler)
+    $(error Unsupported compiler: $(CXX_COMPILER))
 endif
 
 # add debuggiing flag if in debug mode
