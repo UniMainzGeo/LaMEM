@@ -97,7 +97,7 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Time stepping parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Simulation end time          : %g %s \n", ts->time_end*time, scal->lbl_time);
-	PetscPrintf(PETSC_COMM_WORLD, "   Maximum number of steps      : %lld \n", (LLD)ts->nstep_max);
+	PetscPrintf(PETSC_COMM_WORLD, "   Maximum number of steps      : %" PetscInt_FMT " \n", ts->nstep_max);
 	PetscPrintf(PETSC_COMM_WORLD, "   Time step                    : %g %s \n", ts->dt      *time, scal->lbl_time);
 	PetscPrintf(PETSC_COMM_WORLD, "   Minimum time step            : %g %s \n", ts->dt_min  *time, scal->lbl_time);
 	PetscPrintf(PETSC_COMM_WORLD, "   Maximum time step            : %g %s \n", ts->dt_max  *time, scal->lbl_time);
@@ -106,9 +106,9 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
     PetscPrintf(PETSC_COMM_WORLD, "   CFLMAX (fixed time steps)    : %g \n",    ts->CFLMAX);
 
 	if(ts->dt_out)    PetscPrintf(PETSC_COMM_WORLD, "   Output time step             : %g %s \n", ts->dt_out  *time, scal->lbl_time);
-	if(ts->nstep_out) PetscPrintf(PETSC_COMM_WORLD, "   Output every [n] steps       : %lld \n", (LLD)ts->nstep_out);
-	if(ts->nstep_ini) PetscPrintf(PETSC_COMM_WORLD, "   Output [n] initial steps     : %lld \n", (LLD)ts->nstep_ini);
-	if(ts->nstep_rdb) PetscPrintf(PETSC_COMM_WORLD, "   Save restart every [n] steps : %lld \n", (LLD)ts->nstep_rdb);
+	if(ts->nstep_out) PetscPrintf(PETSC_COMM_WORLD, "   Output every [n] steps       : %" PetscInt_FMT " \n", ts->nstep_out);
+	if(ts->nstep_ini) PetscPrintf(PETSC_COMM_WORLD, "   Output [n] initial steps     : %" PetscInt_FMT " \n", ts->nstep_ini);
+	if(ts->nstep_rdb) PetscPrintf(PETSC_COMM_WORLD, "   Save restart every [n] steps : %" PetscInt_FMT " \n", ts->nstep_rdb);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 

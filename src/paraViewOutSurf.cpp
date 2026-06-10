@@ -157,9 +157,9 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	WriteXMLHeader(fp, "PStructuredGrid");
 
 	// open structured grid data block (write total grid size)
-	fprintf(fp, "\t<PStructuredGrid GhostLevel=\"0\" WholeExtent=\"1 %lld 1 %lld 1 1\">\n",
-		(LLD)fs->dsx.tnods,
-		(LLD)fs->dsy.tnods);
+	fprintf(fp, "\t<PStructuredGrid GhostLevel=\"0\" WholeExtent=\"1 %" PetscInt_FMT " 1 %" PetscInt_FMT " 1 1\">\n",
+		fs->dsx.tnods,
+		fs->dsy.tnods);
 
 	// write cell data block (empty)
 	fprintf(fp, "\t\t<PCellData>\n");
@@ -202,10 +202,10 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
 
 		// write data
-		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld 1 1\" Source=\"%s_p%1.8lld.vts\"/>\n",
-			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
-			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1),
-			pvsurf->outfile, (LLD)iproc);
+		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\" Source=\"%s_p%1.8lld.vts\"/>\n",
+			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
+			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
+			pvsurf->outfile, iproc);
 	}
 
 	// close structured grid data block
@@ -225,7 +225,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	Scaling   *scal;
 	char      *fname;
 	PetscInt   rx, ry, sx, sy, nx, ny;
-	size_t     offset = 0;
+	uint64_t   offset = 0;
 
 	
 	PetscFunctionBeginUser;
@@ -239,7 +239,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	if(!fs->dsz.rank)
 	{
 		// open outfile_p_XXXXXX.vts file in the output directory (write mode)
-		asprintf(&fname, "%s/%s_p%1.8lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
+		asprintf(&fname, "%s/%s_p%1.8lld.vts", dirName, pvsurf->outfile, fs->dsz.color);
 		fp = fopen(fname,"wb");
 		if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 		free(fname);
@@ -252,14 +252,14 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		WriteXMLHeader(fp, "StructuredGrid");
 
 		// open structured grid data block (write total grid size)
-		fprintf(fp, "\t<StructuredGrid WholeExtent=\"%lld %lld %lld %lld 1 1\">\n",
-			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
-			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1));
+		fprintf(fp, "\t<StructuredGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\">\n",
+			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
+			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1));
 
 		// open sub-domain (piece) description block
-		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld 1 1\">\n",
-			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
-			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1));
+		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\">\n",
+			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
+			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1));
 
 		// write cell data block (empty)
 		fprintf(fp, "\t\t\t<CellData>\n");
@@ -268,8 +268,8 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		// write coordinate block
 		fprintf(fp, "\t\t<Points>\n");
 
-		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\"/>\n",
-			(LLD)offset);
+		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
+			offset);
 
 		offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*3);
 
@@ -280,24 +280,24 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 
 		if(pvsurf->velocity)
 		{
-			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"velocity %s\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\"/>\n",
-				scal->lbl_velocity, (LLD)offset);
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"velocity %s\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
+				scal->lbl_velocity, offset);
 
 			offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*3);
 		}
 
 		if(pvsurf->topography)
 		{
-			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
-				scal->lbl_length, (LLD)offset);
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n",
+				scal->lbl_length, offset);
 
 			offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny);
 		}
 
 		if(pvsurf->amplitude)
 		{
-			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
-				scal->lbl_length, (LLD)offset);
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n",
+				scal->lbl_length, offset);
 
 			offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny);
 		}

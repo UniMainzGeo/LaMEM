@@ -51,7 +51,7 @@ void PrintStep(PetscInt step)
 	char line[] = "==========================================================================";
 	char left[]  = " STEP ";
 	char right[] = " ";
-	asprintf(&number, "%lld", (LLD) step);
+	asprintf(&number, "%" PetscInt_FMT "",  step);
 
 	p = line + (strlen(line) - strlen(left) - strlen(number) - strlen(right))/2;
 

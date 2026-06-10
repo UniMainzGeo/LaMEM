@@ -53,7 +53,7 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 	// validate path_dim
 	if(bcb->pathDim != 2 && bcb->pathDim != 3)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "path_dim must be 2 or 3, got: %lld", (LLD)bcb->pathDim);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "path_dim must be 2 or 3, got: %" PetscInt_FMT "", bcb->pathDim);
 	}
 
 	// compute number of path coordinates based on dimension
@@ -75,10 +75,10 @@ PetscErrorCode BCBlockPrint(BCBlock *bcb, Scaling *scal, PetscInt cnt)
 {
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD, "      Bezier block #                          : %lld \n", (LLD)cnt);
-	PetscPrintf(PETSC_COMM_WORLD, "      Path dimension                          : %lld \n", (LLD)bcb->pathDim);
-	PetscPrintf(PETSC_COMM_WORLD, "      Number of path points                   : %lld \n", (LLD)bcb->npath);
-	PetscPrintf(PETSC_COMM_WORLD, "      Number of polygon vertices              : %lld \n", (LLD)bcb->npoly);
+	PetscPrintf(PETSC_COMM_WORLD, "      Bezier block #                          : %" PetscInt_FMT " \n", cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Path dimension                          : %" PetscInt_FMT " \n", bcb->pathDim);
+	PetscPrintf(PETSC_COMM_WORLD, "      Number of path points                   : %" PetscInt_FMT " \n", bcb->npath);
+	PetscPrintf(PETSC_COMM_WORLD, "      Number of polygon vertices              : %" PetscInt_FMT " \n", bcb->npoly);
 
 	PetscPrintf(PETSC_COMM_WORLD, "      Bot/Top initial z-coordinates          : %g / %g %s \n",
 		bcb->bot*scal->length, bcb->top*scal->length, scal->lbl_length);
@@ -280,7 +280,7 @@ PetscErrorCode VelBoxPrint(VelBox *velbox, Scaling *scal, PetscInt cnt)
 {
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %lld \n", (LLD) cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Velocity box #                          : %" PetscInt_FMT " \n",  cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Box center                              : %g, %g, %g %s \n", velbox->cenX  *scal->length, velbox->cenY  *scal->length, velbox->cenZ  *scal->length, scal->lbl_length);
 	PetscPrintf(PETSC_COMM_WORLD, "      Box width                               : %g, %g, %g %s \n", velbox->widthX*scal->length, velbox->widthY*scal->length, velbox->widthZ*scal->length, scal->lbl_length);
 	if(velbox->vx != DBL_MAX)
@@ -365,7 +365,7 @@ PetscErrorCode VelCylinderPrint(VelCylinder *velcyl, Scaling *scal, PetscInt cnt
 {
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %lld \n", (LLD) cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "      Velocity cylinder #                     : %" PetscInt_FMT " \n",  cnt);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder base                           : %g, %g, %g %s \n", velcyl->baseX  *scal->length, velcyl->baseY  *scal->length, velcyl->baseZ  *scal->length, scal->lbl_length);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder cap                            : %g, %g, %g %s \n", velcyl->capX*scal->length, velcyl->capY*scal->length, velcyl->capZ*scal->length, scal->lbl_length);
 	PetscPrintf(PETSC_COMM_WORLD, "      Cylinder radius                         : %g %s \n", velcyl->rad*scal->length, scal->lbl_length);
@@ -460,7 +460,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		// error checking
 		if(fb->nblocks > _max_boxes_)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many Bezier blocks! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many Bezier blocks! found: %" PetscInt_FMT ", max allowed: %" PetscInt_FMT "", fb->nblocks, _max_boxes_);
 		}
 
 		// store actual number of Bezier blocks
@@ -485,7 +485,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		// error checking
 		if(fb->nblocks > _max_boxes_)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity boxes! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity boxes! found: %" PetscInt_FMT ", max allowed: %" PetscInt_FMT "", fb->nblocks, _max_boxes_);
 		}
 
 		// store actual number of velocity blocks
@@ -510,7 +510,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		// error checking
 		if(fb->nblocks > _max_boxes_)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity cylinders! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many velocity cylinders! found: %" PetscInt_FMT ", max allowed: %" PetscInt_FMT "", fb->nblocks, _max_boxes_);
 		}
 
 		// store actual number of velocity blocks
@@ -793,21 +793,21 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	for(jj = 0; jj < 6; jj++)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "%lld ", (LLD)bc->noslip[jj]);
+		PetscPrintf(PETSC_COMM_WORLD, "%" PetscInt_FMT " ", bc->noslip[jj]);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "\n");
 
-	if(bc->ExxNumPeriods) { PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %lld \n",  (LLD)bc->ExxNumPeriods); }
-	if(bc->EyyNumPeriods) { PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods); }
-	if(bc->nblocks)       { PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);       }
+	if(bc->ExxNumPeriods) { PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %" PetscInt_FMT " \n",  bc->ExxNumPeriods); }
+	if(bc->EyyNumPeriods) { PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %" PetscInt_FMT " \n",  bc->EyyNumPeriods); }
+	if(bc->nblocks)       { PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %" PetscInt_FMT " \n",  bc->nblocks);       }
 
 	for(jj = 0; jj < bc->nblocks; jj++)
 	{
 		PetscCall(BCBlockPrint(bc->blocks + jj, scal, jj));
 	}
 
-	if(bc->nboxes) { PetscPrintf(PETSC_COMM_WORLD, "   Number of velocity boxes                   : %lld \n",  (LLD)bc->nboxes); }
+	if(bc->nboxes) { PetscPrintf(PETSC_COMM_WORLD, "   Number of velocity boxes                   : %" PetscInt_FMT " \n",  bc->nboxes); }
 
 	for(jj = 0; jj < bc->nboxes; jj++)
 	{
@@ -821,7 +821,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->top_open) { PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n"); }
 	if(bc->bot_open) { PetscPrintf(PETSC_COMM_WORLD, "   Open bottom boundary                       @ \n"); }
 	if(bc->bot_open && bc->Plume_Type == 2) {;}
-	if(bc->fixPhase != -1)   { PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase); }
+	if(bc->fixPhase != -1)   { PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %" PetscInt_FMT "  \n", bc->fixPhase); }
 	if(bc->Ttop     != -1.0) { PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature); }
 	if(bc->TbotNumPeriods == 1)
 	{
@@ -830,7 +830,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	else
 	{
 		// we have a Tbot that changes with time
-		PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %lld  \n", (LLD)bc->TbotNumPeriods);
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of bottom boundary temp periods     : %" PetscInt_FMT "  \n", bc->TbotNumPeriods);
 		PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperatures               : ");
 		for (jj=0; jj<bc->TbotNumPeriods; jj++)
 		{
@@ -866,7 +866,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 		}
 
 		PetscPrintf(PETSC_COMM_WORLD, "      Temperature of plume                    : %g %s \n", bc->Plume_Temperature, 	 				scal->lbl_temperature);
-		PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %lld \n", (LLD) bc->Plume_Phase);
+		PetscPrintf(PETSC_COMM_WORLD, "      Phase of plume                          : %" PetscInt_FMT " \n",  bc->Plume_Phase);
 		PetscPrintf(PETSC_COMM_WORLD, "      Inflow velocity                         : %g %s \n", bc->Plume_Inflow_Velocity*scal->velocity, scal->lbl_velocity);
 		PetscPrintf(PETSC_COMM_WORLD, "      Area fraction of plume                  : %g \n", bc->Plume_areaFrac);
 
@@ -888,7 +888,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 		if(bc->VelNumPeriods>1)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %lld   \n", (LLD) bc->VelNumPeriods);
+			PetscPrintf(PETSC_COMM_WORLD, "      Number of inflow periods                : %" PetscInt_FMT "   \n",  bc->VelNumPeriods);
 		}
 		else
 		{
@@ -897,7 +897,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 		if(bc->VelNetNumPeriods > 1)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "      Number of net inflow periods                : %lld   \n", (LLD) bc->VelNetNumPeriods);
+			PetscPrintf(PETSC_COMM_WORLD, "      Number of net inflow periods                : %" PetscInt_FMT "   \n",  bc->VelNetNumPeriods);
 		}
 		else
 		{
@@ -913,7 +913,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 		if(bc->num_phase_bc >= 0)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %lld \n", (LLD)bc->phase);
+			PetscPrintf(PETSC_COMM_WORLD, "      Inflow phase                            : %" PetscInt_FMT " \n", bc->phase[0]);
 		}
 		else
 		{
@@ -1108,7 +1108,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 	// compile input file name with extension
 	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
 
-	asprintf(&filename, "%s.%1.8lld.dat", file, (LLD)rank);
+	asprintf(&filename, "%s.%1.8d.dat", file, rank);
 
 	// open file
 	fp = fopen(filename, "rb");

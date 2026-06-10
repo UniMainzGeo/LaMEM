@@ -1432,11 +1432,11 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &nproc));
 
 	PetscPrintf(PETSC_COMM_WORLD, "Grid parameters:\n");
-	PetscPrintf(PETSC_COMM_WORLD, "   Total number of cpu                  : %lld \n", (LLD)nproc);
-	PetscPrintf(PETSC_COMM_WORLD, "   Processor grid  [nx, ny, nz]         : [%lld, %lld, %lld]\n", (LLD)px, (LLD)py, (LLD)pz);
-	PetscPrintf(PETSC_COMM_WORLD, "   Fine grid cells [nx, ny, nz]         : [%lld, %lld, %lld]\n", (LLD)cx, (LLD)cy, (LLD)cz);
-	PetscPrintf(PETSC_COMM_WORLD, "   Number of cells                      :  %lld\n", (LLD)nCells);
-	PetscPrintf(PETSC_COMM_WORLD, "   Number of faces                      :  %lld\n", (LLD)nVelDOF);
+	PetscPrintf(PETSC_COMM_WORLD, "   Total number of cpu                  : %" PetscInt_FMT " \n", nproc);
+	PetscPrintf(PETSC_COMM_WORLD, "   Processor grid  [nx, ny, nz]         : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "]\n", px, py, pz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Fine grid cells [nx, ny, nz]         : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "]\n", cx, cy, cz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of cells                      :  %" PetscInt_FMT "\n", nCells);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of faces                      :  %" PetscInt_FMT "\n", nVelDOF);
 	PetscPrintf(PETSC_COMM_WORLD, "   Maximum cell aspect ratio            :  %7.5f\n", maxAspRat);
 	PetscPrintf(PETSC_COMM_WORLD, "   Lower coordinate bounds [bx, by, bz] : [%g, %g, %g]\n", bx*chLen, by*chLen, bz*chLen);
 	PetscPrintf(PETSC_COMM_WORLD, "   Upper coordinate bounds [ex, ey, ez] : [%g, %g, %g]\n", ex*chLen, ey*chLen, ez*chLen);
@@ -1523,9 +1523,9 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	if(rank == 0)
 	{
 		// save file
-		asprintf(&fname, "ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",
-			(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
-			(LLD)fs->dsx.nproc, (LLD)fs->dsy.nproc, (LLD)fs->dsz.nproc);
+		asprintf(&fname, "ProcessorPartitioning_%" PetscInt_FMT "cpu_%" PetscInt_FMT ".%" PetscInt_FMT ".%" PetscInt_FMT ".bin",
+			(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
+			fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc);
 
 		PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid);
 

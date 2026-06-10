@@ -106,7 +106,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Free surface parameters: \n");
 
-	PetscPrintf(PETSC_COMM_WORLD, "   Sticky air phase ID       : %lld \n",  (LLD)surf->AirPhase);
+	PetscPrintf(PETSC_COMM_WORLD, "   Sticky air phase ID       : %" PetscInt_FMT " \n",  surf->AirPhase);
     PetscPrintf(PETSC_COMM_WORLD, "   Initial surface level     : %g %s \n",  surf->InitLevel*scal->length, scal->lbl_length);
 
 	PetscPrintf(PETSC_COMM_WORLD, "   Erosion model             : ");
@@ -118,8 +118,8 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD, "prescribed rate with given level and x-coordinate range\n");
 		for(jj = 0; jj < surf->numErPhs; jj++)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "      Phase %lld: x ∈ [%g, %g] %s\n",
-				(LLD)jj, surf->erXMin[jj]*scal->length, surf->erXMax[jj]*scal->length, scal->lbl_length);
+			PetscPrintf(PETSC_COMM_WORLD, "      Phase %" PetscInt_FMT ": x ∈ [%g, %g] %s\n",
+				jj, surf->erXMin[jj]*scal->length, surf->erXMax[jj]*scal->length, scal->lbl_length);
 		}
 	}
 
@@ -129,7 +129,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	else if (surf->SedimentModel == 2) PetscPrintf(PETSC_COMM_WORLD, "directed sedimentation (continental margin) with prescribed rate\n");
 	else if (surf->SedimentModel == 3) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate\n");
 
-	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %lld \n",  (LLD)surf->numLayers);
+	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %" PetscInt_FMT " \n",  surf->numLayers);
 	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
 	if(surf->MaxAngle)  PetscPrintf(PETSC_COMM_WORLD, "   Maximum surface slope     : %g %s\n",  surf->MaxAngle*scal->angle, scal->lbl_angle);
 
@@ -1059,7 +1059,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 			{
 				// uniformly advect
 				z += dz;
-				//PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%lld) to internal free surface.\n", (LLD)surf->SedimentModel);
+				//PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation model (%" PetscInt_FMT ") to internal free surface.\n", surf->SedimentModel);
 			}
 
 			// check if internal free surface goes outside the model domain
@@ -1081,8 +1081,8 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		PetscCall(FreeSurfGetAvgTopo(surf));
 
 		// print info
-		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",
-			(LLD)phase);
+		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation to internal free surface. Phase that is currently being sedimented is %" PetscInt_FMT "   \n",
+			phase);
 		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation at constant rate (%f %s) to internal free surface.\n", rate*scal->velocity, scal->lbl_velocity);
 		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation at constant level (%e %s) to internal free surface.\n", level*scal->length, scal->lbl_length);
 	}
@@ -1198,7 +1198,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		surf->marginE[1] = aEn[1];
 
 		// print info
-		PetscPrintf(PETSC_COMM_WORLD, "Applying directed (cont. margin) sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n", (LLD)phase);
+		PetscPrintf(PETSC_COMM_WORLD, "Applying directed (cont. margin) sedimentation to internal free surface. Phase that is currently being sedimented is %" PetscInt_FMT "   \n", phase);
 	}
 	else if(surf->SedimentModel == 3)
 	{
@@ -1264,8 +1264,8 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		PetscCall(FreeSurfGetAvgTopo(surf));
 
 		// print info
-		PetscPrintf(PETSC_COMM_WORLD, "Applying differential loading to internal free surface. Phase that is currently being sedimented is %lld   \n",
-			(LLD)phase);
+		PetscPrintf(PETSC_COMM_WORLD, "Applying differential loading to internal free surface. Phase that is currently being sedimented is %" PetscInt_FMT "   \n",
+			phase);
 	}
 	
 	PetscFunctionReturn(0);
@@ -1401,8 +1401,8 @@ PetscErrorCode FreeSurfAppTopoDiffusion(FreeSurf *surf)
 	// update average topography
 	PetscCall(FreeSurfGetAvgTopo(surf));
 
-	PetscPrintf(PETSC_COMM_WORLD, "Applying topographic diffusion (K = %g [m^2/s]) in %lld sub-step(s).\n",
-		K * scal->length_si * scal->length_si / scal->time_si, (LLD)nsolve);
+	PetscPrintf(PETSC_COMM_WORLD, "Applying topographic diffusion (K = %g [m^2/s]) in %" PetscInt_FMT " sub-step(s).\n",
+		K * scal->length_si * scal->length_si / scal->time_si, nsolve);
 
 	PetscFunctionReturn(0);
 }

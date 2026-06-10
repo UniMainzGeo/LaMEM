@@ -103,7 +103,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	{
 		if(actx->jr->dbm->phases[i].pdAct)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"        %lld:  ", (LLD) i);
+			PetscPrintf(PETSC_COMM_WORLD,"        %" PetscInt_FMT ":  ",  i);
 
 			PetscCall(LoadPhaseDiagram(actx, actx->jr->dbm->phases, i));
 		}
@@ -301,7 +301,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	PetscCall(DirMake(path));
 
 	// compile file name
-	asprintf(&filename, "%s.%1.8lld.dat", actx->saveFile, (LLD)actx->iproc);
+	asprintf(&filename, "%s.%1.8" PetscInt_FMT ".dat", actx->saveFile, actx->iproc);
 
 	// open file for binary output
 	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_WRITE, &view_out));
@@ -426,25 +426,25 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	// print diagnostics
 	if(NumInvalidPhase)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "Number of markers with invalid phase ID: %lld\n", (LLD)NumInvalidPhase);
+		PetscPrintf(PETSC_COMM_WORLD, "Number of markers with invalid phase ID: %" PetscInt_FMT "\n", NumInvalidPhase);
 		error = 1;
 	}
 
 	if(numNonLocal)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "Number of non-local markers: %lld\n", (LLD)numNonLocal);
+		PetscPrintf(PETSC_COMM_WORLD, "Number of non-local markers: %" PetscInt_FMT "\n", numNonLocal);
 		error = 1;
 	}
 
 	if(numEmpty)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "Number of exactly empty cells: %lld\n", (LLD)numEmpty);
+		PetscPrintf(PETSC_COMM_WORLD, "Number of exactly empty cells: %" PetscInt_FMT "\n", numEmpty);
 		error = 1;
 	}
 
 	if(numWrong)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "Number of cells with incorrect number of markers (nmark_x*nmark_y*nmark_z): %lld\n", (LLD)numWrong);
+		PetscPrintf(PETSC_COMM_WORLD, "Number of cells with incorrect number of markers (nmark_x*nmark_y*nmark_z): %" PetscInt_FMT "\n", numWrong);
 		error = 1;
 	}
 
@@ -761,7 +761,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PrintStart(&t, "Loading markers in parallel from", file);
 
 	// compile input file name with extension
-	asprintf(&filename, "%s.%1.8lld.dat", file, (LLD)actx->iproc);
+	asprintf(&filename, "%s.%1.8" PetscInt_FMT ".dat", file, actx->iproc);
 
 	// open file
 	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in));
@@ -1416,7 +1416,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 		PetscScalar SxAll[Vol.num];
 		if (kvol == VolID)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"\nVarying volume %lld (phase: %lld, type: %lld) \n", (LLD) VolID, (LLD) Vol.phase, (LLD) Vol.type);
+			PetscPrintf(PETSC_COMM_WORLD,"\nVarying volume %" PetscInt_FMT " (phase: %" PetscInt_FMT ", type: %" PetscInt_FMT ") \n",  VolID,  Vol.phase,  Vol.type);
 			
 			// shift index of control polys by 1 to be in line with c indexing
 			PetscInt    i;
@@ -1425,9 +1425,9 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				// also check if control polygon is out of bounds
 				if (CtrlPoly.Pos[i] > Vol.num)
 				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %lld polygons", (LLD) Vol.num);
+					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Control Polygon out of bounds. Volume only has %" PetscInt_FMT " polygons",  Vol.num);
 				}
-				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %lld: Pos: %lld, Sx: %.6f, Sy: %.6f \n",(LLD) i+1,(LLD) CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
+				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %" PetscInt_FMT ": Pos: %" PetscInt_FMT ", Sx: %.6f, Sy: %.6f \n", i+1, CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
 				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;
     		}
 
@@ -1582,7 +1582,7 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	// check number of control polygons
 	if (nCP > _max_ctrl_poly_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld exceeds maximum number of control polygons (%lld) \n",(LLD) nCP, (LLD) _max_ctrl_poly_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%" PetscInt_FMT " exceeds maximum number of control polygons (%" PetscInt_FMT ") \n", nCP,  _max_ctrl_poly_);
 	}
 
 	// loop over blocks

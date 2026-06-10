@@ -8,46 +8,47 @@
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 
-/*
- *  Created on: Apr 20, 2020
- *      Author: piccolo
- */
-
-/*	Bibliography reference for the phase transition
- * All the phase transition listed are coming from [1] (Tab.1).
- * [1] Manuele Faccenda, Luca Dal Zilio, The role of solid–solid phase transitions in mantle convection, Lithos,
-        Volumes 268–271, 2017,
- * [2] B.R. Hacker, G.A. Abers, S.M. Peacock Subduction factory 1. Theoretical mineralogy, densities, seismic wave speeds, and H2O contents
-        Journal of Geophysical Research, 108 (2003), 10.1029/2001JB001127
- * [3] K. Litasov, E. Ohtani. Hydrous solidus of CMAS-pyrolite and melting of mantle plumes at the bottom of the upper mantle
-		Geophysical Research Letters, 30 (2003), 10.1029/2003GL018318
- * [4] E.R. Hernandez, J. Brodholt, D. Alfè Structural, vibrational and thermodynamic properties of Mg2SiO4 and MgSiO3 minerals from first-principles simulations
-	   Physics of the Earth and Planetary Interiors, 240 (2015), pp. 1-24
- * [5] The postspinel boundary in pyrolitic compositions determined in the laser-heated diamond anvil cell
-	    Geophysical Research Letters, 41 (2014), pp. 3833-3841
- * [6] Akaogi, M., Hashimoto, S., amp; Kojitani, H. (2018). Thermodynamic properties of ZrSiO 4 zircon and
- *  	reidite and of cotunnite-type ZrO 2 with application to high-pressure high-temperature phase relations
- *  	 in ZrSiO 4. Physics of the Earth and Planetary Interiors, 281,
- */
-/*
-	The routines in this file allow changing the phase of a marker depending on conditions
-	set by the user.
-	They thus allow adding phase transitions to a setup in a rahther simple manner.
-	Moreover, a number of phase transitions have been predefined as profiles, such as
-	the basalt-eclogite reaction.
-
-	Routines that deal with phase transitions on particles. We really deal with
-	two kinds of PT:
-		1) change the phase number of a particle once a certain condition is reached
-		   like depth of a particle of P/T conditions. The 'new' phase should
-		   be defined accordingly in the input file
-
-		2) We can take a thermodynamic phase diagram into account while computing 
-			the density of a phase in the code. The same diagram can be used to
-			compute melt fraction and the effective density of the partially molten
-			material (taking into account that the actual melt content may be less
-			than what the phase diagram indicates as a result of melt extraction)   
-*/
+//===========================================================================
+//
+//  Created on: Apr 20, 2020
+//      Author: piccolo
+//
+//	Bibliography reference for the phase transition
+// All the phase transition listed are coming from [1] (Tab.1).
+// [1] Manuele Faccenda, Luca Dal Zilio, The role of solid–solid phase transitions in mantle convection, Lithos,
+//      Volumes 268–271, 2017,
+// [2] B.R. Hacker, G.A. Abers, S.M. Peacock Subduction factory 1. Theoretical mineralogy, densities, seismic wave speeds, and H2O contents
+//      Journal of Geophysical Research, 108 (2003), 10.1029/2001JB001127
+// [3] K. Litasov, E. Ohtani. Hydrous solidus of CMAS-pyrolite and melting of mantle plumes at the bottom of the upper mantle
+//		Geophysical Research Letters, 30 (2003), 10.1029/2003GL018318
+// [4] E.R. Hernandez, J. Brodholt, D. Alfè Structural, vibrational and thermodynamic properties of Mg2SiO4 and MgSiO3 minerals from first-principles simulations
+//	   Physics of the Earth and Planetary Interiors, 240 (2015), pp. 1-24
+// [5] The postspinel boundary in pyrolitic compositions determined in the laser-heated diamond anvil cell
+//	    Geophysical Research Letters, 41 (2014), pp. 3833-3841
+// [6] Akaogi, M., Hashimoto, S., amp; Kojitani, H. (2018). Thermodynamic properties of ZrSiO 4 zircon and
+//  	reidite and of cotunnite-type ZrO 2 with application to high-pressure high-temperature phase relations
+//  	 in ZrSiO 4. Physics of the Earth and Planetary Interiors, 281,
+//
+//
+//	The routines in this file allow changing the phase of a marker depending on conditions
+//	set by the user.
+//	They thus allow adding phase transitions to a setup in a rahther simple manner.
+//	Moreover, a number of phase transitions have been predefined as profiles, such as
+//	the basalt-eclogite reaction.
+//
+//	Routines that deal with phase transitions on particles. We really deal with
+//	two kinds of PT:
+//		1) change the phase number of a particle once a certain condition is reached
+//		   like depth of a particle of P/T conditions. The 'new' phase should
+//		   be defined accordingly in the input file
+//
+//		2) We can take a thermodynamic phase diagram into account while computing
+//			the density of a phase in the code. The same diagram can be used to
+//			compute melt fraction and the effective density of the partially molten
+//			material (taking into account that the actual melt content may be less
+//			than what the phase diagram indicates as a result of melt extraction)
+//
+//===========================================================================
 
 #include "LaMEM.h"
 #include "AVD.h"
@@ -168,11 +169,11 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 			
 			if (ph->PhaseOutside[0]>=0){
 				PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
-				for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %lld ", (LLD)(ph->PhaseOutside[i])); }
+				for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseOutside[i])); }
 				PetscPrintf(PETSC_COMM_WORLD," \n");
 			}
 			PetscPrintf(PETSC_COMM_WORLD,"     Phase Inside       :  ");
-			for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %lld ", (LLD)(ph->PhaseInside[i])); }
+			for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseInside[i])); }
 			PetscPrintf(PETSC_COMM_WORLD," \n");
 			PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
 		}
@@ -183,11 +184,11 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	else
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"     Phase Above        :  ");
-		for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %lld ", (LLD)(ph->PhaseAbove[i])); }
+		for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseAbove[i])); }
 		PetscPrintf(PETSC_COMM_WORLD," \n");
 
 		PetscPrintf(PETSC_COMM_WORLD,"     Phase Below        :  ");
-		for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %lld ", (LLD)(ph->PhaseBelow[i])); }
+		for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseBelow[i])); }
 		PetscPrintf(PETSC_COMM_WORLD," \n");
 		PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
 	}
@@ -258,7 +259,7 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	PetscCall(getScalarParam(fb, _REQUIRED_, "ConstantValue",          &ph->ConstantValue,        1,1.0));
 
 
-	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Constant \n", (LLD)(ph->ID));
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%" PetscInt_FMT "] :   Constant \n", (ph->ID));
 	PetscPrintf(PETSC_COMM_WORLD,"     Parameter          :   %s \n",    Parameter);
 	PetscPrintf(PETSC_COMM_WORLD,"     Transition Value   :   %1.3f \n", ph->ConstantValue);
 
@@ -312,7 +313,7 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 	// ph->PhaseInside[0] = -1; 	// default
 
 	for (i=0; i<6; i++){ Box[i] = ph->bounds[i]*scal->length; }		// dimensional units
-	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Box \n", (LLD)(ph->ID));
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%" PetscInt_FMT "] :   Box \n", (ph->ID));
 	PetscPrintf(PETSC_COMM_WORLD,"     Box Bounds         :   [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
 
 	
@@ -410,8 +411,8 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 
 	for (kk = 0; kk < ph->nsegs; kk++)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Phase Transition, NotInAirbox [%lld]: seg = %lld, xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", \
-			(LLD)(ph->ID), (LLD) kk, \
+		PetscPrintf(PETSC_COMM_WORLD,"Phase Transition, NotInAirbox [%" PetscInt_FMT "]: seg = %" PetscInt_FMT ", xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", \
+			(ph->ID),  kk, \
 		ph->xbounds[2*kk]* scal->length, ph->xbounds[2*kk+1]*scal->length,\
 		ph->ybounds[2*kk]* scal->length, ph->ybounds[2*kk+1]*scal->length,\
 		ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
@@ -421,14 +422,14 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 	PetscCall(getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1));
 	if (ph->phtr_link_left>=0)
 	{
-	    PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %lld\n", (LLD) ph->phtr_link_left);
+	    PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %" PetscInt_FMT "\n",  ph->phtr_link_left);
 	}
 
 	ph->phtr_link_right = -1; 
 	PetscCall(getIntParam(fb, _OPTIONAL_, "PhaseTransLinkRight",   &ph->phtr_link_right,  1, dbm->numPhtr-1));
 	if (ph->phtr_link_right>=0)
 	{
-	    PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %lld\n", (LLD) ph->phtr_link_right);
+	    PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %" PetscInt_FMT "\n",  ph->phtr_link_right);
 	}
 
 	
@@ -574,14 +575,14 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	}
 
 	// print summary
-	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] :   Clapeyron \n", (LLD)(ph->ID));
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%" PetscInt_FMT "] :   Clapeyron \n", (ph->ID));
     PetscPrintf(PETSC_COMM_WORLD,"     Transition law     :   %s\n", ph->Name_clapeyron);
 
-    PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %lld    [ P = P0 + gamma*(T-T0) ] \n", (LLD) ph->neq);
+    PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %" PetscInt_FMT "    [ P = P0 + gamma*(T-T0) ] \n",  ph->neq);
         
 	for(it=0; it<ph->neq; it++)
 	{
-        PetscPrintf(PETSC_COMM_WORLD,"       eq[%lld]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", (LLD)it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
+        PetscPrintf(PETSC_COMM_WORLD,"       eq[%" PetscInt_FMT "]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
 
 		ph->clapeyron_slope[it]     /=  (scal->stress/scal->temperature);                           // [MPa/K]
 		ph->P0_clapeyron[it]        /=  (scal->stress_si);                                          // [Pa]
@@ -595,11 +596,10 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 PetscErrorCode  Overwrite_density(DBMat *dbm)
 {
-    /* 
-        This changes the density values of the phases involved with a pre-defined phase transition such 
-        that they are compatible (e.g., tthis ensures that we do not use bogus values for the basalt->eclogite transition,
-        for example) 
-    */
+
+    //    This changes the density values of the phases involved with a pre-defined phase transition such
+    //    that they are compatible (e.g., tthis ensures that we do not use bogus values for the basalt->eclogite transition,
+    //    for example)
 
 	Scaling         *scal;
 	Ph_trans_t      *ph;
@@ -629,11 +629,11 @@ PetscErrorCode  Overwrite_density(DBMat *dbm)
 			{
 				jj1             =   ph->PhaseBelow[iter];
 				mat[jj1].rho    =   rho_below/rho_scal;
-				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4lld, rho = %4.1f %s \n",(LLD) jj1,rho_below, scal->lbl_density);
+				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4" PetscInt_FMT ", rho = %4.1f %s \n", jj1, rho_below, scal->lbl_density);
 
 				jj2             =   ph->PhaseAbove[iter];
 				mat[jj2].rho    =   rho_above/rho_scal;
-				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4lld, rho = %4.1f %s \n",(LLD) jj2,rho_above, scal->lbl_density);
+				PetscPrintf(PETSC_COMM_WORLD,"     Phase              : %4" PetscInt_FMT ", rho = %4.1f %s \n", jj2, rho_above, scal->lbl_density);
 			}
 
 		}

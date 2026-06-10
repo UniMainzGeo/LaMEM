@@ -158,7 +158,7 @@ struct PVOut
 	PetscInt  nvec;               // number of output vectors
 	OutVec   *outvecs;            // output vectors
 	OutBuf    outbuf;             // output buffer
-	long int  offset;             // pvd file offset
+	uint64_t  offset;             // pvd file offset
 	PetscInt  outpvd;             // pvd file output flag
 
 };
@@ -194,7 +194,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type);
 // WARNING! this is potential bottleneck, get rid of writing every time-step
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt outpvd);
+		uint64_t *offset, PetscScalar ttime, PetscInt outpvd);
 
 //---------------------------------------------------------------------------
 #endif

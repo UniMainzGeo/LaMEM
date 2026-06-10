@@ -141,15 +141,15 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// check marker resolution
 	if(actx->NumPartX < _min_nmark_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartX, (LLD)_min_nmark_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%" PetscInt_FMT ") is smaller than allowed (%" PetscInt_FMT ")", actx->NumPartX, _min_nmark_);
 	}
 	if(actx->NumPartY < _min_nmark_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartY, (LLD)_min_nmark_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%" PetscInt_FMT ") is smaller than allowed (%" PetscInt_FMT ")", actx->NumPartY, _min_nmark_);
 	}
 	if(actx->NumPartZ < _min_nmark_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, (LLD)_min_nmark_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%" PetscInt_FMT ") is smaller than allowed (%" PetscInt_FMT ")", actx->NumPartZ, _min_nmark_);
 	}
 
 	// check advection & interpolation types compatibility
@@ -211,17 +211,17 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else if (actx->mctrl == CTRL_AVD)   PetscPrintf(PETSC_COMM_WORLD, "pure AVD for all control volumes\n");
 	else if (actx->mctrl == CTRL_SUB)   PetscPrintf(PETSC_COMM_WORLD, "subgrid \n");
 
-	PetscPrintf(PETSC_COMM_WORLD,"   Markers per cell [nx, ny, nz] : [%lld, %lld, %lld] \n",
-		(LLD)(actx->NumPartX),
-		(LLD)(actx->NumPartY),
-		(LLD)(actx->NumPartZ));
+	PetscPrintf(PETSC_COMM_WORLD,"   Markers per cell [nx, ny, nz] : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "] \n",
+		(actx->NumPartX),
+		(actx->NumPartY),
+		(actx->NumPartZ));
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type      : ");
 	if(!actx->randNoise) PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
 	else                 PetscPrintf(PETSC_COMM_WORLD, "random noise\n");
 
 	if(actx->saveMark)      PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
-	if(actx->bgPhase != -1) PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %lld \n", (LLD)actx->bgPhase);
+	if(actx->bgPhase != -1) PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %" PetscInt_FMT " \n", actx->bgPhase);
 	if(actx->A)             PetscPrintf(PETSC_COMM_WORLD,"   Interpolation constant        : %g \n", actx->A);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
@@ -311,7 +311,7 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 		// get & print background phase ID
 		PetscCall(getIntParam(fb, _REQUIRED_, "bg_phase", &actx->bgPhase, 1, maxPhaseID));
 
-		PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %lld \n", (LLD)actx->bgPhase);
+		PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %" PetscInt_FMT " \n", actx->bgPhase);
 
 		// set background phase in all control volumes
 		PetscCall(ADVSetBGPhase(actx));
@@ -1575,7 +1575,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	// print info
 	PetscCall(PetscTime(&t1));
-	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%" PetscInt_FMT "]: (Corners ) injected %" PetscInt_FMT " markers in %1.4e s \n",actx->iproc, ninj, t1-t0);
 
 	// clear
 	PetscCall(PetscFree(numcorner));

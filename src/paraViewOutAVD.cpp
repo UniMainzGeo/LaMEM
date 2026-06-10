@@ -8,28 +8,29 @@
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 
-/*
- *  Originally developed by Dave A. May on 6/21/11.
- *  Copyright 2011 Geophysical Fluid Dynamics. All rights reserved.
- *
- *  Adopted for use in LaMEM by Anton A. Popov
- *
- *  The algorithm computes an Approximate Voronoi Diagram (AVD) in 3D using a given set of point coordinates.
- *
- *  The AVD algorithm, is described in:
- *    M. Velic, D.A. May & L. Moresi,
- *    "A Fast Robust Algorithm for Computing Discrete Voronoi Diagrams",
- *    Journal of Mathematical Modelling and Algorithms,
- *    Volume 8, Number 3, 343-355, DOI: 10.1007/s10852-008-9097-6
- *
- *
- *  Notes:
- *    This implementation uses von-Neumann neighbourhoods for boundary chain growth.
- *    Do not be tempted to implement "diagonal" neighbourhood growth cycles - this will greatly increase the
- *    size of the boundary chain (and thus memory usage will increase and CPU time will decrease).
- */
+//===========================================================================
+//
+//  Originally developed by Dave A. May on 6/21/11.
+//  Copyright 2011 Geophysical Fluid Dynamics. All rights reserved.
+//
+//  Adopted for use in LaMEM by Anton A. Popov
+//
+//  The algorithm computes an Approximate Voronoi Diagram (AVD) in 3D using a given set of point coordinates.
+//
+//  The AVD algorithm, is described in:
+//    M. Velic, D.A. May & L. Moresi,
+//    "A Fast Robust Algorithm for Computing Discrete Voronoi Diagrams",
+//    Journal of Mathematical Modelling and Algorithms,
+//    Volume 8, Number 3, 343-355, DOI: 10.1007/s10852-008-9097-6
+//
+//
+//  Notes:
+//    This implementation uses von-Neumann neighbourhoods for boundary chain growth.
+//    Do not be tempted to implement "diagonal" neighbourhood growth cycles - this will greatly increase the
+//    size of the boundary chain (and thus memory usage will increase and CPU time will decrease).
+//
+//===========================================================================
 
-//---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "paraViewOutAVD.h"
 #include "paraViewOutBin.h"
@@ -40,8 +41,6 @@
 #include "advect.h"
 #include "JacRes.h"
 #include "tools.h"
-//---------------------------------------------------------------------------
-#define __AVD_DEBUG_MODE
 //---------------------------------------------------------------------------
 // ........................... AVDPoint3D ...................................
 //---------------------------------------------------------------------------
@@ -507,16 +506,6 @@ void AVD3DClaimCells(AVD3D A, const PetscInt p_i)
 	for (i=0; i<bchain->length; i++) {
 		cell_num0 = bchain->new_boundary_cells[i]; // cell number we are trying to claim
 
-#ifdef __AVD_DEBUG_MODE
-		if (cell_num0<0) {
-			printf("  AVD3dClaimCells(ERROR): p_i = %lld, [%lld] \n", (LLD)p_i,(LLD)cell_num0 );
-			printf("  AVD3dClaimCells(ERROR):   point %f %f %f \n", A->points[p_i].x,A->points[p_i].y,A->points[p_i].z);
-			exit(1);
-		}
-
-		if (cells[cell_num0].p == AVD_CELL_MASK) { printf("YOU SHOULD NEVER HAVE A MASKED CELL IN YOUR LIST\n"); exit(1); }
-#endif
-
 		if (cells[cell_num0].p == AVD_CELL_UNCLAIMED) { // if cell unclaimed, then claim it
 
 // WARNING!!! NEVER use realloc! Either use malloc, or C++ containers
@@ -609,8 +598,6 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 			if (cell_num1 != -2) {
 				if ( (cells[cell_num1].p != p_i) && (cells[cell_num1].done != AVD_TRUE) ) {
 
-// WARNING!!! NEVER use realloc! Either use malloc, or C++ containers
-
 					// Realloc, note that we need one space more than the number of points to terminate the list
 					if (count == bchain->new_boundary_cells_malloced-1 ) {
 						temp = (PetscInt*)realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer + 1)*sizeof(PetscInt) );
@@ -621,13 +608,7 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 						bchain->new_boundary_cells = temp;
 						bchain->new_boundary_cells_malloced += buffer;
 					}
-#ifdef __AVD_DEBUG_MODE
-					if (cell_num1<0) {
-						printf("  AVD3DUpdateChain(ERROR): INSERTING negative cell index \n");
-						printf("  AVD3DUpdateChain(ERROR):   k=%lld :: cell0 i,j,k = %lld,%lld,%lld neighbourid [%lld]\n", (LLD)k,(LLD)(cell0->i), (LLD)(cell0->j), (LLD)(cell0->k), (LLD)cell_num1 );
-						exit(0);
-					}
-#endif
+
 					bchain->new_boundary_cells[count] = cell_num1;
 					bchain->length++;
 					count++;
@@ -673,7 +654,7 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "AVD output parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file       : %s \n", pvavd->outpvd ? "yes" : "no");
-	PetscPrintf(PETSC_COMM_WORLD, "   AVD refinement factor : %lld \n", (LLD)pvavd->refine);
+	PetscPrintf(PETSC_COMM_WORLD, "   AVD refinement factor : %" PetscInt_FMT " \n", pvavd->refine);
 
 	// set file name
 	sprintf(pvavd->outfile, "%s_phase", filename);
@@ -737,10 +718,10 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 
 	WriteXMLHeader(fp, "PRectilinearGrid");
 
-	fprintf(fp, "  <PRectilinearGrid WholeExtent=\"%lld %lld %lld %lld %lld %lld\" GhostLevel=\"0\" >\n",
-		0LL,(LLD)(A->gmx),
-		0LL,(LLD)(A->gmy),
-		0LL,(LLD)(A->gmz));
+	fprintf(fp, "  <PRectilinearGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" GhostLevel=\"0\" >\n",
+		0,(A->gmx),
+		0,(A->gmy),
+		0,(A->gmz));
 
 	fprintf(fp, "    <PCoordinates>\n");
 	fprintf(fp, "      <PDataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" />\n");
@@ -764,11 +745,11 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 		pj = r2d/(A->M);
 		pi = r2d - pj*A->M;
 
-		fprintf(fp, "    <Piece Extent=\"%lld %lld %lld %lld %lld %lld\" Source=\"%s_p%1.6lld.vtr\" />\n",
-				(LLD)(A->ownership_ranges_i[pi]),(LLD)(A->ownership_ranges_i[pi+1]),
-				(LLD)(A->ownership_ranges_j[pj]),(LLD)(A->ownership_ranges_j[pj+1]),
-				(LLD)(A->ownership_ranges_k[pk]),(LLD)(A->ownership_ranges_k[pk+1]),
-				pvavd->outfile, (LLD)p );
+		fprintf(fp, "    <Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" Source=\"%s_p%1.6" PetscInt_FMT ".vtr\" />\n",
+				(A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
+				(A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
+				(A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]),
+				pvavd->outfile, p );
 	}
 
 	fprintf(fp, "  </PRectilinearGrid>\n");
@@ -803,7 +784,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &irank));  rank = (PetscInt)irank;
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
-	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvavd->outfile, (LLD)rank);
+	asprintf(&fname, "%s/%s_p%1.6d.vtr", dirName, pvavd->outfile, rank);
 	fp = fopen(fname,"wb");
 	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
@@ -816,28 +797,28 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	// write header
 	WriteXMLHeader(fp, "RectilinearGrid");
 
-  fprintf(fp, "  <RectilinearGrid WholeExtent=\"%lld %lld %lld %lld %lld %lld\" >\n",
-		  (LLD)(A->ownership_ranges_i[pi]),(LLD)(A->ownership_ranges_i[pi+1]),
-		  (LLD)(A->ownership_ranges_j[pj]),(LLD)(A->ownership_ranges_j[pj+1]),
-		  (LLD)(A->ownership_ranges_k[pk]),(LLD)(A->ownership_ranges_k[pk+1]));
+  fprintf(fp, "  <RectilinearGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" >\n",
+		  (A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
+		  (A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
+		  (A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]));
 
-	fprintf(fp, "    <Piece Extent=\"%lld %lld %lld %lld %lld %lld\" >\n",
-			(LLD)(A->ownership_ranges_i[pi]),(LLD)(A->ownership_ranges_i[pi+1]),
-			(LLD)(A->ownership_ranges_j[pj]),(LLD)(A->ownership_ranges_j[pj+1]),
-			(LLD)(A->ownership_ranges_k[pk]),(LLD)(A->ownership_ranges_k[pk+1]));
+	fprintf(fp, "    <Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" >\n",
+			(A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
+			(A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
+			(A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]));
 
 	offset = 0;
 
 	fprintf(fp, "    <Coordinates>\n");
 
 	// X
-	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%d\"/>\n", offset);
 	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mx+1));
 	// Y
-	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%d\"/>\n", offset);
 	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->my+1));
 	// Z
-	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%d\"/>\n", offset);
 	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mz+1));
 
 	fprintf(fp, "    </Coordinates>\n");
@@ -845,7 +826,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	fprintf(fp, "    <CellData>\n");
 
 	// phase
-	fprintf(fp, "      <DataArray type=\"UInt8\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf(fp, "      <DataArray type=\"UInt8\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%d\"/>\n", offset);
 
 	fprintf(fp, "    </CellData>\n");
 

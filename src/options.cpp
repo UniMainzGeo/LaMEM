@@ -425,10 +425,10 @@ PetscErrorCode get_num_mg_levels(SolOptDB &opt, FDSTAG *fs)
 		// check user-specified number of levels
 		if(opt.num_mg_levels < 2 || opt.num_mg_levels > ncors + 1)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)opt.num_mg_levels, (LLD)(ncors + 1));
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %" PetscInt_FMT ". Max. possible: %" PetscInt_FMT "", opt.num_mg_levels, (ncors + 1));
 		}
 
-		PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels   : %lld (prescribed)\n", (LLD)opt.num_mg_levels);
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels   : %" PetscInt_FMT " (prescribed)\n", opt.num_mg_levels);
 	}
 	else
 	{
@@ -439,7 +439,7 @@ PetscErrorCode get_num_mg_levels(SolOptDB &opt, FDSTAG *fs)
 
 		opt.num_mg_levels = ncors + 1;
 
-		PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels   : %lld (automatic)\n", (LLD)opt.num_mg_levels);
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels   : %" PetscInt_FMT " (automatic)\n", opt.num_mg_levels);
 	}
 
 	PetscFunctionReturn(0);
@@ -509,8 +509,8 @@ PetscErrorCode get_coarse_reduction_factor(
 		}
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid number of cpu    : %lld\n", (LLD)(total_num_cpu/opt.coarse_reduction_factor));
-	PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %lld\n", (LLD)               opt.coarse_reduction_factor);
+	PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid number of cpu    : %" PetscInt_FMT "\n", (total_num_cpu/opt.coarse_reduction_factor));
+	PetscPrintf(PETSC_COMM_WORLD, "   Coarse grid reduction factor : %" PetscInt_FMT "\n",                opt.coarse_reduction_factor);
 
 
 	PetscFunctionReturn(0);
@@ -575,7 +575,7 @@ PetscErrorCode get_num_local_blocks(
 
 	if(opt.levels_num_blocks_constant)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Number of blocks on levels   : %lld\n", (LLD)opt.levels_num_blocks_constant);
+		PetscPrintf(PETSC_COMM_WORLD, "   Number of blocks on levels   : %" PetscInt_FMT "\n", opt.levels_num_blocks_constant);
 	}
 	else
 	{
@@ -583,11 +583,11 @@ PetscErrorCode get_num_local_blocks(
 
 		for(i = 0, petsc_mg_level = opt.num_mg_levels-1; i < opt.num_mg_levels - 1; i++, petsc_mg_level--)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "      PETSc level               : %lld -> %lld\n", (LLD)petsc_mg_level, (LLD)opt.levels_num_local_blocks[i]);
+			PetscPrintf(PETSC_COMM_WORLD, "      PETSc level               : %" PetscInt_FMT " -> %" PetscInt_FMT "\n", petsc_mg_level, opt.levels_num_local_blocks[i]);
 		}
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD, "   Number of coarse grid blocks : %lld\n", (LLD)opt.coarse_num_local_blocks);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of coarse grid blocks : %" PetscInt_FMT "\n", opt.coarse_num_local_blocks);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
@@ -799,7 +799,7 @@ PetscErrorCode set_levels_options(
 		for(i = 0, petsc_mg_level = opt.num_mg_levels-1; i < opt.num_mg_levels - 1; i++, petsc_mg_level--)
 		{
 			// compile level prefix
-			asprintf(&prefix,"%s_mg_levels_%lld", mg_prefix, (LLD)petsc_mg_level);
+			asprintf(&prefix,"%s_mg_levels_%" PetscInt_FMT "", mg_prefix, petsc_mg_level);
 
 			// set smoother options level-wise (different number of local blocks per processor)
 			PetscCall(set_smoother_options(opt, prefix, opt.levels_num_local_blocks[i]));
@@ -888,8 +888,8 @@ PetscErrorCode set_integer_option(const char *key, const PetscInt val, const cha
 {
 	PetscFunctionBeginUser;
 	char *opt;
-	if(prefix) asprintf(&opt,"-%s_%s %lld", prefix, key, (LLD)val);
-	else       asprintf(&opt,"-%s %lld",            key, (LLD)val);
+	if(prefix) asprintf(&opt,"-%s_%s %" PetscInt_FMT "", prefix, key, val);
+	else       asprintf(&opt,"-%s %" PetscInt_FMT "",            key, val);
 	PetscCall(PetscOptionsInsertString(NULL, opt));
 	free(opt);
 	PetscFunctionReturn(0);
@@ -1020,7 +1020,7 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 
 	PetscCall(FBFreeBlocks(fb));
 
-	PetscPrintf(PETSC_COMM_WORLD, "Total number of options added: %lld\n", (LLD)cnt);
+	PetscPrintf(PETSC_COMM_WORLD, "Total number of options added: %" PetscInt_FMT "\n", cnt);
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 

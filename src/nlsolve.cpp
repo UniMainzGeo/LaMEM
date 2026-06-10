@@ -238,11 +238,11 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// print info
 	if(nl->jtype == _PICARD_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"%3lld PICARD ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
+		PetscPrintf(PETSC_COMM_WORLD,"%3" PetscInt_FMT " PICARD ||F||/||F0||=%e \n", nl->it, nrm/nl->refRes);
 	}
 	else if(nl->jtype == _MFFD_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"%3lld MMFD   ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
+		PetscPrintf(PETSC_COMM_WORLD,"%3" PetscInt_FMT " MMFD   ||F||/||F0||=%e \n", nl->it, nrm/nl->refRes);
 		nl->itNwt++;
 	}
 
@@ -302,7 +302,6 @@ PetscErrorCode JacApply(Mat A, Vec x, Vec y)
 {
 	Mat *J;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -329,7 +328,6 @@ PetscErrorCode SNESCoupledTest(
 
 	PetscScalar norm;
 
-	
 	PetscFunctionBeginUser;
 
 	// clear unused parameters
@@ -481,7 +479,7 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Severe divergence reason detected (see above)");
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD, "Number of iterations    : %lld\n", (LLD)its);
+	PetscPrintf(PETSC_COMM_WORLD, "Number of iterations    : %" PetscInt_FMT "\n", its);
 
 	PetscPrintf(PETSC_COMM_WORLD, "SNES solution time      : %g (sec)\n", t_end - t_beg);
 

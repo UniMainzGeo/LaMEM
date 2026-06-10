@@ -18,10 +18,11 @@
 //-----------------------------------------------------------------------------
 //   PREFERABLE VARIABLES
 //
-//   PetscInt    - for all indices                    (can be int or long long int)
-//   PetscScalar - for all floating point variables   (can be float or double)
+//   PetscInt    - for indices                    (int or long long int)
+//   PetscScalar - for floating point variables   (float or double)
 //   float       - for reduced size output
-//   size_t      - for all sizes offsets & counters   (unsigned long long int)
+//   size_t      - for variable sizes
+//   uint64_t    - for offsets & counters
 //   PetscMPIInt - for passing service integer parameters to MPI functions (int)
 //   MPIU_SCALAR - appropriate MPI Data Type for sending/receiving PetsScalar
 //   MPIU_INT    - appropriate MPI Data Type for sending/receiving PetscInt
@@ -159,7 +160,7 @@
 #define _max_num_mat_free_levels_ 8
 
 // cast macros
-#define LLD long long int
+//#define LLD long long int  %lld
 
 // adjoint parameter limits
 #define _MAX_PAR_ 100

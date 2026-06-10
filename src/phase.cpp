@@ -47,7 +47,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		// error checking
 		if(fb->nblocks > _max_num_soft_)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)_max_num_soft_);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %" PetscInt_FMT "", _max_num_soft_);
 		}
 
 		// store actual number of softening laws
@@ -86,7 +86,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// error checking
 	if(fb->nblocks > _max_num_phases_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %" PetscInt_FMT "", _max_num_phases_);
 	}
 
 	// store actual number of phases
@@ -117,7 +117,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		// error checking
 		if(fb->nblocks > _max_num_tr_)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase_transition specified! Max allowed: %lld", (LLD)_max_num_tr_);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase_transition specified! Max allowed: %" PetscInt_FMT "", _max_num_tr_);
 		}
 
 		// store actual number of Phase Transition laws
@@ -195,33 +195,33 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	
     if(!s->healTau && (!s->A || !s->APS1 || !s->APS2)) 
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %lld", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %" PetscInt_FMT "", ID);
 	}
 
 	if ((s->healTau2 && !s->APSheal2) || (!s->healTau2 && s->APSheal2))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "healTau2 and APSheal2 must be set together for heal law %lld", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "healTau2 and APSheal2 must be set together for heal law %" PetscInt_FMT "", ID);
 	}
 
 
 	if (PrintOutput){
 		if(s->Lm)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (s->ID), s->A, s->APS1, s->APS2, s->Lm);
 		}
 		if(s->healTau && s->healTau2)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, APSheal2 = %g, healTau = %g, healTau2= %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->APSheal2,s->healTau, s->healTau2);
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g, APSheal2 = %g, healTau = %g, healTau2= %g\n", (s->ID), s->A, s->APS1, s->APS2, s->APSheal2,s->healTau, s->healTau2);
 		}
 		else if (s->healTau && !s->healTau2)
   		{
-			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, healTau = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->healTau);
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g, healTau = %g\n", (s->ID), s->A, s->APS1, s->APS2, s->healTau);
 			s->APSheal2=s->APS2;
 			s->healTau2=s->healTau;
 		}
 		else
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g\n", (s->ID), s->A, s->APS1, s->APS2);
 		}
 	}
 
@@ -462,7 +462,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	||	(m->T_liq && (!m->Latent_hx || !m->T_sol)) 
 	||  (m->T_sol && (!m->Latent_hx || !m->T_liq)))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %lld (T_sol, T_liq, Latent_hx) \n", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %" PetscInt_FMT " (T_sol, T_liq, Latent_hx) \n", ID);
 	}
 
 	// DEPTH-DEPENDENT
@@ -470,34 +470,34 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// check depth-dependent density parameters
 	if((!m->rho_n && m->rho_c) || (m->rho_n && !m->rho_c))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Depth-dependent density parameters must be specified simultaneously for phase %lld (rho_n + rho_c)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Depth-dependent density parameters must be specified simultaneously for phase %" PetscInt_FMT " (rho_n + rho_c)", ID);
 	}
 
 	if(m->rp < 0.0 || m->rp > 1.0)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Pore pressure ratio must be between 0 and 1 for phase %lld (rp)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Pore pressure ratio must be between 0 and 1 for phase %" PetscInt_FMT " (rp)", ID);
 	}
 
 	// PLASTICITY
 
 	if(m->fr && !m->ch)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (fr + ch)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %" PetscInt_FMT " (fr + ch)", ID);
 	}
 
 	if(!m->fr && frSoftID != -1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Friction angle must be specified for phase %lld (frSoftID + fr)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Friction angle must be specified for phase %" PetscInt_FMT " (frSoftID + fr)", ID);
 	}
 
 	if(!m->ch && chSoftID != -1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %" PetscInt_FMT " (chSoftID + ch)", ID);
 	}
 	
 	if((!m->rho_melt && m->Phase_Diagram_melt))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You need to specify the density of the melting phase for phase %lld", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You need to specify the density of the melting phase for phase %" PetscInt_FMT "", ID);
 	}
 
 
@@ -516,7 +516,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	||   ( !eta && !m->Bd)  // nothing
 	||   (eta && m->Bd && (PetscAbsScalar(m->Bd - scal->viscosity/(2.0*eta)) < PetscAbsScalar(1e-10 * m->Bd))))) //on restart both exist; compare in non-dimensional units
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %lld (eta, Bd)\n", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %" PetscInt_FMT " (eta, Bd)\n", ID);
 	}
 
 	// compute diffusion creep constant
@@ -529,7 +529,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	||   (!eta0 && !e0 &&  !m->n && !m->Bn)   // nothing
 	||   ( eta0 &&  e0 && m->n &&  m->Bn && (PetscAbsScalar(m->Bn - (pow(2.0*eta0, -m->n)*pow(e0, 1 - m->n)*pow(scal->stress_si, m->n)*scal->time_si)) < PetscAbsScalar(1e-10 * m->Bn))))) // on restart: full set, compare in non-dimensional units
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %lld (eta0 + e0 + n, Bn + n)\n", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %" PetscInt_FMT " (eta0 + e0 + n, Bn + n)\n", ID);
 	}
 
 	// compute dislocation creep constant
@@ -539,48 +539,48 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep parameters are incomplete for phase %lld (Bp + taup + gamma + q + Ep)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep parameters are incomplete for phase %" PetscInt_FMT " (Bp + taup + gamma + q + Ep)", ID);
 	}
 
 	if(m->Bp && !m->Bn)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep requires dislocation creep for phase %lld (Bp, Bn)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep requires dislocation creep for phase %" PetscInt_FMT " (Bp, Bn)", ID);
 	}
 
 	// Frank-Kamenetzky
 
 		if((m->eta_fk && (!m->gamma_fk)) || (m->gamma_fk && (!m->eta_fk)))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Frank-Kamenetzky parameters are incomplete for phase %lld (eta_fk + gamma_fk)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Frank-Kamenetzky parameters are incomplete for phase %" PetscInt_FMT " (eta_fk + gamma_fk)", ID);
 	}
 
 	// DC
 
 	if(m->Bdc && (!m->Edc || !m->Rdc || !m->mu))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dc-creep parameters are incomplete for phase %lld (Bdc + Edc + Rdc + mu)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dc-creep parameters are incomplete for phase %" PetscInt_FMT " (Bdc + Edc + Rdc + mu)", ID);
 	}
 
 	if(m->Bdc && m->Bn)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine dc-creep with dislocation creep for phase %lld (Bdc + Bn)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine dc-creep with dislocation creep for phase %" PetscInt_FMT " (Bdc + Bn)", ID);
 	}
 
 	// PS
 
 	if(m->Bps && (!m->Eps || !m->d))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep parameters are incomplete for phase %lld (Bps + Eps + d)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep parameters are incomplete for phase %" PetscInt_FMT " (Bps + Eps + d)", ID);
 	}
 
 	if(m->Bps && !m->Bdc && !m->Bn)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep requires either dc-creep or dislocation creep for phase %lld (Bps + Bdc, Bps + Bn)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep requires either dc-creep or dislocation creep for phase %" PetscInt_FMT " (Bps + Bdc, Bps + Bn)", ID);
 	}
 
 	if(m->Bps && m->Bd)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine ps-creep with diffusion creep for phase %lld (Bps + Bd)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine ps-creep with diffusion creep for phase %" PetscInt_FMT " (Bps + Bd)", ID);
 	}
 
 	// ELASTICITY
@@ -597,17 +597,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	||   (!G && !Kb &&  E &&  nu)   // E & nu
 	||   (!G && !Kb && !E && !nu))) // nothing
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %lld (G, Kb, G + Kb, G + nu, Kb + nu, E + nu)\n", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %" PetscInt_FMT " (G, Kb, G + Kb, G + nu, Kb + nu, E + nu)\n", ID);
 	}
 
 	if(m->Kp && !Kb)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Bulk modulus (Kb) must be specified for phase %lld (Kb + Kp)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Bulk modulus (Kb) must be specified for phase %" PetscInt_FMT " (Kb + Kp)", ID);
 	}
 
 	if(m->beta && Kb)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta, Kb)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %" PetscInt_FMT " (beta, Kb)", ID);
 	}
 
 	// compute elastic parameters
@@ -626,17 +626,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G && !m->Bdc && !m->eta_fk)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G, eta_fk must be specified for phase %lld", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G, eta_fk must be specified for phase %" PetscInt_FMT "", ID);
 	}
 
 	// PRINT (optional)
 	if (PrintOutput){
 		if (strlen(m->Name)>0){
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld     --   %s ",(LLD)(m->ID), m->Name);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %" PetscInt_FMT "     --   %s ",(m->ID), m->Name);
 		}
 		else
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld  %s ",(LLD)(m->ID), m->Name);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %" PetscInt_FMT "  %s ",(m->ID), m->Name);
 			
 		}
 
@@ -711,9 +711,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
 		MatPrintScalParam(m->eta_vp, "eta_vp", "[Pa*s]", scal, title, &print_title);
 		MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);		
-		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
-		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
-		if(healID != -1)   PetscPrintf(PETSC_COMM_WORLD, "healID = %lld ",   (LLD)healID);
+		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %" PetscInt_FMT " ", frSoftID);
+		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %" PetscInt_FMT " ", chSoftID);
+		if(healID != -1)   PetscPrintf(PETSC_COMM_WORLD, "healID = %" PetscInt_FMT " ",   healID);
 		
 		sprintf(title, "   (temp)   : "); print_title = 1;
 		MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);

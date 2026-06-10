@@ -126,7 +126,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 				}
 				else if ( (useField == 1) && (objf->otUse[k] == 1) )
 				{
-					PetscPrintf(PETSC_COMM_WORLD," Observational constraint [%lld]: %s\n",(LLD)k,on[k] );
+					PetscPrintf(PETSC_COMM_WORLD," Observational constraint [%" PetscInt_FMT "]: %s\n",k,on[k] );
 					objf->otUse[k] = 1;
 				}
 			}

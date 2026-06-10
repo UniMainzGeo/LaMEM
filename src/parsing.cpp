@@ -493,7 +493,7 @@ PetscErrorCode FBGetString(
 		// make sure string fits & is null terminated (two null characters are reserved in the end)
 		if(strlen(ptr) > (_str_len_ - 2) )
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \n", key, (LLD)(_str_len_ - 2));
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %" PetscInt_FMT " symbols long, (_str_len_ in parsing.h) \n", key, (_str_len_ - 2));
 		}
 
 		// copy & pad the rest of the string with zeros
@@ -556,8 +556,8 @@ PetscErrorCode getIntParam(
 	}
 
 	// check number of entries
-	if(nval < num) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld entry(ies) are missing in parameter \"[-]%s\" \n",
-		(LLD)(num-nval), key);
+	if(nval < num) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%" PetscInt_FMT " entry(ies) are missing in parameter \"[-]%s\" \n",
+		(num-nval), key);
 
 	// check for out-of-bound entries
 	if(maxval > 0)
@@ -566,8 +566,8 @@ PetscErrorCode getIntParam(
 		{
 			if(val[i] > maxval)
 			{
-				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Entry %lld in parameter \"[-]%s\" is larger than allowed : val=%lld, max=%lld\n",
-					(LLD)(i+1), key, (LLD)val[i], (LLD)maxval);
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Entry %" PetscInt_FMT " in parameter \"[-]%s\" is larger than allowed : val=%" PetscInt_FMT ", max=%" PetscInt_FMT "\n",
+					(i+1), key, val[i], maxval);
 			}
 		}
 	}
@@ -623,7 +623,7 @@ PetscErrorCode getScalarParam(
 	}
 
 	// check number of entries
-	if(nval < num) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld entry(ies) are missing in parameter \"[-]%s\" \n", (LLD)(num-nval), key);
+	if(nval < num) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%" PetscInt_FMT " entry(ies) are missing in parameter \"[-]%s\" \n", (num-nval), key);
 
 	// nondimensionalize
 	for(i = 0; i < num; i++) val[i] /= scal;
@@ -701,7 +701,7 @@ PetscErrorCode  PetscOptionsGetCheckString(
 
 	if(*set && strlen(str) > (_str_len_ - 2))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \n", key, (LLD)(_str_len_ - 2));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %" PetscInt_FMT " symbols long, (_str_len_ in parsing.h) \n", key, (_str_len_ - 2));
 	}
 
 	PetscFunctionReturn(0);

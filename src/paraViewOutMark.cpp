@@ -91,7 +91,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	actx = pvmark->actx;
 
 	// create file name
-	asprintf(&fname, "%s/%s_p%1.8lld.vtu", dirName, pvmark->outfile, (LLD)actx->iproc);
+	asprintf(&fname, "%s/%s_p%1.8lld.vtu", dirName, pvmark->outfile, actx->iproc);
 
 	// open file
 	fp = fopen( fname, "wb" );
@@ -106,20 +106,20 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 
 	// begin unstructured grid
 	fprintf( fp, "\t<UnstructuredGrid>\n" );
-	fprintf( fp, "\t\t<Piece NumberOfPoints=\"%lld\" NumberOfCells=\"%lld\">\n",(LLD)actx->nummark,(LLD)connect );
+	fprintf( fp, "\t\t<Piece NumberOfPoints=\"%" PetscInt_FMT "\" NumberOfCells=\"%" PetscInt_FMT "\">\n",actx->nummark,connect );
 
 	// cells
 	fprintf( fp, "\t\t\t<Cells>\n");
 
 	// connectivity
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n",offset);
 	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
 
 	// offsets
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n",offset);
 	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
 	// types
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n",offset);
 	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
 
 	fprintf( fp, "\t\t\t</Cells>\n");
@@ -132,7 +132,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	fprintf( fp, "\t\t\t<Points>\n");
 
 	// point coordinates
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\" />\n",(LLD)offset);
+	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%" PetscInt_FMT "\" />\n",offset);
 	offset += sizeof(uint64_t) + sizeof(float)*(size_t)(actx->nummark*3);
 
 	fprintf( fp, "\t\t\t</Points>\n");
@@ -140,10 +140,10 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	// point data - marker phase
 	fprintf( fp, "\t\t\t<PointData Scalars=\"\">\n");
 
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
+	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n", offset );
 	offset += sizeof(uint64_t) + sizeof(int)*(size_t)actx->nummark;
 	
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"APS\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
+	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"APS\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n", offset );
 	offset += sizeof(uint64_t) + sizeof(float)*(size_t)actx->nummark;
 
 	fprintf( fp, "\t\t\t</PointData>\n");
@@ -292,7 +292,7 @@ PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName)
 	fprintf( fp, "\t\t</PPointData>\n");
 
 	for(i = 0; i < actx->nproc; i++){
-		fprintf( fp, "\t\t<Piece Source=\"%s_p%1.8lld.vtu\"/>\n",pvmark->outfile,(LLD)i);
+		fprintf( fp, "\t\t<Piece Source=\"%s_p%1.8lld.vtu\"/>\n",pvmark->outfile,i);
 	}
 
 	// close the file

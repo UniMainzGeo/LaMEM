@@ -241,7 +241,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
 
 	// compile restart file name
-	asprintf(&fileName, "./restart/rdb.%1.8lld.dat", (LLD)rank);
+	asprintf(&fileName, "./restart/rdb.%1.8d.dat", rank);
 
 	// open restart file for reading in binary mode
 	fp = fopen(fileName, "rb");
@@ -321,7 +321,7 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
 
 	// compile actual & temporary restart file name
-	asprintf(&fileNameTmp, "./restart-tmp/rdb.%1.8lld.dat", (LLD)rank);
+	asprintf(&fileNameTmp, "./restart-tmp/rdb.%1.8d.dat", rank);
 
 	// create temporary restart directory
 	PetscCall(DirMake("./restart-tmp"));
@@ -392,7 +392,7 @@ PetscErrorCode LaMEMLibDeleteRestart()
 	// get MPI processor rank
 	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
 
-	asprintf(&fileName, "./restart/rdb.%1.8lld.dat", (LLD)rank);
+	asprintf(&fileName, "./restart/rdb.%1.8d.dat", rank);
 
 	// check for existing restart database
 	PetscCall(DirCheck("./restart", &exists));
@@ -536,7 +536,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	bgPhase = lm->actx.bgPhase;
 
 	// create directory (encode current time & step number)
-	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
+	asprintf(&dirName, "Timestep_%1.8" PetscInt_FMT "_%1.8e", step, time);
 
 	// create output directory
 	PetscCall(DirMake(dirName));

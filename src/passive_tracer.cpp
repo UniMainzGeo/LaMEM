@@ -111,8 +111,8 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
      PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box x = [Left,Right] : %6f, %6f \n",passive_tr->box_passive_tracer[0],passive_tr->box_passive_tracer[1]);
      PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box y = [Front,Back] : %6f, %6f \n",passive_tr->box_passive_tracer[2],passive_tr->box_passive_tracer[3]);
      PetscPrintf(PETSC_COMM_WORLD,"   Initial coordinate Box z = [Bot, Top]   : %6f, %6f \n",passive_tr->box_passive_tracer[4],passive_tr->box_passive_tracer[5]);
-     PetscPrintf(PETSC_COMM_WORLD,"   # of tracers in [x,y,z] direction       : [%lld, %lld, %lld] \n",(LLD) passive_tr->passive_tracer_resolution[0], (LLD) passive_tr->passive_tracer_resolution[1], (LLD) passive_tr->passive_tracer_resolution[2]);
-     PetscPrintf(PETSC_COMM_WORLD,"   Total # of tracers                      : %lld \n",(LLD) nummark);
+     PetscPrintf(PETSC_COMM_WORLD,"   # of tracers in [x,y,z] direction       : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "] \n", passive_tr->passive_tracer_resolution[0],  passive_tr->passive_tracer_resolution[1],  passive_tr->passive_tracer_resolution[2]);
+     PetscPrintf(PETSC_COMM_WORLD,"   Total # of tracers                      : %" PetscInt_FMT " \n", nummark);
      PetscPrintf(PETSC_COMM_WORLD,"   Tracer advection activation type        : ");
     
 	 if(passive_tr->Condition_pr==_Always_)
@@ -822,7 +822,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	}
 
     // print output
-    PetscPrintf(PETSC_COMM_WORLD,"\n Currently active tracers    :  %lld \n", (LLD) numActTracers);
+    PetscPrintf(PETSC_COMM_WORLD,"\n Currently active tracers    :  %" PetscInt_FMT " \n",  numActTracers);
 
 
 	// Check whatever the marker are belonging to rocks phase or not
@@ -1205,8 +1205,6 @@ PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
 		PetscCall(VecReadRestart(actx->Ptr->ID, fp));
 	}
 
-
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------
@@ -1229,90 +1227,4 @@ PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark)
 
 	PetscFunctionReturn(0);
 }
-
-
-//=========================================================
-/*
-PetscErrorCode Passive_tracers_save(AdvCtx *actx)
-{	// save new restart database, then delete the original
-
-	Scaling        *scal;
-	FILE           *fp;
-	char           *fileName;
-	PetscScalar    time;
-	PetscInt        step;
-	PetscInt       ii;
-	PetscScalar    *xp,*yp,*zp,*P,*T,*phase,*ID,*mf_ptr,*Active;
-	
-	PetscFunctionBeginUser;
-
-
-	if(actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);
-
-	scal = actx->jr->scal;
-	step    = actx->jr->ts->istep;
-	time    = actx->jr->ts->time*actx->jr->scal->time;
-
-	if(step==0)
-	{
-		PetscCall(DirMake("./Passive_Tracers"));
-	}
-
-	if(ISRankZero(PETSC_COMM_WORLD))
-	{
-	// compile actual & temporary restart file name
-		asprintf(&fileName, "./Passive_Tracers/PT_%1.8lld.dat",(LLD)step);
-
-	// open temporary restart file for writing in binary mode
-		fp = fopen(fileName, "wb");
-		fprintf(fp,"number_marker = %d \n ", actx->Ptr->nummark);
-
-		fprintf(fp,"\n");
-
-
-		fprintf(fp,"Time = %6f Timestep = %d \n",time,step);
-
-		fprintf(fp,"nx = %d ny = %d nz = %d \n", actx->Ptr->passive_tracer_resolution[0],actx->Ptr->passive_tracer_resolution[1],actx->Ptr->passive_tracer_resolution[2]);
-
-		fprintf(fp,"\n");
-
-		fprintf(fp," # ID  X  Y  Z  P  T  PH MeltFr\r\n");
-
-		PetscCall(VecGetArray(actx->Ptr->ID, &ID));
-		PetscCall(VecGetArray(actx->Ptr->x, &xp));
-		PetscCall(VecGetArray(actx->Ptr->y, &yp));
-		PetscCall(VecGetArray(actx->Ptr->z, &zp));
-		PetscCall(VecGetArray(actx->Ptr->p, &P));
-		PetscCall(VecGetArray(actx->Ptr->T, &T));
-		PetscCall(VecGetArray(actx->Ptr->phase, &phase));
-		PetscCall(VecGetArray(actx->Ptr->Melt_fr, &mf_ptr));
-		PetscCall(VecGetArray(actx->Ptr->C_advection, &Active));
-
-
-		for(ii=0;ii<actx->Ptr->nummark;ii++)
-		{
-
-
-			fprintf(fp," %d %3f   %3f  %3f  %2f  %2f  %d %6f %d \r\n",PetscInt(ID[ii]),xp[ii]*scal->length,yp[ii]*scal->length,zp[ii]*scal->length,P[ii]*scal->stress,T[ii]*scal->temperature - scal->Tshift, PetscInt(phase[ii]),mf_ptr[ii],PetscInt(Active[ii]));
-
-		}
-		PetscCall(VecRestoreArray(actx->Ptr->ID, &ID));
-		PetscCall(VecRestoreArray(actx->Ptr->x, &xp));
-		PetscCall(VecRestoreArray(actx->Ptr->y, &yp));
-		PetscCall(VecRestoreArray(actx->Ptr->z, &zp));
-		PetscCall(VecRestoreArray(actx->Ptr->p, &P));
-		PetscCall(VecRestoreArray(actx->Ptr->T, &T));
-		PetscCall(VecRestoreArray(actx->Ptr->phase, &phase));
-		PetscCall(VecRestoreArray(actx->Ptr->Melt_fr, &mf_ptr));
-		PetscCall(VecRestoreArray(actx->Ptr->C_advection, &Active));
-
-
-		fclose(fp);
-
-		free(fileName);
-	}
-
-	PetscFunctionReturn(0);
-
-}
-*/
+//---------------------------------------------------------
