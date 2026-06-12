@@ -741,8 +741,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	//For dynamic diking
 	PetscCall(Locate_Dike_Zones(actx));
 	
-	// loop over all phase transition laws		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
-	nPtr        =   0;
+	nPtr = 0;
 
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	  {

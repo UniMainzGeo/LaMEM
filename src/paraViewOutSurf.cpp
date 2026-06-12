@@ -202,7 +202,7 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
 
 		// write data
-		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\" Source=\"%s_p%1.8lld.vts\"/>\n",
+		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\" Source=\"%s_p%1.8" PetscMPIInt_FMT ".vts\"/>\n",
 			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
 			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
 			pvsurf->outfile, iproc);
@@ -227,7 +227,6 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	PetscInt   rx, ry, sx, sy, nx, ny;
 	uint64_t   offset = 0;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -239,7 +238,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	if(!fs->dsz.rank)
 	{
 		// open outfile_p_XXXXXX.vts file in the output directory (write mode)
-		asprintf(&fname, "%s/%s_p%1.8lld.vts", dirName, pvsurf->outfile, fs->dsz.color);
+		asprintf(&fname, "%s/%s_p%1.8" PetscMPIInt_FMT ".vts", dirName, pvsurf->outfile, fs->dsz.color);
 		fp = fopen(fname,"wb");
 		if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 		free(fname);
@@ -268,10 +267,9 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		// write coordinate block
 		fprintf(fp, "\t\t<Points>\n");
 
-		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
-			offset);
+		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
 
-		offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*3);
+		offset += (uint64_t)((sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*3)));
 
 		fprintf(fp, "\t\t</Points>\n");
 
@@ -283,23 +281,23 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"velocity %s\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
 				scal->lbl_velocity, offset);
 
-			offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*3);
+			offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*3));
 		}
 
 		if(pvsurf->topography)
 		{
-			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n",
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
 				scal->lbl_length, offset);
 
-			offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny);
+			offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny));
 		}
 
 		if(pvsurf->amplitude)
 		{
-			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n",
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
 				scal->lbl_length, offset);
 
-			offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny);
+			offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny));
 		}
 
 		fprintf(fp, "\t\t</PointData>\n");
@@ -345,7 +343,7 @@ void OutputBufferWrite(
 	uint64_t nbytes;
 
 	// compute number of bytes
-	nbytes = (uint64_t)cn*(int)sizeof(float);
+	nbytes = (uint64_t)(sizeof(float)*(size_t)cn);
 
 	// dump number of bytes
 	fwrite(&nbytes, sizeof(uint64_t), 1, fp);

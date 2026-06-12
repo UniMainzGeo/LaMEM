@@ -534,7 +534,7 @@ PetscErrorCode getIntParam(
 	}
 	else
 	{
-		asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
+		asprintf(&dbkey, "-%s[%" PetscInt_FMT "]", key, fb->ID);
 	}
 
 	nval = num;
@@ -600,7 +600,7 @@ PetscErrorCode getScalarParam(
 	}
 	else
 	{
-		asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
+		asprintf(&dbkey, "-%s[%" PetscInt_FMT "]", key, fb->ID);
 	}
 	
 	nval = num;
@@ -660,7 +660,7 @@ PetscErrorCode getStringParam(
 	}
 	else
 	{
-		asprintf(&dbkey, "-%s[%i]", key, (int) fb->ID);
+		asprintf(&dbkey, "-%s[%" PetscInt_FMT "]", key, fb->ID);
 	}
 	
 	PetscCall(PetscOptionsGetCheckString(dbkey, str, &found));

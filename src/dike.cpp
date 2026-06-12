@@ -64,24 +64,27 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 
 	if(fb->nblocks)
 	{
-	// print overview of dike blocks from file                                                                                                           
-	if (PrintOutput)
-	PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
+		// print overview of dike blocks from file
+		if(PrintOutput){ PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n"); }
 
-	// initialize ID for consistency checks                                                                                                                 
+		// initialize ID for consistency checks
 
-	for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1; 
+		for(jj = 0; jj < _max_num_dike_ ; jj++) { dbdike->matDike[jj].ID = -1; }
 
         // error checking
-	if(fb->nblocks >_max_num_dike_)
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %" PetscInt_FMT "", _max_num_dike_ );
+		if(fb->nblocks >_max_num_dike_)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %" PetscInt_FMT "", _max_num_dike_);
+		}
 
         // store actual number of dike blocks 
         dbdike->numDike = fb->nblocks;
 
-        if (PrintOutput)
+        if(PrintOutput)
+        {
             PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-		
+        }
+
         // read each individual dike block                                                                                                                   
         for(jj = 0; jj < fb->nblocks; jj++)
         {

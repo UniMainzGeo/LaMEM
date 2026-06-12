@@ -1907,8 +1907,6 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 
 	numPhases = actx->dbm->numPhases;
 
-	// scan all markersPetscPrintf(PETSC_COMM_WORLD," i = %d\n",jj);
-
 	for(jj = 0; jj < actx->nummark; jj++)
 	{
 		// access marker

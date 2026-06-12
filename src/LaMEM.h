@@ -159,9 +159,6 @@
 // maximum number of matrix-free levels
 #define _max_num_mat_free_levels_ 8
 
-// cast macros
-//#define LLD long long int  %lld
-
 // adjoint parameter limits
 #define _MAX_PAR_ 100
 #define _MAX_OBS_ 100
@@ -199,6 +196,12 @@ typedef pair <PetscInt,    PetscInt> ipair;
 //-----------------------------------------------------------------------------
 
 #define UNUSED(x) (void)(x)
+
+//-----------------------------------------------------------------------------
+// PRINT FORMAT MACRO
+//-----------------------------------------------------------------------------
+
+#define PetscMPIInt_FMT "d"
 
 //-----------------------------------------------------------------------------
 // PROTOTYPES

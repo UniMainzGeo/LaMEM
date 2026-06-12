@@ -27,7 +27,7 @@ struct PVSurf
 	FreeSurf  *surf;               // free surface object
 	char       outfile[_str_len_+_str_len_]; // output file name
 	float     *buff;               // direct output buffer
-	uint64_t   offset;             // pvd file offset
+	long int   offset;             // pvd file offset
 	PetscInt   outsurf;            // free surface output flag
 	PetscInt   outpvd;             // pvd file output flag
 	PetscInt   velocity;           // velocity output flag

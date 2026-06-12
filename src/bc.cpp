@@ -1108,7 +1108,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 	// compile input file name with extension
 	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
 
-	asprintf(&filename, "%s.%1.8d.dat", file, rank);
+	asprintf(&filename, "%s.%1.8" PetscMPIInt_FMT ".dat", file, rank);
 
 	// open file
 	fp = fopen(filename, "rb");
@@ -1540,9 +1540,9 @@ PetscErrorCode BCGetVelins(BCCtx *bc)
 		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
 
 		PetscPrintf(PETSC_COMM_WORLD,
-				"BCGetVelins BOTH: time=%g (Myr) jj=%d kk=%d velin_base=%g velin_net=%g velin_total=%g\n",
+				"BCGetVelins BOTH: time=%g (Myr) jj=%" PetscInt_FMT " kk=%" PetscInt_FMT " velin_base=%g velin_net=%g velin_total=%g\n",
 				(PetscScalar)(time*scal->time),
-				(int)jj, (int)kk,
+				jj, kk,
 				(PetscScalar)(bc->velin_array[jj]*scal->velocity),
 				(PetscScalar)(bc->velin_net_array[kk]*scal->velocity),
 				(PetscScalar)((bc->velin_array[jj] + bc->velin_net_array[kk])*scal->velocity));

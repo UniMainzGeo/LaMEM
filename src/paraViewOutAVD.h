@@ -165,7 +165,7 @@ struct PVAVD
 {
 	AdvCtx    *actx;              // advection context
 	char      outfile[_str_len_+_str_len_]; // output file name
-	uint64_t  offset;             // pvd file offset
+	long int  offset;             // pvd file offset
 	PetscInt  outavd;             // AVD output flag
 	PetscInt  refine;             // Voronoi Diagram refinement factor
 	PetscInt  outpvd;             // pvd file output flag

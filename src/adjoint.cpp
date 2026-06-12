@@ -152,7 +152,7 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 	phsar[iP] 		=  	ID;
 	
 	// Check if there is a command-line option & use that instead
-	asprintf(&dbkey, "-%s[%i]", par_str, (int)ID);
+	asprintf(&dbkey, "-%s[%" PetscInt_FMT "]", par_str, ID);
 	PetscOptionsGetScalar(NULL, NULL, dbkey, &val, &found);
 	free(dbkey);
 

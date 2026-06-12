@@ -25,7 +25,7 @@ struct PVMark
 {
 	AdvCtx    *actx;              // advection context
 	char      outfile[_str_len_+_str_len_]; // output file name
-	uint64_t  offset;             // pvd file offset
+	long int  offset;             // pvd file offset
 	PetscInt  outmark;            // marker output flag
 	PetscInt  outpvd;             // pvd file output flag
 

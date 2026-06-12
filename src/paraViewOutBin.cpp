@@ -85,7 +85,7 @@ void OutBufDump(OutBuf *outbuf)
 	uint64_t nbytes;
 
 	// compute number of bytes
-	nbytes = (uint64_t)outbuf->cn*(int)sizeof(float);
+	nbytes = (uint64_t)(sizeof(float)*(size_t)outbuf->cn);
 
 	// dump number of bytes
 	fwrite(&nbytes, sizeof(uint64_t), 1, outbuf->fp);
@@ -536,7 +536,6 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutDestroy(PVOut *pvout)
 {
-
 	
 	PetscFunctionBeginUser;
 
@@ -595,9 +594,9 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 
 	// open rectilinear grid data block (write total grid size)
 	fprintf(fp, "\t<PRectilinearGrid GhostLevel=\"0\" WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\">\n",
-		1LL, fs->dsx.tnods,
-		1LL, fs->dsy.tnods,
-		1LL, fs->dsz.tnods);
+		1, fs->dsx.tnods,
+		1, fs->dsy.tnods,
+		1, fs->dsz.tnods);
 
 	// write cell data block (empty)
 	fprintf(fp, "\t\t<PCellData>\n");
@@ -605,9 +604,9 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 
 	// write coordinate block
 	fprintf(fp, "\t\t<PCoordinates>\n");
-	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"x\" NumberOfComponents=\"1\" format=\"appended\" header_type=\"UInt64\"/>\n");
-	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"y\" NumberOfComponents=\"1\" format=\"appended\" header_type=\"UInt64\"/>\n");
-	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"z\" NumberOfComponents=\"1\" format=\"appended\" header_type=\"UInt64\"/>\n");
+	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"x\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
+	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"y\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
+	fprintf(fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"z\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
 	fprintf(fp, "\t\t</PCoordinates>\n");
 
 	// write description of output vectors (parameterized)
@@ -629,7 +628,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
 
 		// write data
-		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" Source=\"%s_p%1.8lld.vtr\"/>\n",
+		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" Source=\"%s_p%1.8" PetscMPIInt_FMT ".vtr\"/>\n",
 			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
 			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
 			(fs->dsz.starts[rz] + 1), (fs->dsz.starts[rz+1] + 1), pvout->outfile, iproc);
@@ -654,9 +653,8 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	OutVec        *outvecs;
 	PetscInt       i, rx, ry, rz, sx, sy, sz, nx, ny, nz;
 	PetscMPIInt    rank;
-	size_t         offset = 0;
+	uint64_t       offset = 0;
 
-	
 	PetscFunctionBeginUser;
 
 	// get global sub-domain rank
@@ -673,7 +671,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
-	asprintf(&fname, "%s/%s_p%1.8lld.vtr", dirName, pvout->outfile, rank);
+	asprintf(&fname, "%s/%s_p%1.8" PetscMPIInt_FMT ".vtr", dirName, pvout->outfile, rank);
 	fp = fopen(fname,"wb");
 	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
@@ -703,14 +701,14 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	// write coordinate block
 	fprintf(fp, "\t\t\t<Coordinates>\n");
 
-	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n", offset);
-	offset += sizeof(uint64_t) + sizeof(float)*(size_t)nx;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)nx);
 
-	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n", offset);
-	offset += sizeof(uint64_t) + sizeof(float)*(size_t)ny;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)ny);
 
-	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n", offset);
-	offset += sizeof(uint64_t) + sizeof(float)*(size_t)nz;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)nz);
 
 	fprintf(fp, "\t\t\t</Coordinates>\n");
 
@@ -718,10 +716,10 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	outvecs = pvout->outvecs;
 	fprintf(fp, "\t\t\t<PointData>\n");
 	for(i = 0; i < pvout->nvec; i++)
-	{	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%" PetscInt_FMT "\" format=\"appended\" offset=\"%" PetscInt_FMT "\"/>\n",
+	{	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%" PetscInt_FMT "\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
 			outvecs[i].name, outvecs[i].ncomp, offset);
 		// update offset
-		offset += sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*nz*outvecs[i].ncomp);
+		offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*nz*outvecs[i].ncomp));
 	}
 	fprintf(fp, "\t\t\t</PointData>\n");
 
@@ -771,7 +769,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type)
 //---------------------------------------------------------------------------
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		uint64_t *offset, PetscScalar ttime, PetscInt outpvd)
+		long int *offset, PetscScalar ttime, PetscInt outpvd)
 {
 	FILE        *fp;
 	char        *fname;
@@ -803,7 +801,7 @@ PetscErrorCode UpdatePVDFile(
 	else
 	{
 		// put the file pointer on the next entry
-		PetscCall(fseek(fp, (*offset), SEEK_SET));
+		fseek(fp, (*offset), SEEK_SET);
 	}
 
 	// add entry to .pvd file

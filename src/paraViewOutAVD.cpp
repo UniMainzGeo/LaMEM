@@ -598,6 +598,7 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 			if (cell_num1 != -2) {
 				if ( (cells[cell_num1].p != p_i) && (cells[cell_num1].done != AVD_TRUE) ) {
 
+
 					// Realloc, note that we need one space more than the number of points to terminate the list
 					if (count == bchain->new_boundary_cells_malloced-1 ) {
 						temp = (PetscInt*)realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer + 1)*sizeof(PetscInt) );
@@ -669,7 +670,7 @@ PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar
 
 	AVD3D A;
 
-	
+
 	PetscFunctionBeginUser;
 
 	if(!pvavd->outavd) PetscFunctionReturn(0);
@@ -773,8 +774,8 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	PetscScalar   chLen;
 	float         crd;
 	unsigned char phase;
-	int           offset;
 	uint64_t 	  L;
+	uint64_t      offset = 0;
 
 	PetscFunctionBeginUser;
 
@@ -784,7 +785,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &irank));  rank = (PetscInt)irank;
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
-	asprintf(&fname, "%s/%s_p%1.6d.vtr", dirName, pvavd->outfile, rank);
+	asprintf(&fname, "%s/%s_p%1.8" PetscMPIInt_FMT ".vtr", dirName, pvavd->outfile, irank);
 	fp = fopen(fname,"wb");
 	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
@@ -807,26 +808,25 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 			(A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
 			(A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]));
 
-	offset = 0;
 
 	fprintf(fp, "    <Coordinates>\n");
 
 	// X
-	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%d\"/>\n", offset);
-	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mx+1));
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mx+1));
 	// Y
-	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%d\"/>\n", offset);
-	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->my+1));
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"y\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->my+1));
 	// Z
-	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%d\"/>\n", offset);
-	offset += (int)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mz+1));
+	fprintf(fp, "      <DataArray type=\"Float32\" Name = \"z\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(A->mz+1));
 
 	fprintf(fp, "    </Coordinates>\n");
 
 	fprintf(fp, "    <CellData>\n");
 
 	// phase
-	fprintf(fp, "      <DataArray type=\"UInt8\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%d\"/>\n", offset);
+	fprintf(fp, "      <DataArray type=\"UInt8\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
 
 	fprintf(fp, "    </CellData>\n");
 
@@ -834,41 +834,49 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	fprintf(fp, "    </PointData>\n");
 
 	fprintf(fp, "    </Piece>\n");
-  fprintf(fp, "  </RectilinearGrid>\n");
+	fprintf(fp, "  </RectilinearGrid>\n");
 
 	fprintf(fp,"  <AppendedData encoding=\"raw\">\n");
 	fprintf(fp,"_");
 
 	// X
-	L = (uint64_t)sizeof(float)*(int)(A->mx+1);
+	L = (uint64_t)(sizeof(float)*(size_t)(A->mx+1));
 	fwrite(&L, sizeof(uint64_t), 1, fp);
-	for( i=0; i<A->mx+1; i++ ) {
+
+	for(i = 0; i < A->mx+1; i++ )
+	{
 		crd = (float)((A->x0 + (PetscScalar)i*A->dx)*chLen);
-		fwrite(&crd,sizeof(float),1,fp);
+		fwrite(&crd, sizeof(float), 1, fp);
 	}
 
 	// Y
-	L = (uint64_t)sizeof(float)*(int)(A->my+1);
+	L = (uint64_t)(sizeof(float)*(size_t)(A->my+1));
 	fwrite(&L, sizeof(uint64_t), 1, fp);
-	for( i=0; i<A->my+1; i++ ) {
+
+	for(i = 0; i < A->my+1; i++ )
+	{
 		crd = (float)((A->y0 + (PetscScalar)i*A->dy)*chLen);
-		fwrite(&crd,sizeof(float),1,fp);
+		fwrite(&crd, sizeof(float), 1, fp);
 	}
 
 	// Z
-	L = (uint64_t)sizeof(float)*(int)(A->mz+1);
+	L = (uint64_t)(sizeof(float)*(size_t)(A->mz+1));
 	fwrite(&L, sizeof(uint64_t), 1, fp);
-	for( i=0; i<A->mz+1; i++ ) {
+
+	for(i = 0; i < A->mz+1; i++ )
+	{
 		crd = (float)((A->z0 + (PetscScalar)i*A->dz)*chLen);
-		fwrite(&crd,sizeof(float),1,fp);
+		fwrite(&crd, sizeof(float), 1, fp);
 	}
 
 	// phase
-	L = (uint64_t)sizeof(unsigned char)*(int)(A->mz*A->my*A->mx);
+	L = (uint64_t)(sizeof(unsigned char)*(size_t)(A->mz*A->my*A->mx));
 	fwrite(&L, sizeof(uint64_t), 1, fp);
-	for (k=1; k<A->mz+1; k++) {
-		for (j=1; j<A->my+1; j++) {
-			for (i=1; i<A->mx+1; i++)
+	for(k = 1; k < A->mz+1; k++)
+	{
+		for(j = 1; j < A->my+1; j++)
+		{
+			for(i=1; i < A->mx+1; i++)
 			{
 				ii    = i + j*A->mx_mesh + k*A->mx_mesh*A->my_mesh;
 				phase = (unsigned char)A->points[A->cells[ii].p].phase;
@@ -880,7 +888,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 
 	fprintf(fp, "</VTKFile>\n");
 
-	fclose( fp );
+	fclose(fp);
 
 	PetscFunctionReturn(0);
 }

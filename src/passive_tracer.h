@@ -71,18 +71,18 @@ struct P_Tr
 	PetscInt    nummark ;
 	Condition   Condition_pr;
 	PetscScalar value_condition;
-	Vec         ID;    // global identification number
-	Vec    phase; // phase identifier
-	Vec    x;      // global coordinates
-	Vec    y;      //
-	Vec    z;      //
-	Vec    p;     // pressure
-	Vec    T;     // temperature
-	Vec    Melt_fr; // Melt fraction acquired
-	Vec    Melt_Grid; // melt quantity effectively seen by the grid
-	Vec    APS; // accumulated plastic strain
-	Vec    C_advection; // condition to advect marker /*NB: in the future it could be useful to customize better this vector */
-	Vec    Recv;  // Vector that must be used during synching operation
+	Vec         ID;          // global identification number
+	Vec         phase;       // phase identifier
+	Vec         x;           // global coordinates
+	Vec         y;           //
+	Vec         z;           //
+	Vec         p;           // pressure
+	Vec         T;           // temperature
+	Vec         Melt_fr;     // Melt fraction acquired
+	Vec         Melt_Grid;   // melt quantity effectively seen by the grid
+	Vec         APS;         // accumulated plastic strain
+	Vec         C_advection; // condition to advect marker /*NB: in the future it could be useful to customize better this vector */
+	Vec         Recv;        // Vector that must be used during synching operation
 };
 
 PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb);
