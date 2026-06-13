@@ -53,7 +53,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	PetscScalar    header[2 + _max_num_obs_];
 	PetscInt       Fsize=0,L,k,i,j,cnt,startf,startq,indf,indq;
 	PetscScalar   *readbuff;
-	PetscInt       buffsize;
+	PetscInt       buffsize, root(0);
 	int            fd;
 	PetscViewer    view_in;
 	PetscScalar ***field,***qual;
@@ -137,7 +137,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 		if (ISParallel(PETSC_COMM_WORLD))
 		{
 			objf->otUse[_max_num_obs_] = objf->otN;
-			PetscCallMPI(MPI_Bcast(objf->otUse, (PetscMPIInt)(_max_num_obs_+1), MPIU_2INT,(PetscMPIInt)0, PETSC_COMM_WORLD));
+			PetscCallMPI(MPI_Bcast(objf->otUse, (PetscMPIInt)(_max_num_obs_+1), MPIU_2INT,(PetscMPIInt)root, PETSC_COMM_WORLD));
 			objf->otN = objf->otUse[_max_num_obs_];
 		}
 
@@ -178,7 +178,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 		// broadcast buffer to all cpus
 		if (ISParallel(PETSC_COMM_WORLD))
 		{
-			PetscCallMPI(MPI_Bcast(readbuff, (PetscMPIInt)buffsize, MPIU_SCALAR,(PetscMPIInt)0, PETSC_COMM_WORLD));
+			PetscCallMPI(MPI_Bcast(readbuff, (PetscMPIInt)buffsize, MPIU_SCALAR,(PetscMPIInt)root, PETSC_COMM_WORLD));
 		}
 
 

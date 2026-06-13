@@ -228,8 +228,8 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm, FB *fb)
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 {
 	FILE            *fp;
-	PetscLogDouble  t;
-	PetscMPIInt     rank;
+	PetscLogDouble   t;
+	PetscInt         rank;
 	char            *fileName;
 
 	
@@ -238,10 +238,10 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 	PrintStart(&t, "Loading restart database", NULL);
 
 	// get MPI processor rank
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+	rank = GetRank(MPI_COMM_WORLD);
 
 	// compile restart file name
-	asprintf(&fileName, "./restart/rdb.%1.8" PetscMPIInt_FMT ".dat", rank);
+	asprintf(&fileName, "./restart/rdb.%1.8" PetscInt_FMT ".dat", rank);
 
 	// open restart file for reading in binary mode
 	fp = fopen(fileName, "rb");
@@ -306,7 +306,7 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	// save new restart database, then delete the original
 
 	FILE           *fp;
-	PetscMPIInt    rank;
+	PetscInt       rank;
 	char           *fileNameTmp;
 	PetscLogDouble t;
 
@@ -318,10 +318,10 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	PrintStart(&t, "Saving restart database", NULL);
 
 	// get MPI processor rank
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+	rank = GetRank(MPI_COMM_WORLD);
 
 	// compile actual & temporary restart file name
-	asprintf(&fileNameTmp, "./restart-tmp/rdb.%1.8" PetscMPIInt_FMT ".dat", rank);
+	asprintf(&fileNameTmp, "./restart-tmp/rdb.%1.8" PetscInt_FMT ".dat", rank);
 
 	// create temporary restart directory
 	PetscCall(DirMake("./restart-tmp"));
@@ -381,18 +381,17 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 PetscErrorCode LaMEMLibDeleteRestart()
 {
 	// delete existing restart database
-	PetscMPIInt  rank;
+	PetscInt     rank;
 	int          status;
 	PetscInt     exists;
 	char        *fileName;
-
 	
 	PetscFunctionBeginUser;
 
 	// get MPI processor rank
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+	rank = GetRank(MPI_COMM_WORLD);
 
-	asprintf(&fileName, "./restart/rdb.%1.8" PetscMPIInt_FMT ".dat", rank);
+	asprintf(&fileName, "./restart/rdb.%1.8" PetscInt_FMT ".dat", rank);
 
 	// check for existing restart database
 	PetscCall(DirCheck("./restart", &exists));

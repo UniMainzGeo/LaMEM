@@ -483,9 +483,9 @@ PetscErrorCode ADVelDeleteOutflow(AdvVelCtx *vi)
 {
 	// check if advected positions are within the box bounds
 
-	PetscInt     i, lrank, ndel;
-	PetscMPIInt  grank;
-	FDSTAG       *fs;
+	PetscInt  i, lrank, ndel;
+	PetscInt  grank;
+	FDSTAG    *fs;
 
 	
 	PetscFunctionBeginUser;
@@ -537,9 +537,9 @@ PetscErrorCode ADVelMapToDomains(AdvVelCtx *vi)
 {
 	// count number of positions to be sent to each neighbor domain
 
-	PetscInt     i, lrank, cnt;
-	PetscMPIInt  grank;
-	FDSTAG      *fs;
+	PetscInt  i, lrank, cnt;
+	PetscInt  grank;
+	FDSTAG    *fs;
 
 	PetscFunctionBeginUser;
 
@@ -593,7 +593,7 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 		if(fs->neighb[k] != vi->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Isend(&vi->nsendm[k], 1, MPIU_INT,
-					fs->neighb[k], 100, vi->icomm, &srequest[scnt++]));
+				(PetscMPIInt)fs->neighb[k], 100, vi->icomm, &srequest[scnt++]));
 		}
 	}
 
@@ -603,7 +603,7 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 		if(fs->neighb[k] != vi->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Irecv(&vi->nrecvm[k], 1, MPIU_INT,
-					fs->neighb[k], 100, vi->icomm, &rrequest[rcnt++]));
+				(PetscMPIInt)fs->neighb[k], 100, vi->icomm, &rrequest[rcnt++]));
 		}
 		else vi->nrecvm[k] = 0;
 	}
@@ -619,11 +619,10 @@ PetscErrorCode ADVelCreateMPIBuff(AdvVelCtx *vi)
 {
 	// create send and receive buffers for asynchronous MPI communication
 
-	FDSTAG     *fs;
-	PetscInt    i, cnt, lrank;
-	PetscMPIInt grank;
+	FDSTAG    *fs;
+	PetscInt  i, cnt, lrank;
+	PetscInt  grank;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = vi->fs;
@@ -669,7 +668,7 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 
 	FDSTAG     *fs;
 	PetscInt    k;
-	PetscMPIInt scnt, rcnt, nbyte;
+	PetscInt    scnt, rcnt, nbyte;
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
@@ -687,10 +686,10 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 	{
 		if(vi->nsendm[k])
 		{
-			nbyte = (PetscMPIInt)(vi->nsendm[k]*(PetscInt)sizeof(VelInterp));
+			nbyte = vi->nsendm[k]*(PetscInt)sizeof(VelInterp);
 
-			PetscCallMPI(MPI_Isend(&vi->sendbuf[vi->ptsend[k]], nbyte, MPI_BYTE,
-					fs->neighb[k], 200, vi->icomm, &srequest[scnt++]));
+			PetscCallMPI(MPI_Isend(&vi->sendbuf[vi->ptsend[k]], (PetscMPIInt)nbyte, MPI_BYTE,
+				(PetscMPIInt)fs->neighb[k], 200, vi->icomm, &srequest[scnt++]));
 
 		}
 	}
@@ -700,16 +699,16 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 	{
 		if(vi->nrecvm[k])
 		{
-			nbyte = (PetscMPIInt)(vi->nrecvm[k]*(PetscInt)sizeof(VelInterp));
+			nbyte = vi->nrecvm[k]*(PetscInt)sizeof(VelInterp);
 
-			PetscCallMPI(MPI_Irecv(&vi->recvbuf[vi->ptrecv[k]], nbyte, MPI_BYTE,
-					fs->neighb[k], 200, vi->icomm, &rrequest[rcnt++]));
+			PetscCallMPI(MPI_Irecv(&vi->recvbuf[vi->ptrecv[k]], (PetscMPIInt)nbyte, MPI_BYTE,
+				(PetscMPIInt)fs->neighb[k], 200, vi->icomm, &rrequest[rcnt++]));
 		}
 	}
 
 	// wait until all communication processes have been terminated
-	if(scnt) { PetscCallMPI(MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE)); }
-	if(rcnt) { PetscCallMPI(MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE)); }
+	if(scnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)scnt, srequest, MPI_STATUSES_IGNORE)); }
+	if(rcnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)rcnt, rrequest, MPI_STATUSES_IGNORE)); }
 
 	PetscFunctionReturn(0);
 }

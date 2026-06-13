@@ -473,17 +473,14 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	PetscScalar     *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active,*melt_grid,*aps;
 	PetscScalar     pShift;
 	PetscScalar     Xm[3],X[3];
-	PetscLogDouble t;
-	PetscMPIInt 	rank;
-	vector <spair>    dist;
+	PetscLogDouble  t;
+		vector <spair>  dist;
 	spair d;
 	
 	PetscFunctionBeginUser;
 
 	AirPhase = -1;
 	Ttop     =  0.0;
-
-	PetscCallMPI(MPI_Comm_rank( MPI_COMM_WORLD, &rank));
 
 	// access context
 	fs = actx->fs;
@@ -1211,9 +1208,8 @@ PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
 //---------------------------------------------------------
 PetscErrorCode Sync_Vector(Vec x,AdvCtx *actx ,PetscInt nummark)
 {
-	PetscScalar *recv,*send;
+	PetscScalar *recv, *send;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecZeroEntries(actx->Ptr->Recv));

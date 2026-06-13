@@ -375,7 +375,7 @@ PetscErrorCode FreeSurfGetVelComp(
 
 	// merge velocity patches
 	// compute ghosted version of the velocity component
-	if(dsz->nproc != 1 )
+	if(dsz->nproc != 1)
 	{
 		PetscCall(VecGetArray(surf->vpatch, &vpatch));
 		PetscCall(VecGetArray(surf->vmerge, &vmerge));

@@ -573,7 +573,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	char        *fname;
 	OutVec      *outvecs;
 	PetscInt     i, rx, ry, rz, start(1);
-	PetscMPIInt  nproc, iproc;
+	PetscInt     nproc, iproc;
 
 	PetscFunctionBeginUser;
 
@@ -619,7 +619,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	fprintf(fp, "\t\t</PPointData>\n");
 
 	// get total number of sub-domains
-	PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &nproc));
+	nproc = GetNProc(MPI_COMM_WORLD);
 
 	// write local grid sizes (extents) and data file names for all sub-domains
 	for(iproc = 0; iproc < nproc; iproc++)
@@ -628,7 +628,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
 
 		// write data
-		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" Source=\"%s_p%1.8" PetscMPIInt_FMT ".vtr\"/>\n",
+		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" Source=\"%s_p%1.8" PetscInt_FMT ".vtr\"/>\n",
 			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
 			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
 			(fs->dsz.starts[rz] + 1), (fs->dsz.starts[rz+1] + 1), pvout->outfile, iproc);
@@ -652,13 +652,13 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	OutBuf        *outbuf;
 	OutVec        *outvecs;
 	PetscInt       i, rx, ry, rz, sx, sy, sz, nx, ny, nz;
-	PetscMPIInt    rank;
+	PetscInt       rank;
 	uint64_t       offset = 0;
 
 	PetscFunctionBeginUser;
 
 	// get global sub-domain rank
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+	rank = GetRank(MPI_COMM_WORLD);
 
 	// access output buffer object & staggered grid layout
 	outbuf = &pvout->outbuf;
@@ -671,7 +671,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
-	asprintf(&fname, "%s/%s_p%1.8" PetscMPIInt_FMT ".vtr", dirName, pvout->outfile, rank);
+	asprintf(&fname, "%s/%s_p%1.8" PetscInt_FMT ".vtr", dirName, pvout->outfile, rank);
 	fp = fopen(fname,"wb");
 	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);

@@ -1090,7 +1090,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 {
 	FILE           *fp;
 	PetscLogDouble  t;
-	PetscMPIInt     rank;
+	PetscInt        rank;
 	struct          stat sb;
 	char           *filename, file[_str_len_];
 
@@ -1106,9 +1106,9 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 	PrintStart(&t, "Loading fixed cell flags in parallel from", file);
 
 	// compile input file name with extension
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+	rank = GetRank(MPI_COMM_WORLD);
 
-	asprintf(&filename, "%s.%1.8" PetscMPIInt_FMT ".dat", file, rank);
+	asprintf(&filename, "%s.%1.8" PetscInt_FMT ".dat", file, rank);
 
 	// open file
 	fp = fopen(filename, "rb");

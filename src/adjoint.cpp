@@ -1556,8 +1556,8 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 	FDSTAG              *fs;
 	PetscInt            i, lrank;
 	PetscScalar         dt, coord_local[3], *vx, *vy, *vz, *sty;
-	PetscMPIInt    		rank;
-	PetscMPIInt  		grank;
+	PetscInt    		rank;
+	PetscInt  		    grank;
 
 	PetscScalar    		*rbuf1=NULL;
 
@@ -1723,7 +1723,7 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 		// Send velocity array to rank 0 (sum over all arrays), to deal with points residing on different processors
 		{
 
-			PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+			rank = GetRank(MPI_COMM_WORLD);
 
 			if ( rank == 0) 
 			{ 
@@ -2226,7 +2226,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscScalar         w, z, xb, yb, zb, xe, ye, ze, xc, yc, zc, *iter, *ncx, *ncy, *ncz, *ccx, *ccy, *ccz, ***lvx, ***lvy, ***lvz, ***vgrid, ***topo, ***vsurf;
 	Discret1D           *dsz;
 	InterpFlags         iflag;
-	PetscMPIInt			grank;
+	PetscInt			grank;
 
 	PetscFunctionBeginUser;
 
@@ -3842,7 +3842,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscScalar dPardu_local;
 	PetscScalar coord_local[3],  Cons;
 	PetscInt    As_Ind[IOparam->mdI+1];
-	PetscMPIInt grank;
+	PetscInt    grank;
 	Scaling 	*scal;
 
 	PetscFunctionBeginUser;

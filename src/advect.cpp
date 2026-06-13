@@ -374,10 +374,8 @@ PetscErrorCode ADVCreateData(AdvCtx *actx)
 {
 	// create communicator and separator
 
-	FDSTAG      *fs;
-	PetscMPIInt  nproc, iproc;
+	FDSTAG *fs;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -386,11 +384,8 @@ PetscErrorCode ADVCreateData(AdvCtx *actx)
 	// create MPI communicator
 	PetscCallMPI(MPI_Comm_dup(PETSC_COMM_WORLD, &actx->icomm));
 
-	PetscCallMPI(MPI_Comm_size(actx->icomm, &nproc));
-	PetscCallMPI(MPI_Comm_rank(actx->icomm, &iproc));
-
-	actx->nproc = (PetscInt)nproc;
-	actx->iproc = (PetscInt)iproc;
+	actx->iproc = GetRank (actx->icomm);
+	actx->nproc = GetNProc(actx->icomm);
 
 	// allocate memory for marker index array separators
 	PetscCall(makeIntArray(&actx->markstart, NULL, fs->nCells + 1));
@@ -958,7 +953,7 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 
 	PetscScalar *X;
 	PetscInt     i, lrank, cnt;
-	PetscMPIInt  grank;
+	PetscInt     grank;
 	FDSTAG      *fs;
 
 	PetscFunctionBeginUser;
@@ -1001,7 +996,7 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 	// communicate number of markers with neighbor processes
 	FDSTAG     *fs;
 	PetscInt    k;
-	PetscMPIInt scnt, rcnt;
+	PetscInt    scnt, rcnt;
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
@@ -1020,7 +1015,7 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Isend(&actx->nsendm[k], 1, MPIU_INT,
-				fs->neighb[k], 100, actx->icomm, &srequest[scnt++]));
+				(PetscMPIInt)fs->neighb[k], 100, actx->icomm, &srequest[scnt++]));
 		}
 	}
 
@@ -1030,14 +1025,14 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Irecv(&actx->nrecvm[k], 1, MPIU_INT,
-				fs->neighb[k], 100, actx->icomm, &rrequest[rcnt++]));
+				(PetscMPIInt)fs->neighb[k], 100, actx->icomm, &rrequest[rcnt++]));
 		}
 		else actx->nrecvm[k] = 0;
 	}
 
 	// wait until all communication processes have been terminated
-	if(scnt) { PetscCallMPI(MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE)); }
-	if(rcnt) { PetscCallMPI(MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE)); }
+	if(scnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)scnt, srequest, MPI_STATUSES_IGNORE)); }
+	if(rcnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)rcnt, rrequest, MPI_STATUSES_IGNORE)); }
 
 	PetscFunctionReturn(0);
 }
@@ -1052,7 +1047,7 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	PetscScalar *X;
 	PetscScalar  bx, ex, dx;
 	PetscInt     i, cnt, lrank;
-	PetscMPIInt  grank;
+	PetscInt     grank;
 
 	
 	PetscFunctionBeginUser;
@@ -1120,7 +1115,7 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	// communicate markers with neighbor processes
 	FDSTAG     *fs;
 	PetscInt    k;
-	PetscMPIInt scnt, rcnt, nbyte;
+	PetscInt    scnt, rcnt, nbyte;
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
@@ -1138,10 +1133,10 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	{
 		if(actx->nsendm[k])
 		{
-			nbyte = (PetscMPIInt)(actx->nsendm[k]*(PetscInt)sizeof(Marker));
+			nbyte = actx->nsendm[k]*(PetscInt)sizeof(Marker);
 
-			PetscCallMPI(MPI_Isend(&actx->sendbuf[actx->ptsend[k]], nbyte, MPI_BYTE,
-				fs->neighb[k], 200, actx->icomm, &srequest[scnt++]));
+			PetscCallMPI(MPI_Isend(&actx->sendbuf[actx->ptsend[k]], (PetscMPIInt)nbyte, MPI_BYTE,
+				(PetscMPIInt)fs->neighb[k], 200, actx->icomm, &srequest[scnt++]));
 
 		}
 	}
@@ -1151,16 +1146,16 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	{
 		if(actx->nrecvm[k])
 		{
-			nbyte = (PetscMPIInt)(actx->nrecvm[k]*(PetscInt)sizeof(Marker));
+			nbyte = actx->nrecvm[k]*(PetscInt)sizeof(Marker);
 
-			PetscCallMPI(MPI_Irecv(&actx->recvbuf[actx->ptrecv[k]], nbyte, MPI_BYTE,
-				fs->neighb[k], 200, actx->icomm, &rrequest[rcnt++]));
+			PetscCallMPI(MPI_Irecv(&actx->recvbuf[actx->ptrecv[k]], (PetscMPIInt)nbyte, MPI_BYTE,
+				(PetscMPIInt)fs->neighb[k], 200, actx->icomm, &rrequest[rcnt++]));
 		}
 	}
 
 	// wait until all communication processes have been terminated
-	if(scnt) { PetscCallMPI(MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE)); }
-	if(rcnt) { PetscCallMPI(MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE)); }
+	if(scnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)scnt, srequest, MPI_STATUSES_IGNORE)); }
+	if(rcnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)rcnt, rrequest, MPI_STATUSES_IGNORE)); }
 
 	PetscFunctionReturn(0);
 }

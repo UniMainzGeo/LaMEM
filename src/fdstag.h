@@ -55,7 +55,7 @@ PetscErrorCode MeshSeg1DGenCoord(
 struct Discret1D
 {
 	PetscInt      nproc;     // number of processors
-	PetscMPIInt   rank;      // rank of current processor
+	PetscInt      rank;      // rank of current processor
 
 	PetscInt     *starts;    // index of first node (cell) on all processors + last index
 	PetscInt      pstart;    // index of first node (cell) on this processors
@@ -71,10 +71,10 @@ struct Discret1D
 	PetscScalar  *nbuff;     // memory buffer for node coordinates
 	PetscScalar  *cbuff;     // memory buffer for cells coordinates
 
-	PetscMPIInt   grprev;    // global rank of previous process (-1 for first processor)
-	PetscMPIInt   grnext;    // global rank of next process (-1 for last processor)
+	PetscInt      grprev;    // global rank of previous process (-1 for first processor)
+	PetscInt      grnext;    // global rank of next process (-1 for last processor)
 
-	PetscMPIInt   color;     // color of processor column in base direction
+	PetscInt      color;     // color of processor column in base direction
 	MPI_Comm      comm;      // column communicator
 
 	PetscInt      uniform;   // uniform grid flag
@@ -96,8 +96,8 @@ PetscErrorCode Discret1DCreate(
 		PetscInt     rank,          // processor rank
 		PetscInt    *nnodProc,      // number of nodes per processor
 		PetscInt     color,         // column color
-		PetscMPIInt  grprev,        // global rank of previous process
-		PetscMPIInt  grnext,        // global rank of next process
+		PetscInt     grprev,        // global rank of previous process
+		PetscInt     grnext,        // global rank of next process
 		PetscScalar  gtol,          // geometric tolerance
 		const char  *dir,           // direction label
 		PetscInt     periodic = 0); // periodic topology flag
@@ -187,7 +187,7 @@ struct FDSTAG
 	PetscInt nYFace;  // Y-faces
 	PetscInt nZFace;  // Z-faces
 
-	PetscMPIInt neighb[_num_neighb_]; // global ranks of neighboring process
+	PetscInt    neighb[_num_neighb_]; // global ranks of neighboring process
 	PetscScalar gtol;                 // relative geometry tolerance
 	PetscInt    periodic;             // periodic topology flag
 };
@@ -220,7 +220,7 @@ PetscErrorCode FDSTAGSetNum(FDSTAG *fs);
 PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs);
 
 // get local & global ranks of a domain containing a point (only neighbors are checked)
-PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, PetscMPIInt *grank);
+PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, PetscInt *grank);
 
 // compute maximum aspect ratio in the grid
 PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat);

@@ -15,6 +15,7 @@
 #include "parsing.h"
 #include "scaling.h"
 #include "fdstag.h"
+#include "tools.h"
 //-----------------------------------------------------------------------------
 PetscErrorCode solverOptionsSetDefaults(FB *fb)
 {
@@ -451,15 +452,12 @@ PetscErrorCode get_coarse_reduction_factor(
 {
 	// get number of processors for coarse grid solve
 
-	PetscMPIInt size;
-	PetscInt    total_num_cpu, coarse_num_cpu, targer_factor, lower_factor, upper_factor;
+	PetscInt total_num_cpu, coarse_num_cpu, targer_factor, lower_factor, upper_factor;
 
 	PetscFunctionBeginUser;
 
 	// get number of ranks
-	PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &size));
-
-	total_num_cpu = (PetscInt)size;
+	total_num_cpu = GetNProc(MPI_COMM_WORLD);
 
 	if(total_num_cpu == 1 || !opt.coarse_num_cpu)
 	{

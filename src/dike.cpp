@@ -650,16 +650,16 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   // because the code is patterned after GetLithoStaticPressure
   if(dsz->nproc != 1 && dsz->grnext != -1)
   {
-     PetscCallMPI(MPI_Irecv(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Irecv(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
      PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Irecv(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Irecv(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
      PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
      PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
      PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
   }
@@ -692,47 +692,47 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
       //After integrating and averaging, send it down to the next proc. 
   if(dsz->nproc != 1 && dsz->grprev != -1)
   {
-     PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
      PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Isend(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Isend(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
      PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
      PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
      PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
   }
       
 	//Now receive/send the answer from successive previous (underlying) procs so all procs have the answers
   if(dsz->nproc != 1 && dsz->grprev != -1)
   {
-     PetscCallMPI(MPI_Irecv(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Irecv(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
      PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Irecv(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Irecv(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
      PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
      PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
      PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
   }
 
   if(dsz->nproc != 1 && dsz->grnext != -1)
   {
-     PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
      PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Isend(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Isend(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
      PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
      PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     PetscCallMPI(MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
      PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
   }
@@ -965,44 +965,44 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 //--------------------------------------------------
 	if (dsy->nproc > 1 && dsy->grprev != -1)  //Exchange arrays from previous proc, if not the first proc
 	{
-		PetscCallMPI(MPI_Irecv(lycoors_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Irecv(lycoors_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest));
 		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Irecv(lxcenter_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest2));
+		PetscCallMPI(MPI_Irecv(lxcenter_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest2));
 		PetscCallMPI(MPI_Wait(&rrequest2, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Irecv(lsxx_prev, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest3));
+		PetscCallMPI(MPI_Irecv(lsxx_prev, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest3));
 		PetscCallMPI(MPI_Wait(&rrequest3, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Irecv(lmagP_prev, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest4));
+		PetscCallMPI(MPI_Irecv(lmagP_prev, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest4));
 		PetscCallMPI(MPI_Wait(&rrequest4, MPI_STATUSES_IGNORE));
 
 
-		PetscCallMPI(MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest));
 		PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest2));
+		PetscCallMPI(MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest2));
 		PetscCallMPI(MPI_Wait(&srequest2, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest3));
+		PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest3));
 		PetscCallMPI(MPI_Wait(&srequest3, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Isend(lmagP, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest4));
+		PetscCallMPI(MPI_Isend(lmagP, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest4));
 		PetscCallMPI(MPI_Wait(&srequest4, MPI_STATUSES_IGNORE));
 	}
 
 	if ((dsy->nproc != 1) &&  (dsy->grnext != -1))  //Exhange arrays with next proc, if not the last proc
 	{
-		PetscCallMPI(MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest));
 		PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest2));
+		PetscCallMPI(MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest2));
 		PetscCallMPI(MPI_Wait(&srequest2, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest3));
+		PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest3));
 		PetscCallMPI(MPI_Wait(&srequest3, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Isend(lmagP, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest4));
+		PetscCallMPI(MPI_Isend(lmagP, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest4));
 		PetscCallMPI(MPI_Wait(&srequest4, MPI_STATUSES_IGNORE));
 
-		PetscCallMPI(MPI_Irecv(lycoors_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Irecv(lycoors_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest));
 		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Irecv(lxcenter_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest2));
+		PetscCallMPI(MPI_Irecv(lxcenter_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest2));
 		PetscCallMPI(MPI_Wait(&rrequest2, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Irecv(lsxx_next, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest3));
+		PetscCallMPI(MPI_Irecv(lsxx_next, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest3));
 		PetscCallMPI(MPI_Wait(&rrequest3, MPI_STATUSES_IGNORE));
-		PetscCallMPI(MPI_Irecv(lmagP_next, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest4));
+		PetscCallMPI(MPI_Irecv(lmagP_next, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest4));
 		PetscCallMPI(MPI_Wait(&rrequest4, MPI_STATUSES_IGNORE));
 
 	}
@@ -1518,10 +1518,10 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 	//Receive from 2nd northernmost (top in y) proc to southernmost (bottom in y) and set bottom ghost node
 	if (dsy->nproc > 1 && dsy->grnext != -1) //MPI_Wait will make this run in sequence from top to bottom
 	{
-		PetscCallMPI(MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest));
 		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-		PetscCallMPI(MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest));
 		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
 		CurrPhTr->celly_xboundL[ny] = xboundL_pass[L][M][0];
@@ -1536,19 +1536,19 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 			xboundL_pass[L][M][lj] = CurrPhTr->celly_xboundL[lj];  
 			xboundR_pass[L][M][lj] = CurrPhTr->celly_xboundR[lj];  
 		}
-		PetscCallMPI(MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest));
 		PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-		PetscCallMPI(MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest));
 		PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
   	}
 
 	if(dsy->nproc != 1 && dsy->grprev != -1)  //Receive coordinates from previous node & set BOTTOM ghost node
 	{
-		PetscCallMPI(MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest));
 		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-		PetscCallMPI(MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest));
 		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 	
 		CurrPhTr->celly_xboundL[-1] = xboundL_pass[L][M][ny-1];
@@ -1562,10 +1562,10 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 			xboundL_pass[L][M][lj] = CurrPhTr->celly_xboundL[lj];  
 			xboundR_pass[L][M][lj] = CurrPhTr->celly_xboundR[lj];  
 		}
-     	PetscCallMPI(MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     	PetscCallMPI(MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest));
      	PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-		PetscCallMPI(MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest));
      	PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
   	}
 

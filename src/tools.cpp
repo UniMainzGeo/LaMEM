@@ -202,6 +202,24 @@ PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const P
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscInt GetRank(MPI_Comm comm)
+{
+	PetscMPIInt rank;
+
+	MPI_Comm_rank(comm, &rank);
+
+	return (PetscInt)rank;
+}
+//---------------------------------------------------------------------------
+PetscInt GetNProc(MPI_Comm comm)
+{
+	PetscMPIInt nproc;
+
+	MPI_Comm_size(comm, &nproc);
+
+	return (PetscInt)nproc;
+}
+//---------------------------------------------------------------------------
 PetscInt ISRankZero(MPI_Comm comm)
 {
 	PetscMPIInt rank;
@@ -220,16 +238,16 @@ PetscInt ISParallel(MPI_Comm comm)
 	return (size > 1);
 }
 //---------------------------------------------------------------------------
-PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
+PetscInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
 {
 	// get global rank of processor in DMDA
 
 	if(i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
 
-	return (PetscMPIInt)(i + j*m + k*m*n);
+	return i + j*m + k*m*n;
 }
 //---------------------------------------------------------------------------
-PetscMPIInt getGlobalRankPeriodic(
+PetscInt getGlobalRankPeriodic(
 		PetscInt i,  PetscInt j,  PetscInt k,
 		PetscInt m,  PetscInt n,  PetscInt p,
 		PetscInt pi, PetscInt pj, PetscInt pk)
@@ -241,10 +259,10 @@ PetscMPIInt getGlobalRankPeriodic(
 
 	if(i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
 
-	return (PetscMPIInt)(i + j*m + k*m*n);
+	return i + j*m + k*m*n;
 }
 //---------------------------------------------------------------------------
-void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n)
+void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscInt rank, PetscInt m, PetscInt n)
 {
 	// get local ranks of processor in DMDA
 

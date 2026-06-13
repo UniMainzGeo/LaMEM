@@ -695,7 +695,6 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 {
 	FILE        *fp;
 	char        *fname;
-	PetscMPIInt inproc, irank;
 	PetscInt    r2d, p, pi, pj, pk, nproc, rank, start(0);
 
 	PetscFunctionBeginUser;
@@ -703,8 +702,8 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
-	PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &inproc)); nproc = (PetscInt)inproc;
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &irank));  rank  = (PetscInt)irank;
+	rank  = GetRank(MPI_COMM_WORLD);
+	nproc = GetNProc(MPI_COMM_WORLD);
 
 	// open outfile.pvts file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvtr", dirName, pvavd->outfile);
@@ -766,7 +765,6 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 {
 	// WARNING! writing single entry at a time is too slow. Use buffers instead!
 
-	PetscMPIInt   irank;
 	FILE          *fp;
 	char          *fname;
 	PetscInt      i, j, k, ii;
@@ -782,10 +780,10 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	// access context
 	chLen = pvavd->actx->jr->scal->length;
 
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &irank));  rank = (PetscInt)irank;
+	rank = GetRank(MPI_COMM_WORLD);
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
-	asprintf(&fname, "%s/%s_p%1.8" PetscMPIInt_FMT ".vtr", dirName, pvavd->outfile, irank);
+	asprintf(&fname, "%s/%s_p%1.8" PetscInt_FMT ".vtr", dirName, pvavd->outfile, rank);
 	fp = fopen(fname,"wb");
 	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);

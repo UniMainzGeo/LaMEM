@@ -53,6 +53,12 @@ PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const P
 // Rank checking functions
 //---------------------------------------------------------------------------
 
+// get processor rank
+PetscInt GetRank(MPI_Comm comm);
+
+// get number of processors
+PetscInt GetNProc(MPI_Comm comm);
+
 // checks whether processor has a zero rank in the communicator
 PetscInt ISRankZero(MPI_Comm comm);
 
@@ -60,16 +66,16 @@ PetscInt ISRankZero(MPI_Comm comm);
 PetscInt ISParallel(MPI_Comm comm);
 
 // get global rank of processor in DMDA
-PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p);
+PetscInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p);
 
 // get global rank of processor in DMDA with periodic topology
-PetscMPIInt getGlobalRankPeriodic(
+PetscInt getGlobalRankPeriodic(
 		PetscInt i,  PetscInt j,  PetscInt k,
 		PetscInt m,  PetscInt n,  PetscInt p,
 		PetscInt pi, PetscInt pj, PetscInt pk);
 
 // get local ranks of processor in DMDA
-void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n);
+void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscInt rank, PetscInt m, PetscInt n);
 
 //---------------------------------------------------------------------------
 // Directory management functions
