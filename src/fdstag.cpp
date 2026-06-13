@@ -1432,7 +1432,7 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &nproc));
 
 	PetscPrintf(PETSC_COMM_WORLD, "Grid parameters:\n");
-	PetscPrintf(PETSC_COMM_WORLD, "   Total number of cpu                  : %" PetscInt_FMT " \n", nproc);
+	PetscPrintf(PETSC_COMM_WORLD, "   Total number of cpu                  : %" PetscMPIInt_FMT " \n", nproc);
 	PetscPrintf(PETSC_COMM_WORLD, "   Processor grid  [nx, ny, nz]         : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "]\n", px, py, pz);
 	PetscPrintf(PETSC_COMM_WORLD, "   Fine grid cells [nx, ny, nz]         : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "]\n", cx, cy, cz);
 	PetscPrintf(PETSC_COMM_WORLD, "   Number of cells                      :  %" PetscInt_FMT "\n", nCells);

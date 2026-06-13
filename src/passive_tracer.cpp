@@ -100,7 +100,8 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 
 	nummark = passive_tr->passive_tracer_resolution[0]*passive_tr->passive_tracer_resolution[1]*passive_tr->passive_tracer_resolution[2];
 	passive_tr->nummark = nummark;
-	if (passive_tr->nummark>_max_passive_tracer)
+
+	if(passive_tr->nummark>_max_passive_tracer)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The total number of passive tracers must be lower than %" PetscInt_FMT "",_max_passive_tracer);
 	}

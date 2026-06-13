@@ -326,8 +326,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 			strcpy(m->pdf, PhaseDiagram_Dir);
 		}
 		// check that the length of the directory and the length of the file name does not exceed 	
-		if (StringLength>_pd_name_sz_){
-			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"The length of the Phase Diagram Name and directory exceeds the maximum allowed length of %i /n", _pd_name_sz_);
+		if (StringLength>_pd_name_sz_)
+		{
+			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"The length of the Phase Diagram Name and directory exceeds the maximum allowed length of %" PetscInt_FMT " /n", _pd_name_sz_);
 		}
 
 		// copy string
@@ -346,7 +347,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 	
 	// Default Melt_Parametrization value
-
 
 	//============================================================
 	// Creep profiles

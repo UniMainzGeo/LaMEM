@@ -223,7 +223,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 	for(i = 0; i < nummark; i++)
 	{
-		var_int = int(i);
+		var_int = (int)i;
 		fwrite(&var_int, sizeof(int), 1, fp );
 	}
 	// -------------------
@@ -234,7 +234,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 	for(i = 0; i < nummark; i++)
 	{
-		var_int = int(i+1);
+		var_int = (int)(i+1);
 		fwrite(&var_int, sizeof(int),1, fp );
 	}
 
@@ -286,7 +286,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 		for(i = 0; i < nummark; i++)
 		{
-			var_int = int(buf[i]);
+			var_int = (int)buf[i];
 			fwrite(&var_int, sizeof(int), 1, fp);
 		}
 
@@ -382,7 +382,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 		for(i = 0; i < nummark; i++)
 		{
-			var_int = int(buf[i]);
+			var_int = (int)buf[i];
 			fwrite(&var_int, sizeof(int), 1, fp );
 		}
 
@@ -398,7 +398,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 		for(i = 0; i < nummark; i++)
 		{
-			var_int = int(buf[i]);
+			var_int = (int)buf[i];
 			fwrite(&var_int, sizeof(int), 1, fp);
 		}
 

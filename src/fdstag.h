@@ -91,16 +91,16 @@ struct Discret1D
 //---------------------------------------------------------------------------
 
 PetscErrorCode Discret1DCreate(
-		Discret1D  *ds,
-		PetscInt    nproc,         // number of processors
-		PetscInt    rank,          // processor rank
-		PetscInt   *nnodProc,      // number of nodes per processor
-		PetscInt    color,         // column color
-		PetscMPIInt grprev,        // global rank of previous process
-		PetscMPIInt grnext,        // global rank of next process
-		PetscScalar gtol,          // geometric tolerance
-		const char *dir,           // direction label
-		PetscInt    periodic = 0); // periodic topology flag
+		Discret1D   *ds,
+		PetscInt     nproc,         // number of processors
+		PetscInt     rank,          // processor rank
+		PetscInt    *nnodProc,      // number of nodes per processor
+		PetscInt     color,         // column color
+		PetscMPIInt  grprev,        // global rank of previous process
+		PetscMPIInt  grnext,        // global rank of next process
+		PetscScalar  gtol,          // geometric tolerance
+		const char  *dir,           // direction label
+		PetscInt     periodic = 0); // periodic topology flag
 
 PetscErrorCode Discret1DDestroy(Discret1D *ds);
 

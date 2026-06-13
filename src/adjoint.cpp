@@ -450,7 +450,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref"       			 , &IOparam->DII_ref,   1, 1        ));  // Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
 	if (IOparam->DII_ref==0.0 && IOparam->FS)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%" PetscInt_FMT " For Kernel calculation you have to explicitly set DII_ref (equal to the one in forward LaMEM) with 'Adjoint_DII_ref'", 1);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "For Kernel calculation you have to explicitly set DII_ref (equal to the one in forward LaMEM) with 'Adjoint_DII_ref'");
 	}
 	PetscCall(PetscMemcpy(IOparam->ScalLawFilename, 	str,   (size_t)_str_len_*sizeof(char) )); 
    
@@ -535,7 +535,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	}
 	else
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "\n| Use = %" PetscInt_FMT " not known; should be within [0-4]\n", IOparam->use);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "\n Invalid inversion type requested \n");
 	}
 	
 	PetscCall(AdjointVectorsCreate(Adjoint_Vectors, IOparam));
@@ -598,7 +598,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscCall(VecGetArray(Adjoint_Vectors->grad,&gradar));
 	fb->blockID = 0;
 	i 			= iStart;
-	//PetscPrintf(PETSC_COMM_WORLD, "| \n|    # of adjoint parameter blocks found      : %i   \n", fb->nblocks);
+
 	for(j = 0; j < fb->nblocks; j++)
 	{
 		// Retrieve name of the parameter

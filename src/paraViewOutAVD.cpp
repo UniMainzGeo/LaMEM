@@ -696,7 +696,7 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	FILE        *fp;
 	char        *fname;
 	PetscMPIInt inproc, irank;
-	PetscInt    r2d, p, pi, pj, pk, nproc, rank;
+	PetscInt    r2d, p, pi, pj, pk, nproc, rank, start(0);
 
 	PetscFunctionBeginUser;
 
@@ -720,9 +720,9 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	WriteXMLHeader(fp, "PRectilinearGrid");
 
 	fprintf(fp, "  <PRectilinearGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" GhostLevel=\"0\" >\n",
-		0,(A->gmx),
-		0,(A->gmy),
-		0,(A->gmz));
+		start, A->gmx,
+		start, A->gmy,
+		start, A->gmz);
 
 	fprintf(fp, "    <PCoordinates>\n");
 	fprintf(fp, "      <PDataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" />\n");

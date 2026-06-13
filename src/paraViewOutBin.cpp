@@ -572,7 +572,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	FDSTAG      *fs;
 	char        *fname;
 	OutVec      *outvecs;
-	PetscInt     i, rx, ry, rz;
+	PetscInt     i, rx, ry, rz, start(1);
 	PetscMPIInt  nproc, iproc;
 
 	PetscFunctionBeginUser;
@@ -594,9 +594,9 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 
 	// open rectilinear grid data block (write total grid size)
 	fprintf(fp, "\t<PRectilinearGrid GhostLevel=\"0\" WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\">\n",
-		1, fs->dsx.tnods,
-		1, fs->dsy.tnods,
-		1, fs->dsz.tnods);
+		start, fs->dsx.tnods,
+		start, fs->dsy.tnods,
+		start, fs->dsz.tnods);
 
 	// write cell data block (empty)
 	fprintf(fp, "\t\t<PCellData>\n");
