@@ -587,8 +587,6 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   PetscScalar xcell, ycell;
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L, ID, AirPhase;
   PetscInt 	  istep, nstep_out;
-  PetscMPIInt    rank;
-
   FDSTAG      *fs;
   Dike        *dike;
   Discret1D   *dsz;
@@ -608,8 +606,6 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   L   =  (PetscInt)dsz->rank;
   AirPhase  = jr->surf->AirPhase;
 
-
-  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
   PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith));
 
   dike = jr->dbdike->matDike+nD;
@@ -812,7 +808,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	Dike        *dike;
 	Discret1D   *dsz, *dsy;
 	Ph_trans_t  *CurrPhTr;
-
 	PetscScalar ***gsxx_eff_ave, ***gsxx_eff_ave_hist, ***magPressure;
 	PetscScalar ***ycoors, *lycoors, ***ycoors_prev, *lycoors_prev, ***ycoors_next, *lycoors_next;
 	PetscScalar ***xcenter, *lxcenter, ***xcenter_prev, *lxcenter_prev, ***xcenter_next, *lxcenter_next;
@@ -823,29 +818,24 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	PetscScalar xcent, xcent_north, xcent_south, ycent_north, ycent_south, xcent_search, ycent_search;
 	PetscScalar azim, dalong, dxazim, dyazim, radbound, sumslope, sumadd;
 	PetscScalar dx_tot, dy_tot, str_y;
-
 	Vec         vycoors, vycoors_prev, vycoors_next;
 	Vec         vxcenter, vxcenter_prev, vxcenter_next;
 	Vec         vsxx, vsxx_prev, vsxx_next;
 	Vec         vmagP, vmagP_prev, vmagP_next;
-
 	PetscInt    j, jj, j1prev, j2prev, j1next, j2next, jj1, jj2; 
 	PetscInt    i,ii, ii1, ii2;
 	PetscInt    sx, sy, sz, nx, ny, nz;
 	PetscInt    L, M;
-	PetscMPIInt rank;
 	PetscInt    sisc, istep_count, istep_nave, istep, nstep_out;
+	MPI_Request srequest, rrequest, srequest2, rrequest2, srequest3, rrequest3, srequest4, rrequest4;
 
 	PetscFunctionBeginUser;
 
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
-	MPI_Request srequest, rrequest, srequest2, rrequest2, srequest3, rrequest3, srequest4, rrequest4;
-
-	fs  =  jr->fs;
-	dsz = &fs->dsz;
-	dsy = &fs->dsy;
-	L   =  (PetscInt)dsz->rank;
-	M   =  (PetscInt)dsy->rank;
+	fs   =  jr->fs;
+	dsz  = &fs->dsz;
+	dsy  = &fs->dsy;
+	L    =  (PetscInt)dsz->rank;
+	M    =  (PetscInt)dsy->rank;
 
 	istep=jr->ts->istep+1; 
 	nstep_out=jr->ts->nstep_out;
@@ -862,7 +852,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	CurrPhTr = jr->dbm->matPhtr+nPtr;
 
 // get communication buffer (Gets a PETSc vector, vycoors, that may be used with the DM global routines)
-//y node coords
 	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors));
 	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_prev));
 	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_next));
@@ -871,7 +860,7 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	PetscCall(VecZeroEntries(vycoors_prev));
 	PetscCall(VecZeroEntries(vycoors_next));
 
-//for dike center
+// for dike center
 	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter));
 	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_prev));
 	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_next));

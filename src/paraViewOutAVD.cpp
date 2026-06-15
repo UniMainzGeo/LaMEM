@@ -745,7 +745,7 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 		pj = r2d/(A->M);
 		pi = r2d - pj*A->M;
 
-		fprintf(fp, "    <Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" Source=\"%s_p%1.6" PetscInt_FMT ".vtr\" />\n",
+		fprintf(fp, "    <Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" Source=\"%s_p%1.8" PetscInt_FMT ".vtr\" />\n",
 				(A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
 				(A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
 				(A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]),

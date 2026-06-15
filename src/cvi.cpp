@@ -574,7 +574,7 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 
 	FDSTAG     *fs;
 	PetscInt    k;
-	PetscMPIInt scnt, rcnt;
+	PetscInt    scnt, rcnt;
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
@@ -609,8 +609,8 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 	}
 
 	// wait until all communication processes have been terminated
-	if(scnt) { PetscCallMPI(MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE)); }
-	if(rcnt) { PetscCallMPI(MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE)); }
+	if(scnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)scnt, srequest, MPI_STATUSES_IGNORE)); }
+	if(rcnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)rcnt, rrequest, MPI_STATUSES_IGNORE)); }
 
 	PetscFunctionReturn(0);
 }

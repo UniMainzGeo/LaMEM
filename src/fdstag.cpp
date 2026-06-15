@@ -892,7 +892,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	// to compute strain/rates/stresses/residuals including boundary conditions.
 
 	Scaling         *scal;
-	PetscMPIInt      rank;
+	PetscInt         rank;
 	const PetscInt  *plx, *ply, *plz;
 	PetscInt        *lx,  *ly,  *lz;
 	PetscInt         rx,   ry,   rz;
@@ -902,7 +902,6 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	MeshSeg1D        msx,  msy,  msz;
 	DMBoundaryType   BC_TYPE_X;
 
-	
 	PetscFunctionBeginUser;
 
 	scal = fs->scal;
@@ -969,7 +968,8 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	}
 
 	// get MPI processor rank
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+	rank = GetRank(PETSC_COMM_WORLD);
+
 
 	// determine i-j-k ranks of processor
 	getLocalRank(&rx, &ry, &rz, rank, Px, Py);
@@ -1501,7 +1501,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	int            fid;
 	char           *fname;
 	PetscScalar    *xc, *yc, *zc, chLen;
-	PetscMPIInt    rank;
+	PetscInt       rank;
 	PetscLogDouble t;
 
 	
@@ -1512,7 +1512,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	// characteristic length
 	chLen = fs->scal->length;
 
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+	rank = GetRank(PETSC_COMM_WORLD);
 
 	// gather global coord
 	PetscCall(Discret1DGatherCoord(&fs->dsx, &xc));
