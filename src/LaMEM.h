@@ -24,6 +24,7 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <petsc.h>
 #include <map>
