@@ -222,9 +222,6 @@ struct JacRes
 	// continuity residual
 	Vec gc; // global
 
-	// corner buffer
-	Vec lbcor; // local (ghosted)
-
 	// solution variables
 	SolVarCell  *svCell;   // cell centers
 	SolVarEdge  *svXYEdge; // XY edges

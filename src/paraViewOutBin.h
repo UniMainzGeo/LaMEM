@@ -60,9 +60,13 @@ struct OutBuf
 
 };
 //---------------------------------------------------------------------------
-PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr);
+PetscErrorCode OutBufCreate(OutBuf *outbuf, FDSTAG *fs);
 
 PetscErrorCode OutBufDestroy(OutBuf *outbuf);
+
+PetscErrorCode OutBufGetVectors(OutBuf *outbuf);
+
+PetscErrorCode OutBufRestoreVectors(OutBuf *outbuf);
 
 void OutBufConnectToFile(OutBuf  *outbuf, FILE *fp);
 

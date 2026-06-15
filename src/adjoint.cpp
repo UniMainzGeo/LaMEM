@@ -2218,7 +2218,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, FreeSurf *surf)
 {
 	FDSTAG              *fs;
-	Vec                 lproX, lproY, lproZ, gproX, gproY, gproZ, pro, xini, lxiniX, lxiniY, lxiniZ, gxiniX, gxiniY, gxiniZ;
+	Vec                 lproX, lproY, lproZ, gproX, gproY, gproZ, pro, xini, lxiniX, lxiniY, lxiniZ, gxiniX, gxiniY, gxiniZ, lbcor;
 	PetscScalar         coord_local[3], *temppro, ***llproX, ***llproY, ***llproZ, *dggproX, *dggproY, *dggproZ, *tempxini, ***llxiniX, ***llxiniY, ***llxiniZ, *dggxiniX, *dggxiniY, *dggxiniZ;
 	PetscScalar         *vx, *vy, *vz;
 	PetscScalar         f1,f2,f3,f4,f5,f6,f7,f8;
@@ -2231,6 +2231,8 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
+
+	PetscCall(DMGetLocalVector(fs->DA_COR, &lbcor));
 
 	// initialize corners and edges for interpolation
 	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
@@ -2519,13 +2521,13 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				PetscCall(DMDAVecGetArray(fs->DA_X, lproX, &llproX));
 				
 				// interpolate velocity component from grid faces to corners
-				PetscCall(InterpXFaceCorner(fs, jr->lvx, jr->lbcor, iflag));
+				PetscCall(InterpXFaceCorner(fs, jr->lvx, lbcor, iflag));
 			
 				// load ghost values
-				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+				LOCAL_TO_LOCAL(fs->DA_COR, lbcor)
 			
 				// access topograpy, grid and surface velocity
-				PetscCall(DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecGetArray(fs->DA_COR,    lbcor,        &vgrid));
 				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf));
 				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo));
 			
@@ -2554,7 +2556,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				END_PLANE_LOOP
 	
 				// restore access
-				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    lbcor,        &vgrid));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
 				PetscCall(DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx));
@@ -2577,13 +2579,13 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				PetscCall(DMDAVecGetArray(fs->DA_Y, lproY, &llproY));
 				
 				// interpolate velocity component from grid faces to corners
-				PetscCall(InterpYFaceCorner(fs, jr->lvy, jr->lbcor, iflag));
+				PetscCall(InterpYFaceCorner(fs, jr->lvy, lbcor, iflag));
 			
 				// load ghost values
-				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+				LOCAL_TO_LOCAL(fs->DA_COR, lbcor)
 			
 				// access topograpy, grid and surface velocity
-				PetscCall(DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecGetArray(fs->DA_COR,    lbcor,        &vgrid));
 				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf));
 				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo));
 			
@@ -2611,7 +2613,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				END_PLANE_LOOP
 	
 				// restore access
-				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    lbcor,        &vgrid));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
 				PetscCall(DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy));
@@ -2633,13 +2635,13 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				PetscCall(DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ));
 				
 				// interpolate velocity component from grid faces to corners
-				PetscCall(InterpZFaceCorner(fs, jr->lvz, jr->lbcor, iflag));
+				PetscCall(InterpZFaceCorner(fs, jr->lvz, lbcor, iflag));
 			
 				// load ghost values
-				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+				LOCAL_TO_LOCAL(fs->DA_COR, lbcor)
 			
 				// access topograpy, grid and surface velocity
-				PetscCall(DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecGetArray(fs->DA_COR,    lbcor,        &vgrid));
 				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf));
 				PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo));
 			
@@ -2667,7 +2669,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				END_PLANE_LOOP
 	
 				// restore access
-				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    lbcor,        &vgrid));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
 				PetscCall(DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz));
@@ -2761,6 +2763,8 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscCall(DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz));
 	
+	PetscCall(DMRestoreLocalVector(fs->DA_COR, &lbcor));
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

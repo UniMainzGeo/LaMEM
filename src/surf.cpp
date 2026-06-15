@@ -308,6 +308,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	JacRes      *jr;
 	FDSTAG      *fs;
 	Discret1D   *dsz;
+	Vec          lbcor;
 	InterpFlags iflags;
 	PetscScalar bz, ez;
 	PetscInt    i, j, nx, ny, sx, sy, sz, level, K;
@@ -321,6 +322,8 @@ PetscErrorCode FreeSurfGetVelComp(
 	dsz   = &fs->dsz;
 	level = (PetscInt)dsz->rank;
 
+	PetscCall(DMGetLocalVector(fs->DA_COR, &lbcor));
+
 	// get local coordinate bounds
 	PetscCall(FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez));
 
@@ -332,16 +335,16 @@ PetscErrorCode FreeSurfGetVelComp(
 	iflags.use_bound = 1; // use boundary values
 
 	// interpolate velocity component from grid faces to corners
-	PetscCall(interp(fs, vcomp_grid, jr->lbcor, iflags));
+	PetscCall(interp(fs, vcomp_grid, lbcor, iflags));
 
 	// load ghost values
-	LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+	LOCAL_TO_LOCAL(fs->DA_COR, lbcor)
 
 	// clear surface velocity patch vector
 	PetscCall(VecZeroEntries(surf->vpatch));
 
 	// access topograpy, grid and surface velocity
-	PetscCall(DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+	PetscCall(DMDAVecGetArray(fs->DA_COR,    lbcor,        &vgrid));
 	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf));
 	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo));
 
@@ -369,7 +372,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	END_PLANE_LOOP
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid));
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR,    lbcor,        &vgrid));
 	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
 	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
 
@@ -392,6 +395,8 @@ PetscErrorCode FreeSurfGetVelComp(
 	{
 		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->vpatch, vcomp_surf);
 	}
+
+	PetscCall(DMRestoreLocalVector(fs->DA_COR, &lbcor));
 
 	PetscFunctionReturn(0);
 }

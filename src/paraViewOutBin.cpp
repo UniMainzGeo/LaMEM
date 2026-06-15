@@ -25,15 +25,11 @@
 //---------------------------------------------------------------------------
 //............................. Output buffer ...............................
 //---------------------------------------------------------------------------
-PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
+PetscErrorCode OutBufCreate(OutBuf *outbuf, FDSTAG *fs)
 {
-	FDSTAG   *fs;
 	PetscInt rx, ry, rz, sx, sy, sz, nx, ny, nz;
 
-	
 	PetscFunctionBeginUser;
-
-	fs = jr->fs;
 
 	// initialize parameters
 	outbuf->fs = fs;
@@ -48,23 +44,51 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 	// allocate output buffer
 	PetscCall(PetscMalloc((size_t)(_max_num_comp_*nx*ny*nz)*sizeof(float), &outbuf->buff));
 
-	// set pointers to center, corner & edge buffers (reuse from JacRes object)
-	outbuf->lbcen = jr->ldxx;
-	outbuf->lbcor = jr->lbcor;
-	outbuf->lbxy  = jr->ldxy;
-	outbuf->lbxz  = jr->ldxz;
-	outbuf->lbyz  = jr->ldyz;
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode OutBufDestroy(OutBuf *outbuf)
 {
-	
 	PetscFunctionBeginUser;
 
 	// free output buffer
 	PetscCall(PetscFree(outbuf->buff));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode OutBufGetVectors(OutBuf *outbuf)
+{
+	FDSTAG *fs;
+
+	PetscFunctionBeginUser;
+
+	fs = outbuf->fs;
+
+	// get center, corner & edge buffers
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &outbuf->lbcen));
+	PetscCall(DMGetLocalVector(fs->DA_COR, &outbuf->lbcor));
+	PetscCall(DMGetLocalVector(fs->DA_XY,  &outbuf->lbxy));
+	PetscCall(DMGetLocalVector(fs->DA_XZ,  &outbuf->lbxz));
+	PetscCall(DMGetLocalVector(fs->DA_YZ,  &outbuf->lbyz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode OutBufRestoreVectors(OutBuf *outbuf)
+{
+	FDSTAG *fs;
+
+	PetscFunctionBeginUser;
+
+	fs = outbuf->fs;
+
+	// restore center, corner & edge buffers
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &outbuf->lbcen));
+	PetscCall(DMRestoreLocalVector(fs->DA_COR, &outbuf->lbcor));
+	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &outbuf->lbxy));
+	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &outbuf->lbxz));
+	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &outbuf->lbyz));
 
 	PetscFunctionReturn(0);
 }
@@ -477,7 +501,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	iter   =  0;
 
 	// create output buffer
-	PetscCall(OutBufCreate(&pvout->outbuf, jr));
+	PetscCall(OutBufCreate(&pvout->outbuf, jr->fs));
 
 	// create vectors
 	PetscCall(PetscMalloc(sizeof(OutVec)*(size_t)pvout->nvec, &pvout->outvecs));
@@ -536,7 +560,6 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutDestroy(PVOut *pvout)
 {
-	
 	PetscFunctionBeginUser;
 
 	// output vectors
@@ -676,6 +699,9 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
+	// get output vectors
+	PetscCall(OutBufGetVectors(&pvout->outbuf));
+
 	// link output buffer to file
 	OutBufConnectToFile(outbuf, fp);
 
@@ -750,6 +776,9 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 
 	// close file
 	fclose(fp);
+
+	// restore output vectors
+	PetscCall(OutBufRestoreVectors(&pvout->outbuf));
 
 	PetscFunctionReturn(0);
 }

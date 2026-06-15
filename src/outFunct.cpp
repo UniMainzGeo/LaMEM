@@ -41,7 +41,6 @@
 	PetscScalar ***buff, cf; \
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter; \
 	InterpFlags iflag; \
-	 \
 	PetscFunctionBeginUser; \
 	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \
@@ -57,7 +56,6 @@
 	Scaling     *scal; \
 	PetscScalar  cf; \
 	InterpFlags  iflag; \
-	 \
 	PetscFunctionBeginUser; \
 	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \

@@ -422,9 +422,6 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	// continuity residual
 	PetscCall(DMCreateGlobalVector(fs->DA_CEN, &jr->gc));
 
-	// corner buffer
-	PetscCall(DMCreateLocalVector(fs->DA_COR,  &jr->lbcor));
-
 	//======================================
 	// allocate space for solution variables
 	//======================================
@@ -552,8 +549,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	PetscCall(VecDestroy(&jr->gc));
 
 	PetscCall(VecDestroy(&jr->phi));
-
-	PetscCall(VecDestroy(&jr->lbcor));
 
 	// solution variables
 	PetscCall(PetscFree(jr->svCell));
