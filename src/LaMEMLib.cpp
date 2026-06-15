@@ -417,7 +417,6 @@ PetscErrorCode LaMEMLibDeleteRestart()
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(FDSTAGDestroy      (&lm->fs));

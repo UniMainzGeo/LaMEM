@@ -76,12 +76,9 @@ PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar
 	if(pvptr->actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	PetscCall(UpdatePVDFile(dirName, pvptr->outfile, "pvtu", &pvptr->offset, ttime, pvptr->outpvd));
+	PetscCall(UpdatePVDFile(dirName, pvptr->outfile, "vtu", &pvptr->offset, ttime, pvptr->outpvd));
 
-	// write parallel data .pvtu file
-	PetscCall(PVPtrWritePVTU(pvptr, dirName));
-
-	// write sub-domain data .vtu files
+	// write all traces in a single .vtu file (since they are stored redundantly)
 	PetscCall(PVPtrWriteVTU(pvptr, dirName));
 
 	PetscFunctionReturn(0);
@@ -103,6 +100,9 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 
 	PetscFunctionBeginUser;
 
+	// only processor 0
+	if (!ISRankZero(PETSC_COMM_WORLD)) { PetscFunctionReturn(0); }
+
 	// get context
 	ptr = pvptr->actx->Ptr;
 
@@ -113,7 +113,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	stress    = pvptr->actx->jr->scal->stress;
 
 	// create file name
-	asprintf(&fname, "%s/%s_p%1.8" PetscInt_FMT ".vtu", dirName, pvptr->outfile, pvptr->actx->iproc);
+	asprintf(&fname, "%s/%s.vtu", dirName, pvptr->outfile);
 
 	// open file
 	fp = fopen( fname, "wb" );
@@ -415,115 +415,3 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
-{
-	// create .pvtu file for marker output
-	// load the pvtu file in ParaView and apply a Glyph-spheres filter
-	char     *fname;
-	FILE     *fp;
-	PetscInt i;
-
-	PetscFunctionBeginUser;
-
-	// only processor 0
-	if (!ISRankZero(PETSC_COMM_WORLD)) { PetscFunctionReturn(0); }
-
-	// get context
-
-	// create file name
-	asprintf(&fname, "%s/%s.pvtu", dirName, pvptr->outfile);
-
-	// open file
-	fp = fopen( fname, "wb" );
-	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
-	free(fname);
-
-	// write header
-	WriteXMLHeader(fp, "PUnstructuredGrid");
-
-	// define ghost level
-	fprintf( fp, "\t<PUnstructuredGrid GhostLevel=\"0\">\n" );
-
-	// cell data (empty)
-	fprintf( fp, "\t\t<PCellData>\n");
-	fprintf( fp, "\t\t</PCellData>\n");
-
-	// cells
-	fprintf( fp, "\t\t\t<Cells>\n");
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" />\n");
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" />\n");
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\" />\n");
-	fprintf( fp, "\t\t\t</Cells>\n");
-
-	// points
-	fprintf( fp, "\t\t<PPoints>\n");
-	fprintf( fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\"/>\n");
-	fprintf( fp, "\t\t</PPoints>\n");
-
-	fprintf( fp, "\t\t<PPointData>\n");
-
-	if(pvptr->Phase)
-	{
-		// point data
-		fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-	}
-	if(pvptr->Temperature)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Temperature %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_temperature);
-		}
-	if(pvptr->Pressure)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Pressure %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_stress);
-		}
-	if(pvptr->MeltFraction)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Mf %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_unit);
-		}
-
-	if(pvptr->Grid_mf)
-			{
-				// point data
-				fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Mf_Grid %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_unit);
-			}
-
-	if(pvptr->APS)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"APS\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-		}
-
-	if(pvptr->ID)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"ID\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-		}
-	if(pvptr->Active)
-		{
-				// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"Active\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-		}
-
-	fprintf( fp, "\t\t</PPointData>\n");
-
-
-	for(i = 0; i < 1; i++){
-			fprintf( fp, "\t\t<Piece Source=\"%s_p%1.8" PetscInt_FMT ".vtu\"/>\n",pvptr->outfile,i);
-		}
-
-	// close the file
-	fprintf( fp, "\t</PUnstructuredGrid>\n");
-	fprintf( fp, "</VTKFile>\n");
-
-	// close file and free name
-	fclose(fp);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-
-
-
-

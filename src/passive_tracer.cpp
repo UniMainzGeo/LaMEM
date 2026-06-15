@@ -7,14 +7,9 @@
  **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-
-/*
- *  Created on: Jul 28, 2020
- *      Author: piccolo
- */
-
+// Created on: Jul 28, 2020
+//      Author: Andrea Piccolo
 //---------------------------------------------------------------------------
-
 #include "LaMEM.h"
 #include "AVD.h"
 #include "passive_tracer.h"
@@ -45,13 +40,10 @@
 // 2. Communicate to the master processors all the data, and print the output
 
 //---------------------------------------------------------------------------
-
 PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 {
-/*
- *  This function creates all the vector required for tracing pressure, temperature, phase and x,y,z position.
- *  RecvBuf is a vector used only for the synching operation and it has any meaning.
- */
+	// This function creates all the vector required for tracing pressure, temperature, phase and x,y,z position.
+	//  RecvBuf is a vector used only for the synching operation and it has any meaning.
 
 	P_Tr            *passive_tr;
 	char             Condition_adv[_str_len_];
@@ -139,59 +131,54 @@ PetscErrorCode ADVPtrPassive_Tracer_create(AdvCtx *actx, FB *fb)
 
 	 PetscFunctionReturn(0);
 	}
-// ---------------------------------------------------------------------------------------------------------------------------//
+//---------------------------------------------------------------------------
 PetscErrorCode ADVPtrReCreateStorage(AdvCtx *actx)
 {
-
 	PetscFunctionBeginUser;
 
-		if(!actx->jr->ctrl.Passive_Tracer)	PetscFunctionReturn(0);
-	// check whether current storage is insufficient
+	if(!actx->jr->ctrl.Passive_Tracer)	PetscFunctionReturn(0);
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&actx->Ptr->ID));
-		PetscCall(VecZeroEntries(actx->Ptr->ID));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&actx->Ptr->ID));
+	PetscCall(VecZeroEntries(actx->Ptr->ID));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&actx->Ptr->x));
-		PetscCall(VecZeroEntries(actx->Ptr->x));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&actx->Ptr->x));
+	PetscCall(VecZeroEntries(actx->Ptr->x));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->y));
-		PetscCall(VecZeroEntries(actx->Ptr->y));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->y));
+	PetscCall(VecZeroEntries(actx->Ptr->y));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->z));
-		PetscCall(VecZeroEntries(actx->Ptr->z));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->z));
+	PetscCall(VecZeroEntries(actx->Ptr->z));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&actx->Ptr->T));
-		PetscCall(VecZeroEntries(actx->Ptr->T));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&actx->Ptr->T));
+	PetscCall(VecZeroEntries(actx->Ptr->T));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->p));
-		PetscCall(VecZeroEntries(actx->Ptr->p));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->p));
+	PetscCall(VecZeroEntries(actx->Ptr->p));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->phase));
-		PetscCall(VecZeroEntries(actx->Ptr->phase));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->phase));
+	PetscCall(VecZeroEntries(actx->Ptr->phase));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Melt_fr));
-		PetscCall(VecZeroEntries(actx->Ptr->Melt_fr));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Melt_fr));
+	PetscCall(VecZeroEntries(actx->Ptr->Melt_fr));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->C_advection));
-		PetscCall(VecZeroEntries(actx->Ptr->C_advection));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->C_advection));
+	PetscCall(VecZeroEntries(actx->Ptr->C_advection));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Recv));
-		PetscCall(VecZeroEntries(actx->Ptr->Recv));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Recv));
+	PetscCall(VecZeroEntries(actx->Ptr->Recv));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Melt_Grid));
-		PetscCall(VecZeroEntries(actx->Ptr->Melt_Grid));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Melt_Grid));
+	PetscCall(VecZeroEntries(actx->Ptr->Melt_Grid));
 
-		PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->APS));
-		PetscCall(VecZeroEntries(actx->Ptr->APS));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->APS));
+	PetscCall(VecZeroEntries(actx->Ptr->APS));
 
 	PetscFunctionReturn(0);
 }
-
-//------------------------------------------------------------------------------------------//
-
+//---------------------------------------------------------------------------
 PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx)
 {
-	
 	PetscFunctionBeginUser;
 
 	if(actx->jr->ctrl.Passive_Tracer == 0 ) PetscFunctionReturn(0);
@@ -203,11 +190,10 @@ PetscErrorCode ADVPassiveTracerInit(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 {
-	//Initialize the passive tracer lagrangian grid. The initial passive tracer distribution is a rectangular grid, with a
+	// Initialize the passive tracer lagrangian grid. The initial passive tracer distribution is a rectangular grid, with a
 	// a variable resolution. After initializing the coordinates, phase, temperature and pressure are interpolated from
 	// the nearest marker (s.s.)
 
@@ -216,7 +202,6 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	PetscInt     imark;
 	PetscScalar  *Xp,*Yp,*Zp,*ID,*active;
 
-	
 	PetscFunctionBeginUser;
 
 	nx = (PetscScalar) actx->Ptr->passive_tracer_resolution[0];
@@ -226,7 +211,6 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	dy = (actx->Ptr->box_passive_tracer[3]/(actx->dbm->scal->length)-actx->Ptr->box_passive_tracer[2]/(actx->dbm->scal->length))/ny;
 	dz = (actx->Ptr->box_passive_tracer[5]/(actx->dbm->scal->length)-actx->Ptr->box_passive_tracer[4]/(actx->dbm->scal->length))/nz;
 
-
 	// marker counter
 	imark = 0;
 	PetscCall(VecGetArray(actx->Ptr->x, &Xp));
@@ -234,8 +218,6 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 	PetscCall(VecGetArray(actx->Ptr->z, &Zp));
 	PetscCall(VecGetArray(actx->Ptr->ID, &ID));
 	PetscCall(VecGetArray(actx->Ptr->C_advection, &active));
-
-
 
 	// create uniform distribution of markers/cell for variable grid
 	for(k = 0; k < actx->Ptr->passive_tracer_resolution[2]; k++)
@@ -296,18 +278,14 @@ PetscErrorCode ADVPtrInitCoord(AdvCtx *actx)
 
 	}
 
-
 	PetscCall(VecRestoreArray(actx->Ptr->x, &Xp));
 	PetscCall(VecRestoreArray(actx->Ptr->y, &Yp));
 	PetscCall(VecRestoreArray(actx->Ptr->z, &Zp));
 	PetscCall(VecRestoreArray(actx->Ptr->ID, &ID));
 	PetscCall(VecRestoreArray(actx->Ptr->C_advection, &active));
 
-
-
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 {
@@ -322,10 +300,7 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 	PetscInt     I, J, K,ii,numpassive,imark,ID,nx,ny,n,*markind,id_m;
 	PetscScalar ex,bx,ey,by,ez,bz;
 
-
-	
 	PetscFunctionBeginUser;
-
 
 	fs = actx->fs;
 
@@ -441,22 +416,21 @@ PetscErrorCode ADV_Assign_Phase(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-//------------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 {
-/*
- * Warning 1: this routine was copied from the routine of marker advection.
- * 1st : if something change in the advection routine, it may creates some discrepancies
- * in this routine (this may cause the failing of t19_passive tracers)
- * 2nd : In order to mantain a certain degree of consistency between the routine it is necessary
- * to create a general function for the advection. On the other hand, a potential solution
- * Function: 1st part: Each timestep the function advect the passive tracers whose coordinate are
- * belonging to the current processor. The passive tracers that does not belong to the processor
- * are set to be equal to -DBL_MAX. After that, the x,y,z, Temperature, Pressure are syncronized in
- * all processor with an All_reduce operation.
- * 2nd part: The routine check if the passive tracer is below the free surface, changing eventually its phase
- * and following the same approach for the coordinate and P,T.
- */
+
+	// Warning 1: this routine was copied from the routine of marker advection.
+	// 1st : if something change in the advection routine, it may creates some discrepancies
+	// in this routine (this may cause the failing of t19_passive tracers)
+	// 2nd : In order to mantain a certain degree of consistency between the routine it is necessary
+	// to create a general function for the advection. On the other hand, a potential solution
+	// Function: 1st part: Each timestep the function advect the passive tracers whose coordinate are
+	// belonging to the current processor. The passive tracers that does not belong to the processor
+	// are set to be equal to -DBL_MAX. After that, the x,y,z, Temperature, Pressure are syncronized in
+	// all processor with an All_reduce operation.
+	// 2nd part: The routine check if the passive tracer is below the free surface, changing eventually its phase
+	// and following the same approach for the coordinate and P,T.
 
 	FDSTAG          *fs;
 	JacRes          *jr;
@@ -661,7 +635,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			if(AirPhase != -1 && phase[jj] == ((PetscScalar) AirPhase)) T[jj] = Ttop;
 
 			// advect marker
-
 			if( Active[jj]==1.0)
 			{
                 numActTracers += 1; // keep track of the # of active tracers on this processor
@@ -677,41 +650,38 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			}
 
 			if(npz > endz)
-				{
-					npz = zp;
-					Active[jj]=0.0;
-				}
+			{
+				npz = zp;
+				Active[jj]=0.0;
+			}
 			else if(npz < begz)
-				{
-					npz = zp;
-					Active[jj]=0.0;
-				}
+			{
+				npz = zp;
+				Active[jj]=0.0;
+			}
 
 			if(npy > endy)
-				{
-					npy = yp;
-					Active[jj]=0.0;
-				}
+			{
+				npy = yp;
+				Active[jj]=0.0;
+			}
 			else if(npy < begy)
-				{
-				  	npy = yp;
-					Active[jj]=0.0;
-				}
-
+			{
+				npy = yp;
+				Active[jj]=0.0;
+			}
 
 			if(npx > endx)
-				{
-					npx = xp;
-					Active[jj]=0.0;
+			{
+				npx = xp;
+				Active[jj]=0.0;
 
-				}
+			}
 			else if(npx < begx)
-				{
-					npx = xp;
-					Active[jj]=0.0;
-				}
-
-
+			{
+				npx = xp;
+				Active[jj]=0.0;
+			}
 
 			Xp[jj]=npx;
 			Yp[jj]=npy;
@@ -733,7 +703,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 	}
 
-
 	PetscCall(VecRestoreArray(actx->Ptr->x, &Xp));
 	PetscCall(VecRestoreArray(actx->Ptr->y, &Yp));
 	PetscCall(VecRestoreArray(actx->Ptr->z, &Zp));
@@ -745,7 +714,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	PetscCall(VecRestoreArray(actx->Ptr->APS, &aps));
 	PetscCall(VecRestoreArray(actx->Ptr->C_advection, &Active));
 
-
 	// restore access
 	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy));
@@ -756,10 +724,8 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	// get local grid sizes
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
-
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-
 		// sync pressure
 		PetscCall(Sync_Vector(actx->Ptr->p,actx,actx->Ptr->nummark));
 
@@ -816,18 +782,13 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
         PetscInt numActTracers_0;
         PetscCallMPI(MPI_Reduce(&numActTracers, &numActTracers_0, 1, MPIU_INT, MPI_SUM, 0, PETSC_COMM_WORLD));
         numActTracers   = numActTracers_0;       // sum of # of active tracers on root
-
 	}
 
     // print output
     PetscPrintf(PETSC_COMM_WORLD,"\n Currently active tracers    :  %" PetscInt_FMT " \n",  numActTracers);
 
-
 	// Check whatever the marker are belonging to rocks phase or not
-
 	PetscCall(ADVMarkCrossFreeSurfPassive_Tracers(actx));
-
-
 
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
@@ -837,30 +798,25 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	}
 
 	PrintDone(t);
-	
 
 	PetscFunctionReturn(0);
 }
-
-//----------------------------------------------------------------------------//
-
+//---------------------------------------------------------------------------
 PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 {
 	// change marker passive tracers when crossing free surface
 
-	Marker           *IP;
+	Marker          *IP;
 	FDSTAG          *fs;
 	FreeSurf        *surf;
 	Vec             vphase;
 	PetscInt        sx, sy, sz;
 	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
 	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *IX,bz,ez,by,ey,bx,ex,Xm[3];
-	PetscScalar *Xp, *Yp,*Zp,*phaseptr;
+	PetscScalar     *Xp, *Yp,*Zp,*phaseptr;
 	spair           d;
 	vector <spair>  dist;
 
-
-	
 	PetscFunctionBeginUser;
 
 	// free-surface cases only
@@ -882,7 +838,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	ncy = fs->dsy.ncoor;
 
 	PetscCall(FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez));
-
 
 	// reserve marker distance buffer
 	dist.reserve(_mark_buff_sz_);
@@ -913,13 +868,11 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 
 		if(xp >= bx && xp<ex && yp >= by && yp< ey && zp >= bz && zp< ez)
 		{
-
 			PetscCall(Discret1DFindPoint(&fs->dsx, xp, I));
 			PetscCall(Discret1DFindPoint(&fs->dsy, yp, J));
 			PetscCall(Discret1DFindPoint(&fs->dsz, zp, K));
 
 			GET_CELL_ID(ID, I, J, K, fs->dsx.ncels, fs->dsy.ncels)
-
 
 			// compute surface topography at marker position
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
@@ -941,16 +894,16 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 				}
 				else
 				{
-				// sedimentation (numerical) -> air turns into closest (reference) rock
+					// sedimentation (numerical) -> air turns into closest (reference) rock
 					Xm[0]=xp;
 					Xm[1]=yp;
 					Xm[2]=zp;
 
-				// get marker list in containing cell
+					// get marker list in containing cell
 					nmark   = actx->markstart[ID+1] - actx->markstart[ID];
 					markind = actx->markind + actx->markstart[ID];
 
-				// clear distance storage
+					// clear distance storage
 					dist.clear();
 
 					for(ii = 0; ii < nmark; ii++)
@@ -975,10 +928,10 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 					// find closest rock marker (if any)
 					if(dist.size())
 					{
-					// sort rock markers by distance
+						// sort rock markers by distance
 						sort(dist.begin(), dist.end());
 
-					// copy phase from closest marker
+						// copy phase from closest marker
 						IP = &actx->markers[dist.begin()->second];
 
 						phaseptr[jj] = (PetscScalar) IP->phase;
@@ -1008,7 +961,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 		}
 	}
 
-
 	PetscCall(VecRestoreArray(actx->Ptr->x, &Xp));
 	PetscCall(VecRestoreArray(actx->Ptr->y, &Yp));
 	PetscCall(VecRestoreArray(actx->Ptr->z, &Zp));
@@ -1022,8 +974,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-
-//----------------------------------------------------------------------------//
+//---------------------------------------------------------------------------
 PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID, PetscScalar xp, PetscScalar yp, PetscScalar zp, PetscScalar P,PetscScalar T,PetscScalar mf)
 {
 
@@ -1066,14 +1017,11 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 	}
 
 	// overwrite the phase in case of delayed activation or if some condition are met
-
 	if(((actx->Ptr->Condition_pr ==_Pres_ptr_)||(actx->Ptr->Condition_pr ==_Temp_ptr_)||(actx->Ptr->Condition_pr ==_Time_ptr_)) && Active[jj] == 1.0)
 	{
-
 		PetscInt n, ii,id_m,*markind;
 
 		PetscCall(VecGetArray(actx->Ptr->phase, &phase));
-
 
 		X[0]  = xp;
 		X[1]  = yp;
@@ -1082,7 +1030,6 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 		dist.clear();
 		n = actx->markstart[ID+1] - actx->markstart[ID];
 		markind = actx->markind + actx->markstart[ID];
-
 
 		for (ii = 0; ii < n; ii++)
 		{
@@ -1100,59 +1047,33 @@ PetscErrorCode Check_advection_condition(AdvCtx *actx, PetscInt jj, PetscInt ID,
 		sort(dist.begin(), dist.end());
 		phase[jj]= (PetscScalar) actx->markers[dist.begin()->second].phase;
 		PetscCall(VecRestoreArray(actx->Ptr->phase, &phase));
-
-
-
 	}
 
 	PetscCall(VecRestoreArray(actx->Ptr->C_advection, &Active));
 
 	PetscFunctionReturn(0);
 }
-
-
-
-//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------
 PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 {
-
 	PetscFunctionBeginUser;
 
-
-	// check whether current storage is insufficient
-
 	VecDestroy(&actx->Ptr->ID);
-
 	VecDestroy(&actx->Ptr->x);
-
 	VecDestroy(&actx->Ptr->y);
-
 	VecDestroy(&actx->Ptr->z);
-
 	VecDestroy(&actx->Ptr->T);
-
 	VecDestroy(&actx->Ptr->p);
-
 	VecDestroy(&actx->Ptr->phase);
-
 	VecDestroy(&actx->Ptr->Melt_fr);
-
 	VecDestroy(&actx->Ptr->Melt_Grid);
-
 	VecDestroy(&actx->Ptr->APS);
-
 	VecDestroy(&actx->Ptr->C_advection);
-
 	VecDestroy(&actx->Ptr->Recv);
-
-
 
 	PetscFunctionReturn(0);
 }
-// --------------------------------------------------------------------------------------- //
-
-//-------------------------------------------------------------------------//
-
+//---------------------------------------------------------------------------
 PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
 {
 	
@@ -1177,12 +1098,9 @@ PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
 
 	PetscFunctionReturn(0);
 }
-
-// --------------------------------------------------------------------------------------- //
-
+//---------------------------------------------------------------------------
 PetscErrorCode ReadPassive_Tracers(AdvCtx *actx, FILE *fp)
 {
-	
 	PetscFunctionBeginUser;
 
 	// read solution vectors
