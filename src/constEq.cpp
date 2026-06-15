@@ -919,7 +919,7 @@ PetscErrorCode edgeConstEq(
 PetscErrorCode checkConvConstEq(ConstEqCtx *ctx)
 {
 	// check convergence of constitutive equations
-	LLD         ndiv, nit;
+	PetscInt    ndiv, nit;
 	PetscScalar stats[3] = {1.0, 1.0, 1.0};
 
 	PetscFunctionBeginUser;
@@ -929,14 +929,14 @@ PetscErrorCode checkConvConstEq(ConstEqCtx *ctx)
 	PetscCallMPI(MPI_Reduce(stats, ctx->stats, 3, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD));
 
 	// compute number of diverged equations and average iteration count
-	ndiv = (LLD)(stats[0] - stats[1]);
-	nit  = (LLD)(stats[2] / stats[0]);
+	ndiv = (PetscInt)(stats[0] - stats[1]);
+	nit  = (PetscInt)(stats[2] / stats[0]);
 
 	if(ndiv)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"*****************************************************************************\n");
-		PetscPrintf(PETSC_COMM_WORLD,"Warning! Number of diverged points : %lld \n", ndiv);
-		PetscPrintf(PETSC_COMM_WORLD,"Average iteration count            : %lld \n", nit);
+		PetscPrintf(PETSC_COMM_WORLD,"Warning! Number of diverged points : %" PetscInt_FMT " \n", ndiv);
+		PetscPrintf(PETSC_COMM_WORLD,"Average iteration count            : %" PetscInt_FMT " \n", nit);
 		PetscPrintf(PETSC_COMM_WORLD,"*****************************************************************************\n");
 	}
 

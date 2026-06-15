@@ -76,12 +76,9 @@ PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar
 	if(pvptr->actx->jr->ctrl.Passive_Tracer == 0) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	PetscCall(UpdatePVDFile(dirName, pvptr->outfile, "pvtu", &pvptr->offset, ttime, pvptr->outpvd));
+	PetscCall(UpdatePVDFile(dirName, pvptr->outfile, "vtu", &pvptr->offset, ttime, pvptr->outpvd));
 
-	// write parallel data .pvtu file
-	PetscCall(PVPtrWritePVTU(pvptr, dirName));
-
-	// write sub-domain data .vtu files
+	// write all traces in a single .vtu file (since they are stored redundantly)
 	PetscCall(PVPtrWriteVTU(pvptr, dirName));
 
 	PetscFunctionReturn(0);
@@ -93,22 +90,30 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	P_Tr       *ptr;
 	char       *fname;
 	FILE       *fp;
-	PetscInt    i, idx, connect;
+	PetscInt    i, nummark;
+	PetscScalar scal_leng, scal_temp, Tshift, stress;
+	PetscScalar *xp, *yp, *zp, *buf;
+	float       var_float, Xp[3];
+	int         var_int;
+	uint64_t    offset = 0;
 	uint64_t 	length;
-	PetscScalar scal_length;
-	float       var,Xp[3];
-	PetscInt    var_int;
-	PetscScalar *xp,*yp,*zp,*buf;
-	size_t      offset = 0;
 
-	
 	PetscFunctionBeginUser;
+
+	// only processor 0
+	if (!ISRankZero(PETSC_COMM_WORLD)) { PetscFunctionReturn(0); }
 
 	// get context
 	ptr = pvptr->actx->Ptr;
 
+	// units
+	scal_leng = pvptr->actx->jr->scal->length;
+	scal_temp = pvptr->actx->jr->scal->temperature;
+	Tshift    = pvptr->actx->jr->scal->Tshift;
+	stress    = pvptr->actx->jr->scal->stress;
+
 	// create file name
-	asprintf(&fname, "%s/%s_p%1.8lld.vtu", dirName, pvptr->outfile, (LLD)pvptr->actx->iproc);
+	asprintf(&fname, "%s/%s.vtu", dirName, pvptr->outfile);
 
 	// open file
 	fp = fopen( fname, "wb" );
@@ -119,157 +124,155 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	WriteXMLHeader(fp, "UnstructuredGrid");
 
 	// initialize connectivity
-	connect = ptr->nummark;
+	nummark = ptr->nummark;
 
 	// begin unstructured grid
-	fprintf( fp, "\t<UnstructuredGrid>\n" );
-	fprintf( fp, "\t\t<Piece NumberOfPoints=\"%lld\" NumberOfCells=\"%lld\">\n",(LLD)ptr->nummark,(LLD)connect );
+	fprintf(fp, "\t<UnstructuredGrid>\n" );
+	fprintf(fp, "\t\t<Piece NumberOfPoints=\"%" PetscInt_FMT "\" NumberOfCells=\"%" PetscInt_FMT "\">\n", nummark, nummark);
 
 	// cells
-	fprintf( fp, "\t\t\t<Cells>\n");
+	fprintf(fp, "\t\t\t<Cells>\n");
 
 	// connectivity
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(int)*(size_t)nummark);
 
 	// offsets
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
-	// types
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset += sizeof(uint64_t) + sizeof(int)*(size_t)connect;
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(int)*(size_t)nummark);
 
-	fprintf( fp, "\t\t\t</Cells>\n");
+	// types
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(int)*(size_t)nummark);
+
+	fprintf(fp, "\t\t\t</Cells>\n");
 
 	// write cell data block (empty)
-	fprintf( fp, "\t\t\t<CellData>\n");
-	fprintf( fp, "\t\t\t</CellData>\n");
+	fprintf(fp, "\t\t\t<CellData>\n");
+	fprintf(fp, "\t\t\t</CellData>\n");
 
 	// points
-	fprintf( fp, "\t\t\t<Points>\n");
+	fprintf(fp, "\t\t\t<Points>\n");
 
 	// point coordinates
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\" />\n",(LLD)offset);
-	offset += sizeof(uint64_t) + sizeof(float)*(size_t)(ptr->nummark*3);
+	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%" PRIu64 "\" />\n", offset);
+	offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(3*nummark));
 
-	fprintf( fp, "\t\t\t</Points>\n");
+	fprintf(fp, "\t\t\t</Points>\n");
 
 	// point data - marker phase
-	fprintf( fp, "\t\t\t<PointData>\n");
+	fprintf(fp, "\t\t\t<PointData>\n");
 	if(pvptr->Phase)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
-		offset += sizeof(uint64_t) + sizeof(int)*(size_t)ptr->nummark;
+		fprintf(fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+		offset += (uint64_t)(sizeof(uint64_t) + sizeof(int)*(size_t)nummark);
 	}
 
 	if(pvptr->Temperature)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Temperature %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_temperature, (LLD)offset);
-		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
+		fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Temperature %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",pvptr->actx->jr->scal->lbl_temperature, offset);
+		offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)nummark);
 	}
 	if(pvptr->Pressure)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Pressure %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_stress ,(LLD)offset);
-		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
+		fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Pressure %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",pvptr->actx->jr->scal->lbl_stress, offset);
+		offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)nummark);
 	}
 	if(pvptr->MeltFraction)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_unit  ,(LLD)offset);
+		fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",pvptr->actx->jr->scal->lbl_unit, offset);
 
-		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
+		offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)nummark);
 	}
 	if(pvptr->Grid_mf)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf_Grid %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",pvptr->actx->jr->scal->lbl_unit  ,(LLD)offset);
-		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
+		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"Mf_Grid %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",pvptr->actx->jr->scal->lbl_unit, offset);
+		offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)nummark);
 	}
 	if(pvptr->APS)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"APS\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset);
-		offset += sizeof(uint64_t) + sizeof(float)*(size_t)ptr->nummark;
+		fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"APS\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+		offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)nummark);
 	}
 
 	if(pvptr->ID)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"ID\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
-		offset += sizeof(uint64_t) + sizeof(int)*(size_t)ptr->nummark;
+		fprintf(fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"ID\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+		offset += (uint64_t)(sizeof(uint64_t) + sizeof(int)*(size_t)nummark);
 	}
 
 	if(pvptr->Active)
 	{
-		fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Active\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n", (LLD)offset );
-		offset += sizeof(uint64_t) + sizeof(int)*(size_t)ptr->nummark;
+		fprintf(fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"Active\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n", offset);
+		offset += (uint64_t)(sizeof(uint64_t) + sizeof(int)*(size_t)nummark);
 	}
 
-	fprintf( fp, "\t\t\t</PointData>\n");
+	fprintf(fp, "\t\t\t</PointData>\n");
 
-	fprintf( fp, "\t\t</Piece>\n");
-	fprintf( fp, "\t</UnstructuredGrid>\n");
+	fprintf(fp, "\t\t</Piece>\n");
+	fprintf(fp, "\t</UnstructuredGrid>\n");
 
-	fprintf( fp,"\t<AppendedData encoding=\"raw\">\n");
-	fprintf( fp,"_");
+	fprintf(fp,"\t<AppendedData encoding=\"raw\">\n");
+	fprintf(fp,"_");
 
 	// -------------------
 	// write connectivity
 	// -------------------
-	length = (uint64_t)sizeof(int)*connect;
-	fwrite( &length,sizeof(uint64_t),1, fp);
+	length = (uint64_t)(sizeof(int)*(size_t)nummark);
+	fwrite(&length, sizeof(uint64_t), 1, fp);
 
-	for( i = 0; i < connect; i++)
+	for(i = 0; i < nummark; i++)
 	{
-		idx = i;
-		fwrite( &idx, sizeof(int),1, fp );
+		var_int = (int)i;
+		fwrite(&var_int, sizeof(int), 1, fp );
 	}
 	// -------------------
 	// write offsets
 	// -------------------
-	length = (uint64_t)sizeof(int)*connect;
-	fwrite( &length,sizeof(uint64_t),1, fp);
+	length = (uint64_t)(sizeof(int)*(size_t)nummark);
+	fwrite(&length, sizeof(uint64_t), 1, fp);
 
-	for( i = 0; i < connect; i++)
+	for(i = 0; i < nummark; i++)
 	{
-		idx = i+1;
-		fwrite( &idx, sizeof(int),1, fp );
+		var_int = (int)(i+1);
+		fwrite(&var_int, sizeof(int),1, fp );
 	}
+
 	// -------------------
 	// write types
 	// -------------------
-	length = (uint64_t)sizeof(int)*connect;
-	fwrite( &length,sizeof(uint64_t),1, fp);
+	length = (uint64_t)(sizeof(int)*(size_t)nummark);
+	fwrite(&length, sizeof(uint64_t), 1, fp);
 
-	for( i = 0; i < connect; i++)
+	for(i = 0; i < nummark; i++)
 	{
-		idx = 1;
-		fwrite( &idx, sizeof(int),1, fp );
+		var_int = 1;
+		fwrite(&var_int, sizeof(int), 1, fp);
 	}
+
 	// -------------------
 	// write point coordinates
 	// -------------------
-	// scaling length
-		scal_length = pvptr->actx->jr->scal->length;
 
-		PetscCall(VecGetArray(ptr->x, &xp));
-		PetscCall(VecGetArray(ptr->y, &yp));
-		PetscCall(VecGetArray(ptr->z, &zp));
+	PetscCall(VecGetArray(ptr->x, &xp));
+	PetscCall(VecGetArray(ptr->y, &yp));
+	PetscCall(VecGetArray(ptr->z, &zp));
 
+	length = (uint64_t)(sizeof(float)*(size_t)(3*nummark));
+	fwrite(&length,sizeof(uint64_t), 1, fp);
 
-
-	length = (uint64_t)sizeof(float)*(3*ptr->nummark);
-	fwrite( &length,sizeof(uint64_t),1, fp);
-
-	for( i = 0; i < ptr->nummark; i++)
+	for(i = 0; i < nummark; i++)
 	{
-		Xp[0] = (float)(xp[i]*scal_length);
-		Xp[1] = (float)(yp[i]*scal_length);
-		Xp[2] = (float)(zp[i]*scal_length);
-		fwrite( Xp, sizeof(float), (size_t)3, fp );
+		Xp[0] = (float)(xp[i]*scal_leng);
+		Xp[1] = (float)(yp[i]*scal_leng);
+		Xp[2] = (float)(zp[i]*scal_leng);
+
+		fwrite(Xp, sizeof(float), 3, fp);
 	}
+
 	PetscCall(VecRestoreArray(ptr->x, &xp));
 	PetscCall(VecRestoreArray(ptr->y, &yp));
 	PetscCall(VecRestoreArray(ptr->z, &zp));
-
-
-
 
 	// -------------------
 	// write field: phases
@@ -278,264 +281,137 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	{
 		PetscCall(VecGetArray(ptr->phase, &buf));
 
-		length = (uint64_t)sizeof(int)*(ptr->nummark);
-		fwrite( &length,sizeof(uint64_t),1, fp);
+		length = (uint64_t)(sizeof(int)*(size_t)(nummark));
+		fwrite( &length, sizeof(uint64_t),1, fp);
 
-		for( i = 0; i < ptr->nummark; i++)
+		for(i = 0; i < nummark; i++)
 		{
-			var_int = PetscInt(buf[i]);
-			fwrite( &var_int, sizeof(int),1, fp );
+			var_int = (int)buf[i];
+			fwrite(&var_int, sizeof(int), 1, fp);
 		}
-	// -------------------
+
 		PetscCall(VecRestoreArray(ptr->phase, &buf));
-
-
 	}
 
 	if(pvptr->Temperature)
+	{
+		PetscCall(VecGetArray(ptr->T, &buf));
+
+		length = (uint64_t)(sizeof(float)*(size_t)(nummark));
+		fwrite(&length, sizeof(uint64_t), 1, fp);
+
+		for(i = 0; i < nummark; i++)
 		{
-			PetscCall(VecGetArray(ptr->T, &buf));
-
-			length = (uint64_t)sizeof(float)*(ptr->nummark);
-			fwrite( &length,sizeof(uint64_t),1, fp);
-
-			for( i = 0; i < ptr->nummark; i++)
-			{
-				var = float(buf[i]*pvptr->actx->jr->scal->temperature-pvptr->actx->jr->scal->Tshift);
-				fwrite( &var, sizeof(float),1, fp );
-			}
-		// -------------------
-			PetscCall(VecRestoreArray(ptr->T, &buf));
-
-			// end header
-
+			var_float = float(buf[i]*scal_temp - Tshift);
+			fwrite(&var_float, sizeof(float), 1, fp);
 		}
 
+		PetscCall(VecRestoreArray(ptr->T, &buf));
+	}
 
 	if(pvptr->Pressure)
+	{
+		PetscCall(VecGetArray(ptr->p, &buf));
+
+		length = (uint64_t)(sizeof(float)*(size_t)(nummark));
+		fwrite( &length, sizeof(uint64_t), 1, fp);
+
+		for(i = 0; i < nummark; i++)
 		{
-			PetscCall(VecGetArray(ptr->p, &buf));
-
-			length = (uint64_t)sizeof(float)*(ptr->nummark);
-			fwrite( &length,sizeof(uint64_t),1, fp);
-
-			for( i = 0; i < ptr->nummark; i++)
-			{
-				var = float(buf[i]*pvptr->actx->jr->scal->stress);
-				fwrite( &var, sizeof(float),1, fp );
-			}
-		// -------------------
-			PetscCall(VecRestoreArray(ptr->p, &buf));
-
-
+			var_float = float(buf[i]*stress);
+			fwrite(&var_float, sizeof(float), 1, fp);
 		}
+
+		PetscCall(VecRestoreArray(ptr->p, &buf));
+	}
 
 	if(pvptr->MeltFraction)
+	{
+		PetscCall(VecGetArray(ptr->Melt_fr, &buf));
+
+		length = (uint64_t)(sizeof(float)*(size_t)(nummark));
+		fwrite(&length, sizeof(uint64_t), 1, fp);
+
+		for(i = 0; i < nummark; i++)
 		{
-			PetscCall(VecGetArray(ptr->Melt_fr, &buf));
-
-			length = (uint64_t)sizeof(float)*(ptr->nummark);
-			fwrite( &length,sizeof(uint64_t),1, fp);
-
-			for( i = 0; i < ptr->nummark; i++)
-			{
-				var = float(buf[i]);
-				fwrite( &var, sizeof(float),1, fp );
-			}
-		// -------------------
-			PetscCall(VecRestoreArray(ptr->Melt_fr, &buf));
-
-
+			var_float = float(buf[i]);
+			fwrite(&var_float, sizeof(float), 1, fp);
 		}
+
+		PetscCall(VecRestoreArray(ptr->Melt_fr, &buf));
+	}
 
 	if(pvptr->Grid_mf)
+	{
+		PetscCall(VecGetArray(ptr->Melt_Grid, &buf));
+
+		length = (uint64_t)(sizeof(float)*(size_t)(nummark));
+		fwrite(&length, sizeof(uint64_t), 1, fp);
+
+		for(i = 0; i < nummark; i++)
 		{
-			PetscCall(VecGetArray(ptr->Melt_Grid, &buf));
-
-			length = (uint64_t)sizeof(float)*(ptr->nummark);
-			fwrite( &length,sizeof(uint64_t),1, fp);
-
-			for( i = 0; i < ptr->nummark; i++)
-			{
-				var = float(buf[i]);
-				fwrite( &var, sizeof(float),1, fp );
-			}
-		// -------------------
-			PetscCall(VecRestoreArray(ptr->Melt_Grid, &buf));
-
-
+			var_float = float(buf[i]);
+			fwrite(&var_float, sizeof(float), 1, fp);
 		}
+
+		PetscCall(VecRestoreArray(ptr->Melt_Grid, &buf));
+	}
 
 	if(pvptr->APS)
+	{
+		PetscCall(VecGetArray(ptr->APS, &buf));
+
+		length = (uint64_t)(sizeof(float)*(size_t)(nummark));
+		fwrite(&length, sizeof(uint64_t), 1, fp);
+
+		for(i = 0; i < nummark; i++)
 		{
-			PetscCall(VecGetArray(ptr->APS, &buf));
-
-			length = (uint64_t)sizeof(float)*(ptr->nummark);
-			fwrite( &length,sizeof(uint64_t),1, fp);
-
-			for( i = 0; i < ptr->nummark; i++)
-			{
-				var = float(buf[i]);
-				fwrite( &var, sizeof(float),1, fp );
-			}
-		// -------------------
-			PetscCall(VecRestoreArray(ptr->APS, &buf));
-
-
+			var_float = float(buf[i]);
+			fwrite(&var_float, sizeof(float), 1, fp);
 		}
 
+		PetscCall(VecRestoreArray(ptr->APS, &buf));
+	}
+
 	if(pvptr->ID)
-			{
-				PetscCall(VecGetArray(ptr->ID, &buf));
+	{
+		PetscCall(VecGetArray(ptr->ID, &buf));
 
-				length = (uint64_t)sizeof(int)*(ptr->nummark);
-				fwrite( &length,sizeof(uint64_t),1, fp);
+		length = (uint64_t)(sizeof(int)*(size_t)(nummark));
+		fwrite(&length, sizeof(uint64_t), 1, fp);
 
-				for( i = 0; i < ptr->nummark; i++)
-				{
-					var_int = PetscInt(buf[i]);
-					fwrite( &var_int, sizeof(int),1, fp );
-				}
-			// -------------------
-				PetscCall(VecRestoreArray(ptr->ID, &buf));
+		for(i = 0; i < nummark; i++)
+		{
+			var_int = (int)buf[i];
+			fwrite(&var_int, sizeof(int), 1, fp );
+		}
 
-
-			}
+		PetscCall(VecRestoreArray(ptr->ID, &buf));
+	}
 
 	if(pvptr->Active)
-			{
-				PetscCall(VecGetArray(ptr->C_advection, &buf));
+	{
+		PetscCall(VecGetArray(ptr->C_advection, &buf));
 
-				length = (uint64_t)sizeof(int)*(ptr->nummark);
-				fwrite( &length,sizeof(uint64_t),1, fp);
+		length = (uint64_t)(sizeof(int)*(size_t)(nummark));
+		fwrite(&length, sizeof(uint64_t), 1, fp);
 
-				for( i = 0; i < ptr->nummark; i++)
-				{
-					var_int = PetscInt(buf[i]);
-					fwrite( &var_int, sizeof(int),1, fp );
-				}
+		for(i = 0; i < nummark; i++)
+		{
+			var_int = (int)buf[i];
+			fwrite(&var_int, sizeof(int), 1, fp);
+		}
 
-				PetscCall(VecRestoreArray(ptr->C_advection, &buf));
+		PetscCall(VecRestoreArray(ptr->C_advection, &buf));
 
-			}
+	}
 
+	fprintf(fp,"\n\t</AppendedData>\n");
+	fprintf(fp, "</VTKFile>\n");
 
-	fprintf( fp,"\n\t</AppendedData>\n");
-	fprintf( fp, "</VTKFile>\n");
 	// close file
 	fclose(fp);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName)
-{
-	// create .pvtu file for marker output
-	// load the pvtu file in ParaView and apply a Glyph-spheres filter
-	char     *fname;
-	FILE     *fp;
-	PetscInt i;
-
-	PetscFunctionBeginUser;
-
-	// only processor 0
-	if (!ISRankZero(PETSC_COMM_WORLD)) { PetscFunctionReturn(0); }
-
-	// get context
-
-	// create file name
-	asprintf(&fname, "%s/%s.pvtu", dirName, pvptr->outfile);
-
-	// open file
-	fp = fopen( fname, "wb" );
-	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
-	free(fname);
-
-	// write header
-	WriteXMLHeader(fp, "PUnstructuredGrid");
-
-	// define ghost level
-	fprintf( fp, "\t<PUnstructuredGrid GhostLevel=\"0\">\n" );
-
-	// cell data (empty)
-	fprintf( fp, "\t\t<PCellData>\n");
-	fprintf( fp, "\t\t</PCellData>\n");
-
-	// cells
-	fprintf( fp, "\t\t\t<Cells>\n");
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" />\n");
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" />\n");
-	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\" />\n");
-	fprintf( fp, "\t\t\t</Cells>\n");
-
-	// points
-	fprintf( fp, "\t\t<PPoints>\n");
-	fprintf( fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\"/>\n");
-	fprintf( fp, "\t\t</PPoints>\n");
-
-	fprintf( fp, "\t\t<PPointData>\n");
-
-	if(pvptr->Phase)
-	{
-		// point data
-		fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-	}
-	if(pvptr->Temperature)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Temperature %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_temperature);
-		}
-	if(pvptr->Pressure)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Pressure %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_stress);
-		}
-	if(pvptr->MeltFraction)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Mf %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_unit);
-		}
-
-	if(pvptr->Grid_mf)
-			{
-				// point data
-				fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"Mf_Grid %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",pvptr->actx->jr->scal->lbl_unit);
-			}
-
-	if(pvptr->APS)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"APS\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-		}
-
-	if(pvptr->ID)
-		{
-			// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"ID\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-		}
-	if(pvptr->Active)
-		{
-				// point data
-			fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"Active\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
-		}
-
-	fprintf( fp, "\t\t</PPointData>\n");
-
-
-	for(i = 0; i < 1; i++){
-			fprintf( fp, "\t\t<Piece Source=\"%s_p%1.8lld.vtu\"/>\n",pvptr->outfile,(LLD)i);
-		}
-
-	// close the file
-	fprintf( fp, "\t</PUnstructuredGrid>\n");
-	fprintf( fp, "</VTKFile>\n");
-
-	// close file and free name
-	fclose(fp);
-
-	PetscFunctionReturn(0);
-}
-
-
-
-

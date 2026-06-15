@@ -281,7 +281,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->tauUlt)         PetscPrintf(PETSC_COMM_WORLD, "   Ultimate yield stress                   : %g %s \n", ctrl->tauUlt,    scal->lbl_stress_si);
 	if(ctrl->rho_fluid)      PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid, scal->lbl_density);
 	if(ctrl->mfmax)          PetscPrintf(PETSC_COMM_WORLD, "   Max. melt fraction (viscosity, density) : %g    \n", ctrl->mfmax);
-	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %lld  \n", (LLD) ctrl->lmaxit);
+	if(ctrl->lmaxit)         PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration number               : %" PetscInt_FMT "  \n",  ctrl->lmaxit);
 	if(ctrl->lrtol)          PetscPrintf(PETSC_COMM_WORLD, "   Rheology iteration tolerance            : %g    \n", ctrl->lrtol);
 	if(ctrl->Adiabatic_gr)   PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic gradient                      : %g    \n", ctrl->Adiabatic_gr);
 	if(ctrl->Phasetrans)     PetscPrintf(PETSC_COMM_WORLD, "   Phase transitions are active            @ \n");
@@ -2029,7 +2029,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 
 	PrintDone(t);
 
-	if(!conv) PetscPrintf(PETSC_COMM_WORLD, "WARNING: Unable to converge initial pressure (tol: %g maxit: %lld)\n", tol, (LLD)maxit);
+	if(!conv) PetscPrintf(PETSC_COMM_WORLD, "WARNING: Unable to converge initial pressure (tol: %g maxit: %" PetscInt_FMT ")\n", tol, maxit);
 
 	PetscFunctionReturn(0);
 }

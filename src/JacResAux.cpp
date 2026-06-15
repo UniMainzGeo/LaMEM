@@ -256,7 +256,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	// start receiving integral from top domain (next)
 	if(dsz->nproc != 1 && dsz->grnext != -1)
 	{
-		PetscCallMPI(MPI_Irecv(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Irecv(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
 	}
 
 	// copy density
@@ -296,7 +296,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	// send integral to bottom domain (previous)
 	if(dsz->nproc != 1 && dsz->grprev != -1)
 	{
-		PetscCallMPI(MPI_Isend(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Isend(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
 
 		PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 	}

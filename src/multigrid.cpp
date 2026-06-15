@@ -445,11 +445,11 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 
 	if(opt_set != PETSC_TRUE)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %" PetscInt_FMT "", (ncors+1));
 	}
 	else if(nlevels < 2 || nlevels > ncors + 1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %" PetscInt_FMT ". Max. possible: %" PetscInt_FMT "", nlevels, (ncors+1));
 	}
 
 	// check number of matrix-free levels requested on the command line
@@ -459,7 +459,7 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	{
 		if(nlmf > nlevels-2)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of matrix-free levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlmf, (LLD)(nlevels-2));
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of matrix-free levels specified. Requested: %" PetscInt_FMT ". Max. possible: %" PetscInt_FMT "", nlmf, (nlevels-2));
 		}
 	}
 	else
@@ -481,10 +481,10 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	PetscCall(FDSTAGGetCoarseGridSize(fs, nlevels, nx, ny, nz, Nx, Ny, Nz));
 
 	// print grid statistics
-	PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [Nx,Ny,Nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz);
-	PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz);
-	PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);
-	PetscPrintf(PETSC_COMM_WORLD, "   Number of matrix-free levels  :  %lld\n", (LLD)nlmf);
+	PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [Nx,Ny,Nz] : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "]\n", Nx, Ny, Nz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "]\n", nx, ny, nz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %" PetscInt_FMT "\n", nlevels);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of matrix-free levels  :  %" PetscInt_FMT "\n", nlmf);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 

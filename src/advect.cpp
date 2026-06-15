@@ -141,15 +141,15 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// check marker resolution
 	if(actx->NumPartX < _min_nmark_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartX, (LLD)_min_nmark_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%" PetscInt_FMT ") is smaller than allowed (%" PetscInt_FMT ")", actx->NumPartX, _min_nmark_);
 	}
 	if(actx->NumPartY < _min_nmark_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartY, (LLD)_min_nmark_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%" PetscInt_FMT ") is smaller than allowed (%" PetscInt_FMT ")", actx->NumPartY, _min_nmark_);
 	}
 	if(actx->NumPartZ < _min_nmark_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, (LLD)_min_nmark_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%" PetscInt_FMT ") is smaller than allowed (%" PetscInt_FMT ")", actx->NumPartZ, _min_nmark_);
 	}
 
 	// check advection & interpolation types compatibility
@@ -211,17 +211,17 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else if (actx->mctrl == CTRL_AVD)   PetscPrintf(PETSC_COMM_WORLD, "pure AVD for all control volumes\n");
 	else if (actx->mctrl == CTRL_SUB)   PetscPrintf(PETSC_COMM_WORLD, "subgrid \n");
 
-	PetscPrintf(PETSC_COMM_WORLD,"   Markers per cell [nx, ny, nz] : [%lld, %lld, %lld] \n",
-		(LLD)(actx->NumPartX),
-		(LLD)(actx->NumPartY),
-		(LLD)(actx->NumPartZ));
+	PetscPrintf(PETSC_COMM_WORLD,"   Markers per cell [nx, ny, nz] : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "] \n",
+		(actx->NumPartX),
+		(actx->NumPartY),
+		(actx->NumPartZ));
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type      : ");
 	if(!actx->randNoise) PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
 	else                 PetscPrintf(PETSC_COMM_WORLD, "random noise\n");
 
 	if(actx->saveMark)      PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
-	if(actx->bgPhase != -1) PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %lld \n", (LLD)actx->bgPhase);
+	if(actx->bgPhase != -1) PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %" PetscInt_FMT " \n", actx->bgPhase);
 	if(actx->A)             PetscPrintf(PETSC_COMM_WORLD,"   Interpolation constant        : %g \n", actx->A);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
@@ -311,7 +311,7 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 		// get & print background phase ID
 		PetscCall(getIntParam(fb, _REQUIRED_, "bg_phase", &actx->bgPhase, 1, maxPhaseID));
 
-		PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %lld \n", (LLD)actx->bgPhase);
+		PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %" PetscInt_FMT " \n", actx->bgPhase);
 
 		// set background phase in all control volumes
 		PetscCall(ADVSetBGPhase(actx));
@@ -374,10 +374,8 @@ PetscErrorCode ADVCreateData(AdvCtx *actx)
 {
 	// create communicator and separator
 
-	FDSTAG      *fs;
-	PetscMPIInt  nproc, iproc;
+	FDSTAG *fs;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -386,11 +384,8 @@ PetscErrorCode ADVCreateData(AdvCtx *actx)
 	// create MPI communicator
 	PetscCallMPI(MPI_Comm_dup(PETSC_COMM_WORLD, &actx->icomm));
 
-	PetscCallMPI(MPI_Comm_size(actx->icomm, &nproc));
-	PetscCallMPI(MPI_Comm_rank(actx->icomm, &iproc));
-
-	actx->nproc = (PetscInt)nproc;
-	actx->iproc = (PetscInt)iproc;
+	actx->iproc = GetRank (actx->icomm);
+	actx->nproc = GetNProc(actx->icomm);
 
 	// allocate memory for marker index array separators
 	PetscCall(makeIntArray(&actx->markstart, NULL, fs->nCells + 1));
@@ -958,7 +953,7 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 
 	PetscScalar *X;
 	PetscInt     i, lrank, cnt;
-	PetscMPIInt  grank;
+	PetscInt     grank;
 	FDSTAG      *fs;
 
 	PetscFunctionBeginUser;
@@ -1001,7 +996,7 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 	// communicate number of markers with neighbor processes
 	FDSTAG     *fs;
 	PetscInt    k;
-	PetscMPIInt scnt, rcnt;
+	PetscInt    scnt, rcnt;
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
@@ -1020,7 +1015,7 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Isend(&actx->nsendm[k], 1, MPIU_INT,
-				fs->neighb[k], 100, actx->icomm, &srequest[scnt++]));
+				(PetscMPIInt)fs->neighb[k], 100, actx->icomm, &srequest[scnt++]));
 		}
 	}
 
@@ -1030,14 +1025,14 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Irecv(&actx->nrecvm[k], 1, MPIU_INT,
-				fs->neighb[k], 100, actx->icomm, &rrequest[rcnt++]));
+				(PetscMPIInt)fs->neighb[k], 100, actx->icomm, &rrequest[rcnt++]));
 		}
 		else actx->nrecvm[k] = 0;
 	}
 
 	// wait until all communication processes have been terminated
-	if(scnt) { PetscCallMPI(MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE)); }
-	if(rcnt) { PetscCallMPI(MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE)); }
+	if(scnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)scnt, srequest, MPI_STATUSES_IGNORE)); }
+	if(rcnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)rcnt, rrequest, MPI_STATUSES_IGNORE)); }
 
 	PetscFunctionReturn(0);
 }
@@ -1052,7 +1047,7 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	PetscScalar *X;
 	PetscScalar  bx, ex, dx;
 	PetscInt     i, cnt, lrank;
-	PetscMPIInt  grank;
+	PetscInt     grank;
 
 	
 	PetscFunctionBeginUser;
@@ -1120,7 +1115,7 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	// communicate markers with neighbor processes
 	FDSTAG     *fs;
 	PetscInt    k;
-	PetscMPIInt scnt, rcnt, nbyte;
+	PetscInt    scnt, rcnt, nbyte;
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
@@ -1138,10 +1133,10 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	{
 		if(actx->nsendm[k])
 		{
-			nbyte = (PetscMPIInt)(actx->nsendm[k]*(PetscInt)sizeof(Marker));
+			nbyte = actx->nsendm[k]*(PetscInt)sizeof(Marker);
 
-			PetscCallMPI(MPI_Isend(&actx->sendbuf[actx->ptsend[k]], nbyte, MPI_BYTE,
-				fs->neighb[k], 200, actx->icomm, &srequest[scnt++]));
+			PetscCallMPI(MPI_Isend(&actx->sendbuf[actx->ptsend[k]], (PetscMPIInt)nbyte, MPI_BYTE,
+				(PetscMPIInt)fs->neighb[k], 200, actx->icomm, &srequest[scnt++]));
 
 		}
 	}
@@ -1151,16 +1146,16 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	{
 		if(actx->nrecvm[k])
 		{
-			nbyte = (PetscMPIInt)(actx->nrecvm[k]*(PetscInt)sizeof(Marker));
+			nbyte = actx->nrecvm[k]*(PetscInt)sizeof(Marker);
 
-			PetscCallMPI(MPI_Irecv(&actx->recvbuf[actx->ptrecv[k]], nbyte, MPI_BYTE,
-				fs->neighb[k], 200, actx->icomm, &rrequest[rcnt++]));
+			PetscCallMPI(MPI_Irecv(&actx->recvbuf[actx->ptrecv[k]], (PetscMPIInt)nbyte, MPI_BYTE,
+				(PetscMPIInt)fs->neighb[k], 200, actx->icomm, &rrequest[rcnt++]));
 		}
 	}
 
 	// wait until all communication processes have been terminated
-	if(scnt) { PetscCallMPI(MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE)); }
-	if(rcnt) { PetscCallMPI(MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE)); }
+	if(scnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)scnt, srequest, MPI_STATUSES_IGNORE)); }
+	if(rcnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)rcnt, rrequest, MPI_STATUSES_IGNORE)); }
 
 	PetscFunctionReturn(0);
 }
@@ -1575,7 +1570,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	// print info
 	PetscCall(PetscTime(&t1));
-	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%" PetscInt_FMT "]: (Corners ) injected %" PetscInt_FMT " markers in %1.4e s \n",actx->iproc, ninj, t1-t0);
 
 	// clear
 	PetscCall(PetscFree(numcorner));
@@ -1906,8 +1901,6 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 	PetscFunctionBeginUser;
 
 	numPhases = actx->dbm->numPhases;
-
-	// scan all markersPetscPrintf(PETSC_COMM_WORLD," i = %d\n",jj);
 
 	for(jj = 0; jj < actx->nummark; jj++)
 	{

@@ -185,8 +185,8 @@ PetscErrorCode Discret1DCreate(
 		PetscInt    rank,     // processor rank
 		PetscInt   *nnodProc, // number of nodes per processor
 		PetscInt    color,    // column color
-		PetscMPIInt grprev,   // global rank of previous process
-		PetscMPIInt grnext,   // global rank of next process
+		PetscInt    grprev,   // global rank of previous process
+		PetscInt    grnext,   // global rank of next process
 		PetscScalar gtol,     // geometric tolerance
 		const char *dir,      // direction label
 		PetscInt    periodic) // periodic topology flag
@@ -203,7 +203,7 @@ PetscErrorCode Discret1DCreate(
 	ds->nproc = nproc;
 
 	// rank of current processor
-	ds->rank = (PetscMPIInt)rank;
+	ds->rank = rank;
 
 	// index of first node (cell) on all processors + last index
 	PetscCall(makeIntArray(&ds->starts, 0, nproc+1));
@@ -255,7 +255,7 @@ PetscErrorCode Discret1DCreate(
 	ds->grnext = grnext;
 
 	// column color
-	ds->color = (PetscMPIInt) color;
+	ds->color = color;
 
 	// column communicator
 	ds->comm = MPI_COMM_NULL;
@@ -391,7 +391,7 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine)
 {
 	PetscInt    i, nn;
-	PetscMPIInt cnt;
+	PetscInt    cnt;
 	MPI_Request request[4];
 	PetscScalar sprev, rprev, snext, rnext;
 
@@ -430,20 +430,20 @@ PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine)
 		{
 			sprev = fine->ncoor[2];
 
-			PetscCallMPI(MPI_Isend(&sprev, 1, MPIU_SCALAR, fine->grprev, 700, PETSC_COMM_WORLD, &request[cnt++]));
-			PetscCallMPI(MPI_Irecv(&rprev, 1, MPIU_SCALAR, fine->grprev, 700, PETSC_COMM_WORLD, &request[cnt++]));
+			PetscCallMPI(MPI_Isend(&sprev, 1, MPIU_SCALAR, (PetscMPIInt)fine->grprev, 700, PETSC_COMM_WORLD, &request[cnt++]));
+			PetscCallMPI(MPI_Irecv(&rprev, 1, MPIU_SCALAR, (PetscMPIInt)fine->grprev, 700, PETSC_COMM_WORLD, &request[cnt++]));
 		}
 
 		if(fine->grnext != -1)
 		{
 			snext = fine->ncoor[fine->ncels-2];
 
-			PetscCallMPI(MPI_Isend(&snext, 1, MPIU_SCALAR, fine->grnext, 700, PETSC_COMM_WORLD, &request[cnt++]));
-			PetscCallMPI(MPI_Irecv(&rnext, 1, MPIU_SCALAR, fine->grnext, 700, PETSC_COMM_WORLD, &request[cnt++]));
+			PetscCallMPI(MPI_Isend(&snext, 1, MPIU_SCALAR, (PetscMPIInt)fine->grnext, 700, PETSC_COMM_WORLD, &request[cnt++]));
+			PetscCallMPI(MPI_Irecv(&rnext, 1, MPIU_SCALAR, (PetscMPIInt)fine->grnext, 700, PETSC_COMM_WORLD, &request[cnt++]));
 		}
 
 		// wait until all communication processes have been terminated
-		if(cnt) { PetscCallMPI(MPI_Waitall(cnt, request, MPI_STATUSES_IGNORE)); }
+		if(cnt) { PetscCallMPI(MPI_Waitall((PetscMPIInt)cnt, request, MPI_STATUSES_IGNORE)); }
 
 		if(fine->grprev != -1) { coarse->ncoor[-1] = rprev; }
 		if(fine->grnext != -1) { coarse->ncoor[nn] = rnext; }
@@ -490,8 +490,8 @@ PetscErrorCode Discret1DCompleteCoord(Discret1D *ds)
 			{
 				SN = D0;
 
-				PetscCall(MPI_Isend(&SN, 1, MPIU_SCALAR, (PetscMPIInt)ds->nproc-1, 800, ds->comm, &request[0]));
-				PetscCall(MPI_Irecv(&RN, 1, MPIU_SCALAR, (PetscMPIInt)ds->nproc-1, 800, ds->comm, &request[1]));
+				PetscCall(MPI_Isend(&SN, 1, MPIU_SCALAR, (PetscMPIInt)(ds->nproc-1), 800, ds->comm, &request[0]));
+				PetscCall(MPI_Irecv(&RN, 1, MPIU_SCALAR, (PetscMPIInt)(ds->nproc-1), 800, ds->comm, &request[1]));
 
 				PetscCall(MPI_Waitall(2, request, MPI_STATUSES_IGNORE));
 
@@ -569,7 +569,7 @@ PetscErrorCode Discret1DGetColumnComm(Discret1D *ds)
 
 	if(ds->nproc != 1 && ds->comm == MPI_COMM_NULL)
 	{
-		PetscCallMPI(MPI_Comm_split(PETSC_COMM_WORLD, ds->color, ds->rank, &ds->comm));
+		PetscCallMPI(MPI_Comm_split(PETSC_COMM_WORLD, (PetscMPIInt)ds->color, (PetscMPIInt)ds->rank, &ds->comm));
 	}
 
 	PetscFunctionReturn(0);
@@ -605,7 +605,6 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 	PetscMPIInt *recvcnts;
 	PetscMPIInt *recvdisp;
 
-	
 	PetscFunctionBeginUser;
 
 	pcoord   = NULL;
@@ -893,7 +892,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	// to compute strain/rates/stresses/residuals including boundary conditions.
 
 	Scaling         *scal;
-	PetscMPIInt      rank;
+	PetscInt         rank;
 	const PetscInt  *plx, *ply, *plz;
 	PetscInt        *lx,  *ly,  *lz;
 	PetscInt         rx,   ry,   rz;
@@ -903,7 +902,6 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	MeshSeg1D        msx,  msy,  msz;
 	DMBoundaryType   BC_TYPE_X;
 
-	
 	PetscFunctionBeginUser;
 
 	scal = fs->scal;
@@ -970,7 +968,8 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	}
 
 	// get MPI processor rank
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+	rank = GetRank(PETSC_COMM_WORLD);
+
 
 	// determine i-j-k ranks of processor
 	getLocalRank(&rx, &ry, &rz, rank, Px, Py);
@@ -1331,7 +1330,7 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, PetscMPIInt *grank)
+PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, PetscInt *grank)
 {
 	// get local & global ranks of a domain containing a point (only neighbors are checked)
 
@@ -1407,7 +1406,7 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 {
 	// print & check essential grid details
 
-	PetscMPIInt nproc;
+	PetscInt nproc;
 	PetscScalar bx, by, bz;
 	PetscScalar ex, ey, ez;
 	PetscScalar maxAspRat, chLen;
@@ -1429,14 +1428,14 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 
 	PetscCall(FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez));
 
-	PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &nproc));
+	nproc = GetNProc(MPI_COMM_WORLD);
 
 	PetscPrintf(PETSC_COMM_WORLD, "Grid parameters:\n");
-	PetscPrintf(PETSC_COMM_WORLD, "   Total number of cpu                  : %lld \n", (LLD)nproc);
-	PetscPrintf(PETSC_COMM_WORLD, "   Processor grid  [nx, ny, nz]         : [%lld, %lld, %lld]\n", (LLD)px, (LLD)py, (LLD)pz);
-	PetscPrintf(PETSC_COMM_WORLD, "   Fine grid cells [nx, ny, nz]         : [%lld, %lld, %lld]\n", (LLD)cx, (LLD)cy, (LLD)cz);
-	PetscPrintf(PETSC_COMM_WORLD, "   Number of cells                      :  %lld\n", (LLD)nCells);
-	PetscPrintf(PETSC_COMM_WORLD, "   Number of faces                      :  %lld\n", (LLD)nVelDOF);
+	PetscPrintf(PETSC_COMM_WORLD, "   Total number of cpu                  : %" PetscInt_FMT " \n", nproc);
+	PetscPrintf(PETSC_COMM_WORLD, "   Processor grid  [nx, ny, nz]         : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "]\n", px, py, pz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Fine grid cells [nx, ny, nz]         : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "]\n", cx, cy, cz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of cells                      :  %" PetscInt_FMT "\n", nCells);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of faces                      :  %" PetscInt_FMT "\n", nVelDOF);
 	PetscPrintf(PETSC_COMM_WORLD, "   Maximum cell aspect ratio            :  %7.5f\n", maxAspRat);
 	PetscPrintf(PETSC_COMM_WORLD, "   Lower coordinate bounds [bx, by, bz] : [%g, %g, %g]\n", bx*chLen, by*chLen, bz*chLen);
 	PetscPrintf(PETSC_COMM_WORLD, "   Upper coordinate bounds [ex, ey, ez] : [%g, %g, %g]\n", ex*chLen, ey*chLen, ez*chLen);
@@ -1502,7 +1501,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	int            fid;
 	char           *fname;
 	PetscScalar    *xc, *yc, *zc, chLen;
-	PetscMPIInt    rank;
+	PetscInt       rank;
 	PetscLogDouble t;
 
 	
@@ -1513,7 +1512,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	// characteristic length
 	chLen = fs->scal->length;
 
-	PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+	rank = GetRank(PETSC_COMM_WORLD);
 
 	// gather global coord
 	PetscCall(Discret1DGatherCoord(&fs->dsx, &xc));
@@ -1523,9 +1522,9 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	if(rank == 0)
 	{
 		// save file
-		asprintf(&fname, "ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",
-			(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
-			(LLD)fs->dsx.nproc, (LLD)fs->dsy.nproc, (LLD)fs->dsz.nproc);
+		asprintf(&fname, "ProcessorPartitioning_%" PetscInt_FMT "cpu_%" PetscInt_FMT ".%" PetscInt_FMT ".%" PetscInt_FMT ".bin",
+			(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
+			fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc);
 
 		PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid);
 

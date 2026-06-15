@@ -50,8 +50,6 @@ PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar
 // .vtu marker output
 PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName);
 
-// .pvtu marker output
-PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName);
-
+//---------------------------------------------------------------------------
 
 #endif

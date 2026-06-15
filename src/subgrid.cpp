@@ -187,8 +187,8 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	// print info
 	PetscCall(PetscTime(&t1));
 	PetscPrintf(PETSC_COMM_WORLD,
-		"Marker control [%lld]: (subgrid) cloned %lld markers and merged %lld markers in %1.4e s\n",
-		(LLD)actx->iproc, (LLD)nclone, (LLD)nmerge, t1-t0);
+		"Marker control [%" PetscInt_FMT "]: (subgrid) cloned %" PetscInt_FMT " markers and merged %" PetscInt_FMT " markers in %1.4e s\n",
+		actx->iproc, nclone, nmerge, t1-t0);
 
 	PetscFunctionReturn(0);
 }
