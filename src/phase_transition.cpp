@@ -25,7 +25,7 @@
 //	   Physics of the Earth and Planetary Interiors, 240 (2015), pp. 1-24
 // [5] The postspinel boundary in pyrolitic compositions determined in the laser-heated diamond anvil cell
 //	    Geophysical Research Letters, 41 (2014), pp. 3833-3841
-// [6] Akaogi, M., Hashimoto, S., amp; Kojitani, H. (2018). Thermodynamic properties of ZrSiO 4 zircon and
+// [6] Akaogi, M., Hashimoto, S., & Kojitani, H. (2018). Thermodynamic properties of ZrSiO 4 zircon and
 //  	reidite and of cotunnite-type ZrO 2 with application to high-pressure high-temperature phase relations
 //  	 in ZrSiO 4. Physics of the Earth and Planetary Interiors, 281,
 //
