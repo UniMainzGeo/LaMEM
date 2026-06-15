@@ -111,14 +111,15 @@
 # Markers (loaded from files written by CreateMarkers_t36_SingleCore.jl)
 #===============================================================================
 
-    msetup     = files
-    nmark_x    = 3
-    nmark_y    = 3
-    nmark_z    = 3
-    rand_noise = 1
-    bg_phase   = 0
-    advect     = rk2
-    interp     = stag
+    msetup         = files
+    nmark_x        = 3
+    nmark_y        = 3
+    nmark_z        = 3
+    mark_load_file = ./markers/mdb  # marker input file (extension is .xxxxxxxx.dat)
+    rand_noise     = 1
+    bg_phase       = 0
+    advect         = rk2
+    interp         = stag
     mark_ctrl  = subgrid
     nmark_lim  = 10 100
     nmark_sub  = 3
