@@ -801,7 +801,7 @@ PetscErrorCode UpdatePVDFile(
 	else
 	{
 		// put the file pointer on the next entry
-		fseek(fp, (*offset), SEEK_SET);
+		if(fseek(fp, (*offset), SEEK_SET)) SETERRQ(PETSC_COMM_SELF, 1, "cannot seek in file %s.pvd", outfile);
 	}
 
 	// add entry to .pvd file
