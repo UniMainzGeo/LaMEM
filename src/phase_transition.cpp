@@ -32,7 +32,7 @@
 //
 //	The routines in this file allow changing the phase of a marker depending on conditions
 //	set by the user.
-//	They thus allow adding phase transitions to a setup in a rahther simple manner.
+//	They thus allow adding phase transitions to a setup in a rather simple manner.
 //	Moreover, a number of phase transitions have been predefined as profiles, such as
 //	the basalt-eclogite reaction.
 //
