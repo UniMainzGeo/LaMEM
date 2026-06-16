@@ -700,7 +700,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	free(fname);
 
 	// get output vectors
-	PetscCall(OutBufGetVectors(&pvout->outbuf));
+	PetscCall(OutBufGetVectors(outbuf));
 
 	// link output buffer to file
 	OutBufConnectToFile(outbuf, fp);
@@ -778,7 +778,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	fclose(fp);
 
 	// restore output vectors
-	PetscCall(OutBufRestoreVectors(&pvout->outbuf));
+	PetscCall(OutBufRestoreVectors(outbuf));
 
 	PetscFunctionReturn(0);
 }
