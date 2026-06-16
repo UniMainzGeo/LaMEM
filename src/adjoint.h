@@ -103,9 +103,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 // reset the perturbed input parameter within the gradient computation
 PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
 
-// Gradient function for field sensitivity for rho (FD approximation)
-PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop, ModParam *IOparam );
-
 // Add or remove parameters from command-line database & update material DB
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val);
 PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscInt ID);

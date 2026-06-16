@@ -401,7 +401,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	fb 					=	IOparam->fb;	// filebuffer
 
 	// Some defaults
-	IOparam->FS         		= 0;
 	IOparam->MfitType           = 0;
 	IOparam->Gr         		= 1;
 	IOparam->SCF        		= 0;
@@ -440,7 +439,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	else if (!strcmp(str, "Var"))       IOparam->SCF=2;
 	else{	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [None; Mean; Var] as parameter for Adjoint_ScaleCostFunction, not %s",str);} 
 
-	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"         , &IOparam->FS,        		1, 1 ));  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_ObservationPoints"        , &IOparam->Ap,        		1, 3 ));  // 1 = several indices ; 2 = the whole domain ; 3 = surface
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_AdvectPoint"              , &IOparam->Adv,       		1, 1 ));  // 1 = advect the point
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef"     , &IOparam->OFdef,     		1, 1 ));  // Objective function defined by hand?
@@ -448,10 +446,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_UseInitialAdjointParams"  , &IOparam->SetInitAdjParam,  	1, 1 ));  // Use InitialGuess specified in AdjointParamsStart/End as initial value?
 	PetscCall(getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename"     	 , str,  "ScalingLaw.dat"  ));  // Scaling law filename
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref"       			 , &IOparam->DII_ref,   1, 1        ));  // Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
-	if (IOparam->DII_ref==0.0 && IOparam->FS)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "For Kernel calculation you have to explicitly set DII_ref (equal to the one in forward LaMEM) with 'Adjoint_DII_ref'");
-	}
+
 	PetscCall(PetscMemcpy(IOparam->ScalLawFilename, 	str,   (size_t)_str_len_*sizeof(char) )); 
    
   	PetscCall(getScalarParam(fb, _OPTIONAL_, "Adjoint_ReferenceDensity"       	 , &IOparam->ReferenceDensity, 1, 1 ));  // Reference density (density parameters are computed w.r.t. this)
@@ -480,7 +475,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		PetscPrintf(PETSC_COMM_WORLD, "|    Adjoint mode                             : AdjointGradients  \n");
 		if (IOparam->Gr==0){ PetscPrintf(PETSC_COMM_WORLD, "|    Gradients are computed w.r.t.            : CostFunction \n"); }
 		else               { PetscPrintf(PETSC_COMM_WORLD, "|    Gradients are computed w.r.t.            : Solution     \n"); }
-		PetscPrintf(PETSC_COMM_WORLD, "|    Field-based gradient evaluation          : %" PetscInt_FMT "    \n",  IOparam->FS);		
 
 		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "|    Gradient evaluation points               : several observation points \n"); }
 		else if (IOparam->Ap == 2){PetscPrintf(PETSC_COMM_WORLD, "|    Gradient evaluation points               : whole domain \n"); }
@@ -1931,136 +1925,90 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
         PetscPrintf(PETSC_COMM_WORLD,"|     Finite difference step size for Adjoint dr/dp calculation set to %e \n", aop->FD_epsilon);
     }
 
+	// Phase based gradients
 
-	// Field sensitivity (aka geodynamic sensitivity kernels) or 'classic' phase based gradients?
- 	if(IOparam->FS == 1)
+ 	//=================
+	// PARAMETER LOOP
+	//=================
+	PetscCall(VecGetArray(IOparam->P,&Par));
+	for(j = 0; j < IOparam->mdN; j++)
 	{
-        //  This plots the sensitivity of the solution to incremental changes in the parameter (density here) at
-        //  every point in the computational domain. This allows a visual inspection of where changes in density have the largest impact
-        //  on say, surface velocity
+		if (!IOparam->FD_gradient[j]){	// only if we want to compute an adjoint gradient for this parameter
 
-		// Compute residual with the converged Jacobian analytically
-		
-    	strcpy(CurName, IOparam->type_name[0]);	// name of the parameter
-		if (IOparam->mdN>1)
-		{
-			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"| Field-based gradients can currently only be computed for a single parameter \n");		// error check
-		}
-		if (!strcmp(CurName,"rho") || !strcmp(CurName,"eta0") || !strcmp(CurName,"n"))		// we need some way to ensure that we do this for one field at a time only
-		{
-			PetscPrintf(PETSC_COMM_WORLD,"| Starting computation of Field-based gradients.  \n");	
-			// Compute the gradient
-			if(IOparam->MfitType == 0)
+			// Get the initial residual since it is overwritten in VecAYPX
+			PetscCall(VecCopy(jr->gres,res));
+
+			// Get current phase and parameter which is being perturbed
+			//CurPhase 		= 	IOparam->phs[j];
+			CurVal 	 		= 	Par[j];
+			strcpy(CurName, IOparam->type_name[j]);	// name
+
+			// Perturb parameter
+			Perturb 		= 	aop->FD_epsilon*CurVal;
+
+			// Set as command-line option & create updated material database
+			PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j));
+			PetscCall(CreateModifiedMaterialDatabase(IOparam));			// update LaMEM material DB (to call directly call the LaMEM residual routine)
+
+			// Swap material structure of phase with that of LaMEM Material DB
+			for (i=0; i < nl->jr->dbm->numPhases; i++)
 			{
-				aop->CurScal   = (scal->velocity)/(1);
-				PetscCall(AdjointFormResidualFieldFD(snes, sol, psi, nl, aop, IOparam));
+				PetscCall(PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t)));
+				PetscCall(swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]));
 			}
-			else if(IOparam->MfitType == 1)
+
+			PetscCall(FormResidual(snes, sol, res_pert, nl));        // compute the residual with the perturbed parameter
+			PetscCall(VecAYPX(res,-1.0,res_pert));        // res = (res_perturbed-res)
+			PetscCall(VecScale(res,1.0/Perturb));        // res = (res_perturbed-res)/Perturb
+
+			PetscCall(VecCopy(res,drdp));
+
+			// Reset parameter again
+			PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j));
+			PetscCall(CreateModifiedMaterialDatabase(IOparam));			// update LaMEM material DB (to call directly call the LaMEM residual routine)
+
+			// Swap material structure of phase with that of LaMEM Material DB back
+			for (i=0; i < nl->jr->dbm->numPhases; i++)
 			{
+				PetscCall(PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t)));
+				PetscCall(swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]));
+			}
+
+			// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
+			if (IOparam->MfitType == 0)
+			{
+				PetscCall(VecDot(drdp,psi,&grd));
+				if (IOparam->Gr == 1)
+				{
+					aop->CurScal = scal->velocity;
+				}
+				else if (IOparam->Gr == 0)
+				{
+					aop->CurScal = pow(scal->velocity,2);
+				}
+			}
+			else if (IOparam->MfitType == 1)		// PSD or strainrate
+			{
+				PetscCall(VecDot(drdp,psiPar,&grd));
+
 				if (!strcmp(IOparam->ObsName[0],"PSD")){
 					// PSD is dimensionless
 					aop->CurScal    =   1.0;
 				}
 				else{
 					// if NOT PSD, it should be strain rate and have units of 1/s. 
-					aop->CurScal =    (1.0/scal->time_si);	
+					// if we later add other variables at the center points (e.g., stress, this needs to be expanded)
+					if	 	(IOparam->Gr == 1){		aop->CurScal =    (1.0/scal->time_si);		}
+					else if (IOparam->Gr == 0){		aop->CurScal = pow(1.0/scal->time_si,2.0);	}
 				}
-
-				PetscCall(AdjointFormResidualFieldFD(snes, sol, psiPar, nl, aop, IOparam));
+				PetscPrintf(PETSC_COMM_WORLD,"| grad=%e, aop->CurScal=%e vel-scale =%e\n",grd, aop->CurScal, scal->length);
 			}
-			PetscPrintf(PETSC_COMM_WORLD,"| Finished gradient computation & added it to VTK\n");
-			PetscPrintf(PETSC_COMM_WORLD,"| Add '-out_gradient = 1' to your parameter file. \n");
-		}
-		else 
-		{
-			PetscPrintf(PETSC_COMM_WORLD,"| Field based gradient only for [rho,eta0,n] programmed not for %s! \n",CurName);
+				
+			IOparam->grd[j]	=   -grd*aop->CurScal;						// gradient
+
 		}
 	}
-	else // Phase based gradients
-	{
- 		//=================
-		// PARAMETER LOOP
-		//=================
-		PetscCall(VecGetArray(IOparam->P,&Par));
-		for(j = 0; j < IOparam->mdN; j++)
-		{
-			if (!IOparam->FD_gradient[j]){	// only if we want to compute an adjoint gradient for this parameter
-
-				// Get the initial residual since it is overwritten in VecAYPX
-				PetscCall(VecCopy(jr->gres,res));
-
-				// Get current phase and parameter which is being perturbed
-				//CurPhase 		= 	IOparam->phs[j];
-				CurVal 	 		= 	Par[j];
-				strcpy(CurName, IOparam->type_name[j]);	// name
-
-				// Perturb parameter
-				Perturb 		= 	aop->FD_epsilon*CurVal;
-
-				// Set as command-line option & create updated material database
-				PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j));
-				PetscCall(CreateModifiedMaterialDatabase(IOparam));			// update LaMEM material DB (to call directly call the LaMEM residual routine)
-
-				// Swap material structure of phase with that of LaMEM Material DB
-				for (i=0; i < nl->jr->dbm->numPhases; i++)
-				{
-					PetscCall(PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t)));
-					PetscCall(swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]));
-				}
-
-				PetscCall(FormResidual(snes, sol, res_pert, nl));        // compute the residual with the perturbed parameter
-				PetscCall(VecAYPX(res,-1.0,res_pert));        // res = (res_perturbed-res)
-				PetscCall(VecScale(res,1.0/Perturb));        // res = (res_perturbed-res)/Perturb
-				
-				PetscCall(VecCopy(res,drdp));        
-				
-				// Reset parameter again
-				PetscCall(CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j));
-				PetscCall(CreateModifiedMaterialDatabase(IOparam));			// update LaMEM material DB (to call directly call the LaMEM residual routine)
-
-				// Swap material structure of phase with that of LaMEM Material DB back
-				for (i=0; i < nl->jr->dbm->numPhases; i++)
-				{
-					PetscCall(PetscMemzero(&nl->jr->dbm->phases[i],  sizeof(Material_t)));
-					PetscCall(swapStruct(&nl->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]));
-				}
-				
-				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
-				if (IOparam->MfitType == 0)
-				{
-					PetscCall(VecDot(drdp,psi,&grd));
-					if (IOparam->Gr == 1)	
-					{
-						aop->CurScal = scal->velocity;
-					}
-					else if (IOparam->Gr == 0)	
-					{
-						aop->CurScal = pow(scal->velocity,2);
-					}
-				}
-				else if (IOparam->MfitType == 1)		// PSD or strainrate 
-				{
-					PetscCall(VecDot(drdp,psiPar,&grd));
-				
-					if (!strcmp(IOparam->ObsName[0],"PSD")){
-						// PSD is dimensionless
-						aop->CurScal    =   1.0;
-					}
-					else{
-						// if NOT PSD, it should be strain rate and have units of 1/s. 
-						// if we later add other variables at the center points (e.g., stress, this needs to be expanded)
-						if	 	(IOparam->Gr == 1){		aop->CurScal =    (1.0/scal->time_si);		}
-						else if (IOparam->Gr == 0){		aop->CurScal = pow(1.0/scal->time_si,2.0);	}
-					}
-					PetscPrintf(PETSC_COMM_WORLD,"| grad=%e, aop->CurScal=%e vel-scale =%e\n",grd, aop->CurScal, scal->length);
-				}
-					
-				IOparam->grd[j]	=   -grd*aop->CurScal;						// gradient
-
-			}
-		}
-		PetscCall(VecRestoreArray(IOparam->P,&Par));
-	}
+	PetscCall(VecRestoreArray(IOparam->P,&Par));
 
 	// Clean
 	PetscCall(VecDestroy(&psi));
@@ -2116,38 +2064,34 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n| ");
 
 		PetscPrintf(PETSC_COMM_WORLD,"\n| Gradients: \n");
-		if (IOparam->FS==0){
-			PetscPrintf(PETSC_COMM_WORLD,"|                    Parameter             |  Gradient (dimensional)  \n");    
-			PetscPrintf(PETSC_COMM_WORLD,"|                  -----------------------   ------------------------ \n");    
 
-			PetscCall(VecGetArray(IOparam->P,&Par));
-			for(j = 0; j < IOparam->mdN; j++){
-				// Get current phase and parameter which is being perturbed
-				CurPhase 		= 	IOparam->phs[j];
-				strcpy(CurName, IOparam->type_name[j]);	// name
-				if (IOparam->par_log10[j]==1){strcpy(logstr, "log10"); }
-				else{strcpy(logstr, "     "); }
-			
+		PetscPrintf(PETSC_COMM_WORLD,"|                    Parameter             |  Gradient (dimensional)  \n");
+		PetscPrintf(PETSC_COMM_WORLD,"|                  -----------------------   ------------------------ \n");
 
-				// Print result
-				if (IOparam->FD_gradient[j]>0){
-					if (CurPhase<0){
-						PetscPrintf(PETSC_COMM_WORLD,"|       FD %5" PetscInt_FMT ":   %5s%5s           %- 1.6e \n", j+1, logstr, CurName, IOparam->grd[j]);
-					}
-					else{
-						PetscPrintf(PETSC_COMM_WORLD,"|       FD %5" PetscInt_FMT ":   %5s%5s[%2" PetscInt_FMT "]           %- 1.6e \n", j+1, logstr, CurName,  CurPhase, IOparam->grd[j]);
-					}
+		PetscCall(VecGetArray(IOparam->P,&Par));
+		for(j = 0; j < IOparam->mdN; j++){
+			// Get current phase and parameter which is being perturbed
+			CurPhase 		= 	IOparam->phs[j];
+			strcpy(CurName, IOparam->type_name[j]);	// name
+			if (IOparam->par_log10[j]==1){strcpy(logstr, "log10"); }
+			else{strcpy(logstr, "     "); }
+
+
+			// Print result
+			if (IOparam->FD_gradient[j]>0){
+				if (CurPhase<0){
+					PetscPrintf(PETSC_COMM_WORLD,"|       FD %5" PetscInt_FMT ":   %5s%5s           %- 1.6e \n", j+1, logstr, CurName, IOparam->grd[j]);
 				}
 				else{
-					PetscPrintf(PETSC_COMM_WORLD,"|  adjoint %5" PetscInt_FMT ":   %5s%5s[%2" PetscInt_FMT "]           %- 1.6e \n", j+1, logstr, CurName,  CurPhase, IOparam->grd[j]);
+					PetscPrintf(PETSC_COMM_WORLD,"|       FD %5" PetscInt_FMT ":   %5s%5s[%2" PetscInt_FMT "]           %- 1.6e \n", j+1, logstr, CurName,  CurPhase, IOparam->grd[j]);
 				}
-
 			}
-			PetscCall(VecRestoreArray(IOparam->P,&Par));
+			else{
+				PetscPrintf(PETSC_COMM_WORLD,"|  adjoint %5" PetscInt_FMT ":   %5s%5s[%2" PetscInt_FMT "]           %- 1.6e \n", j+1, logstr, CurName,  CurPhase, IOparam->grd[j]);
+			}
+
 		}
-		else{
-			PetscPrintf(PETSC_COMM_WORLD,"|    Computed field-based gradients \n");    
-		}
+		PetscCall(VecRestoreArray(IOparam->P,&Par));
 		
 	}
 	PetscPrintf(PETSC_COMM_WORLD,"| \n| ");
@@ -2764,653 +2708,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz));
 	
 	PetscCall(DMRestoreLocalVector(fs->DA_COR, &lbcor));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop, ModParam *IOparam  )
-{
-    // "geodynamic sensitivity kernels" 
-	// Currentkly only implemented for n, eta0 and rho
-	// -> Just a debug function for the field gradient ...
-	// -> This thing produces the negative of the gradient (multiply with minus; or compare abs value)
-
-	// WARNING: as of now, the routine appears to have a bug if ran in parallel, or with nel_x != nel_y != nel_z
-	//  some more work is thus required.
-
-	ConstEqCtx  ctx;
-	JacRes     *jr;
-	FDSTAG     *fs;
-	BCCtx      *bc;
-	SolVarCell *svCell;
-	SolVarEdge *svEdge;
-	PetscInt    iter, temprank;
-	PetscInt    I1, I2, J1, J2, K1, K2;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
-	PetscInt 	kk, jk, ik;
-	PetscScalar XX, XX1, XX2, XX3, XX4;
-	PetscScalar YY, YY1, YY2, YY3, YY4;
-	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
-	PetscScalar XY, XY1, XY2, XY3, XY4;
-	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
-	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
-	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
-	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
-	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
-	PetscScalar grdt, nrm;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp, ***llgradfield;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
-	Vec         rpl, res;
-	char 		CurName[_str_len_];
-
-	
-	PetscFunctionBeginUser;
-
-	// access context
-	jr = nl->jr;
-
-	// Create stuff
-	PetscCall(VecDuplicate(jr->gres, &res));
-	PetscCall(VecDuplicate(jr->gres, &rpl));
-	
-	PetscCall(VecZeroEntries(jr->lgradfield));
-
-	strcpy(CurName, IOparam->type_name[0]);	// name
-
-	// access context
-	fs  = jr->fs;
-	bc  = jr->bc;
-
-	mcx = fs->dsx.tcels - 1;
-	mcy = fs->dsy.tcels - 1;
-	mcz = fs->dsz.tcels - 1;
-
-	mx  = fs->dsx.tnods - 1;
-	my  = fs->dsy.tnods - 1;
-	mz  = fs->dsz.tnods - 1;
-
-	// access residual context variables
-	fssa   =  jr->ctrl.FSSA; // density gradient penalty parameter
-	grav   =  jr->ctrl.grav; // gravity acceleration
-	dt     =  jr->ts->dt;    // time step
-
-	// recompute residual (necessary to correctly initialize fields; also copies global->local vectors!!)
-	PetscCall(FormResidual(snes, x, res, nl));
-
-	// Recompute correct strainrates (necessary!!)
-	PetscCall(JacResGetEffStrainRate(jr));
-
-	// access work vectors
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lgradfield,&llgradfield));
-
-	for(kk=0;kk<fs->dsx.tcels;kk++)
-	{
-		for(jk=0;jk<fs->dsy.tcels;jk++)
-		{
-			for(ik=0;ik<fs->dsz.tcels;ik++)
-			{
-
-				// compute global residual again		
-				PetscCall(FormResidual(snes, x, res, nl));
-			
-
-				// setup constitutive equation evaluation context parameters
-				PetscCall(setUpConstEq(&ctx, jr));
-
-				// clear local residual vectors
-				PetscCall(VecZeroEntries(jr->lfx));
-				PetscCall(VecZeroEntries(jr->lfy));
-				PetscCall(VecZeroEntries(jr->lfz));
-				PetscCall(VecZeroEntries(jr->gc));
-				temprank = 100;
-				aop->Perturb = 1;
-
-				// access work vectors
-				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc));
-				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p));
-				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T));
-				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx));
-				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy));
-				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz));
-				PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy));
-				PetscCall(DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz));
-				PetscCall(DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz));
-				PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lfx,     &fx));
-				PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lfy,     &fy));
-				PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lfz,     &fz));
-				PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx));
-				PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy));
-				PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz));
-				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith));
-				PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore));
-				PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp));
-
-				//-------------------------------
-				// central points
-				//-------------------------------
-				iter = 0;
-
-				PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
-
-				START_STD_LOOP
-				{
-
-					// access solution variables
-					svCell = &jr->svCell[iter++];
-
-					//=================
-					// SECOND INVARIANT
-					//=================
-
-					// access strain rates
-					XX = dxx[k][j][i];
-					YY = dyy[k][j][i];
-					ZZ = dzz[k][j][i];
-
-					// x-y plane, i-j indices
-					XY1 = dxy[k][j][i];
-					XY2 = dxy[k][j+1][i];
-					XY3 = dxy[k][j][i+1];
-					XY4 = dxy[k][j+1][i+1];
-
-					// x-z plane, i-k indices
-					XZ1 = dxz[k][j][i];
-					XZ2 = dxz[k+1][j][i];
-					XZ3 = dxz[k][j][i+1];
-					XZ4 = dxz[k+1][j][i+1];
-
-					// y-z plane, j-k indices
-					YZ1 = dyz[k][j][i];
-					YZ2 = dyz[k+1][j][i];
-					YZ3 = dyz[k][j+1][i];
-					YZ4 = dyz[k+1][j+1][i];
-
-					// compute second invariant
-					J2Inv = 0.5*(XX*XX + YY*YY + ZZ*ZZ) +
-					0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
-					0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
-					0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
-
-					DII = sqrt(J2Inv);
-
-					//=======================
-					// CONSTITUTIVE EQUATIONS
-					//=======================
-
-					// access current pressure
-					pc = p[k][j][i];
-
-					// current temperature
-					Tc = T[k][j][i];
-
-					// access current lithostatic pressure
-					pc_lith = p_lith[k][j][i];
-
-					// access current pore pressure (zero if deactivated)
-					pc_pore = p_pore[k][j][i];
-
-					// z-coordinate of control volume
-					z = COORD_CELL(k, sz, fs->dsz);
-
-					// get characteristic element size
-					dx = SIZE_CELL(i, sx, fs->dsx);
-					dy = SIZE_CELL(j, sy, fs->dsy);
-					dz = SIZE_CELL(k, sz, fs->dsz);
-					Le = sqrt(dx*dx + dy*dy + dz*dz);
-
-					// setup control volume parameters
-					PetscCall(setUpCtrlVol(&ctx, svCell->phRat, &svCell->svDev, &svCell->svBulk, pc, pc_lith, pc_pore, Tc, DII, z, Le));
-
-					// evaluate constitutive equations on the cell
-					PetscCall(cellConstEqFD(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, aop, IOparam,  i,  j,  k,  ik,  jk,  kk));
-
-					// Set perturbation paramter for the finite differences
-					if (!strcmp(CurName,"rho"))
-					{
-						if ((i)==ik && (j)==jk && (k)==kk)
-						{
-							aop->Perturb = rho*aop->FD_epsilon;
-							rho += aop->Perturb;
-						}
-					}
-					
-					// compute gravity terms 
-					gx = rho*grav[0];
-					gy = rho*grav[1];
-					gz = rho*grav[2];
-
-					// compute stabilization terms (lumped approximation)
-					tx = -fssa*dt*gx;
-					ty = -fssa*dt*gy;
-					tz = -fssa*dt*gz;
-
-					//=========
-					// RESIDUAL
-					//=========
-
-					// get mesh steps for the backward and forward derivatives
-					bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
-					bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
-					bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
-
-					// momentum
-					fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
-					fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
-					fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
-
-					// pressure boundary constraints
-					if(i == 0   && bcp[k][j][i-1] != DBL_MAX) fx[k][j][i]   += -p[k][j][i-1]/bdx;
-					if(i == mcx && bcp[k][j][i+1] != DBL_MAX) fx[k][j][i+1] -= -p[k][j][i+1]/fdx;
-					if(j == 0   && bcp[k][j-1][i] != DBL_MAX) fy[k][j][i]   += -p[k][j-1][i]/bdy;
-					if(j == mcy && bcp[k][j+1][i] != DBL_MAX) fy[k][j+1][i] -= -p[k][j+1][i]/fdy;
-					if(k == 0   && bcp[k-1][j][i] != DBL_MAX) fz[k][j][i]   += -p[k-1][j][i]/bdz;
-					if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
-					
-
-					// mass (volume)
-					gc[k][j][i] = gres;
-					
-				}
-				END_STD_LOOP
-
-				//-------------------------------
-				// xy edge points
-				//-------------------------------
-				iter = 0;
-
-				PetscCall(DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz));
-
-				START_STD_LOOP
-				{
-					// access solution variables
-					svEdge = &jr->svXYEdge[iter++];
-
-					//=================
-					// SECOND INVARIANT
-					//=================
-
-					// check index bounds
-					I1 = i;   if(I1 == mx) I1--;
-					I2 = i-1; if(I2 == -1) I2++;
-					J1 = j;   if(J1 == my) J1--;
-					J2 = j-1; if(J2 == -1) J2++;
-
-					// access strain rates
-					XY = dxy[k][j][i];
-
-					// x-y plane, i-j indices (i & j - bounded)
-					XX1 = dxx[k][J1][I1];
-					XX2 = dxx[k][J1][I2];
-					XX3 = dxx[k][J2][I1];
-					XX4 = dxx[k][J2][I2];
-
-					// x-y plane, i-j indices (i & j - bounded)
-					YY1 = dyy[k][J1][I1];
-					YY2 = dyy[k][J1][I2];
-					YY3 = dyy[k][J2][I1];
-					YY4 = dyy[k][J2][I2];
-
-					// x-y plane, i-j indices (i & j - bounded)
-					ZZ1 = dzz[k][J1][I1];
-					ZZ2 = dzz[k][J1][I2];
-					ZZ3 = dzz[k][J2][I1];
-					ZZ4 = dzz[k][J2][I2];
-
-					// y-z plane j-k indices (j - bounded)
-					XZ1 = dxz[k][J1][i];
-					XZ2 = dxz[k+1][J1][i];
-					XZ3 = dxz[k][J2][i];
-					XZ4 = dxz[k+1][J2][i];
-
-					// x-z plane i-k indices (i - bounded)
-					YZ1 = dyz[k][j][I1];
-					YZ2 = dyz[k+1][j][I1];
-					YZ3 = dyz[k][j][I2];
-					YZ4 = dyz[k+1][j][I2];
-
-					// compute second invariant
-					J2Inv = XY*XY +
-					0.125*(XX1*XX1 + XX2*XX2 + XX3*XX3 + XX4*XX4) +
-					0.125*(YY1*YY1 + YY2*YY2 + YY3*YY3 + YY4*YY4) +
-					0.125*(ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4) +
-					0.25 *(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
-					0.25 *(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
-
-					DII = sqrt(J2Inv);
-
-					//=======================
-					// CONSTITUTIVE EQUATIONS
-					//=======================
-
-					// access current pressure (x-y plane, i-j indices)
-					pc = 0.25*(p[k][j][i] + p[k][j][i-1] + p[k][j-1][i] + p[k][j-1][i-1]);
-
-					// current temperature (x-y plane, i-j indices)
-					Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);
-
-					// access current lithostatic pressure (x-y plane, i-j indices)
-					pc_lith = 0.25*(p_lith[k][j][i] + p_lith[k][j][i-1] + p_lith[k][j-1][i] + p_lith[k][j-1][i-1]);
-
-					// access current pore pressure (x-y plane, i-j indices)
-					pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k][j-1][i] + p_pore[k][j-1][i-1]);
-
-					// get characteristic element size
-					dx = SIZE_NODE(i, sx, fs->dsx);
-					dy = SIZE_NODE(j, sy, fs->dsy);
-					dz = SIZE_CELL(k, sz, fs->dsz);
-					Le = sqrt(dx*dx + dy*dy + dz*dz);
-
-					// setup control volume parameters
-					PetscCall(setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le));
-
-
-					// evaluate constitutive equations on the edge
-					PetscCall(edgeConstEqFD(&ctx, svEdge, XY, sxy, aop, IOparam,  i,  j,  k,  ik,  jk,  kk));
-
-					//=========
-					// RESIDUAL
-					//=========
-
-					// get mesh steps for the backward and forward derivatives
-					bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
-					bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
-
-					// momentum
-					fx[k][j-1][i] -= sxy/bdy;   fx[k][j][i] += sxy/fdy;
-					fy[k][j][i-1] -= sxy/bdx;   fy[k][j][i] += sxy/fdx;
-
-				}
-				END_STD_LOOP
-
-				//-------------------------------
-				// xz edge points
-				//-------------------------------
-				iter = 0;
-
-				PetscCall(DMDAGetCorners(fs->DA_XZ, &sx, &sy, &sz, &nx, &ny, &nz));
-
-				START_STD_LOOP
-				{
-					// access solution variables
-					svEdge = &jr->svXZEdge[iter++];
-
-					//=================
-					// SECOND INVARIANT
-					//=================
-
-					// check index bounds
-					I1 = i;   if(I1 == mx) I1--;
-					I2 = i-1; if(I2 == -1) I2++;
-					K1 = k;   if(K1 == mz) K1--;
-					K2 = k-1; if(K2 == -1) K2++;
-
-					// access strain rates
-					XZ = dxz[k][j][i];
-
-					// x-z plane, i-k indices (i & k - bounded)
-					XX1 = dxx[K1][j][I1];
-					XX2 = dxx[K1][j][I2];
-					XX3 = dxx[K2][j][I1];
-					XX4 = dxx[K2][j][I2];
-
-					// x-z plane, i-k indices (i & k - bounded)
-					YY1 = dyy[K1][j][I1];
-					YY2 = dyy[K1][j][I2];
-					YY3 = dyy[K2][j][I1];
-					YY4 = dyy[K2][j][I2];
-
-					// x-z plane, i-k indices (i & k - bounded)
-					ZZ1 = dzz[K1][j][I1];
-					ZZ2 = dzz[K1][j][I2];
-					ZZ3 = dzz[K2][j][I1];
-					ZZ4 = dzz[K2][j][I2];
-
-					// y-z plane, j-k indices (k - bounded)
-					XY1 = dxy[K1][j][i];
-					XY2 = dxy[K1][j+1][i];
-					XY3 = dxy[K2][j][i];
-					XY4 = dxy[K2][j+1][i];
-
-					// xy plane, i-j indices (i - bounded)
-					YZ1 = dyz[k][j][I1];
-					YZ2 = dyz[k][j+1][I1];
-					YZ3 = dyz[k][j][I2];
-					YZ4 = dyz[k][j+1][I2];
-
-					// compute second invariant
-					J2Inv = XZ*XZ +
-					0.125*(XX1*XX1 + XX2*XX2 + XX3*XX3 + XX4*XX4) +
-					0.125*(YY1*YY1 + YY2*YY2 + YY3*YY3 + YY4*YY4) +
-					0.125*(ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4) +
-					0.25 *(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
-					0.25 *(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
-
-					DII = sqrt(J2Inv);
-
-					//=======================
-					// CONSTITUTIVE EQUATIONS
-					//=======================
-
-					// access current pressure (x-z plane, i-k indices)
-					pc = 0.25*(p[k][j][i] + p[k][j][i-1] + p[k-1][j][i] + p[k-1][j][i-1]);
-
-					// current temperature (x-z plane, i-k indices)
-					Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]);
-
-					// access current lithostatic pressure (x-z plane, i-k indices)
-					pc_lith = 0.25*(p_lith[k][j][i] + p_lith[k][j][i-1] + p_lith[k-1][j][i] + p_lith[k-1][j][i-1]);
-
-					// access current pore pressure (x-z plane, i-k indices)
-					pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k-1][j][i] + p_pore[k-1][j][i-1]);
-
-					// get characteristic element size
-					dx = SIZE_NODE(i, sx, fs->dsx);
-					dy = SIZE_CELL(j, sy, fs->dsy);
-					dz = SIZE_NODE(k, sz, fs->dsz);
-					Le = sqrt(dx*dx + dy*dy + dz*dz);
-
-					// setup control volume parameters
-					PetscCall(setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le));
-
-					// evaluate constitutive equations on the edge
-					PetscCall(edgeConstEqFD(&ctx, svEdge, XZ, sxz, aop, IOparam,  i,  j,  k,  ik,  jk,  kk));
-
-					//=========
-					// RESIDUAL
-					//=========
-
-					// get mesh steps for the backward and forward derivatives
-					bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
-					bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
-
-					// momentum
-					fx[k-1][j][i] -= sxz/bdz;   fx[k][j][i] += sxz/fdz;
-					fz[k][j][i-1] -= sxz/bdx;   fz[k][j][i] += sxz/fdx;
-
-				}
-				END_STD_LOOP
-
-				//-------------------------------
-				// yz edge points
-				//-------------------------------
-				iter = 0;
-
-				PetscCall(DMDAGetCorners(fs->DA_YZ, &sx, &sy, &sz, &nx, &ny, &nz));
-
-				START_STD_LOOP
-				{
-					// access solution variables
-					svEdge = &jr->svYZEdge[iter++];
-
-					//=================
-					// SECOND INVARIANT
-					//=================
-
-					// check index bounds
-					J1 = j;   if(J1 == my) J1--;
-					J2 = j-1; if(J2 == -1) J2++;
-					K1 = k;   if(K1 == mz) K1--;
-					K2 = k-1; if(K2 == -1) K2++;
-
-					// access strain rates
-					YZ = dyz[k][j][i];
-
-					// y-z plane, j-k indices (j & k - bounded)
-					XX1 = dxx[K1][J1][i];
-					XX2 = dxx[K1][J2][i];
-					XX3 = dxx[K2][J1][i];
-					XX4 = dxx[K2][J2][i];
-
-					// y-z plane, j-k indices (j & k - bounded)
-					YY1 = dyy[K1][J1][i];
-					YY2 = dyy[K1][J2][i];
-					YY3 = dyy[K2][J1][i];
-					YY4 = dyy[K2][J2][i];
-
-					// y-z plane, j-k indices (j & k - bounded)
-					ZZ1 = dzz[K1][J1][i];
-					ZZ2 = dzz[K1][J2][i];
-					ZZ3 = dzz[K2][J1][i];
-					ZZ4 = dzz[K2][J2][i];
-
-					// x-z plane, i-k indices (k -bounded)
-					XY1 = dxy[K1][j][i];
-					XY2 = dxy[K1][j][i+1];
-					XY3 = dxy[K2][j][i];
-					XY4 = dxy[K2][j][i+1];
-
-					// x-y plane, i-j indices (j - bounded)
-					XZ1 = dxz[k][J1][i];
-					XZ2 = dxz[k][J1][i+1];
-					XZ3 = dxz[k][J2][i];
-					XZ4 = dxz[k][J2][i+1];
-
-					// compute second invariant
-					J2Inv = YZ*YZ +
-					0.125*(XX1*XX1 + XX2*XX2 + XX3*XX3 + XX4*XX4) +
-					0.125*(YY1*YY1 + YY2*YY2 + YY3*YY3 + YY4*YY4) +
-					0.125*(ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4) +
-					0.25 *(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
-					0.25 *(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4);
-
-					DII = sqrt(J2Inv);
-
-					//=======================
-					// CONSTITUTIVE EQUATIONS
-					//=======================
-
-					// access current pressure (y-z plane, j-k indices)
-					pc = 0.25*(p[k][j][i] + p[k][j-1][i] + p[k-1][j][i] + p[k-1][j-1][i]);
-
-					// current temperature (y-z plane, j-k indices)
-					Tc = 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]);
-
-					// access current lithostatic pressure (y-z plane, j-k indices)
-					pc_lith = 0.25*(p_lith[k][j][i] + p_lith[k][j-1][i] + p_lith[k-1][j][i] + p_lith[k-1][j-1][i]);
-
-					// access current pore pressure (y-z plane, j-k indices)
-					pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j-1][i] + p_pore[k-1][j][i] + p_pore[k-1][j-1][i]);
-
-					// get characteristic element size
-					dx = SIZE_CELL(i, sx, fs->dsx);
-					dy = SIZE_NODE(j, sy, fs->dsy);
-					dz = SIZE_NODE(k, sz, fs->dsz);
-					Le = sqrt(dx*dx + dy*dy + dz*dz);
-
-					// setup control volume parameters
-					PetscCall(setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le));
-
-					// evaluate constitutive equations on the edge
-					PetscCall(edgeConstEqFD(&ctx, svEdge, YZ, syz, aop, IOparam,  i,  j,  k,  ik,  jk,  kk));
-
-					//=========
-					// RESIDUAL
-					//=========
-
-					// get mesh steps for the backward and forward derivatives
-					bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
-					bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
-
-					// update momentum residuals
-					fy[k-1][j][i] -= syz/bdz;   fy[k][j][i] += syz/fdz;
-					fz[k][j-1][i] -= syz/bdy;   fz[k][j][i] += syz/fdy;
-
-				}
-				END_STD_LOOP
-
-				// restore vectors
-				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc));
-				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p));
-				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T));
-				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx));
-				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy));
-				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz));
-				PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy));
-				PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz));
-				PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz));
-				PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lfx,     &fx));
-				PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,     &fy));
-				PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,     &fz));
-				PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx));
-				PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy));
-				PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz));
-				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith));
-				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore));
-				PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp));
-
-				// assemble global residuals from local contributions
-				LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
-				LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
-				LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
-
-				// check convergence of constitutive equations
-				PetscCall(checkConvConstEq(&ctx));
-
-				// copy residuals to global vector
-				PetscCall(JacResCopyRes(jr, rpl));
-				
-				PetscCall(VecAYPX(res,-1,rpl));
-				PetscCall(VecScale(res,1/aop->Perturb));
-
-				// Compute the gradient
-				PetscCall(VecDot(res,psi,&grdt));
-
-				PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
-
-				if (ik >= sx && ik < sx+nx && jk >= sy && jk < sy+ny && kk >= sz && kk < sz+nz)
-				{
-					temprank = 13;
-				}
-				else
-				{
-					temprank = 100;
-				}
-
-				// If temprank is not 13 the point is not on this processor
-				if(temprank == 13)
-				{
-					llgradfield[kk][jk][ik] = -grdt*aop->CurScal;
-				}
-				
-				PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
-			}
-		}
-	}
-
-	// restore vectors
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lgradfield,&llgradfield));
-
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lgradfield);
-
-	// give it back to the adjoint context
-	PetscCall(VecCopy(jr->lgradfield,aop->gradfield));
-
-	// display norm (partly also for testing purposes)
-	PetscCall(VecNorm(aop->gradfield, NORM_1, &nrm));
-	PetscPrintf(PETSC_COMM_WORLD,"|   Norm of field gradient vector : %2.15e \n",nrm);
-
-	PetscCall(VecDestroy(&rpl));
-	PetscCall(VecDestroy(&res));
 
 	PetscFunctionReturn(0);
 }

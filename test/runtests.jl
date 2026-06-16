@@ -506,57 +506,6 @@ end
 	                        keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
 	                        create_expected_file=update_expected, clean_dir=clean_files)
 	
-	# Adjoint_rho_SensitivityKernel_PSD
-
-	keywords   = ( "|Div|_inf",
-	               "|Div|_2",
-	               "|mRes|_2",
-	               "| Current Cost function = "
-	               )
-	
-	acc        = (  (rtol=1e-7, atol=1e-6), 
-	               (rtol=1e-5, atol=1e-5), 
-	               (rtol=1e-4, atol=1e-5), 
-	               (rtol=1e-6, atol=1e-5), 
-	            );   
-	
-	ParamFile = "AdjointGradients_SensitivityKernel_PSD.dat";
-	@test perform_lamem_test(dir,ParamFile,"Adjoint_rho_SensitivityKernel_PSD_p2",
-	                        args="",
-	                        keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
-	                        create_expected_file=update_expected, clean_dir=clean_files)
-
-	# the following two tests are  work-in-progress (deactivated)
-#=	
-	# Adjoint_n_SensitivityKernel_PSD
-	keywords   = ( "|   Norm of field gradient vector :",
-	                )
-	
-	acc        = (  (rtol=5e-1, atol=1e-6), 
-	             );
-	split_sign       = (":",)       
-	
-	ParamFile = "PSDKernelPaper.dat";
-	@test perform_lamem_test(dir,ParamFile,"Adjoint_n_SensitivityKernelPaper_PSD",
-	                        args="-nel_x 8  -nel_y 8 -nel_z 8 ",
-	                        keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-	                        create_expected_file=update_expected, clean_dir=clean_files)
-	
-	# Adjoint_eta0_SensitivityKernel_PSD
-	keywords   = ( "|   Norm of field gradient vector :",
-	                )
-	
-	acc        = (  (rtol=5e-1, atol=1e-6), 
-	             );
-	split_sign       = (":",)       
-	
-	ParamFile = "PSDKernelPaper.dat";
-	@test perform_lamem_test(dir,ParamFile,"Adjoint_eta0_SensitivityKernelPaper_PSD",
-	                        args="-nel_x 8  -nel_y 8 -nel_z 8 -Type[0] eta0",
-	                        keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec, 
-	                        split_sign=split_sign,
-	                        create_expected_file=update_expected, clean_dir=clean_files)
-=#
 end
 #---------------------------------------------------------------------------
 @testset "t09_PhaseDiagrams" begin

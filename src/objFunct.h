@@ -72,7 +72,6 @@ struct ModParam
 	PetscInt         SCF;                               // Scale cost function?
 	PetscInt         mdI;    		                    // number of indices
 	PetscInt         Ap;        	                    // 1 = several indices ; 2 = whole domain ; 3 = surface
-	PetscInt         FS;                                // 1 = pointwise gradient
 	PetscInt         Gr;                                // 1 = Grad w.r.t solution; 0 = Grad w.r.t to cost function
 	PetscInt         OFdef;                             // Objective function defined by hand?
 	PetscInt         maxit;                             // maximum number of inverse iteration
