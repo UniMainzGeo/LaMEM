@@ -3,15 +3,33 @@
 #  2) Delete basic output (make clean)
 #  3) Delete all output (make purge)
 
+# define PETSc installation directories:
+# PETSC_DEB = /directory/where/petsc/debug/is/installed
+# PETSC_OPT = /directory/where/petsc/optimized/is/installed
+
+# check integer types of both PETSc versions
+IS_64BIT_DEB := $(shell grep -c "PETSC_USE_64BIT_INDICES 1" ${PETSC_DEB}/include/petscconf.h)
+IS_64BIT_OPT := $(shell grep -c "PETSC_USE_64BIT_INDICES 1" ${PETSC_OPT}/include/petscconf.h)
+
+ifneq ($(IS_64BIT_DEB), $(IS_64BIT_OPT))
+   $(error Debug and optimized PETSc version are using different types of integers [32-bit vs. 64-bit])
+endif
+
+ifeq ($(IS_64BIT_DEB), 1)
+   ARGS = "is64bit"
+   BIT  = "64-bit"
+else
+   ARGS = ""
+   BIT  = "32-bit"
+endif
+
 .PHONY : test clean purge
 
 test:
-	@echo "============================================="
-	@echo "Running the LaMEM julia testing framework"
-	@echo "============================================="
-
-# compile LaMEM & run test suite:			
-	@julia --project=../. start_tests.jl 
+	@echo "===================================================="
+	@echo "Running LaMEM Julia testing framework in" ${BIT} "mode"
+	@echo "===================================================="
+	@julia --project=../. start_tests.jl ${ARGS}
 
 clean :
 	@echo "............................................."
