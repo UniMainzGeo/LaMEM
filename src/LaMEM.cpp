@@ -24,8 +24,6 @@ int main(int argc, char **argv)
 	ModParam IOparam;
 	char     str[_str_len_];
 
-	
-
 	// Initialize PETSC
 	PetscCall(PetscInitialize(&argc,&argv,(char *)0, help));
 

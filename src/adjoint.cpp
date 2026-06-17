@@ -1586,7 +1586,7 @@ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOpa
 			// -------- Only get gradients with respect to the solution --------
 			PetscCall(VecCopy(aop->pro,aop->dF)); // dF/dx = P
 
-			PetscCall(VecDot(aop->pro, jr->gsol,&value));
+			PetscCall(VecDot(aop->pro, jr->gsol, &value));
 			IOparam->mfit 	   = value*scal->velocity;    
 		}
 		else if(IOparam->MfitType == 1)
@@ -3135,7 +3135,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscScalar XX, YY, ZZ, XY, XZ, YZ, XY2, XZ2, YZ2, E2;
 	PetscScalar bdx, bdy, bdz, fdx, fdy, fdz, dx, dy, dz;
 	PetscScalar phival=0.0, Parameter, Param_local, mfitParam;
-	PetscScalar *tempPar,  *tempdPardu;
+	PetscScalar *tempdPardu;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***vx,  ***vy,  ***vz;
 	Vec         gxPar, gyPar, gzPar, gxdPardu, gydPardu, gzdPardu;
 	Vec         lxPar, lyPar, lzPar, lxdPardu, lydPardu, lzdPardu;
@@ -3206,7 +3206,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	}
 
 	// clear local residual vectors
-	PetscCall(VecZeroEntries(jr->phi));
 	PetscCall(VecZeroEntries(aop->dPardu));
 
 	PetscCall(DMCreateGlobalVector(fs->DA_X, &gxPar));
@@ -3559,20 +3558,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscCall(VecGetArray(gxPar, &dggxPar));
 	PetscCall(VecGetArray(gyPar, &dggyPar));
 	PetscCall(VecGetArray(gzPar, &dggzPar));
-
-	PetscCall(VecGetArray(jr->phi, &tempPar));
-	iter = tempPar;
-
-	PetscCall(PetscMemcpy(iter, dggxPar, (size_t)fs->nXFace*sizeof(PetscScalar)));
-	iter += fs->nXFace;
-
-	PetscCall(PetscMemcpy(iter, dggyPar, (size_t)fs->nYFace*sizeof(PetscScalar)));
-	iter += fs->nYFace;
-
-	PetscCall(PetscMemcpy(iter, dggzPar, (size_t)fs->nZFace*sizeof(PetscScalar)));
-	iter += fs->nZFace;
-
-	PetscCall(VecRestoreArray(jr->phi, &tempPar));
 
 	PetscCall(VecRestoreArray(gxPar, &dggxPar));
 	PetscCall(VecRestoreArray(gyPar, &dggyPar));

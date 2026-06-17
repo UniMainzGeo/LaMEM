@@ -394,9 +394,6 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	PetscCall(DMCreateLocalVector (fs->DA_CEN, &jr->lp_lith));
 	PetscCall(DMCreateLocalVector (fs->DA_CEN, &jr->lp_pore));
 
-	// PSD (adjoint paper)
-	PetscCall(VecDuplicate(jr->gsol, &jr->phi));
-	PetscCall(VecSet(jr->phi, 0.0));
 
 	// continuity residual
 	PetscCall(DMCreateGlobalVector(fs->DA_CEN, &jr->gc));
@@ -486,7 +483,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 
 	PetscInt   i;
 
-	
 	PetscFunctionBeginUser;
 
 	// solution vectors
@@ -515,8 +511,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	PetscCall(VecDestroy(&jr->lp_pore));
 
 	PetscCall(VecDestroy(&jr->gc));
-
-	PetscCall(VecDestroy(&jr->phi));
 
 	// solution variables
 	PetscCall(PetscFree(jr->svCell));
