@@ -18,24 +18,26 @@
 #include "Tensor.h"
 #include "parsing.h"
 //---------------------------------------------------------------------------
-PetscErrorCode JacResGetSHmax(JacRes *jr)
+PetscErrorCode JacResGetSHmax(JacRes *jr, Vec cx, Vec cy)
 {
 	// compute maximum horizontal compressive stress (SHmax) orientation
 
 	FDSTAG      *fs;
 	SolVarCell  *svCell;
+	Vec          ldxy;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar v1[3], v2[3], sxx, syy, sxy, s1, s2;
-	PetscScalar ***dx, ***dy, ***lsxy;
+	PetscScalar ***dx, ***dy, ***dxy;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
 	fs = jr->fs;
 
 	// setup shear stress vector
-	PetscCall(DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lsxy));
+	PetscCall(DMGetLocalVector(fs->DA_XY, &ldxy));
+
+	PetscCall(DMDAVecGetArray(fs->DA_XY, ldxy, &dxy));
 
 	PetscCall(DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz));
 
@@ -43,18 +45,18 @@ PetscErrorCode JacResGetSHmax(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		lsxy[k][j][i] = jr->svXYEdge[iter++].s;
+		dxy[k][j][i] = jr->svXYEdge[iter++].s;
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lsxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY, ldxy, &dxy));
 
-	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+	LOCAL_TO_LOCAL(fs->DA_XY, ldxy);
 
 	// get SHmax
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dx));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dy));
-	PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &lsxy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, cx,   &dx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, cy,   &dy));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy, &dxy));
 
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
@@ -65,7 +67,7 @@ PetscErrorCode JacResGetSHmax(JacRes *jr)
 		svCell = &jr->svCell[iter++];
 		sxx    = svCell->sxx;
 		syy    = svCell->syy;
-		sxy    = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0;
+		sxy    = (dxy[k][j][i] + dxy[k][j][i+1] + dxy[k][j+1][i] + dxy[k][j+1][i+1])/4.0;
 
 		// maximum compressive stress orientation is the eigenvector of the SMALLEST eigenvalue
 		// (stress is negative in compression)
@@ -84,27 +86,28 @@ PetscErrorCode JacResGetSHmax(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &lsxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, cx,   &dx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, cy,   &dy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy, &dxy));
 
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+	LOCAL_TO_LOCAL(fs->DA_CEN, cx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, cy);
+
+	PetscCall(DMRestoreLocalVector(fs->DA_XY, &ldxy));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResGetEHmax(JacRes *jr)
+PetscErrorCode JacResGetEHmax(JacRes *jr, Vec cx, Vec cy)
 {
-
 	// compute maximum horizontal extension rate (EHmax) orientation
 
 	FDSTAG      *fs;
 	SolVarCell  *svCell;
+	Vec         ldxy;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar v1[3], v2[3], dxx, dyy, dxy, d1, d2;
-	PetscScalar ***dx, ***dy, ***ldxy;
-
+	PetscScalar v1[3], v2[3], exx, eyy, exy, d1, d2;
+	PetscScalar ***dx, ***dy, ***dxy;
 	
 	PetscFunctionBeginUser;
 
@@ -112,7 +115,9 @@ PetscErrorCode JacResGetEHmax(JacRes *jr)
 	fs = jr->fs;
 
 	// setup shear strain rate vector
-	PetscCall(DMDAVecGetArray(fs->DA_XY, jr->ldxy, &ldxy));
+	PetscCall(DMGetLocalVector(fs->DA_XY, &ldxy));
+
+	PetscCall(DMDAVecGetArray(fs->DA_XY, ldxy, &dxy));
 
 	PetscCall(DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz));
 
@@ -120,18 +125,18 @@ PetscErrorCode JacResGetEHmax(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		ldxy[k][j][i] = jr->svXYEdge[iter++].d;
+		dxy[k][j][i] = jr->svXYEdge[iter++].d;
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &ldxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY, ldxy, &dxy));
 
-	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+	LOCAL_TO_LOCAL(fs->DA_XY, ldxy);
 
 	// get EHmax
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dx));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dy));
-	PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &ldxy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, cx,   &dx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, cy,   &dy));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy, &dxy));
 
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
@@ -140,13 +145,13 @@ PetscErrorCode JacResGetEHmax(JacRes *jr)
 	START_STD_LOOP
 	{
 		svCell = &jr->svCell[iter++];
-		dxx    = svCell->dxx;
-		dyy    = svCell->dyy;
-		dxy    = (ldxy[k][j][i] + ldxy[k][j][i+1] + ldxy[k][j+1][i] + ldxy[k][j+1][i+1])/4.0;
+		exx    = svCell->dxx;
+		eyy    = svCell->dyy;
+		exy    = (dxy[k][j][i] + dxy[k][j][i+1] + dxy[k][j+1][i] + dxy[k][j+1][i+1])/4.0;
 
 		// maximum extension rate orientation is the eigenvector of the LARGEST eigenvalue
 		// (strain rate is positive in extension)
-		PetscCall(Tensor2RS2DSpectral(dxx, dyy, dxy, &d1, &d2, v1, v2, 1e-12));
+		PetscCall(Tensor2RS2DSpectral(exx, eyy, exy, &d1, &d2, v1, v2, 1e-12));
 
 		// get common sense
 		if(v1[0] < 0.0 || (v1[0] == 0.0 && v1[1] < 0.0))
@@ -161,12 +166,14 @@ PetscErrorCode JacResGetEHmax(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &ldxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, cx,   &dx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, cy,   &dy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy, &dxy));
 
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+	LOCAL_TO_LOCAL(fs->DA_CEN, cx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, cy);
+
+	PetscCall(DMRestoreLocalVector(fs->DA_XY, &ldxy));
 
 	PetscFunctionReturn(0);
 }

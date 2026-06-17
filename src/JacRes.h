@@ -197,22 +197,6 @@ struct JacRes
 	Vec gfx,  gfy, gfz;  // global
 	Vec lfx,  lfy, lfz;  // local (ghosted)
 
-	// strain-rate components (also used as buffer vectors)
-	Vec ldxx, ldyy, ldzz, ldxy, ldxz, ldyz; // local (ghosted)
-	Vec                   gdxy, gdxz, gdyz; // global
-	// (ADVInterpMarkToEdge & ADVInterpFieldToMark is the only
-	//  couple of functions where global vectors (gdxy, gdxz, gdyz) are used.
-	//  Get rid of this ugly averaging between markers & edges!
-	//  In ADVInterpFieldToMark it's easy.
-	//  In ADVInterpMarkToEdge it's impossible because of assembly operation.
-	//  Really really really need to switch to ghost marker approach!
-	//  Also to get communication pattern independent of number of phases.
-
-	// For almost all the purposes only one center-based array is necessary instead of three
-	// for example - strain rate contributions from centers can be stored in one array
-
-	// IN GENERAL GET RID OF BUFFER VECTORS, USE LOCAL DMGetLocalVector (GET_INIT_LOCAL_VECTOR)
-
 	// pressure
 	Vec gp;      // global
 	Vec lp;      // local (ghosted)
@@ -281,7 +265,9 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr);
 PetscErrorCode JacResGetPressShift(JacRes *jr);
 
 // evaluate effective strain rate components in basic nodes
-PetscErrorCode JacResGetEffStrainRate(JacRes *jr);
+PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
+		Vec ldxx, Vec ldyy, Vec ldzz,
+		Vec ldxy, Vec ldxz, Vec ldyz);
 
 // compute velocity gradients for output
 PetscErrorCode JacResGetVelGrad(JacRes *jr,
@@ -290,7 +276,8 @@ PetscErrorCode JacResGetVelGrad(JacRes *jr,
 		Vec dvzdx, Vec dvzdy, Vec dvzdz);
 
 // compute components of vorticity vector
-PetscErrorCode JacResGetVorticity(JacRes *jr);
+PetscErrorCode JacResGetVorticity(JacRes *jr,
+		Vec ldxy, Vec ldxz, Vec ldyz);
 
 // compute nonlinear residual vectors
 PetscErrorCode JacResGetResidual(JacRes *jr);
@@ -324,10 +311,10 @@ PetscErrorCode JacResViewRes(JacRes *jr);
 //---------------------------------------------------------------------------
 
 // compute maximum horizontal compressive stress (SHmax) orientation
-PetscErrorCode JacResGetSHmax(JacRes *jr);
+PetscErrorCode JacResGetSHmax(JacRes *jr, Vec cx, Vec cy);
 
 // compute maximum horizontal extension rate (EHmax) orientation
-PetscErrorCode JacResGetEHmax(JacRes *jr);
+PetscErrorCode JacResGetEHmax(JacRes *jr, Vec cx, Vec cy);
 
 //---------------------------------------------------------------------------
 // Effective permeability functions
@@ -395,6 +382,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr);
 	else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
 
 //---------------------------------------------------------------------------
+
 #endif
 
 

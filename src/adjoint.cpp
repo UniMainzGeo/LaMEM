@@ -3128,6 +3128,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
+	Vec         ldxx, ldyy, ldzz, ldxy, ldxz, ldyz;
 	PetscInt    ii, i, j, k, nx, ny, nz, sx, sy, sz, iterat, lrank;
 	PetscInt    I, J, K, ID;
 	PetscScalar *ncx, *ncy, *ncz;
@@ -3152,6 +3153,13 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	fs 		= jr->fs;
 	scal 	= jr->scal;
 
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldxx));
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldyy));
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldzz));
+	PetscCall(DMGetLocalVector(fs->DA_XY,  &ldxy));
+	PetscCall(DMGetLocalVector(fs->DA_XZ,  &ldxz));
+	PetscCall(DMGetLocalVector(fs->DA_YZ,  &ldyz));
+
 	// Initialize vector to store observations:
 	PetscCall(VecZeroEntries(aop->sty));
 
@@ -3161,11 +3169,10 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	Param_local 		= 	0.0;
 	Parameter 			=	0.0;
 
-	/* 
-		For the cost function,  determine in which FDSTAG cell the observation are made.
-		Note: we compute the parameters only at the center of the FDSTAG cell & interpolate
-		values such as Exy from edges->center
-	*/
+	//	For the cost function,  determine in which FDSTAG cell the observation are made.
+	//	Note: we compute the parameters only at the center of the FDSTAG cell & interpolate
+	//	values such as Exy from edges->center
+
 	for(ii = 0; ii < IOparam->mdI; ii++)
 	{
 		// Create coordinate vector
@@ -3235,12 +3242,12 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscCall(VecZeroEntries(lzdPardu));
 
 	// access work vectors
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz));
-	PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy));
-	PetscCall(DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz));
-	PetscCall(DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldxx,    &dxx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldyy,    &dyy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldzz,    &dzz));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy,    &dxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  ldxz,    &dxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  ldyz,    &dyz));
 	
 	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx));
 	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy));
@@ -3526,12 +3533,12 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	}
 
 	// restore vectors
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldxx,    &dxx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldyy,    &dyy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldzz,    &dzz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy,    &dxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  ldxz,    &dxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  ldyz,    &dyz));
 
 	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy));
@@ -3613,6 +3620,13 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscCall(VecDestroy(&lxdPardu));
 	PetscCall(VecDestroy(&lydPardu));
 	PetscCall(VecDestroy(&lzdPardu));
+
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldxx));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldyy));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldzz));
+	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &ldxy));
+	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &ldxz));
+	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &ldyz));
 
 	PetscFunctionReturn(0);
 }

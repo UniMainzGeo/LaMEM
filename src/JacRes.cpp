@@ -398,17 +398,6 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	PetscCall(DMCreateLocalVector (fs->DA_Y, &jr->lfy));
 	PetscCall(DMCreateLocalVector (fs->DA_Z, &jr->lfz));
 
-	// strain-rate components (also used as buffer vectors)
-	PetscCall(DMCreateLocalVector (fs->DA_CEN, &jr->ldxx));
-	PetscCall(DMCreateLocalVector (fs->DA_CEN, &jr->ldyy));
-	PetscCall(DMCreateLocalVector (fs->DA_CEN, &jr->ldzz));
-	PetscCall(DMCreateLocalVector (fs->DA_XY,  &jr->ldxy));
-	PetscCall(DMCreateLocalVector (fs->DA_XZ,  &jr->ldxz));
-	PetscCall(DMCreateLocalVector (fs->DA_YZ,  &jr->ldyz));
-	PetscCall(DMCreateGlobalVector(fs->DA_XY,  &jr->gdxy));
-	PetscCall(DMCreateGlobalVector(fs->DA_XZ,  &jr->gdxz));
-	PetscCall(DMCreateGlobalVector(fs->DA_YZ,  &jr->gdyz));
-
 	// pressure
 	PetscCall(DMCreateGlobalVector(fs->DA_CEN, &jr->gp));
 	PetscCall(DMCreateLocalVector (fs->DA_CEN, &jr->lp));
@@ -530,17 +519,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	PetscCall(VecDestroy(&jr->lfy));
 	PetscCall(VecDestroy(&jr->lfz));
 
-	PetscCall(VecDestroy(&jr->ldxx));
-	PetscCall(VecDestroy(&jr->ldyy));
-	PetscCall(VecDestroy(&jr->ldzz));
-	PetscCall(VecDestroy(&jr->ldxy));
-	PetscCall(VecDestroy(&jr->ldxz));
-	PetscCall(VecDestroy(&jr->ldyz));
-
-	PetscCall(VecDestroy(&jr->gdxy));
-	PetscCall(VecDestroy(&jr->gdxz));
-	PetscCall(VecDestroy(&jr->gdyz));
-
 	PetscCall(VecDestroy(&jr->gp));
 	PetscCall(VecDestroy(&jr->lp));
 	PetscCall(VecDestroy(&jr->lp_lith));
@@ -591,9 +569,6 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 
 	// compute pore pressure
 	PetscCall(JacResGetPorePressure(jr));
-
-	// compute effective strain rate
-	PetscCall(JacResGetEffStrainRate(jr));
 
 	// compute residual
 	PetscCall(JacResGetResidual(jr));
@@ -714,9 +689,10 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
+PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
+		Vec ldxx, Vec ldyy, Vec ldzz,
+		Vec ldxy, Vec ldxz, Vec ldyz)
 {
-
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
@@ -728,7 +704,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	PetscScalar dx, dy, dz, xx, yy, zz, xy, xz, yz, theta, tr;
 	PetscScalar ***vx,  ***vy,  ***vz;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz;
-
 	
 	PetscFunctionBeginUser;
 
@@ -740,12 +715,12 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz));
 
 	// access global strain-rate components
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz));
-	PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &dxy));
-	PetscCall(DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz));
-	PetscCall(DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldxx, &dxx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldyy, &dyy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldzz, &dzz));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy, &dxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  ldxz, &dxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  ldyz, &dyz));
 
 	//-------------------------------
 	// central points (dxx, dyy, dzz)
@@ -889,25 +864,26 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &dxy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldxx, &dxx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldyy, &dyy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldzz, &dzz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy, &dxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  ldxz, &dxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  ldyz, &dyz));
 
 	// communicate boundary strain-rate values
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldzz);
-	LOCAL_TO_LOCAL(fs->DA_XY,  jr->ldxy);
-	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->ldxz);
-	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->ldyz);
+	LOCAL_TO_LOCAL(fs->DA_CEN, ldxx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, ldyy);
+	LOCAL_TO_LOCAL(fs->DA_CEN, ldzz);
+	LOCAL_TO_LOCAL(fs->DA_XY,  ldxy);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  ldxz);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  ldyz);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResGetVorticity(JacRes *jr)
+PetscErrorCode JacResGetVorticity(JacRes *jr,
+		Vec ldxy, Vec ldxz, Vec ldyz)
 {
 	// Compute components of the vorticity pseudo-vector
 	// (instantaneous rotation rates around three coordinate axis).
@@ -920,7 +896,6 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	PetscScalar ***lvx, ***lvy, ***lvz;
 	PetscScalar ***gwx, ***gwy, ***gwz;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
@@ -929,9 +904,9 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	PetscCall(DMDAVecGetArray(fs->DA_X,  jr->lvx,  &lvx));
 	PetscCall(DMDAVecGetArray(fs->DA_Y,  jr->lvy,  &lvy));
 	PetscCall(DMDAVecGetArray(fs->DA_Z,  jr->lvz,  &lvz));
-	PetscCall(DMDAVecGetArray(fs->DA_XY, jr->ldxy, &gwz));
-	PetscCall(DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &gwy));
-	PetscCall(DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &gwx));
+	PetscCall(DMDAVecGetArray(fs->DA_XY, ldxy, &gwz));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ, ldxz, &gwy));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ, ldyz, &gwx));
 
 	//-------------------------------
 	// xy edge points (wz)
@@ -985,14 +960,14 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	PetscCall(DMDAVecRestoreArray(fs->DA_X,  jr->lvx,  &lvx));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Y,  jr->lvy,  &lvy));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z,  jr->lvz,  &lvz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &gwz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &gwy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &gwx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY, ldxy, &gwz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ, ldxz, &gwy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ, ldyz, &gwx));
 
 	// communicate boundary values
-	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
-	LOCAL_TO_LOCAL(fs->DA_XZ, jr->ldxz);
-	LOCAL_TO_LOCAL(fs->DA_YZ, jr->ldyz);
+	LOCAL_TO_LOCAL(fs->DA_XY, ldxy);
+	LOCAL_TO_LOCAL(fs->DA_XZ, ldxz);
+	LOCAL_TO_LOCAL(fs->DA_YZ, ldyz);
 
 	PetscFunctionReturn(0);
 }
@@ -1017,6 +992,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscInt    periodic;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
+	Vec         ldxx, ldyy, ldzz, ldxy, ldxz, ldyz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
 	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
@@ -1030,7 +1006,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 
-	
 	PetscFunctionBeginUser;
 	
 	// access context
@@ -1054,6 +1029,17 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// set periodic flag
 	periodic = fs->periodic;
 
+	// get work vectors
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldxx));
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldyy));
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldzz));
+	PetscCall(DMGetLocalVector(fs->DA_XY,  &ldxy));
+	PetscCall(DMGetLocalVector(fs->DA_XZ,  &ldxz));
+	PetscCall(DMGetLocalVector(fs->DA_YZ,  &ldyz));
+
+	// compute effective strain rate
+	PetscCall(JacResGetEffStrainRate(jr, ldxx, ldyy, ldzz, ldxy, ldxz, ldyz));
+
 	// setup constitutive equation evaluation context parameters
 	PetscCall(setUpConstEq(&ctx, jr));
 
@@ -1067,12 +1053,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz));
-	PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy));
-	PetscCall(DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz));
-	PetscCall(DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz));
+
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldxx,    &dxx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldyy,    &dyy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldzz,    &dzz));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy,    &dxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  ldxz,    &dxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  ldyz,    &dyz));
+
 	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lfx,     &fx));
 	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lfy,     &fy));
 	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lfz,     &fz));
@@ -1540,12 +1528,12 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldxx,    &dxx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldyy,    &dyy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldzz,    &dzz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy,    &dxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  ldxz,    &dxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  ldyz,    &dyz));
 	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lfx,     &fx));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,     &fy));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,     &fz));
@@ -1563,6 +1551,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	// check convergence of constitutive equations
 	PetscCall(checkConvConstEq(&ctx));
+
+	// restore work vectors
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldxx));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldyy));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldzz));
+	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &ldxy));
+	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &ldxz));
+	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &ldyz));
 
 	PetscFunctionReturn(0);
 }

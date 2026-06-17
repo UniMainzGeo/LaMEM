@@ -655,20 +655,27 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	Tensor2RN    R;
 	Tensor2RS    SR;
 	SolVarCell  *svCell;
+	Vec          ldxy, ldxz, ldyz;
+	Vec          gdxy, gdxz, gdyz;
 	PetscScalar  UPXX, UPYY, UPZZ, UPXY, UPXZ, UPYZ;
 	PetscInt     nx, ny, sx, sy, sz;
 	PetscInt     jj, ID, I, J, K, II, JJ, KK;
 	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
-
 	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, d, dt;
-
 	PetscInt     healID, phase_ID;
-	  
 	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
 	jr = actx->jr;
+
+	// get work vectors
+	PetscCall(DMGetGlobalVector(fs->DA_XY, &gdxy));
+	PetscCall(DMGetGlobalVector(fs->DA_XZ, &gdxz));
+	PetscCall(DMGetGlobalVector(fs->DA_YZ, &gdyz));
+	PetscCall(DMGetLocalVector (fs->DA_XY, &ldxy));
+	PetscCall(DMGetLocalVector (fs->DA_XZ, &ldxz));
+	PetscCall(DMGetLocalVector (fs->DA_YZ, &ldyz));
 
 	// current time step
 	dt = jr->ts->dt;
@@ -682,14 +689,14 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	if(icase == _VORTICITY_)
 	{
 		// compute current vorticity field
-		PetscCall(JacResGetVorticity(jr));
+		PetscCall(JacResGetVorticity(jr, ldxy, ldxz, ldyz));
 	}
 	else
 	{
 		// access 1D layouts of global vectors
-		PetscCall(VecGetArray(jr->gdxy, &gxy));
-		PetscCall(VecGetArray(jr->gdxz, &gxz));
-		PetscCall(VecGetArray(jr->gdyz, &gyz));
+		PetscCall(VecGetArray(gdxy, &gxy));
+		PetscCall(VecGetArray(gdxz, &gxz));
+		PetscCall(VecGetArray(gdyz, &gyz));
 
 		if(icase == _STRESS_)
 		{
@@ -711,21 +718,21 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		}
 
 		// restore access
-		PetscCall(VecRestoreArray(jr->gdxy, &gxy));
-		PetscCall(VecRestoreArray(jr->gdxz, &gxz));
-		PetscCall(VecRestoreArray(jr->gdyz, &gyz));
+		PetscCall(VecRestoreArray(gdxy, &gxy));
+		PetscCall(VecRestoreArray(gdxz, &gxz));
+		PetscCall(VecRestoreArray(gdyz, &gyz));
 
 		// communicate boundary values
-		GLOBAL_TO_LOCAL(fs->DA_XY, jr->gdxy, jr->ldxy);
-		GLOBAL_TO_LOCAL(fs->DA_XZ, jr->gdxz, jr->ldxz);
-		GLOBAL_TO_LOCAL(fs->DA_YZ, jr->gdyz, jr->ldyz);
+		GLOBAL_TO_LOCAL(fs->DA_XY, gdxy, ldxy);
+		GLOBAL_TO_LOCAL(fs->DA_XZ, gdxz, ldxz);
+		GLOBAL_TO_LOCAL(fs->DA_YZ, gdyz, ldyz);
 
 	}
 
 	// access 3D layouts of local vectors
-	PetscCall(DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy));
-	PetscCall(DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz));
-	PetscCall(DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz));
+	PetscCall(DMDAVecGetArray(fs->DA_XY, ldxy, &lxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ, ldxz, &lxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ, ldyz, &lyz));
 
 	// scan ALL markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -821,9 +828,17 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	}
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY, ldxy, &lxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ, ldxz, &lxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ, ldyz, &lyz));
+
+	// restore work vectors
+	PetscCall(DMRestoreGlobalVector(fs->DA_XY, &gdxy));
+	PetscCall(DMRestoreGlobalVector(fs->DA_XZ, &gdxz));
+	PetscCall(DMRestoreGlobalVector(fs->DA_YZ, &gdyz));
+	PetscCall(DMRestoreLocalVector (fs->DA_XY, &ldxy));
+	PetscCall(DMRestoreLocalVector (fs->DA_XZ, &ldxz));
+	PetscCall(DMRestoreLocalVector (fs->DA_YZ, &ldyz));
 
 	PetscFunctionReturn(0);
 }
@@ -1769,13 +1784,14 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	FDSTAG      *fs;
 	JacRes      *jr;
 	Marker      *P;
+	Vec          ldxy, ldxz, ldyz;
+	Vec          gdxy, gdxz, gdyz;
 	PetscScalar  UPXY, UPXZ, UPYZ;
 	PetscInt     nx, ny, sx, sy, sz;
 	PetscInt     jj, ID, I, J, K, II, JJ, KK;
 	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
 	PetscScalar  xc, yc, zc, xp, yp, zp, wxc, wyc, wzc, wxn, wyn, wzn;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -1786,15 +1802,23 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
 	sz = fs->dsz.pstart;
 
+	// get work vectors
+	PetscCall(DMGetGlobalVector(fs->DA_XY, &gdxy));
+	PetscCall(DMGetGlobalVector(fs->DA_XZ, &gdxz));
+	PetscCall(DMGetGlobalVector(fs->DA_YZ, &gdyz));
+	PetscCall(DMGetLocalVector (fs->DA_XY, &ldxy));
+	PetscCall(DMGetLocalVector (fs->DA_XZ, &ldxz));
+	PetscCall(DMGetLocalVector (fs->DA_YZ, &ldyz));
+
 	// clear local vectors
-	PetscCall(VecZeroEntries(jr->ldxy));
-	PetscCall(VecZeroEntries(jr->ldxz));
-	PetscCall(VecZeroEntries(jr->ldyz));
+	PetscCall(VecZeroEntries(ldxy));
+	PetscCall(VecZeroEntries(ldxz));
+	PetscCall(VecZeroEntries(ldyz));
 
 	// access 3D layouts of local vectors
-	PetscCall(DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy));
-	PetscCall(DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz));
-	PetscCall(DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz));
+	PetscCall(DMDAVecGetArray(fs->DA_XY, ldxy, &lxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ, ldxz, &lxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ, ldyz, &lyz));
 
 	// set interpolated fields to defaults
 	UPXY = 1.0; UPXZ = 1.0; UPYZ = 1.0;
@@ -1849,19 +1873,19 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	}
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY, ldxy, &lxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ, ldxz, &lxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ, ldyz, &lyz));
 
 	// assemble global vectors
-	LOCAL_TO_GLOBAL(fs->DA_XY, jr->ldxy, jr->gdxy)
-	LOCAL_TO_GLOBAL(fs->DA_XZ, jr->ldxz, jr->gdxz)
-	LOCAL_TO_GLOBAL(fs->DA_YZ, jr->ldyz, jr->gdyz)
+	LOCAL_TO_GLOBAL(fs->DA_XY, ldxy, gdxy)
+	LOCAL_TO_GLOBAL(fs->DA_XZ, ldxz, gdxz)
+	LOCAL_TO_GLOBAL(fs->DA_YZ, ldyz, gdyz)
 
 	// access 1D layouts of global vectors
-	PetscCall(VecGetArray(jr->gdxy, &gxy));
-	PetscCall(VecGetArray(jr->gdxz, &gxz));
-	PetscCall(VecGetArray(jr->gdyz, &gyz));
+	PetscCall(VecGetArray(gdxy, &gxy));
+	PetscCall(VecGetArray(gdxz, &gxz));
+	PetscCall(VecGetArray(gdyz, &gyz));
 
 	// copy (normalized) data to the residual context
 	if(icase == _PHASE_)
@@ -1884,9 +1908,17 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	}
 
 	// restore access
-	PetscCall(VecRestoreArray(jr->gdxy, &gxy));
-	PetscCall(VecRestoreArray(jr->gdxz, &gxz));
-	PetscCall(VecRestoreArray(jr->gdyz, &gyz));
+	PetscCall(VecRestoreArray(gdxy, &gxy));
+	PetscCall(VecRestoreArray(gdxz, &gxz));
+	PetscCall(VecRestoreArray(gdyz, &gyz));
+
+	// restore work vectors
+	PetscCall(DMRestoreGlobalVector(fs->DA_XY, &gdxy));
+	PetscCall(DMRestoreGlobalVector(fs->DA_XZ, &gdxz));
+	PetscCall(DMRestoreGlobalVector(fs->DA_YZ, &gdyz));
+	PetscCall(DMRestoreLocalVector (fs->DA_XY, &ldxy));
+	PetscCall(DMRestoreLocalVector (fs->DA_XZ, &ldxz));
+	PetscCall(DMRestoreLocalVector (fs->DA_YZ, &ldyz));
 
 	PetscFunctionReturn(0);
 }

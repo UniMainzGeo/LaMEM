@@ -409,6 +409,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	SolVarBulk  *svBulk;
 	PetscInt    periodic;
 	Controls    ctrl;
+	Vec         ldcen, ldxy, ldxz, ldyz;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -445,19 +446,25 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	if(dt) invdt = 1.0/dt;
 	else   invdt = 0.0;
 
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT));
+	// get work vectors
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldcen));
+	PetscCall(DMGetLocalVector(fs->DA_XY,  &ldxy));
+	PetscCall(DMGetLocalVector(fs->DA_XZ,  &ldxz));
+	PetscCall(DMGetLocalVector(fs->DA_YZ,  &ldyz));
 
-	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, lT, GET_KC)
-	SCATTER_FIELD(fs->DA_XY,  jr->ldxy, lT, GET_HRXY)
-	SCATTER_FIELD(fs->DA_XZ,  jr->ldxz, lT, GET_HRXZ)
-	SCATTER_FIELD(fs->DA_YZ,  jr->ldyz, lT, GET_HRYZ)
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT));
+
+	SCATTER_FIELD(fs->DA_CEN, ldcen, lT, GET_KC)
+	SCATTER_FIELD(fs->DA_XY,  ldxy,  lT, GET_HRXY)
+	SCATTER_FIELD(fs->DA_XZ,  ldxz,  lT, GET_HRXZ)
+	SCATTER_FIELD(fs->DA_YZ,  ldyz,  lT, GET_HRYZ)
 
 	// access work vectors
 	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->ge,   &ge));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk));
-	PetscCall(DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &hxy));
-	PetscCall(DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &hxz));
-	PetscCall(DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &hyz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldcen,    &lk));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy,     &hxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  ldxz,     &hxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  ldyz,     &hyz));
 	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx) );
 	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy) );
 	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz) );
@@ -553,10 +560,10 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	// restore access
 	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->ge,   &ge));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &hxy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &hxz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &hyz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldcen,    &lk));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy,     &hxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  ldxz,     &hxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  ldyz,     &hyz));
 	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx) );
 	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy) );
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz) );
@@ -568,6 +575,12 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	for(i = 0; i < num; i++) e[list[i]] = 0.0;
 
 	PetscCall(VecRestoreArray(jr->ge, &e));
+
+	// restore work vectors
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldcen));
+	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &ldxy));
+	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &ldxz));
+	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &ldyz));
 
 	PetscFunctionReturn(0);
 }
@@ -582,6 +595,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	BCCtx      *bc;
 	SolVarCell *svCell;
 	PetscInt    periodic;
+	Vec         ldcen;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -592,7 +606,6 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff, ***lT;
 	PetscScalar y;
-	
 	
 	PetscFunctionBeginUser;
 
@@ -614,15 +627,18 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	my = fs->dsy.tcels - 1;
 	mz = fs->dsz.tcels - 1;
 
+	// get work vectors
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldcen));
+
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT));
 
-	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, lT, GET_KC)
+	SCATTER_FIELD(fs->DA_CEN, ldcen, lT, GET_KC)
 
 	// clear matrix coefficients
 	PetscCall(MatZeroEntries(jr->Att));
 
 	// access work vectors
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldcen,    &lk));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcT,  &bcT));
 	
 	//---------------
@@ -699,12 +715,15 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	END_STD_LOOP
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldcen,   &lk));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT));
 
 	// assemble temperature matrix
 	PetscCall(MatAIJAssemble(jr->Att, num, list, 1.0));
+
+	// restore work vectors
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldcen));
 
 	PetscFunctionReturn(0);
 }

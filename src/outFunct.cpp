@@ -677,32 +677,45 @@ PetscErrorCode PVOutWriteTotDispl(OutVec* outvec)
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteSHmax(OutVec* outvec)
 {
+	Vec cx, cy;
+
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->unit;
 
-	// compute maximum horizontal compressive stress (SHmax) orientation
-	PetscCall(JacResGetSHmax(jr));
+	PetscCall(DMGetLocalVector(jr->fs->DA_CEN, &cx));
+	PetscCall(DMGetLocalVector(jr->fs->DA_CEN, &cy));
 
-	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 3, 0, 0.0)
-	INTERPOLATE_ACCESS(jr->ldyy, InterpCenterCorner, 3, 1, 0.0)
+	// compute maximum horizontal compressive stress (SHmax) orientation
+	PetscCall(JacResGetSHmax(jr, cx, cy));
+
+	INTERPOLATE_ACCESS(cx, InterpCenterCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(cy, InterpCenterCorner, 3, 1, 0.0)
 
 	PetscCall(OutBufZero3DVecComp(outbuf, 3, 2));
+
+	PetscCall(DMRestoreLocalVector(jr->fs->DA_CEN, &cx));
+	PetscCall(DMRestoreLocalVector(jr->fs->DA_CEN, &cy));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 {
+	Vec cx, cy;
+
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->unit;
 
-	// compute maximum horizontal extension rate (EHmax) orientation
-	PetscCall(JacResGetEHmax(jr));
+	PetscCall(DMGetLocalVector(jr->fs->DA_CEN, &cx));
+	PetscCall(DMGetLocalVector(jr->fs->DA_CEN, &cy));
 
-	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 3, 0, 0.0)
-	INTERPOLATE_ACCESS(jr->ldyy, InterpCenterCorner, 3, 1, 0.0)
+	// compute maximum horizontal extension rate (EHmax) orientation
+	PetscCall(JacResGetEHmax(jr, cx, cy));
+
+	INTERPOLATE_ACCESS(cx, InterpCenterCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(cy, InterpCenterCorner, 3, 1, 0.0)
 
 	PetscCall(OutBufZero3DVecComp(outbuf, 3, 2));
 
