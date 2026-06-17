@@ -104,7 +104,6 @@ struct OutMask
 	PetscInt velocity;       // velocity
 	PetscInt pressure;       // pressure
 	PetscInt tot_pressure;   // totalpressure
-	PetscInt gradient;       // Adjoint field based gradient
 	PetscInt eff_press;      // effective pressure
 	PetscInt over_press;     // overpressure
 	PetscInt litho_press;    // lithostatic pressure

@@ -212,13 +212,11 @@ struct JacRes
 	SolVarEdge  *svXZEdge; // XZ edges
 	SolVarEdge  *svYZEdge; // YZ edges
 	PetscScalar *svBuff;   // storage for phRat
-	PetscScalar  mean_p;  // average lithostatic pressure
 
 	// Phase diagram
 	PData       *Pd;
 
 	// Adjoint field based gradients
-	Vec          lgradfield;
 	Vec          phi; // PSD context
 
 	//=======================

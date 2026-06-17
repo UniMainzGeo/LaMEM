@@ -52,7 +52,6 @@ PetscErrorCode PVOutWriteViscTotal   (OutVec*);
 PetscErrorCode PVOutWriteViscCreep   (OutVec*);
 PetscErrorCode PVOutWriteVelocity    (OutVec*);
 PetscErrorCode PVOutWritePressure    (OutVec*);
-PetscErrorCode PVOutWriteGradient    (OutVec*);
 PetscErrorCode PVOutWriteTotalPress  (OutVec*);
 PetscErrorCode PVOutWriteEffPress    (OutVec*);
 PetscErrorCode PVOutWriteOverPress   (OutVec*);

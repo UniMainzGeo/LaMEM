@@ -262,18 +262,6 @@ PetscErrorCode PVOutWritePressure(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PVOutWriteGradient(OutVec* outvec)
-{
-
-	ACCESS_FUNCTION_HEADER
-
-	cf = scal->unit;
-
-	INTERPOLATE_ACCESS(jr->lgradfield, InterpCenterCorner, 1, 0, 0.0)
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteStAngle(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER

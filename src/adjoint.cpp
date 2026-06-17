@@ -3333,7 +3333,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 				PetscCall(FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank));
 				if(lrank == 13)
 				{
-					/* Retrieve parameter */
+					// Retrieve parameter
 					if (!strcmp(IOparam->ObsName[ii],"PSD")) {Parameter       = phival;}
 					// Perform adjoint computation for strainrate components
 					else if (!strcmp(IOparam->ObsName[ii],"Exx")) {	Parameter =	XX;		}
@@ -3347,7 +3347,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 
 					if (!strcmp(IOparam->ObsName[ii],"PSD"))
 					{					
-						/* If we perform the computation for PSD (Principal Stress Direction) */	
+						// If we perform the computation for PSD (Principal Stress Direction)
 						// Compute objective function derivative (dFdu = P*(st-st_ini))
 						dPardu_local = 0;
 						if (IOparam->Gr == 0)

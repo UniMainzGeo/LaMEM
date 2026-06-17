@@ -34,7 +34,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	BCCtx      *bc;
 	PetscScalar gx, gy, gz;
 	char        gwtype [_str_len_];
-	PetscInt    i, numPhases, temp_int, nlmf;
+	PetscInt    i, numPhases, nlmf;
 	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
 	PetscBool   mat_free;
 	char        pc_type[_str_len_];
@@ -316,16 +316,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->steadyTempStep /=  scal->time;
     ctrl->pShift         /=  scal->stress;
     ctrl->Adiabatic_gr   = (ctrl->Adiabatic_gr/scal->temperature)*scal->length;
-
-	// adjoint field based gradient output vector
-    // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
-    temp_int = 0;
-    PetscCall(getIntParam(fb, _OPTIONAL_, "Adjoint_FieldSensitivity", &temp_int, 1, 1));
-	if(temp_int == 1)
-	{
-		PetscCall(DMCreateLocalVector(jr->fs->DA_CEN, &jr->lgradfield));
-		PetscCall(VecZeroEntries     (jr->lgradfield));
-	}
 
 	// create Jacobian & residual evaluation context
 	PetscCall(JacResCreateData(jr));
