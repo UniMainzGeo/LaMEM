@@ -183,15 +183,15 @@ PetscErrorCode MatFreeComputeLinearOperator(MatData *md, Vec x, Vec f, PetscScal
 	fs = md->fs;
 
 	// get temporary solution vectors
-	PetscCall(DMGetLocalVector (fs->DA_X,   &vx));
-	PetscCall(DMGetLocalVector (fs->DA_Y,   &vy));
-	PetscCall(DMGetLocalVector (fs->DA_Z,   &vz));
+	PetscCall(DMGetLocalVectorClean (fs->DA_X,   &vx));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Y,   &vy));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Z,   &vz));
 	PetscCall(DMGetGlobalVector(fs->DA_CEN, &p));
 
 	// get temporary residual vectors
-	PetscCall(DMGetLocalVector (fs->DA_X,   &fx));
-	PetscCall(DMGetLocalVector (fs->DA_Y,   &fy));
-	PetscCall(DMGetLocalVector (fs->DA_Z,   &fz));
+	PetscCall(DMGetLocalVectorClean (fs->DA_X,   &fx));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Y,   &fy));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Z,   &fz));
 	PetscCall(DMGetGlobalVector(fs->DA_CEN, &c));
 
 	// split solution vector
@@ -230,9 +230,9 @@ PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc)
 	fine   = mgi->fine;
 
 	// get temporary fine grid vectors
-	PetscCall(DMGetLocalVector (fine->fs->DA_X,     &fx));
-	PetscCall(DMGetLocalVector (fine->fs->DA_Y,     &fy));
-	PetscCall(DMGetLocalVector (fine->fs->DA_Z,     &fz));
+	PetscCall(DMGetLocalVectorClean (fine->fs->DA_X,     &fx));
+	PetscCall(DMGetLocalVectorClean (fine->fs->DA_Y,     &fy));
+	PetscCall(DMGetLocalVectorClean (fine->fs->DA_Z,     &fz));
 	PetscCall(DMGetGlobalVector(fine->fs->DA_CEN,   &fp));
 
 	// get temporary coarse grid vectors
@@ -283,9 +283,9 @@ PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf)
 	PetscCall(DMGetGlobalVector(fine->fs->DA_CEN,   &fp));
 
 	// get temporary coarse grid vectors
-	PetscCall(DMGetLocalVector (coarse->fs->DA_X,   &cx));
-	PetscCall(DMGetLocalVector (coarse->fs->DA_Y,   &cy));
-	PetscCall(DMGetLocalVector (coarse->fs->DA_Z,   &cz));
+	PetscCall(DMGetLocalVectorClean (coarse->fs->DA_X,   &cx));
+	PetscCall(DMGetLocalVectorClean (coarse->fs->DA_Y,   &cy));
+	PetscCall(DMGetLocalVectorClean (coarse->fs->DA_Z,   &cz));
 	PetscCall(DMGetGlobalVector(coarse->fs->DA_CEN, &cp));
 
 	// split coarse grid vector
@@ -322,9 +322,9 @@ PetscErrorCode MatFreeComputeDiagonal(MatData *md, Vec d)
 	fs = md->fs;
 
 	// get temporary diagoanal vectors
-	PetscCall(DMGetLocalVector (fs->DA_X,   &dx));
-	PetscCall(DMGetLocalVector (fs->DA_Y,   &dy));
-	PetscCall(DMGetLocalVector (fs->DA_Z,   &dz));
+	PetscCall(DMGetLocalVectorClean (fs->DA_X,   &dx));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Y,   &dy));
+	PetscCall(DMGetLocalVectorClean (fs->DA_Z,   &dz));
 	PetscCall(DMGetGlobalVector(fs->DA_CEN, &dp));
 
 	// compute diagonal entries

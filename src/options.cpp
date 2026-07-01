@@ -51,7 +51,12 @@ PetscErrorCode solverOptionsSetDefaults(FB *fb)
 	}
 	else
 	{
-		PetscCall(PetscOptionsInsertString(NULL, "-snes_max_funcs 1000000000"));
+		if(opt.continue_on_fail)
+		{
+			PetscCall(PetscOptionsInsertString(NULL, "-snes_continue_on_fail"));
+		}
+
+		PetscCall(PetscOptionsInsertString(NULL, "-snes_max_funcs unlimited"));
 
 		PetscCall(set_tolerances("snes", opt.nonlinear_tolerances));
 
@@ -309,6 +314,7 @@ PetscErrorCode solverOptionsReadFromFile(FB *fb, SolOptDB &opt)
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "view_solvers",            &opt.view_solvers,            1, 1));
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "monitor_solvers",         &opt.monitor_solvers,         1, 1));
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "set_linear_problem",      &opt.set_linear_problem,      1, 1));
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "continue_on_fail",        &opt.continue_on_fail,        1, 1));
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "nonlinear_tolerances",     opt.nonlinear_tolerances,    3, 1.0));
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "linear_tolerances",        opt.linear_tolerances,       3, 1.0));
 		PetscCall(getScalarParam(fb, _OPTIONAL_, "picard_to_newton",         opt.picard_to_newton,        4, 1.0));

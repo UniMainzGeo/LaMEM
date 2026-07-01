@@ -25,11 +25,6 @@
 #include "surf.h"
 #include "interpolate.h"
 #include "phase_transition.h"
-
-/*
-#START_DOC#
-#END_DOC#
-*/
 //---------------------------------------------------------------------------
 PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 {
@@ -663,11 +658,11 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	FDSTAG         *fs;
 	JacRes         *jr;
 	Marker         *P;
+	Vec            lT;
 	PetscInt       sx, sy, sz, nx, ny, jj, ID, I, J, K, II, JJ, KK, AirPhase;
-	PetscScalar    *ccx, *ccy, *ccz, ***lT;
+	PetscScalar    *ccx, *ccy, *ccz, ***T;
 	PetscScalar    xc, yc, zc, xp, yp, zp, Ttop;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -678,8 +673,8 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	AirPhase = -1;
 	Ttop     =  0.0;
 
-	// initialize corners and edges for interpolation
-	PetscCall(SetEdgeCornerCenter(fs, jr->lT));
+	// get temperature
+	PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, NULL, &lT, _interp_));
 
 	if(actx->surf->UseFreeSurf)
 	{
@@ -698,7 +693,7 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 	ccz = fs->dsz.ccoor;
 
 	// access temperature vector
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT, &T));
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -728,14 +723,16 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 		if(zp > zc) { KK = K; } else { KK = K-1; }
 
 		// interpolate temperature on the marker
-		P->T = InterpLin3D(lT, II, JJ, KK,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
+		P->T = InterpLin3D(T, II, JJ, KK,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
 
 		// override temperature of air phase
 		if(AirPhase != -1 && P->phase == AirPhase) P->T = Ttop;
 	}
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lT, &T));
+
+	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, NULL, &lT));
 
 	PetscFunctionReturn(0);
 }

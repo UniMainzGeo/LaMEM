@@ -11,15 +11,16 @@ OPTIONS & PREFIXES
 	-snes_newton_rtol [value] - relative tolerance to switch to Picard (divergence)
 	-snes_newton_maxit[value] - maximum number of Newton iterations to switch to Picard (divergence)
 	-snes_atol_auto           - automatic selection of absolute tolerance
+	-snes_continue_on_fail    - continue simulation if nonlinear solver diverged
 
 * MFFD Jacobian options prefix: -fd_
 
 * Jacobian linear solver prefix: -js_ 
 	
 	Custom options:
-	
+
 	-js_mat_free      - matrix-free Jacobian activation flag
-    -js_ksp_atol_auto - automatic selection of absolute tolerance
+	-js_ksp_atol_auto - automatic selection of absolute tolerance
 
 * Jacobian preconditioner prefix: -jp_
 

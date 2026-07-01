@@ -57,42 +57,6 @@ PetscErrorCode OutBufDestroy(OutBuf *outbuf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode OutBufGetVectors(OutBuf *outbuf)
-{
-	FDSTAG *fs;
-
-	PetscFunctionBeginUser;
-
-	fs = outbuf->fs;
-
-	// get center, corner & edge buffers
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &outbuf->lbcen));
-	PetscCall(DMGetLocalVector(fs->DA_COR, &outbuf->lbcor));
-	PetscCall(DMGetLocalVector(fs->DA_XY,  &outbuf->lbxy));
-	PetscCall(DMGetLocalVector(fs->DA_XZ,  &outbuf->lbxz));
-	PetscCall(DMGetLocalVector(fs->DA_YZ,  &outbuf->lbyz));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode OutBufRestoreVectors(OutBuf *outbuf)
-{
-	FDSTAG *fs;
-
-	PetscFunctionBeginUser;
-
-	fs = outbuf->fs;
-
-	// restore center, corner & edge buffers
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &outbuf->lbcen));
-	PetscCall(DMRestoreLocalVector(fs->DA_COR, &outbuf->lbcor));
-	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &outbuf->lbxy));
-	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &outbuf->lbxz));
-	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &outbuf->lbyz));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 void OutBufConnectToFile(OutBuf *outbuf, FILE *fp)
 {
 	// set file pointer
@@ -149,20 +113,20 @@ void OutBufPutCoordVec(
 //---------------------------------------------------------------------------
 PetscErrorCode OutBufPut3DVecComp(
 	OutBuf      *outbuf,
+	Vec          lbcor,  // vector containing component data
 	PetscInt     ncomp,  // number of components
 	PetscInt     dir,    // component identifier
 	PetscScalar  cf,     // scaling coefficient
 	PetscScalar  shift)  // shift parameter (subtracted from scaled values)
 {
 	// put component of 3D vector to output buffer
-	// component data is taken from obuf->gbcor vector
+	// component data is taken from lbcor vector
 
 	FDSTAG      *fs;
 	float       *buff;
 	PetscScalar ***arr;
 	PetscInt    i, j, k, rx, ry, rz, sx, sy, sz, nx, ny, nz, cnt;
 
-	
 	PetscFunctionBeginUser;
 
 	// access grid layout & buffer
@@ -170,10 +134,10 @@ PetscErrorCode OutBufPut3DVecComp(
 	buff = outbuf->buff;
 
 	// scatter ghost points to local buffer vector from global source vector
-	LOCAL_TO_LOCAL(fs->DA_COR, outbuf->lbcor)
+	LOCAL_TO_LOCAL(fs->DA_COR, lbcor)
 
 	// access local buffer vector
-	PetscCall(DMDAVecGetArray(fs->DA_COR, outbuf->lbcor, &arr));
+	PetscCall(DMDAVecGetArray(fs->DA_COR, lbcor, &arr));
 
 	// get sub-domain ranks, starting node IDs, and number of nodes
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
@@ -216,7 +180,7 @@ PetscErrorCode OutBufPut3DVecComp(
 	}
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_COR, outbuf->lbcor, &arr));
+	PetscCall(DMDAVecRestoreArray(fs->DA_COR, lbcor, &arr));
 
 	// update number of elements in the buffer
 	outbuf->cn += nx*ny*nz;
@@ -695,9 +659,6 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	if(fp == NULL) SETERRQ(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
-	// get output vectors
-	PetscCall(OutBufGetVectors(outbuf));
-
 	// link output buffer to file
 	OutBufConnectToFile(outbuf, fp);
 
@@ -772,9 +733,6 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 
 	// close file
 	fclose(fp);
-
-	// restore output vectors
-	PetscCall(OutBufRestoreVectors(outbuf));
 
 	PetscFunctionReturn(0);
 }

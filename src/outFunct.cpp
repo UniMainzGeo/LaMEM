@@ -35,33 +35,49 @@
 // interpolation function header
 #define COPY_FUNCTION_HEADER \
 	JacRes      *jr; \
-	OutBuf      *outbuf; \
 	FDSTAG      *fs; \
+	OutBuf      *outbuf; \
 	Scaling     *scal; \
 	PetscScalar ***buff, cf; \
+	Vec         lbcen, lbcor; \
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter; \
 	InterpFlags iflag; \
 	PetscFunctionBeginUser; \
-	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \
-	fs     = outbuf->fs; \
+	jr     = outvec->jr; \
+	fs     = jr->fs; \
 	scal   = jr->scal; \
 	iflag.update    = 0; \
-	iflag.use_bound = 0;
+	iflag.use_bound = 0; \
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &lbcen)); \
+	PetscCall(DMGetLocalVectorClean(fs->DA_COR, &lbcor));
+//---------------------------------------------------------------------------
+#define COPY_FUNCTION_FOOTER \
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &lbcen)); \
+	PetscCall(DMRestoreLocalVector(fs->DA_COR, &lbcor)); \
+	PetscFunctionReturn(0);
 //---------------------------------------------------------------------------
 // access function header
 #define ACCESS_FUNCTION_HEADER \
 	JacRes      *jr; \
+	FDSTAG      *fs; \
 	OutBuf      *outbuf; \
 	Scaling     *scal; \
 	PetscScalar  cf; \
 	InterpFlags  iflag; \
+	Vec          lbcor; \
 	PetscFunctionBeginUser; \
-	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \
+	jr     = outvec->jr; \
+	fs     = jr->fs; \
 	scal   = jr->scal; \
 	iflag.update    = 0; \
-	iflag.use_bound = 0;
+	iflag.use_bound = 0; \
+	PetscCall(DMGetLocalVectorClean(fs->DA_COR, &lbcor));
+//---------------------------------------------------------------------------
+#define ACCESS_FUNCTION_FOOTER \
+	PetscCall(DMRestoreLocalVector(fs->DA_COR, &lbcor)); \
+	PetscFunctionReturn(0);
 //---------------------------------------------------------------------------
 #define COPY_TO_LOCAL_BUFFER(da, vec, FIELD) \
 	PetscCall(DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz)); \
@@ -75,12 +91,12 @@
 //---------------------------------------------------------------------------
 #define INTERPOLATE_COPY(da, vec, IFUNCT, FIELD, ncomp, dir) \
 	COPY_TO_LOCAL_BUFFER(da, vec, FIELD) \
-	PetscCall(IFUNCT(fs, vec, outbuf->lbcor, iflag)); \
-	if(!iflag.update) { PetscCall(OutBufPut3DVecComp(outbuf, ncomp, dir, cf, 0.0)); }
+	PetscCall(IFUNCT(fs, vec, lbcor, iflag)); \
+	if(!iflag.update) { PetscCall(OutBufPut3DVecComp(outbuf, lbcor, ncomp, dir, cf, 0.0)); }
 //---------------------------------------------------------------------------
 #define INTERPOLATE_ACCESS(vec, IFUNCT, ncomp, dir, shift) \
-	PetscCall(IFUNCT(outbuf->fs, vec, outbuf->lbcor, iflag)); \
-	PetscCall(OutBufPut3DVecComp(outbuf, ncomp, dir, cf, shift));
+	PetscCall(IFUNCT(outbuf->fs, vec, lbcor, iflag)); \
+	PetscCall(OutBufPut3DVecComp(outbuf, lbcor, ncomp, dir, cf, shift));
 //---------------------------------------------------------------------------
 //...........  Multi-component output vector data structure .................
 //---------------------------------------------------------------------------
@@ -127,11 +143,11 @@ void OutVecCreate(
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWritePhase(OutVec* outvec)
 {
+	COPY_FUNCTION_HEADER
+
 	Material_t  *phases;
 	PetscScalar *phRat, mID;
 	PetscInt     jj, numPhases;
-
-	COPY_FUNCTION_HEADER
 
 	// macro to copy phase parameter to buffer
 	#define GET_PHASE \
@@ -141,24 +157,23 @@ PetscErrorCode PVOutWritePhase(OutVec* outvec)
 			mID += phRat[jj]*(PetscScalar)phases[jj].visID; \
 		buff[k][j][i] = mID;
 
-	// no scaling is necessary for the phase
 	cf = scal->unit;
 
 	// access material parameters
 	phases    = jr->dbm->phases;
 	numPhases = jr->dbm->numPhases;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_PHASE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_PHASE, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWritePhaseAgg(OutVec* outvec)
 {
+	COPY_FUNCTION_HEADER
+
 	PetscScalar *phRat, agg;
 	PetscInt     jj, numPhases, *phase_mask;
-
-	COPY_FUNCTION_HEADER
 
 	// macro to copy aggregated phase ratio to buffer
 	#define GET_PHASE_AGG \
@@ -168,16 +183,15 @@ PetscErrorCode PVOutWritePhaseAgg(OutVec* outvec)
 			if(phase_mask[jj]) agg += phRat[jj]; \
 		buff[k][j][i] = agg;
 
-	// no scaling is necessary for the phase
 	cf = scal->unit;
 
 	// access material parameters
 	numPhases  = jr->dbm->numPhases;
 	phase_mask = outvec->phase_mask;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_PHASE_AGG, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_PHASE_AGG, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteDensity(OutVec* outvec)
@@ -189,9 +203,9 @@ PetscErrorCode PVOutWriteDensity(OutVec* outvec)
 
 	cf = scal->density;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DENSITY, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DENSITY, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteViscTotal(OutVec* outvec)
@@ -206,9 +220,9 @@ PetscErrorCode PVOutWriteViscTotal(OutVec* outvec)
 	if(scal->utype == _GEO_) cf = -scal->viscosity;
 	else                     cf =  scal->viscosity;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_TOTAL, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_VISC_TOTAL, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteViscCreep(OutVec* outvec)
@@ -223,31 +237,35 @@ PetscErrorCode PVOutWriteViscCreep(OutVec* outvec)
 	if(scal->utype == _GEO_) cf = -scal->viscosity;
 	else                     cf =  scal->viscosity;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_CREEP, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_VISC_CREEP, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVelocity(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
-	cf = scal->velocity;
+	Vec lvx, lvy, lvz;
 
+	cf              = scal->velocity;
 	iflag.use_bound = 1;
 
-	PetscCall(JacResCopyVel(jr, jr->gsol));
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _interp_));
 
-	INTERPOLATE_ACCESS(jr->lvx, InterpXFaceCorner, 3, 0, 0.0)
-	INTERPOLATE_ACCESS(jr->lvy, InterpYFaceCorner, 3, 1, 0.0)
-	INTERPOLATE_ACCESS(jr->lvz, InterpZFaceCorner, 3, 2, 0.0)
+	INTERPOLATE_ACCESS(lvx, InterpXFaceCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(lvy, InterpYFaceCorner, 3, 1, 0.0)
+	INTERPOLATE_ACCESS(lvz, InterpZFaceCorner, 3, 2, 0.0)
 
-	PetscFunctionReturn(0);
+	// restore velocity vectors
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWritePressure(OutVec* outvec)
 {
-	
 	PetscFunctionBeginUser;
 
 	if(outvec->jr->ctrl.gwType != _GW_NONE_)
@@ -271,64 +289,81 @@ PetscErrorCode PVOutWriteStAngle(OutVec* outvec)
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_STANGLE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_STANGLE, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 {
-	PetscScalar pShift, biot;
-
 	ACCESS_FUNCTION_HEADER
 
-	biot = jr->ctrl.biot;
-	cf   = scal->stress;
+	Vec         lp, lpt;
+	PetscScalar pShift, biot;
 
-	// scale pressure shift
+	biot   =  jr->ctrl.biot;
+	cf     =  scal->stress;
 	pShift = -cf*jr->ctrl.pShift;
-	
-	PetscCall(JacResCopyPres(jr, jr->gsol));
 
-	// compute total pressure [add pore fluid P]
-	PetscCall(VecWAXPY(outbuf->lbcen, biot, jr->lp_pore, jr->lp));
-	
-	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &lpt));
 
-	PetscFunctionReturn(0);
+	PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, &lp, NULL, _no_interp_));
+
+	// compute total pressure (add pore fluid pressure)
+	PetscCall(VecWAXPY(lpt, biot, jr->lp_pore, lp));
+
+	// set corners and edges for interpolation
+	PetscCall(FDSTAGSetEdgeCornerCenter(jr->fs, lpt));
+
+	INTERPOLATE_ACCESS(lpt, InterpCenterCorner, 1, 0, pShift)
+
+	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, &lp, NULL));
+
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &lpt));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 {
-	PetscScalar pShift;
-
 	ACCESS_FUNCTION_HEADER
 
-	cf = scal->stress;
+	Vec         lp;
+	PetscScalar pShift;
+
+	cf              = scal->stress;
 	iflag.use_bound = 1;
+	pShift          = -cf*jr->ctrl.pShift;
 
-	// scale pressure shift
-	pShift = -cf*jr->ctrl.pShift;
+	PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, &lp, NULL, _interp_));
 
-	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
+	INTERPOLATE_ACCESS(lp, InterpCenterCorner, 1, 0, pShift)
 
-	PetscFunctionReturn(0);
+	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, &lp, NULL));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteOverPress(OutVec* outvec)
 {
-	PetscScalar pShift;
 	ACCESS_FUNCTION_HEADER
 
-	cf = scal->stress;
-	
-	// scale pressure shift
-	pShift 	= -cf*jr->ctrl.pShift;
-	PetscCall(JacResGetOverPressure(jr, outbuf->lbcen));
+	Vec lop;
 
-	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+	PetscScalar pShift;
 
-	PetscFunctionReturn(0);
+	cf     =  scal->stress;
+	pShift = -cf*jr->ctrl.pShift;
+
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &lop));
+
+	PetscCall(JacResGetOverPressure(jr, lop));
+
+	INTERPOLATE_ACCESS(lop, InterpCenterCorner, 1, 0, pShift)
+
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &lop));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteLithoPress(OutVec* outvec)
@@ -339,7 +374,7 @@ PetscErrorCode PVOutWriteLithoPress(OutVec* outvec)
 
 	INTERPOLATE_ACCESS(jr->lp_lith, InterpCenterCorner, 1, 0, 0.0)
 
-	PetscFunctionReturn(0);
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWritePorePress(OutVec* outvec)
@@ -350,24 +385,29 @@ PetscErrorCode PVOutWritePorePress(OutVec* outvec)
 
 	INTERPOLATE_ACCESS(jr->lp_pore, InterpCenterCorner, 1, 0, 0.0)
 
-	PetscFunctionReturn(0);
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteTemperature(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
-	cf = scal->temperature;
+	Vec lT;
+
+	cf              = scal->temperature;
 	iflag.use_bound = 1;
 
-	INTERPOLATE_ACCESS(jr->lT, InterpCenterCorner, 1, 0, scal->Tshift)
+	PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, NULL, &lT, _interp_));
 
-	PetscFunctionReturn(0);
+	INTERPOLATE_ACCESS(lT, InterpCenterCorner, 1, 0, scal->Tshift)
+
+	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, NULL, &lT));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteConductivity(OutVec* outvec)
 {
-
 	COPY_FUNCTION_HEADER
 
 	// macros to copy conductivity to buffer  
@@ -375,20 +415,21 @@ PetscErrorCode PVOutWriteConductivity(OutVec* outvec)
 
 	cf = scal->conductivity;
 	
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_COND_CENTER, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_COND_CENTER, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 {
+	COPY_FUNCTION_HEADER
+
 	// NOTE! See warning about component ordering scheme above
 
 	SolVarEdge  *svEdge;
 	SolVarCell  *svCell;
 	PetscScalar  pf;
-
-	COPY_FUNCTION_HEADER
+	Vec          lbxy, lbxz, lbyz;
 
 	// get pre-factor
 	if(jr->ctrl.initGuess) pf = 0.0;
@@ -404,27 +445,31 @@ PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 
 	cf = scal->stress;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SXX, 9, 0)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SXY, 9, 1)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SXZ, 9, 2)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SXY, 9, 3)
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SYY, 9, 4)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SYZ, 9, 5)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SXZ, 9, 6)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SYZ, 9, 7)
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SZZ, 9, 8)
-	
+	PetscCall(FDSTAGGetLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
 
-	PetscFunctionReturn(0);
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_SXX, 9, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  lbxy,  InterpXYEdgeCorner, GET_SXY, 9, 1)
+	INTERPOLATE_COPY(fs->DA_XZ,  lbxz,  InterpXZEdgeCorner, GET_SXZ, 9, 2)
+	INTERPOLATE_COPY(fs->DA_XY,  lbxy,  InterpXYEdgeCorner, GET_SXY, 9, 3)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_SYY, 9, 4)
+	INTERPOLATE_COPY(fs->DA_YZ,  lbyz,  InterpYZEdgeCorner, GET_SYZ, 9, 5)
+	INTERPOLATE_COPY(fs->DA_XZ,  lbxz,  InterpXZEdgeCorner, GET_SXZ, 9, 6)
+	INTERPOLATE_COPY(fs->DA_YZ,  lbyz,  InterpYZEdgeCorner, GET_SYZ, 9, 7)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_SZZ, 9, 8)
+
+	PetscCall(FDSTAGRestoreLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
+
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 {
+	COPY_FUNCTION_HEADER
+
 	SolVarCell  *svCell;
 	SolVarEdge  *svEdge;
 	PetscScalar s, J2, pf;
-
-	COPY_FUNCTION_HEADER
+	Vec         lbxy, lbxz, lbyz;
 
 	// get pre-factor
 	if(jr->ctrl.initGuess) pf = 0.0;
@@ -442,30 +487,35 @@ PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 	#define GET_J2_STRESS_YZ_EDGE { svEdge = &jr->svYZEdge[iter++]; s = svEdge->s + pf*svEdge->svDev.eta_st*svEdge->d; buff[k][j][i] = s*s;}
 	#define GET_J2_STRESS_XZ_EDGE { svEdge = &jr->svXZEdge[iter++]; s = svEdge->s + pf*svEdge->svDev.eta_st*svEdge->d; buff[k][j][i] = s*s;}
 
-	cf = scal->stress;
-
+	cf           = scal->stress;
 	iflag.update = 1;
 
-	PetscCall(VecSet(outbuf->lbcor, 0.0));
+	PetscCall(FDSTAGGetLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRESS_CENTER,  1, 0)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRESS_XY_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_J2_STRESS_YZ_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRESS_XZ_EDGE, 1, 0)
+	PetscCall(VecSet(lbcor, 0.0));
+
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_J2_STRESS_CENTER,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  lbxy,  InterpXYEdgeCorner, GET_J2_STRESS_XY_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  lbyz,  InterpYZEdgeCorner, GET_J2_STRESS_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  lbxz,  InterpXZEdgeCorner, GET_J2_STRESS_XZ_EDGE, 1, 0)
 
 	// compute & store second invariant
-	PetscCall(VecSqrtAbs(outbuf->lbcor));
+	PetscCall(VecSqrtAbs(lbcor));
 
-	PetscCall(OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0));
+	PetscCall(OutBufPut3DVecComp(outbuf, lbcor, 1, 0, cf, 0.0));
 
-	PetscFunctionReturn(0);
+	PetscCall(FDSTAGRestoreLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
+
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteStrainRate(OutVec* outvec)
 {
-	// NOTE! See warning about component ordering scheme above
-
 	COPY_FUNCTION_HEADER
+
+	Vec lbxy, lbxz, lbyz;
+
+	// NOTE! See warning about component ordering scheme above
 
 	// macro to copy deviatoric strain rate components to buffer
 	#define GET_DXX buff[k][j][i] = jr->svCell[iter++].dxx;
@@ -477,25 +527,30 @@ PetscErrorCode PVOutWriteStrainRate(OutVec* outvec)
 
 	cf = scal->strain_rate;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DXX, 9, 0)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DXY, 9, 1)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 9, 2)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DXY, 9, 3)
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DYY, 9, 4)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 9, 5)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 9, 6)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 9, 7)
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DZZ, 9, 8)
+	PetscCall(FDSTAGGetLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
 
-	PetscFunctionReturn(0);
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DXX, 9, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  lbxy,  InterpXYEdgeCorner, GET_DXY, 9, 1)
+	INTERPOLATE_COPY(fs->DA_XZ,  lbxz,  InterpXZEdgeCorner, GET_DXZ, 9, 2)
+	INTERPOLATE_COPY(fs->DA_XY,  lbxy,  InterpXYEdgeCorner, GET_DXY, 9, 3)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DYY, 9, 4)
+	INTERPOLATE_COPY(fs->DA_YZ,  lbyz,  InterpYZEdgeCorner, GET_DYZ, 9, 5)
+	INTERPOLATE_COPY(fs->DA_XZ,  lbxz,  InterpXZEdgeCorner, GET_DXZ, 9, 6)
+	INTERPOLATE_COPY(fs->DA_YZ,  lbyz,  InterpYZEdgeCorner, GET_DYZ, 9, 7)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DZZ, 9, 8)
+
+	PetscCall(FDSTAGRestoreLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
+
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteJ2StrainRate(OutVec* outvec)
 {
+	COPY_FUNCTION_HEADER
+
+	Vec        lbxy, lbxz, lbyz;
 	SolVarCell *svCell;
 	PetscScalar d, J2;
-
-	COPY_FUNCTION_HEADER
 
 	// macros to copy deviatoric strain rate invariant to buffer
 	#define GET_J2_STRAIN_RATE_CENTER \
@@ -509,23 +564,26 @@ PetscErrorCode PVOutWriteJ2StrainRate(OutVec* outvec)
 	#define GET_J2_STRAIN_RATE_YZ_EDGE d = jr->svYZEdge[iter++].d; buff[k][j][i] = d*d;
 	#define GET_J2_STRAIN_RATE_XZ_EDGE d = jr->svXZEdge[iter++].d; buff[k][j][i] = d*d;
 
-	cf = scal->strain_rate;
-
+	cf           = scal->strain_rate;
 	iflag.update = 1;
 
-	PetscCall(VecSet(outbuf->lbcor, 0.0));
+	PetscCall(FDSTAGGetLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRAIN_RATE_CENTER,  1, 0)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRAIN_RATE_XY_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_J2_STRAIN_RATE_YZ_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRAIN_RATE_XZ_EDGE, 1, 0)
+	PetscCall(VecSet(lbcor, 0.0));
+
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_J2_STRAIN_RATE_CENTER,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  lbxy,  InterpXYEdgeCorner, GET_J2_STRAIN_RATE_XY_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  lbyz,  InterpYZEdgeCorner, GET_J2_STRAIN_RATE_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  lbxz,  InterpXZEdgeCorner, GET_J2_STRAIN_RATE_XZ_EDGE, 1, 0)
 
 	// compute & store second invariant
-	PetscCall(VecSqrtAbs(outbuf->lbcor));
+	PetscCall(VecSqrtAbs(lbcor));
 
-	PetscCall(OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0));
+	PetscCall(OutBufPut3DVecComp(outbuf, lbcor, 1, 0, cf, 0.0));
 
-	PetscFunctionReturn(0);
+	PetscCall(FDSTAGRestoreLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
+
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteFluidDensity(OutVec* outvec)
@@ -537,9 +595,9 @@ PetscErrorCode PVOutWriteFluidDensity(OutVec* outvec)
 
 	cf = scal->density;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_RHOPF_CENTER,  1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_RHOPF_CENTER,  1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
@@ -551,9 +609,9 @@ PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MF_CENTER,  1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_MF_CENTER,  1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
@@ -592,9 +650,9 @@ PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_ATS, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_ATS, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWritePlastStrain(OutVec* outvec)
@@ -606,18 +664,19 @@ PetscErrorCode PVOutWritePlastStrain(OutVec* outvec)
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_APS, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_APS, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWritePlastDissip(OutVec* outvec)
 {
+	COPY_FUNCTION_HEADER
+
+	Vec        lbxy, lbxz, lbyz;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	PetscScalar Hr;
-
-	COPY_FUNCTION_HEADER
 
 	// macros to copy shear heating  to buffer
 	#define GET_SHEAR_HEATING_CENTER \
@@ -629,20 +688,23 @@ PetscErrorCode PVOutWritePlastDissip(OutVec* outvec)
 	#define GET_SHEAR_HEATING_YZ_EDGE svEdge = &jr->svYZEdge[iter++]; Hr = svEdge->svDev.Hr; buff[k][j][i] = Hr;
 	#define GET_SHEAR_HEATING_XZ_EDGE svEdge = &jr->svXZEdge[iter++]; Hr = svEdge->svDev.Hr; buff[k][j][i] = Hr;
 
-	cf = scal->dissipation_rate;
-
+	cf           = scal->dissipation_rate;
 	iflag.update = 1;
 
-	PetscCall(VecSet(outbuf->lbcor, 0.0));
+	PetscCall(FDSTAGGetLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SHEAR_HEATING_CENTER,  1, 0)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SHEAR_HEATING_XY_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SHEAR_HEATING_YZ_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SHEAR_HEATING_XZ_EDGE, 1, 0)
+	PetscCall(VecSet(lbcor, 0.0));
 
-	PetscCall(OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0));
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_SHEAR_HEATING_CENTER,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  lbxy,  InterpXYEdgeCorner, GET_SHEAR_HEATING_XY_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  lbyz,  InterpYZEdgeCorner, GET_SHEAR_HEATING_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  lbxz,  InterpXZEdgeCorner, GET_SHEAR_HEATING_XZ_EDGE, 1, 0)
 
-	PetscFunctionReturn(0);
+	PetscCall(OutBufPut3DVecComp(outbuf, lbcor, 1, 0, cf, 0.0));
+
+	PetscCall(FDSTAGRestoreLocalVectorEdge(fs, &lbxy, &lbxz, &lbyz));
+
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteTotDispl(OutVec* outvec)
@@ -656,23 +718,23 @@ PetscErrorCode PVOutWriteTotDispl(OutVec* outvec)
 	#define GET_DISPLY buff[k][j][i] = jr->svCell[iter++].U[1];
 	#define GET_DISPLZ buff[k][j][i] = jr->svCell[iter++].U[2];
 
-	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLX, 3, 0);
-	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLY, 3, 1);
-	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLZ, 3, 2);
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DISPLX, 3, 0);
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DISPLY, 3, 1);
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DISPLZ, 3, 2);
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteSHmax(OutVec* outvec)
 {
-	Vec cx, cy;
-
 	ACCESS_FUNCTION_HEADER
+
+	Vec cx, cy;
 
 	cf = scal->unit;
 
-	PetscCall(DMGetLocalVector(jr->fs->DA_CEN, &cx));
-	PetscCall(DMGetLocalVector(jr->fs->DA_CEN, &cy));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &cx));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &cy));
 
 	// compute maximum horizontal compressive stress (SHmax) orientation
 	PetscCall(JacResGetSHmax(jr, cx, cy));
@@ -682,22 +744,22 @@ PetscErrorCode PVOutWriteSHmax(OutVec* outvec)
 
 	PetscCall(OutBufZero3DVecComp(outbuf, 3, 2));
 
-	PetscCall(DMRestoreLocalVector(jr->fs->DA_CEN, &cx));
-	PetscCall(DMRestoreLocalVector(jr->fs->DA_CEN, &cy));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &cx));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &cy));
 
-	PetscFunctionReturn(0);
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 {
-	Vec cx, cy;
-
 	ACCESS_FUNCTION_HEADER
+
+	Vec cx, cy;
 
 	cf = scal->unit;
 
-	PetscCall(DMGetLocalVector(jr->fs->DA_CEN, &cx));
-	PetscCall(DMGetLocalVector(jr->fs->DA_CEN, &cy));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &cx));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &cy));
 
 	// compute maximum horizontal extension rate (EHmax) orientation
 	PetscCall(JacResGetEHmax(jr, cx, cy));
@@ -707,7 +769,10 @@ PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 
 	PetscCall(OutBufZero3DVecComp(outbuf, 3, 2));
 
-	PetscFunctionReturn(0);
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &cx));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &cy));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteYield(OutVec* outvec)
@@ -715,14 +780,13 @@ PetscErrorCode PVOutWriteYield(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy yield stress to buffer
-
 	#define GET_YIELD buff[k][j][i] = jr->svCell[iter++].yield;
 
 	cf = scal->stress;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_YIELD, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_YIELD, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteRelDIIdif(OutVec* outvec)
@@ -730,14 +794,13 @@ PetscErrorCode PVOutWriteRelDIIdif(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy diffusion creep relative strain rate to buffer
-
 	#define GET_DIIdif buff[k][j][i] = jr->svCell[iter++].DIIdif;
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIdif, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DIIdif, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteRelDIIdis(OutVec* outvec)
@@ -745,14 +808,13 @@ PetscErrorCode PVOutWriteRelDIIdis(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy diffusion creep relative strain rate to buffer
-
 	#define GET_DIIdis buff[k][j][i] = jr->svCell[iter++].DIIdis;
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIdis, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DIIdis, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
@@ -760,14 +822,13 @@ PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy diffusion creep relative strain rate to buffer
-
 	#define GET_DIIprl buff[k][j][i] = jr->svCell[iter++].DIIprl;
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIprl, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DIIprl, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteRelDIIpl(OutVec* outvec)
@@ -775,14 +836,13 @@ PetscErrorCode PVOutWriteRelDIIpl(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy plastic relative strain rate to buffer
-
 	#define GET_DIIpl buff[k][j][i] = jr->svCell[iter++].DIIpl;
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIpl, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, lbcen, InterpCenterCorner, GET_DIIpl, 1, 0)
 
-	PetscFunctionReturn(0);
+	COPY_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 // DEBUG VECTORS
@@ -791,103 +851,103 @@ PetscErrorCode PVOutWriteMomentRes(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
+	Vec gfx, gfy, gfz;
+	Vec lfx, lfy, lfz;
+
 	cf = scal->volumetric_force;
 
-	PetscCall(JacResCopyMomentumRes(jr, jr->gres));
+	// make buffer vectors
+	PetscCall(FDSTAGGetGlobalVectorFace(fs, &gfx, &gfy, &gfz));
+	PetscCall(FDSTAGGetLocalVectorFace (fs, &lfx, &lfy, &lfz));
 
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_Z, jr->gfz, jr->lfz)
+	// get momentum residuals
+	PetscCall(FDSTAGSplitVectors(fs, jr->gres, gfx, gfy, gfz, NULL));
 
-	INTERPOLATE_ACCESS(jr->lfx, InterpXFaceCorner, 3, 0, 0.0)
-	INTERPOLATE_ACCESS(jr->lfy, InterpYFaceCorner, 3, 1, 0.0)
-	INTERPOLATE_ACCESS(jr->lfz, InterpZFaceCorner, 3, 2, 0.0)
+	// exchange ghost values
+	GLOBAL_TO_LOCAL(fs->DA_X, gfx, lfx)
+	GLOBAL_TO_LOCAL(fs->DA_Y, gfy, lfy)
+	GLOBAL_TO_LOCAL(fs->DA_Z, gfz, lfz)
 
-	PetscFunctionReturn(0);
+	INTERPOLATE_ACCESS(lfx, InterpXFaceCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(lfy, InterpYFaceCorner, 3, 1, 0.0)
+	INTERPOLATE_ACCESS(lfz, InterpZFaceCorner, 3, 2, 0.0)
+
+	PetscCall(FDSTAGRestoreGlobalVectorFace(fs, &gfx, &gfy, &gfz));
+	PetscCall(FDSTAGRestoreLocalVectorFace (fs, &lfx, &lfy, &lfz));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteContRes(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
-	cf  = scal->strain_rate;
+	Vec gc, lc;
 
-	PetscCall(JacResCopyContinuityRes(jr, jr->gres));
+	cf = scal->strain_rate;
 
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->gc, outbuf->lbcen)
+	PetscCall(DMGetGlobalVector    (fs->DA_CEN, &gc));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &lc));
 
-	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
+	// get continuity residual
+	PetscCall(FDSTAGSplitVectors(fs, jr->gres, NULL, NULL, NULL, gc));
 
-	PetscFunctionReturn(0);
+	GLOBAL_TO_LOCAL(fs->DA_CEN, gc, lc)
+
+	INTERPOLATE_ACCESS(lc, InterpCenterCorner, 1, 0, 0.0)
+
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &gc));
+	PetscCall(DMRestoreLocalVector (fs->DA_CEN, &lc));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 {
-	FDSTAG      *fs;
-	PetscScalar ***lbcen, ***ge;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-
 	ACCESS_FUNCTION_HEADER
+
+	Vec le;
 
 	cf = scal->dissipation_rate;
 
-	fs = jr->fs;
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &le));
 
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen));
-	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->ge,         &ge));
+	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->ge, le)
 
-	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
+	INTERPOLATE_ACCESS(le, InterpCenterCorner, 1, 0, 0.0)
 
-	START_STD_LOOP
-	{
-		lbcen[k][j][i] = ge[k][j][i];
-	}
-	END_STD_LOOP
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &le));
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen));
-	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->ge,         &ge));
-
-	LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
-
-	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
-
-	PetscFunctionReturn(0);
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVelGrad(OutVec* outvec)
 {
-	// NOTE! See warning about component ordering scheme above
-
 	ACCESS_FUNCTION_HEADER
 
-	FDSTAG *fs;
+	// NOTE! See warning about component ordering scheme above
 
-	Vec dvxdx, dvxdy, dvxdz;
-	Vec dvydx, dvydy, dvydz;
-	Vec dvzdx, dvzdy, dvzdz;
+	Vec    lvx, lvy, lvz;
+	Vec    dvxdx, dvxdy, dvxdz;
+	Vec    dvydx, dvydy, dvydz;
+	Vec    dvzdx, dvzdy, dvzdz;
 
-	// access context
-	fs = jr->fs;
 	cf = scal->strain_rate;
 
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &dvxdx));
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &dvydy));
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &dvzdz));
-	PetscCall(DMGetLocalVector(fs->DA_XY,  &dvxdy));
-	PetscCall(DMGetLocalVector(fs->DA_XY,  &dvydx));
-	PetscCall(DMGetLocalVector(fs->DA_XZ,  &dvxdz));
-	PetscCall(DMGetLocalVector(fs->DA_XZ,  &dvzdx));
-	PetscCall(DMGetLocalVector(fs->DA_YZ,  &dvydz));
-	PetscCall(DMGetLocalVector(fs->DA_YZ,  &dvzdy));
+	// get work vectors
+	PetscCall(FDSTAGGetLocalVectorCenter(fs, &dvxdx, &dvydy, &dvzdz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &dvxdy, &dvxdz, &dvydz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &dvydx, &dvzdx, &dvzdy));
 
-	// copy velocity to local vectors
-	PetscCall(JacResCopyVel(jr, jr->gsol));
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _no_interp_));
 
 	// compute velocity gradients
 	PetscCall(JacResGetVelGrad(jr,
-		dvxdx,  dvxdy,  dvxdz,
-		dvydx,  dvydy,  dvydz,
-		dvzdx,  dvzdy,  dvzdz));
+		lvx,   lvy,   lvz,
+		dvxdx, dvxdy, dvxdz,
+		dvydx, dvydy, dvydz,
+		dvzdx, dvzdy, dvzdz));
 
 	INTERPOLATE_ACCESS(dvxdx, InterpCenterCorner, 9, 0, 0.0)
 	INTERPOLATE_ACCESS(dvxdy, InterpXYEdgeCorner, 9, 1, 0.0)
@@ -899,16 +959,14 @@ PetscErrorCode PVOutWriteVelGrad(OutVec* outvec)
 	INTERPOLATE_ACCESS(dvzdy, InterpYZEdgeCorner, 9, 7, 0.0)
 	INTERPOLATE_ACCESS(dvzdz, InterpCenterCorner, 9, 8, 0.0)
 
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &dvxdx));
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &dvydy));
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &dvzdz));
-	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &dvxdy));
-	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &dvydx));
-	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &dvxdz));
-	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &dvzdx));
-	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &dvydz));
-	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &dvzdy));
+	// get work vectors
+	PetscCall(FDSTAGRestoreLocalVectorCenter(fs, &dvxdx, &dvydy, &dvzdz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &dvxdy, &dvxdz, &dvydz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &dvydx, &dvzdx, &dvzdy));
 
-	PetscFunctionReturn(0);
+	// restore velocity vectors
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
+
+	ACCESS_FUNCTION_FOOTER
 }
 //---------------------------------------------------------------------------

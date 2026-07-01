@@ -13,8 +13,7 @@
 // extended advection schemes for Runge-Kutta 2nd order and Runge-Kutta 4th order
 // also testing velocity interpolation routines
 // by A. Pusok, July 2015
-
-
+//---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "cvi.h"
 #include "JacRes.h"
@@ -26,7 +25,6 @@
 #include "tssolve.h"
 #include "tools.h"
 #include "interpolate.h"
-
 //---------------------------------------------------------------------------
 PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 {
@@ -57,9 +55,9 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	SolVarCell  *svCell;
 	PetscInt    nx, ny, sx, sy, sz;
 	PetscInt    jj, ID, I, J, K, AirPhase;
+	Vec         lbp, lbT;
 	PetscScalar ***lp, ***lT, Ttop;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -82,9 +80,11 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	sy = fs->dsy.pstart;
 	sz = fs->dsz.pstart;
 
+	PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, &lbp, &lbT, _no_interp_));
+
 	// access velocity, pressure & temperature vectors
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lbp,  &lp));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lbT,  &lT));
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -110,8 +110,10 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	}
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lbp, &lp));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lbT, &lT));
+
+	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, &lbp, &lbT));
 
 	PetscFunctionReturn(0);
 }
@@ -931,10 +933,10 @@ PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 	PetscInt    jj, ID, I, J, K, II, JJ, KK;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
+	Vec         lbvx, lbvy, lbvz;
 	PetscScalar ***lvx, ***lvy, ***lvz;
 	PetscScalar xc, yc, zc, xp, yp, zp;
 
-	
 	PetscFunctionBeginUser;
 
 	// compute host cells for all markers
@@ -956,15 +958,13 @@ PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
 
-	// initialize corners and edges for interpolation
-	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
-	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
-	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lbvx, &lbvy, &lbvz, NULL, NULL, _interp_));
 
 	// access velocity, pressure & temperature vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz));
+	PetscCall(DMDAVecGetArray(fs->DA_X, lbvx, &lvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, lbvy, &lvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, lbvz, &lvz));
 
 	// scan all markers
 	for(jj = 0; jj < nmark; jj++)
@@ -997,9 +997,11 @@ PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 	}
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X, lbvx, &lvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y, lbvy, &lvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, lbvz, &lvz));
+
+	PetscCall(JacResRestoreSolution(jr, &lbvx, &lbvy, &lbvz, NULL, NULL));
 
 	PetscFunctionReturn(0);
 }
@@ -1017,6 +1019,7 @@ PetscErrorCode ADVelInterpMINMOD(AdvVelCtx *vi)
 	PetscInt    ID, pind, jj, n;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
+	Vec         lbvx, lbvy, lbvz;
 	PetscScalar ***lvx, ***lvy, ***lvz;
 	PetscScalar vxn[8], vyn[8], vzn[8];
 	PetscScalar C12, C23, C31, C10, C20, C30;
@@ -1024,7 +1027,6 @@ PetscErrorCode ADVelInterpMINMOD(AdvVelCtx *vi)
 	PetscScalar nxs, nys, nzs, nxe, nye, nze, dx, dy, dz;
 	PetscScalar xpl, ypl, zpl;
 
-	
 	PetscFunctionBeginUser;
 
 	// compute host cells for all markers
@@ -1044,15 +1046,13 @@ PetscErrorCode ADVelInterpMINMOD(AdvVelCtx *vi)
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
 
-	// initialize corners and edges for interpolation
-	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
-	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
-	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lbvx, &lbvy, &lbvz, NULL, NULL, _interp_));
 
 	// access velocity, pressure & temperature vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz));
+	PetscCall(DMDAVecGetArray(fs->DA_X, lbvx, &lvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, lbvy, &lvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, lbvz, &lvz));
 
 	// scan all local cells
 	START_STD_LOOP
@@ -1217,9 +1217,11 @@ PetscErrorCode ADVelInterpMINMOD(AdvVelCtx *vi)
 	END_STD_LOOP
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X, lbvx, &lvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y, lbvy, &lvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, lbvz, &lvz));
+
+	PetscCall(JacResRestoreSolution(jr, &lbvx, &lbvy, &lbvz, NULL, NULL));
 
 	PetscFunctionReturn(0);
 }
@@ -1236,13 +1238,13 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
 	PetscScalar v[3], vp[3];
+	Vec         lbvx, lbvy, lbvz;
 	PetscScalar ***lvx, ***lvy, ***lvz;
 	PetscScalar xc, yc, zc, xp, yp, zp;
 	PetscScalar vii[12], vxp[8], vyp[8], vzp[8];
 	PetscScalar nxs, nxe, nys, nye, nzs, nze, xpl, ypl, zpl;
 	PetscScalar A, B;
 
-	
 	PetscFunctionBeginUser;
 
 	// compute host cells for all markers
@@ -1270,15 +1272,13 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
 
-	// initialize corners and edges for interpolation
-	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
-	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
-	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lbvx, &lbvy, &lbvz, NULL, NULL, _interp_));
 
-	// access velocity, pressure & temperature vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz));
+	// access velocity vectors
+	PetscCall(DMDAVecGetArray(fs->DA_X, lbvx, &lvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, lbvy, &lvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, lbvz, &lvz));
 
 	// scan all markers
 	for(jj = 0; jj < nmark; jj++)
@@ -1469,9 +1469,11 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	}
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X, lbvx, &lvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y, lbvy, &lvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, lbvz, &lvz));
+
+	PetscCall(JacResRestoreSolution(jr, &lbvx, &lbvy, &lbvz, NULL, NULL));
 
 	PetscFunctionReturn(0);
 }

@@ -25,7 +25,7 @@
 
 //---------------------------------------------------------------------------
 
-#define SCATTER_FIELD(da, vec, lT, FIELD)				\
+#define SCATTER_FIELD(da, vec, FIELD)				\
 	PetscCall(DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz)); \
 	PetscCall(DMDAVecGetArray(da, vec, &buff)); \
 	iter = 0; \
@@ -36,8 +36,11 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-  PetscCall(JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, lT[k][j][i], COORD_CELL(j,sy,fs->dsy),j-sy)); \
-  buff[k][j][i] = kc;   // added one NULL because of the new variables that are passed
+	Tc    = T[k][j][i]; \
+	ycell = COORD_CELL(j, sy, fs->dsy); \
+	jcell = j-sy; \
+	PetscCall(JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL, Tc, ycell, jcell)); \
+	buff[k][j][i] = kc;
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
 #define GET_HRXZ buff[k][j][i] = jr->svXZEdge[iter++].svDev.Hr;
@@ -182,12 +185,6 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	// set periodic flag
 	periodic = fs->periodic;
 
-	// create local temperature vector using box-stencil central DMDA
-	PetscCall(DMCreateLocalVector(fs->DA_CEN, &jr->lT));
-
-	// temperature diffusion cases only
-	if(!jr->ctrl.actTemp) PetscFunctionReturn(0);
-
 	// get cell center grid partitioning
 	PetscCall(DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz));
 
@@ -205,6 +202,12 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	// set proper interpolation type for multigrid
 	PetscCall(DMDASetInterpolationType(jr->DA_T, DMDA_Q0));
+
+	// create global temperature vector
+	PetscCall(DMCreateGlobalVector(jr->DA_T, &jr->gT_));
+
+	// temperature diffusion cases only
+	if(!jr->ctrl.actTemp) PetscFunctionReturn(0);
 
 	// create temperature preconditioner matrix
 	PetscCall(DMCreateMatrix(jr->DA_T, &jr->Att));
@@ -245,13 +248,13 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 
 	PetscFunctionBeginUser;
 
-	PetscCall(VecDestroy(&jr->lT));
+	PetscCall(DMDestroy (&jr->DA_T));
+	PetscCall(VecDestroy(&jr->gT_));
 
 	// temperature diffusion cases only
 	if(!jr->ctrl.actTemp) PetscFunctionReturn(0);
 
 	// temperature parameters
-	PetscCall(DMDestroy (&jr->DA_T));
 	PetscCall(MatDestroy(&jr->Att));
 
 	PetscCall(VecDestroy(&jr->dT));
@@ -271,7 +274,7 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 
 	FDSTAG      *fs;
 	BCCtx       *bc;
-	PetscScalar ***lT, ***bcT, T;
+	PetscScalar ***gT, ***bcT, T;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
 	PetscFunctionBeginUser;
@@ -280,7 +283,7 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	fs = jr->fs;
 	bc = jr->bc;
 
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->gT_,  &gT));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT));
 
 	iter = 0;
@@ -293,66 +296,30 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 
 		if(T == DBL_MAX) T = jr->svCell[iter].svBulk.Tn;
 
-		lT[k][j][i] = T;
+		gT[k][j][i] = T;
 
 		iter++;
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->gT_,  &gT));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT));
 
-	// apply two-point constraints
-	PetscCall(JacResApplyTempBC(jr));
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResUpdateTemp(JacRes *jr)
+PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT)
 {
-	// correct temperature for diffusion (Newton update)
-
-	FDSTAG      *fs;
-	PetscScalar ***lT, ***dT;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-
-	PetscFunctionBeginUser;
-
-	fs = jr->fs;
-
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT));
-	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->dT, &dT));
-
-	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
-
-	START_STD_LOOP
-	{
-		lT[k][j][i] -= dT[k][j][i];
-	}
-	END_STD_LOOP
-
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT, &lT));
-	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->dT, &dT));
-
-	// apply two-point constraints
-	PetscCall(JacResApplyTempBC(jr));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode JacResApplyTempBC(JacRes *jr)
-{
-	// apply temperature two-point constraints
+	// access current temperature
 
 	FDSTAG      *fs;
 	BCCtx       *bc;
 	PetscInt    periodic;
 	PetscScalar pmdof;
-	PetscScalar ***lT, ***bcT;
+	PetscScalar ***T, ***gT, ***bcT;
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
-	
 	PetscFunctionBeginUser;
 
 	fs  =  jr->fs;
@@ -363,11 +330,26 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 	mcy = fs->dsy.tcels - 1;
 	mcz = fs->dsz.tcels - 1;
 
+	// copy global temperature solution
+	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->gT_,  &gT));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT,       &T));
+
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
+
+	START_STD_LOOP
+	{
+		T[k][j][i] = gT[k][j][i];
+	}
+	END_STD_LOOP
+
+	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->gT_, &gT));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lT,      &T));
+
 	// exchange internal ghost points
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lT)
+	LOCAL_TO_LOCAL(fs->DA_CEN, lT)
 
 	// access local solution & boundary constraints
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT,      &T));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT));
 
 	// set periodic flag
@@ -379,19 +361,19 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		pmdof = lT[k][j][i];
+		pmdof = T[k][j][i];
 
-		if(i == 0)   { if(!periodic) { SET_TPC(bcT, lT, k,   j,   i-1, pmdof) } }
-		if(i == mcx) { if(!periodic) { SET_TPC(bcT, lT, k,   j,   i+1, pmdof) } }
-		if(j == 0)   {                 SET_TPC(bcT, lT, k,   j-1, i,   pmdof) }
-		if(j == mcy) {                 SET_TPC(bcT, lT, k,   j+1, i,   pmdof) }
-		if(k == 0)   {                 SET_TPC(bcT, lT, k-1, j,   i,   pmdof) }
-		if(k == mcz) {                 SET_TPC(bcT, lT, k+1, j,   i,   pmdof) }
+		if(i == 0)   { if(!periodic) { SET_TPC(bcT, T, k,   j,   i-1, pmdof) } }
+		if(i == mcx) { if(!periodic) { SET_TPC(bcT, T, k,   j,   i+1, pmdof) } }
+		if(j == 0)   {                 SET_TPC(bcT, T, k,   j-1, i,   pmdof) }
+		if(j == mcy) {                 SET_TPC(bcT, T, k,   j+1, i,   pmdof) }
+		if(k == 0)   {                 SET_TPC(bcT, T, k-1, j,   i,   pmdof) }
+		if(k == mcz) {                 SET_TPC(bcT, T, k+1, j,   i,   pmdof) }
 	}
 	END_STD_LOOP
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lT,      &T));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT));
 
 	PetscFunctionReturn(0);
@@ -410,6 +392,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscInt    periodic;
 	Controls    ctrl;
 	Vec         ldcen, ldxy, ldxz, ldyz;
+	Vec         lvx, lvy, lvz, lT;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -419,9 +402,10 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
 	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Pc, Tn, Hr, Ha;
-	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e, ***P;
+	PetscScalar ***ge, ***T, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e, ***P;
 	PetscScalar ***vx,***vy,***vz;
-	PetscScalar y;
+	PetscScalar ycell;
+	PetscInt    jcell;
 	
 	PetscFunctionBeginUser;
 
@@ -447,27 +431,29 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	else   invdt = 0.0;
 
 	// get work vectors
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldcen));
-	PetscCall(DMGetLocalVector(fs->DA_XY,  &ldxy));
-	PetscCall(DMGetLocalVector(fs->DA_XZ,  &ldxz));
-	PetscCall(DMGetLocalVector(fs->DA_YZ,  &ldyz));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &ldcen));
 
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT));
+	PetscCall(FDSTAGGetLocalVectorEdge(fs, &ldxy, &ldxz, &ldyz));
 
-	SCATTER_FIELD(fs->DA_CEN, ldcen, lT, GET_KC)
-	SCATTER_FIELD(fs->DA_XY,  ldxy,  lT, GET_HRXY)
-	SCATTER_FIELD(fs->DA_XZ,  ldxz,  lT, GET_HRXZ)
-	SCATTER_FIELD(fs->DA_YZ,  ldyz,  lT, GET_HRYZ)
+	// get current solution
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, &lT, _no_interp_));
+
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT, &T));
+
+	SCATTER_FIELD(fs->DA_CEN, ldcen, GET_KC)
+	SCATTER_FIELD(fs->DA_XY,  ldxy,  GET_HRXY)
+	SCATTER_FIELD(fs->DA_XZ,  ldxz,  GET_HRXZ)
+	SCATTER_FIELD(fs->DA_YZ,  ldyz,  GET_HRYZ)
 
 	// access work vectors
-	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->ge,   &ge));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldcen,    &lk));
-	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy,     &hxy));
-	PetscCall(DMDAVecGetArray(fs->DA_XZ,  ldxz,     &hxz));
-	PetscCall(DMDAVecGetArray(fs->DA_YZ,  ldyz,     &hyz));
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx) );
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy) );
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz) );
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldcen,       &lk));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy,        &hxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  ldxz,        &hxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  ldyz,        &hyz));
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lvx,         &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lvy,         &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lvz,         &vz));
+	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->ge,      &ge));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &P ));
 
 	//---------------
@@ -484,15 +470,16 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		svBulk = &svCell->svBulk;
 		
 		// access
-		Tc  = lT[k][j][i]; // current temperature
+		Tc  = T[k][j][i];  // current temperature
 		Tn  = svBulk->Tn;  // temperature history
 		Pc  = P[k][j][i] ; // current Pressure
 
-		// cell coordinate
-		y = COORD_CELL(j,sy,fs->dsy);
+		// cell coordinate and index
+		ycell = COORD_CELL(j, sy, fs->dsy);
+		jcell = j-sy;
 
 		// conductivity, heat capacity, radiogenic heat production
-		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, y, j-sy));
+		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A, Tc, ycell, jcell));
 
 		// shear heating term (effective)
 		Hr = svDev->Hr
@@ -524,9 +511,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// compute heat fluxes
-		bqx = bkx*(Tc - lT[k][j][i-1])/bdx;   fqx = fkx*(lT[k][j][i+1] - Tc)/fdx;
-		bqy = bky*(Tc - lT[k][j-1][i])/bdy;   fqy = fky*(lT[k][j+1][i] - Tc)/fdy;
-		bqz = bkz*(Tc - lT[k-1][j][i])/bdz;   fqz = fkz*(lT[k+1][j][i] - Tc)/fdz;
+		bqx = bkx*(Tc - T[k][j][i-1])/bdx;   fqx = fkx*(T[k][j][i+1] - Tc)/fdx;
+		bqy = bky*(Tc - T[k][j-1][i])/bdy;   fqy = fky*(T[k][j+1][i] - Tc)/fdy;
+		bqz = bkz*(Tc - T[k-1][j][i])/bdz;   fqz = fkz*(T[k+1][j][i] - Tc)/fdz;
 
 		// Compute the pressure gradient
 		if(jr->ctrl.initGuess == 0)
@@ -558,16 +545,16 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	END_STD_LOOP
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->ge,   &ge));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldcen,    &lk));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy,     &hxy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  ldxz,     &hxz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  ldyz,     &hyz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx) );
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy) );
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz) );
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &P)  );
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lT,          &T));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldcen,       &lk));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy,        &hxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  ldxz,        &hxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  ldyz,        &hyz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lvx,         &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lvy,         &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lvz,         &vz));
+	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->ge,      &ge));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &P));
 
 	// impose primary temperature constraints
 	PetscCall(VecGetArray(jr->ge, &e));
@@ -578,9 +565,10 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 
 	// restore work vectors
 	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldcen));
-	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &ldxy));
-	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &ldxz));
-	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &ldyz));
+
+	PetscCall(FDSTAGRestoreLocalVectorEdge(fs, &ldxy, &ldxz, &ldyz));
+
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, &lT));
 
 	PetscFunctionReturn(0);
 }
@@ -604,8 +592,10 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
  	PetscScalar dx, dy, dz;
 	PetscScalar v[7], cf[6], kc, rho_Cp(0.0), invdt, Tc;
 	MatStencil  row[1], col[7];
-	PetscScalar ***lk, ***bcT, ***buff, ***lT;
-	PetscScalar y;
+	Vec         lT;
+	PetscScalar ***lk, ***bcT, ***buff, ***T;
+	PetscScalar ycell;
+	PetscInt    jcell;
 	
 	PetscFunctionBeginUser;
 
@@ -628,11 +618,14 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	mz = fs->dsz.tcels - 1;
 
 	// get work vectors
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldcen));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &ldcen));
 
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT));
+	// get current solution
+	PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, NULL, &lT, _no_interp_));
 
-	SCATTER_FIELD(fs->DA_CEN, ldcen, lT, GET_KC)
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT, &T));
+
+	SCATTER_FIELD(fs->DA_CEN, ldcen, GET_KC)
 
 	// clear matrix coefficients
 	PetscCall(MatZeroEntries(jr->Att));
@@ -652,14 +645,15 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 		// access solution variables
 		svCell = &jr->svCell[iter++];
 
-		// cell coordinate
-		y = COORD_CELL(j, sy, fs->dsy);
-		
 		// access
-		Tc  = lT[k][j][i]; // current temperature
+		Tc  = T[k][j][i]; // current temperature
 		
+		// cell coordinate and index
+		ycell = COORD_CELL(j, sy, fs->dsy);
+		jcell = j-sy;
+
 		// conductivity, heat capacity
-		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, y, j-sy));
+		PetscCall(JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL, Tc, ycell, jcell));
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { if(!periodic) { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; } }
@@ -715,15 +709,17 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	END_STD_LOOP
 
 	// restore access
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lT,      &T));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldcen,   &lk));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT));
 
 	// assemble temperature matrix
 	PetscCall(MatAIJAssemble(jr->Att, num, list, 1.0));
 
 	// restore work vectors
 	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldcen));
+
+	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, NULL, &lT));
 
 	PetscFunctionReturn(0);
 }

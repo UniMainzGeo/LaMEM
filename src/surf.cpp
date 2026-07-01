@@ -272,6 +272,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	// advect topography of the free surface mesh
 
 	JacRes *jr;
+	Vec     lvx,  lvy,  lvz;
 
 	PetscFunctionBeginUser;
 
@@ -281,10 +282,13 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	// access context
 	jr = surf->jr;
 
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _interp_));
+
 	// get surface velocities
-	PetscCall(FreeSurfGetVelComp(surf, &InterpXFaceCorner, jr->lvx, surf->vx));
-	PetscCall(FreeSurfGetVelComp(surf, &InterpYFaceCorner, jr->lvy, surf->vy));
-	PetscCall(FreeSurfGetVelComp(surf, &InterpZFaceCorner, jr->lvz, surf->vz));
+	PetscCall(FreeSurfGetVelComp(surf, &InterpXFaceCorner, lvx, surf->vx));
+	PetscCall(FreeSurfGetVelComp(surf, &InterpYFaceCorner, lvy, surf->vy));
+	PetscCall(FreeSurfGetVelComp(surf, &InterpZFaceCorner, lvz, surf->vz));
 
 	// advect topography
 	PetscCall(FreeSurfAdvectTopo(surf));
@@ -294,6 +298,9 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 
 	// compute & store average topography
 	PetscCall(FreeSurfGetAvgTopo(surf));
+
+	// restore velocity vectors
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
 
 	PetscFunctionReturn(0);
 }
@@ -322,7 +329,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	dsz   = &fs->dsz;
 	level = (PetscInt)dsz->rank;
 
-	PetscCall(DMGetLocalVector(fs->DA_COR, &lbcor));
+	PetscCall(DMGetLocalVectorClean(fs->DA_COR, &lbcor));
 
 	// get local coordinate bounds
 	PetscCall(FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez));
@@ -599,7 +606,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	zbot += step*Ezz*(zbot - Rzz);
 
 	// get cell topography vector
-	PetscCall(DMGetLocalVector(jr->DA_CELL_2D, &cellTopo));
+	PetscCall(DMGetLocalVectorClean(jr->DA_CELL_2D, &cellTopo));
 
 	PetscCall(VecZeroEntries(cellTopo));
 

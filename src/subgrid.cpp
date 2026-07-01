@@ -28,21 +28,6 @@
 #include "Tensor.h"
 #include "tools.h"
 #include "phase_transition.h"
-
-/*
-#START_DOC#
-\lamemfunction{\verb- ADVCreate -}
-Create advection context
-
-\lamemfunction{\verb- ADVDestroy -}
-Destroy advection context
-
-\lamemfunction{\verb- ADVAdvect -}
-Main advection routine
-
-#END_DOC#
-*/
-
 //---------------------------------------------------------------------------
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 {
@@ -517,7 +502,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	dist.reserve(_mark_buff_sz_);
 
 	// request local vector for reference sedimentation phases
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &vphase));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &vphase));
 
 	// compute reference sedimentation phases
 	PetscCall(ADVGetSedPhase(actx, vphase));

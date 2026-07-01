@@ -28,7 +28,6 @@ Total number of options added: 0
 | Adjoint parameters:  
 |    Adjoint mode                             : AdjointGradients  
 |    Gradients are computed w.r.t.            : Solution     
-|    Field-based gradient evaluation          : 0    
 |    Gradient evaluation points               : several observation points 
 |    Advect evaluation points with flow       : 0    
 |    Objective function type                  : 0    
@@ -47,8 +46,8 @@ Total number of options added: 0
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -102,7 +101,6 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -110,7 +108,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000150876 sec)
+Reading geometric primitives ... done (0.000287516 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -131,7 +129,7 @@ Preconditioner parameters:
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.011122 sec)
+Saving output ... done (0.0205195 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -143,32 +141,32 @@ Tentative time step : 0.01000000 [ ]
     Residual norms for js_ solve.
     0 KSP Residual norm 2.216709541792e+01
     1 KSP Residual norm 6.681267433234e-03
-    2 KSP Residual norm 1.374865824974e-06
+    2 KSP Residual norm 1.374865824975e-06
     Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.374865824974e-06
+  1 SNES Function norm 1.374865824975e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0137378 (sec)
+SNES solution time      : 0.0160206 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
       |Div|_inf = 2.990046845952e-07 
-      |Div|_2   = 1.374865824974e-06 
+      |Div|_2   = 1.374865824975e-06 
    Momentum: 
-      |mRes|_2  = 4.344151054867e-13 
+      |mRes|_2  = 3.511672989571e-13 
 --------------------------------------------------------------------------
     Residual norms for as_ solve.
     0 KSP Residual norm 4.000000000000e-01
     1 KSP Residual norm 2.290139064769e-05
-    2 KSP Residual norm 5.871571445208e-09
+    2 KSP Residual norm 5.871571445001e-09
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0107406 sec)
+Saving output ... done (0.0191423 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0571534 (sec) 
+Total solution time : 0.0833758 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
@@ -218,7 +216,7 @@ Total solution time : 0.0571534 (sec)
 |   Scaling law data saved to :  ScalingLaw_Test.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 0.0576646 s                         	 
+| Adjoint computation was successful & took 0.0839781 s                         	 
 | ************************************************************************ 
 #PETSc Option Table entries:
 -eta[0] 1.00000000000000000000e+00 # (source: code)

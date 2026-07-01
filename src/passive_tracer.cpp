@@ -138,10 +138,10 @@ PetscErrorCode ADVPtrReCreateStorage(AdvCtx *actx)
 
 	if(!actx->jr->ctrl.Passive_Tracer)	PetscFunctionReturn(0);
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&actx->Ptr->ID));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->ID));
 	PetscCall(VecZeroEntries(actx->Ptr->ID));
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&actx->Ptr->x));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->x));
 	PetscCall(VecZeroEntries(actx->Ptr->x));
 
 	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->y));
@@ -150,28 +150,28 @@ PetscErrorCode ADVPtrReCreateStorage(AdvCtx *actx)
 	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->z));
 	PetscCall(VecZeroEntries(actx->Ptr->z));
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark  ,&actx->Ptr->T));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->T));
 	PetscCall(VecZeroEntries(actx->Ptr->T));
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->p));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->p));
 	PetscCall(VecZeroEntries(actx->Ptr->p));
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->phase));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->phase));
 	PetscCall(VecZeroEntries(actx->Ptr->phase));
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Melt_fr));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->Melt_fr));
 	PetscCall(VecZeroEntries(actx->Ptr->Melt_fr));
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->C_advection));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->C_advection));
 	PetscCall(VecZeroEntries(actx->Ptr->C_advection));
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Recv));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->Recv));
 	PetscCall(VecZeroEntries(actx->Ptr->Recv));
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->Melt_Grid));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->Melt_Grid));
 	PetscCall(VecZeroEntries(actx->Ptr->Melt_Grid));
 
-	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark ,&actx->Ptr->APS));
+	PetscCall(VecCreateSeq(PETSC_COMM_SELF,actx->Ptr->nummark, &actx->Ptr->APS));
 	PetscCall(VecZeroEntries(actx->Ptr->APS));
 
 	PetscFunctionReturn(0);
@@ -437,18 +437,19 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	SolVarCell      *svCell;
 	Material_t      *mat;
 	PData           *Pd;
-	PetscInt        sx, sy, sz, nx, ny,nz;
-	PetscInt        jj, I, J, K, II, JJ, KK, AirPhase, num_part,ID, n, ii, numActTracers,*markind,id_m ;
-	PetscScalar     ex,bx,ey,by,ez,bz;
+	Vec             lvx,  lvy,  lvz, lp, lT;
+	PetscInt        sx, sy, sz, nx, ny, nz;
+	PetscInt        jj, I, J, K, II, JJ, KK, AirPhase, num_part,ID, n, ii, numActTracers, *markind, id_m;
+	PetscScalar     ex, bx, ey, by, ez, bz;
 	PetscScalar     *ncx, *ncy, *ncz;
 	PetscScalar     *ccx, *ccy, *ccz;
-	PetscScalar     ***lvx, ***lvy, ***lvz, ***lp, ***lT;
-	PetscScalar     vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop, endx,endy,endz,begx,begy,begz,npx,npy,npz;
-	PetscScalar     *Xp, *Yp,*Zp,*T,*Pr,*phase,*mf_ptr,*Active,*melt_grid,*aps;
+	PetscScalar     ***vx, ***vy, ***vz, ***p, ***T;
+	PetscScalar     vxp, vyp, vzp, xc, yc, zc, xp, yp, zp, dt, Ttop, endx, endy, endz, begx, begy, begz, npx, npy, npz;
+	PetscScalar     *Xp, *Yp, *Zp, *Tp, *Pr, *phase, *mf_ptr, *Active, *melt_grid, *aps;
 	PetscScalar     pShift;
-	PetscScalar     Xm[3],X[3];
+	PetscScalar     Xm[3], X[3];
 	PetscLogDouble  t;
-		vector <spair>  dist;
+	vector <spair>  dist;
 	spair d;
 	
 	PetscFunctionBeginUser;
@@ -457,8 +458,8 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	Ttop     =  0.0;
 
 	// access context
-	fs = actx->fs;
-	jr = actx->jr;
+	fs  = actx->fs;
+	jr  = actx->jr;
 	mat = jr->dbm->phases;
 	Pd  = jr->Pd;
 
@@ -500,32 +501,27 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	begz = fs->dsz.gcrdbeg;
 	endz = fs->dsz.gcrdend;
 
-	// initialize corners and edges for interpolation
-	PetscCall(SetEdgeCornerXFace (fs, jr->lvx));
-	PetscCall(SetEdgeCornerYFace (fs, jr->lvy));
-	PetscCall(SetEdgeCornerZFace (fs, jr->lvz));
-	PetscCall(SetEdgeCornerCenter(fs, jr->lp));
-	PetscCall(SetEdgeCornerCenter(fs, jr->lT));
-
-	// access velocity, pressure & temperature vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT));
-
 	PetscCall(FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez));
 
+	// get solution vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, &lp, &lT, _interp_));
 
-	PetscCall(VecGetArray(actx->Ptr->x, &Xp));
-	PetscCall(VecGetArray(actx->Ptr->y, &Yp));
-	PetscCall(VecGetArray(actx->Ptr->z, &Zp));
-	PetscCall(VecGetArray(actx->Ptr->p, &Pr));
-	PetscCall(VecGetArray(actx->Ptr->T, &T));
-	PetscCall(VecGetArray(actx->Ptr->phase, &phase));
-	PetscCall(VecGetArray(actx->Ptr->Melt_fr, &mf_ptr));
-	PetscCall(VecGetArray(actx->Ptr->Melt_Grid, &melt_grid));
-	PetscCall(VecGetArray(actx->Ptr->APS, &aps));
+	// access velocity, pressure & temperature vectors
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lvx, &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lvy, &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lvz, &vz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lp,  &p));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT,  &T));
+
+	PetscCall(VecGetArray(actx->Ptr->x,           &Xp));
+	PetscCall(VecGetArray(actx->Ptr->y,           &Yp));
+	PetscCall(VecGetArray(actx->Ptr->z,           &Zp));
+	PetscCall(VecGetArray(actx->Ptr->p,           &Pr));
+	PetscCall(VecGetArray(actx->Ptr->T,           &Tp));
+	PetscCall(VecGetArray(actx->Ptr->phase,       &phase));
+	PetscCall(VecGetArray(actx->Ptr->Melt_fr,     &mf_ptr));
+	PetscCall(VecGetArray(actx->Ptr->Melt_Grid,   &melt_grid));
+	PetscCall(VecGetArray(actx->Ptr->APS,         &aps));
 	PetscCall(VecGetArray(actx->Ptr->C_advection, &Active));
 
 	// scan all markers
@@ -534,7 +530,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 	for(jj = 0; jj < num_part; jj++)
 	{
-
 		// get consecutive index of the host cell
 		xp = Xp[jj];
 		yp = Yp[jj];
@@ -558,13 +553,13 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			if(zp > zc) { KK = K; } else { KK = K-1; }
 
 			// interpolate velocity, pressure & temperature
-			vx = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
-			vy = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
-			vz = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
+			vxp = InterpLin3D(vx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
+			vyp = InterpLin3D(vy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
+			vzp = InterpLin3D(vz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
 
 			// update pressure & temperature variables
-			Pr[jj] = InterpLin3D(lp, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz) + pShift;
-			T[jj]  = InterpLin3D(lT, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
+			Pr[jj] = InterpLin3D(p, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz) + pShift;
+			Tp[jj] = InterpLin3D(T, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
 
 			GET_CELL_ID(ID, I, J, K, nx, ny)
 
@@ -580,7 +575,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 				if(mat[PetscInt(phase[jj])].pdn[0] != '\0')
 				{
-					PetscCall(setDataPhaseDiagram(Pd, Pr[jj], T[jj], mat[PetscInt(phase[jj])].pdn));
+					PetscCall(setDataPhaseDiagram(Pd, Pr[jj], Tp[jj], mat[PetscInt(phase[jj])].pdn));
 					mf_ptr[jj]= Pd->mf;
 				}
 				else
@@ -614,7 +609,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 					sort(dist.begin(), dist.end());
 					phase[jj] = (PetscScalar) actx->markers[dist.begin()->second].phase;
 
-					PetscCall(setDataPhaseDiagram(Pd, Pr[jj], T[jj], mat[PetscInt(phase[jj])].pdn));
+					PetscCall(setDataPhaseDiagram(Pd, Pr[jj], Tp[jj], mat[PetscInt(phase[jj])].pdn));
 
 					mf_ptr[jj]=Pd->mf;
 
@@ -628,19 +623,19 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 			if((Active[jj] == 0.0) && actx->Ptr->Condition_pr != _Always_)
 			{
-				PetscCall(Check_advection_condition(actx, jj, ID,xp,yp,zp,Pr[jj],T[jj],melt_grid[jj]));
+				PetscCall(Check_advection_condition(actx, jj, ID,xp,yp,zp,Pr[jj], Tp[jj],melt_grid[jj]));
 			}
 
 			// override temperature of air phase
-			if(AirPhase != -1 && phase[jj] == ((PetscScalar) AirPhase)) T[jj] = Ttop;
+			if(AirPhase != -1 && phase[jj] == ((PetscScalar) AirPhase)) Tp[jj] = Ttop;
 
 			// advect marker
 			if( Active[jj]==1.0)
 			{
                 numActTracers += 1; // keep track of the # of active tracers on this processor
-				npx = xp + vx*dt;
-				npy = yp + vy*dt;
-				npz = zp + vz*dt;
+				npx = xp + vxp*dt;
+				npy = yp + vyp*dt;
+				npz = zp + vzp*dt;
 			}
 			else
 			{
@@ -693,7 +688,7 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 			Yp[jj]      =   -DBL_MAX;
 			Zp[jj]      =   -DBL_MAX;
 			Pr[jj]      =   -DBL_MAX;
-			T[jj]       =   -DBL_MAX;
+			Tp[jj]      =   -DBL_MAX;
 			phase[jj]   =   -DBL_MAX;
 			mf_ptr[jj]  =   -DBL_MAX;
 			Active[jj]  =   -DBL_MAX;
@@ -702,24 +697,23 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 		}
 
 	}
-
-	PetscCall(VecRestoreArray(actx->Ptr->x, &Xp));
-	PetscCall(VecRestoreArray(actx->Ptr->y, &Yp));
-	PetscCall(VecRestoreArray(actx->Ptr->z, &Zp));
-	PetscCall(VecRestoreArray(actx->Ptr->p, &Pr));
-	PetscCall(VecRestoreArray(actx->Ptr->T, &T));
-	PetscCall(VecRestoreArray(actx->Ptr->phase, &phase));
-	PetscCall(VecRestoreArray(actx->Ptr->Melt_fr, &mf_ptr));
-	PetscCall(VecRestoreArray(actx->Ptr->Melt_Grid, &melt_grid));
-	PetscCall(VecRestoreArray(actx->Ptr->APS, &aps));
-	PetscCall(VecRestoreArray(actx->Ptr->C_advection, &Active));
-
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lvx, &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lvy, &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lvz, &vz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lp,  &p));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lT,  &T));
+
+	PetscCall(VecRestoreArray(actx->Ptr->x,           &Xp));
+	PetscCall(VecRestoreArray(actx->Ptr->y,           &Yp));
+	PetscCall(VecRestoreArray(actx->Ptr->z,           &Zp));
+	PetscCall(VecRestoreArray(actx->Ptr->p,           &Pr));
+	PetscCall(VecRestoreArray(actx->Ptr->T,           &Tp));
+	PetscCall(VecRestoreArray(actx->Ptr->phase,       &phase));
+	PetscCall(VecRestoreArray(actx->Ptr->Melt_fr,     &mf_ptr));
+	PetscCall(VecRestoreArray(actx->Ptr->Melt_Grid,   &melt_grid));
+	PetscCall(VecRestoreArray(actx->Ptr->APS,         &aps));
+	PetscCall(VecRestoreArray(actx->Ptr->C_advection, &Active));
 
 	// get local grid sizes
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
@@ -799,6 +793,9 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 
 	PrintDone(t);
 
+	// restore solution vectors
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, &lp, &lT));
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -843,7 +840,7 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	dist.reserve(_mark_buff_sz_);
 
 	// request local vector for reference sedimentation phases
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &vphase));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, &vphase));
 
 	// compute reference sedimentation phases
 	PetscCall(ADVGetSedPhase(actx, vphase));

@@ -592,6 +592,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   Discret1D   *dsz;
   SolVarCell  *svCell;
   Controls    *ctrl;
+  Vec         lbT;
 
   PetscFunctionBeginUser;
 
@@ -639,8 +640,10 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   PetscCall(VecGetArray(vliththick, &lliththick));
   PetscCall(VecGetArray(vzsol, &lzsol));
 
-  //Access temperatures
-  PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT));
+  // Access temperatures
+  PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, NULL, &lbT, _interp_));
+
+  PetscCall(DMDAVecGetArray(fs->DA_CEN, lbT, &lT));
 
   // receive from top domain (next)  dsz->grnext is the next proc up (in increasing z). Top to bottom doesn't matter here, its this way
   // because the code is patterned after GetLithoStaticPressure
@@ -768,7 +771,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	}
 
   // restore buffer and mean stress vectors
-  PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT));
+  PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lbT, &lT));
   PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));      
   PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure));
 
@@ -788,12 +791,14 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vliththick));
   PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vzsol));
 
-  //fill ghost points
-      
+  PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith));
+
+  // fill ghost points
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->magPressure);
 
-  PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith));
+  PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, NULL, &lbT));
+
   PetscFunctionReturn(0);
 }
 

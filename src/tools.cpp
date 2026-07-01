@@ -903,5 +903,3 @@ PetscErrorCode DMDAGetLocalGridSize(DM DA, PetscInt &nnods)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-
-

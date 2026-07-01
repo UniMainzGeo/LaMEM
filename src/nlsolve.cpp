@@ -33,8 +33,8 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	SNESType        type;
 	NLSol          *nl;
 	PetscBool       flag;
+	SNESLineSearch  linesearch;
 
-	
 	PetscFunctionBeginUser;
 
 	// create nonlinear solver context
@@ -81,6 +81,8 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	PetscCall(SNESSetFunction(snes, jr->gres, &FormResidual, NULL));
 	PetscCall(SNESSetJacobian(snes, J, P, &FormJacobian, NULL));
 	PetscCall(SNESSetConvergenceTest(snes, &SNESCoupledTest, NULL, NULL));
+	PetscCall(SNESGetLineSearch(snes, &linesearch));
+    PetscCall(SNESLineSearchSetPreCheck(linesearch, &SNESLineSearchPreCheck, (void*)nl));
 	PetscCall(SNESSetFromOptions(snes));
 
 	// setup linear solver & preconditioner
@@ -121,6 +123,9 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	PetscCall(PetscOptionsHasName(NULL, NULL, "-snes_atol_auto",   &flag)); if(flag) { nl->snes_atol_auto   = 1; }
 	PetscCall(PetscOptionsHasName(NULL, NULL, "-js_ksp_atol_auto", &flag)); if(flag) { nl->js_ksp_atol_auto = 1; }
 	PetscCall(PetscOptionsHasName(NULL, NULL, "-ts_ksp_atol_auto", &flag)); if(flag) { nl->ts_ksp_atol_auto = 1; }
+
+	// set continuation flag
+	PetscCall(PetscOptionsHasName(NULL, NULL, "-snes_continue_on_fail", &flag)); if(flag) { nl->snes_continue_on_fail = 1; }
 
 	// force one nonlinear iteration regardless of the initial residual
 	PetscCall(SNESSetForceIteration(snes, PETSC_TRUE));
@@ -313,6 +318,47 @@ PetscErrorCode JacApply(Mat A, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode SNESLineSearchPreCheck(SNESLineSearch linesearch, Vec x, Vec d, PetscBool *changed_d, void *cctx)
+{
+	// compute temperature update before line search is applied and the norm of mechanical residual is evaluated
+
+	NLSol       *nl;
+	JacRes      *jr;
+
+	PetscFunctionBeginUser;
+
+	// clear unused parameters
+	UNUSED(x);
+	UNUSED(d);
+	UNUSED(linesearch);
+
+	// clear modification flag
+	(*changed_d) = PETSC_FALSE;
+
+	// get context
+	nl = (NLSol*)cctx;
+	jr = nl->jr;
+
+	//=============================
+	// Temperature diffusion solver
+	//=============================
+
+	if(jr->ctrl.actTemp)
+	{
+		// get residual and tangent matrix
+		PetscCall(JacResGetTempRes(jr, jr->ts->dt));
+		PetscCall(JacResGetTempMat(jr, jr->ts->dt));
+
+		// compute and apply temperature correction
+		PetscCall(KSPSetOperators(jr->tksp, jr->Att, jr->Att));
+		PetscCall(KSPSetUp(jr->tksp));
+		PetscCall(KSPSolve(jr->tksp, jr->ge, jr->dT));
+		PetscCall(VecAXPY (jr->gT_, -1.0, jr->dT));
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,
 	PetscInt            it,
@@ -322,10 +368,9 @@ PetscErrorCode SNESCoupledTest(
 	SNESConvergedReason *reason,
 	void                *cctx)
 {
-	NLSol    *nl;
-	JacRes   *jr;
-	KSP      js_ksp;
-
+	NLSol       *nl;
+	JacRes      *jr;
+	KSP         js_ksp;
 	PetscScalar norm;
 
 	PetscFunctionBeginUser;
@@ -344,51 +389,40 @@ PetscErrorCode SNESCoupledTest(
 	PetscCall(SNESUpdateAbsTol(snes,    nl->snes_atol_auto,   nl->snes_ref_norm,   f, it));
 	PetscCall(KSPUpdateAbsTol (js_ksp,  nl->js_ksp_atol_auto, nl->js_ksp_ref_norm, f, it));
 
-	// call default convergence test
-	PetscCall(SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL));
-
-	//=============================
-	// Temperature diffusion solver
-	//=============================
-
+	// temperature block
 	if(jr->ctrl.actTemp)
 	{
-		// get residual and tangent matrix
-		PetscCall(JacResGetTempRes(jr, jr->ts->dt));
-		PetscCall(JacResGetTempMat(jr, jr->ts->dt));
+		// compute energy residual
+		PetscCall(VecNorm(jr->ge, NORM_2, &norm));
 
 		// update absolute tolerance
-		PetscCall(VecNorm(jr->ge, NORM_2, &norm));
 		PetscCall(NLSolvePushNorm(nl->ts_ksp_ref_norm, jr->ts_ksp_ref_norm, norm));
 		PetscCall(KSPUpdateAbsTol(jr->tksp, nl->ts_ksp_atol_auto, nl->ts_ksp_ref_norm, norm, it));
-
-		// compute and apply temperature correction (not on first iteration)
-		if(it)
-		{
-			PetscCall(KSPSetOperators(jr->tksp, jr->Att, jr->Att));
-			PetscCall(KSPSetUp(jr->tksp));
-			PetscCall(KSPSolve(jr->tksp, jr->ge, jr->dT));
-			PetscCall(JacResUpdateTemp(jr));
-		}
 	}
+
+	// call default convergence test
+	PetscCall(SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 {
+	NLSol               *nl;
 	PetscLogDouble      t_end;
 	SNESConvergedReason reason;
 	PetscInt            its;
 	KSP                 ksp;
 	KSPConvergedReason  ksp_reason;
-	PetscInt            div_severe;
-
+	PetscInt            div_severe, stop;
 	
 	PetscFunctionBeginUser;
 
+	PetscCall(SNESGetApplicationContext(snes, &nl));
+
 	// set flag for severe divergence
 	div_severe = 0;
+	stop       = 0;
 
 	PetscTime(&t_end);
 
@@ -401,6 +435,11 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** \n");
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+
+		if(!nl->snes_continue_on_fail)
+		{
+			stop = 1;
+		}
 	}
 
 	if(reason == SNES_CONVERGED_FNORM_ABS)
@@ -473,10 +512,15 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 		PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : || J^T b || is small, implies converged to local minimum of F\n");
 	}
 
-	// stop if severe divergence reason detected
 	if(div_severe)
 	{
+		// stop if severe divergence reason detected
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Severe divergence reason detected (see above)");
+	}
+	else if(stop)
+	{
+		// stop if solver normally diverged but continuation is deactivated
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Continuation deactivated (activate with -snes_continue_on_fail)");
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "Number of iterations    : %" PetscInt_FMT "\n", its);

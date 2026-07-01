@@ -49,6 +49,9 @@ struct NLSol
 	PetscScalar js_ksp_ref_norm;
 	PetscScalar ts_ksp_ref_norm;
 
+	// continuation flag
+	PetscInt    snes_continue_on_fail;
+
 };
 //---------------------------------------------------------------------------
 
@@ -63,6 +66,8 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx);
 PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx);
 
 PetscErrorCode JacApply(Mat A, Vec x, Vec y);
+
+PetscErrorCode SNESLineSearchPreCheck(SNESLineSearch linesearch, Vec x, Vec d, PetscBool *changed_d, void *ctx);
 
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,

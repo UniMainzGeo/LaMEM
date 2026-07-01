@@ -54,19 +54,11 @@ struct OutBuf
 	FILE     *fp;    // output file handler
 	float    *buff;  // direct output buffer
 	PetscInt  cn;    // current number of elements in the buffer
-
-	// grid buffer vectors
-	Vec lbcen, lbcor, lbxy, lbxz, lbyz; // local (ghosted)
-
 };
 //---------------------------------------------------------------------------
 PetscErrorCode OutBufCreate(OutBuf *outbuf, FDSTAG *fs);
 
 PetscErrorCode OutBufDestroy(OutBuf *outbuf);
-
-PetscErrorCode OutBufGetVectors(OutBuf *outbuf);
-
-PetscErrorCode OutBufRestoreVectors(OutBuf *outbuf);
 
 void OutBufConnectToFile(OutBuf  *outbuf, FILE *fp);
 
@@ -82,6 +74,7 @@ void OutBufPutCoordVec(
 // put component of 3D vector to output buffer
 PetscErrorCode OutBufPut3DVecComp(
 	OutBuf      *outbuf,
+	Vec          lbcor,  // vector containing component data
 	PetscInt     ncomp,  // number of components
 	PetscInt     dir,    // component identifier
 	PetscScalar  cf,     // scaling coefficient

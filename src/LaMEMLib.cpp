@@ -61,7 +61,7 @@ PetscErrorCode LaMEMLibMain(void *param, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
-	PetscPrintf(PETSC_COMM_WORLD,"     Version : 3.0.0 \n");
+	PetscPrintf(PETSC_COMM_WORLD,"     Version : 3.1.0 \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
@@ -570,14 +570,16 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
+	JacRes         *jr;
 	SNES           snes;   // PETSc nonlinear solver
  	AdjGrad        aop;    // Adjoint options
 	PetscInt       restart, track_stages;
 	PetscLogDouble t;
 	PetscLogStage  stages[4];
 
-	
 	PetscFunctionBeginUser;
+
+	jr = &lm->jr;
 
 	if(!param)
 	{
@@ -596,7 +598,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	}
 
 	// create nonlinear solver
-	PetscCall(NLSolCreate(&snes, &lm->jr));
+	PetscCall(NLSolCreate(&snes, jr));
 
 	//==============
 	// INITIAL GUESS
@@ -610,7 +612,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 	if(param)
 	{
-		PetscCall(AdjointCreate(&aop, &lm->jr, (ModParam *)param));
+		PetscCall(AdjointCreate(&aop, jr, (ModParam*)param));
 	}
 
 	//===============
@@ -630,25 +632,34 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		PetscCall(BCApply(&lm->bc));
 
 		// initialize temperature
-		PetscCall(JacResInitTemp(&lm->jr));
+		PetscCall(JacResInitTemp(jr));
 
 		// compute elastic parameters
-		PetscCall(JacResGetI2Gdt(&lm->jr));
+		PetscCall(JacResGetI2Gdt(jr));
+
+		// compute lithostatic pressure
+		PetscCall(JacResGetLithoStaticPressure(jr));
+
+		// compute pore pressure
+		PetscCall(JacResGetPorePressure(jr));
 
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
 
 		if(track_stages) { PetscCall(PetscLogStagePush(stages[1])); }
 
-		PetscCall(SNESSolve(snes, NULL, lm->jr.gsol));
+		PetscCall(SNESSolve(snes, NULL, jr->gsol));
 
 		if(track_stages) { PetscCall(PetscLogStagePop()); }
 
 		// print analyze convergence/divergence reason & iteration count
 		PetscCall(SNESPrintConvergedReason(snes, t));
 
-		// view nonlinear residual
-		PetscCall(JacResViewRes(&lm->jr));
+		// evaluate converged residual
+		PetscCall(JacResFormResidual(jr, jr->gsol, jr->gres));
+
+		// view converged residual
+		PetscCall(JacResViewRes(jr));
 
 		// Compute adjoint gradients every TS
 		if(param)
@@ -737,14 +748,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 	if(param)
 	{
-		ModParam *IOparam = (ModParam *)param;
-
-		if(IOparam->use == _syntheticforwardrun_)
-		{
-			// Assume this as a forward simulation and save the solution vector
-			// VecDuplicate(lm->jr.gsol, &IOparam->xini);
-			// VecCopy(lm->jr.gsol, IOparam->xini);
-		}
+		ModParam *IOparam = (ModParam*)param;
 
 		PetscCall(AdjointDestroy(&aop, IOparam));
 	}
@@ -760,7 +764,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 {
-	
 	PetscFunctionBeginUser;
 
 	// initialize boundary constraint vectors
@@ -783,10 +786,9 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 {
+	PetscLogDouble t;
 	
 	PetscFunctionBeginUser;
-
-	PetscLogDouble t;
 
 	// initialize boundary constraint vectors
 	PetscCall(BCApply(&lm->bc));
@@ -798,7 +800,7 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	PetscCall(LaMEMLibDiffuseTemp(lm));
 
 	// initialize pressure
-	PetscCall(JacResInitPres(&lm->jr,&lm->ts));
+	PetscCall(JacResInitPres(&lm->jr));
 
 	// lithostatic pressure initializtaion
 	PetscCall(JacResInitLithPres(&lm->jr, &lm->actx, &lm->ts));
@@ -821,7 +823,10 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 		// print analyze convergence/divergence reason & iteration count
 		PetscCall(SNESPrintConvergedReason(snes, t));
 
-		// view nonlinear residual
+		// evaluate converged residual
+		PetscCall(JacResFormResidual(&lm->jr, lm->jr.gsol, lm->jr.gres));
+
+		// view converged residual
 		PetscCall(JacResViewRes(&lm->jr));
 
 		// switch flag
@@ -849,11 +854,10 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	PetscScalar    diff_step;
 	PetscInt       i, num_steps;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
-	ts       = &lm->ts; 
+	ts      = &lm->ts;
 	jr      = &lm->jr;
 	ctrl    = &jr->ctrl;
 	actx    = &lm->actx;
@@ -864,8 +868,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		PrintStart(&t,"Computing steady-state temperature distribution", NULL);
 
 		// ignore existing temperature initialization
-		PetscCall(VecZeroEntries(jr->lT));
-		PetscCall(JacResApplyTempBC(jr));
+		PetscCall(VecZeroEntries(jr->gT_));
 
 		// compute steady-state temperature distribution
 		PetscCall(LaMEMLibSolveTemp(lm, 0.0));
@@ -877,7 +880,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		PetscCall(ADVProjHistMarkToGrid(actx));
 
 		// initialize temperature
-		PetscCall(JacResInitTemp(&lm->jr));
+		PetscCall(JacResInitTemp(jr));
 		
 		PrintDone(t);
 	}
@@ -911,7 +914,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 				PetscCall(ADVProjHistMarkToGrid(actx));
 	
 				// initialize temperature
-				PetscCall(JacResInitTemp(&lm->jr));
+				PetscCall(JacResInitTemp(jr));
 			}
 		}
 
@@ -925,7 +928,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 			PetscCall(ADVProjHistMarkToGrid(actx));
 	
 			// initialize temperature
-			PetscCall(JacResInitTemp(&lm->jr));
+			PetscCall(JacResInitTemp(jr));
 		}
 		
 		PrintDone(t);		
@@ -943,7 +946,6 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	PetscScalar    norm;
 	PetscBool      set;
 	PetscInt       ts_ksp_atol_auto;
-	
 	
 	PetscFunctionBeginUser;
 
@@ -1001,8 +1003,8 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	// destroy initial temperature solver
 	PetscCall(KSPDestroy(&tksp));
 
-	// store computed temperature, enforce boundary constraints
-	PetscCall(JacResUpdateTemp(jr));
+	// store computed temperature
+	PetscCall(VecAXPY(jr->gT_, -1.0, jr->dT));
 
 	// copy temperature to markers
 	PetscCall(ADVMarkSetTempVector(actx));
@@ -1011,7 +1013,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	PetscCall(ADVProjHistMarkToGrid(actx));
 	
 	// initialize temperature
-	PetscCall(JacResInitTemp(&lm->jr));
+	PetscCall(JacResInitTemp(jr));
 
 	PetscFunctionReturn(0);
 }

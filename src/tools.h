@@ -285,5 +285,4 @@ PetscErrorCode ViewSolver(KSP ksp);
 PetscErrorCode DMDAGetLocalGridSize(DM DA, PetscInt &nnods);
 
 //--------------------------------------------------------------------------
-
 #endif

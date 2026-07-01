@@ -35,7 +35,7 @@ PetscErrorCode JacResGetSHmax(JacRes *jr, Vec cx, Vec cy)
 	fs = jr->fs;
 
 	// setup shear stress vector
-	PetscCall(DMGetLocalVector(fs->DA_XY, &ldxy));
+	PetscCall(DMGetLocalVectorClean(fs->DA_XY, &ldxy));
 
 	PetscCall(DMDAVecGetArray(fs->DA_XY, ldxy, &dxy));
 
@@ -115,7 +115,7 @@ PetscErrorCode JacResGetEHmax(JacRes *jr, Vec cx, Vec cy)
 	fs = jr->fs;
 
 	// setup shear strain rate vector
-	PetscCall(DMGetLocalVector(fs->DA_XY, &ldxy));
+	PetscCall(DMGetLocalVectorClean(fs->DA_XY, &ldxy));
 
 	PetscCall(DMDAVecGetArray(fs->DA_XY, ldxy, &dxy));
 
@@ -183,23 +183,23 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 	// compute overpressure
 
 	FDSTAG      *fs;
+	Vec         lp;
 	PetscScalar ***op, ***p, ***p_lith;
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
 	fs  =  jr->fs;
 
+	PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, &lp, NULL, _no_interp_));
+
 	// get local grid sizes
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	// access pressure vectors
-	PetscCall(VecZeroEntries(lop));
-
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, lop,         &op));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lp,          &p));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith));
 
 	START_STD_LOOP
@@ -211,11 +211,13 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 
 	// restore buffer and pressure vectors
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lop,         &op));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lp,          &p));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith));
 
 	// fill ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, lop)
+
+	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, &lp, NULL));
 
 	PetscFunctionReturn(0);
 }
@@ -421,11 +423,11 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 	BCCtx       *bc;
 	Material_t  *phases;
 	Scaling     *scal;
+	Vec         lvx, lvy, lvz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***vz, nZFace, lvel, gvel, dp, eta, ks, bz, ez;
 	char        path[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -452,8 +454,11 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 	// get local grid sizes
 	PetscCall(DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz));
 
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _no_interp_));
+
 	// access z-velocity vector
-	PetscCall(DMDAVecGetArray(fs->DA_Z, jr->lvz, &vz));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, lvz, &vz));
 
 	// compute volume average absolute velocity
 	lvel = 0.0;
@@ -469,7 +474,9 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 	END_STD_LOOP
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &vz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, lvz, &vz));
+
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
 
 	// compute global sum
 	if(ISParallel(PETSC_COMM_WORLD))
@@ -517,6 +524,7 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 }
 //---------------------------------------------------------------------------
 PetscErrorCode JacResGetVelGrad(JacRes *jr,
+		Vec lvx,   Vec lvy,   Vec lvz,
 		Vec dvxdx, Vec dvxdy, Vec dvxdz,
 		Vec dvydx, Vec dvydy, Vec dvydz,
 		Vec dvzdx, Vec dvzdy, Vec dvzdz)
@@ -531,15 +539,14 @@ PetscErrorCode JacResGetVelGrad(JacRes *jr,
 	PetscScalar ***dyx, ***dyy, ***dyz;
 	PetscScalar ***dzx, ***dzy, ***dzz;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
 
 	// access velocity and gradients
-	PetscCall(DMDAVecGetArray(fs->DA_X, jr->lvx, &vx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y, jr->lvy, &vy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z, jr->lvz, &vz));
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lvx,   &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lvy,   &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lvz,   &vz));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, dvxdx, &dxx));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, dvydy, &dyy));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, dvzdz, &dzz));
@@ -621,9 +628,9 @@ PetscErrorCode JacResGetVelGrad(JacRes *jr,
 	END_STD_LOOP
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X, jr->lvx, &vx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &vy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &vz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lvx,   &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lvy,   &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lvz,   &vz));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, dvxdx, &dxx));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, dvydy, &dyy));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, dvzdz, &dzz));

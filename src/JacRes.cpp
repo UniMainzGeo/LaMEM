@@ -89,7 +89,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "p_litho_visc",    &ctrl->pLithoVisc,     1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "p_litho_plast",   &ctrl->pLithoPlast,    1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "p_lim_plast",     &ctrl->pLimPlast,      1, 1));
-	PetscCall(getScalarParam(fb, _OPTIONAL_, "p_shift",  		 &ctrl->pShift, 		1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "p_shift",         &ctrl->pShift,         1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "eta_min",         &ctrl->eta_min,        1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "eta_max",         &ctrl->eta_max,        1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "eta_ref",         &ctrl->eta_ref,        1, 1.0));
@@ -114,7 +114,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "dikeHeat",        &ctrl->dikeHeat,        1, 1));
 
-//
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
 	else if(!strcmp(gwtype, "surf"))  ctrl->gwType = _GW_SURF_;
@@ -155,8 +154,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	if(need_top_open && !bc->top_open)
 	{
-        // whereas this is true, there are still cases that can be computed w/out "true" open top boundary    
-    	PetscPrintf(PETSC_COMM_WORLD, " Warning: True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, Kb, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
+		PetscPrintf(PETSC_COMM_WORLD, " Warning: True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, Kb, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
 	}
 
 	// fix advection time steps for elasticity or kinematic block BC
@@ -322,7 +320,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	// set initial guess
 	PetscCall(VecZeroEntries(jr->gsol));
-	PetscCall(VecZeroEntries(jr->lT));
+	PetscCall(VecZeroEntries(jr->gT_));
 
 	PetscFunctionReturn(0);
 }
@@ -372,31 +370,8 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	PetscCall(VecSet(jr->gsol, 0.0));
 	PetscCall(VecSet(jr->gres, 0.0));
 
-	// velocity components
-	PetscCall(DMCreateGlobalVector(fs->DA_X, &jr->gvx));
-	PetscCall(DMCreateGlobalVector(fs->DA_Y, &jr->gvy));
-	PetscCall(DMCreateGlobalVector(fs->DA_Z, &jr->gvz));
-	PetscCall(DMCreateLocalVector (fs->DA_X, &jr->lvx));
-	PetscCall(DMCreateLocalVector (fs->DA_Y, &jr->lvy));
-	PetscCall(DMCreateLocalVector (fs->DA_Z, &jr->lvz));
-
-	// momentum residual components
-	PetscCall(DMCreateGlobalVector(fs->DA_X, &jr->gfx));
-	PetscCall(DMCreateGlobalVector(fs->DA_Y, &jr->gfy));
-	PetscCall(DMCreateGlobalVector(fs->DA_Z, &jr->gfz));
-	PetscCall(DMCreateLocalVector (fs->DA_X, &jr->lfx));
-	PetscCall(DMCreateLocalVector (fs->DA_Y, &jr->lfy));
-	PetscCall(DMCreateLocalVector (fs->DA_Z, &jr->lfz));
-
-	// pressure
-	PetscCall(DMCreateGlobalVector(fs->DA_CEN, &jr->gp));
-	PetscCall(DMCreateLocalVector (fs->DA_CEN, &jr->lp));
 	PetscCall(DMCreateLocalVector (fs->DA_CEN, &jr->lp_lith));
 	PetscCall(DMCreateLocalVector (fs->DA_CEN, &jr->lp_pore));
-
-
-	// continuity residual
-	PetscCall(DMCreateGlobalVector(fs->DA_CEN, &jr->gc));
 
 	//======================================
 	// allocate space for solution variables
@@ -489,28 +464,9 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	PetscCall(VecDestroy(&jr->gsol));
 	PetscCall(VecDestroy(&jr->gres));
 
-	PetscCall(VecDestroy(&jr->gvx));
-	PetscCall(VecDestroy(&jr->gvy));
-	PetscCall(VecDestroy(&jr->gvz));
-
-	PetscCall(VecDestroy(&jr->lvx));
-	PetscCall(VecDestroy(&jr->lvy));
-	PetscCall(VecDestroy(&jr->lvz));
-
-	PetscCall(VecDestroy(&jr->gfx));
-	PetscCall(VecDestroy(&jr->gfy));
-	PetscCall(VecDestroy(&jr->gfz));
-
-	PetscCall(VecDestroy(&jr->lfx));
-	PetscCall(VecDestroy(&jr->lfy));
-	PetscCall(VecDestroy(&jr->lfz));
-
-	PetscCall(VecDestroy(&jr->gp));
-	PetscCall(VecDestroy(&jr->lp));
+	// pressure vectors
 	PetscCall(VecDestroy(&jr->lp_lith));
 	PetscCall(VecDestroy(&jr->lp_pore));
-
-	PetscCall(VecDestroy(&jr->gc));
 
 	// solution variables
 	PetscCall(PetscFree(jr->svCell));
@@ -533,32 +489,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 
 	// 2D integration primitives
 	PetscCall(DMDestroy(&jr->DA_CELL_2D));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
-{
-	
-	PetscFunctionBeginUser;
-
-	// copy solution from global to local vectors, enforce boundary constraints
-	PetscCall(JacResCopySol(jr, x));
-
-	// get pressure shift to enforce zero pressure in top layer of cells if requested (for free slip setups)
-	PetscCall(JacResGetPressShift(jr));
-
-	// compute lithostatic pressure
-	PetscCall(JacResGetLithoStaticPressure(jr));
-
-	// compute pore pressure
-	PetscCall(JacResGetPorePressure(jr));
-
-	// compute residual
-	PetscCall(JacResGetResidual(jr));
-
-	// copy residuals to global vector
-	PetscCall(JacResCopyRes(jr, f));
 
 	PetscFunctionReturn(0);
 }
@@ -625,7 +555,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResGetPressShift(JacRes *jr)
+PetscErrorCode JacResGetPressShift(JacRes *jr, Vec lp)
 {
 	// get average pressure near the top surface, such that we can shift that
 	// to be, for example, zero
@@ -634,7 +564,6 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	PetscScalar ***p;
 	PetscScalar lpShift, gpShift;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mcz;
-
 	
 	PetscFunctionBeginUser;
 
@@ -645,7 +574,7 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	mcz     = fs->dsz.tcels - 1;
 	lpShift = 0.0;
 
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->gp, &p));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lp, &p));
 
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
@@ -655,7 +584,7 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &p));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lp, &p));
 
 	// synchronize
 	if(ISParallel(PETSC_COMM_WORLD))
@@ -668,12 +597,13 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	}
 
 	// store pressure shift
-	jr->ctrl.pShift = -gpShift/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels);		// minus as we need to reduce P @ the top by this amount
+	jr->ctrl.pShift = -gpShift/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
+		Vec lvx,  Vec lvy,  Vec lvz,
 		Vec ldxx, Vec ldyy, Vec ldzz,
 		Vec ldxy, Vec ldxz, Vec ldyz)
 {
@@ -694,9 +624,9 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
 	fs = jr->fs;
 
 	// access local (ghosted) velocity components
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz));
+	PetscCall(DMDAVecGetArray(fs->DA_X, lvx, &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, lvy, &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, lvz, &vz));
 
 	// access global strain-rate components
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldxx, &dxx));
@@ -845,9 +775,9 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
 	END_STD_LOOP
 
 	// restore vectors
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lvx,  &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lvy,  &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lvz,  &vz));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldxx, &dxx));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldyy, &dyy));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldzz, &dzz));
@@ -867,6 +797,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
 }
 //---------------------------------------------------------------------------
 PetscErrorCode JacResGetVorticity(JacRes *jr,
+		Vec lvx,  Vec lvy,  Vec lvz,
 		Vec ldxy, Vec ldxz, Vec ldyz)
 {
 	// Compute components of the vorticity pseudo-vector
@@ -877,7 +808,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr,
 	FDSTAG     *fs;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar dvxdy, dvydx, dvxdz, dvzdx, dvydz, dvzdy;
-	PetscScalar ***lvx, ***lvy, ***lvz;
+	PetscScalar ***vx,  ***vy,  ***vz;
 	PetscScalar ***gwx, ***gwy, ***gwz;
 
 	PetscFunctionBeginUser;
@@ -885,9 +816,9 @@ PetscErrorCode JacResGetVorticity(JacRes *jr,
 	fs = jr->fs;
 
 	// access vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X,  jr->lvx,  &lvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,  jr->lvy,  &lvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,  jr->lvz,  &lvz));
+	PetscCall(DMDAVecGetArray(fs->DA_X,  lvx,  &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,  lvy,  &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,  lvz,  &vz));
 	PetscCall(DMDAVecGetArray(fs->DA_XY, ldxy, &gwz));
 	PetscCall(DMDAVecGetArray(fs->DA_XZ, ldxz, &gwy));
 	PetscCall(DMDAVecGetArray(fs->DA_YZ, ldyz, &gwx));
@@ -900,8 +831,8 @@ PetscErrorCode JacResGetVorticity(JacRes *jr,
 
 	START_STD_LOOP
 	{
-		dvxdy = (lvx[k][j][i] - lvx[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
-		dvydx = (lvy[k][j][i] - lvy[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
+		dvxdy = (vx[k][j][i] - vx[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
+		dvydx = (vy[k][j][i] - vy[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
 
 		// positive (counter-clockwise) rotation around Z axis X -> Y
 		gwz[k][j][i] = dvydx - dvxdy;
@@ -916,8 +847,8 @@ PetscErrorCode JacResGetVorticity(JacRes *jr,
 
 	START_STD_LOOP
 	{
-		dvxdz = (lvx[k][j][i] - lvx[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
-		dvzdx = (lvz[k][j][i] - lvz[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
+		dvxdz = (vx[k][j][i] - vx[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
+		dvzdx = (vz[k][j][i] - vz[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
 
 		// positive (counter-clockwise) rotation around Y axis Z -> X
 		gwy[k][j][i] = dvxdz - dvzdx;
@@ -932,8 +863,8 @@ PetscErrorCode JacResGetVorticity(JacRes *jr,
 
 	START_STD_LOOP
 	{
-		dvydz = (lvy[k][j][i] - lvy[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
-		dvzdy = (lvz[k][j][i] - lvz[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
+		dvydz = (vy[k][j][i] - vy[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
+		dvzdy = (vz[k][j][i] - vz[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
 
 		// positive (counter-clockwise) rotation around X axis Y -> Z
 		gwx[k][j][i] = dvzdy - dvydz;
@@ -941,9 +872,9 @@ PetscErrorCode JacResGetVorticity(JacRes *jr,
 	END_STD_LOOP
 
 	// restore velocity & strain rate component vectors
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,  jr->lvx,  &lvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,  jr->lvy,  &lvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,  jr->lvz,  &lvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,  lvx,  &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,  lvy,  &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,  lvz,  &vz));
 	PetscCall(DMDAVecRestoreArray(fs->DA_XY, ldxy, &gwz));
 	PetscCall(DMDAVecRestoreArray(fs->DA_XZ, ldxz, &gwy));
 	PetscCall(DMDAVecRestoreArray(fs->DA_YZ, ldyz, &gwx));
@@ -956,7 +887,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr,
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-PetscErrorCode JacResGetResidual(JacRes *jr)
+PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 {
 	// Compute residual of nonlinear momentum and mass conservation
 	// equations, based on pre-computed components of effective
@@ -976,6 +907,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscInt    periodic;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
+	Vec         lfx,  lfy,  lfz, gc;
+	Vec         lvx,  lvy,  lvz, lp, lT;
 	Vec         ldxx, ldyy, ldzz, ldxy, ldxz, ldyz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
@@ -987,7 +920,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***c, ***bcp;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 
 	PetscFunctionBeginUser;
@@ -1014,43 +947,43 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	periodic = fs->periodic;
 
 	// get work vectors
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldxx));
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldyy));
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldzz));
-	PetscCall(DMGetLocalVector(fs->DA_XY,  &ldxy));
-	PetscCall(DMGetLocalVector(fs->DA_XZ,  &ldxz));
-	PetscCall(DMGetLocalVector(fs->DA_YZ,  &ldyz));
+	PetscCall(FDSTAGGetLocalVectorFace  (fs, &lfx,  &lfy,  &lfz));
+	PetscCall(FDSTAGGetLocalVectorCenter(fs, &ldxx, &ldyy, &ldzz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &ldxy, &ldxz, &ldyz));
 
-	// compute effective strain rate
-	PetscCall(JacResGetEffStrainRate(jr, ldxx, ldyy, ldzz, ldxy, ldxz, ldyz));
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &gc));
+
+	// get solution vectors
+	PetscCall(JacResGetSolution(jr, x, &lvx, &lvy, &lvz, &lp, &lT, _no_interp_));
+
+	// get pressure shift to enforce zero pressure in top layer of cells if requested (for free slip setups)
+	PetscCall(JacResGetPressShift(jr, lp));
+
+	// compute effective strain rates
+	PetscCall(JacResGetEffStrainRate(jr, lvx, lvy, lvz, ldxx, ldyy, ldzz, ldxy, ldxz, ldyz));
 
 	// setup constitutive equation evaluation context parameters
 	PetscCall(setUpConstEq(&ctx, jr));
 
-	// clear local residual vectors
-	PetscCall(VecZeroEntries(jr->lfx));
-	PetscCall(VecZeroEntries(jr->lfy));
-	PetscCall(VecZeroEntries(jr->lfz));
-	PetscCall(VecZeroEntries(jr->gc));
-
 	// access work vectors
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T));
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lvx,         &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lvy,         &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lvz,         &vz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lp,          &p));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT,          &T));
 
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldxx,    &dxx));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldyy,    &dyy));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldzz,    &dzz));
-	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy,    &dxy));
-	PetscCall(DMDAVecGetArray(fs->DA_XZ,  ldxz,    &dxz));
-	PetscCall(DMDAVecGetArray(fs->DA_YZ,  ldyz,    &dyz));
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lfx,         &fx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lfy,         &fy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lfz,         &fz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, gc,          &c));
 
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lfx,     &fx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lfy,     &fy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lfz,     &fz));
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldxx,        &dxx));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldyy,        &dyy));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, ldzz,        &dzz));
+	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy,        &dxy));
+	PetscCall(DMDAVecGetArray(fs->DA_XZ,  ldxz,        &dxz));
+	PetscCall(DMDAVecGetArray(fs->DA_YZ,  ldyz,        &dyz));
+
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp));
@@ -1180,7 +1113,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
 		// mass (volume)
-		gc[k][j][i] = gres;
+		c[k][j][i] = gres;
 
 	}
 	END_STD_LOOP
@@ -1508,306 +1441,71 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	// restore vectors
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldxx,    &dxx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldyy,    &dyy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldzz,    &dzz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy,    &dxy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  ldxz,    &dxz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  ldyz,    &dyz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lfx,     &fx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,     &fy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,     &fz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz));
+	// restore access
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lvx,         &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lvy,         &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lvz,         &vz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lp,          &p));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lT,          &T));
+
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lfx,         &fx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lfy,         &fy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lfz,         &fz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, gc,          &c));
+
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldxx,        &dxx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldyy,        &dyy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, ldzz,        &dzz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  ldxy,        &dxy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  ldxz,        &dxz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  ldyz,        &dyz));
+
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp));
 
-	// assemble global residuals from local contributions
-	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
-	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
-	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
+	// assemble global residual vector
+	PetscCall(JacResAssembleRes(jr, f, lfx, lfy, lfz, gc));
+
+	// restore work vectors
+	PetscCall(FDSTAGRestoreLocalVectorFace  (fs, &lfx,  &lfy,  &lfz));
+	PetscCall(FDSTAGRestoreLocalVectorCenter(fs, &ldxx, &ldyy, &ldzz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &ldxy, &ldxz, &ldyz));
+
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &gc));
+
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, &lp, &lT));
 
 	// check convergence of constitutive equations
 	PetscCall(checkConvConstEq(&ctx));
 
-	// restore work vectors
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldxx));
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldyy));
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldzz));
-	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &ldxy));
-	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &ldxz));
-	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &ldyz));
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
+PetscErrorCode JacResInitPres(JacRes *jr)
 {
-	// copy solution from global to local vectors, enforce boundary constraints
-
-	
-	PetscFunctionBeginUser;
-
-	PetscCall(JacResCopyVel (jr, x));
-
-	PetscCall(JacResCopyPres(jr, x));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
-{
-	// copy velocity from global to local vectors, enforce boundary constraints
-
-	FDSTAG           *fs;
-	BCCtx            *bc;
-	PetscInt          periodic;
-	PetscInt          mcx, mcy, mcz;
-	PetscInt          I, J, K;
-	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar       ***bcvx,  ***bcvy,  ***bcvz;
-	PetscScalar       ***lvx, ***lvy, ***lvz;
-	PetscScalar       *vx, *vy, *vz, pmdof;
-	const PetscScalar *sol, *iter;
-
-	
-	PetscFunctionBeginUser;
-
-	fs  =  jr->fs;
-	bc  =  jr->bc;
-
-	// initialize maximal index in all directions
-	mcx = fs->dsx.tcels - 1;
-	mcy = fs->dsy.tcels - 1;
-	mcz = fs->dsz.tcels - 1;
-
-	// access vectors
-	PetscCall(VecGetArray    (jr->gvx, &vx));
-	PetscCall(VecGetArray    (jr->gvy, &vy));
-	PetscCall(VecGetArray    (jr->gvz, &vz));
-	PetscCall(VecGetArrayRead(x,       &sol));
-
-	// set periodic flag
-	periodic = fs->periodic;
-
-	// copy vectors component-wise
-	iter = sol;
-
-	PetscCall(PetscMemcpy(vx, iter, (size_t)fs->nXFace*sizeof(PetscScalar)));
-	iter += fs->nXFace;
-
-	PetscCall(PetscMemcpy(vy, iter, (size_t)fs->nYFace*sizeof(PetscScalar)));
-	iter += fs->nYFace;
-
-	PetscCall(PetscMemcpy(vz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)));
-
-	// restore access
-	PetscCall(VecRestoreArray    (jr->gvx, &vx));
-	PetscCall(VecRestoreArray    (jr->gvy, &vy));
-	PetscCall(VecRestoreArray    (jr->gvz, &vz));
-	PetscCall(VecRestoreArrayRead(x,       &sol));
-
-	// fill local (ghosted) version of solution vectors
-	GLOBAL_TO_LOCAL(fs->DA_X,   jr->gvx, jr->lvx)
-	GLOBAL_TO_LOCAL(fs->DA_Y,   jr->gvy, jr->lvy)
-	GLOBAL_TO_LOCAL(fs->DA_Z,   jr->gvz, jr->lvz)
-
-	// access local solution vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz));
-
-	// access boundary constraints vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz));
-
-	//==============================
-	// enforce two-point constraints
-	//==============================
-
-	//---------
-	// X points
-	//---------
-	GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		pmdof = lvx[k][j][i];
-
-		J = j;
-		K = k;
-
-		if(j == 0)   { J = j-1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
-		if(j == mcy) { J = j+1; SET_TPC(bcvx, lvx, k, J, i, pmdof) }
-		if(k == 0)   { K = k-1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
-		if(k == mcz) { K = k+1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
-	}
-	END_STD_LOOP
-
-	//---------
-	// Y points
-	//---------
-	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		pmdof = lvy[k][j][i];
-
-		I = i;
-		K = k;
-
-		if(i == 0)   { I = i-1; if(!periodic) { SET_TPC(bcvy, lvy, k, j, I, pmdof) } }
-		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvy, lvy, k, j, I, pmdof) } }
-		if(k == 0)   { K = k-1;                 SET_TPC(bcvy, lvy, K, j, i, pmdof) }
-		if(k == mcz) { K = k+1;                 SET_TPC(bcvy, lvy, K, j, i, pmdof) }
-	}
-	END_STD_LOOP
-
-	//---------
-	// Z points
-	//---------
-	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		pmdof = lvz[k][j][i];
-
-		I = i;
-		J = j;
-
-		if(i == 0 )  { I = i-1; if(!periodic) { SET_TPC(bcvz, lvz, k, j, I, pmdof) } }
-		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvz, lvz, k, j, I, pmdof) } }
-		if(j == 0)   { J = j-1;                 SET_TPC(bcvz, lvz, k, J, i, pmdof) }
-		if(j == mcy) { J = j+1;                 SET_TPC(bcvz, lvz, k, J, i, pmdof) }
-	}
-	END_STD_LOOP
-
-	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
-{
-	// copy pressure from global to local vectors, enforce boundary constraints
-
+	TSSol             *ts;
 	FDSTAG            *fs;
-	BCCtx             *bc;
-	PetscInt          periodic;
-	PetscInt          mcx, mcy, mcz;
-	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar       ***bcp;
-	PetscScalar       ***lp;
-	PetscScalar       *p, pmdof;
-	const PetscScalar *sol, *iter;
-
-	
-	PetscFunctionBeginUser;
-
-	fs  =  jr->fs;
-	bc  =  jr->bc;
-
-	// set periodic flag
-	periodic = fs->periodic;
-
-	// initialize maximal index in all directions
-	mcx = fs->dsx.tcels - 1;
-	mcy = fs->dsy.tcels - 1;
-	mcz = fs->dsz.tcels - 1;
-
-	// access vectors
-	PetscCall(VecGetArray    (jr->gp, &p));
-	PetscCall(VecGetArrayRead(x,      &sol));
-
-	// copy vectors component-wise
-	iter = sol + fs->nXFace + fs->nYFace + fs->nZFace;
-
-	PetscCall(PetscMemcpy(p, iter, (size_t)fs->nCells*sizeof(PetscScalar)));
-
-	// restore access
-	PetscCall(VecRestoreArray    (jr->gp, &p));
-	PetscCall(VecRestoreArrayRead(x,      &sol));
-
-	// fill local (ghosted) version of solution vectors
-	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
-
-	// access local solution vectors
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp, &lp));
-
-	// access boundary constraints vectors
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp));
-
-	//==============================
-	// enforce two-point constraints
-	//==============================
-
-	//--------------------------
-	// central points (pressure)
-	//--------------------------
-	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		pmdof = lp[k][j][i];
-
-		if(i == 0)   { if(!periodic) { SET_TPC(bcp, lp, k,   j,   i-1, pmdof) } }
-		if(i == mcx) { if(!periodic) { SET_TPC(bcp, lp, k,   j,   i+1, pmdof) } }
-		if(j == 0)   {                 SET_TPC(bcp, lp, k,   j-1, i,   pmdof) }
-		if(j == mcy) {                 SET_TPC(bcp, lp, k,   j+1, i,   pmdof) }
-		if(k == 0)   {                 SET_TPC(bcp, lp, k-1, j,   i,   pmdof) }
-		if(k == mcz) {                 SET_TPC(bcp, lp, k+1, j,   i,   pmdof) }
-	}
-	END_STD_LOOP
-
-	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts)
-{
-	FDSTAG            *fs;
-	
 	BCCtx             *bc;
 	SolVarCell        *svCell;
-	const PetscScalar *p;
-	PetscScalar       ***gp, *sol, *psol, dpdz, bz, ez, cz;
+	Vec               gp;
+	PetscScalar       ***p, dpdz, bz, ez, cz;
 	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
+	ts       = jr->ts;
 	fs       = jr->fs;
 	bc       = jr->bc;
 	svCell   = jr->svCell;
 	fixPhase = bc->fixPhase;
 
 	// check activation
-	if(!bc->initPres || ts->istep>0) PetscFunctionReturn(0);
+	if(!bc->initPres || ts->istep > 0) PetscFunctionReturn(0);
+
+	// get work vector
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &gp));
 
 	// get grid coordinate bounds in z-direction
 	PetscCall(FDSTAGGetGlobalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez));
@@ -1815,13 +1513,10 @@ PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts)
 	// get pressure gradient in z-direction
 	dpdz = (bc->ptop - bc->pbot)/(ez - bz);
 
-	// set pressure to zero
-	PetscCall(VecZeroEntries(jr->gp));
-
 	// get local grid sizes
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->gp, &gp));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, gp, &p));
 
 	iter = 0;
 
@@ -1834,25 +1529,17 @@ PetscErrorCode JacResInitPres(JacRes *jr,TSSol *ts)
 			cz = COORD_CELL(k, sz, fs->dsz);
 
 			// set pressure initial guess
-			gp[k][j][i] = bc->pbot + dpdz*(cz - bz);
+			p[k][j][i] = bc->pbot + dpdz*(cz - bz);
 		}
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &gp));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, gp, &p));
 
-	// access vectors
-	PetscCall(VecGetArrayRead(jr->gp,   &p));
-	PetscCall(VecGetArray    (jr->gsol, &sol));
+	PetscCall(FDSTAGCombineVectors(fs, jr->gsol, NULL, NULL, NULL, gp));
 
-	// copy pressure to coupled solution vector
-	psol = sol + fs->nXFace + fs->nYFace + fs->nZFace;
-
-	PetscCall(PetscMemcpy(psol, p, (size_t)fs->nCells*sizeof(PetscScalar)));
-
-	// restore access
-	PetscCall(VecRestoreArrayRead(jr->gp,   &p));
-	PetscCall(VecRestoreArray    (jr->gsol, &sol));
+	// restore work vector
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &gp));
 
 	PetscFunctionReturn(0);
 }
@@ -1866,6 +1553,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 	PetscInt          ID, ii, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscInt          iter, it, maxit, conv;
 	PetscScalar       z, Tc, pc, nprev, norm, lnorm, stop, tol;
+	Vec               lT;
 	PetscScalar       ***T, ***p;
 	PetscLogDouble    t;
 
@@ -1879,7 +1567,8 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 	PrintStart(&t, "Initializing pressure with lithostatic pressure", NULL);
 
 	// access context
-	fs         =  jr->fs;
+	fs = jr->fs;
+
 
 	// setup constitutive equation evaluation context parameters
 	PetscCall(setUpConstEq(&ctx, jr));
@@ -1892,10 +1581,13 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 	stop  = 0.0;
 	conv  = 0;
 
+	// access temperature
+	PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, NULL, &lT, _no_interp_));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT, &T));
+
 	do
 	{	// access pressure and temperature
 		PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p));
-		PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T));
 
 		// loop over cell centers
 		iter = 0;
@@ -1926,7 +1618,6 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 		END_STD_LOOP
 
 		PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p));
-		PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T));
 
 		// compute new lithostatic pressure
 		PetscCall(JacResGetLithoStaticPressure(jr));
@@ -1965,6 +1656,8 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 		conv = stop < tol;
 
 	} while(!conv && it++ < maxit);
+
+	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, NULL, &lT));
 
 	// copy lithostatic pressure to pressure history of grid
 	iter = 0;
@@ -2009,41 +1702,35 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
+PetscErrorCode JacResAssembleRes(JacRes *jr, Vec f, Vec lfx, Vec lfy, Vec lfz, Vec gc)
 {
-	// copy residuals from local to global vectors, enforce boundary constraints
-
 	FDSTAG      *fs;
 	BCCtx       *bc;
 	PetscInt    i, num, *list;
-	PetscScalar *fx, *fy, *fz, *c, *res, *iter;
+	PetscScalar *res;
+	Vec         gfx,  gfy, gfz;
 
-	
 	PetscFunctionBeginUser;
 
 	fs  = jr->fs;
 	bc  = jr->bc;
 
-	// access vectors
-	PetscCall(VecGetArray(jr->gfx, &fx));
-	PetscCall(VecGetArray(jr->gfy, &fy));
-	PetscCall(VecGetArray(jr->gfz, &fz));
-	PetscCall(VecGetArray(jr->gc,  &c));
+	// get work vectors
+	PetscCall(FDSTAGGetGlobalVectorFace(fs, &gfx, &gfy, &gfz));
+
+	// assemble global residuals from local contributions
+	LOCAL_TO_GLOBAL(fs->DA_X, lfx, gfx)
+	LOCAL_TO_GLOBAL(fs->DA_Y, lfy, gfy)
+	LOCAL_TO_GLOBAL(fs->DA_Z, lfz, gfz)
+
+	// combine residuals to global vector
+	PetscCall(FDSTAGCombineVectors(fs, f, gfx, gfy, gfz, gc));
+
+	// free work vectors
+	PetscCall(FDSTAGRestoreGlobalVectorFace(fs, &gfx, &gfy, &gfz));
+
+	// access residual vector
 	PetscCall(VecGetArray(f, &res));
-
-	// copy vectors component-wise
-	iter = res;
-
-	PetscCall(PetscMemcpy(iter, fx, (size_t)fs->nXFace*sizeof(PetscScalar)));
-	iter += fs->nXFace;
-
-	PetscCall(PetscMemcpy(iter, fy, (size_t)fs->nYFace*sizeof(PetscScalar)));
-	iter += fs->nYFace;
-
-	PetscCall(PetscMemcpy(iter, fz, (size_t)fs->nZFace*sizeof(PetscScalar)));
-	iter += fs->nZFace;
-
-	PetscCall(PetscMemcpy(iter, c,  (size_t)fs->nCells*sizeof(PetscScalar)));
 
 	// zero out constrained residuals (velocity)
 	num   = bc->vNumSPC;
@@ -2058,108 +1745,47 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	for(i = 0; i < num; i++) res[list[i]] = 0.0;
 
 	// restore access
-	PetscCall(VecRestoreArray(jr->gfx,  &fx));
-	PetscCall(VecRestoreArray(jr->gfy,  &fy));
-	PetscCall(VecRestoreArray(jr->gfz,  &fz));
-	PetscCall(VecRestoreArray(jr->gc,   &c));
 	PetscCall(VecRestoreArray(f, &res));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f)
-{
-	// copy momentum residuals from global to local vectors for output
-
-	FDSTAG      *fs;
-	PetscScalar *fx, *fy, *fz, *res, *iter;
-
-	
-	PetscFunctionBeginUser;
-
-	fs  = jr->fs;
-
-	// access vectors
-	PetscCall(VecGetArray(jr->gfx, &fx));
-	PetscCall(VecGetArray(jr->gfy, &fy));
-	PetscCall(VecGetArray(jr->gfz, &fz));
-	PetscCall(VecGetArray(f, &res));
-
-	// copy vectors component-wise
-	iter = res;
-
-	PetscCall(PetscMemcpy(fx, iter, (size_t)fs->nXFace*sizeof(PetscScalar)));
-	iter += fs->nXFace;
-
-	PetscCall(PetscMemcpy(fy, iter, (size_t)fs->nYFace*sizeof(PetscScalar)));
-	iter += fs->nYFace;
-
-	PetscCall(PetscMemcpy(fz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)));
-	iter += fs->nZFace;
-
-	// restore access
-	PetscCall(VecRestoreArray(jr->gfx,  &fx));
-	PetscCall(VecRestoreArray(jr->gfy,  &fy));
-	PetscCall(VecRestoreArray(jr->gfz,  &fz));
-	PetscCall(VecRestoreArray(f, &res));
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f)
-{
-	// copy continuity residuals from global to local vectors for output
-
-	FDSTAG      *fs;
-	PetscScalar *c, *res, *iter;
-
-	
-	PetscFunctionBeginUser;
-
-	fs  = jr->fs;
-
-	// access vectors
-	PetscCall(VecGetArray(jr->gc, &c));
-	PetscCall(VecGetArray(f,      &res));
-
-	// copy vectors component-wise
-	iter = res + fs->dof.lnv;
-
-	PetscCall(PetscMemcpy(c, iter, (size_t)fs->nCells*sizeof(PetscScalar)));
-
-	// restore access
-	PetscCall(VecRestoreArray(jr->gc, &c));
-	PetscCall(VecRestoreArray(f,      &res));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode JacResViewRes(JacRes *jr)
 {
-	// show assembled residual with boundary constraints
-	// WARNING! rewrite this function using coupled residual vector directly
+	// view residual and solution norms
 
-	PetscScalar dinf, d2, e2, fx, fy, fz, f2, div_tol, T2, vx2, vy2, vz2, p2;
+	FDSTAG      *fs;
+	Vec         gvx, gvy, gvz, gp;
+	Vec         gfx, gfy, gfz, gc;
+	PetscScalar dinf, d2, e2, fx, fy, fz, f2, T2, vx2, vy2, vz2, p2;
 
-	
 	PetscFunctionBeginUser;
 
-	// get constrained residual vectors
-	PetscCall(JacResCopyMomentumRes  (jr, jr->gres));
-	PetscCall(JacResCopyContinuityRes(jr, jr->gres));
+	fs = jr->fs;
+	
+	// make buffer vectors
+	PetscCall(FDSTAGGetGlobalVectorFace(fs, &gvx, &gvy, &gvz));
+	PetscCall(FDSTAGGetGlobalVectorFace(fs, &gfx, &gfy, &gfz));
+
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &gp));
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &gc));
+
+	// get solution and residual components
+	PetscCall(FDSTAGSplitVectors(fs, jr->gsol, gvx, gvy, gvz, gp));
+	PetscCall(FDSTAGSplitVectors(fs, jr->gres, gfx, gfy, gfz, gc));
 
 	// compute norms
-	PetscCall(VecNorm(jr->gc,  NORM_INFINITY, &dinf));
-	PetscCall(VecNorm(jr->gc,  NORM_2,        &d2));
+	PetscCall(VecNorm(gc,  NORM_INFINITY, &dinf));
+	PetscCall(VecNorm(gc,  NORM_2,        &d2));
 
-	PetscCall(VecNorm(jr->gfx, NORM_2, &fx));
-	PetscCall(VecNorm(jr->gfy, NORM_2, &fy));
-	PetscCall(VecNorm(jr->gfz, NORM_2, &fz));
+	PetscCall(VecNorm(gfx, NORM_2, &fx));
+	PetscCall(VecNorm(gfy, NORM_2, &fy));
+	PetscCall(VecNorm(gfz, NORM_2, &fz));
 
-	PetscCall(VecNorm(jr->gvx, NORM_2, &vx2));
-	PetscCall(VecNorm(jr->gvy, NORM_2, &vy2));
-	PetscCall(VecNorm(jr->gvz, NORM_2, &vz2));
-	PetscCall(VecNorm(jr->gp,  NORM_2, &p2));		// pressure
+	PetscCall(VecNorm(gvx, NORM_2, &vx2));
+	PetscCall(VecNorm(gvy, NORM_2, &vy2));
+	PetscCall(VecNorm(gvz, NORM_2, &vz2));
+	PetscCall(VecNorm(gp,  NORM_2, &p2));		// pressure
 
 	f2 = sqrt(fx*fx + fy*fy + fz*fz);
 
@@ -2167,7 +1793,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	{
 		PetscCall(JacResGetTempRes(jr,jr->ts->dt));
 		PetscCall(VecNorm(jr->ge, NORM_2, &e2));
-		PetscCall(VecNorm(jr->lT, NORM_2, &T2));
+		PetscCall(VecNorm(jr->gT_, NORM_2, &T2));
 	}
 
 	// print
@@ -2201,15 +1827,269 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
-	// stop if divergence more than tolerance
-	div_tol = 0.0;
-	PetscCall(PetscOptionsGetScalar(NULL, NULL, "-div_tol",  &div_tol,  NULL));
+	// free buffer vectors
+	PetscCall(FDSTAGRestoreGlobalVectorFace(fs, &gvx, &gvy, &gvz));
+	PetscCall(FDSTAGRestoreGlobalVectorFace(fs, &gfx, &gfy, &gfz));
 
-	if ((div_tol) && (( dinf > div_tol ) || (f2 > div_tol)))
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &gp));
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &gc));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode JacResGetVel(JacRes *jr, Vec x, Vec lvx, Vec lvy, Vec lvz)
+{
+	// access current velocity
+
+	FDSTAG           *fs;
+	BCCtx            *bc;
+	PetscInt          periodic;
+	PetscInt          mcx, mcy, mcz;
+	PetscInt          I, J, K;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar       ***bcvx, ***bcvy, ***bcvz;
+	PetscScalar       ***vx,   ***vy,   ***vz;
+	PetscScalar       pmdof;
+	Vec               gvx, gvy, gvz;
+
+	PetscFunctionBeginUser;
+
+	fs = jr->fs;
+	bc = jr->bc;
+
+	// set periodic flag
+	periodic = fs->periodic;
+
+	// initialize maximal index in all directions
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+
+	// make buffer vectors
+	PetscCall(FDSTAGGetGlobalVectorFace(fs, &gvx, &gvy, &gvz));
+
+	// get velocity components
+	PetscCall(FDSTAGSplitVectors(fs, x, gvx, gvy, gvz, NULL));
+
+	// fill local (ghosted) vectors
+	GLOBAL_TO_LOCAL(fs->DA_X, gvx, lvx)
+	GLOBAL_TO_LOCAL(fs->DA_Y, gvy, lvy)
+	GLOBAL_TO_LOCAL(fs->DA_Z, gvz, lvz)
+
+	// free buffer vectors
+	PetscCall(FDSTAGRestoreGlobalVectorFace(fs, &gvx, &gvy, &gvz));
+
+	// access local solution vectors
+	PetscCall(DMDAVecGetArray(fs->DA_X, lvx, &vx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, lvy, &vy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, lvz, &vz));
+
+	// access boundary constraints vectors
+	PetscCall(DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz));
+
+	//==============================
+	// enforce two-point constraints
+	//==============================
+
+	//---------
+	// X points
+	//---------
+	GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " *** Emergency stop! Maximum divergence or momentum residual is too large; solver did not converge! *** \n");
+		pmdof = vx[k][j][i];
+
+		J = j;
+		K = k;
+
+		if(j == 0)   { J = j-1; SET_TPC(bcvx, vx, k, J, i, pmdof) }
+		if(j == mcy) { J = j+1; SET_TPC(bcvx, vx, k, J, i, pmdof) }
+		if(k == 0)   { K = k-1; SET_TPC(bcvx, vx, K, j, i, pmdof) }
+		if(k == mcz) { K = k+1; SET_TPC(bcvx, vx, K, j, i, pmdof) }
+	}
+	END_STD_LOOP
+
+	//---------
+	// Y points
+	//---------
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		pmdof = vy[k][j][i];
+
+		I = i;
+		K = k;
+
+		if(i == 0)   { I = i-1; if(!periodic) { SET_TPC(bcvy, vy, k, j, I, pmdof) } }
+		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvy, vy, k, j, I, pmdof) } }
+		if(k == 0)   { K = k-1;                 SET_TPC(bcvy, vy, K, j, i, pmdof) }
+		if(k == mcz) { K = k+1;                 SET_TPC(bcvy, vy, K, j, i, pmdof) }
+	}
+	END_STD_LOOP
+
+	//---------
+	// Z points
+	//---------
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		pmdof = vz[k][j][i];
+
+		I = i;
+		J = j;
+
+		if(i == 0 )  { I = i-1; if(!periodic) { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
+		if(i == mcx) { I = i+1; if(!periodic) { SET_TPC(bcvz, vz, k, j, I, pmdof) } }
+		if(j == 0)   { J = j-1;                 SET_TPC(bcvz, vz, k, J, i, pmdof) }
+		if(j == mcy) { J = j+1;                 SET_TPC(bcvz, vz, k, J, i, pmdof) }
+	}
+	END_STD_LOOP
+
+	// restore access
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lvx,      &vx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lvy,      &vy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lvz,      &vz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode JacResGetPres(JacRes *jr, Vec x, Vec lp)
+{
+	// access current pressure
+
+	FDSTAG            *fs;
+	BCCtx             *bc;
+	PetscInt          periodic;
+	PetscInt          mcx, mcy, mcz;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar       pmdof;
+	PetscScalar       ***bcp;
+	PetscScalar       ***p;
+	Vec               gp;
+
+	PetscFunctionBeginUser;
+
+	fs = jr->fs;
+	bc = jr->bc;;
+
+	// set periodic flag
+	periodic = fs->periodic;
+
+	// initialize maximal index in all directions
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+
+	// get work vector
+	PetscCall(DMGetGlobalVector(fs->DA_CEN, &gp));
+
+	// get pressure component
+	PetscCall(FDSTAGSplitVectors(fs, x, NULL, NULL, NULL, gp));
+
+	// fill local (ghosted) version of solution vectors
+	GLOBAL_TO_LOCAL(fs->DA_CEN, gp, lp)
+
+	// restore work vector
+	PetscCall(DMRestoreGlobalVector(fs->DA_CEN, &gp));
+
+	// access local solution vectors
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lp, &p));
+
+	// access boundary constraints vectors
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcp, &bcp));
+
+	//==============================
+	// enforce two-point constraints
+	//==============================
+
+	//--------------------------
+	// central points (pressure)
+	//--------------------------
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		pmdof = p[k][j][i];
+
+		if(i == 0)   { if(!periodic) { SET_TPC(bcp, p, k,   j,   i-1, pmdof) } }
+		if(i == mcx) { if(!periodic) { SET_TPC(bcp, p, k,   j,   i+1, pmdof) } }
+		if(j == 0)   {                 SET_TPC(bcp, p, k,   j-1, i,   pmdof) }
+		if(j == mcy) {                 SET_TPC(bcp, p, k,   j+1, i,   pmdof) }
+		if(k == 0)   {                 SET_TPC(bcp, p, k-1, j,   i,   pmdof) }
+		if(k == mcz) {                 SET_TPC(bcp, p, k+1, j,   i,   pmdof) }
+	}
+	END_STD_LOOP
+
+	// restore access
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lp,      &p));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcp, &bcp));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode JacResGetSolution(JacRes *jr, Vec x, Vec *lvx, Vec *lvy, Vec *lvz, Vec *lp, Vec *lT, AccessMode mode)
+{
+	// access solution vectors, set two-point constraints, prepare for interpolation (optionally)
+	// NOTE: temperature should be eventually added as global solution block
+
+	FDSTAG *fs;
+
+	PetscFunctionBeginUser;
+
+	fs = jr->fs;
+
+	// get work vectors
+	if(lvx) { PetscCall(FDSTAGGetLocalVectorFace(jr->fs, lvx, lvy, lvz)); }
+	if(lp)  { PetscCall(DMGetLocalVectorClean(fs->DA_CEN, lp));           }
+	if(lT)  { PetscCall(DMGetLocalVectorClean(fs->DA_CEN, lT));           }
+
+	// get velocity pressure and temperature
+	if(lvx) { PetscCall(JacResGetVel (jr, x, (*lvx), (*lvy), (*lvz))); }
+	if(lp)  { PetscCall(JacResGetPres(jr, x, (*lp)));                  }
+	if(lT)  { PetscCall(JacResGetTemp(jr,    (*lT)));                  }
+
+	// set corners and edges for interpolation
+	if(lp)  { PetscCall(FDSTAGSetEdgeCornerCenter(fs, (*lp))); }
+	if(lT)  { PetscCall(FDSTAGSetEdgeCornerCenter(fs, (*lT))); }
+
+	if(mode == _interp_)
+	{
+		if(lvx) { PetscCall(FDSTAGSetEdgeCornerFaces (fs, (*lvx), (*lvy), (*lvz))); }
 	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode JacResRestoreSolution(JacRes *jr, Vec *lvx, Vec *lvy, Vec *lvz, Vec *lp, Vec *lT)
+{
+	FDSTAG *fs;
+
+	PetscFunctionBeginUser;
+
+	fs = jr->fs;
+
+	// restore work vectors
+	if(lvx) { PetscCall(FDSTAGRestoreLocalVectorFace(fs, lvx, lvy, lvz)); }
+	if(lp)  { PetscCall(DMRestoreLocalVector(fs->DA_CEN, lp));            }
+	if(lT)  { PetscCall(DMRestoreLocalVector(fs->DA_CEN, lT));            }
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+

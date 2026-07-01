@@ -263,11 +263,11 @@ unit_stress      = 1e9
 
 <SolverOptionsStart>
 
-	nonlinear_tolerances =  1e-5 5e-4  50  # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	nonlinear_tolerances =  1e-5 1e-4  50  # rtol, atol, maxit (-1 = automatic setting, only for atol)
 	linear_tolerances    =  1e-5 1e-6  30  # rtol, atol, maxit(-1 = automatic setting, only for atol)
 	picard_to_newton     =  1e-7 5 1.2 5   # picard rtol, picard minit, newton rtol, newton maxit
 	monitor_solvers      = 1
-	stokes_solver        = block_direct
+	stokes_solver        = coupled_direct
 	direct_solver_type   = mumps
 
 <SolverOptionsEnd>

@@ -2162,6 +2162,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, FreeSurf *surf)
 {
 	FDSTAG              *fs;
+	Vec                 lbvx, lbvy, lbvz;
 	Vec                 lproX, lproY, lproZ, gproX, gproY, gproZ, pro, xini, lxiniX, lxiniY, lxiniZ, gxiniX, gxiniY, gxiniZ, lbcor;
 	PetscScalar         coord_local[3], *temppro, ***llproX, ***llproY, ***llproZ, *dggproX, *dggproY, *dggproZ, *tempxini, ***llxiniX, ***llxiniY, ***llxiniZ, *dggxiniX, *dggxiniY, *dggxiniZ;
 	PetscScalar         *vx, *vy, *vz;
@@ -2176,12 +2177,10 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 
 	fs = jr->fs;
 
-	PetscCall(DMGetLocalVector(fs->DA_COR, &lbcor));
+	PetscCall(DMGetLocalVectorClean(fs->DA_COR, &lbcor));
 
-	// initialize corners and edges for interpolation
-	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
-	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
-	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
+	// get velocity vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lbvx, &lbvy, &lbvz, NULL, NULL, _interp_));
 
 	// create vectors with correct layout (doesn't copy values!)
  	PetscCall(VecDuplicate(jr->gsol, &pro));
@@ -2190,9 +2189,9 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
  	PetscCall(VecZeroEntries(xini));
 	
 	// Access the local velocities
-	PetscCall(DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz));
+	PetscCall(DMDAVecGetArray(fs->DA_X, lbvx, &lvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, lbvy, &lvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, lbvz, &lvz));
 
 	PetscCall(DMCreateGlobalVector(fs->DA_X, &gproX));
 	PetscCall(DMCreateGlobalVector(fs->DA_Y, &gproY));
@@ -2461,11 +2460,11 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				iflag.update    = PETSC_FALSE;
 				iflag.use_bound = PETSC_TRUE;
 			
-				PetscCall(DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx));
+				PetscCall(DMDAVecRestoreArray(fs->DA_X, lbvx, &lvx));
 				PetscCall(DMDAVecGetArray(fs->DA_X, lproX, &llproX));
 				
 				// interpolate velocity component from grid faces to corners
-				PetscCall(InterpXFaceCorner(fs, jr->lvx, lbcor, iflag));
+				PetscCall(InterpXFaceCorner(fs, lbvx, lbcor, iflag));
 			
 				// load ghost values
 				LOCAL_TO_LOCAL(fs->DA_COR, lbcor)
@@ -2503,7 +2502,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    lbcor,        &vgrid));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
-				PetscCall(DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx));
+				PetscCall(DMDAVecGetArray(fs->DA_X, lbvx, &lvx));
 				PetscCall(DMDAVecRestoreArray(fs->DA_X, lproX, &llproX));
 				
 			}
@@ -2519,11 +2518,11 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				iflag.update    = PETSC_FALSE;
 				iflag.use_bound = PETSC_TRUE;
 			
-				PetscCall(DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Y, lbvy, &lvy));
 				PetscCall(DMDAVecGetArray(fs->DA_Y, lproY, &llproY));
 				
 				// interpolate velocity component from grid faces to corners
-				PetscCall(InterpYFaceCorner(fs, jr->lvy, lbcor, iflag));
+				PetscCall(InterpYFaceCorner(fs, lbvy, lbcor, iflag));
 			
 				// load ghost values
 				LOCAL_TO_LOCAL(fs->DA_COR, lbcor)
@@ -2560,7 +2559,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    lbcor,        &vgrid));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
-				PetscCall(DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy));
+				PetscCall(DMDAVecGetArray(fs->DA_Y, lbvy, &lvy));
 				PetscCall(DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY));
 			}
 			else if (IOparam->Av[ii] == 3)
@@ -2575,11 +2574,11 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				iflag.update    = PETSC_FALSE;
 				iflag.use_bound = PETSC_TRUE;
 				
-				PetscCall(DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz));
+				PetscCall(DMDAVecRestoreArray(fs->DA_Z, lbvz, &lvz));
 				PetscCall(DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ));
 				
 				// interpolate velocity component from grid faces to corners
-				PetscCall(InterpZFaceCorner(fs, jr->lvz, lbcor, iflag));
+				PetscCall(InterpZFaceCorner(fs, lbvz, lbcor, iflag));
 			
 				// load ghost values
 				LOCAL_TO_LOCAL(fs->DA_COR, lbcor)
@@ -2616,7 +2615,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				PetscCall(DMDAVecRestoreArray(fs->DA_COR,    lbcor,        &vgrid));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf));
 				PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo));
-				PetscCall(DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz));
+				PetscCall(DMDAVecGetArray(fs->DA_Z, lbvz, &lvz));
 				PetscCall(DMDAVecRestoreArray(fs->DA_Z, lproZ, &llproZ));
 			}
 		}
@@ -2703,11 +2702,14 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscCall(VecDestroy(&gxiniZ));
 	PetscCall(VecDestroy(&xini));
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X, lbvx, &lvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y, lbvy, &lvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, lbvz, &lvz));
 	
 	PetscCall(DMRestoreLocalVector(fs->DA_COR, &lbcor));
+
+	// restore velocity vectors
+	PetscCall(JacResRestoreSolution(jr, &lbvx, &lbvy, &lbvz, NULL, NULL));
 
 	PetscFunctionReturn(0);
 }
@@ -3115,20 +3117,18 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	PetscPrintf(PETSC_COMM_WORLD,"|       \n");
 	PetscPrintf(PETSC_COMM_WORLD,"| -------------------------------------------------------------------------\n");
 
-
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOparam)
 {
-	// Compute derivative of stress objective function with respect to the solution (dF/du) (dF/dst = (P*st-P*st_ini) * dphi/de * de/du)       
+	// Compute derivative of stress objective function with respect to the solution (dF/du) (dF/dst = (P*st-P*st_ini) * dphi/de * de/du)
 	// dphi/de = (1/(2*pow(exx-eyy,2)) * (-2*exy,2exy,exx-eyy)); e = deviatoric strainrate
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
-	Vec         ldxx, ldyy, ldzz, ldxy, ldxz, ldyz;
+	Vec         lvx, lvy, lvz, ldxx, ldyy, ldzz, ldxy, ldxz, ldyz;
 	PetscInt    ii, i, j, k, nx, ny, nz, sx, sy, sz, iterat, lrank;
 	PetscInt    I, J, K, ID;
 	PetscScalar *ncx, *ncy, *ncz;
@@ -3136,7 +3136,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscScalar bdx, bdy, bdz, fdx, fdy, fdz, dx, dy, dz;
 	PetscScalar phival=0.0, Parameter, Param_local, mfitParam;
 	PetscScalar *tempdPardu;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***vx,  ***vy,  ***vz;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz;
 	Vec         gxPar, gyPar, gzPar, gxdPardu, gydPardu, gzdPardu;
 	Vec         lxPar, lyPar, lzPar, lxdPardu, lydPardu, lzdPardu;
 	PetscScalar *dggxPar, *dggyPar, *dggzPar, *dggxdPardu, *dggydPardu, *dggzdPardu, *iter, *sty;
@@ -3153,12 +3153,17 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	fs 		= jr->fs;
 	scal 	= jr->scal;
 
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldxx));
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldyy));
-	PetscCall(DMGetLocalVector(fs->DA_CEN, &ldzz));
-	PetscCall(DMGetLocalVector(fs->DA_XY,  &ldxy));
-	PetscCall(DMGetLocalVector(fs->DA_XZ,  &ldxz));
-	PetscCall(DMGetLocalVector(fs->DA_YZ,  &ldyz));
+	// get work vectors
+	PetscCall(FDSTAGGetLocalVectorCenter(fs, &ldxx, &ldyy, &ldzz));
+	PetscCall(FDSTAGGetLocalVectorEdge  (fs, &ldxy, &ldxz, &ldyz));
+
+	// get velocity
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _no_interp_));
+
+	// get strain rate
+	PetscCall(JacResGetEffStrainRate(jr, lvx, lvy, lvz, ldxx, ldyy, ldzz, ldxy, ldxz, ldyz));
+
+	PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
 
 	// Initialize vector to store observations:
 	PetscCall(VecZeroEntries(aop->sty));
@@ -3247,10 +3252,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscCall(DMDAVecGetArray(fs->DA_XY,  ldxy,    &dxy));
 	PetscCall(DMDAVecGetArray(fs->DA_XZ,  ldxz,    &dxz));
 	PetscCall(DMDAVecGetArray(fs->DA_YZ,  ldyz,    &dyz));
-	
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz));
 
 	PetscCall(DMDAVecGetArray(fs->DA_X, lxPar,    &xPar));
 	PetscCall(DMDAVecGetArray(fs->DA_Y, lyPar,    &yPar));
@@ -3539,10 +3540,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  ldxz,    &dxz));
 	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  ldyz,    &dyz));
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz));
-
 	PetscCall(DMDAVecRestoreArray(fs->DA_X, lxPar,    &xPar));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Y, lyPar,    &yPar));
 	PetscCall(DMDAVecRestoreArray(fs->DA_Z, lzPar,    &zPar));
@@ -3606,12 +3603,9 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscCall(VecDestroy(&lydPardu));
 	PetscCall(VecDestroy(&lzdPardu));
 
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldxx));
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldyy));
-	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &ldzz));
-	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &ldxy));
-	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &ldxz));
-	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &ldyz));
+	// restore work vectors
+	PetscCall(FDSTAGRestoreLocalVectorCenter(fs, &ldxx, &ldyy, &ldzz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge  (fs, &ldxy, &ldxz, &ldyz));
 
 	PetscFunctionReturn(0);
 }

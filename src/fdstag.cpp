@@ -1701,5 +1701,363 @@ PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscErrorCode DMGetLocalVectorClean(DM dm, Vec *g)
+{
+	PetscFunctionBeginUser;
 
+	PetscCall(DMGetLocalVector(dm, g));
+
+	PetscCall(VecZeroEntries((*g)));
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+// BUFFERS
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGGetLocalVectorFace(FDSTAG *fs, Vec *vx,  Vec *vy,  Vec *vz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMGetLocalVectorClean(fs->DA_X, vx));
+	PetscCall(DMGetLocalVectorClean(fs->DA_Y, vy));
+	PetscCall(DMGetLocalVectorClean(fs->DA_Z, vz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGRestoreLocalVectorFace(FDSTAG *fs, Vec *vx,  Vec *vy,  Vec *vz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMRestoreLocalVector(fs->DA_X, vx));
+	PetscCall(DMRestoreLocalVector(fs->DA_Y, vy));
+	PetscCall(DMRestoreLocalVector(fs->DA_Z, vz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGGetGlobalVectorFace(FDSTAG *fs, Vec *vx,  Vec *vy,  Vec *vz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMGetGlobalVector(fs->DA_X, vx));
+	PetscCall(DMGetGlobalVector(fs->DA_Y, vy));
+	PetscCall(DMGetGlobalVector(fs->DA_Z, vz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGRestoreGlobalVectorFace(FDSTAG *fs, Vec *vx,  Vec *vy,  Vec *vz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMRestoreGlobalVector(fs->DA_X, vx));
+	PetscCall(DMRestoreGlobalVector(fs->DA_Y, vy));
+	PetscCall(DMRestoreGlobalVector(fs->DA_Z, vz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGGetLocalVectorEdge(FDSTAG *fs, Vec *vxy, Vec *vxz, Vec *vyz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMGetLocalVectorClean(fs->DA_XY, vxy));
+	PetscCall(DMGetLocalVectorClean(fs->DA_XZ, vxz));
+	PetscCall(DMGetLocalVectorClean(fs->DA_YZ, vyz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGRestoreLocalVectorEdge(FDSTAG *fs, Vec *vxy, Vec *vxz, Vec *vyz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMRestoreLocalVector(fs->DA_XY, vxy));
+	PetscCall(DMRestoreLocalVector(fs->DA_XZ, vxz));
+	PetscCall(DMRestoreLocalVector(fs->DA_YZ, vyz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGGetGlobalVectorEdge(FDSTAG *fs, Vec *vxy, Vec *vxz, Vec *vyz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMGetGlobalVector(fs->DA_XY, vxy));
+	PetscCall(DMGetGlobalVector(fs->DA_XZ, vxz));
+	PetscCall(DMGetGlobalVector(fs->DA_YZ, vyz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGRestoreGlobalVectorEdge(FDSTAG *fs, Vec *vxy, Vec *vxz, Vec *vyz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMRestoreGlobalVector(fs->DA_XY, vxy));
+	PetscCall(DMRestoreGlobalVector(fs->DA_XZ, vxz));
+	PetscCall(DMRestoreGlobalVector(fs->DA_YZ, vyz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGGetLocalVectorCenter(FDSTAG *fs, Vec *vxx, Vec *vyy, Vec *vzz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, vxx));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, vyy));
+	PetscCall(DMGetLocalVectorClean(fs->DA_CEN, vzz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGRestoreLocalVectorCenter(FDSTAG *fs, Vec *vxx, Vec *vyy, Vec *vzz)
+{
+	PetscFunctionBeginUser;
+
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, vxx));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, vyy));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, vzz));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGCombineVectors(FDSTAG *fs, Vec gf, Vec gfx, Vec gfy, Vec gfz, Vec gp)
+{
+	// combine components into a vector
+
+	const PetscScalar *fx, *fy, *fz, *p;
+	PetscScalar       *f, *iter;
+
+	PetscFunctionBeginUser;
+
+	// access vectors
+	if(gfx) { PetscCall(VecGetArrayRead(gfx, &fx)); }
+	if(gfy) { PetscCall(VecGetArrayRead(gfy, &fy)); }
+	if(gfz) { PetscCall(VecGetArrayRead(gfz, &fz)); }
+	if(gp)  { PetscCall(VecGetArrayRead(gp,  &p));  }
+
+	PetscCall(VecGetArray(gf, &f));
+
+	iter = f;
+
+	if(gfx) { PetscCall(PetscMemcpy(iter, fx, (size_t)fs->nXFace*sizeof(PetscScalar))); }
+	iter += fs->nXFace;
+
+	if(gfy) { PetscCall(PetscMemcpy(iter, fy, (size_t)fs->nYFace*sizeof(PetscScalar))); }
+	iter += fs->nYFace;
+
+	if(gfz) { PetscCall(PetscMemcpy(iter, fz, (size_t)fs->nZFace*sizeof(PetscScalar))); }
+	iter += fs->nZFace;
+
+	if(gp)  { PetscCall(PetscMemcpy(iter, p,  (size_t)fs->nCells*sizeof(PetscScalar))); }
+
+	// restore access
+	if(gfx) { PetscCall(VecRestoreArrayRead(gfx, &fx)); }
+	if(gfy) { PetscCall(VecRestoreArrayRead(gfy, &fy)); }
+	if(gfz) { PetscCall(VecRestoreArrayRead(gfz, &fz)); }
+	if(gp)  { PetscCall(VecRestoreArrayRead(gp,  &p));  }
+
+	PetscCall(VecRestoreArray(gf, &f));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGSplitVectors(FDSTAG *fs, Vec gf, Vec gfx, Vec gfy, Vec gfz, Vec gp)
+{
+	// split vector into components
+
+	PetscScalar       *fx, *fy, *fz, *p;
+	const PetscScalar *f, *iter;
+
+	PetscFunctionBeginUser;
+
+	// access vectors
+	if(gfx) { PetscCall(VecGetArray(gfx, &fx)); }
+	if(gfy) { PetscCall(VecGetArray(gfy, &fy)); }
+	if(gfz) { PetscCall(VecGetArray(gfz, &fz)); }
+	if(gp)  { PetscCall(VecGetArray(gp,  &p));  }
+
+	PetscCall(VecGetArrayRead(gf, &f));
+
+	iter = f;
+
+	if(gfx) { PetscCall(PetscMemcpy(fx, iter, (size_t)fs->nXFace*sizeof(PetscScalar))); }
+	iter += fs->nXFace;
+
+	if(gfy) { PetscCall(PetscMemcpy(fy, iter, (size_t)fs->nYFace*sizeof(PetscScalar))); }
+	iter += fs->nYFace;
+
+	if(gfz) { PetscCall(PetscMemcpy(fz, iter, (size_t)fs->nZFace*sizeof(PetscScalar))); }
+	iter += fs->nZFace;
+
+	if(gp)  { PetscCall(PetscMemcpy(p,  iter, (size_t)fs->nCells*sizeof(PetscScalar))); }
+
+	// restore access
+	if(gfx) { PetscCall(VecRestoreArray(gfx, &fx)); }
+	if(gfy) { PetscCall(VecRestoreArray(gfy, &fy)); }
+	if(gfz) { PetscCall(VecRestoreArray(gfz, &fz)); }
+	if(gp)  { PetscCall(VecRestoreArray(gp,  &p));  }
+
+	PetscCall(VecRestoreArrayRead(gf, &f));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGSetEdgeCornerCenter(FDSTAG *fs, Vec Center)
+{
+	PetscScalar pmdof;
+	PetscScalar ***lCenter;
+	PetscInt    mcx, mcy, mcz;
+	PetscInt    I, J, K, fi, fj, fk;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+	PetscFunctionBeginUser;
+
+	// set index boundaries in all directions
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+
+	// access vector
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, Center, &lCenter));
+
+	//---------------
+	// central points
+	//---------------
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		pmdof = lCenter[k][j][i];
+
+		I = i; fi = 0;
+		J = j; fj = 0;
+		K = k; fk = 0;
+
+		if(i == 0)   { fi = 1; I = i-1; }
+		if(i == mcx) { fi = 1; I = i+1; }
+		if(j == 0)   { fj = 1; J = j-1; }
+		if(j == mcy) { fj = 1; J = j+1; }
+		if(k == 0)   { fk = 1; K = k-1; }
+		if(k == mcz) { fk = 1; K = k+1; }
+
+		// set values at edges and corners
+		if(fi && fj )       SET_EDGE_CORNER(lCenter, k, J, I, k, j, i, pmdof)
+		if(fi && fk )       SET_EDGE_CORNER(lCenter, K, j, I, k, j, i, pmdof)
+		if(fj && fk )       SET_EDGE_CORNER(lCenter, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk ) SET_EDGE_CORNER(lCenter, K, J, I, k, j, i, pmdof)
+
+	}
+	END_STD_LOOP
+
+	// restore access
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, Center, &lCenter));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FDSTAGSetEdgeCornerFaces(FDSTAG *fs, Vec XFace, Vec YFace, Vec ZFace)
+{
+	PetscInt          mcx, mcy, mcz;
+	PetscInt          I, J, K, fi, fj, fk;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar       ***lXFace, ***lYFace, ***lZFace;
+	PetscScalar       pmdof;
+
+	PetscFunctionBeginUser;
+
+	// initialize maximal index in tangential directions
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+
+	// access vectors
+	PetscCall(DMDAVecGetArray(fs->DA_X, XFace, &lXFace));
+	PetscCall(DMDAVecGetArray(fs->DA_Y, YFace, &lYFace));
+	PetscCall(DMDAVecGetArray(fs->DA_Z, ZFace, &lZFace));
+
+	//---------
+	// X points
+	//---------
+	GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		pmdof = lXFace[k][j][i];
+
+		J = j; fj = 0;
+		K = k; fk = 0;
+
+		if(j == 0)   { fj = 1; J = j-1; }
+		if(j == mcy) { fj = 1; J = j+1; }
+		if(k == 0)   { fk = 1; K = k-1; }
+		if(k == mcz) { fk = 1; K = k+1; }
+
+		if(fj && fk) SET_EDGE_CORNER(lXFace, K, J, i, k, j, i, pmdof)
+	}
+	END_STD_LOOP
+
+	//---------
+	// Y points
+	//---------
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		pmdof = lYFace[k][j][i];
+
+		I = i; fi = 0;
+		K = k; fk = 0;
+
+		if(i == 0)   { fi = 1; I = i-1;}
+		if(i == mcx) { fi = 1; I = i+1;}
+		if(k == 0)   { fk = 1; K = k-1; }
+		if(k == mcz) { fk = 1; K = k+1; }
+
+		if(fi && fk) SET_EDGE_CORNER(lYFace, K, j, I, k, j, i, pmdof)
+	}
+	END_STD_LOOP
+
+	//---------
+	// Z points
+	//---------
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+	GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		pmdof = lZFace[k][j][i];
+
+		I = i; fi = 0;
+		J = j; fj = 0;
+
+		if(i == 0 )  { fi = 1; I = i-1; }
+		if(i == mcx) { fi = 1; I = i+1; }
+		if(j == 0)   { fj = 1; J = j-1; }
+		if(j == mcy) { fj = 1; J = j+1; }
+
+		if(fi && fj) SET_EDGE_CORNER(lZFace, k, J, I, k, j, i, pmdof)
+
+	}
+	END_STD_LOOP
+
+	// restore access
+	PetscCall(DMDAVecRestoreArray(fs->DA_X, XFace, &lXFace));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y, YFace, &lYFace));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z, ZFace, &lZFace));
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 

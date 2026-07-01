@@ -29,19 +29,6 @@
 #include "interpolate.h"
 #include "phase_transition.h"
 #include "passive_tracer.h"
-/*
-#START_DOC#
-\lamemfunction{\verb- ADVCreate -}
-Create advection context
-
-\lamemfunction{\verb- ADVDestroy -}
-Destroy advection context
-
-\lamemfunction{\verb- ADVAdvect -}
-Main advection routine
-
-#END_DOC#
-*/
 //---------------------------------------------------------------------------
 PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 {
@@ -655,6 +642,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	Tensor2RN    R;
 	Tensor2RS    SR;
 	SolVarCell  *svCell;
+	Vec          lvx,  lvy,  lvz;
 	Vec          ldxy, ldxz, ldyz;
 	Vec          gdxy, gdxz, gdyz;
 	PetscScalar  UPXX, UPYY, UPZZ, UPXY, UPXZ, UPYZ;
@@ -669,14 +657,6 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	fs = actx->fs;
 	jr = actx->jr;
 
-	// get work vectors
-	PetscCall(DMGetGlobalVector(fs->DA_XY, &gdxy));
-	PetscCall(DMGetGlobalVector(fs->DA_XZ, &gdxz));
-	PetscCall(DMGetGlobalVector(fs->DA_YZ, &gdyz));
-	PetscCall(DMGetLocalVector (fs->DA_XY, &ldxy));
-	PetscCall(DMGetLocalVector (fs->DA_XZ, &ldxz));
-	PetscCall(DMGetLocalVector (fs->DA_YZ, &ldyz));
-
 	// current time step
 	dt = jr->ts->dt;
 
@@ -685,14 +665,24 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
 	sz = fs->dsz.pstart;
 
+	// get work vectors
+	PetscCall(FDSTAGGetLocalVectorEdge(fs, &ldxy, &ldxz, &ldyz));
+
 	// copy history increments into edge buffers
 	if(icase == _VORTICITY_)
 	{
+		// get velocity
+		PetscCall(JacResGetSolution(jr, jr->gsol, &lvx, &lvy, &lvz, NULL, NULL, _no_interp_));
+
 		// compute current vorticity field
-		PetscCall(JacResGetVorticity(jr, ldxy, ldxz, ldyz));
+		PetscCall(JacResGetVorticity(jr, lvx,  lvy,  lvz, ldxy, ldxz, ldyz));
+
+		PetscCall(JacResRestoreSolution(jr, &lvx, &lvy, &lvz, NULL, NULL));
 	}
 	else
 	{
+		PetscCall(FDSTAGGetGlobalVectorEdge(fs, &gdxy, &gdxz, &gdyz));
+
 		// access 1D layouts of global vectors
 		PetscCall(VecGetArray(gdxy, &gxy));
 		PetscCall(VecGetArray(gdxz, &gxz));
@@ -727,6 +717,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		GLOBAL_TO_LOCAL(fs->DA_XZ, gdxz, ldxz);
 		GLOBAL_TO_LOCAL(fs->DA_YZ, gdyz, ldyz);
 
+		PetscCall(FDSTAGRestoreGlobalVectorEdge(fs, &gdxy, &gdxz, &gdyz));
 	}
 
 	// access 3D layouts of local vectors
@@ -833,12 +824,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	PetscCall(DMDAVecRestoreArray(fs->DA_YZ, ldyz, &lyz));
 
 	// restore work vectors
-	PetscCall(DMRestoreGlobalVector(fs->DA_XY, &gdxy));
-	PetscCall(DMRestoreGlobalVector(fs->DA_XZ, &gdxz));
-	PetscCall(DMRestoreGlobalVector(fs->DA_YZ, &gdyz));
-	PetscCall(DMRestoreLocalVector (fs->DA_XY, &ldxy));
-	PetscCall(DMRestoreLocalVector (fs->DA_XZ, &ldxz));
-	PetscCall(DMRestoreLocalVector (fs->DA_YZ, &ldyz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge(fs, &ldxy, &ldxz, &ldyz));
 
 	PetscFunctionReturn(0);
 }
@@ -855,10 +841,10 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	PetscInt    jj, ID, I, J, K, II, JJ, KK, AirPhase;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
+	Vec         lbvx,  lbvy,  lbvz, lbp, lbT;
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
 	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -887,17 +873,15 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
 
-	// initialize velocity in the edges and corners
-	PetscCall(SetEdgeCornerXFace(fs, jr->lvx));
-	PetscCall(SetEdgeCornerYFace(fs, jr->lvy));
-	PetscCall(SetEdgeCornerZFace(fs, jr->lvz));
+	// get solution vectors
+	PetscCall(JacResGetSolution(jr, jr->gsol, &lbvx, &lbvy, &lbvz, &lbp, &lbT, _interp_));
 
 	// access velocity, pressure & temperature vectors
-	PetscCall(DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecGetArray(fs->DA_X,   lbvx, &lvx));
+	PetscCall(DMDAVecGetArray(fs->DA_Y,   lbvy, &lvy));
+	PetscCall(DMDAVecGetArray(fs->DA_Z,   lbvz, &lvz));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lbp,  &lp));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lbT,  &lT));
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -953,11 +937,14 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	}
 
 	// restore access
-	PetscCall(DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy));
-	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT));
+	PetscCall(DMDAVecRestoreArray(fs->DA_X,   lbvx, &lvx));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Y,   lbvy, &lvy));
+	PetscCall(DMDAVecRestoreArray(fs->DA_Z,   lbvz, &lvz));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lbp,  &lp));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lbT,  &lT));
+
+	// restore solution vectors
+	PetscCall(JacResRestoreSolution(jr, &lbvx, &lbvy, &lbvz, &lbp, &lbT));
 
 	PetscFunctionReturn(0);
 }
@@ -1803,17 +1790,8 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	sz = fs->dsz.pstart;
 
 	// get work vectors
-	PetscCall(DMGetGlobalVector(fs->DA_XY, &gdxy));
-	PetscCall(DMGetGlobalVector(fs->DA_XZ, &gdxz));
-	PetscCall(DMGetGlobalVector(fs->DA_YZ, &gdyz));
-	PetscCall(DMGetLocalVector (fs->DA_XY, &ldxy));
-	PetscCall(DMGetLocalVector (fs->DA_XZ, &ldxz));
-	PetscCall(DMGetLocalVector (fs->DA_YZ, &ldyz));
-
-	// clear local vectors
-	PetscCall(VecZeroEntries(ldxy));
-	PetscCall(VecZeroEntries(ldxz));
-	PetscCall(VecZeroEntries(ldyz));
+	PetscCall(FDSTAGGetLocalVectorEdge (fs, &ldxy, &ldxz, &ldyz));
+	PetscCall(FDSTAGGetGlobalVectorEdge(fs, &gdxy, &gdxz, &gdyz));
 
 	// access 3D layouts of local vectors
 	PetscCall(DMDAVecGetArray(fs->DA_XY, ldxy, &lxy));
@@ -1913,12 +1891,8 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	PetscCall(VecRestoreArray(gdyz, &gyz));
 
 	// restore work vectors
-	PetscCall(DMRestoreGlobalVector(fs->DA_XY, &gdxy));
-	PetscCall(DMRestoreGlobalVector(fs->DA_XZ, &gdxz));
-	PetscCall(DMRestoreGlobalVector(fs->DA_YZ, &gdyz));
-	PetscCall(DMRestoreLocalVector (fs->DA_XY, &ldxy));
-	PetscCall(DMRestoreLocalVector (fs->DA_XZ, &ldxz));
-	PetscCall(DMRestoreLocalVector (fs->DA_YZ, &ldyz));
+	PetscCall(FDSTAGRestoreLocalVectorEdge (fs, &ldxy, &ldxz, &ldyz));
+	PetscCall(FDSTAGRestoreGlobalVectorEdge(fs, &gdxy, &gdxz, &gdyz));
 
 	PetscFunctionReturn(0);
 }
@@ -1961,13 +1935,13 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 	//
 	//===============================================
 
-	FDSTAG      *fs;
-	JacRes      *jr;
-	SolVarCell  *svCell;
+	FDSTAG       *fs;
+	JacRes       *jr;
+	SolVarCell   *svCell;
+	Vec          lbp, lbT;
 	PetscScalar  ***lp, ***lT;
 	PetscInt     i, j, k, jj, nx, ny, nz, sx, sy, sz, iter;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -1978,9 +1952,11 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].h = jr->svXZEdge[jj].s;
 	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].h = jr->svYZEdge[jj].s;
 
+	PetscCall(JacResGetSolution(jr, jr->gsol, NULL, NULL, NULL, &lbp, &lbT, _no_interp_));
+
 	// update pressure, temperature and stress on cells
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp, &lp));
-	PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lbp, &lp));
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, lbT, &lT));
 
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
@@ -1998,8 +1974,10 @@ PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx)
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp, &lp));
-	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT, &lT));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lbp, &lp));
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lbT, &lT));
+
+	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, &lbp, &lbT));
 
 	PetscFunctionReturn(0);
 }
@@ -2013,7 +1991,8 @@ PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart)
 	FDSTAG      *fs;
 	TSSol       *ts;
 	JacRes      *jr;
-	PetscScalar  lidtmax, gidtmax;
+	Vec         gvx, gvy, gvz;
+	PetscScalar lidtmax, gidtmax;
 
 	
 	PetscFunctionBeginUser;
@@ -2030,10 +2009,16 @@ PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart)
 
 	lidtmax = 0.0;
 
+	PetscCall(FDSTAGGetGlobalVectorFace(fs, &gvx, &gvy, &gvz));
+
+	PetscCall(FDSTAGSplitVectors(fs, jr->gsol, gvx, gvy, gvz, NULL));
+
 	// determine maximum local inverse time step
-	PetscCall(Discret1DgetMaxInvStep(&fs->dsx, fs->DA_X, jr->gvx, 0, &lidtmax));
-	PetscCall(Discret1DgetMaxInvStep(&fs->dsy, fs->DA_Y, jr->gvy, 1, &lidtmax));
-	PetscCall(Discret1DgetMaxInvStep(&fs->dsz, fs->DA_Z, jr->gvz, 2, &lidtmax));
+	PetscCall(Discret1DgetMaxInvStep(&fs->dsx, fs->DA_X, gvx, 0, &lidtmax));
+	PetscCall(Discret1DgetMaxInvStep(&fs->dsy, fs->DA_Y, gvy, 1, &lidtmax));
+	PetscCall(Discret1DgetMaxInvStep(&fs->dsz, fs->DA_Z, gvz, 2, &lidtmax));
+
+	PetscCall(FDSTAGRestoreGlobalVectorFace(fs, &gvx, &gvy, &gvz));
 
 	// synchronize
 	if(ISParallel(PETSC_COMM_WORLD))

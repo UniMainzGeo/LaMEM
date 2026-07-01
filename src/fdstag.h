@@ -260,6 +260,31 @@ PetscErrorCode FDSTAGGetLevelsLocalGridSize(
 		PetscInt &coarse_num_local_cells);
 
 //---------------------------------------------------------------------------
+// BUFFERS
+//---------------------------------------------------------------------------
+
+PetscErrorCode FDSTAGGetLocalVectorFace      (FDSTAG *fs, Vec *vx,  Vec *vy,  Vec *vz);
+PetscErrorCode FDSTAGRestoreLocalVectorFace  (FDSTAG *fs, Vec *vx,  Vec *vy,  Vec *vz);
+
+PetscErrorCode FDSTAGGetGlobalVectorFace     (FDSTAG *fs, Vec *vx,  Vec *vy,  Vec *vz);
+PetscErrorCode FDSTAGRestoreGlobalVectorFace (FDSTAG *fs, Vec *vx,  Vec *vy,  Vec *vz);
+
+PetscErrorCode FDSTAGGetLocalVectorEdge      (FDSTAG *fs, Vec *vxy, Vec *vxz, Vec *vyz);
+PetscErrorCode FDSTAGRestoreLocalVectorEdge  (FDSTAG *fs, Vec *vxy, Vec *vxz, Vec *vyz);
+
+PetscErrorCode FDSTAGGetGlobalVectorEdge     (FDSTAG *fs, Vec *vxy, Vec *vxz, Vec *vyz);
+PetscErrorCode FDSTAGRestoreGlobalVectorEdge (FDSTAG *fs, Vec *vxy, Vec *vxz, Vec *vyz);
+
+PetscErrorCode FDSTAGGetLocalVectorCenter    (FDSTAG *fs, Vec *vxx, Vec *vyy, Vec *vzz);
+PetscErrorCode FDSTAGRestoreLocalVectorCenter(FDSTAG *fs, Vec *vxx, Vec *vyy, Vec *vzz);
+
+PetscErrorCode FDSTAGCombineVectors          (FDSTAG *fs, Vec gf, Vec gfx, Vec gfy, Vec gfz, Vec gp);
+PetscErrorCode FDSTAGSplitVectors            (FDSTAG *fs, Vec gf, Vec gfx, Vec gfy, Vec gfz, Vec gp);
+
+PetscErrorCode FDSTAGSetEdgeCornerCenter     (FDSTAG *fs, Vec Center);
+PetscErrorCode FDSTAGSetEdgeCornerFaces      (FDSTAG *fs, Vec XFace, Vec YFace, Vec ZFace);
+
+//---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------
 
@@ -310,6 +335,9 @@ PetscErrorCode FDSTAGGetLevelsLocalGridSize(
 	(j) = (ID - (k)*(m)*(n))/m;         \
 	(i) =  ID - (k)*(m)*(n) - (j)*(m);
 
+#define SET_EDGE_CORNER(a, K, J, I, k, j, i, pmdof) \
+	a[K][J][I] = a[k][j][I] + a[k][J][i] + a[K][j][i] - 2.0*pmdof;
+
 //---------------------------------------------------------------------------
 
 // initialize standard access loop
@@ -356,18 +384,6 @@ PetscErrorCode FDSTAGGetLevelsLocalGridSize(
 	PetscCall(DMLocalToGlobalBegin(dm, lvec, ADD_VALUES, gvec)); \
 	PetscCall(DMLocalToGlobalEnd  (dm, lvec, ADD_VALUES, gvec));
 
-// create and initialize local vector, scatter ghost values, access array
-#define GET_INIT_LOCAL_VECTOR(dm, gvec, lvec, array) \
-	PetscCall(DMGetLocalVector(dm, &lvec)); \
-	PetscCall(DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec)); \
-	PetscCall(DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec)); \
-	PetscCall(DMDAVecGetArray(dm, lvec, &array));
-
-// close access & return local vector
-#define RESTORE_LOCAL_VECTOR(dm, lvec, array) \
-	PetscCall(DMDAVecRestoreArray(dm, lvec, &array)); \
-	PetscCall(DMRestoreLocalVector(dm, &lvec));
-
 //-----------------------------------------------------------------------------
 // WRAPPERS
 //-----------------------------------------------------------------------------
@@ -377,11 +393,7 @@ PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
 	PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,
 	PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da);
 
-
-//---------------------------------------------------------------------------
-
-
-// PetscErrorCode TestPeriodic(DM DA_X);
+PetscErrorCode DMGetLocalVectorClean(DM dm, Vec *g);
 
 //---------------------------------------------------------------------------
 

@@ -27,6 +27,7 @@ struct SolOptDB
 	PetscInt    view_solvers                   =  0;                         // show linear solver configuration
 	PetscInt    monitor_solvers                =  0;                         // show linear iteration convergence
 	PetscInt    set_linear_problem             =  0;                         // linear problem flag (skip nonlinear iteration)
+	PetscInt    continue_on_fail               =  0;                         // continue simulation if nonlinear solver diverged
 
 	PetscScalar nonlinear_tolerances[3]        =  { 1e-5, -1.0, 50.0  };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
 	PetscScalar linear_tolerances[3]           =  { 1e-6, -1.0, 200.0 };     // rtol, atol, maxit (-1 = automatic setting, only for atol)
