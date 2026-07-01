@@ -204,7 +204,7 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	PetscCall(DMDASetInterpolationType(jr->DA_T, DMDA_Q0));
 
 	// create global temperature vector
-	PetscCall(DMCreateGlobalVector(jr->DA_T, &jr->gT_));
+	PetscCall(DMCreateGlobalVector(jr->DA_T, &jr->gT));
 
 	// temperature diffusion cases only
 	if(!jr->ctrl.actTemp) PetscFunctionReturn(0);
@@ -249,7 +249,7 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	PetscFunctionBeginUser;
 
 	PetscCall(DMDestroy (&jr->DA_T));
-	PetscCall(VecDestroy(&jr->gT_));
+	PetscCall(VecDestroy(&jr->gT));
 
 	// temperature diffusion cases only
 	if(!jr->ctrl.actTemp) PetscFunctionReturn(0);
@@ -283,7 +283,7 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	fs = jr->fs;
 	bc = jr->bc;
 
-	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->gT_,  &gT));
+	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->gT,  &gT));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT));
 
 	iter = 0;
@@ -302,7 +302,7 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->gT_,  &gT));
+	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->gT,  &gT));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT));
 
 	PetscFunctionReturn(0);
@@ -331,7 +331,7 @@ PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT)
 	mcz = fs->dsz.tcels - 1;
 
 	// copy global temperature solution
-	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->gT_,  &gT));
+	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->gT,  &gT));
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT,       &T));
 
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
@@ -342,7 +342,7 @@ PetscErrorCode JacResGetTemp(JacRes *jr, Vec lT)
 	}
 	END_STD_LOOP
 
-	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->gT_, &gT));
+	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->gT, &gT));
 	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lT,      &T));
 
 	// exchange internal ghost points

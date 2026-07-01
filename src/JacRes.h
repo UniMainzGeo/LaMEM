@@ -116,7 +116,7 @@ enum GWLevelType
 
 };
 
-// solutino access mode
+// solution access mode
 enum AccessMode
 {
 	_interp_,    // assigned edges and corners for interpolation
@@ -215,7 +215,7 @@ struct JacRes
 	// temperature parameters
 	//=======================
 
-	Vec gT_;   // temperature solution vector (global)
+	Vec gT;   // temperature solution vector (global)
 	DM  DA_T; // temperature cell-centered grid with star stencil
 	Mat Att;  // temperature preconditioner matrix
 	Vec dT;   // temperature increment (global)

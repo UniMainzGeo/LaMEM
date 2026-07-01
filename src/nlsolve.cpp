@@ -353,7 +353,7 @@ PetscErrorCode SNESLineSearchPreCheck(SNESLineSearch linesearch, Vec x, Vec d, P
 		PetscCall(KSPSetOperators(jr->tksp, jr->Att, jr->Att));
 		PetscCall(KSPSetUp(jr->tksp));
 		PetscCall(KSPSolve(jr->tksp, jr->ge, jr->dT));
-		PetscCall(VecAXPY (jr->gT_, -1.0, jr->dT));
+		PetscCall(VecAXPY (jr->gT, -1.0, jr->dT));
 	}
 
 	PetscFunctionReturn(0);

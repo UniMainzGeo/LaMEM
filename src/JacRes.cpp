@@ -320,7 +320,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	// set initial guess
 	PetscCall(VecZeroEntries(jr->gsol));
-	PetscCall(VecZeroEntries(jr->gT_));
+	PetscCall(VecZeroEntries(jr->gT));
 
 	PetscFunctionReturn(0);
 }
@@ -1793,7 +1793,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	{
 		PetscCall(JacResGetTempRes(jr,jr->ts->dt));
 		PetscCall(VecNorm(jr->ge, NORM_2, &e2));
-		PetscCall(VecNorm(jr->gT_, NORM_2, &T2));
+		PetscCall(VecNorm(jr->gT, NORM_2, &T2));
 	}
 
 	// print

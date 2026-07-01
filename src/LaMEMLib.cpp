@@ -868,7 +868,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 		PrintStart(&t,"Computing steady-state temperature distribution", NULL);
 
 		// ignore existing temperature initialization
-		PetscCall(VecZeroEntries(jr->gT_));
+		PetscCall(VecZeroEntries(jr->gT));
 
 		// compute steady-state temperature distribution
 		PetscCall(LaMEMLibSolveTemp(lm, 0.0));
@@ -1004,7 +1004,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	PetscCall(KSPDestroy(&tksp));
 
 	// store computed temperature
-	PetscCall(VecAXPY(jr->gT_, -1.0, jr->dT));
+	PetscCall(VecAXPY(jr->gT, -1.0, jr->dT));
 
 	// copy temperature to markers
 	PetscCall(ADVMarkSetTempVector(actx));
