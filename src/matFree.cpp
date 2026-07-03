@@ -29,7 +29,6 @@ PetscErrorCode MatFreeApplyPicard(Mat A, Vec x, Vec f)
 	MatData     *md;
 	PetscScalar  cfInvEta;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -50,7 +49,6 @@ PetscErrorCode MatFreeApplyPreconditioner(Mat A, Vec x, Vec f)
 	MatDataPC   *mdpc;
 	PetscScalar  cfInvEta;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -70,7 +68,6 @@ PetscErrorCode MatFreeGetDiagonal(Mat A, Vec v)
 
 	MatDataPC *mdpc;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatShellGetContext(A, (void**)&mdpc));
@@ -86,7 +83,6 @@ PetscErrorCode MatFreeApplyRestrict(Mat R, Vec vf, Vec vc)
 
 	MGInterp *mgi;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -103,7 +99,6 @@ PetscErrorCode MatFreeUpdateRestrict(Mat R, Vec vf, Vec vcb, Vec vc)
 
 	MGInterp *mgi;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -130,7 +125,6 @@ PetscErrorCode MatFreeApplyProlong(Mat P, Vec vc, Vec vf)
 
 	MGInterp *mgi;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -147,7 +141,6 @@ PetscErrorCode MatFreeUpdateProlong(Mat P, Vec vc, Vec vfb, Vec vf)
 
 	MGInterp *mgi;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -176,7 +169,6 @@ PetscErrorCode MatFreeComputeLinearOperator(MatData *md, Vec x, Vec f, PetscScal
 	Vec      vx, vy, vz, p;
 	Vec      fx, fy, fz, c;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -222,7 +214,6 @@ PetscErrorCode MatFreeComputeRestrict(MGInterp *mgi, Vec vf, Vec vc)
 	Vec       fx, fy, fz, fp;
 	Vec       cx, cy, cz, cp;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -269,7 +260,6 @@ PetscErrorCode MatFreeComputeProlong(MGInterp *mgi, Vec vc, Vec vf)
 	Vec       fx, fy, fz, fp;
 	Vec       cx, cy, cz, cp;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -315,7 +305,6 @@ PetscErrorCode MatFreeComputeDiagonal(MatData *md, Vec d)
 	FDSTAG  *fs;
 	Vec      dx, dy, dz, dp;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -353,7 +342,6 @@ PetscErrorCode MatFreeSplitVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz, Ve
 	Vec                gvx, gvy, gvz;
 	const PetscScalar *va, *iter;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
@@ -415,7 +403,6 @@ PetscErrorCode MatFreeAssembleVec(MatData *md, Vec v, Vec lvx, Vec lvy, Vec lvz,
 	FDSTAG *fs;
 	Vec     gvx, gvy, gvz;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
@@ -449,7 +436,6 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 	PetscInt     i, num, *list;
 	PetscScalar *vx, *vy, *vz, *vp, *va, *iter;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
@@ -522,7 +508,6 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
 	PetscScalar cf[6];
 
-	
 	PetscFunctionBeginUser;
 
 	fs     = md->fs;     // grid context
@@ -799,7 +784,6 @@ PetscErrorCode MatFreeEvaluateRestrict(
 	PetscScalar ***fxa, ***fya, ***fza, ***fpa;
 	PetscScalar ***cxa, ***cya, ***cza, ***cpa;
 
-	
 	PetscFunctionBeginUser;
 
 	// access vectors in fine grid
@@ -984,7 +968,6 @@ PetscErrorCode MatFreeEvaluateProlong(
 	PetscScalar ***fxa, ***fya, ***fza, ***fpa;
 	PetscScalar ***cxa, ***cya, ***cza, ***cpa;
 
-	
 	PetscFunctionBeginUser;
 
 	// access vectors in fine grid
@@ -1193,7 +1176,6 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context

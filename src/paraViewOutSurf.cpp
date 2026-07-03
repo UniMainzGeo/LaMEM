@@ -24,7 +24,6 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 {
 	char filename[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// free surface cases only
@@ -73,7 +72,6 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 	FDSTAG   *fs;
 	PetscInt  rx, ry, sx, sy, nx, ny;
 
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -98,7 +96,6 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 {
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -111,7 +108,6 @@ PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime)
 {
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -360,7 +356,6 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	PetscScalar ***topo, cf;
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
-	
 	PetscFunctionBeginUser;
 
 	L    = 0;
@@ -402,7 +397,6 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	PetscScalar ***vx, ***vy, ***vz, cf;
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
-	
 	PetscFunctionBeginUser;
 
 	L    = 0;
@@ -448,7 +442,6 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	PetscScalar ***topo, cf;
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
-	
 	PetscFunctionBeginUser;
 
 	L    = 0;
@@ -488,7 +481,6 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	PetscScalar ***topo, avg_topo, cf;
 	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
-	
 	PetscFunctionBeginUser;
 
 	L    = 0;

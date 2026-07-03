@@ -154,7 +154,6 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	Dike     *dike;
 	PetscInt  ID;
 	Scaling  *scal;
-	
 	PetscFunctionBeginUser;
 
 	// access context           

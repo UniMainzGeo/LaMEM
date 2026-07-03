@@ -24,7 +24,6 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 {
 	char filename[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// check advection type
@@ -55,7 +54,6 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 //---------------------------------------------------------------------------
 PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime)
 {
-	
 	PetscFunctionBeginUser;
 
 	// check activation

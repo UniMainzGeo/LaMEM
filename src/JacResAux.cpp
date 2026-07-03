@@ -108,7 +108,6 @@ PetscErrorCode JacResGetEHmax(JacRes *jr, Vec cx, Vec cy)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar v1[3], v2[3], exx, eyy, exy, d1, d2;
 	PetscScalar ***dx, ***dy, ***dxy;
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -233,7 +232,6 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	PetscScalar ***lp, ***ibuff, *lbuff, dz, dp, g, rho;
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, iter, L;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -335,7 +333,6 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	PetscScalar ztop, g, gwLevel=0.0, rho_fluid, depth, p_hydro, rp_cv, rp;
 	PetscInt    numPhases, i, j, k, iter, iphase, sx, sy, sz, nx, ny, nz;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize

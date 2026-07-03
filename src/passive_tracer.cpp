@@ -451,7 +451,6 @@ PetscErrorCode ADVAdvectPassiveTracer(AdvCtx *actx)
 	PetscLogDouble  t;
 	vector <spair>  dist;
 	spair d;
-	
 	PetscFunctionBeginUser;
 
 	AirPhase = -1;
@@ -1073,7 +1072,6 @@ PetscErrorCode ADVPtrDestroy(AdvCtx *actx)
 //---------------------------------------------------------------------------
 PetscErrorCode Passive_Tracer_WriteRestart(AdvCtx *actx, FILE *fp)
 {
-	
 	PetscFunctionBeginUser;
 
 	if(actx->jr->ctrl.Passive_Tracer)

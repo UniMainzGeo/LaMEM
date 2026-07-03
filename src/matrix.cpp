@@ -44,7 +44,6 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space)
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -251,7 +250,6 @@ PetscErrorCode PMatAssemble(MatData *md, PetscScalar pgamma, Mat A)
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -552,7 +550,6 @@ PetscErrorCode PMatDiagComp(MatData *md, PetscScalar pgamma, Mat M)
 	PetscScalar ***ip;
 	PetscScalar ***veta;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -606,7 +603,6 @@ PetscErrorCode PMatMonoCreate(
 {
 	DOFIndex *dof;
 
-	
 	PetscFunctionBeginUser;
 
 	// store evaluation context
@@ -631,7 +627,6 @@ PetscErrorCode PMatMonoCreate(
 //---------------------------------------------------------------------------
 PetscErrorCode PMatMonoDestroy(PMatMono *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatDestroy(&P->A));
@@ -643,7 +638,6 @@ PetscErrorCode PMatMonoDestroy(PMatMono *P)
 //---------------------------------------------------------------------------
 PetscErrorCode PMatMonoAssemble(PMatMono *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(PMatAssemble(P->md, P->pgamma, P->A));
@@ -662,7 +656,6 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 
 	PMatMono *P;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatShellGetContext(J, (void**)&P));
@@ -698,7 +691,6 @@ PetscErrorCode PMatBlockCreate(
 	PetscInt    *Apv_d_nnz, *Apv_o_nnz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
-	
 	PetscFunctionBeginUser;
 
 	// store evaluation context
@@ -949,7 +941,6 @@ PetscErrorCode PMatBlockCreate(
 //---------------------------------------------------------------------------
 PetscErrorCode PMatBlockDestroy(PMatBlock *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatDestroy(&P->Avv));
@@ -1012,7 +1003,6 @@ PetscErrorCode PMatBlockAssemble(PMatBlock *P)
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 
-	
 	PetscFunctionBeginUser;
 
 	// accees context
@@ -1365,7 +1355,6 @@ PetscErrorCode PMatBlockPicard(Mat J, Vec x, Vec r)
 	//=======================================================================
 	PMatBlock *P;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatShellGetContext(J, (void**)&P));

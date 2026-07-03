@@ -46,7 +46,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	vector <spair>    dist;
 	vector <Marker>   mark;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(PetscTime(&t0));
@@ -197,7 +196,6 @@ PetscErrorCode ADVMarkClone(
 	PetscScalar       xc[3], *x;
 	PetscInt          I, J, K, j, npx, npy, imark, nmark, *markind;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -270,7 +268,6 @@ PetscErrorCode ADVMarkCheckMerge(
 
 	PetscInt j, jb, je, k, sz, phase, nmark;
 
-	
 	PetscFunctionBeginUser;
 
 	// copy marker phase IDs
@@ -353,7 +350,6 @@ PetscErrorCode ADVMarkMerge(
 	PetscInt     j, k, jmin, kmin;
 	PetscScalar  d, dmin;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize storage size
@@ -410,7 +406,6 @@ PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vect
 	Marker   *markers;
 	PetscInt  nummark, nrecv, ndel;
 
-	
 	PetscFunctionBeginUser;
 
 	// access storage
@@ -477,7 +472,6 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
     spair           d;
 	vector <spair>  dist;
 
-	
 	PetscFunctionBeginUser;
 
 	// free-surface cases only
@@ -634,7 +628,6 @@ PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 	PetscInt     nCells, nMarks, numPhases, sedPhase, AirPhase, ii, jj, ID;
 	PetscScalar  maxMark, ***phase;
 
-	
 	PetscFunctionBeginUser;
 
 	fs        = actx->fs;

@@ -29,7 +29,6 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 	PetscInt       lnv, stv;
 	const PetscInt *lx, *ly, *lz;
 
-	
 	PetscFunctionBeginUser;
 
 	// store evaluation context
@@ -83,7 +82,6 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 //---------------------------------------------------------------------------
 PetscErrorCode wBFBTDestroy(wBFBTData *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(DMDestroy (&P->DA_P));
@@ -108,7 +106,6 @@ PetscErrorCode wBFBTAssemble(wBFBTData *P)
 	PetscScalar ***eta, ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context variables

@@ -1434,7 +1434,6 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 //---------------------------------------------------------------------------
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx)
 {
-	
 	PetscFunctionBeginUser;
 
 	// initialize
@@ -1515,7 +1514,6 @@ PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, ModParam *IOpar
 	JacRes   *jr;
 	FreeSurf *surf;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(SNESGetApplicationContext(snes, &nl));
@@ -3637,7 +3635,6 @@ PetscErrorCode cellConstEqFD(
 	Controls    *ctrl;
 	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -3729,7 +3726,6 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 	PetscScalar  Inin=1.0,Inieta=1.0,ViscTemp=1.0;
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -3964,7 +3960,6 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 	Material_t  *phases;
 	PetscInt     i, numPhases;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -4044,7 +4039,6 @@ PetscErrorCode edgeConstEqFD(
 	SolVarDev   *svDev;
 	PetscScalar  t, eta_st;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -4089,7 +4083,6 @@ PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
 {
 	PetscScalar 	*vals, *dF_vec;
 	PetscInt  		i, num, *list;
-	
 	PetscFunctionBeginUser;
 	
 	// Apply BC's to dF vector

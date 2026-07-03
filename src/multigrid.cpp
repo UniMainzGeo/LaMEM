@@ -24,7 +24,6 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md, Mat A)
 {
 	PetscInt ln=0, lnfine=0;
 
-	
 	PetscFunctionBeginUser;
 
 	//===================
@@ -151,7 +150,6 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, MatData *md, Mat A)
 //---------------------------------------------------------------------------
 PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 {
-	
 	PetscFunctionBeginUser;
 
 	if(lvl->md->coarsened)
@@ -190,7 +188,6 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 //---------------------------------------------------------------------------
 PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine)
 {
-	
 	PetscFunctionBeginUser;
 
 	// set evaluation context
@@ -209,7 +206,6 @@ PetscErrorCode MGInterpCreate(MGInterp *mgi, MatData *coarse, MatData *fine)
 //---------------------------------------------------------------------------
 PetscErrorCode MGInterpDestroy(MGInterp *mgi)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecDestroy(&mgi->wc));
@@ -222,7 +218,6 @@ PetscErrorCode MGInterpDestroy(MGInterp *mgi)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataPCCreate(MatDataPC *mdpc, MatData *md)
 {
-	
 	PetscFunctionBeginUser;
 
 	// set evaluation context
@@ -237,7 +232,6 @@ PetscErrorCode MatDataPCCreate(MatDataPC *mdpc, MatData *md)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataPCDestroy(MatDataPC *mdpc)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecDestroy(&mdpc->D));
@@ -252,7 +246,6 @@ PetscErrorCode MGCreate(MG *mg, MatData *md, Mat A)
 	PetscInt i;
 	MGLevel  *fine;
 
-	
 	PetscFunctionBeginUser;
 
 	// clear object
@@ -301,7 +294,6 @@ PetscErrorCode MGDestroy(MG *mg)
 	PetscInt  i;
 	PetscBool flg;
 
-	
 	PetscFunctionBeginUser;
 
 	// view preconditioner if required
@@ -330,7 +322,6 @@ PetscErrorCode MGSetup(MG *mg)
 	MGLevel *lvl, *fine;
 	PetscInt i, petsc_mg_level;
 
-	
 	PetscFunctionBeginUser;
 
 	for(i = 0, petsc_mg_level = mg->nlvl-1; i < mg->nlvl; i++, petsc_mg_level--)
@@ -410,7 +401,6 @@ PetscErrorCode MGApply(PC pc, Vec x, Vec y)
 {
 	MG *mg;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(PCShellGetContext(pc, (void**)&mg));
@@ -429,7 +419,6 @@ PetscErrorCode MGGetNumLevels(MG *mg, MatData *md)
 	PetscBool opt_set;
 	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels, nlmf;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = md->fs;
@@ -509,7 +498,6 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	
 	PetscFunctionBeginUser;
 
 	R      = lvl->R;
@@ -799,7 +787,6 @@ PetscErrorCode MGLevelSetupProlong3D(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	
 	PetscFunctionBeginUser;
 
 	P      = lvl->P;
@@ -1075,7 +1062,6 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	
 	PetscFunctionBeginUser;
 
 	R      = lvl->R;
@@ -1313,7 +1299,6 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	
 	PetscFunctionBeginUser;
 
 	P      = lvl->P;
@@ -1620,7 +1605,6 @@ PetscErrorCode compareVecs(Vec va, Vec vb)
 	Vec       diff;
 	PetscReal nrm;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecDuplicate(va, &diff));
@@ -1644,7 +1628,6 @@ PetscErrorCode genRandVec(MatData *md, Vec *v)
 {
 	PetscRandom  rctx;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &rctx));
@@ -1663,7 +1646,6 @@ PetscErrorCode VecSetBC(MatData *md, Vec v)
 	PetscInt     i, num, *list;
 	PetscScalar  *va;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecGetArray(v, &va));
@@ -1695,7 +1677,6 @@ PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P)
 	PetscInt nc, nf;
 	MGInterp mgi;
 
-	
 	PetscFunctionBeginUser;
 
 	nc = coarse->fs->dof.ln;
@@ -1783,7 +1764,6 @@ PetscErrorCode TestInterpBC(MatData *coarse, MatData *fine, Mat P)
 	Vec rc, rcbc;
 	Vec wf, wfbc;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MGInterpCreate(&mgi, coarse, fine));

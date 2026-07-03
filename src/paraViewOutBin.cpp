@@ -300,7 +300,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	OutMask *omask;
 	PetscInt i, j, np, numPhases, maxPhaseID;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -452,7 +451,6 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	OutMask  *omask;
 	PetscInt  i, iter;
 
-	
 	PetscFunctionBeginUser;
 
 	jr     =  pvout->jr;
@@ -533,7 +531,6 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime)
 {
-	
 	PetscFunctionBeginUser;
 
 	// update .pvd file if necessary
@@ -756,7 +753,6 @@ PetscErrorCode UpdatePVDFile(
 {
 	FILE        *fp;
 	char        *fname;
-	
 	PetscFunctionBeginUser;
 
 	// check whether pvd is requested

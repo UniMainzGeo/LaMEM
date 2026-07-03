@@ -24,7 +24,6 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 	PetscScalar angle, area, volume, energy, power;
 	PetscScalar yr, Myr, km, cm, cm_yr, MPa, mW;
 
-	
 	PetscFunctionBeginUser;
 
 	// set unit scaling

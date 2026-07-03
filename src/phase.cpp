@@ -24,7 +24,6 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	PetscInt jj;
 
-	
 	PetscFunctionBeginUser;
 
 	//===============
@@ -161,7 +160,6 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Soft_t   *s;
 	PetscInt  ID;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -249,7 +247,6 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -830,7 +827,6 @@ PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key
 {
 	// read profile name from file
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(getStringParam(fb, _OPTIONAL_, key, name, NULL));
@@ -874,7 +870,6 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	PetscScalar      d0, p;
 	PetscScalar      C_OH_0, r;
 
-	
 	PetscFunctionBeginUser;
 
 	// check for empty string
@@ -991,7 +986,6 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	PetscInt         MPa;
 	PetscScalar      C_OH_0, r;
 
-	
 	PetscFunctionBeginUser;
 
 	// check for empty string
@@ -1380,7 +1374,6 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	ExpType  type;
 	PetscInt MPa;
 
-	
 	PetscFunctionBeginUser;
 
 	// check for empty string

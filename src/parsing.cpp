@@ -22,7 +22,6 @@ PetscErrorCode FBLoad(FB **pfb)
 	PetscBool found;
 	char      filename[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(PetscMalloc(sizeof(FB), &fb));
@@ -106,7 +105,6 @@ PetscErrorCode FBDestroy(FB **pfb)
 {
 	FB *fb;
 
-	
 	PetscFunctionBeginUser;
 
 	// get pointer
@@ -133,7 +131,6 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	size_t    len, maxlen;
 	PetscInt  i, nchar, nlines, comment, cnt, block, *fblock;
 
-	
 	PetscFunctionBeginUser;
 
 	// process buffer
@@ -239,7 +236,6 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 
 	PetscInt i, nbeg, nend;
 
-	
 	PetscFunctionBeginUser;
 
 	nbeg = 0;
@@ -293,7 +289,6 @@ PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const c
 //---------------------------------------------------------------------------
 PetscErrorCode FBFreeBlocks(FB *fb)
 {
-	
 	PetscFunctionBeginUser;
 
 	fb->nblocks = 0;
@@ -521,7 +516,6 @@ PetscErrorCode getIntParam(
 	PetscBool found;
 	char     *dbkey;
 
-	
 	PetscFunctionBeginUser;
 
 	if(num < 1) PetscFunctionReturn(0);
@@ -587,7 +581,6 @@ PetscErrorCode getScalarParam(
 	PetscBool found;
 	char     *dbkey;
 
-	
 	PetscFunctionBeginUser;
 
 	if(num < 1) PetscFunctionReturn(0);
@@ -645,7 +638,6 @@ PetscErrorCode getStringParam(
 	PetscBool found;
 	char     *dbkey;
 
-	
 	PetscFunctionBeginUser;
 
 	found = PETSC_FALSE;
@@ -689,7 +681,6 @@ PetscErrorCode  PetscOptionsGetCheckString(
 {
 	// prohibit empty parameters & check for overruns (two null characters are reserved in the end)
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(PetscOptionsGetString(NULL, NULL, key, str, _str_len_, set));

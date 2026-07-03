@@ -138,7 +138,6 @@ PetscErrorCode NLSolDestroy(SNES *p_snes)
 	NLSol *nl;
 	Mat    J, P;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(SNESGetApplicationContext((*p_snes), &nl));
@@ -160,7 +159,6 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	NLSol  *nl;
 	JacRes *jr;
 
-	
 	PetscFunctionBeginUser;
 
 	// clear unused parameters
@@ -185,7 +183,6 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	Controls    *ctrl;
 	PetscScalar nrm;
 
-	
 	PetscFunctionBeginUser;
 
 	// clear unused parameters
@@ -415,7 +412,6 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 	KSP                 ksp;
 	KSPConvergedReason  ksp_reason;
 	PetscInt            div_severe, stop;
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(SNESGetApplicationContext(snes, &nl));

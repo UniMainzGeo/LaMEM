@@ -26,7 +26,6 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 {
 	char filename[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -69,7 +68,6 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 //---------------------------------------------------------------------------
 PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar ttime)
 {
-	
 	PetscFunctionBeginUser;
 
 	// check activation

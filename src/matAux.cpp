@@ -23,7 +23,6 @@ PetscErrorCode MatAIJCreate(
 	PetscInt o_nz, const PetscInt o_nnz[],
 	Mat *P)
 {
-	
 	PetscFunctionBeginUser;
 
 	// create matrix
@@ -49,7 +48,6 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 {
 	PetscInt i, ii;
 
-	
 	PetscFunctionBeginUser;
 
 	// preallocate
@@ -74,7 +72,6 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 //---------------------------------------------------------------------------
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatSetOption(P, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_FALSE));
@@ -100,7 +97,6 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 	PetscScalar *v;
 	PetscInt     i, j, sz, ln, iter, nullsp_sz, lbsz[_max_nullsp_sz_];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -331,7 +327,6 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 	PetscInt     fs,  gs,  bs;
 	PetscScalar *fp, *gp;
 
-	
 	PetscFunctionBeginUser;
 
 	// get sizes of the blocks

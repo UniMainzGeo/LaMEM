@@ -406,7 +406,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar ***vx,***vy,***vz;
 	PetscScalar ycell;
 	PetscInt    jcell;
-	
 	PetscFunctionBeginUser;
 
 	// access residual context variables
@@ -596,7 +595,6 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar ***lk, ***bcT, ***buff, ***T;
 	PetscScalar ycell;
 	PetscInt    jcell;
-	
 	PetscFunctionBeginUser;
 
 	// access residual context variables

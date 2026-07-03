@@ -69,7 +69,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	PetscInt nmark_avd[ ] = { 0, 0, 0 };
 	char     msetup[_str_len_], interp[_str_len_], mctrl[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// set advection type
@@ -247,7 +246,6 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	PetscInt maxPhaseID;
 	char     advect[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize
@@ -313,7 +311,6 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 {
 	// read advection object from restart database
 
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -384,7 +381,6 @@ PetscErrorCode ADVDestroy(AdvCtx *actx)
 {
 	// destroy advection context
 
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -410,7 +406,6 @@ PetscErrorCode ADVSetBGPhase(AdvCtx *actx)
 	JacRes   *jr;
 	PetscInt  i, n, svBuffSz, bgPhase;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -444,7 +439,6 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 
 	Marker *markers;
 
-	
 	PetscFunctionBeginUser;
 
 	// check whether current storage is insufficient
@@ -484,7 +478,6 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	// MAJOR ADVECTION ROUTINE
 	//=======================================================================
 
-	
 	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
@@ -512,7 +505,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	// MAJOR ADVECTION REMAPPING
 	//=======================================================================
 
-	
 	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE)
@@ -582,7 +574,6 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 	// Exchange markers between the processors resulting from the position change
 	//=======================================================================
 
-	
 	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
@@ -651,7 +642,6 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
 	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, d, dt;
 	PetscInt     healID, phase_ID;
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -1002,7 +992,6 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -1051,7 +1040,6 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	PetscInt     i, cnt, lrank;
 	PetscInt     grank;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -1121,7 +1109,6 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -1164,7 +1151,6 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 //---------------------------------------------------------------------------
 PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx)
 {
-	
 	PetscFunctionBeginUser;
 
 	// destroy buffers
@@ -1182,7 +1168,6 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 	Marker   *markers, *recvbuf;
 	PetscInt *idel, nummark, nrecv, ndel;
 
-	
 	PetscFunctionBeginUser;
 
 	// access storage
@@ -1248,7 +1233,6 @@ PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
 	PetscScalar *X;
 	PetscInt     i, ID, I, J, K, M, N, nummark;
 
-	
 	PetscFunctionBeginUser;
 
 	// get context
@@ -1331,7 +1315,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscRandom    rctx;
 	PetscLogDouble t0,t1;
 
-	
 	PetscFunctionBeginUser;
 
 	bc = actx->jr->bc;
@@ -1596,7 +1579,6 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	JacRes   *jr;
 	PetscInt  ii, jj, numPhases;
 
-	
 	PetscFunctionBeginUser;
 
 	fs        = actx->fs;
@@ -1660,7 +1642,6 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 	PetscInt     nx, ny, nCells, numPhases;
 	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w = 0.0;
 
-	
 	PetscFunctionBeginUser;
 
 	fs        = actx->fs;
@@ -1903,7 +1884,6 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 	Marker    *P;
 	PetscInt  jj;
 	PetscInt  numPhases;
-	
 	PetscFunctionBeginUser;
 
 	numPhases = actx->dbm->numPhases;
@@ -1994,7 +1974,6 @@ PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart)
 	Vec         gvx, gvy, gvz;
 	PetscScalar lidtmax, gidtmax;
 
-	
 	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE)

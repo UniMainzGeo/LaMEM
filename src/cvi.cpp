@@ -33,7 +33,6 @@ PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 	//=======================================================================
 	AdvVelCtx vi;
 
-	
 	PetscFunctionBeginUser;
 
 	// interpolate P,T - needs update
@@ -122,7 +121,6 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 {
 	PetscScalar  dt;
 
-	
 	PetscFunctionBeginUser;
 
 	//=======================================================================
@@ -198,7 +196,6 @@ PetscErrorCode ADVelRungeKuttaStep(AdvVelCtx *vi, PetscScalar dt, PetscScalar a,
 {
 	// routines to perform one runge-kutta step
 
-	
 	PetscFunctionBeginUser;
 
 	// 1. New position
@@ -223,7 +220,6 @@ PetscErrorCode ADVelCreate(AdvCtx *actx, AdvVelCtx *vi)
 {
 	// create advection velocity context
 
-	
 	PetscFunctionBeginUser;
 
 	vi->fs   = actx->fs;
@@ -279,7 +275,6 @@ PetscErrorCode ADVelDestroy(AdvVelCtx *vi)
 {
 	// destroy advection velocity context
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(PetscFree(vi->interp));
@@ -297,7 +292,6 @@ PetscErrorCode ADVelExchange(AdvVelCtx *vi)
 {
 	// exchange interpolated marker positions between the processors
 
-	
 	PetscFunctionBeginUser;
 
 	// count number of markers to be sent to each neighbor domain
@@ -444,7 +438,6 @@ PetscErrorCode ADVelCollectIndices(AdvCtx *actx, AdvVelCtx *vi)
 
 	PetscInt     jj, ind, ndel, *p;
 
-	
 	PetscFunctionBeginUser;
 
 	// number to delete
@@ -489,7 +482,6 @@ PetscErrorCode ADVelDeleteOutflow(AdvVelCtx *vi)
 	PetscInt  grank;
 	FDSTAG    *fs;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = vi->fs;
@@ -580,7 +572,6 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
-	
 	PetscFunctionBeginUser;
 
 	fs = vi->fs;
@@ -674,7 +665,6 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 	MPI_Request srequest[_num_neighb_];
 	MPI_Request rrequest[_num_neighb_];
 
-	
 	PetscFunctionBeginUser;
 
 	fs = vi->fs;
@@ -717,7 +707,6 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 //---------------------------------------------------------------------------
 PetscErrorCode ADVelDestroyMPIBuff(AdvVelCtx *vi)
 {
-	
 	PetscFunctionBeginUser;
 
 	// destroy buffers
@@ -739,7 +728,6 @@ PetscErrorCode ADVelCollectGarbage(AdvVelCtx *vi)
 	VelInterp   *interp, *recvbuf;
 	PetscInt    *idel, nmark, nrecv, ndel;
 
-	
 	PetscFunctionBeginUser;
 
 	// access storage
@@ -803,7 +791,6 @@ PetscErrorCode ADVelReAllocStorage(AdvVelCtx *vi, PetscInt nmark)
 	PetscInt     nbuff;
 	VelInterp   *interp;
 
-	
 	PetscFunctionBeginUser;
 
 	// check whether current storage is insufficient
@@ -853,7 +840,6 @@ PetscErrorCode ADVelMapMarkToCells(AdvVelCtx *vi)
 	PetscInt     i, ID, I, J, K, M, N;
 	PetscInt    *numMarkCell, *m, p;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = vi->fs;
@@ -912,7 +898,6 @@ PetscErrorCode ADVelInterpMain(AdvVelCtx *vi)
 	//=======================================================================
 	// VELOCITY INTERPOLATION ROUTINE
 	//=======================================================================
-	
 	PetscFunctionBeginUser;
 
 	if     (vi->actx->interp == STAG   )  { PetscCall(ADVelInterpSTAG   (vi)); }

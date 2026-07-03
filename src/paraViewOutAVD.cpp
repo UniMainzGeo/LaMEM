@@ -159,7 +159,6 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 	PetscInt       nx, ny, nz;
 	PetscInt       i, count, claimed;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -632,7 +631,6 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 {
 	char filename[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// check advection type

@@ -68,7 +68,6 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	const char           *isa_name="isa";
 	const char           *shmax_name="shmax";
 
-	
 	PetscFunctionBeginUser;
 
 	// compute misift?

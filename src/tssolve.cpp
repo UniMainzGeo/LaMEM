@@ -324,7 +324,6 @@ PetscErrorCode TSSolGetPeriodSteps(
 {
 	PetscScalar  dt_avg, n_try, sum, err, corr;
 	PetscInt     i;
-	
 	PetscFunctionBeginUser;
 
 	// average timestep
@@ -370,7 +369,6 @@ PetscErrorCode TSSolMakeSchedule(TSSol *ts)
 	PetscScalar *schedule, *steps, *t, *dt_fix;
 	PetscScalar  dt_start, dt_end, span;
 	PetscInt     num_seg, iSeg, iter, n, i, maxSteps;
-	
 	PetscFunctionBeginUser;
 
 	// access content

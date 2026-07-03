@@ -216,7 +216,6 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	Scaling      *scal;
 	char         Parameter[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	scal = dbm -> scal;
@@ -303,7 +302,6 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 	PetscScalar  Box[6];
 	PetscInt 	 i;
 
-	
 	PetscFunctionBeginUser;
 
 	scal = dbm -> scal;
@@ -383,7 +381,6 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 	PetscInt     kk;
 	char         Parameter[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	scal = dbm -> scal;
@@ -1472,7 +1469,6 @@ PetscErrorCode DynamicPhTr_ReadRestart(JacRes *jr, FILE *fp)
 	Ph_trans_t *PhaseTrans;
 	PetscInt   nPtr, numPhTrn;
 
-	
 	PetscFunctionBeginUser;
 
 
@@ -1512,7 +1508,6 @@ PetscErrorCode DynamicPhTrDestroy(DBMat *dbm)
 	PetscInt   nPtr, numPhTrn;
 
 
-	
 	PetscFunctionBeginUser;
 
 	numPhTrn    =   dbm->numPhtr;

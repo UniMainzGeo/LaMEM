@@ -32,7 +32,6 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	PetscInt  nmarkx, nmarky, nmarkz, nummark;
 	PetscBool LoadPhaseDiagrams;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -125,7 +124,6 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 	PetscRandom  rctx;
 	PetscScalar  cf_rand;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -213,7 +211,6 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 	PetscRandom  rctx;
 	PetscScalar  cf_rand;
 
-	
 	PetscFunctionBeginUser;
 
 	// return if not set
@@ -274,7 +271,6 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	char           *filename, path[_str_len_];
 	PetscScalar    *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
 
-	
 	PetscFunctionBeginUser;
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
@@ -348,7 +344,6 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	PetscInt     *numMarkCell, rbuf[4], sbuf[4];
 	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numWrong, refMarkCell;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -555,7 +550,6 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	PetscInt       Ix, Iy, Iz;
 	PetscScalar    chTemp, Tshift;
 
-	
 	PetscFunctionBeginUser;
 
 	// get file name
@@ -749,7 +743,6 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscScalar    *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
 	PetscInt       imark, nummark, nfields;
 
-	
 	PetscFunctionBeginUser;
 
 	// get file name
@@ -835,7 +828,6 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	map<PetscInt, GeomPrim*> cgeom;
 	map<PetscInt, GeomPrim*>::iterator it, ie;
 
-	
 	PetscFunctionBeginUser;
 
 	ngeom      = 0;
@@ -1214,7 +1206,6 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	CtrlP          CtrlPoly;
 	PetscInt       VolID, nCP;
 
-	
 	PetscFunctionBeginUser;
 
 	// get file name
@@ -1568,7 +1559,6 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, PetscInt &nCP)
 {
 	PetscInt       jj;
-	
 	
 	PetscFunctionBeginUser;
 

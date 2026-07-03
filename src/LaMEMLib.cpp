@@ -52,7 +52,6 @@ PetscErrorCode LaMEMLibMain(void *param, FB *fb)
 	char           str[_str_len_];
 	PetscLogDouble cputime_start, cputime_end;
 
-	
 	PetscFunctionBeginUser;       
 
 	// start code
@@ -149,7 +148,6 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param, FB *fb)
 {
 	UNUSED(param);
 
-	
 	PetscFunctionBeginUser;
 
 	// create scaling object
@@ -207,7 +205,6 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param, FB *fb)
 //---------------------------------------------------------------------------
 PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm, FB *fb)
 {
-	
 	PetscFunctionBeginUser;
 
 	// create scaling object
@@ -232,7 +229,6 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 	PetscInt         rank;
 	char            *fileName;
 
-	
 	PetscFunctionBeginUser;
 
 	PrintStart(&t, "Loading restart database", NULL);
@@ -310,7 +306,6 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	char           *fileNameTmp;
 	PetscLogDouble t;
 
-	
 	PetscFunctionBeginUser;
 
 	if(!TSSolIsRestart(&lm->ts)) PetscFunctionReturn(0);
@@ -385,7 +380,6 @@ PetscErrorCode LaMEMLibDeleteRestart()
 	int          status;
 	PetscInt     exists;
 	char        *fileName;
-	
 	PetscFunctionBeginUser;
 
 	// get MPI processor rank
@@ -519,7 +513,6 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	char           *dirName;
 	PetscLogDouble t;
 
-	
 	PetscFunctionBeginUser;
 
 	scal = &lm->scal;
@@ -787,7 +780,6 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 {
 	PetscLogDouble t;
-	
 	PetscFunctionBeginUser;
 
 	// initialize boundary constraint vectors
@@ -946,7 +938,6 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	PetscScalar    norm;
 	PetscBool      set;
 	PetscInt       ts_ksp_atol_auto;
-	
 	PetscFunctionBeginUser;
 
 	// access context

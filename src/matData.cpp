@@ -21,7 +21,6 @@
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataCreate(MatData *md, JacRes *jr, idxtype idxmod)
 {
-	
 	PetscFunctionBeginUser;
 
 	// set coarse grid flag
@@ -54,7 +53,6 @@ PetscErrorCode MatDataCreateData(MatData *md)
 	FDSTAG   *fs;
 	DOFIndex *dof;
 
-	
 	PetscFunctionBeginUser;
 
 	fs  =  md->fs;
@@ -92,7 +90,6 @@ PetscErrorCode MatDataCreateData(MatData *md)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataDestroy(MatData *md)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecDestroy(&md->ivx));
@@ -126,7 +123,6 @@ PetscErrorCode MatDataDestroy(MatData *md)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataCoarsen(MatData *coarse, MatData *fine)
 {
-	
 	PetscFunctionBeginUser;
 
 	// set coarse grid flag
@@ -169,7 +165,6 @@ PetscErrorCode MatDataComputeIndex(MatData *md)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, stv=0, stp=0;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
-	
 	PetscFunctionBeginUser;
 
 	fs  =  md->fs;
@@ -255,7 +250,6 @@ PetscErrorCode MatDataComputeIndex(MatData *md)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataSetup(MatData *md, JacRes *jr)
 {
-	
 	PetscFunctionBeginUser;
 
 	// update time step
@@ -272,7 +266,6 @@ PetscErrorCode MatDataSetup(MatData *md, JacRes *jr)
 //---------------------------------------------------------------------------
 PetscErrorCode MatDataRestrict(MatData *coarse, MatData *fine, PetscInt MG2D)
 {
-	
 	PetscFunctionBeginUser;
 
 	// update time step
@@ -313,7 +306,6 @@ PetscErrorCode MatDataInitParam(MatData *md, JacRes *jr)
 	PetscScalar ***Kb, ***rho, ***eta, ***etaxy, ***etaxz, ***etayz;
 	PetscScalar IKdt, dt;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -413,7 +405,6 @@ PetscErrorCode MatDataRestrictParam3D(MatData *coarse, MatData *fine)
 	PetscScalar ***Kb,  ***rho,  ***eta, ***etaxy, ***etaxz, ***etayz;
 	PetscScalar sum;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize index bounds in fine grid
@@ -618,7 +609,6 @@ PetscErrorCode MatDataRestrictParam2D(MatData *coarse, MatData *fine)
 
 	UNUSED(fine);
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecZeroEntries(coarse->Kb));
@@ -646,7 +636,6 @@ PetscErrorCode MatDataRestrictBC3D(MatData *coarse, MatData *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	
 	PetscFunctionBeginUser;
 
 	// mark all variables unconstrained
@@ -813,7 +802,6 @@ PetscErrorCode MatDataRestrictBC2D(MatData *coarse, MatData *fine)
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
 
-	
 	PetscFunctionBeginUser;
 
 	// mark all variables unconstrained
@@ -968,7 +956,6 @@ PetscErrorCode MatDataListSPC(MatData *md)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context

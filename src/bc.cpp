@@ -246,7 +246,6 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 //---------------------------------------------------------------------------
 PetscErrorCode VelBoxCreate(VelBox *velbox, Scaling *scal, FB *fb)
 {
-	
 	PetscFunctionBeginUser;
 
 	//========================
@@ -309,7 +308,6 @@ PetscErrorCode VelCylinderCreate(VelCylinder *velcyl, Scaling *scal, FB *fb)
 {
 	char           str_type[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	//========================
@@ -412,7 +410,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	PetscScalar  bz;
 	char         inflow_temp[_str_len_],str_inflow[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -992,7 +989,6 @@ PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp)
 {
 	PetscInt nCells;
 
-	
 	PetscFunctionBeginUser;
 
 	nCells = bc->fs->nCells;
@@ -1031,7 +1027,6 @@ PetscErrorCode BCCreateData(BCCtx *bc)
 	FDSTAG   *fs;
 	DOFIndex *dof;
 
-	
 	PetscFunctionBeginUser;
 
 	fs  =  bc->fs;
@@ -1062,7 +1057,6 @@ PetscErrorCode BCCreateData(BCCtx *bc)
 //---------------------------------------------------------------------------
 PetscErrorCode BCDestroy(BCCtx *bc)
 {
-	
 	PetscFunctionBeginUser;
 
 	// destroy boundary conditions vectors (velocity, pressure, temperature)
@@ -1094,7 +1088,6 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 	struct          stat sb;
 	char           *filename, file[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -1142,7 +1135,6 @@ PetscErrorCode BCApply(BCCtx *bc)
 {
 	FDSTAG *fs;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -1228,7 +1220,6 @@ PetscErrorCode BCApplySPC(BCCtx *bc)
 	PetscScalar *sol, *vals;
 	PetscInt    i, num, *list;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(VecGetArray(bc->jr->gsol, &sol));
@@ -1270,7 +1261,6 @@ PetscErrorCode BCApplyPres(BCCtx *bc)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcp;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -1323,7 +1313,6 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 	PetscScalar xmin, xmax;
 	PetscScalar rad_plume_squared, rad_squared;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -1411,7 +1400,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, top_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -1599,7 +1587,6 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc)
 	PetscScalar Exy, Ryy, y, dy, vx;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -1721,7 +1708,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel, zOffset, velz;
 	PetscScalar Xbeg[4], Xend[4], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
 
-	
 	PetscFunctionBeginUser;
 
 	// check whether constraint is activated
@@ -1900,7 +1886,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	PetscScalar ***bcvx,  ***bcvy, ***bcvz;
 	PetscScalar z, bot, top, vel, velin, velout,relax_dist, velbot, veltop, time;
 
-	
 	PetscFunctionBeginUser;
 
 	// check whether constraint is activated
@@ -2090,7 +2075,6 @@ PetscErrorCode BCApplyVelBox(BCCtx *bc)
 	PetscScalar x, y, z, cx, cy, cz, dx, dy, dz, t, vx, vy, vz;
 	PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
 
-	
 	PetscFunctionBeginUser;
 
 	// skip initial guess
@@ -2220,7 +2204,6 @@ PetscErrorCode BCApplyVelCylinder(BCCtx *bc)
 	PetscScalar a, ax, ay, az, px, py, pz, npc, dx, dy, dz, dr, rr;
 	PetscScalar velType;
 
-	
 	PetscFunctionBeginUser;
 
 	// skip initial guess
@@ -2427,7 +2410,6 @@ PetscErrorCode BCApplyPhase(BCCtx *bc)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -2482,7 +2464,6 @@ PetscErrorCode BCApplyCells(BCCtx *bc)
 	PetscInt      i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar   ***bcvx,  ***bcvy,  ***bcvz;
 
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -2537,7 +2518,6 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, *SPCVals;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -2746,7 +2726,6 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 	PetscScalar Exx, Eyy, Ezz;
 	PetscScalar Rxx, Ryy, Rzz;
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -2772,7 +2751,6 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	PetscScalar Temp_age,k_thermal,dT_adiabatic,Z_Top,Tbot;
 	PetscInt phase_inflow;
 	PetscScalar T_inflow;
-	
 	PetscFunctionBeginUser;
 
 	// get time-dependent Tbot
@@ -2909,7 +2887,6 @@ PetscErrorCode BC_Plume_inflow(BCCtx *bc)
 	PetscScalar     Area_Bottom, Area_Inflow, Area_Outflow, V_avg, V_in, V_out, Qin, areaFrac;
 	PetscScalar     radius2, R;
 
-	
 	PetscFunctionBeginUser;
 
 	if(!bc->Plume_Inflow) PetscFunctionReturn(0);

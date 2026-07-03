@@ -31,7 +31,6 @@ PetscErrorCode MeshSeg1DReadParam(
 	PetscScalar avgsz, sz;
 	char        *nseg, *nel, *coord, *bias;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize
@@ -193,7 +192,6 @@ PetscErrorCode Discret1DCreate(
 {
 	PetscInt i, cnt;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize
@@ -271,7 +269,6 @@ PetscErrorCode Discret1DCreate(
 //---------------------------------------------------------------------------
 PetscErrorCode Discret1DDestroy(Discret1D *ds)
 {
-	
 	PetscFunctionBeginUser;
 
 	// free memory buffers
@@ -285,7 +282,6 @@ PetscErrorCode Discret1DDestroy(Discret1D *ds)
 //---------------------------------------------------------------------------
 PetscErrorCode Discret1DReadRestart(Discret1D *ds, FILE *fp)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(makeIntArray (&ds->starts, NULL, ds->nproc + 1));
@@ -319,7 +315,6 @@ PetscErrorCode Discret1DGetNumCells(Discret1D *ds, PetscInt **ncelProc)
 
 	PetscInt i, *l;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(makeIntArray(&l, NULL, ds->nproc));
@@ -339,7 +334,6 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	PetscInt     i, n, nl, pstart, istart;
 	PetscScalar *crd;
 
-	
 	PetscFunctionBeginUser;
 
 	// set uniform grid flag
@@ -395,7 +389,6 @@ PetscErrorCode Discret1DCoarsenCoord(Discret1D *coarse, Discret1D *fine)
 	MPI_Request request[4];
 	PetscScalar sprev, rprev, snext, rnext;
 
-	
 	PetscFunctionBeginUser;
 
 	// copy data
@@ -564,7 +557,6 @@ PetscErrorCode Discret1DGetColumnComm(Discret1D *ds)
 	// This function is called every time the column communicator is needed.
 	// Nothing is done if communicator already exists or in sequential case.
 
-	
 	PetscFunctionBeginUser;
 
 	if(ds->nproc != 1 && ds->comm == MPI_COMM_NULL)
@@ -581,7 +573,6 @@ PetscErrorCode Discret1DFreeColumnComm(Discret1D *ds)
 	// that communicator is no longer necessary. Calling it is safe, because
 	// the constructor will be called anyways when necessary.
 
-	
 	PetscFunctionBeginUser;
 
 	if(ds->comm != MPI_COMM_NULL)
@@ -706,7 +697,6 @@ PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir
 	PetscScalar v, h, vmax, idt, idtmax;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, idx, ijk[3], jj, ln;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize
@@ -854,7 +844,6 @@ PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_
 
 	PetscInt nx, ny, nz, NUM[2], SUM[3];
 
-	
 	PetscFunctionBeginUser;
 
 	// get local number of dof
@@ -1024,7 +1013,6 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	PetscInt       Px,   Py,   Pz;
 	DMBoundaryType BC_TYPE_X;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(Discret1DReadRestart(&fs->dsx, fp));
@@ -1079,7 +1067,6 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(Discret1DWriteRestart(&fs->dsx, fp));
@@ -1099,7 +1086,6 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 	Discret1D       *fdsx, *fdsy, *fdsz;
 	DMBoundaryType   BC_TYPE_X;
 
-	
 	PetscFunctionBeginUser;
 
 	// clear memory
@@ -1174,7 +1160,6 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine)
 {
-	
 	PetscFunctionBeginUser;
 
 	// coarsen coordinates
@@ -1187,7 +1172,6 @@ PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine)
 //---------------------------------------------------------------------------
 PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 {
-	
 	PetscFunctionBeginUser;
 
 	// destroy DMDA objects
@@ -1216,7 +1200,6 @@ PetscErrorCode FDSTAGCreateDMDA(FDSTAG   *fs,
 	PetscInt       bc_node;
 	DMBoundaryType BC_NONE, BC_GHOSTED;
 
-	
 	PetscFunctionBeginUser;
 
 	// PERIODIC CASE: JUST USE ONE POINT LESS IN X-DIRECTION FOR DA_COR, DA_XY, DA_XZ, AND DA_X
@@ -1338,7 +1321,6 @@ PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, 
 	PetscScalar bx, by, bz;
 	PetscScalar ex, ey, ez;
 
-	
 	PetscFunctionBeginUser;
 
 	// get local coordinate bounds
@@ -1363,7 +1345,6 @@ PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
 	PetscScalar dx, dy, dz, rt, lrt, grt;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
@@ -1412,7 +1393,6 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscScalar maxAspRat, chLen;
 	PetscInt    px, py, pz, cx, cy, cz, nx, ny, nz, nVelDOF, nCells;
 
-	
 	PetscFunctionBeginUser;
 
 	chLen = fs->scal->length;
@@ -1504,7 +1484,6 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	PetscInt       rank;
 	PetscLogDouble t;
 
-	
 	PetscFunctionBeginUser;
 
 	PrintStart(&t, "Saving processor partitioning", NULL);
@@ -1690,7 +1669,6 @@ PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
 	PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,
 	PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(DMDACreate3d(comm, bx, by, bz, stencil_type, M, N, P, m, n, p, dof, s, lx, ly, lz, da));

@@ -39,7 +39,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscBool   mat_free;
 	char        pc_type[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -334,7 +333,6 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	const PetscInt *lx, *ly;
 	PetscInt        i, n, svBuffSz, numPhases;
 
-	
 	PetscFunctionBeginUser;
 
 	fs        =  jr->fs;
@@ -431,7 +429,6 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 //---------------------------------------------------------------------------
 PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(JacResCreateData(jr));
@@ -444,7 +441,6 @@ PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp)
 //---------------------------------------------------------------------------
 PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp)
 {
-	
 	PetscFunctionBeginUser;
 
 	// write solution vectors
@@ -564,7 +560,6 @@ PetscErrorCode JacResGetPressShift(JacRes *jr, Vec lp)
 	PetscScalar ***p;
 	PetscScalar lpShift, gpShift;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mcz;
-	
 	PetscFunctionBeginUser;
 
 	// check if requested
@@ -618,7 +613,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
 	PetscScalar dx, dy, dz, xx, yy, zz, xy, xz, yz, theta, tr;
 	PetscScalar ***vx,  ***vy,  ***vz;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz;
-	
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
@@ -1557,7 +1551,6 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 	PetscScalar       ***T, ***p;
 	PetscLogDouble    t;
 
-	
 	PetscFunctionBeginUser;
 
 	// check activation
