@@ -1,9 +1,5 @@
 # LaMEM Userguide
-
-!!! note "Upgrading from LaMEM v2.2.1 to v3.0.0?"
-    v3.0.0 introduces breaking changes to input files. Please refer to the
-    [**Upgrading from v2.2.1 to v3.0.0 guide**](Upgrade_v2.2.1_to_v3.0.0.md).
-
+  
  ![Getting Started](../assets/img/LaMEM_overview.png)
 
   LaMEM (Lithosphere and Mantle Evolution Model) is a software package to simulate 2D/3D geological and geomechanical processes, which runs on anything from your laptop to a massively parallel machine. It takes (poro)-visco-elasto-plastic rheologies into account, and can be used to simulate anything from the collision of tectonic plates to the flow of fluids through porous rocks. 
