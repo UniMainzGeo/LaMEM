@@ -132,22 +132,22 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine);
 void AVD3DDestroy(AVD3D *A);
 
 void AVD3DAllocate(
-	const PetscInt mx,
-	const PetscInt my,
-	const PetscInt mz,
-	const PetscInt buffer,
-	const PetscInt npoints,
-	AVD3D          *A);
+    const PetscInt mx,
+    const PetscInt my,
+    const PetscInt mz,
+    const PetscInt buffer,
+    const PetscInt npoints,
+    AVD3D          *A);
 
 PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt P);
 
 void AVD3DSetDomainSize(AVD3D A,
-	const PetscScalar x0,
-	const PetscScalar x1,
-	const PetscScalar y0,
-	const PetscScalar y1,
-	const PetscScalar z0,
-	const PetscScalar z1);
+                        const PetscScalar x0,
+                        const PetscScalar x1,
+                        const PetscScalar y0,
+                        const PetscScalar y1,
+                        const PetscScalar z0,
+                        const PetscScalar z1);
 
 PetscErrorCode AVD3DLoadPoints(AVD3D A, AdvCtx *actx);
 

@@ -123,13 +123,22 @@ endif
 
 # target list
 
-.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc
+.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc format
 
 # default target (build executable)
 
 .DEFAULT_TARGET: all
 
 all : lamem
+
+#==============================================================================
+
+# format source files
+
+format:
+	@echo "Formatting source files ..."
+	@astyle --options=.astylerc *.cpp *.h
+	@echo "Done."
 
 #==============================================================================
 

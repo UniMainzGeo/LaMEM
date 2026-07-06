@@ -52,7 +52,7 @@ PetscErrorCode LaMEMLibMain(void *param, FB *fb)
 	char           str[_str_len_];
 	PetscLogDouble cputime_start, cputime_end;
 
-	PetscFunctionBeginUser;       
+	PetscFunctionBeginUser;
 
 	// start code
 	PetscCall(PetscTime(&cputime_start));
@@ -249,7 +249,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 
 	// read LaMEM library database
 	fread(lm, sizeof(LaMEMLib), 1, fp);
-	
+
 	// setup cross-references between library objects
 	PetscCall(LaMEMLibSetLinks(lm));
 
@@ -276,13 +276,13 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb)
 
 	// surface output driver
 	PetscCall(PVSurfCreateData(&lm->pvsurf));
-	
+
 	// arrays for dynamic NotInAir phase_trans
 	PetscCall(DynamicPhTr_ReadRestart(&lm->jr, fp));
-	
+
 	// read from input file, create arrays for dynamic diking, and read from restart file
 	PetscCall(DynamicDike_ReadRestart(&lm->dbdike, &lm->dbm, &lm->jr, &lm->ts, fp, fb));
- 
+
 	// override material database
 	PetscCall(DBMatCreate(&lm->dbm, fb, PETSC_TRUE));
 
@@ -350,10 +350,10 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	// passive tracers
 	PetscCall(Passive_Tracer_WriteRestart(&lm->actx, fp));
 
-	// dynamic phase transition 
+	// dynamic phase transition
 	PetscCall(DynamicPhTr_WriteRestart(&lm->jr, fp));
 
-	// dynamic dike 
+	// dynamic dike
 	PetscCall(DynamicDike_WriteRestart(&lm->jr, fp));
 
 	// close temporary restart file
@@ -565,7 +565,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
 	JacRes         *jr;
 	SNES           snes;   // PETSc nonlinear solver
- 	AdjGrad        aop;    // Adjoint options
+	AdjGrad        aop;    // Adjoint options
 	PetscInt       restart, track_stages;
 	PetscLogDouble t;
 	PetscLogStage  stages[4];
@@ -586,7 +586,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		PetscCall(PetscLogStageRegister("I/O",            &stages[3]));
 	}
 	else
-	{	// not for the inversion!
+	{
+		// not for the inversion!
 		track_stages = 0;
 	}
 
@@ -615,12 +616,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	while(!TSSolIsDone(&lm->ts))
 	{
 		//====================================
-		//	NONLINEAR THERMO-MECHANICAL SOLVER
+		//  NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
 
 		// apply phase transitions on particles
 		PetscCall(Phase_Transition(&lm->actx));
-		
+
 		// initialize boundary constraint vectors
 		PetscCall(BCApply(&lm->bc));
 
@@ -658,7 +659,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		if(param)
 		{
 			ModParam *IOparam = (ModParam *)param;
-			
+
 			if(IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ || IOparam->use == _inversion_ )
 			{
 				//================================================================================================================
@@ -680,7 +681,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// calculate current time step
 		PetscCall(ADVSelectTimeStep(&lm->actx, &restart));
-		
+
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
 
@@ -719,7 +720,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//==================
 		// Save data to disk
 		//==================
-	
+
 		// update time stamp and counter
 		PetscCall(TSSolStepForward(&lm->ts));
 
@@ -873,7 +874,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 
 		// initialize temperature
 		PetscCall(JacResInitTemp(jr));
-		
+
 		PrintDone(t);
 	}
 
@@ -890,8 +891,8 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 			num_steps = ctrl->steadyNumStep;
 			diff_step = diff_step/((PetscScalar) num_steps);
 		}
-		
-		for(i=0;i<num_steps;i++)
+
+		for(i=0; i<num_steps; i++)
 		{
 			// diffuse
 			PetscCall(LaMEMLibSolveTemp(lm, diff_step));
@@ -904,7 +905,7 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 
 				// project temperature from markers to grid
 				PetscCall(ADVProjHistMarkToGrid(actx));
-	
+
 				// initialize temperature
 				PetscCall(JacResInitTemp(jr));
 			}
@@ -918,12 +919,12 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 
 			// project temperature from markers to grid
 			PetscCall(ADVProjHistMarkToGrid(actx));
-	
+
 			// initialize temperature
 			PetscCall(JacResInitTemp(jr));
 		}
-		
-		PrintDone(t);		
+
+		PrintDone(t);
 	}
 
 	PetscFunctionReturn(0);
@@ -947,7 +948,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 
 	// get automatic absolute tolerance initialization flag
 	PetscCall(PetscOptionsHasName(NULL, NULL, "-ts_ksp_atol_auto", &set));
-	
+
 	if(set && ctrl->actTemp) { ts_ksp_atol_auto = 1; }
 	else                     { ts_ksp_atol_auto = 0; }
 
@@ -1002,7 +1003,7 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 
 	// project temperature from markers to grid
 	PetscCall(ADVProjHistMarkToGrid(actx));
-	
+
 	// initialize temperature
 	PetscCall(JacResInitTemp(jr));
 

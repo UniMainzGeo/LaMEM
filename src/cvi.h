@@ -118,10 +118,10 @@ PetscErrorCode ADVelInterpSTAGP      (AdvVelCtx *vi);
 //-----------------------------------------------------------------------------
 
 static inline PetscScalar GenInterpLin3D(
-	PetscScalar A[8],
-	PetscScalar xe,
-	PetscScalar ye,
-	PetscScalar ze)
+    PetscScalar A[8],
+    PetscScalar xe,
+    PetscScalar ye,
+    PetscScalar ze)
 {
 	PetscScalar v, xb, yb, zb;
 
@@ -131,22 +131,22 @@ static inline PetscScalar GenInterpLin3D(
 
 	// interpolate & return result
 	v =
-	A[0]*xb*yb*zb +
-	A[1]*xe*yb*zb +
-	A[2]*xb*ye*zb +
-	A[3]*xe*ye*zb +
-	A[4]*xb*yb*ze +
-	A[5]*xe*yb*ze +
-	A[6]*xb*ye*ze +
-	A[7]*xe*ye*ze;
+	    A[0]*xb*yb*zb +
+	    A[1]*xe*yb*zb +
+	    A[2]*xb*ye*zb +
+	    A[3]*xe*ye*zb +
+	    A[4]*xb*yb*ze +
+	    A[5]*xe*yb*ze +
+	    A[6]*xb*ye*ze +
+	    A[7]*xe*ye*ze;
 
 	return v;
 }
 
 //-----------------------------------------------------------------------------
 static inline PetscScalar minmod(
-	PetscScalar a,
-	PetscScalar b)
+    PetscScalar a,
+    PetscScalar b)
 {
 	// minmod slope limiter
 	PetscScalar X,c;
@@ -161,14 +161,14 @@ static inline PetscScalar minmod(
 }
 //-----------------------------------------------------------------------------
 static inline PetscScalar InterpLinMinmod(
-	PetscScalar U1,
-	PetscScalar U2,
-	PetscScalar U3,
-	PetscScalar dx,
-	PetscScalar x1,
-	PetscScalar x2,
-	PetscScalar x3,
-	PetscInt    d)
+    PetscScalar U1,
+    PetscScalar U2,
+    PetscScalar U3,
+    PetscScalar dx,
+    PetscScalar x1,
+    PetscScalar x2,
+    PetscScalar x3,
+    PetscInt    d)
 {
 	PetscScalar X;
 

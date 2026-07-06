@@ -63,21 +63,51 @@ The workflow is as follows:
    Use all lowercase.
 
 4. Write code
-5. Inspect changes: 
+
+5. If you plan to merge your contributions to `LaMEM/master` it is mandatory to apply automated formatting using Artistic Style [astyle] (https://astyle.sourceforge.net/) tool.
+
+   The astyle executables can be installed on Linux (e.g. Ubuntu) as folows:
+   ```
+   sudo apt-get install astyle
+   ```
+   and on Mac, using Homebrew:
+   ```
+   brew install astyle
+   ```
+   The formatting options are described in the hidden file `.astylerc` which is located in the source directory. Please do not modify this file, since otherwise LaMEM coding style will be broken.
+   To perform formatting of your changes you can simply use the `format` target from `Makefile`:
+   
+   ```
+   make format
+   ```
+   Apply the formatting regularly and modify the source if you are dissatisfied  with the result. Below is a couple of tips.
+   If you want to keep if-else statement on the the same line do not use curly brackets, otherwise formatter will put else statement on the next line:
+   ```
+   if(xp > xc)  II = I; else  II = I-1;
+   ```
+   Curly brackets are necessary to keep a macro after if statement:
+   ```
+   if(fi && fj ) { SET_EDGE_CORNER(lCenter, k, J, I, k, j, i, pmdof) }
+   ```
+   This is how you can nicely split long conditional or computational statement:
+   ```
+   if(X[0] < bx || X[0] > ex ||
+      X[1] < by || X[1] > ey ||
+      X[2] < bz || X[2] > ez) numNonLocal++;
+   ```
+6. Inspect changes: 
    ```
    git status
    ``` 
    or use one of the GUI's to do this 
-6. Regularly commit code:
+7. Regularly commit code:
    - Commit all files changed: `git commit -a` or
    - Commit selected files: `git commit file1 file2 file1` or
    - Add new files to be committed:`git add file1 file2` followed by `git commit`. Modified files can be added to a commit in the same way.
    - The same can of course be done through the GUI.
    - It is important to do this frequently and add useful commit messages as 
-7. Push the feature branch from your local hard disk to your online GitHub account, such that others (with access) can see it: `git push -u origin andrea_piccolo/feature-passive_tracers`
-(or equivalently, `git push --set-upstream origin andrea_piccolo/feature-passive_tracers`).
-Note that this step will still be in your own fork of LaMEM, and not in the main version of LaMEM.s
-8. On a regular basis: merge `master` back into your feature or bugfix branch. This is easiest done with SourceTree. On a regular basis you should also pull the latest updates of the main LaMEM into your forked repository (step 2 above)
+8. Push the feature branch from your local hard disk to your online GitHub account, such that others (with access) can see it: `git push -u origin andrea_piccolo/feature-passive_tracers` (or equivalently, `git push --set-upstream origin andrea_piccolo/feature-passive_tracers`). Note that this step will still be in your own fork of LaMEM, and not in the main version of LaMEM.
+9. On a regular basis: merge `master` back into your feature or bugfix branch. This is easiest done with SourceTree. On a regular basis you should also pull the latest updates of the main LaMEM into your forked repository (step 2 above)
 
 Once your branch is ready and you would like to push it back to the main version of LaMEM, you should create a `Pull Request`, as described below.
 
@@ -108,7 +138,7 @@ The LaMEM development team will make sure that things in master work and that te
 - Merge the latest version of master back into your branch and make sure that all tests work (you may have to resolve conflicts; if you do his step regularly as suggested above it will in general be easier to keep your branch up-to-date). 
 - Make sure that you have no memory leaks. That means that every vector/matrix/dm you created should also be destroyed with VecDestroy, etc. In addition, if you happen to allocate memory yourself (with PetscMalloc) you *must* make sure that you free the memory again (using PetscFree). A simple way to check that you are fine with the PETSc internal objects is to run your testfile with ` -log_view` at the end. This will give you a picture such as this one 
   ![MemoryUsage](../assets/img/PETSc_memory_usage.png)
-  The number of creations must be the same as the number of destructions. The only exception is the Viewer, as the log_view itself is also a viewer. If there is a mismatch, you likely forgot to do a Destroy somewhere. Note that it is more difficult to track down `PetscMalloc` statements without corresponding `PetscFree`. Doing that is important as otherwise the memory of a simulation will go up with every timestep, which ultimately makes the simulations run out of memory. 
+  The number of creations must be the same as the number of destructions. The only exception is the Viewer, as the log_view itself is also a viewer. If there is a mismatch, you likely forgot to do a Destroy somewhere. Note that it is more difficult to track down `PetscMalloc` statements without corresponding `PetscFree`. Doing that is important as otherwise the memory of a simulation will go up with every timestep, which ultimately makes the simulations run out of memory. You can use a very powerful memory inspection tool [Valgrind](https://valgrind.org/) to identify all potential memory leaks. Please take a look into a bash script file `LaMEM/scripts/bash/ValgrindCheck.sh` to figure out how to run LaMEM under Valgrind in parallel and how to navigate through the inspection results.
   
 #### 6.3.2 Filing a pull request  
 Once you are ready to push back your branch to the main version of LaMEM, you should create a pull request. 

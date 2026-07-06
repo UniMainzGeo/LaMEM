@@ -126,7 +126,7 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space)
 		ind = (PetscInt) ivz[k+1][j-1][i]; CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k][j][i];     CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k+1][j][i];   CHECK_DOF(ind, start, ln, nd, no);
- 		// x-velocity
+		// x-velocity
 		ind = (PetscInt) ivx[k][j-1][i];   CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivx[k][j-1][i+1]; CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivx[k][j][i];     CHECK_DOF(ind, start, ln, nd, no);
@@ -158,7 +158,7 @@ PetscErrorCode PMatCreate(MatData *md, Mat *A, PetscInt set_null_space)
 		ind = (PetscInt) ivz[k][j-1][i];   CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k+1][j][i];   CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivz[k-1][j][i];   CHECK_DOF(ind, start, ln, nd, no);
- 		// x-velocity
+		// x-velocity
 		ind = (PetscInt) ivx[k-1][j][i];   CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivx[k-1][j][i+1]; CHECK_DOF(ind, start, ln, nd, no);
 		ind = (PetscInt) ivx[k][j][i];     CHECK_DOF(ind, start, ln, nd, no);
@@ -596,10 +596,10 @@ PetscErrorCode PMatDiagComp(MatData *md, PetscScalar pgamma, Mat M)
 //.........................   MONOLITHIC MATRIX   ...........................
 //---------------------------------------------------------------------------
 PetscErrorCode PMatMonoCreate(
-		PMatMono    *P,
-		MatData     *md,
-		PetscScalar  pgamma,
-		PetscInt     set_null_space)
+    PMatMono    *P,
+    MatData     *md,
+    PetscScalar  pgamma,
+    PetscInt     set_null_space)
 {
 	DOFIndex *dof;
 
@@ -675,12 +675,12 @@ PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 //...........................   BLOCK MATRIX   ..............................
 //---------------------------------------------------------------------------
 PetscErrorCode PMatBlockCreate(
-		PMatBlock   *P,
-		MatData     *md,
-		PetscScalar  pgamma,
-		PetscInt     buildwBFBT,
-		PetscInt     buildBvv,
-		PetscInt     set_null_space)
+    PMatBlock   *P,
+    MatData     *md,
+    PetscScalar  pgamma,
+    PetscInt     buildwBFBT,
+    PetscInt     buildBvv,
+    PetscInt     set_null_space)
 {
 	FDSTAG      *fs;
 	DOFIndex    *dof;
@@ -789,7 +789,7 @@ PetscErrorCode PMatBlockCreate(
 		ind = (PetscInt) ivz[k+1][j-1][i]; CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivz[k][j][i];     CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivz[k+1][j][i];   CHECK_DOF(ind, startv, lnv, nd, no);
- 		// x-velocity
+		// x-velocity
 		ind = (PetscInt) ivx[k][j-1][i];   CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivx[k][j-1][i+1]; CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivx[k][j][i];     CHECK_DOF(ind, startv, lnv, nd, no);
@@ -825,7 +825,7 @@ PetscErrorCode PMatBlockCreate(
 		ind = (PetscInt) ivz[k][j-1][i];   CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivz[k+1][j][i];   CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivz[k-1][j][i];   CHECK_DOF(ind, startv, lnv, nd, no);
- 		// x-velocity
+		// x-velocity
 		ind = (PetscInt) ivx[k-1][j][i];   CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivx[k-1][j][i+1]; CHECK_DOF(ind, startv, lnv, nd, no);
 		ind = (PetscInt) ivx[k][j][i];     CHECK_DOF(ind, startv, lnv, nd, no);

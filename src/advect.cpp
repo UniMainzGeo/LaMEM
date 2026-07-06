@@ -75,7 +75,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	PetscCall(ADVSetType(actx, fb));
 
 	// check activation
- 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
+	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
 	// initialize
 	actx->NumPartX =  2;
@@ -198,9 +198,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else if (actx->mctrl == CTRL_SUB)   PetscPrintf(PETSC_COMM_WORLD, "subgrid \n");
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Markers per cell [nx, ny, nz] : [%" PetscInt_FMT ", %" PetscInt_FMT ", %" PetscInt_FMT "] \n",
-		(actx->NumPartX),
-		(actx->NumPartY),
-		(actx->NumPartZ));
+	            (actx->NumPartX),
+	            (actx->NumPartY),
+	            (actx->NumPartZ));
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type      : ");
 	if(!actx->randNoise) PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
@@ -274,14 +274,14 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 	// set periodic advection flag
 	if(fs->periodic || bc->ExyNumPeriods) { actx->periodic = 1; }
 
- 	if(actx->periodic && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
- 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic, exy_num_periods)");
- 	}
-
- 	if(actx->periodic)
+	if(actx->periodic && (actx->advect == EULER || actx->advect == RUNGE_KUTTA_2))
 	{
-		 PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     @\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Periodic marker advection is only compatible with BASIC_EULER (advect, periodic, exy_num_periods)");
+	}
+
+	if(actx->periodic)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "   Periodic marker advection     @\n");
 	}
 
 	// apply default setup in case advection is deactivated
@@ -304,7 +304,7 @@ PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 	}
 
- 	PetscFunctionReturn(0);
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
@@ -314,7 +314,7 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 	PetscFunctionBeginUser;
 
 	// check activation
- 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
+	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
 	// allocate memory for markers
 	PetscCall(PetscMalloc((size_t)actx->markcap*sizeof(Marker), &actx->markers));
@@ -346,7 +346,7 @@ PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp)
 	PetscFunctionBeginUser;
 
 	// check activation
- 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
+	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
 	// store local markers to disk
 	fwrite(actx->markers, (size_t)actx->nummark*sizeof(Marker), 1, fp);
@@ -384,7 +384,7 @@ PetscErrorCode ADVDestroy(AdvCtx *actx)
 	PetscFunctionBeginUser;
 
 	// check activation
- 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
+	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
 	PetscCallMPI(MPI_Comm_free(&actx->icomm));
 	PetscCall(PetscFree(actx->markers));
@@ -738,9 +738,9 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		zc = fs->dsz.ccoor[K];
 
 		// map marker on the control volumes of edge nodes
-		if(xp > xc) { II = I+1; } else { II = I; }
-		if(yp > yc) { JJ = J+1; } else { JJ = J; }
-		if(zp > zc) { KK = K+1; } else { KK = K; }
+		if(xp > xc)  II = I+1; else  II = I;
+		if(yp > yc)  JJ = J+1; else  JJ = J;
+		if(zp > zc)  KK = K+1; else  KK = K;
 
 		// access buffer
 		UPXY = lxy[sz+K ][sy+JJ][sx+II];
@@ -762,12 +762,12 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		}
 		else if(icase == _APS_)
 		{
-		  	P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
-			phase_ID = P->phase;			
+			P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
+			phase_ID = P->phase;
 			mat = actx->dbm->phases + phase_ID;
 			healID = mat->healID;
 			if (healID != -1)
-			{		
+			{
 				soft = actx->dbm->matSoft + healID;
 				if(soft->healTau)
 				{
@@ -896,9 +896,9 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		zc = ccz[K];
 
 		// map marker on the cells of X, Y, Z & center grids
-		if(xp > xc) { II = I; } else { II = I-1; }
-		if(yp > yc) { JJ = J; } else { JJ = J-1; }
-		if(zp > zc) { KK = K; } else { KK = K-1; }
+		if(xp > xc)  II = I; else  II = I-1;
+		if(yp > yc)  JJ = J; else  JJ = J-1;
+		if(zp > zc)  KK = K; else  KK = K-1;
 
 		// interpolate velocity, pressure & temperature
 		vx = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
@@ -963,7 +963,7 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 
 		// get global & local ranks of a marker
 		PetscCall(FDSTAGGetPointRanks(fs, X, &lrank, &grank));
-		
+
 		if(grank == -1)
 		{
 			// count outflow markers
@@ -1006,7 +1006,7 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Isend(&actx->nsendm[k], 1, MPIU_INT,
-				(PetscMPIInt)fs->neighb[k], 100, actx->icomm, &srequest[scnt++]));
+			                       (PetscMPIInt)fs->neighb[k], 100, actx->icomm, &srequest[scnt++]));
 		}
 	}
 
@@ -1016,7 +1016,7 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Irecv(&actx->nrecvm[k], 1, MPIU_INT,
-				(PetscMPIInt)fs->neighb[k], 100, actx->icomm, &rrequest[rcnt++]));
+			                       (PetscMPIInt)fs->neighb[k], 100, actx->icomm, &rrequest[rcnt++]));
 		}
 		else actx->nrecvm[k] = 0;
 	}
@@ -1125,7 +1125,7 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 			nbyte = actx->nsendm[k]*(PetscInt)sizeof(Marker);
 
 			PetscCallMPI(MPI_Isend(&actx->sendbuf[actx->ptsend[k]], (PetscMPIInt)nbyte, MPI_BYTE,
-				(PetscMPIInt)fs->neighb[k], 200, actx->icomm, &srequest[scnt++]));
+			                       (PetscMPIInt)fs->neighb[k], 200, actx->icomm, &srequest[scnt++]));
 
 		}
 	}
@@ -1138,7 +1138,7 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 			nbyte = actx->nrecvm[k]*(PetscInt)sizeof(Marker);
 
 			PetscCallMPI(MPI_Irecv(&actx->recvbuf[actx->ptrecv[k]], (PetscMPIInt)nbyte, MPI_BYTE,
-				(PetscMPIInt)fs->neighb[k], 200, actx->icomm, &rrequest[rcnt++]));
+			                       (PetscMPIInt)fs->neighb[k], 200, actx->icomm, &rrequest[rcnt++]));
 		}
 	}
 
@@ -1392,7 +1392,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	xp[0] = 0.0;
 	xp[1] = 0.0;
 	xp[2] = 0.0;
-	
+
 	// allocate memory for new markers
 	actx->nrecv = ninj;
 	PetscCall(PetscMalloc((size_t)actx->nrecv*sizeof(Marker), &actx->recvbuf));
@@ -1730,7 +1730,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		PetscCall(getPhaseRatio(numPhases, svCell->phRat, &w));
 
 		// normalize history variables
-		svCell->svBulk.pn /= w;		
+		svCell->svBulk.pn /= w;
 		svCell->svBulk.Tn /= w;
 		svCell->svDev.APS /= w;
 		svCell->ATS       /= w;
@@ -1808,9 +1808,9 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		zc = fs->dsz.ccoor[K];
 
 		// map marker on the control volumes of edge nodes
-		if(xp > xc) { II = I+1; } else { II = I; }
-		if(yp > yc) { JJ = J+1; } else { JJ = J; }
-		if(zp > zc) { KK = K+1; } else { KK = K; }
+		if(xp > xc)  II = I+1; else  II = I;
+		if(yp > yc)  JJ = J+1; else  JJ = J;
+		if(zp > zc)  KK = K+1; else  KK = K;
 
 		// get interpolation weights in cell control volumes
 		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx);

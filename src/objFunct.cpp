@@ -23,14 +23,14 @@
 //---------------------------------------------------------------------------
 PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 {
-	
+
 	PetscInt       k;
 	PetscFunctionBeginUser;
 
 	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// free vectors
-	for (k=0;k<_max_num_obs_; k++)
+	for (k=0; k<_max_num_obs_; k++)
 	{
 		if (objf->otUse[k] == 1)
 		{
@@ -59,7 +59,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	PetscScalar ***field,***qual;
 	PetscInt       useField;
 
-	const char  *on[_max_num_obs_];			//static array of pointers
+	const char           *on[_max_num_obs_];         //static array of pointers
 	const char           *velx_name="velx";
 	const char           *vely_name="vely";
 	const char           *velz_name="velz";
@@ -246,7 +246,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 //---------------------------------------------------------------------------
 PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 {
-	
+
 	PetscBool      found, exists;
 	PetscInt       k;
 	char           otname [_str_len_];
@@ -280,7 +280,7 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar scal)
+PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field,PetscScalar scal)
 {
 	PetscScalar       ***lfield,***gfield;
 	Vec               err;
@@ -354,45 +354,12 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	velScal = surf->jr->scal->velocity;
 
 	// compute weighted error of surface fields
-	if (objf->otUse[_VELX_])	{ PetscCall(VecErrSurf(surf->vx,    objf, _VELX_,velScal)); }
-	if (objf->otUse[_VELY_])	{ PetscCall(VecErrSurf(surf->vy,    objf, _VELY_,velScal)); }
-	if (objf->otUse[_VELZ_])	{ PetscCall(VecErrSurf(surf->vz,    objf, _VELZ_,velScal));	}
-	if (objf->otUse[_TOPO_])	{ PetscCall(VecErrSurf(surf->ltopo, objf, _TOPO_,velScal)); }
+	if (objf->otUse[_VELX_])    { PetscCall(VecErrSurf(surf->vx,    objf, _VELX_,velScal)); }
+	if (objf->otUse[_VELY_])    { PetscCall(VecErrSurf(surf->vy,    objf, _VELY_,velScal)); }
+	if (objf->otUse[_VELZ_])    { PetscCall(VecErrSurf(surf->vz,    objf, _VELZ_,velScal)); }
+	if (objf->otUse[_TOPO_])    { PetscCall(VecErrSurf(surf->ltopo, objf, _TOPO_,velScal)); }
 
-/*
-	// BOUGUER
-	// ISA
-	// SHMAX
-*/
-
-
-/*
-	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_obs.bin", FILE_MODE_WRITE, &view_out));
-	PetscCall(VecView(objf->obs[_VELX_],view_out));
-	PetscCall(PetscViewerDestroy(&view_out));
-
-	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_mod.bin", FILE_MODE_WRITE, &view_out));
-	PetscCall(VecView(surf->vx,view_out));
-	PetscCall(PetscViewerDestroy(&view_out));
-
-	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"err_mod.bin", FILE_MODE_WRITE, &view_out));
-	PetscCall(VecView(err_vx,view_out));
-	PetscCall(PetscViewerDestroy(&view_out));
-
-	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_obsvy.bin", FILE_MODE_WRITE, &view_out));
-	PetscCall(VecView(objf->obs[_VELY_],view_out));
-	PetscCall(PetscViewerDestroy(&view_out));
-
-	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_modvy.bin", FILE_MODE_WRITE, &view_out));
-	PetscCall(VecView(surf->vy,view_out));
-	PetscCall(PetscViewerDestroy(&view_out));
-
-	PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD,"err_modvy.bin", FILE_MODE_WRITE, &view_out));
-	PetscCall(VecView(err_vy,view_out));
-	PetscCall(PetscViewerDestroy(&view_out));
-*/
-
-	// total least squares error 
+	// total least squares error
 	objf->errtot = 0.0;
 	for(k = 0; k < _max_num_obs_; k++)
 	{

@@ -74,9 +74,12 @@ void AVDCell3DCreate(const PetscInt mx, const PetscInt my, const PetscInt mz, AV
 	cells = (AVDCell3D) malloc( sizeof(struct _p_AVDCell3D)*(size_t)(mx*my*mz) );
 	memset( cells, 0, sizeof(struct _p_AVDCell3D)*(size_t)(mx*my*mz) );
 
-	for (k=0; k<mz; k++) {
-		for (j=0; j<my; j++) {
-			for (i=0; i<mx; i++) {
+	for (k=0; k<mz; k++)
+	{
+		for (j=0; j<my; j++)
+		{
+			for (i=0; i<mx; i++)
+			{
 				PetscInt ind;
 
 				ind = i + j * mx + k * mx*my;
@@ -116,7 +119,8 @@ void AVDChain3DCreate(const PetscInt npoints, const PetscInt buffer, AVDChain3D 
 
 	chains = (AVDChain3D) malloc( sizeof(struct _p_AVDChain3D)*(size_t)(npoints) );
 	memset( chains, 0, sizeof(struct _p_AVDChain3D)*(size_t)(npoints) );
-	for (p=0; p<npoints; p++) {
+	for (p=0; p<npoints; p++)
+	{
 		chains[p].new_claimed_cells_malloced = buffer;
 		chains[p].new_boundary_cells_malloced = buffer;
 
@@ -134,13 +138,16 @@ void AVDChain3DDestroy(const PetscInt npoints, AVDChain3D *CH)
 
 	if (!CH) { return; }
 	chains = *CH;
-	for (p=0; p<npoints; p++) {
-		if (chains[p].new_claimed_cells) {
+	for (p=0; p<npoints; p++)
+	{
+		if (chains[p].new_claimed_cells)
+		{
 			free( chains[p].new_claimed_cells );
 			chains[p].new_claimed_cells = NULL;
 		}
 
-		if (chains[p].new_boundary_cells) {
+		if (chains[p].new_boundary_cells)
+		{
 			free( chains[p].new_boundary_cells );
 			chains[p].new_boundary_cells = NULL;
 		}
@@ -212,23 +219,29 @@ void AVD3DDestroy(AVD3D *A)
 	AVD3D aa;
 	if (!A) { return; }
 	aa = *A;
-	if (aa->chains) {
+	if (aa->chains)
+	{
 		AVDChain3DDestroy(aa->npoints,&aa->chains);
 	}
-	if (aa->cells) {
+	if (aa->cells)
+	{
 		AVDCell3DDestroy(&aa->cells);
 	}
-	if (aa->points) {
+	if (aa->points)
+	{
 		AVDPoint3DDestroy(&aa->points);
 	}
 
-	if (aa->ownership_ranges_i) {
+	if (aa->ownership_ranges_i)
+	{
 		free(aa->ownership_ranges_i);
 	}
-	if (aa->ownership_ranges_j) {
+	if (aa->ownership_ranges_j)
+	{
 		free(aa->ownership_ranges_j);
 	}
-	if (aa->ownership_ranges_k) {
+	if (aa->ownership_ranges_k)
+	{
 		free(aa->ownership_ranges_k);
 	}
 
@@ -237,12 +250,12 @@ void AVD3DDestroy(AVD3D *A)
 }
 //---------------------------------------------------------------------------
 void AVD3DAllocate(
-	const PetscInt mx,
-	const PetscInt my,
-	const PetscInt mz,
-	const PetscInt buffer,
-	const PetscInt npoints,
-	AVD3D          *A)
+    const PetscInt mx,
+    const PetscInt my,
+    const PetscInt mz,
+    const PetscInt buffer,
+    const PetscInt npoints,
+    AVD3D          *A)
 {
 
 	AVD3D avd3D;
@@ -260,10 +273,10 @@ void AVD3DAllocate(
 	avd3D->mz_mesh = mz+2;
 
 	AVDCell3DCreate(
-		 avd3D->mx_mesh,
-		 avd3D->my_mesh,
-		 avd3D->mz_mesh,
-		&avd3D->cells);
+	    avd3D->mx_mesh,
+	    avd3D->my_mesh,
+	    avd3D->mz_mesh,
+	    &avd3D->cells);
 
 	avd3D->npoints = npoints;
 
@@ -278,7 +291,7 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 {
 	PetscInt *tmp;
 	PetscInt pid,i,j,k,sum;
-	
+
 
 	PetscFunctionBeginUser;
 
@@ -297,7 +310,8 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 	PetscCallMPI(MPI_Allgather(&A->mx,1,MPIU_INT,tmp,1,MPIU_INT,PETSC_COMM_WORLD));
 	j = k = 0;
 	sum = 0;
-	for (i=0; i<A->M; i++) {
+	for (i=0; i<A->M; i++)
+	{
 		pid = i + j*A->M + k*A->M*A->N;
 		A->ownership_ranges_i[i] = sum;
 		sum = sum + tmp[pid];
@@ -307,7 +321,8 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 	PetscCallMPI(MPI_Allgather(&A->my,1,MPIU_INT,tmp,1,MPIU_INT,PETSC_COMM_WORLD));
 	i = k = 0;
 	sum = 0;
-	for (j=0; j<A->N; j++) {
+	for (j=0; j<A->N; j++)
+	{
 		pid = i + j*A->M + k*A->M*A->N;
 		A->ownership_ranges_j[j] = sum;
 		sum = sum + tmp[pid];
@@ -317,7 +332,8 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 	PetscCallMPI(MPI_Allgather(&A->mz,1,MPIU_INT,tmp,1,MPIU_INT,PETSC_COMM_WORLD));
 	i = j = 0;
 	sum = 0;
-	for (k=0; k<A->P; k++) {
+	for (k=0; k<A->P; k++)
+	{
 		pid = i + j*A->M + k*A->M*A->N;
 		A->ownership_ranges_k[k] = sum;
 		sum = sum + tmp[pid];
@@ -332,12 +348,12 @@ PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt 
 }
 //---------------------------------------------------------------------------
 void AVD3DSetDomainSize(AVD3D A,
-	const PetscScalar x0,
-	const PetscScalar x1,
-	const PetscScalar y0,
-	const PetscScalar y1,
-	const PetscScalar z0,
-	const PetscScalar z1)
+                        const PetscScalar x0,
+                        const PetscScalar x1,
+                        const PetscScalar y0,
+                        const PetscScalar y1,
+                        const PetscScalar z0,
+                        const PetscScalar z1)
 {
 	A->x0 = x0;
 	A->x1 = x1;
@@ -389,9 +405,12 @@ void AVD3DResetCells(AVD3D A)
 	my = A->my_mesh;
 	mz = A->mz_mesh;
 
-	for (k=0; k<mz; k++) {
-		for (j=0; j<my; j++) {
-			for (i=0; i<mx; i++) {
+	for (k=0; k<mz; k++)
+	{
+		for (j=0; j<my; j++)
+		{
+			for (i=0; i<mx; i++)
+			{
 				PetscInt ii = i + j * mx + k * mx*my;
 
 				A->cells[ii].p = -1;
@@ -464,15 +483,15 @@ PetscErrorCode AVD3DInit(AVD3D A)
 }
 //---------------------------------------------------------------------------
 static inline PetscScalar AVD3DDistanceTest(
-	PetscScalar x0,
-	PetscScalar y0,
-	PetscScalar z0,
-	PetscScalar x1,
-	PetscScalar y1,
-	PetscScalar z1,
-	PetscScalar x2,
-	PetscScalar y2,
-	PetscScalar z2)
+    PetscScalar x0,
+    PetscScalar y0,
+    PetscScalar z0,
+    PetscScalar x1,
+    PetscScalar y1,
+    PetscScalar z1,
+    PetscScalar x2,
+    PetscScalar y2,
+    PetscScalar z2)
 {
 	return (x1+x2-x0-x0)*(x1-x2) + (y1+y2-y0-y0)*(y1-y2) + (z1+z2-z0-z0)*(z1-z2);
 }
@@ -502,15 +521,16 @@ void AVD3DClaimCells(AVD3D A, const PetscInt p_i)
 	count = 0;
 	bchain->num_claimed = 0;
 
-	for (i=0; i<bchain->length; i++) {
+	for (i=0; i<bchain->length; i++)
+	{
 		cell_num0 = bchain->new_boundary_cells[i]; // cell number we are trying to claim
 
-		if (cells[cell_num0].p == AVD_CELL_UNCLAIMED) { // if cell unclaimed, then claim it
-
-// WARNING!!! NEVER use realloc! Either use malloc, or C++ containers
+		if (cells[cell_num0].p == AVD_CELL_UNCLAIMED)   // if cell unclaimed, then claim it
+		{
 
 			// Realloc, note that we need one space more than the number of points to terminate the list
-			if( count == bchain->new_claimed_cells_malloced-1  ){
+			if( count == bchain->new_claimed_cells_malloced-1  )
+			{
 				temp = (PetscInt*) realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 				bchain->new_claimed_cells = temp;
 				bchain->new_claimed_cells_malloced += buffer;
@@ -523,7 +543,9 @@ void AVD3DClaimCells(AVD3D A, const PetscInt p_i)
 			bchain->num_claimed++;
 			count++;
 			cells[cell_num0].p = p_i; // mark cell as owned by particle p_i
-		} else if (cells[cell_num0].p != p_i) {
+		}
+		else if (cells[cell_num0].p != p_i)
+		{
 			// perform distance test between points to determine ownership
 			x2 = points[p_i].x;
 			y2 = points[p_i].y;
@@ -539,7 +561,8 @@ void AVD3DClaimCells(AVD3D A, const PetscInt p_i)
 			z0 = (PetscScalar)cells[cell_num0].k*dz + (A->z0 - dz + 0.5*dz);
 
 			dist1 = AVD3DDistanceTest(x0,y0,z0,x1,y1,z1,x2,y2,z2);
-			if (dist1 > 0.0) {
+			if (dist1 > 0.0)
+			{
 				bchain->new_claimed_cells[count] = cell_num0;
 				bchain->num_claimed++;
 				count++;
@@ -568,7 +591,8 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 
 	count = 0;
 	bchain->length = 0;
-	for( i=0; i<bchain->num_claimed; i++) {
+	for( i=0; i<bchain->num_claimed; i++)
+	{
 		cell_num0 = bchain->new_claimed_cells[i];
 		cell0 = &cells[cell_num0];
 
@@ -582,24 +606,30 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 		cell_num[5] = (cell0->i  ) + (cell0->j  )*mx + (cell0->k-1)*mx*my; // Back
 
 		// boundary protection
-		for (k=0; k<6; k++) {
-			if (cells[cell_num[k]].p == AVD_CELL_MASK) {
+		for (k=0; k<6; k++)
+		{
+			if (cells[cell_num[k]].p == AVD_CELL_MASK)
+			{
 				cell_num[k] = -2;
 			}
 		}
 
-		for (k=0; k<6; k++) {
+		for (k=0; k<6; k++)
+		{
 			cell_num1 = cell_num[k];
 
-			 // if cell does not already belong to the particle and hasn't been
-			 // marked as being done then add it to new boundary array and mark it as done
+			// if cell does not already belong to the particle and hasn't been
+			// marked as being done then add it to new boundary array and mark it as done
 
-			if (cell_num1 != -2) {
-				if ( (cells[cell_num1].p != p_i) && (cells[cell_num1].done != AVD_TRUE) ) {
+			if (cell_num1 != -2)
+			{
+				if ( (cells[cell_num1].p != p_i) && (cells[cell_num1].done != AVD_TRUE) )
+				{
 
 
 					// Realloc, note that we need one space more than the number of points to terminate the list
-					if (count == bchain->new_boundary_cells_malloced-1 ) {
+					if (count == bchain->new_boundary_cells_malloced-1 )
+					{
 						temp = (PetscInt*)realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 						bchain->new_claimed_cells = temp;
 						bchain->new_claimed_cells_malloced += buffer;
@@ -620,7 +650,8 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 	}
 
 	// reset the processed flags
-	for (i=0; i<count; i++){
+	for (i=0; i<count; i++)
+	{
 		cells[ bchain->new_boundary_cells[i] ].done = AVD_FALSE;
 	}
 }
@@ -717,9 +748,9 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	WriteXMLHeader(fp, "PRectilinearGrid");
 
 	fprintf(fp, "  <PRectilinearGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" GhostLevel=\"0\" >\n",
-		start, A->gmx,
-		start, A->gmy,
-		start, A->gmz);
+	        start, A->gmx,
+	        start, A->gmy,
+	        start, A->gmz);
 
 	fprintf(fp, "    <PCoordinates>\n");
 	fprintf(fp, "      <PDataArray type=\"Float32\" Name = \"x\" NumberOfComponents=\"1\" format=\"appended\" />\n");
@@ -744,10 +775,10 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 		pi = r2d - pj*A->M;
 
 		fprintf(fp, "    <Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" Source=\"%s_p%1.8" PetscInt_FMT ".vtr\" />\n",
-				(A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
-				(A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
-				(A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]),
-				pvavd->outfile, p );
+		        (A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
+		        (A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
+		        (A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]),
+		        pvavd->outfile, p );
 	}
 
 	fprintf(fp, "  </PRectilinearGrid>\n");
@@ -770,7 +801,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	PetscScalar   chLen;
 	float         crd;
 	unsigned char phase;
-	uint64_t 	  L;
+	uint64_t      L;
 	uint64_t      offset = 0;
 
 	PetscFunctionBeginUser;
@@ -794,15 +825,15 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	// write header
 	WriteXMLHeader(fp, "RectilinearGrid");
 
-  fprintf(fp, "  <RectilinearGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" >\n",
-		  (A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
-		  (A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
-		  (A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]));
+	fprintf(fp, "  <RectilinearGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" >\n",
+	        (A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
+	        (A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
+	        (A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]));
 
 	fprintf(fp, "    <Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" >\n",
-			(A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
-			(A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
-			(A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]));
+	        (A->ownership_ranges_i[pi]),(A->ownership_ranges_i[pi+1]),
+	        (A->ownership_ranges_j[pj]),(A->ownership_ranges_j[pj+1]),
+	        (A->ownership_ranges_k[pk]),(A->ownership_ranges_k[pk+1]));
 
 
 	fprintf(fp, "    <Coordinates>\n");

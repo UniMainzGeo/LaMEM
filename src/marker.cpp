@@ -53,8 +53,8 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	}
 
 	// initialize coordinates, add random noise
-	if(actx->msetup != _FILES_
-	&& actx->msetup != _POLYGONS_)
+	if(actx->msetup != _FILES_ &&
+	   actx->msetup != _POLYGONS_)
 	{
 		PetscCall(ADVMarkInitCoord(actx));
 	}
@@ -77,7 +77,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 
 	// Load phase diagrams for the phases where it is required + interpolate the reference density for the first timestep
 	LoadPhaseDiagrams = PETSC_FALSE;
-	
+
 	for(PetscInt i = 0; i < actx->jr->dbm->numPhases; i++)
 	{
 		if(actx->jr->dbm->phases[i].pdAct)
@@ -90,8 +90,8 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Phase Diagrams:  \n");
 		PetscPrintf(PETSC_COMM_WORLD,"   Diagrams employed for phases  : \n ");
-		
-	}	
+
+	}
 
 	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++)
 	{
@@ -376,14 +376,14 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 		X = actx->markers[i].X;
 
 		// marker must be local (check bounding box)
-		if(X[0] < bx || X[0] > ex
-		|| X[1] < by || X[1] > ey
-		|| X[2] < bz || X[2] > ez) numNonLocal++;
-		
+		if(X[0] < bx || X[0] > ex ||
+		   X[1] < by || X[1] > ey ||
+		   X[2] < bz || X[2] > ez) numNonLocal++;
+
 		// count number of markers in the cells
 		numMarkCell[actx->cellnum[i]]++;
 	}
-	
+
 	// count empty & sparse cells
 	numEmpty = 0;
 	numWrong = 0;
@@ -466,8 +466,8 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	if(!bc->initTemp) PetscFunctionReturn(0);
 
 	// get time-dependent Tbot
-	PetscCall(BCGetTempBound(bc, &Tbot));		
-	
+	PetscCall(BCGetTempBound(bc, &Tbot));
+
 	// get grid coordinate bounds in z-direction
 	PetscCall(FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop));
 
@@ -627,15 +627,14 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 		zpL = (zp - Zc)/DZ;
 
 		// Interpolate value on the particle using trilinear shape functions
-		P->T = ((
-		(1.0-xpL) * (1.0-ypL) * (1.0-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix   ] +
-		 xpL      * (1.0-ypL) * (1.0-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix+1 ] +
-		 xpL      *  ypL      * (1.0-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix+1 ] +
-		(1.0-xpL) *  ypL      * (1.0-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix   ] +
-		(1.0-xpL) * (1.0-ypL) *  zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix   ] +
-		 xpL      * (1.0-ypL) *  zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix+1 ] +
-		 xpL      *  ypL      *  zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix+1 ] +
-		(1.0-xpL) *  ypL      *  zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix   ] ) + Tshift)/chTemp;
+		P->T = (((1.0-xpL)   * (1.0-ypL) * (1.0-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix   ]
+		         + xpL       * (1.0-ypL) * (1.0-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix+1 ]
+		         + xpL       *  ypL      * (1.0-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix+1 ]
+		         + (1.0-xpL) *  ypL      * (1.0-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix   ]
+		         + (1.0-xpL) * (1.0-ypL) *  zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix   ]
+		         + xpL       * (1.0-ypL) *  zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix+1 ]
+		         + xpL       *  ypL      *  zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix+1 ]
+		         + (1.0-xpL) *  ypL      *  zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix   ] ) + Tshift)/chTemp;
 	}
 
 	// clear memory
@@ -712,9 +711,9 @@ PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 		zc = ccz[K];
 
 		// map marker on the cells of center grids
-		if(xp > xc) { II = I; } else { II = I-1; }
-		if(yp > yc) { JJ = J; } else { JJ = J-1; }
-		if(zp > zc) { KK = K; } else { KK = K-1; }
+		if(xp > xc)  II = I;  else  II = I-1;
+		if(yp > yc)  JJ = J;  else  JJ = J-1;
+		if(zp > zc)  KK = K;  else  KK = K-1;
 
 		// interpolate temperature on the marker
 		P->T = InterpLin3D(T, II, JJ, KK,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
@@ -759,10 +758,13 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 
 	// the file header signals the version of the marker file
 	PetscCall(PetscBinaryRead(fd, &header, 1, NULL, PETSC_SCALAR));
-	if((PetscInt)header == 1211215) {
+	if((PetscInt)header == 1211215)
+	{
 		// version with APS as a field
 		nfields = 6;
-	} else {
+	}
+	else
+	{
 		// version without APS
 		nfields = 5;
 	}
@@ -801,7 +803,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 		P->X[2]  =           markptr[2]/chLen;
 		P->phase = (PetscInt)markptr[3];
 		P->T     =          (markptr[4] + Tshift)/chTemp;
-		if(nfields == 6) 
+		if(nfields == 6)
 		{
 			P->APS =         markptr[5];
 		}
@@ -849,7 +851,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		fb->ID  = jj;								// allows command-line parsing
+		fb->ID  = jj;                               // allows command-line parsing
 		GET_GEOM(layer, geom, ngeom, _max_geom_);
 
 		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",  &layer->phase,  1, maxPhaseID));
@@ -860,7 +862,8 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		//  (adds amplitude*sin(2*pi/wavelength*x) to the interface)
 		layer->cosine = 0;
 		PetscCall(getIntParam   (fb, _OPTIONAL_, "cosine",  &layer->cosine,  1, maxPhaseID));
-		if (layer->cosine==1){
+		if (layer->cosine==1)
+		{
 			PetscCall(getScalarParam   (fb, _REQUIRED_, "wavelength",  &layer->wavelength,  1, chLen    ));
 			PetscCall(getScalarParam   (fb, _REQUIRED_, "amplitude",   &layer->amplitude,   1, chLen    ));
 		}
@@ -872,28 +875,31 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		// Optional temperature options:
 		layer->setTemp = 0;
 		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
-		if 		(!strcmp(TemperatureStructure, "constant"))	    {layer->setTemp=1;}
-		else if (!strcmp(TemperatureStructure, "linear"))	    {layer->setTemp=2;}
+		if      (!strcmp(TemperatureStructure, "constant"))     {layer->setTemp=1;}
+		else if (!strcmp(TemperatureStructure, "linear"))       {layer->setTemp=2;}
 		else if (!strcmp(TemperatureStructure, "halfspace"))    {layer->setTemp=3;}
-		
-		// Depending on temperature options, get required input parameters
-		if (layer->setTemp==1){
-			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&layer->cstTemp, 1, 1)); 
-		
-			// take potential shift C->K into account	
-			layer->cstTemp = (layer->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
-		}
-		if (layer->setTemp>1){
-			PetscCall(getScalarParam(fb, _REQUIRED_, "topTemp", 	&layer->topTemp, 1, 1)); 
-			PetscCall(getScalarParam(fb, _REQUIRED_, "botTemp", 	&layer->botTemp, 1, 1)); 
 
-			// take potential shift C->K into account	
-			layer->topTemp = (layer->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		// Depending on temperature options, get required input parameters
+		if (layer->setTemp==1)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp",     &layer->cstTemp, 1, 1));
+
+			// take potential shift C->K into account
+			layer->cstTemp = (layer->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
+		}
+		if (layer->setTemp>1)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "topTemp",     &layer->topTemp, 1, 1));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "botTemp",     &layer->botTemp, 1, 1));
+
+			// take potential shift C->K into account
+			layer->topTemp = (layer->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 			layer->botTemp = (layer->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 		}
-		if (layer->setTemp==3){
-			PetscCall(getScalarParam(fb, _REQUIRED_, "thermalAge", &layer->thermalAge, 1, chTime)); 
-			layer->kappa    = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s	
+		if (layer->setTemp==3)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "thermalAge", &layer->thermalAge, 1, chTime));
+			layer->kappa    = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s
 		}
 
 		layer->setPhase = setPhaseLayer;
@@ -911,10 +917,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		fb->ID  = jj;								// allows command-line parsing
-		
+		fb->ID  = jj;                               // allows command-line parsing
+
 		GET_GEOM(sphere, geom, ngeom, _max_geom_);
-		
+
 		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",  &sphere->phase,  1, maxPhaseID));
 		PetscCall(getScalarParam(fb, _REQUIRED_, "radius", &sphere->radius, 1, chLen));
 		PetscCall(getScalarParam(fb, _REQUIRED_, "center",  sphere->center, 3, chLen));
@@ -922,16 +928,17 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		// Optional temperature options:
 		sphere->setTemp = 0;
 		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
-		if 		(!strcmp(TemperatureStructure, "constant"))	    {sphere->setTemp=1;}
-		
+		if      (!strcmp(TemperatureStructure, "constant"))     {sphere->setTemp=1;}
+
 		// Depending on temperature options, get required input parameters
-		if (sphere->setTemp==1){
-			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&sphere->cstTemp, 1, 1)); 
-		
-			// take potential shift C->K into account	
-			sphere->cstTemp = (sphere->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		if (sphere->setTemp==1)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp",     &sphere->cstTemp, 1, 1));
+
+			// take potential shift C->K into account
+			sphere->cstTemp = (sphere->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 		}
-		
+
 		sphere->setPhase = setPhaseSphere;
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], sphere));
@@ -956,19 +963,20 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		// Optional temperature options:
 		ellipsoid->setTemp = 0;
 		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
-		if 		(!strcmp(TemperatureStructure, "constant"))	    {ellipsoid->setTemp=1;}
-		
+		if      (!strcmp(TemperatureStructure, "constant"))     {ellipsoid->setTemp=1;}
+
 		// Depending on temperature options, get required input parameters
-		if (ellipsoid->setTemp==1){
-			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&ellipsoid->cstTemp, 1, 1)); 
-		
-			// take potential shift C->K into account	
-			ellipsoid->cstTemp = (ellipsoid->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		if (ellipsoid->setTemp==1)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp",     &ellipsoid->cstTemp, 1, 1));
+
+			// take potential shift C->K into account
+			ellipsoid->cstTemp = (ellipsoid->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 		}
 
 		ellipsoid->setPhase = setPhaseEllipsoid;
 
-		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ellipsoid));	
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ellipsoid));
 	}
 
 	PetscCall(FBFreeBlocks(fb));
@@ -981,45 +989,48 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		fb->ID  = jj;								// allows command-line parsing
+		fb->ID  = jj;                               // allows command-line parsing
 		GET_GEOM(box, geom, ngeom, _max_geom_);
 
-		box->setTemp = 0;	//default is no	
-		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",  	&box->phase,   1, maxPhaseID));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "bounds",  	 box->bounds,  6, chLen));
+		box->setTemp = 0;   //default is no
+		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",   &box->phase,   1, maxPhaseID));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "bounds",   box->bounds,  6, chLen));
 		box->bot = box->bounds[4]; box->top = box->bounds[5];
 
 		// Optional temperature options:
 		box->setTemp = 0;
 		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",        TemperatureStructure,       NULL ));
-		if 		(!strcmp(TemperatureStructure, "constant"))	    {box->setTemp=1;}
-		else if (!strcmp(TemperatureStructure, "linear"))	    {box->setTemp=2;}
+		if      (!strcmp(TemperatureStructure, "constant"))     {box->setTemp=1;}
+		else if (!strcmp(TemperatureStructure, "linear"))       {box->setTemp=2;}
 		else if (!strcmp(TemperatureStructure, "halfspace"))    {box->setTemp=3;}
-		
+
 		// Depending on temperature options, get required input parameters
-		if (box->setTemp==1){
-			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&box->cstTemp, 1, 1)); 
-			
-			// take potential shift C->K into account	
-			box->cstTemp = (box->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		if (box->setTemp==1)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp",     &box->cstTemp, 1, 1));
+
+			// take potential shift C->K into account
+			box->cstTemp = (box->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 
 		}
-		if (box->setTemp>1){
-			PetscCall(getScalarParam(fb, _REQUIRED_, "topTemp", 	&box->topTemp, 1, 1)); 
-			PetscCall(getScalarParam(fb, _REQUIRED_, "botTemp", 	&box->botTemp, 1, 1)); 
+		if (box->setTemp>1)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "topTemp",     &box->topTemp, 1, 1));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "botTemp",     &box->botTemp, 1, 1));
 
-			// take potential shift C->K into account	
-			box->topTemp = (box->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
-			box->botTemp = (box->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+			// take potential shift C->K into account
+			box->topTemp = (box->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
+			box->botTemp = (box->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 
 		}
-		if (box->setTemp==3){
-			
-			PetscCall(getScalarParam(fb, _REQUIRED_, "thermalAge", &box->thermalAge, 1, chTime)); 
+		if (box->setTemp==3)
+		{
 
-			box->kappa      = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s	
+			PetscCall(getScalarParam(fb, _REQUIRED_, "thermalAge", &box->thermalAge, 1, chTime));
+
+			box->kappa      = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s
 		}
-		
+
 		box->setPhase = setPhaseBox;
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], box));
@@ -1035,58 +1046,61 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<RidgeSegStart>", "<RidgeSegEnd>"));
 
 	for(jj = 0; jj < fb->nblocks; jj++)
-	  {
-		PetscScalar v_spread, maxAge;  
-	    fb->ID  = jj;                                                               // allows command-line parsing
-	    GET_GEOM(ridge, geom, ngeom, _max_geom_);
-	    
-	    ridge->setTemp 	= 0;       	//	default is no
-		v_spread   	   	= 0.0;
-		maxAge 			= 1e20;		// max. thermal age a plate can have 		
-	    PetscCall(getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID));
-	    PetscCall(getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen));
-	    PetscCall(getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen));
-        PetscCall(getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen));
-	    PetscCall(getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime));
-        PetscCall(getScalarParam(fb, _OPTIONAL_, "v_spread",       &v_spread,    1, actx->jr->scal->velocity));
-        PetscCall(getScalarParam(fb, _OPTIONAL_, "maxAge",       	&maxAge,      1, actx->jr->scal->time));
-		
-	    ridge->bot 		= ridge->bounds[4];
-	    ridge->top 		= ridge->bounds[5];
-	    ridge->maxAge 	= maxAge;
+	{
+		PetscScalar v_spread, maxAge;
+		fb->ID  = jj;                                                               // allows command-line parsing
+		GET_GEOM(ridge, geom, ngeom, _max_geom_);
 
-		if (v_spread>0){
-			ridge->v_spread=v_spread;		
+		ridge->setTemp  = 0;        //  default is no
+		v_spread        = 0.0;
+		maxAge          = 1e20;     // max. thermal age a plate can have
+		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",          &ridge->phase,  1, maxPhaseID));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "bounds",         ridge->bounds,  6, chLen));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "ridgeseg_x",     ridge->ridgeseg_x,  2, chLen));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "ridgeseg_y",     ridge->ridgeseg_y,  2, chLen));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "age0",           &ridge->age0, 1, chTime));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "v_spread",       &v_spread,    1, actx->jr->scal->velocity));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "maxAge",          &maxAge,      1, actx->jr->scal->time));
+
+		ridge->bot      = ridge->bounds[4];
+		ridge->top      = ridge->bounds[5];
+		ridge->maxAge   = maxAge;
+
+		if (v_spread>0)
+		{
+			ridge->v_spread=v_spread;
 		}
-		else{
-	    	ridge->v_spread=PetscAbs(actx->jr->bc->velin);
+		else
+		{
+			ridge->v_spread=PetscAbs(actx->jr->bc->velin);
 		}
-	    
-	    // Temperature options (actually required to be setTemp==4)
-	    PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL ));
-	    
-	    if (!strcmp(TemperatureStructure, "halfspace_age"))    {ridge->setTemp=4;}
-	    
-	    if (ridge->setTemp==4){
-	      PetscCall(getScalarParam(fb, _REQUIRED_, "topTemp",  &ridge->topTemp, 1, 1));
-	      PetscCall(getScalarParam(fb, _REQUIRED_, "botTemp",  &ridge->botTemp, 1, 1));
-	      
-	      // take potential shift C->K into account
-	      ridge->topTemp = (ridge->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
-	      ridge->botTemp = (ridge->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
-	      ridge->kappa   = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/
-	      
-	    }
-	    
-	    ridge->setPhase = setPhaseRidge;
-	    
-	    cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ridge));
-	    
-	  }
-	
+
+		// Temperature options (actually required to be setTemp==4)
+		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",    TemperatureStructure,   NULL ));
+
+		if (!strcmp(TemperatureStructure, "halfspace_age"))    {ridge->setTemp=4;}
+
+		if (ridge->setTemp==4)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "topTemp",  &ridge->topTemp, 1, 1));
+			PetscCall(getScalarParam(fb, _REQUIRED_, "botTemp",  &ridge->botTemp, 1, 1));
+
+			// take potential shift C->K into account
+			ridge->topTemp = (ridge->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
+			ridge->botTemp = (ridge->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
+			ridge->kappa   = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/
+
+		}
+
+		ridge->setPhase = setPhaseRidge;
+
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], ridge));
+
+	}
+
 	PetscCall(FBFreeBlocks(fb));
 
-	
+
 	//======
 	// HEXES
 	//======
@@ -1095,7 +1109,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		fb->ID  = jj;								// allows command-line parsing
+		fb->ID  = jj;                               // allows command-line parsing
 		GET_GEOM(hex, geom, ngeom, _max_geom_);
 
 		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",  &hex->phase, 1,  maxPhaseID));
@@ -1119,7 +1133,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		fb->ID  = jj;								// allows command-line parsing
+		fb->ID  = jj;                               // allows command-line parsing
 		GET_GEOM(cylinder, geom, ngeom, _max_geom_);
 
 		PetscCall(getIntParam   (fb, _REQUIRED_, "phase",   &cylinder->phase,  1, maxPhaseID));
@@ -1130,14 +1144,15 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		// Optional temperature options:
 		cylinder->setTemp = 0;
 		PetscCall(getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ));
-		if 		(!strcmp(TemperatureStructure, "constant"))	    {cylinder->setTemp=1;}
-		
+		if      (!strcmp(TemperatureStructure, "constant"))     {cylinder->setTemp=1;}
+
 		// Depending on temperature options, get required input parameters
-		if (cylinder->setTemp==1){
-			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp", 	&cylinder->cstTemp, 1, 1)); 
-		
-			// take potential shift C->K into account	
-			cylinder->cstTemp = (cylinder->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		if (cylinder->setTemp==1)
+		{
+			PetscCall(getScalarParam(fb, _REQUIRED_, "cstTemp",     &cylinder->cstTemp, 1, 1));
+
+			// take potential shift C->K into account
+			cylinder->cstTemp = (cylinder->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
 		}
 
 		cylinder->setPhase = setPhaseCylinder;
@@ -1228,7 +1243,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	//===========================
 	// --- initialize markers ---
 	//===========================
-	
+
 	// marker counter
 	imark  = 0;
 	icellx = 0;
@@ -1281,8 +1296,8 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				actx->markers[imark].X[0] = x;
 				actx->markers[imark].X[1] = y;
 				actx->markers[imark].X[2] = z;
-				
-				
+
+
 				if(actx->randNoise)
 				{
 					// add random noise
@@ -1337,7 +1352,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscCall(PetscMalloc((size_t)Fsize  *sizeof(PetscScalar),&PolyFile));
 	Fcount = 0;
 
-	// read entire file 
+	// read entire file
 	PetscCall(PetscBinaryRead(fd, PolyFile, Fsize, NULL, PETSC_SCALAR));
 
 	// read number of volumes
@@ -1345,7 +1360,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	Nmax = (PetscInt)(PolyFile[Fcount]); Fcount++;
 	Lmax = (PetscInt)(PolyFile[Fcount]); Fcount++;
 
-    // allocate space for index array & the coordinates of the largest polygon
+	// allocate space for index array & the coordinates of the largest polygon
 	PetscCall(PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyLen));
 	PetscCall(PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyIdx));
 	PetscCall(PetscMalloc((size_t)Lmax*2*sizeof(PetscScalar),&PolyX));
@@ -1368,7 +1383,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 		Vol.phase = (PetscInt)(PolyFile[Fcount]); Fcount++; // phase that polygon defines
 		Vol.type  = (PetscInt)(PolyFile[Fcount]); Fcount++; // type of assigning the phases
 		Vol.num   = (PetscInt)(PolyFile[Fcount]); Fcount++; // number of polygon slices defining the volume
-		
+
 		// define axes the span the polygon plane
 		if (Vol.dir==0)
 		{
@@ -1394,7 +1409,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 		}
 
 		// get lengths of polygons (PetscScalar !)
-		for (kpoly=0; kpoly<Vol.num;kpoly++)
+		for (kpoly=0; kpoly<Vol.num; kpoly++)
 		{
 			PolyLen[kpoly] = PolyFile[Fcount]; Fcount++;
 		}
@@ -1405,11 +1420,11 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 		if (kvol == VolID)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"\nVarying volume %" PetscInt_FMT " (phase: %" PetscInt_FMT ", type: %" PetscInt_FMT ") \n",  VolID,  Vol.phase,  Vol.type);
-			
+
 			// shift index of control polys by 1 to be in line with c indexing
 			PetscInt    i;
-    		for (i=0; i < nCP; ++i)
-    		{
+			for (i=0; i < nCP; ++i)
+			{
 				// also check if control polygon is out of bounds
 				if (CtrlPoly.Pos[i] > Vol.num)
 				{
@@ -1417,7 +1432,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				}
 				PetscPrintf(PETSC_COMM_WORLD,"CtrlPoly %" PetscInt_FMT ": Pos: %" PetscInt_FMT ", Sx: %.6f, Sy: %.6f \n", i+1, CtrlPoly.Pos[i],CtrlPoly.Sx[i],CtrlPoly.Sy[i]);
 				CtrlPoly.Pos[i] = CtrlPoly.Pos[i] - 1;
-    		}
+			}
 
 			// interpolate stretch parameters
 			interpStretch(CtrlPoly.Sx,CtrlPoly.Sy,nCP,CtrlPoly.Pos,Vol.num,SxAll,SyAll);
@@ -1466,7 +1481,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				if(Polys[lpoly].gidx >= tstart[Vol.dir] && Polys[lpoly].gidx <= tend[Vol.dir])
 				{
 					// read polygon
-					for (n=0; n<Polys[lpoly].len*2;n++)
+					for (n=0; n<Polys[lpoly].len*2; n++)
 					{
 						PolyX[n] = PolyFile[Fcount]; Fcount++;
 					}
@@ -1543,7 +1558,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscCall(PetscFree(PolyLen));
 	PetscCall(PetscFree(PolyX));
 	PetscCall(PetscFree(PolyFile));
-	
+
 	if(actx->randNoise)
 	{
 		PetscCall(PetscRandomDestroy(&rctx));
@@ -1559,7 +1574,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, PetscInt &nCP)
 {
 	PetscInt       jj;
-	
+
 	PetscFunctionBeginUser;
 
 	// find blocks
@@ -1575,7 +1590,7 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	// loop over blocks
 	for(jj = 0; jj < nCP; jj++)
 	{
-		fb->ID  = jj;								// allows command-line parsing
+		fb->ID  = jj;                               // allows command-line parsing
 
 		PetscCall(getIntParam   (fb, _REQUIRED_, "PolyID",  &CtrlPoly->ID[jj],    1, 0));
 		PetscCall(getIntParam   (fb, _REQUIRED_, "VolID",   &CtrlPoly->VolID[jj], 1, 0));
@@ -1610,7 +1625,7 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 	FDSTAG   *fs;
 	PetscInt i,ix,iy,iz,nmarkx,nmarky,nmarkz;
 	PetscInt d,c;
-	
+
 	// get fdstag info
 	fs = actx->fs;
 
@@ -1637,9 +1652,9 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 	{
 		d = 0;
 		c = Islice *nmarkx;
-		for(iz=0; iz<nmarkz;iz++ )
+		for(iz=0; iz<nmarkz; iz++ )
 		{
-			for(ix=0; ix<nmarkx;ix++)
+			for(ix=0; ix<nmarkx; ix++)
 			{
 				idx[d] = c;
 				c++;
@@ -1651,7 +1666,7 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 	else if(dir == 2) // xy plane
 	{
 		d = 0;
-		for(i=0; i<(nmarkx*nmarky);i++)
+		for(i=0; i<(nmarkx*nmarky); i++)
 		{
 			idx[d] = i + (Islice*nmarkx*nmarky);
 			d++;
@@ -1665,12 +1680,12 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 {
 	FILE          *fp;
-    PetscInt       i_pd,j,ij,lineStart,n,found, NumberOfPhaseDiagramProperties;
-    PetscScalar    fl[2];
-    char           buf[1000],name[_str_len_+_str_len_];
-    PData         *pd;
-    Scaling       *scal;
-   
+	PetscInt       i_pd,j,ij,lineStart,n,found, NumberOfPhaseDiagramProperties;
+	PetscScalar    fl[2];
+	char           buf[1000],name[_str_len_+_str_len_];
+	PData         *pd;
+	Scaling       *scal;
+
 	PetscFunctionBeginUser;
 
 	scal = actx->jr->scal;
@@ -1682,13 +1697,13 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	{
 		if(!pd->rho_pdns[0][j])
 		{
-			found 	= 1;
-			i_pd 	= j;
+			found   = 1;
+			i_pd    = j;
 			break;
 		}
 		else
 		{
-			found 	= 1;
+			found   = 1;
 			// Check if we have this diagram already in the buffer
 			for(ij=0; ij<_pd_name_sz_; ij++)
 			{
@@ -1703,7 +1718,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 				// We already loaded that diagram so no need to do anything here except setting the flags for the melt
 				sprintf(name,"%s.in",phases[i].pdn);  // is this ever used?
 				fp=fopen(phases[i].pdf,"rb");
-				for(j=0;j<1;j++)
+				for(j=0; j<1; j++)
 				{
 					if(j==0)
 					{
@@ -1738,7 +1753,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	}
 
 	// Read header
-	for(j=0;j<lineStart;j++)
+	for(j=0; j<lineStart; j++)
 	{
 		if(j==0)
 		{
@@ -1751,19 +1766,19 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	}
 
 	// Read important phase diagram info about the pressure & temperature range of the diagram
-	fscanf(fp, "%lf,",&pd->minT[i_pd]);														// minimum T of diagram [in Kelvin]
-	pd->minT[i_pd] 			=	pd->minT[i_pd]/scal->temperature;							// non-dimensionalize
-	fscanf(fp, "%lf,",&pd->dT[i_pd]);														// Temperature increment
-	pd->dT[i_pd] 			=	pd->dT[i_pd]/scal->temperature;								// non-dimensionalize
-	fscanf(fp, "%" PetscInt_FMT ",", &pd->nT[i_pd]);														// # of temperature points in diagram
-	pd->maxT[i_pd] 	 		=	pd->minT[i_pd] + (PetscScalar)(pd->nT[i_pd])*pd->dT[i_pd];	// maximum T of diagram
-	fscanf(fp, "%lf,",&pd->minP[i_pd]);														// minimum P of diagram [in bar]
-	pd->minP[i_pd] 			=	(pd->minP[i_pd]*1e5)/scal->stress_si;						// non-dimensionalize
-	fscanf(fp, "%lf,",&pd->dP[i_pd]);														// Pressure increment
-	pd->dP[i_pd] 			=	(pd->dP[i_pd]*1e5)/scal->stress_si;							// non-dimensionalize
-	fscanf(fp, "%" PetscInt_FMT ",",&pd->nP[i_pd]);														// # of pressure points in diagram
-	pd->maxP[i_pd] 	 		=	pd->minP[i_pd] + (PetscScalar)(pd->nP[i_pd])*pd->dP[i_pd];	// maximum P of diagram
-	
+	fscanf(fp, "%lf,",&pd->minT[i_pd]);                                                     // minimum T of diagram [in Kelvin]
+	pd->minT[i_pd]          =   pd->minT[i_pd]/scal->temperature;                           // non-dimensionalize
+	fscanf(fp, "%lf,",&pd->dT[i_pd]);                                                       // Temperature increment
+	pd->dT[i_pd]            =   pd->dT[i_pd]/scal->temperature;                             // non-dimensionalize
+	fscanf(fp, "%" PetscInt_FMT ",", &pd->nT[i_pd]);                                                        // # of temperature points in diagram
+	pd->maxT[i_pd]          =   pd->minT[i_pd] + (PetscScalar)(pd->nT[i_pd])*pd->dT[i_pd];  // maximum T of diagram
+	fscanf(fp, "%lf,",&pd->minP[i_pd]);                                                     // minimum P of diagram [in bar]
+	pd->minP[i_pd]          =   (pd->minP[i_pd]*1e5)/scal->stress_si;                       // non-dimensionalize
+	fscanf(fp, "%lf,",&pd->dP[i_pd]);                                                       // Pressure increment
+	pd->dP[i_pd]            =   (pd->dP[i_pd]*1e5)/scal->stress_si;                         // non-dimensionalize
+	fscanf(fp, "%" PetscInt_FMT ",",&pd->nP[i_pd]);                                                     // # of pressure points in diagram
+	pd->maxP[i_pd]          =   pd->minP[i_pd] + (PetscScalar)(pd->nP[i_pd])*pd->dP[i_pd];  // maximum P of diagram
+
 	n = pd->nT[i_pd]*pd->nP[i_pd]; // number of points
 
 	// Print info:
@@ -1844,11 +1859,11 @@ void setPhaseSphere(GeomPrim *sphere, Marker *P)
 	{
 		P->phase = sphere->phase;
 		if (sphere->setTemp>0)
-		{	
+		{
 			PetscScalar T=0;
 			computeTemperature(sphere, P, &T);
 
-			P->T = T; 			// set Temperature
+			P->T = T;           // set Temperature
 		}
 	}
 }
@@ -1873,7 +1888,7 @@ void setPhaseEllipsoid(GeomPrim *ellipsoid, Marker *P)
 			PetscScalar T=0;
 			computeTemperature(ellipsoid, P, &T);
 
-			P->T = T; 			// set Temperature
+			P->T = T;           // set Temperature
 		}
 	}
 
@@ -1881,38 +1896,38 @@ void setPhaseEllipsoid(GeomPrim *ellipsoid, Marker *P)
 //---------------------------------------------------------------------------
 void setPhaseBox(GeomPrim *box, Marker *P)
 {
-	if(P->X[0] >= box->bounds[0] && P->X[0] <= box->bounds[1]
-	&& P->X[1] >= box->bounds[2] && P->X[1] <= box->bounds[3]
-	&& P->X[2] >= box->bounds[4] && P->X[2] <= box->bounds[5])
+	if(P->X[0] >= box->bounds[0] && P->X[0] <= box->bounds[1] &&
+	   P->X[1] >= box->bounds[2] && P->X[1] <= box->bounds[3] &&
+	   P->X[2] >= box->bounds[4] && P->X[2] <= box->bounds[5])
 	{
 		P->phase = box->phase;
 		if (box->setTemp>0)
-		{	
+		{
 			PetscScalar T=0;
 			computeTemperature(box, P, &T);
 
-			P->T = T; 			// set Temperature
+			P->T = T;           // set Temperature
 		}
 
 	}
 }
-//--------------------------------------------------------------------------- 
-void setPhaseRidge(GeomPrim *ridge, Marker *P)    // JS, ridge temperature  
+//---------------------------------------------------------------------------
+void setPhaseRidge(GeomPrim *ridge, Marker *P)    // JS, ridge temperature
 {
-  if(P->X[0] >= ridge->bounds[0] && P->X[0] <= ridge->bounds[1]
-     && P->X[1] >= ridge->bounds[2] && P->X[1] <= ridge->bounds[3]
-     && P->X[2] >= ridge->bounds[4] && P->X[2] <= ridge->bounds[5])
-    {
+	if(P->X[0] >= ridge->bounds[0] && P->X[0] <= ridge->bounds[1] &&
+	   P->X[1] >= ridge->bounds[2] && P->X[1] <= ridge->bounds[3] &&
+	   P->X[2] >= ridge->bounds[4] && P->X[2] <= ridge->bounds[5])
+	{
 
-      P->phase = ridge->phase;
-      if(ridge->setTemp>0)
-        {
-          PetscScalar T=0;
-          computeTemperature(ridge, P, &T);
+		P->phase = ridge->phase;
+		if(ridge->setTemp>0)
+		{
+			PetscScalar T=0;
+			computeTemperature(ridge, P, &T);
 
-          P->T = T;                     // set Temperature
-        }
-    }
+			P->T = T;                     // set Temperature
+		}
+	}
 }
 //---------------------------------------------------------------------------
 void setPhaseLayer(GeomPrim *layer, Marker *P)
@@ -1920,29 +1935,30 @@ void setPhaseLayer(GeomPrim *layer, Marker *P)
 	PetscScalar bot, top,pert,pert_random;
 
 
-	bot = layer->bot; 
+	bot = layer->bot;
 	top = layer->top;
-	if (layer->cosine==1){
+	if (layer->cosine==1)
+	{
 		// Add sinusoidal perturbation
-		pert 	= 	-layer->amplitude*PetscCosScalar(2*PETSC_PI/layer->wavelength*P->X[0]);	
-		bot 	= 	bot + pert;
-		top 	= 	top + pert;
+		pert    =   -layer->amplitude*PetscCosScalar(2*PETSC_PI/layer->wavelength*P->X[0]);
+		bot     =   bot + pert;
+		top     =   top + pert;
 	}
 
 	// add random noise
-	pert_random 	= (rand()/PetscScalar(RAND_MAX)-0.5)*layer->rand_amplitude;
-	bot 			= 	bot + pert_random;
-	top 			= 	top + pert_random;
+	pert_random     = (rand()/PetscScalar(RAND_MAX)-0.5)*layer->rand_amplitude;
+	bot             =   bot + pert_random;
+	top             =   top + pert_random;
 
 	if(P->X[2] >= bot && P->X[2] <= top)
 	{
 		P->phase = layer->phase;
 		if (layer->setTemp>0)
-		{	
+		{
 			PetscScalar T=0;
 			computeTemperature(layer, P, &T);
 
-			P->T = T; 			// set Temperature
+			P->T = T;           // set Temperature
 		}
 	}
 }
@@ -1963,9 +1979,9 @@ void setPhaseHex(GeomPrim *hex, Marker *P)
 	};
 
 	// check bounding box
-	if(P->X[0] >= hex->bounds[0] && P->X[0] <= hex->bounds[1]
-	&& P->X[1] >= hex->bounds[2] && P->X[1] <= hex->bounds[3]
-	&& P->X[2] >= hex->bounds[4] && P->X[2] <= hex->bounds[5])
+	if(P->X[0] >= hex->bounds[0] && P->X[0] <= hex->bounds[1] &&
+	   P->X[1] >= hex->bounds[2] && P->X[1] <= hex->bounds[3] &&
+	   P->X[2] >= hex->bounds[4] && P->X[2] <= hex->bounds[5])
 	{
 		// check tetrahedrons
 		for(i = 0; i < 5; i++)
@@ -2007,11 +2023,11 @@ void setPhaseCylinder(GeomPrim *cylinder, Marker *P)
 		P->phase = cylinder->phase;
 
 		if (cylinder->setTemp>0)
-		{	
+		{
 			PetscScalar T=0;
 			computeTemperature(cylinder, P, &T);
 
-			P->T = T; 			// set Temperature
+			P->T = T;           // set Temperature
 		}
 	}
 }
@@ -2021,7 +2037,7 @@ void setPhaseCylinder(GeomPrim *cylinder, Marker *P)
 void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 {
 	// computes the temperature at the point based on the top of the geometric object
-	
+
 	if(geom->setTemp == 1)
 	{
 		// constant temperature
@@ -2031,15 +2047,13 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 	{
 		// linear temperature between top & bottom
 		PetscScalar z_top, z_bot, z, T_top, T_bot;
-		
+
 		z_top = geom->top;
 		z_bot = geom->bot;
 		T_top = geom->topTemp;
 		T_bot = geom->botTemp;
 		z     = P->X[2];
 		(*T)  = (z-z_top)*(T_top - T_bot)/(z_top-z_bot) + T_top; // linear gradient between top & bottom
-		
-
 	}
 	else if (geom->setTemp==3)
 	{
@@ -2055,50 +2069,50 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 		(*T)       = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAge)) + T_top;
 	}
 	else if (geom->setTemp==4)   // Oblique ridge temperature
-    {
-        // Half space cooling profile with age function, oblique possible
-        PetscScalar   x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack;
-        PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge;
-        
-        y             = P->X[1];
-        x             = P->X[0];
-        y_ridgeFront  = geom->ridgeseg_y[0];
-        y_ridgeBack   = geom->ridgeseg_y[1];
-        x_ridgeRight  = geom->ridgeseg_x[1];
-        x_ridgeLeft   = geom->ridgeseg_x[0];
-        z_top         = geom->top;
-        T_top         = geom->topTemp;
-        T_bot         = geom->botTemp;
-        z             = PetscAbs(P->X[2]-z_top);
-        kappa         = geom->kappa;
-        v_spread      = geom->v_spread;
-        age0          = geom->age0;
-        maxAge        = geom->maxAge;
-        
-        if (x_ridgeLeft == x_ridgeRight)
-        {
-            thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread + age0;
-            //thermalAgeRidge = max(thermalAgeRidge,age0);
-            
-        }
-        else
-        {
-            x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
-            thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread + age0;
-            //thermalAgeRidge = max(thermalAgeRidge,age0);
-        }
-        
-        thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff
-        (*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
-        
-    }
-    
+	{
+		// Half space cooling profile with age function, oblique possible
+		PetscScalar   x, y, z, z_top, v_spread, x_oblique, x_ridgeLeft, x_ridgeRight, y_ridgeFront, y_ridgeBack;
+		PetscScalar   T_top, T_bot, kappa, thermalAgeRidge, age0, maxAge;
+
+		y             = P->X[1];
+		x             = P->X[0];
+		y_ridgeFront  = geom->ridgeseg_y[0];
+		y_ridgeBack   = geom->ridgeseg_y[1];
+		x_ridgeRight  = geom->ridgeseg_x[1];
+		x_ridgeLeft   = geom->ridgeseg_x[0];
+		z_top         = geom->top;
+		T_top         = geom->topTemp;
+		T_bot         = geom->botTemp;
+		z             = PetscAbs(P->X[2]-z_top);
+		kappa         = geom->kappa;
+		v_spread      = geom->v_spread;
+		age0          = geom->age0;
+		maxAge        = geom->maxAge;
+
+		if (x_ridgeLeft == x_ridgeRight)
+		{
+			thermalAgeRidge = PetscAbs(x-x_ridgeLeft)/v_spread + age0;
+			//thermalAgeRidge = max(thermalAgeRidge,age0);
+
+		}
+		else
+		{
+			x_oblique = (x_ridgeLeft-x_ridgeRight)/(y_ridgeFront-y_ridgeBack) * y + x_ridgeLeft;
+			thermalAgeRidge = PetscAbs(x-x_oblique)/v_spread + age0;
+			//thermalAgeRidge = max(thermalAgeRidge,age0);
+		}
+
+		thermalAgeRidge = min(thermalAgeRidge,maxAge);      // upper cutoff
+		(*T) = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAgeRidge)) + T_top;
+
+	}
+
 }
 
 //---------------------------------------------------------------------------
 void HexGetBoundingBox(
-		PetscScalar *coord,  // hex coordinates
-		PetscScalar *bounds) // bounding box
+    PetscScalar *coord,  // hex coordinates
+    PetscScalar *bounds) // bounding box
 {
 	PetscInt     i;
 	PetscScalar *x;
@@ -2122,13 +2136,13 @@ void HexGetBoundingBox(
 }
 //---------------------------------------------------------------------------
 PetscInt TetPointTest(
-		PetscScalar *coord, // tetrahedron coordinates
-		PetscInt    *ii,    // corner indices
-		PetscScalar *xp,    // point coordinate
-		PetscScalar  tol)   // relative tolerance
+    PetscScalar *coord, // tetrahedron coordinates
+    PetscInt    *ii,    // corner indices
+    PetscScalar *xp,    // point coordinate
+    PetscScalar  tol)   // relative tolerance
 {
 	// macro for computing 3x3 matrix determinant
-	#define DET PetscAbsScalar(a11*(a22*a33-a23*a32)-a12*(a21*a33-a23*a31)+a13*(a21*a32-a22*a31))
+#define DET PetscAbsScalar(a11*(a22*a33-a23*a32)-a12*(a21*a33-a23*a31)+a13*(a21*a32-a22*a31))
 
 	PetscInt     j1, j2, j3, j4;
 	PetscScalar  x, y, z, r, s, t, q, d;

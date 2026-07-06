@@ -247,9 +247,9 @@ PetscErrorCode ADVelCreate(AdvCtx *actx, AdvVelCtx *vi)
 	//========================
 	// MARKER-CELL INTERACTION
 	//========================
-	PetscCall(makeIntArray(&vi->cellnum  , actx->cellnum, vi->nbuff       ));
-	PetscCall(makeIntArray(&vi->markind  , NULL         , vi->nbuff       ));
-	PetscCall(makeIntArray(&vi->markstart, NULL         , vi->fs->nCells+1));
+	PetscCall(makeIntArray(&vi->cellnum, actx->cellnum, vi->nbuff       ));
+	PetscCall(makeIntArray(&vi->markind, NULL, vi->nbuff       ));
+	PetscCall(makeIntArray(&vi->markstart, NULL, vi->fs->nCells+1));
 
 	//=========
 	// EXCHANGE
@@ -586,7 +586,7 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 		if(fs->neighb[k] != vi->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Isend(&vi->nsendm[k], 1, MPIU_INT,
-				(PetscMPIInt)fs->neighb[k], 100, vi->icomm, &srequest[scnt++]));
+			                       (PetscMPIInt)fs->neighb[k], 100, vi->icomm, &srequest[scnt++]));
 		}
 	}
 
@@ -596,7 +596,7 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 		if(fs->neighb[k] != vi->iproc && fs->neighb[k] != -1)
 		{
 			PetscCallMPI(MPI_Irecv(&vi->nrecvm[k], 1, MPIU_INT,
-				(PetscMPIInt)fs->neighb[k], 100, vi->icomm, &rrequest[rcnt++]));
+			                       (PetscMPIInt)fs->neighb[k], 100, vi->icomm, &rrequest[rcnt++]));
 		}
 		else vi->nrecvm[k] = 0;
 	}
@@ -681,7 +681,7 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 			nbyte = vi->nsendm[k]*(PetscInt)sizeof(VelInterp);
 
 			PetscCallMPI(MPI_Isend(&vi->sendbuf[vi->ptsend[k]], (PetscMPIInt)nbyte, MPI_BYTE,
-				(PetscMPIInt)fs->neighb[k], 200, vi->icomm, &srequest[scnt++]));
+			                       (PetscMPIInt)fs->neighb[k], 200, vi->icomm, &srequest[scnt++]));
 
 		}
 	}
@@ -694,7 +694,7 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 			nbyte = vi->nrecvm[k]*(PetscInt)sizeof(VelInterp);
 
 			PetscCallMPI(MPI_Irecv(&vi->recvbuf[vi->ptrecv[k]], (PetscMPIInt)nbyte, MPI_BYTE,
-				(PetscMPIInt)fs->neighb[k], 200, vi->icomm, &rrequest[rcnt++]));
+			                       (PetscMPIInt)fs->neighb[k], 200, vi->icomm, &rrequest[rcnt++]));
 		}
 	}
 
@@ -971,9 +971,9 @@ PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 		zc = ccz[K];
 
 		// map marker on the cells of X, Y, Z & center grids
-		if(xp > xc) { II = I; } else { II = I-1; }
-		if(yp > yc) { JJ = J; } else { JJ = J-1; }
-		if(zp > zc) { KK = K; } else { KK = K-1; }
+		if(xp > xc)  II = I; else  II = I-1;
+		if(yp > yc)  JJ = J; else  JJ = J-1;
+		if(zp > zc)  KK = K; else  KK = K-1;
 
 		// interpolate velocity, pressure & temperature
 		vi->interp[jj].v[0] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
@@ -1285,9 +1285,9 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 		zc = ccz[K];
 
 		// map marker on the cells of X, Y, Z & center grids
-		if(xp > xc) { II = I; } else { II = I-1; }
-		if(yp > yc) { JJ = J; } else { JJ = J-1; }
-		if(zp > zc) { KK = K; } else { KK = K-1; }
+		if(xp > xc)  II = I;  else  II = I-1;
+		if(yp > yc)  JJ = J;  else  JJ = J-1;
+		if(zp > zc)  KK = K;  else  KK = K-1;
 
 		// interpolate velocity, pressure & temperature
 		v[0] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
@@ -1300,7 +1300,7 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 		// ----------------
 		// VX
 		// ----------------
-		if(xp > xc) { IN = I+1; } else { IN = I; }
+		if(xp > xc)  IN = I+1;  else  IN = I;
 
 		if (IN == 0)
 		{
@@ -1350,7 +1350,7 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 		// ----------------
 		// VY
 		// ----------------
-		if(yp > yc) { JN = J+1; } else { JN = J; }
+		if(yp > yc) JN = J+1;  else  JN = J;
 
 		if (JN == 0)
 		{
@@ -1400,7 +1400,7 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 		// ----------------
 		// VZ
 		// ----------------
-		if(zp > zc) { KN = K+1; } else { KN = K; }
+		if(zp > zc)  KN = K+1;  else  KN = K;
 
 		if (KN == 0)
 		{

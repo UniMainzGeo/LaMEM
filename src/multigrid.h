@@ -101,21 +101,21 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine);
 
 // setup row of restriction matrix
 void getRowRestrict(
-		PetscScalar parent,
-		PetscInt    n,
-		PetscInt    idx[],
-		PetscScalar bc[],
-		PetscScalar v[],
-		PetscScalar vs[]);
+    PetscScalar parent,
+    PetscInt    n,
+    PetscInt    idx[],
+    PetscScalar bc[],
+    PetscScalar v[],
+    PetscScalar vs[]);
 
 // setup row of prolongation matrix
 void getRowProlong(
-		PetscInt    parent,
-		PetscScalar parent_bc,
-		PetscInt    n,
-		PetscScalar bc[],
-		PetscScalar v[],
-		PetscScalar vs[]);
+    PetscInt    parent,
+    PetscScalar parent_bc,
+    PetscInt    n,
+    PetscScalar bc[],
+    PetscScalar v[],
+    PetscScalar vs[]);
 
 //---------------------------------------------------------------------------
 

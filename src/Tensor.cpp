@@ -18,11 +18,11 @@
 // Elastic stress rotation functions
 //---------------------------------------------------------------------------
 void GetRotationMatrix(
-	Tensor2RN   *R,  // rotation matrix
-	PetscScalar  dt, // time step
-	PetscScalar  wx, // vorticity vector components
-	PetscScalar  wy, // ...
-	PetscScalar  wz) // ...
+    Tensor2RN   *R,  // rotation matrix
+    PetscScalar  dt, // time step
+    PetscScalar  wx, // vorticity vector components
+    PetscScalar  wy, // ...
+    PetscScalar  wz) // ...
 {
 	// compute rotation matrix from axis & angle (Euler-Rodrigues formula)
 	// WARNING! Courant criterion for rotation angle should be implemented
@@ -94,7 +94,7 @@ void Tensor2RSCopy(Tensor2RS *A, Tensor2RS *B)
 	// copy symmetric second order tensor B = A
 	B->xx = A->xx;
 	B->xy = A->xy; B->yy = A->yy;
-    B->xz = A->xz; B->yz = A->yz; B->zz = A->zz;
+	B->xz = A->xz; B->yz = A->yz; B->zz = A->zz;
 }
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) calculation functions
@@ -128,12 +128,12 @@ PetscInt Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
 	PetscScalar I2, I3, p, q, D, theta, l1, l2, l3, cx, t, sd, r, s;
 
 	// get invariants
-	I2 = L->xx*L->yy + L->yy*L->zz + L->xx*L->zz
-	-    L->xy*L->yx - L->yz*L->zy - L->xz*L->zx;
+	I2 = L->xx*L->yy + L->yy*L->zz + L->xx*L->zz -
+	     L->xy*L->yx - L->yz*L->zy - L->xz*L->zx;
 
-	I3 = L->xx*(L->yy*L->zz - L->yz*L->zy)
-	+    L->xy*(L->yz*L->zx - L->yx*L->zz)
-	+    L->xz*(L->yx*L->zy - L->yy*L->zx);
+	I3 = L->xx*(L->yy*L->zz - L->yz*L->zy) +
+	     L->xy*(L->yz*L->zx - L->yx*L->zz) +
+	     L->xz*(L->yx*L->zy - L->yy*L->zx);
 
 	// get discriminant
 	p =  I2;
@@ -451,10 +451,10 @@ void Tensor2RNUnit(Tensor2RN *A)
 }
 //---------------------------------------------------------------------------
 void Tensor2RNSum3(
-	Tensor2RN *A, PetscScalar ka,
-	Tensor2RN *B, PetscScalar kb,
-	Tensor2RN *C, PetscScalar kc,
-	Tensor2RN *R)
+    Tensor2RN *A, PetscScalar ka,
+    Tensor2RN *B, PetscScalar kb,
+    Tensor2RN *C, PetscScalar kc,
+    Tensor2RN *R)
 {
 	// R = ka*A + kb*B + kc*C
 
@@ -486,20 +486,20 @@ void Tensor2RSView(Tensor2RS *A, const char *msg)
 }
 //---------------------------------------------------------------------------
 PetscInt Tensor2RSSpectral(
-	Tensor2RS   *A,      // symmetric tensor
-	PetscScalar eval[],  // eigenvalues (sorted)
-	PetscScalar evect[], // eigenvectors (corresponding)
-	PetscScalar ttol,    // tight tolerance (convergence condition)
-	PetscScalar ltol,    // loose tolerance (divergence condition)
-	PetscInt    itmax)   // maximum number rotations
+    Tensor2RS   *A,      // symmetric tensor
+    PetscScalar eval[],  // eigenvalues (sorted)
+    PetscScalar evect[], // eigenvectors (corresponding)
+    PetscScalar ttol,    // tight tolerance (convergence condition)
+    PetscScalar ltol,    // loose tolerance (divergence condition)
+    PetscInt    itmax)   // maximum number rotations
 {
 	//=====================================================
 	// Jacobi rotation algorithm for spectral decomposition
 	//=====================================================
 
 	// return codes:
-	// 	 0 - converged to tight tolerance within maximum rotations
-	// 	 1 - failed to converge to loose tolerance within maximum rotations
+	//   0 - converged to tight tolerance within maximum rotations
+	//   1 - failed to converge to loose tolerance within maximum rotations
 
 	PetscInt    iter, opt, code;
 	PetscScalar atmp, ntmp[3], nrm;
@@ -508,25 +508,25 @@ PetscInt Tensor2RSSpectral(
 	PetscScalar a1, a2, a3, a12, a13, a23, *n1, *n2, *n3;
 
 	// macro for single Jacobi rotation
-	#define JAC_ROT(pp, qq, pq, rp, rq, vp, vq) \
-	{	theta = 0.5*(qq - pp)/pq; \
-		t     = 1.0/(fabs(theta) + sqrt(theta*theta + 1.0)); \
-		if(theta < 0.0) t = -t; \
-		c = 1.0/sqrt(t*t + 1.0); s = t*c; tau = s/(1.0 + c); \
-		pp -= t*pq;  qq += t*pq;   pq     = 0.0; \
-		w  =  rp;     z  = rq;     rp    -= s*(z + tau*w);  rq    += s*(w - tau*z); \
-		w  =  vp[0];  z  = vq[0];  vp[0] -= s*(z + tau*w);  vq[0] += s*(w - tau*z); \
-		w  =  vp[1];  z  = vq[1];  vp[1] -= s*(z + tau*w);  vq[1] += s*(w - tau*z); \
-		w  =  vp[2];  z  = vq[2];  vp[2] -= s*(z + tau*w);  vq[2] += s*(w - tau*z); \
-	}
+#define JAC_ROT(pp, qq, pq, rp, rq, vp, vq) \
+ {   theta = 0.5*(qq - pp)/pq; \
+     t     = 1.0/(fabs(theta) + sqrt(theta*theta + 1.0)); \
+     if(theta < 0.0) t = -t; \
+     c = 1.0/sqrt(t*t + 1.0); s = t*c; tau = s/(1.0 + c); \
+     pp -= t*pq;  qq += t*pq;   pq     = 0.0; \
+     w  =  rp;     z  = rq;     rp    -= s*(z + tau*w);  rq    += s*(w - tau*z); \
+     w  =  vp[0];  z  = vq[0];  vp[0] -= s*(z + tau*w);  vq[0] += s*(w - tau*z); \
+     w  =  vp[1];  z  = vq[1];  vp[1] -= s*(z + tau*w);  vq[1] += s*(w - tau*z); \
+     w  =  vp[2];  z  = vq[2];  vp[2] -= s*(z + tau*w);  vq[2] += s*(w - tau*z); \
+ }
 
 	// macro for swapping two principal values & principal directions
-	#define SWAP_EIG_PAIR(ai, aj, ni, nj) \
-	{	atmp    = ai;    ai    = aj;    aj    = atmp; \
-		ntmp[0] = ni[0]; ni[0] = nj[0]; nj[0] = ntmp[0]; \
-		ntmp[1] = ni[1]; ni[1] = nj[1]; nj[1] = ntmp[1]; \
-		ntmp[2] = ni[2]; ni[2] = nj[2]; nj[2] = ntmp[2]; \
-	}
+#define SWAP_EIG_PAIR(ai, aj, ni, nj) \
+ {   atmp    = ai;    ai    = aj;    aj    = atmp; \
+     ntmp[0] = ni[0]; ni[0] = nj[0]; nj[0] = ntmp[0]; \
+     ntmp[1] = ni[1]; ni[1] = nj[1]; nj[1] = ntmp[1]; \
+     ntmp[2] = ni[2]; ni[2] = nj[2]; nj[2] = ntmp[2]; \
+ }
 
 	// set return code
 	code = 0;
@@ -554,7 +554,8 @@ PetscInt Tensor2RSSpectral(
 	// zero out off-diagonal component by Jacobi rotations
 	iter = 0;
 	do
-	{	// select maximum off-diagonal component
+	{
+		// select maximum off-diagonal component
 		f = fabs(a12);               max = f;  opt = 1;
 		f = fabs(a13); if(f > max) { max = f;  opt = 2; }
 		f = fabs(a23); if(f > max) { max = f;  opt = 3; }
@@ -563,11 +564,12 @@ PetscInt Tensor2RSSpectral(
 		if(max < ttol) break;
 
 		// perform Jacobi rotation
-		if     (opt == 1) JAC_ROT(a1, a2, a12, a13, a23, n1, n2) // a12 term
-		else if(opt == 2) JAC_ROT(a1, a3, a13, a12, a23, n1, n3) // a13 term
-		else              JAC_ROT(a2, a3, a23, a12, a13, n2, n3) // a23 term
+		if     (opt == 1) { JAC_ROT(a1, a2, a12, a13, a23, n1, n2) } // a12 term
+		else if(opt == 2) { JAC_ROT(a1, a3, a13, a12, a23, n1, n3) } // a13 term
+		else              { JAC_ROT(a2, a3, a23, a12, a13, n2, n3) } // a23 term
 
-	} while(++iter < itmax);
+	}
+	while(++iter < itmax);
 
 	// check divergence
 	if(iter == itmax)
@@ -583,9 +585,9 @@ PetscInt Tensor2RSSpectral(
 	}
 
 	// sort principal values in descending order & permute principal directions
-	if(a2 > a1) SWAP_EIG_PAIR(a1, a2, n1, n2)
-	if(a3 > a1) SWAP_EIG_PAIR(a1, a3, n1, n3)
-	if(a3 > a2) SWAP_EIG_PAIR(a2, a3, n2, n3)
+	if(a2 > a1) { SWAP_EIG_PAIR(a1, a2, n1, n2) }
+	if(a3 > a1) { SWAP_EIG_PAIR(a1, a3, n1, n3) }
+	if(a3 > a2) { SWAP_EIG_PAIR(a2, a3, n2, n3) }
 
 	// store eigenvalues
 	eval[0] = a1;
@@ -596,14 +598,14 @@ PetscInt Tensor2RSSpectral(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode Tensor2RS2DSpectral(
-	PetscScalar  axx,
-	PetscScalar  ayy,
-	PetscScalar  axy,
-	PetscScalar *pa1,
-	PetscScalar *pa2,
-	PetscScalar  v1[],
-	PetscScalar  v2[],
-	PetscScalar  tol)
+    PetscScalar  axx,
+    PetscScalar  ayy,
+    PetscScalar  axy,
+    PetscScalar *pa1,
+    PetscScalar *pa2,
+    PetscScalar  v1[],
+    PetscScalar  v2[],
+    PetscScalar  tol)
 {
 	PetscScalar theta, t, c, s, tau, nrm, sum, a1, a2, a, v[2];
 

@@ -60,10 +60,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->mfmax        =  1.0;
 	ctrl->lmaxit       =  25;
 	ctrl->lrtol        =  1e-6;
-	ctrl->actTemp	   =  0;			// diffusion is not active by default (otherwise we have to define thermal properties in all cases)
-	ctrl->printNorms   =  0;			// print norms of velocity/pressure/temperature?
+	ctrl->actTemp      =  0;            // diffusion is not active by default (otherwise we have to define thermal properties in all cases)
+	ctrl->printNorms   =  0;            // print norms of velocity/pressure/temperature?
 	ctrl->Adiabatic_gr = 0.0;
-	
+
 	if(scal->utype != _NONE_)
 	{
 		ctrl->Rugc      = 8.3144621;
@@ -75,7 +75,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0));
-	PetscCall(getScalarParam(fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,       1, 1.0));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,        1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "act_therm_exp",   &ctrl->actExp,         1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1));
@@ -107,7 +107,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,     1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Passive_Tracer",  &ctrl->Passive_Tracer, 1, 1));
-	PetscCall(getIntParam   (fb, _OPTIONAL_, "printNorms", 	 &ctrl->printNorms,     1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "printNorms",      &ctrl->printNorms,     1, 1));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "adiabatic_gradient", &ctrl->Adiabatic_gr,1, 1.0));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "act_dike",        &ctrl->actDike,         1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "useTk",           &ctrl->useTk,           1, 1));
@@ -136,15 +136,15 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		m = jr->dbm->phases + i;
 
 		if(m->G   || m->Kb)           is_elastic     = 1;
-		if(m->Ed  || m->En || m->Ep
-		|| m->Vd  || m->Vn || m->Vp
-		|| m->Bdc || m->Bps )         need_RUGC      = 1;
+		if(m->Ed  || m->En || m->Ep ||
+		   m->Vd  || m->Vn || m->Vp ||
+		   m->Bdc || m->Bps )         need_RUGC      = 1;
 		if(m->rp  || m->rho_n)        need_rho_fluid = 1;
 		if(m->rp)                     need_gw_type   = 1;
 		if(m->rho_n)                  need_surf      = 1;
-		if(((m->Vd || m->Vn || m->Vp) && !ctrl->pLithoVisc)
-		||  (m->fr                    && !ctrl->pLithoPlast)
-		||  (m->Kb || m->beta))       need_top_open  = 1;
+		if(((m->Vd || m->Vn || m->Vp) && !ctrl->pLithoVisc)  ||
+		   ( m->fr                    && !ctrl->pLithoPlast) ||
+		   ( m->Kb || m->beta))       need_top_open  = 1;
 
 		// set default stabilization viscosity
 		if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
@@ -267,7 +267,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->pLithoPlast)    PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for plasticity @ \n");
 	if(ctrl->pShiftAct)      PetscPrintf(PETSC_COMM_WORLD, "   Enforce zero average pressure on top    @ \n");
 	if(ctrl->pLimPlast)      PetscPrintf(PETSC_COMM_WORLD, "   Limit pressure at first iteration       @ \n");
-    if(ctrl->pShift)         PetscPrintf(PETSC_COMM_WORLD, "   Applying a pressure shift               : %g %s \n", ctrl->pShift,    scal->lbl_stress);
+	if(ctrl->pShift)         PetscPrintf(PETSC_COMM_WORLD, "   Applying a pressure shift               : %g %s \n", ctrl->pShift,    scal->lbl_stress);
 	if(ctrl->eta_min)        PetscPrintf(PETSC_COMM_WORLD, "   Minimum viscosity                       : %g %s \n", ctrl->eta_min,   scal->lbl_viscosity);
 	if(ctrl->eta_max)        PetscPrintf(PETSC_COMM_WORLD, "   Maximum viscosity                       : %g %s \n", ctrl->eta_max,   scal->lbl_viscosity);
 	if(ctrl->eta_ref)        PetscPrintf(PETSC_COMM_WORLD, "   Reference viscosity (initial guess)     : %g %s \n", ctrl->eta_ref,   scal->lbl_viscosity);
@@ -311,8 +311,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->rho_fluid      /=  scal->density;
 	ctrl->gwLevel        /=  scal->length;
 	ctrl->steadyTempStep /=  scal->time;
-    ctrl->pShift         /=  scal->stress;
-    ctrl->Adiabatic_gr   = (ctrl->Adiabatic_gr/scal->temperature)*scal->length;
+	ctrl->pShift         /=  scal->stress;
+	ctrl->Adiabatic_gr   = (ctrl->Adiabatic_gr/scal->temperature)*scal->length;
 
 	// create Jacobian & residual evaluation context
 	PetscCall(JacResCreateData(jr));
@@ -338,7 +338,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	fs        =  jr->fs;
 	dof       = &fs->dof;
 	numPhases =  jr->dbm->numPhases;
-	
+
 	// set boundary type in x direction
 	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; }
 	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     }
@@ -363,7 +363,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	PetscCall(VecSetFromOptions(jr->gsol));
 	PetscCall(VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gres));
 	PetscCall(VecSetFromOptions(jr->gres));
-	
+
 	// zero out global vectors
 	PetscCall(VecSet(jr->gsol, 0.0));
 	PetscCall(VecSet(jr->gres, 0.0));
@@ -418,11 +418,11 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 
 	// create 2D cell center grid
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
-		DMDA_STENCIL_BOX,
-		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
-		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-		1, 1, lx, ly, NULL, &jr->DA_CELL_2D));
+	                            BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+	                            DMDA_STENCIL_BOX,
+	                            fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
+	                            fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+	                            1, 1, lx, ly, NULL, &jr->DA_CELL_2D));
 
 	PetscFunctionReturn(0);
 }
@@ -512,7 +512,8 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	//=============
 	n = fs->nCells;
 	for(i = 0; i < n; i++)
-	{	// access solution variables
+	{
+		// access solution variables
 		svCell = &jr->svCell[i];
 		// compute & store inverse viscosity
 		svCell->svDev.I2Gdt = getI2Gdt(numPhases, phases, svCell->phRat, dt);
@@ -522,7 +523,8 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	//===========
 	n = fs->nXYEdg;
 	for(i = 0; i < n; i++)
-	{	// access solution variables
+	{
+		// access solution variables
 		svEdge = &jr->svXYEdge[i];
 		// compute & store inverse viscosity
 		svEdge->svDev.I2Gdt = getI2Gdt(numPhases, phases, svEdge->phRat, dt);
@@ -532,7 +534,8 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	//===========
 	n = fs->nXZEdg;
 	for(i = 0; i < n; i++)
-	{	// access solution variables
+	{
+		// access solution variables
 		svEdge = &jr->svXZEdge[i];
 		// compute & store inverse viscosity
 		svEdge->svDev.I2Gdt = getI2Gdt(numPhases, phases, svEdge->phRat, dt);
@@ -542,7 +545,8 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	//===========
 	n = fs->nYZEdg;
 	for(i = 0; i < n; i++)
-	{	// access solution variables
+	{
+		// access solution variables
 		svEdge = &jr->svYZEdge[i];
 		// compute & store inverse viscosity
 		svEdge->svDev.I2Gdt = getI2Gdt(numPhases, phases, svEdge->phRat, dt);
@@ -598,9 +602,9 @@ PetscErrorCode JacResGetPressShift(JacRes *jr, Vec lp)
 }
 //---------------------------------------------------------------------------
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
-		Vec lvx,  Vec lvy,  Vec lvz,
-		Vec ldxx, Vec ldyy, Vec ldzz,
-		Vec ldxy, Vec ldxz, Vec ldyz)
+                                      Vec lvx,  Vec lvy,  Vec lvz,
+                                      Vec ldxx, Vec ldyy, Vec ldzz,
+                                      Vec ldxy, Vec ldxz, Vec ldyz)
 {
 	FDSTAG     *fs;
 	SolVarCell *svCell;
@@ -791,8 +795,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
 }
 //---------------------------------------------------------------------------
 PetscErrorCode JacResGetVorticity(JacRes *jr,
-		Vec lvx,  Vec lvy,  Vec lvz,
-		Vec ldxy, Vec ldxz, Vec ldyz)
+                                  Vec lvx,  Vec lvy,  Vec lvz,
+                                  Vec ldxy, Vec ldxz, Vec ldyz)
 {
 	// Compute components of the vorticity pseudo-vector
 	// (instantaneous rotation rates around three coordinate axis).
@@ -918,7 +922,7 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 
 	PetscFunctionBeginUser;
-	
+
 	// access context
 	fs = jr->fs;
 	bc = jr->bc;
@@ -1016,7 +1020,7 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 		XX = dxx[k][j][i];
 		YY = dyy[k][j][i];
 		ZZ = dzz[k][j][i];
-		
+
 		// x-y plane, i-j indices
 		XY1 = dxy[k][j][i];
 		XY2 = dxy[k][j+1][i];
@@ -1073,7 +1077,7 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 
 		// evaluate constitutive equations on the cell
 		PetscCall(cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, dikeRHS));
-		
+
 		// compute gravity terms
 		gx = rho*grav[0];
 		gy = rho*grav[1];
@@ -1579,12 +1583,13 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 	PetscCall(DMDAVecGetArray(fs->DA_CEN, lT, &T));
 
 	do
-	{	// access pressure and temperature
+	{
+		// access pressure and temperature
 		PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p));
 
 		// loop over cell centers
 		iter = 0;
-			
+
 		PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 		START_STD_LOOP
@@ -1648,7 +1653,8 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 
 		conv = stop < tol;
 
-	} while(!conv && it++ < maxit);
+	}
+	while(!conv && it++ < maxit);
 
 	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, NULL, &lT));
 
@@ -1755,7 +1761,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscFunctionBeginUser;
 
 	fs = jr->fs;
-	
+
 	// make buffer vectors
 	PetscCall(FDSTAGGetGlobalVectorFace(fs, &gvx, &gvy, &gvz));
 	PetscCall(FDSTAGGetGlobalVectorFace(fs, &gfx, &gfy, &gfz));
@@ -1778,7 +1784,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscCall(VecNorm(gvx, NORM_2, &vx2));
 	PetscCall(VecNorm(gvy, NORM_2, &vy2));
 	PetscCall(VecNorm(gvz, NORM_2, &vz2));
-	PetscCall(VecNorm(gp,  NORM_2, &p2));		// pressure
+	PetscCall(VecNorm(gp,  NORM_2, &p2));       // pressure
 
 	f2 = sqrt(fx*fx + fy*fy + fz*fz);
 

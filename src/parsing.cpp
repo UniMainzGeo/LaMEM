@@ -86,7 +86,7 @@ PetscErrorCode FBLoad(FB **pfb)
 	{
 		PetscCallMPI(MPI_Bcast(fb->fbuf, (PetscMPIInt)fb->nchar, MPI_CHAR, 0, PETSC_COMM_WORLD));
 	}
-	
+
 	// parse buffer
 	PetscCall(FBParseBuffer(fb));
 
@@ -323,12 +323,12 @@ char ** FBGetLineRanges(FB *fb, PetscInt *lnbeg, PetscInt *lnend)
 }
 //-----------------------------------------------------------------------------
 PetscErrorCode FBGetIntArray(
-		FB         *fb,
-		const char *key,
-		PetscInt   *nvalues,
-		PetscInt   *values,
-		PetscInt    num,
-		PetscBool  *found)
+    FB         *fb,
+    const char *key,
+    PetscInt   *nvalues,
+    PetscInt   *values,
+    PetscInt    num,
+    PetscBool  *found)
 {
 	PetscFunctionBeginUser;
 
@@ -384,12 +384,12 @@ PetscErrorCode FBGetIntArray(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode FBGetScalarArray(
-		FB          *fb,
-		const char  *key,
-		PetscInt    *nvalues,
-		PetscScalar *values,
-		PetscInt     num,
-		PetscBool   *found)
+    FB          *fb,
+    const char  *key,
+    PetscInt    *nvalues,
+    PetscScalar *values,
+    PetscInt     num,
+    PetscBool   *found)
 {
 	PetscFunctionBeginUser;
 
@@ -445,10 +445,10 @@ PetscErrorCode FBGetScalarArray(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode FBGetString(
-		FB         *fb,
-		const char *key,
-		char       *str,    // output string
-		PetscBool  *found)
+    FB         *fb,
+    const char *key,
+    char       *str,    // output string
+    PetscBool  *found)
 {
 	PetscFunctionBeginUser;
 
@@ -505,12 +505,12 @@ PetscErrorCode FBGetString(
 // Wrappers
 //-----------------------------------------------------------------------------
 PetscErrorCode getIntParam(
-		FB         *fb,
-		ParamType   ptype,
-		const char *key,
-		PetscInt   *val,
-		PetscInt    num,
-		PetscInt    maxval)
+    FB         *fb,
+    ParamType   ptype,
+    const char *key,
+    PetscInt   *val,
+    PetscInt    num,
+    PetscInt    maxval)
 {
 	PetscInt  i, nval;
 	PetscBool found;
@@ -551,7 +551,7 @@ PetscErrorCode getIntParam(
 
 	// check number of entries
 	if(nval < num) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "%" PetscInt_FMT " entry(ies) are missing in parameter \"[-]%s\" \n",
-		(num-nval), key);
+		                       (num-nval), key);
 
 	// check for out-of-bound entries
 	if(maxval > 0)
@@ -561,7 +561,7 @@ PetscErrorCode getIntParam(
 			if(val[i] > maxval)
 			{
 				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Entry %" PetscInt_FMT " in parameter \"[-]%s\" is larger than allowed : val=%" PetscInt_FMT ", max=%" PetscInt_FMT "\n",
-					(i+1), key, val[i], maxval);
+				        (i+1), key, val[i], maxval);
 			}
 		}
 	}
@@ -570,12 +570,12 @@ PetscErrorCode getIntParam(
 }
 //-----------------------------------------------------------------------------
 PetscErrorCode getScalarParam(
-		FB          *fb,
-		ParamType    ptype,
-		const char  *key,
-		PetscScalar *val,
-		PetscInt     num,
-		PetscScalar  scal)
+    FB          *fb,
+    ParamType    ptype,
+    const char  *key,
+    PetscScalar *val,
+    PetscInt     num,
+    PetscScalar  scal)
 {
 	PetscInt  i, nval;
 	PetscBool found;
@@ -595,14 +595,14 @@ PetscErrorCode getScalarParam(
 	{
 		asprintf(&dbkey, "-%s[%" PetscInt_FMT "]", key, fb->ID);
 	}
-	
+
 	nval = num;
 
 	PetscCall(PetscOptionsGetScalarArray(NULL, NULL, dbkey, val, &nval, &found));
-	
+
 	free(dbkey);
 
-	
+
 	if(found != PETSC_TRUE && fb)
 	{
 		PetscCall(FBGetScalarArray(fb, key, &nval, val, num, &found));
@@ -625,11 +625,11 @@ PetscErrorCode getScalarParam(
 }
 //-----------------------------------------------------------------------------
 PetscErrorCode getStringParam(
-		FB          *fb,
-		ParamType    ptype,
-		const char  *key,
-		char        *str,        // output string
-		const char  *_default_)  // default value (optional)
+    FB          *fb,
+    ParamType    ptype,
+    const char  *key,
+    char        *str,        // output string
+    const char  *_default_)  // default value (optional)
 {
 	// default ->  NULL             str -> cleared
 	// default -> "_none_"          str -> not cleared
@@ -654,7 +654,7 @@ PetscErrorCode getStringParam(
 	{
 		asprintf(&dbkey, "-%s[%" PetscInt_FMT "]", key, fb->ID);
 	}
-	
+
 	PetscCall(PetscOptionsGetCheckString(dbkey, str, &found));
 
 	free(dbkey);
@@ -675,9 +675,9 @@ PetscErrorCode getStringParam(
 }
 //-----------------------------------------------------------------------------
 PetscErrorCode  PetscOptionsGetCheckString(
-	const char   key[],
-	char         str[],
-	PetscBool   *set)
+    const char   key[],
+    char         str[],
+    PetscBool   *set)
 {
 	// prohibit empty parameters & check for overruns (two null characters are reserved in the end)
 

@@ -35,19 +35,19 @@ struct MeshSeg1D
 //---------------------------------------------------------------------------
 
 PetscErrorCode MeshSeg1DReadParam(
-	MeshSeg1D  *ms,
-	PetscScalar leng,
-	PetscScalar gtol,
-	const char *dir,
-	FB         *fb);
+    MeshSeg1D  *ms,
+    PetscScalar leng,
+    PetscScalar gtol,
+    const char *dir,
+    FB         *fb);
 
 // (partially) mesh a segment with (optionally) biased element size
 PetscErrorCode MeshSeg1DGenCoord(
-	MeshSeg1D   *ms,     // segments description
-	PetscInt     iseg,   // segment index
-	PetscInt     nl,     // number of nodes to be generated
-	PetscInt     istart, // index of the first node
-	PetscScalar *crd);   // coordinates of the nodes
+    MeshSeg1D   *ms,     // segments description
+    PetscInt     iseg,   // segment index
+    PetscInt     nl,     // number of nodes to be generated
+    PetscInt     istart, // index of the first node
+    PetscScalar *crd);   // coordinates of the nodes
 
 
 //---------------------------------------------------------------------------
@@ -91,16 +91,16 @@ struct Discret1D
 //---------------------------------------------------------------------------
 
 PetscErrorCode Discret1DCreate(
-		Discret1D   *ds,
-		PetscInt     nproc,         // number of processors
-		PetscInt     rank,          // processor rank
-		PetscInt    *nnodProc,      // number of nodes per processor
-		PetscInt     color,         // column color
-		PetscInt     grprev,        // global rank of previous process
-		PetscInt     grnext,        // global rank of next process
-		PetscScalar  gtol,          // geometric tolerance
-		const char  *dir,           // direction label
-		PetscInt     periodic = 0); // periodic topology flag
+    Discret1D   *ds,
+    PetscInt     nproc,         // number of processors
+    PetscInt     rank,          // processor rank
+    PetscInt    *nnodProc,      // number of nodes per processor
+    PetscInt     color,         // column color
+    PetscInt     grprev,        // global rank of previous process
+    PetscInt     grnext,        // global rank of next process
+    PetscScalar  gtol,          // geometric tolerance
+    const char  *dir,           // direction label
+    PetscInt     periodic = 0); // periodic topology flag
 
 PetscErrorCode Discret1DDestroy(Discret1D *ds);
 
@@ -209,9 +209,9 @@ PetscErrorCode FDSTAGCoarsen(FDSTAG *coarse, FDSTAG *fine);
 PetscErrorCode FDSTAGCoarsenCoord(FDSTAG *coarse, FDSTAG *fine);
 
 PetscErrorCode FDSTAGCreateDMDA(FDSTAG   *fs,
-	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
-	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
-	PetscInt *lx, PetscInt *ly, PetscInt *lz);
+                                PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
+                                PetscInt  Px, PetscInt  Py, PetscInt  Pz,
+                                PetscInt *lx, PetscInt *ly, PetscInt *lz);
 
 // set number of local grid points
 PetscErrorCode FDSTAGSetNum(FDSTAG *fs);
@@ -229,12 +229,12 @@ PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat);
 PetscErrorCode FDSTAGView(FDSTAG *fs);
 
 PetscErrorCode FDSTAGGetLocalBox(FDSTAG *fs,
-	PetscScalar *bx, PetscScalar *by, PetscScalar *bz,
-	PetscScalar *ex, PetscScalar *ey, PetscScalar *ez);
+                                 PetscScalar *bx, PetscScalar *by, PetscScalar *bz,
+                                 PetscScalar *ex, PetscScalar *ey, PetscScalar *ez);
 
 PetscErrorCode FDSTAGGetGlobalBox(FDSTAG *fs,
-	PetscScalar *bx, PetscScalar *by, PetscScalar *bz,
-	PetscScalar *ex, PetscScalar *ey, PetscScalar *ez);
+                                  PetscScalar *bx, PetscScalar *by, PetscScalar *bz,
+                                  PetscScalar *ex, PetscScalar *ey, PetscScalar *ez);
 
 // save grid coordinates and processor partitioning to disk
 PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
@@ -247,17 +247,17 @@ PetscErrorCode FDSTAGCheckMG2D(FDSTAG *fs, PetscInt &MG2D);
 
 // compute global and local size of the coarse grid
 PetscErrorCode FDSTAGGetCoarseGridSize(
-		FDSTAG   *fs,
-		PetscInt nlevels,
-		PetscInt &nx, PetscInt &ny, PetscInt &nz,
-		PetscInt &Nx, PetscInt &Ny, PetscInt &Nz);
+    FDSTAG   *fs,
+    PetscInt nlevels,
+    PetscInt &nx, PetscInt &ny, PetscInt &nz,
+    PetscInt &Nx, PetscInt &Ny, PetscInt &Nz);
 
 // compute local grid size on all levels
 PetscErrorCode FDSTAGGetLevelsLocalGridSize(
-		FDSTAG   *fs,
-		PetscInt nlevels,
-		PetscInt levels_num_local_cells[],
-		PetscInt &coarse_num_local_cells);
+    FDSTAG   *fs,
+    PetscInt nlevels,
+    PetscInt levels_num_local_cells[],
+    PetscInt &coarse_num_local_cells);
 
 //---------------------------------------------------------------------------
 // BUFFERS
@@ -331,67 +331,67 @@ PetscErrorCode FDSTAGSetEdgeCornerFaces      (FDSTAG *fs, Vec XFace, Vec YFace, 
 
 // get I, J, K indices from consecutive index
 #define GET_CELL_IJK(ID, i, j, k, m, n) \
-	(k) = (ID)/((m)*(n));               \
-	(j) = (ID - (k)*(m)*(n))/m;         \
-	(i) =  ID - (k)*(m)*(n) - (j)*(m);
+    (k) = (ID)/((m)*(n));               \
+    (j) = (ID - (k)*(m)*(n))/m;         \
+    (i) =  ID - (k)*(m)*(n) - (j)*(m);
 
 #define SET_EDGE_CORNER(a, K, J, I, k, j, i, pmdof) \
-	a[K][J][I] = a[k][j][I] + a[k][J][i] + a[K][j][i] - 2.0*pmdof;
+    a[K][J][I] = a[k][j][I] + a[k][J][i] + a[K][j][i] - 2.0*pmdof;
 
 //---------------------------------------------------------------------------
 
 // initialize standard access loop
 #define START_STD_LOOP \
-	for(k = sz; k < sz+nz; k++) \
-	{	for(j = sy; j < sy+ny; j++) \
-		{	for(i = sx; i < sx+nx; i++) \
-			{
+    for(k = sz; k < sz+nz; k++) \
+    {   for(j = sy; j < sy+ny; j++) \
+        {   for(i = sx; i < sx+nx; i++) \
+            {
 
 // finalize standard access loop
 #define END_STD_LOOP \
-			} \
-		} \
-	}
+            } \
+        } \
+    }
 
 //---------------------------------------------------------------------------
 
 // initialize plane access loop
 #define START_PLANE_LOOP \
-	for(j = sy; j < sy+ny; j++) \
-	{	for(i = sx; i < sx+nx; i++) \
-		{
+    for(j = sy; j < sy+ny; j++) \
+    {   for(i = sx; i < sx+nx; i++) \
+        {
 
 // finalize plane access loop
 #define END_PLANE_LOOP \
-		} \
-	}
+        } \
+    }
 
 //---------------------------------------------------------------------------
 
 // scatter operation (two-vectors)
 #define GLOBAL_TO_LOCAL(dm, gvec, lvec) \
-	PetscCall(DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec)); \
-	PetscCall(DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec));
+    PetscCall(DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec)); \
+    PetscCall(DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec));
 
 // scatter operation (one-vector)
 #define LOCAL_TO_LOCAL(dm, lvec) \
-	PetscCall(DMLocalToLocalBegin(dm, lvec, INSERT_VALUES, lvec)); \
-	PetscCall(DMLocalToLocalEnd  (dm, lvec, INSERT_VALUES, lvec));
+    PetscCall(DMLocalToLocalBegin(dm, lvec, INSERT_VALUES, lvec)); \
+    PetscCall(DMLocalToLocalEnd  (dm, lvec, INSERT_VALUES, lvec));
 
 // assembly operation
 #define LOCAL_TO_GLOBAL(dm, lvec, gvec) \
-	PetscCall(VecZeroEntries(gvec)); \
-	PetscCall(DMLocalToGlobalBegin(dm, lvec, ADD_VALUES, gvec)); \
-	PetscCall(DMLocalToGlobalEnd  (dm, lvec, ADD_VALUES, gvec));
+    PetscCall(VecZeroEntries(gvec)); \
+    PetscCall(DMLocalToGlobalBegin(dm, lvec, ADD_VALUES, gvec)); \
+    PetscCall(DMLocalToGlobalEnd  (dm, lvec, ADD_VALUES, gvec));
 
 //-----------------------------------------------------------------------------
 // WRAPPERS
 //-----------------------------------------------------------------------------
 
 PetscErrorCode DMDACreate3DSetUp(MPI_Comm comm,
-	DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,
-	PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,
-	PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da);
+                                 DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,
+                                 PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,
+                                 PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da);
 
 PetscErrorCode DMGetLocalVectorClean(DM dm, Vec *g);
 

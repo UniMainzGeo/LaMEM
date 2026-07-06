@@ -26,8 +26,8 @@
 // [5] The postspinel boundary in pyrolitic compositions determined in the laser-heated diamond anvil cell
 //	    Geophysical Research Letters, 41 (2014), pp. 3833-3841
 // [6] Akaogi, M., Hashimoto, S., & Kojitani, H. (2018). Thermodynamic properties of ZrSiO 4 zircon and
-//  	reidite and of cotunnite-type ZrO 2 with application to high-pressure high-temperature phase relations
-//  	 in ZrSiO 4. Physics of the Earth and Planetary Interiors, 281,
+//      reidite and of cotunnite-type ZrO 2 with application to high-pressure high-temperature phase relations
+//       in ZrSiO 4. Physics of the Earth and Planetary Interiors, 281,
 //
 //
 //	The routines in this file allow changing the phase of a marker depending on conditions
@@ -90,7 +90,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	// check ID
 	if(ph->ID != -1)
 	{
-		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Duplicate phase transition law!");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Duplicate phase transition law!");
 	}
 
 	// set ID
@@ -117,8 +117,8 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ph->Type = _NotInAirBox_;
 		PetscCall(Set_NotInAirBox_Phase_Transition(ph, dbm, fb));
 	}
-	
-	PetscCall(getIntParam(fb,      _REQUIRED_, "number_phases", &ph->number_phases, 1 ,                     _max_tr_));
+
+	PetscCall(getIntParam(fb,      _REQUIRED_, "number_phases", &ph->number_phases, 1,                     _max_tr_));
 
 	if(!ph->number_phases)
 	{
@@ -127,72 +127,76 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 
 	if(ph->Type == _Box_ || ph->Type == _NotInAirBox_)
 	{
-		ph->PhaseInside[0] = -1;	// default
-		PetscCall(getIntParam(fb, 	    _OPTIONAL_, "PhaseInside",    	ph->PhaseInside, 	ph->number_phases , _max_num_phases_));
-		
-		ph->PhaseOutside[0] = -1;	// default
-		PetscCall(getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,	ph->number_phases , _max_num_phases_));
-		
+		ph->PhaseInside[0] = -1;    // default
+		PetscCall(getIntParam(fb,       _OPTIONAL_, "PhaseInside",      ph->PhaseInside,    ph->number_phases, _max_num_phases_));
+
+		ph->PhaseOutside[0] = -1;   // default
+		PetscCall(getIntParam(fb,      _OPTIONAL_, "PhaseOutside",     ph->PhaseOutside,    ph->number_phases, _max_num_phases_));
+
 	}
 	else
 	{
-		PetscCall(getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases , _max_num_phases_));
-		PetscCall(getIntParam(fb, 	    _OPTIONAL_, "PhaseAbove",       ph->PhaseAbove,     ph->number_phases , _max_num_phases_));
-		PetscCall(getScalarParam(fb,   _OPTIONAL_, "DensityBelow",     ph->DensityBelow,   ph->number_phases , 1.0));
+		PetscCall(getIntParam(fb,      _OPTIONAL_, "PhaseBelow",       ph->PhaseBelow,     ph->number_phases, _max_num_phases_));
+		PetscCall(getIntParam(fb,       _OPTIONAL_, "PhaseAbove",       ph->PhaseAbove,     ph->number_phases, _max_num_phases_));
+		PetscCall(getScalarParam(fb,   _OPTIONAL_, "DensityBelow",     ph->DensityBelow,   ph->number_phases, 1.0));
 		PetscCall(getScalarParam(fb,   _OPTIONAL_, "DensityAbove",     ph->DensityAbove,   ph->number_phases,  1.0));
 	}
-	
+
 	// for moving NotInAirBox: read-in box-velocity
 	if (ph->Type == _NotInAirBox_)
-	  {
-	    scal    =  dbm->scal;
-	    PetscCall(getScalarParam(fb, _OPTIONAL_, "v_box", &ph->v_box, 1,  1.0));
-	    PetscCall(getScalarParam(fb, _OPTIONAL_, "t0_box", &ph->t0_box, 1,  1.0));
-	    PetscCall(getScalarParam(fb, _OPTIONAL_, "t1_box", &ph->t1_box, 1,  1.0));
-	    ph->v_box  /= scal->velocity;
-	    ph->t0_box /= scal->time;
-	    ph->t1_box /= scal->time;
-	  }
-	
+	{
+		scal    =  dbm->scal;
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "v_box", &ph->v_box, 1,  1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "t0_box", &ph->t0_box, 1,  1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "t1_box", &ph->t1_box, 1,  1.0));
+		ph->v_box  /= scal->velocity;
+		ph->t0_box /= scal->time;
+		ph->t1_box /= scal->time;
+	}
+
 	PetscCall(getStringParam(fb, _OPTIONAL_, "PhaseDirection",     str_direction, "BothWays"));
-	
-	if     	(!strcmp(str_direction, "BelowToAbove"))    ph->PhaseDirection  = 1;
-	else if (!strcmp(str_direction, "InsideToOutside")) ph->PhaseDirection  = 1; 
+
+	if      (!strcmp(str_direction, "BelowToAbove"))    ph->PhaseDirection  = 1;
+	else if (!strcmp(str_direction, "InsideToOutside")) ph->PhaseDirection  = 1;
 	else if (!strcmp(str_direction, "AboveToBelow"))    ph->PhaseDirection  = 2;
 	else if (!strcmp(str_direction, "OutsideToInside")) ph->PhaseDirection  = 2;
 	else if (!strcmp(str_direction, "BothWays"    ))    ph->PhaseDirection  = 0;
-	else{      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Phase direction %s \n", str_direction);  }
+	else {      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown Phase direction %s \n", str_direction);  }
 
-	if (ph->Type == _Box_ || ph->Type == _NotInAirBox_){
-		
-		if (ph->number_phases>0){
-			
-			if (ph->PhaseOutside[0]>=0){
+	if (ph->Type == _Box_ || ph->Type == _NotInAirBox_)
+	{
+
+		if (ph->number_phases>0)
+		{
+
+			if (ph->PhaseOutside[0]>=0)
+			{
 				PetscPrintf(PETSC_COMM_WORLD,"     Phase Outside      :   ");
-				for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseOutside[i])); }
+				for (i=0; i<ph->number_phases; i++) {    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseOutside[i])); }
 				PetscPrintf(PETSC_COMM_WORLD," \n");
 			}
 			PetscPrintf(PETSC_COMM_WORLD,"     Phase Inside       :  ");
-			for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseInside[i])); }
+			for (i=0; i<ph->number_phases; i++) {    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseInside[i])); }
 			PetscPrintf(PETSC_COMM_WORLD," \n");
 			PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
 		}
-		else{
+		else
+		{
 			PetscPrintf(PETSC_COMM_WORLD,"     No phase change    @   \n");
 		}
 	}
 	else
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"     Phase Above        :  ");
-		for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseAbove[i])); }
+		for (i=0; i<ph->number_phases; i++) {    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseAbove[i])); }
 		PetscPrintf(PETSC_COMM_WORLD," \n");
 
 		PetscPrintf(PETSC_COMM_WORLD,"     Phase Below        :  ");
-		for (i=0; i<ph->number_phases; i++){    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseBelow[i])); }
+		for (i=0; i<ph->number_phases; i++) {    PetscPrintf(PETSC_COMM_WORLD," %" PetscInt_FMT " ", (ph->PhaseBelow[i])); }
 		PetscPrintf(PETSC_COMM_WORLD," \n");
 		PetscPrintf(PETSC_COMM_WORLD,"     Direction          :   %s \n", str_direction);
 	}
-	
+
 	// [Optional] parameter to reset on the tracers
 	PetscCall(getStringParam(fb, _OPTIONAL_, "ResetParam",   Parameter,  "none"));
 	if(!strcmp(Parameter, "none"))
@@ -203,7 +207,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	{
 		ph->Reset = 1;
 		PetscPrintf(PETSC_COMM_WORLD,"     Reset Parameter    :   APS \n");
- 	}
+	}
 	else
 	{
 		SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_Reset [none; APS;]");
@@ -253,7 +257,7 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	{
 		ph->Parameter_transition = _Time_;
 	}
-	
+
 
 	PetscCall(getScalarParam(fb, _REQUIRED_, "ConstantValue",          &ph->ConstantValue,        1,1.0));
 
@@ -274,11 +278,11 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	{
 		ph->ConstantValue   /= scal->length;
 	}
-	else if(ph->Parameter_transition==_X_)          	//  X-coordinate [km if geo units]
+	else if(ph->Parameter_transition==_X_)              //  X-coordinate [km if geo units]
 	{
 		ph->ConstantValue   /= scal->length;
 	}
-	else if(ph->Parameter_transition==_Y_)          	//  Y-coordinate [km if geo units]
+	else if(ph->Parameter_transition==_Y_)              //  Y-coordinate [km if geo units]
 	{
 		ph->ConstantValue   /= scal->length;
 	}
@@ -288,8 +292,8 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	}
 	else if( !(ph->Parameter_transition==_PlasticStrain_ || ph->Parameter_transition==_MeltFraction_) )
 	{
-        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for [Constant] Phase transition");
-    }
+		SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for [Constant] Phase transition");
+	}
 
 	PetscFunctionReturn(0);
 
@@ -300,55 +304,55 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 	Scaling      *scal;
 	char         Parameter[_str_len_];
 	PetscScalar  Box[6];
-	PetscInt 	 i;
+	PetscInt     i;
 
 	PetscFunctionBeginUser;
 
 	scal = dbm -> scal;
 
-	PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_Bounds",   	ph->bounds,  		6, scal->length));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_Bounds",    ph->bounds,         6, scal->length));
 
-	// ph->PhaseInside[0] = -1; 	// default
+	// ph->PhaseInside[0] = -1;     // default
 
-	for (i=0; i<6; i++){ Box[i] = ph->bounds[i]*scal->length; }		// dimensional units
+	for (i=0; i<6; i++) { Box[i] = ph->bounds[i]*scal->length; }    // dimensional units
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%" PetscInt_FMT "] :   Box \n", (ph->ID));
 	PetscPrintf(PETSC_COMM_WORLD,"     Box Bounds         :   [%1.1f; %1.1f; %1.1f; %1.1f; %1.1f; %1.1f] %s \n", Box[0],Box[1],Box[2],Box[3],Box[4],Box[5], scal->lbl_length);
 
-	
+
 	PetscCall(getIntParam(fb, _OPTIONAL_, "BoxVicinity",   &ph->BoxVicinity,  1, 1));
 
 	if (ph->BoxVicinity==1)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside \n");
-	} 
+	}
 	else
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"     Box Vicinity       :   Use all particles to check inside/outside \n");
 	}
-	
+
 	if (ph->PhaseInside[0] < 0) PetscPrintf(PETSC_COMM_WORLD,"     Don't set phase    @   \n");
 
- 	PetscCall(getStringParam(fb, _OPTIONAL_, "PTBox_TempType",   Parameter,  "none"));
+	PetscCall(getStringParam(fb, _OPTIONAL_, "PTBox_TempType",   Parameter,  "none"));
 	if(!strcmp(Parameter, "none"))
 	{
 		ph->TempType = 0;
-	    PetscPrintf(PETSC_COMM_WORLD,"     Don't set T inside @   \n");
+		PetscPrintf(PETSC_COMM_WORLD,"     Don't set T inside @   \n");
 	}
 	else if(!strcmp(Parameter, "constant"))
 	{
 		ph->TempType = 1;
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_cstTemp",   	&ph->cstTemp,  1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_cstTemp",       &ph->cstTemp,  1, 1));
 		PetscPrintf(PETSC_COMM_WORLD,"     Constant T inside  :   %1.1f %s \n", ph->cstTemp, scal->lbl_temperature);
-	 	ph->cstTemp = (ph->cstTemp + scal->Tshift)/scal->temperature;
+		ph->cstTemp = (ph->cstTemp + scal->Tshift)/scal->temperature;
 	}
 	else if(!strcmp(Parameter, "linear"))
 	{
 		ph->TempType = 2;
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",   	&ph->topTemp,  1, 1));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",   	&ph->botTemp,  1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",       &ph->topTemp,  1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",       &ph->botTemp,  1, 1));
 		PetscPrintf(PETSC_COMM_WORLD,"     Linear Temp; bot T :   %1.1f %s \n", ph->botTemp, scal->lbl_temperature);
 		PetscPrintf(PETSC_COMM_WORLD,"     Linear Temp; top T :   %1.1f %s \n", ph->topTemp, scal->lbl_temperature);
-		
+
 		ph->topTemp = (ph->topTemp + scal->Tshift)/scal->temperature;
 		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
 
@@ -356,17 +360,18 @@ PetscErrorCode  Set_Box_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb)
 	else if(!strcmp(Parameter, "halfspace"))
 	{
 		ph->TempType = 3;
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",   	&ph->topTemp,  		1, 1)); 
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",   	&ph->botTemp,  		1, 1));   	
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_thermalAge", 	&ph->thermalAge,  	1, scal->time));	
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",       &ph->topTemp,       1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",       &ph->botTemp,       1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_thermalAge",    &ph->thermalAge,    1, scal->time));
 		PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; top T   :   %1.1f %s \n", ph->topTemp, scal->lbl_temperature);
 		PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; bot T   :   %1.1f %s \n", ph->botTemp, scal->lbl_temperature);
 		PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; Age     :   %1.1f %s \n", ph->thermalAge*scal->time, scal->lbl_time);
-		
+
 		ph->topTemp = (ph->topTemp + scal->Tshift)/scal->temperature;
 		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
 	}
-	else{
+	else
+	{
 		SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType %s [none; constant; linear; halfspace]", Parameter);
 	}
 
@@ -388,9 +393,10 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 	ph->nsegs=0;
 
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "nsegs",  &ph->nsegs,  1, _max_NotInAir_segs_));
-	
+
 	//*
-	if (ph->nsegs==0){
+	if (ph->nsegs==0)
+	{
 		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_Bounds", ph->bounds, 6, scal->length));
 		ph->xbounds[0]=ph->bounds[0];
 		ph->xbounds[1]=ph->bounds[1];
@@ -398,9 +404,10 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 		ph->ybounds[1]=ph->bounds[3];
 		ph->zbounds[0]=ph->bounds[4];
 		ph->zbounds[1]=ph->bounds[5];
-		ph->nsegs=1;		
+		ph->nsegs=1;
 	}
-	else{
+	else
+	{
 		PetscCall(getScalarParam(fb, _REQUIRED_, "xbounds", ph->xbounds, 2*ph->nsegs, scal->length));
 		PetscCall(getScalarParam(fb, _REQUIRED_, "ybounds", ph->ybounds, 2*ph->nsegs, scal->length));
 		PetscCall(getScalarParam(fb, _REQUIRED_, "zbounds", ph->zbounds, 2*ph->nsegs, scal->length));
@@ -409,61 +416,61 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 	for (kk = 0; kk < ph->nsegs; kk++)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Phase Transition, NotInAirbox [%" PetscInt_FMT "]: seg = %" PetscInt_FMT ", xbounds=[%g, %g], ybounds=[%g, %g], zbounds=[%g, %g] \n", \
-			(ph->ID),  kk, \
-		ph->xbounds[2*kk]* scal->length, ph->xbounds[2*kk+1]*scal->length,\
-		ph->ybounds[2*kk]* scal->length, ph->ybounds[2*kk+1]*scal->length,\
-		ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
+		            (ph->ID),  kk, \
+		            ph->xbounds[2*kk]* scal->length, ph->xbounds[2*kk+1]*scal->length,\
+		            ph->ybounds[2*kk]* scal->length, ph->ybounds[2*kk+1]*scal->length,\
+		            ph->zbounds[2*kk]* scal->length, ph->zbounds[2*kk+1]*scal->length);
 	}
 
-       ph->phtr_link_left = -1; 
+	ph->phtr_link_left = -1;
 	PetscCall(getIntParam(fb, _OPTIONAL_, "PhaseTransLinkLeft",   &ph->phtr_link_left,  1, dbm->numPhtr-1));
 	if (ph->phtr_link_left>=0)
 	{
-	    PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %" PetscInt_FMT "\n",  ph->phtr_link_left);
+		PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkLeft = %" PetscInt_FMT "\n",  ph->phtr_link_left);
 	}
 
-	ph->phtr_link_right = -1; 
+	ph->phtr_link_right = -1;
 	PetscCall(getIntParam(fb, _OPTIONAL_, "PhaseTransLinkRight",   &ph->phtr_link_right,  1, dbm->numPhtr-1));
 	if (ph->phtr_link_right>=0)
 	{
-	    PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %" PetscInt_FMT "\n",  ph->phtr_link_right);
+		PetscPrintf(PETSC_COMM_WORLD,"PhaseTransLinkRight = %" PetscInt_FMT "\n",  ph->phtr_link_right);
 	}
 
-	
+
 	PetscCall(getIntParam(fb, _OPTIONAL_, "BoxVicinity",   &ph->BoxVicinity,  1, 1));
 
 	if(ph->BoxVicinity==1)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside \n");
-	} 
+	}
 	else
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"     Box Vicinity       :   Use all particles to check inside/outside \n");
 	}
-	
+
 	if (ph->PhaseInside[0] < 0) PetscPrintf(PETSC_COMM_WORLD,"     Don't set phase    @   \n");
 
- 	PetscCall(getStringParam(fb, _OPTIONAL_, "PTBox_TempType",   Parameter,  "none"));
+	PetscCall(getStringParam(fb, _OPTIONAL_, "PTBox_TempType",   Parameter,  "none"));
 	if(!strcmp(Parameter, "none"))
 	{
 		ph->TempType = 0;
-	       PetscPrintf(PETSC_COMM_WORLD,"     Don't set T inside @   \n");
+		PetscPrintf(PETSC_COMM_WORLD,"     Don't set T inside @   \n");
 	}
 	else if(!strcmp(Parameter, "constant"))
 	{
 		ph->TempType = 1;
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_cstTemp",   	&ph->cstTemp,  1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_cstTemp",       &ph->cstTemp,  1, 1));
 		PetscPrintf(PETSC_COMM_WORLD,"     Constant T inside  :   %1.1f %s \n", ph->cstTemp, scal->lbl_temperature);
-	 	ph->cstTemp = (ph->cstTemp + scal->Tshift)/scal->temperature;
+		ph->cstTemp = (ph->cstTemp + scal->Tshift)/scal->temperature;
 	}
 	else if(!strcmp(Parameter, "linear"))
 	{
 		ph->TempType = 2;
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",   	&ph->topTemp,  1, 1));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",   	&ph->botTemp,  1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",       &ph->topTemp,  1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",       &ph->botTemp,  1, 1));
 		PetscPrintf(PETSC_COMM_WORLD,"     Linear Temp; bot T :   %1.1f %s \n", ph->botTemp, scal->lbl_temperature);
 		PetscPrintf(PETSC_COMM_WORLD,"     Linear Temp; top T :   %1.1f %s \n", ph->topTemp, scal->lbl_temperature);
-		
+
 		ph->topTemp = (ph->topTemp + scal->Tshift)/scal->temperature;
 		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
 
@@ -471,20 +478,21 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 	else if(!strcmp(Parameter, "halfspace"))
 	{
 		ph->TempType = 3;
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",   	&ph->topTemp,  		1, 1));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",   	&ph->botTemp,  		1, 1));
-		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_thermalAge", 	&ph->thermalAge,  	1, scal->time));
-		
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_topTemp",       &ph->topTemp,       1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_botTemp",       &ph->botTemp,       1, 1));
+		PetscCall(getScalarParam(fb, _REQUIRED_, "PTBox_thermalAge",    &ph->thermalAge,    1, scal->time));
+
 		PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; top T   :   %1.1f %s \n", ph->topTemp, scal->lbl_temperature);
 		PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; bot T   :   %1.1f %s \n", ph->botTemp, scal->lbl_temperature);
 		PetscPrintf(PETSC_COMM_WORLD,"     Halfspace; Age     :   %1.1f %s \n", ph->thermalAge*scal->time, scal->lbl_time);
-		
+
 		ph->topTemp = (ph->topTemp + scal->Tshift)/scal->temperature;
 		ph->botTemp = (ph->botTemp + scal->Tshift)/scal->temperature;
 
 	}
-	else{
-		  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType %s [none; constant; linear; halfspace]", Parameter);
+	else
+	{
+		SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER, "Unknown parameter for PTBox_TempType %s [none; constant; linear; halfspace]", Parameter);
 	}
 
 	PetscFunctionReturn(0);
@@ -493,12 +501,12 @@ PetscErrorCode  Set_NotInAirBox_Phase_Transition(Ph_trans_t *ph, DBMat *dbm, FB 
 //----------------------------------------------------------------------------------------
 PetscErrorCode  DynamicPhTr_Init(JacRes *jr)
 {
-	FDSTAG		*fs;
-	Discret1D	*dsy;
-	PetscInt	j, kk, n, numPhtr;
-	Ph_trans_t	*PhTr;
+	FDSTAG      *fs;
+	Discret1D   *dsy;
+	PetscInt    j, kk, n, numPhtr;
+	Ph_trans_t  *PhTr;
 
-	
+
 
 	PetscFunctionBeginUser;
 
@@ -506,35 +514,35 @@ PetscErrorCode  DynamicPhTr_Init(JacRes *jr)
 	fs  =  jr->fs;
 	dsy = &fs->dsy;
 
-	for(n=0; n<numPhtr; n++)                          
-	{                                               
-	   PhTr = jr->dbm->matPhtr+n;
-	   if (PhTr->Type == _NotInAirBox_)
-	   {
-
-		//create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
-		PetscCall(makeScalArray(&PhTr->cbuffL, 0, dsy->ncels+2));
-		PhTr->celly_xboundL = PhTr->cbuffL + 1;
-		PetscCall(makeScalArray(&PhTr->cbuffR, 0, dsy->ncels+2));
-		PhTr->celly_xboundR = PhTr->cbuffR + 1;
-
-		for(j = -1; j < dsy->ncels+1; j++)
+	for(n=0; n<numPhtr; n++)
+	{
+		PhTr = jr->dbm->matPhtr+n;
+		if (PhTr->Type == _NotInAirBox_)
 		{
-			PhTr->celly_xboundL[j] = 1.0e12;
-			PhTr->celly_xboundR[j] = -1.0e12;
 
-			//for each y coord, find which segment its in and then set x bounds
-			for (kk = 0; kk < PhTr->nsegs; kk++)
+			//create 1D array of xbound1 and xbound2, which define xbounds interpolated at each y-coord of cell
+			PetscCall(makeScalArray(&PhTr->cbuffL, 0, dsy->ncels+2));
+			PhTr->celly_xboundL = PhTr->cbuffL + 1;
+			PetscCall(makeScalArray(&PhTr->cbuffR, 0, dsy->ncels+2));
+			PhTr->celly_xboundR = PhTr->cbuffR + 1;
+
+			for(j = -1; j < dsy->ncels+1; j++)
 			{
-				if (PhTr->ybounds[2*kk] <= dsy->ccoor[j] && dsy->ccoor[j] <= PhTr->ybounds[2*kk+1])
+				PhTr->celly_xboundL[j] = 1.0e12;
+				PhTr->celly_xboundR[j] = -1.0e12;
+
+				//for each y coord, find which segment its in and then set x bounds
+				for (kk = 0; kk < PhTr->nsegs; kk++)
 				{
-					PhTr->celly_xboundL[j] = PhTr->xbounds[2*kk];
-					PhTr->celly_xboundR[j] = PhTr->xbounds[2*kk+1];
-					break;
+					if (PhTr->ybounds[2*kk] <= dsy->ccoor[j] && dsy->ccoor[j] <= PhTr->ybounds[2*kk+1])
+					{
+						PhTr->celly_xboundL[j] = PhTr->xbounds[2*kk];
+						PhTr->celly_xboundR[j] = PhTr->xbounds[2*kk+1];
+						break;
+					}
 				}
 			}
 		}
-	   }   
 	}
 	PetscFunctionReturn(0);
 }
@@ -559,12 +567,12 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	else
 	{
 		// user-defined profile
-        PetscCall(getIntParam   (fb, _REQUIRED_, "numberofequation",   &ph->neq, 1, 2));
+		PetscCall(getIntParam   (fb, _REQUIRED_, "numberofequation",   &ph->neq, 1, 2));
 
-        if(ph->neq>2 || ph->neq == 0)
-        {
-        	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero");
-        }
+		if(ph->neq>2 || ph->neq == 0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any Clapeyron phase transition you cannot have a number of equation higher than 2, or equal to zero");
+		}
 
 		PetscCall(getScalarParam(fb, _REQUIRED_, "clapeyron_slope",    ph->clapeyron_slope, ph->neq,    1.0));    // [MPa/K]
 		PetscCall(getScalarParam(fb, _REQUIRED_, "P0_clapeyron",       ph->P0_clapeyron,    ph->neq,    1.0));    // [Pa]
@@ -573,13 +581,13 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%" PetscInt_FMT "] :   Clapeyron \n", (ph->ID));
-    PetscPrintf(PETSC_COMM_WORLD,"     Transition law     :   %s\n", ph->Name_clapeyron);
+	PetscPrintf(PETSC_COMM_WORLD,"     Transition law     :   %s\n", ph->Name_clapeyron);
 
-    PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %" PetscInt_FMT "    [ P = P0 + gamma*(T-T0) ] \n",  ph->neq);
-        
+	PetscPrintf(PETSC_COMM_WORLD,"       # Equations      :   %" PetscInt_FMT "    [ P = P0 + gamma*(T-T0) ] \n",  ph->neq);
+
 	for(it=0; it<ph->neq; it++)
 	{
-        PetscPrintf(PETSC_COMM_WORLD,"       eq[%" PetscInt_FMT "]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
+		PetscPrintf(PETSC_COMM_WORLD,"       eq[%" PetscInt_FMT "]            :   gamma = %- 4.2e [MPa/C], P0 = %4.2e [Pa],  T0 = %2.1f [deg C] \n", it, ph->clapeyron_slope[it], ph->P0_clapeyron[it],ph->T0_clapeyron[it]);
 
 		ph->clapeyron_slope[it]     /=  (scal->stress/scal->temperature);                           // [MPa/K]
 		ph->P0_clapeyron[it]        /=  (scal->stress_si);                                          // [Pa]
@@ -594,26 +602,26 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 PetscErrorCode  Overwrite_density(DBMat *dbm)
 {
 
-    //    This changes the density values of the phases involved with a pre-defined phase transition such
-    //    that they are compatible (e.g., tthis ensures that we do not use bogus values for the basalt->eclogite transition,
-    //    for example)
+	//    This changes the density values of the phases involved with a pre-defined phase transition such
+	//    that they are compatible (e.g., tthis ensures that we do not use bogus values for the basalt->eclogite transition,
+	//    for example)
 
 	Scaling         *scal;
 	Ph_trans_t      *ph;
 	Material_t      *mat;
 	PetscInt        numPhTrn,   nPtr,       num_phases, iter, jj1, jj2;
 	PetscScalar     rho_above,  rho_below,  rho_scal;
-    
+
 	PetscFunctionBeginUser;
 
-    // Retrieve parameters:
-    scal        = dbm->scal;
+	// Retrieve parameters:
+	scal        = dbm->scal;
 	rho_scal    = scal->density;
 	mat         = dbm->phases;
 	numPhTrn    = dbm->numPhtr;
 
-    PetscPrintf(PETSC_COMM_WORLD,"\n   Adjusting density values due to phase transitions: \n");
-    for(nPtr=0; nPtr<numPhTrn;  nPtr++)
+	PetscPrintf(PETSC_COMM_WORLD,"\n   Adjusting density values due to phase transitions: \n");
+	for(nPtr=0; nPtr<numPhTrn;  nPtr++)
 	{
 		ph          = dbm->matPhtr+nPtr;
 		num_phases  = ph->number_phases;
@@ -634,7 +642,7 @@ PetscErrorCode  Overwrite_density(DBMat *dbm)
 			}
 
 		}
-    }
+	}
 	PetscFunctionReturn(0);
 }
 
@@ -643,16 +651,16 @@ PetscErrorCode  Overwrite_density(DBMat *dbm)
 PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 {
 	/*
-        This has predefined phase transitions that are specified as linear lines, where
-        the phase transition is given by
-        
-        P = P0 + clapeyron_slope*(T-T0)
+	    This has predefined phase transitions that are specified as linear lines, where
+	    the phase transition is given by
 
-        Where 
-            P0              :   Zero interection [Pa]
-            clapeyron_slope :   Slope of the line [MPa/C]??
-            T0              :   Shift in temperature [Celcius]
-    */
+	    P = P0 + clapeyron_slope*(T-T0)
+
+	    Where
+	        P0              :   Zero interection [Pa]
+	        clapeyron_slope :   Slope of the line [MPa/C]??
+	        T0              :   Shift in temperature [Celcius]
+	*/
 
 	PetscFunctionBeginUser;
 
@@ -663,8 +671,8 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 		ph->P0_clapeyron[0]     =   2e9;        // Pa
 		ph->T0_clapeyron[0]     =   800;        // C
 		ph->clapeyron_slope[0]  =   1.5;
-		
-        ph->P0_clapeyron[1]     =   2e9;        // Pa    
+
+		ph->P0_clapeyron[1]     =   2e9;        // Pa
 		ph->T0_clapeyron[1]     =   700;
 		ph->clapeyron_slope[1]  =   -30;
 	}
@@ -694,11 +702,11 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 	}
 	else if(!strcmp(ph->Name_clapeyron,"Zircon_Reidite"))
 	{
-			//[6]
-			ph->neq                 =   1;
-			ph->P0_clapeyron[0]     =   8e9;
-			ph->T0_clapeyron[0]     =   25;
-			ph->clapeyron_slope[0]  =   1.9;
+		//[6]
+		ph->neq                 =   1;
+		ph->P0_clapeyron[0]     =   8e9;
+		ph->T0_clapeyron[0]     =   25;
+		ph->clapeyron_slope[0]  =   1.9;
 	}
 
 	PetscFunctionReturn(0);
@@ -723,59 +731,60 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 	PetscFunctionBeginUser;
 
-    // Retrieve parameters
+	// Retrieve parameters
 	jr          =   actx->jr;
 	dbm         =   jr->dbm;
 	ts          =   jr->ts;
 	numPhTrn    =   dbm->numPhtr;
-	scal 	    =	dbm->scal;
+	scal        =   dbm->scal;
 	time        =   jr->bc->ts->time;
-	
-	if (!numPhTrn) 	PetscFunctionReturn(0);		// only execute this function if we have phase transitions
+
+	if (!numPhTrn)  PetscFunctionReturn(0);     // only execute this function if we have phase transitions
 
 	PrintStart(&t, "Phase_Transition", NULL);
 
 	//For dynamic diking
 	PetscCall(Locate_Dike_Zones(actx));
-	
+
 	nPtr = 0;
 
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
-	  {
-	    PhaseTrans = jr->dbm->matPhtr+nPtr;
+	{
+		PhaseTrans = jr->dbm->matPhtr+nPtr;
 
-	    // Is the phase transition changing the phase, or other properites?
-	    if((PhaseTrans->PhaseInside[0]>=0 && PhaseTrans->PhaseOutside[0]>=0) || (PhaseTrans->PhaseAbove[0]>=0 && PhaseTrans->PhaseBelow[0]>=0))
-	    {
-              nphc = 1;
-	    }
-	    else
-	    {
-              nphc = 0;
-	    }
-	    // calling the moving dike function
+		// Is the phase transition changing the phase, or other properites?
+		if((PhaseTrans->PhaseInside[0]>=0 && PhaseTrans->PhaseOutside[0]>=0) || (PhaseTrans->PhaseAbove[0]>=0 && PhaseTrans->PhaseBelow[0]>=0))
+		{
+			nphc = 1;
+		}
+		else
+		{
+			nphc = 0;
+		}
+		// calling the moving dike function
 
-	    if ( PhaseTrans->Type == _NotInAirBox_ )
-	    {
-              if (PhaseTrans->v_box) {
-                PetscCall(MovingBox(PhaseTrans, ts, jr));
-              }
+		if ( PhaseTrans->Type == _NotInAirBox_ )
+		{
+			if (PhaseTrans->v_box)
+			{
+				PetscCall(MovingBox(PhaseTrans, ts, jr));
+			}
 
-              PetscCall(LinkNotInAirBoxes(PhaseTrans, jr));
+			PetscCall(LinkNotInAirBoxes(PhaseTrans, jr));
 
-	    }
-	    
+		}
+
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
 		{
 			// access marker
-			P   =   &actx->markers[i];      
+			P   =   &actx->markers[i];
 
 			// get consecutive index of the host cell of marker
-			ID = 	actx->cellnum[i];
+			ID =    actx->cellnum[i];
 
 			// access host cell solution variables
 			svCell = &jr->svCell[ID];
-			
+
 			num_phas    =   PhaseTrans->number_phases;
 
 			if(PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ )
@@ -783,7 +792,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas, &below));
 				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas, &above));
 			}
-			else {
+			else
+			{
 				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas, &below));
 				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseAbove,   P, num_phas, &above));
 			}
@@ -794,25 +804,29 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			if  ( (below >= 0) || (above >= 0) )
 			{
 
-                 // the current phase is indeed involved in a phase transition
+				// the current phase is indeed involved in a phase transition
 				if      (   (below>=0) && (nphc ==1))
 				{
-					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_){
+					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_)
+					{
 						PH1 = PhaseTrans->PhaseInside[below];
 						PH2 = PhaseTrans->PhaseOutside[below];
 					}
-					else{
+					else
+					{
 						PH1 = PhaseTrans->PhaseBelow[below];
 						PH2 = PhaseTrans->PhaseAbove[below];
 					}
 				}
 				else if (   (above >=0) && (nphc==1))
 				{
-					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_){
+					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_)
+					{
 						PH1 = PhaseTrans->PhaseInside[above];
 						PH2 = PhaseTrans->PhaseOutside[above];
 					}
-					else{
+					else
+					{
 						PH1 = PhaseTrans->PhaseBelow[above];
 						PH2 = PhaseTrans->PhaseAbove[above];
 					}
@@ -823,59 +837,70 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					PH2 = PH1;
 				}
 
-				ph 			= P->phase;
+				ph          = P->phase;
 				InsideAbove = 0;
 
 				PetscCall(Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr, ID));
 
 				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) )
 				{
-					if (PhaseTrans->PhaseInside[0]<0){ 
-						ph = P->phase;				// do not change the phase
+					if (PhaseTrans->PhaseInside[0]<0)
+					{
+						ph = P->phase;              // do not change the phase
 					}
 
-				
-					if (PhaseTrans->BoxVicinity==1){
+
+					if (PhaseTrans->BoxVicinity==1)
+					{
 						factor = 1.0;
 						dxBox  = (PhaseTrans->bounds[1]-PhaseTrans->bounds[0])*factor;
 						dyBox  = (PhaseTrans->bounds[3]-PhaseTrans->bounds[2])*factor;
 						dzBox  = (PhaseTrans->bounds[3]-PhaseTrans->bounds[2])*factor;
-						
+
 						if ( (P->X[0] < (PhaseTrans->bounds[0]-dxBox)) | (P->X[0] > (PhaseTrans->bounds[1]+dxBox)) |
-							 (P->X[1] < (PhaseTrans->bounds[2]-dyBox)) | (P->X[1] > (PhaseTrans->bounds[3]+dyBox)) |
-							 (P->X[2] < (PhaseTrans->bounds[4]-dzBox)) | (P->X[2] > (PhaseTrans->bounds[5]+dzBox))  )
+						     (P->X[1] < (PhaseTrans->bounds[2]-dyBox)) | (P->X[1] > (PhaseTrans->bounds[3]+dyBox)) |
+						     (P->X[2] < (PhaseTrans->bounds[4]-dzBox)) | (P->X[2] > (PhaseTrans->bounds[5]+dzBox))  )
 						{
-							ph = P->phase;				// do not change the phase
+							ph = P->phase;              // do not change the phase
 						}
 					}
 
-				
+
 				}
-				if (PhaseTrans->PhaseDirection==0){
+				if (PhaseTrans->PhaseDirection==0)
+				{
 					P->phase    =   ph;
 				}
-				else if ( (PhaseTrans->PhaseDirection==1) & (below>=0) ){
+				else if ( (PhaseTrans->PhaseDirection==1) & (below>=0) )
+				{
 					P->phase    =   ph;
 				}
-				else if ( (PhaseTrans->PhaseDirection==2) & (above>=0) ){
+				else if ( (PhaseTrans->PhaseDirection==2) & (above>=0) )
+				{
 					P->phase    =   ph;
 				}
-				P->T = T;	// set T
+				P->T = T;   // set T
 
 				// Reset other parameters on particles if requested
-				if (PhaseTrans->PhaseDirection< 2){
+				if (PhaseTrans->PhaseDirection< 2)
+				{
 
-					// Both ways or below2above	
-					if (InsideAbove==1){
-						if (PhaseTrans->Reset==1){
+					// Both ways or below2above
+					if (InsideAbove==1)
+					{
+						if (PhaseTrans->Reset==1)
+						{
 							P->APS = 0.0;
 						}
 					}
 				}
-				else{
+				else
+				{
 					// Above to below
-					if (InsideAbove==0){
-						if (PhaseTrans->Reset==1){
+					if (InsideAbove==0)
+					{
+						if (PhaseTrans->Reset==1)
+						{
 							P->APS = 0.0;
 						}
 					}
@@ -886,24 +911,27 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 			else
 			{
 				// allow cases in which we only reset T
-				ph 			= P->phase;
+				ph          = P->phase;
 				InsideAbove = 0;
 
 				PetscCall(Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr, ID));
 
-				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) ){
-					if (PhaseTrans->PhaseInside[0]<0){ 
-						ph 		= P->phase;				// do not change the phase
+				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) )
+				{
+					if (PhaseTrans->PhaseInside[0]<0)
+					{
+						ph      = P->phase;             // do not change the phase
 					}
-					
-					if ((PhaseTrans->PhaseOutside[0]<0) & (PhaseTrans->PhaseDirection==2) & (InsideAbove==1)){ 	
-						// PhaseOutside is set to -1 and OutsideToInside is selected, in which case we 
+
+					if ((PhaseTrans->PhaseOutside[0]<0) & (PhaseTrans->PhaseDirection==2) & (InsideAbove==1))
+					{
+						// PhaseOutside is set to -1 and OutsideToInside is selected, in which case we
 						// set everything inside the box to a constant phase (specified in PhaseInside)
 						ph = PhaseTrans->PhaseInside[0];
 						P->phase = ph;
 					}
-					
-					P->T 	= T;	// set T
+
+					P->T    = T;    // set T
 				}
 			}
 
@@ -913,7 +941,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	}
 	PetscCall(ADVInterpMarkToCell(actx));
 
-    	PrintDone(t);
+	PrintDone(t);
 	PetscFunctionReturn(0);
 }
 
@@ -921,79 +949,79 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
 {
-  
-  PetscScalar  t0_box, t1_box, v_box;
-  PetscScalar  t_c, dt;
-  PetscInt     j, ny;             
-  FDSTAG 	*fs;  
 
-  PetscFunctionBeginUser;
-  
-  dt  = ts->dt;       // time step
-  t_c = ts->time;     // current time stamp, computed at the end of last time step round
+	PetscScalar  t0_box, t1_box, v_box;
+	PetscScalar  t_c, dt;
+	PetscInt     j, ny;
+	FDSTAG    *fs;
 
-  fs = jr->fs;
-  ny = fs->dsy.ncels;
-  
-  // access the starting and end times of certain phase transition and the velocity of the phase transition-box
-  t0_box = PhaseTrans->t0_box;
-  t1_box = PhaseTrans->t1_box;
-  v_box  = PhaseTrans->v_box;
-  
-  // check if the current time step is equal to the starting time of when the box is supposed to move
-  if(t_c >= t0_box && t_c <= t1_box)
-    {
-      for(j = -1; j < ny+1; j++)
-      {
-         PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundL[j] + v_box * dt;
-         PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundR[j] + v_box * dt;
-      }
-    }
-  
-  PetscFunctionReturn(0);
+	PetscFunctionBeginUser;
+
+	dt  = ts->dt;       // time step
+	t_c = ts->time;     // current time stamp, computed at the end of last time step round
+
+	fs = jr->fs;
+	ny = fs->dsy.ncels;
+
+	// access the starting and end times of certain phase transition and the velocity of the phase transition-box
+	t0_box = PhaseTrans->t0_box;
+	t1_box = PhaseTrans->t1_box;
+	v_box  = PhaseTrans->v_box;
+
+	// check if the current time step is equal to the starting time of when the box is supposed to move
+	if(t_c >= t0_box && t_c <= t1_box)
+	{
+		for(j = -1; j < ny+1; j++)
+		{
+			PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundL[j] + v_box * dt;
+			PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundR[j] + v_box * dt;
+		}
+	}
+
+	PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------
 PetscErrorCode LinkNotInAirBoxes(Ph_trans_t *PhaseTrans, JacRes *jr)
 {
-  
-  Ph_trans_t   *PhaseTransLinkLeft;
-  Ph_trans_t   *PhaseTransLinkRight;
-  PetscScalar  Phase_Width;
-  PetscInt     j, ny;             
-  FDSTAG 	*fs;  
-  
-  PetscFunctionBeginUser;
-  
-  fs = jr->fs;
-  ny = fs->dsy.ncels;
-  
-  if (PhaseTrans->phtr_link_left>=0)
-  {
-     PhaseTransLinkLeft = jr->dbm->matPhtr+PhaseTrans->phtr_link_left;
-     for(j = -1; j < ny+1; j++)
-      {
-      	  Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
-         PhaseTrans->celly_xboundL[j] = PhaseTransLinkLeft->celly_xboundR[j];
-         PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundL[j]+Phase_Width;
-      }
-  }
 
-  if (PhaseTrans->phtr_link_right>=0)
-  {
-     PhaseTransLinkRight = jr->dbm->matPhtr+PhaseTrans->phtr_link_right;
-     for(j = -1; j < ny+1; j++)
-      {
-      	  Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
-         PhaseTrans->celly_xboundR[j] = PhaseTransLinkRight->celly_xboundL[j];
-         PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundR[j]-Phase_Width;
-      }
-  }
+	Ph_trans_t   *PhaseTransLinkLeft;
+	Ph_trans_t   *PhaseTransLinkRight;
+	PetscScalar  Phase_Width;
+	PetscInt     j, ny;
+	FDSTAG    *fs;
 
-  PetscFunctionReturn(0);
+	PetscFunctionBeginUser;
+
+	fs = jr->fs;
+	ny = fs->dsy.ncels;
+
+	if (PhaseTrans->phtr_link_left>=0)
+	{
+		PhaseTransLinkLeft = jr->dbm->matPhtr+PhaseTrans->phtr_link_left;
+		for(j = -1; j < ny+1; j++)
+		{
+			Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
+			PhaseTrans->celly_xboundL[j] = PhaseTransLinkLeft->celly_xboundR[j];
+			PhaseTrans->celly_xboundR[j] = PhaseTrans->celly_xboundL[j]+Phase_Width;
+		}
+	}
+
+	if (PhaseTrans->phtr_link_right>=0)
+	{
+		PhaseTransLinkRight = jr->dbm->matPhtr+PhaseTrans->phtr_link_right;
+		for(j = -1; j < ny+1; j++)
+		{
+			Phase_Width = PhaseTrans->celly_xboundR[j]-PhaseTrans->celly_xboundL[j];
+			PhaseTrans->celly_xboundR[j] = PhaseTransLinkRight->celly_xboundL[j];
+			PhaseTrans->celly_xboundL[j] = PhaseTrans->celly_xboundR[j]-Phase_Width;
+		}
+	}
+
+	PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------
 PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, PetscInt PH2, Controls ctrl, Scaling *scal,
-		    SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr, PetscInt cellID)
+                          SolVarCell *svCell, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InsideAbove, PetscScalar time, JacRes *jr, PetscInt cellID)
 {
 	PetscInt    ph, InAbove;
 	PetscScalar T;
@@ -1003,7 +1031,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, Petsc
 	ph = P->phase;
 	T  = P->T;
 	InAbove = 0;
-	
+
 	if (PhaseTrans->Type==_NotInAirBox_ )
 	{
 		PetscCall(Check_NotInAirBox_Phase_Transition(PhaseTrans, P,PH1,PH2, scal, &ph, &T, jr, cellID));   // adjust phase according to T within Box but ignore airphase particles
@@ -1018,13 +1046,13 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, Petsc
 	}
 	else if(PhaseTrans->Type==_Box_)
 	{
-		PetscCall(Check_Box_Phase_Transition(PhaseTrans,jr, P,PH1,PH2, scal, &ph, &T, &InAbove));		// compute phase & T within Box
+		PetscCall(Check_Box_Phase_Transition(PhaseTrans,jr, P,PH1,PH2, scal, &ph, &T, &InAbove));       // compute phase & T within Box
 	}
-	
+
 	// Prepare output
-	*ph_out 		= ph;
-	*T_out  		= T;
-	*InsideAbove 	= InAbove;
+	*ph_out         = ph;
+	*T_out          = T;
+	*InsideAbove    = InAbove;
 
 	PetscFunctionReturn(0);
 }
@@ -1033,212 +1061,219 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1, Petsc
     Sets the values for a phase transition that occurs @ a constant value
 */
 PetscErrorCode Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,
-						Controls ctrl, SolVarCell *svCell, PetscInt *ph_out, PetscInt *InAbove, PetscScalar time) 
+        Controls ctrl, SolVarCell *svCell, PetscInt *ph_out, PetscInt *InAbove, PetscScalar time)
 {
-    
-    PetscInt 	ph, InAb;
-    PetscScalar pShift;
 
-    PetscFunctionBeginUser;
+	PetscInt    ph, InAb;
+	PetscScalar pShift;
 
-	if (ctrl.pShift){
+	PetscFunctionBeginUser;
+
+	if (ctrl.pShift)
+	{
 		pShift = ctrl.pShift;
 	}
-	else{
+	else
+	{
 		pShift = 0.0;
 	}
 
-	ph 		= 0;
-	InAb 	= 0;
+	ph      = 0;
+	InAb    = 0;
 	if(PhaseTrans->Parameter_transition==_T_)  // NOTE: string comparisons can be slow; optimization possibility
-		{
-            // Temperature transition
-            if ( P->T >= PhaseTrans->ConstantValue)     {   ph = PH2; InAb=1;  	}
-			else                                        {   ph = PH1; 			}
-		}
+	{
+		// Temperature transition
+		if ( P->T >= PhaseTrans->ConstantValue)     {   ph = PH2; InAb=1;   }
+		else                                        {   ph = PH1;           }
+	}
 
 	if(PhaseTrans->Parameter_transition==_Pressure_)
-		{
-            if  ( (P->p+pShift) >= PhaseTrans->ConstantValue)   {   ph = PH2; InAb=1; 	}
-		    else                                       	 		{   ph = PH1;  			}
-          
-		}
+	{
+		if  ( (P->p+pShift) >= PhaseTrans->ConstantValue)   {   ph = PH2; InAb=1;   }
+		else                                                {   ph = PH1;           }
+
+	}
 	if(PhaseTrans->Parameter_transition==_X_)
-		{
-          if ( P->X[0] >= PhaseTrans->ConstantValue)  {   ph = PH2; 	InAb=1;   }
-          else                                        {   ph = PH1;   }
-        }
+	{
+		if ( P->X[0] >= PhaseTrans->ConstantValue)  {   ph = PH2;     InAb=1;   }
+		else                                        {   ph = PH1;   }
+	}
 
 	if(PhaseTrans->Parameter_transition==_Y_)
-		{
-          if ( P->X[1] >= PhaseTrans->ConstantValue)  {   ph = PH2; 	InAb=1;   }
-          else                                        {   ph = PH1;   }
-        }
+	{
+		if ( P->X[1] >= PhaseTrans->ConstantValue)  {   ph = PH2;     InAb=1;   }
+		else                                        {   ph = PH1;   }
+	}
 
 	if(PhaseTrans->Parameter_transition==_Depth_)
-		{
-          if ( P->X[2] >= PhaseTrans->ConstantValue)  {   ph = PH2; InAb=1;	}
-          else                                        {   ph = PH1; 		}
-        }
+	{
+		if ( P->X[2] >= PhaseTrans->ConstantValue)  {   ph = PH2; InAb=1; }
+		else                                        {   ph = PH1;         }
+	}
 
 	if(PhaseTrans->Parameter_transition==_PlasticStrain_) // accumulated plastic strain
-		{
-            if ( P->APS >= PhaseTrans->ConstantValue)  {   ph = PH2; InAb=1;}
-            else                                       {   ph = PH1; 	}
-        }
+	{
+		if ( P->APS >= PhaseTrans->ConstantValue)  {   ph = PH2; InAb=1;}
+		else                                       {   ph = PH1;    }
+	}
 
 	if(PhaseTrans->Parameter_transition==_MeltFraction_) // melt fraction in cell
-		{
-            /* Different than the conditions above, the melt fraction is NOT stored
-			 	on in the marker structure. Instead, it is stored on the grid. 
-			 	We thus have to determine in which cell the current marker is & retrieve 
-				the properties of that cell.
-			*/ 
-			PetscScalar mf;	// melt fraction of current cell
+	{
+		/* Different than the conditions above, the melt fraction is NOT stored
+		    on in the marker structure. Instead, it is stored on the grid.
+		    We thus have to determine in which cell the current marker is & retrieve
+		    the properties of that cell.
+		*/
+		PetscScalar mf; // melt fraction of current cell
 
-			mf = svCell->svBulk.mf;
-			
-			if (mf >= PhaseTrans->ConstantValue)  {   ph = PH2;   InAb=1;  }
-            else                                  {   ph = PH1; 			}
-        }
+		mf = svCell->svBulk.mf;
+
+		if (mf >= PhaseTrans->ConstantValue)  {   ph = PH2;   InAb=1;  }
+		else                                  {   ph = PH1;             }
+	}
 	if(PhaseTrans->Parameter_transition==_Time_)
-		{
-            if  ( time >= PhaseTrans->ConstantValue)   {   ph = PH2; InAb=1; 	}
-		    else                                       	 		{   ph = PH1;  			}
-          
-		}
+	{
+		if  ( time >= PhaseTrans->ConstantValue)   {   ph = PH2; InAb=1;    }
+		else                                                {   ph = PH1;           }
+
+	}
 
 	// return
-	*ph_out 	= ph;
-	*InAbove 	= InAb;
-	
+	*ph_out     = ph;
+	*InAbove    = InAb;
+
 	PetscFunctionReturn(0);
 }
 
 //------------------------------------------------------------------------------------------------------------//
 PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Marker *P,PetscInt PH1, PetscInt PH2,
-			Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InAbove)
+        Scaling *scal, PetscInt *ph_out, PetscScalar *T_out, PetscInt *InAbove)
 {
 	Material_t  *mat;
-    PetscInt 	ph, InAb;
+	PetscInt    ph, InAb;
 	PetscScalar T;
-    PetscScalar alpha, Cp, g, T_adiab;
-    PetscScalar dz, depth, k1, k2, Z_Top, Ztot;
-    PetscInt    nsteps, i;
+	PetscScalar alpha, Cp, g, T_adiab;
+	PetscScalar dz, depth, k1, k2, Z_Top, Ztot;
+	PetscInt    nsteps, i;
 
-    PetscFunctionBeginUser;
+	PetscFunctionBeginUser;
 
-    g     = PetscAbs(jr->ctrl.grav[2]);
+	g     = PetscAbs(jr->ctrl.grav[2]);
 	ph = P->phase;
 	T  = P->T;
 	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
-		 (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
+	     (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
 	     (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5])  )
-    {
+	{
 
-        // We are within the box
-		ph 		= PH1;
-		InAb 	= 1;
+		// We are within the box
+		ph      = PH1;
+		InAb    = 1;
 
 		// Set the temperature structure
-		if 		(PhaseTrans->TempType == 0){
-		  //PetscPrintf(PETSC_COMM_WORLD,"inside box in loop in none temp \n");  // PRINT BOX TEST
+		if      (PhaseTrans->TempType == 0)
+		{
+			//PetscPrintf(PETSC_COMM_WORLD,"inside box in loop in none temp \n");  // PRINT BOX TEST
 			// do nothing
 		}
-		else if	(PhaseTrans->TempType == 1){
+		else if (PhaseTrans->TempType == 1)
+		{
 			// constant T inside
 			T = PhaseTrans->cstTemp;
 		}
-		else if	(PhaseTrans->TempType == 2){
+		else if (PhaseTrans->TempType == 2)
+		{
 			// linear temperature profile
 			PetscScalar zTop, zBot, topTemp, botTemp, d;
 
-			zTop 	=	PhaseTrans->bounds[5];	// top 	  of domain 
-			zBot 	=	PhaseTrans->bounds[4];	// bottom of domain 
-			topTemp =	PhaseTrans->topTemp;	// T @ top
-			botTemp =	PhaseTrans->botTemp;	// T @ bottom
-			
-			d 		=	(P->X[2]-zTop)/(zTop-zBot);		// normalized distance to top
-			T 		=	d*(topTemp-botTemp) + topTemp;	// temperature profile	
+			zTop    =   PhaseTrans->bounds[5];  // top    of domain
+			zBot    =   PhaseTrans->bounds[4];  // bottom of domain
+			topTemp =   PhaseTrans->topTemp;    // T @ top
+			botTemp =   PhaseTrans->botTemp;    // T @ bottom
+
+			d       =   (P->X[2]-zTop)/(zTop-zBot);     // normalized distance to top
+			T       =   d*(topTemp-botTemp) + topTemp;  // temperature profile
 		}
-		else if	(PhaseTrans->TempType == 3){
+		else if (PhaseTrans->TempType == 3)
+		{
 			// halfspace cooling T inside
 			PetscScalar zTop, topTemp, botTemp, T_age, d, kappa;
 
-			zTop 	=	PhaseTrans->bounds[5];	// top 	  of domain 
-			topTemp =	PhaseTrans->topTemp;	// T @ top
-			botTemp =	PhaseTrans->botTemp;	// T @ bottom
-			T_age 	=	PhaseTrans->thermalAge;	// thermal age
+			zTop    =   PhaseTrans->bounds[5];  // top    of domain
+			topTemp =   PhaseTrans->topTemp;    // T @ top
+			botTemp =   PhaseTrans->botTemp;    // T @ bottom
+			T_age   =   PhaseTrans->thermalAge; // thermal age
 
-			kappa 	=	1e-6/( (scal->length_si)*(scal->length_si)/(scal->time_si));
-			
-			d 		=	zTop - P->X[2];
-			T 		= 	(botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
+			kappa   =   1e-6/( (scal->length_si)*(scal->length_si)/(scal->time_si));
+
+			d       =   zTop - P->X[2];
+			T       =   (botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
-        // Add the Adiabatic Gradient
-    if(jr->ctrl.AdiabHeat > 0.0 && PhaseTrans->TempType != 0)
-	    {
-            mat   = jr->dbm->phases + PH1;
-            alpha = mat->alpha;
-            Cp    = mat->Cp;
-            // Get top of domain
-            if(jr->surf->UseFreeSurf)
-                Z_Top = jr->surf->InitLevel;
-            else
-                Z_Top = jr->fs->dsz.gcrdend;
+		// Add the Adiabatic Gradient
+		if(jr->ctrl.AdiabHeat > 0.0 && PhaseTrans->TempType != 0)
+		{
+			mat   = jr->dbm->phases + PH1;
+			alpha = mat->alpha;
+			Cp    = mat->Cp;
+			// Get top of domain
+			if(jr->surf->UseFreeSurf)
+				Z_Top = jr->surf->InitLevel;
+			else
+				Z_Top = jr->fs->dsz.gcrdend;
 
-            // Global Domain thickness used to define dz
-            Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
+			// Global Domain thickness used to define dz
+			Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
 			depth = PetscAbs(Z_Top - P->X[2]);
 			nsteps=(PetscInt)((depth/Ztot)*((PetscScalar)jr->fs->dsz.tcels/2.0)) + 1;
-            dz = depth/(PetscScalar)(nsteps);
+			dz = depth/(PetscScalar)(nsteps);
 
-            // Start with the temperature T (potential temperature from TempType)
-            T_adiab = T;
+			// Start with the temperature T (potential temperature from TempType)
+			T_adiab = T;
 
-            // RK2 integration: dT/dz = alpha * g * T / Cp
-            for(i = 0; i < nsteps; i++)
-            {
-                k1 = alpha * g * T_adiab / Cp;
-                k2 = alpha * g * (T_adiab + 0.5*dz*k1) / Cp;
-                T_adiab = T_adiab + dz * k2;
-            }
+			// RK2 integration: dT/dz = alpha * g * T / Cp
+			for(i = 0; i < nsteps; i++)
+			{
+				k1 = alpha * g * T_adiab / Cp;
+				k2 = alpha * g * (T_adiab + 0.5*dz*k1) / Cp;
+				T_adiab = T_adiab + dz * k2;
+			}
 
-            T = T_adiab;
-	    }
+			T = T_adiab;
+		}
 
 	}
-	else{
+	else
+	{
 
 		// Outside; keep T
-		ph 		= PH2;
-		InAb 	= 0;
+		ph      = PH2;
+		InAb    = 0;
 	}
 
 	// return
-	*ph_out 	= 	ph;
-	*T_out 		=	T;
-	*InAbove 	= 	InAb;
+	*ph_out     =   ph;
+	*T_out      =   T;
+	*InAbove    =   InAb;
 
 	PetscFunctionReturn(0);
 }
-//------------------------------------------------------------------------------------------------------------//                                                          
+//------------------------------------------------------------------------------------------------------------//
 PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal,
-					PetscInt *ph_out, PetscScalar *T_out, JacRes *jr, PetscInt cellID)
+        PetscInt *ph_out, PetscScalar *T_out, JacRes *jr, PetscInt cellID)
 {
 	Material_t  *mat;
 	PetscInt     ph, AirPhase, J, K, nx, ny;
 	//PetscInt     I;
 	PetscScalar  T, xboundL, xboundR;
 	PetscScalar alpha, Cp, g, T_adiab;
-    PetscScalar dz, depth, k1, k2, Z_Top, Ztot;
-    PetscInt    nsteps, i;
-	FDSTAG 	*fs;
-	Discret1D	*dsy;   
-  
+	PetscScalar dz, depth, k1, k2, Z_Top, Ztot;
+	PetscInt    nsteps, i;
+	FDSTAG  *fs;
+	Discret1D   *dsy;
+
 	PetscFunctionBeginUser;
 
-  	g     = PetscAbs(jr->ctrl.grav[2]);
+	g     = PetscAbs(jr->ctrl.grav[2]);
 	AirPhase  = jr->surf->AirPhase;
 	ph = P->phase;
 	T  = P->T;
@@ -1255,99 +1290,104 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 	//interpolate box boundaries if particle backward of the cell center and adjacent cell is within phase trans box
 	if (P->X[1] <= dsy->ccoor[J] && PhaseTrans->celly_xboundL[J-1] < PhaseTrans->celly_xboundR[J-1])
 	{
- 	 	xboundL = PhaseTrans->celly_xboundL[J-1] + 
- 	 	(PhaseTrans->celly_xboundL[J]-PhaseTrans->celly_xboundL[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[1]-dsy->ccoor[J-1]);
- 	 	xboundR = PhaseTrans->celly_xboundR[J-1] + 
- 	 	(PhaseTrans->celly_xboundR[J]-PhaseTrans->celly_xboundR[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[1]-dsy->ccoor[J-1]);
-  	}
-  	//interpolate boundaries if particle is forward of the cell center and next cell is within phase trans box
-  	else if (P->X[1] > dsy->ccoor[J] && PhaseTrans->celly_xboundL[J+1] < PhaseTrans->celly_xboundR[J+1]) 
-  	{
-  		xboundL = PhaseTrans->celly_xboundL[J] + 
-  		(PhaseTrans->celly_xboundL[J+1]-PhaseTrans->celly_xboundL[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[1]-dsy->ccoor[J]);
-  		xboundR = PhaseTrans->celly_xboundR[J] + 
-  		(PhaseTrans->celly_xboundR[J+1]-PhaseTrans->celly_xboundR[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[1]-dsy->ccoor[J]);
-  	}
-  	//particle outside of phase transition box or adjacent to y-edge of box so boundaries before or after are +/-1e12
-  	else 
-  	{
-  		xboundL = PhaseTrans->celly_xboundL[J];
-       	xboundR = PhaseTrans->celly_xboundR[J];
-       }
-       
-  	if 	( (xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
-       	(PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )
-    	{
-        	// We are within the box
+		xboundL = PhaseTrans->celly_xboundL[J-1] +
+		          (PhaseTrans->celly_xboundL[J]-PhaseTrans->celly_xboundL[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[1]-dsy->ccoor[J-1]);
+		xboundR = PhaseTrans->celly_xboundR[J-1] +
+		          (PhaseTrans->celly_xboundR[J]-PhaseTrans->celly_xboundR[J-1])/(dsy->ccoor[J]-dsy->ccoor[J-1])*(P->X[1]-dsy->ccoor[J-1]);
+	}
+	//interpolate boundaries if particle is forward of the cell center and next cell is within phase trans box
+	else if (P->X[1] > dsy->ccoor[J] && PhaseTrans->celly_xboundL[J+1] < PhaseTrans->celly_xboundR[J+1])
+	{
+		xboundL = PhaseTrans->celly_xboundL[J] +
+		          (PhaseTrans->celly_xboundL[J+1]-PhaseTrans->celly_xboundL[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[1]-dsy->ccoor[J]);
+		xboundR = PhaseTrans->celly_xboundR[J] +
+		          (PhaseTrans->celly_xboundR[J+1]-PhaseTrans->celly_xboundR[J])/(dsy->ccoor[J+1]-dsy->ccoor[J])*(P->X[1]-dsy->ccoor[J]);
+	}
+	//particle outside of phase transition box or adjacent to y-edge of box so boundaries before or after are +/-1e12
+	else
+	{
+		xboundL = PhaseTrans->celly_xboundL[J];
+		xboundR = PhaseTrans->celly_xboundR[J];
+	}
+
+	if  ( (xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
+	      (PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )
+	{
+		// We are within the box
 		ph = PH1;
 
-		// Set the temperature structure                                                                 
-		if      (PhaseTrans->TempType == 0){
+		// Set the temperature structure
+		if      (PhaseTrans->TempType == 0)
+		{
 
-		  //PetscPrintf(PETSC_COMM_WORLD,"inside NIAB in loop in none-temp \n");  // PRINT FOR NOTINAIRBOX TEST 
+			//PetscPrintf(PETSC_COMM_WORLD,"inside NIAB in loop in none-temp \n");  // PRINT FOR NOTINAIRBOX TEST
 
-			// do nothing                                                                                                                                    
+			// do nothing
 		}
-		else if (PhaseTrans->TempType == 1){
-			// constant T inside                                                                      
+		else if (PhaseTrans->TempType == 1)
+		{
+			// constant T inside
 			T = PhaseTrans->cstTemp;
 		}
-		else if (PhaseTrans->TempType == 2){
+		else if (PhaseTrans->TempType == 2)
+		{
 			// linear temperature profile
 			PetscScalar zTop, zBot, topTemp, botTemp, d;
-			zTop    =       PhaseTrans->zbounds[1];  // top    of domain                                                                                      
-			zBot    =       PhaseTrans->zbounds[0];  // bottom of domain                                                                                      
-			topTemp =       PhaseTrans->topTemp;    // T @ top                                                                                               
-			botTemp =       PhaseTrans->botTemp;    // T @ bottom                                                                                           
-
-			d		=       (P->X[2]-zTop)/(zTop-zBot);             // normalized distance to top                                                    
-			T		=       d*(topTemp-botTemp) + topTemp;  // temperature profile                                                                   
-		}
-		else if (PhaseTrans->TempType == 3){
-			// halfspace cooling T inside                                                                                                                     
-			PetscScalar zTop, topTemp, botTemp, T_age, d, kappa;
-			zTop    =       PhaseTrans->zbounds[1];  // top    of domain                                                                                      
+			zTop    =       PhaseTrans->zbounds[1];  // top    of domain
+			zBot    =       PhaseTrans->zbounds[0];  // bottom of domain
 			topTemp =       PhaseTrans->topTemp;    // T @ top
-			botTemp =       PhaseTrans->botTemp;    // T @ bottom                                                                                           
-			T_age   =       PhaseTrans->thermalAge; // thermal age                                                        
+			botTemp =       PhaseTrans->botTemp;    // T @ bottom
+
+			d       =       (P->X[2]-zTop)/(zTop-zBot);             // normalized distance to top
+			T       =       d*(topTemp-botTemp) + topTemp;  // temperature profile
+		}
+		else if (PhaseTrans->TempType == 3)
+		{
+			// halfspace cooling T inside
+			PetscScalar zTop, topTemp, botTemp, T_age, d, kappa;
+			zTop    =       PhaseTrans->zbounds[1];  // top    of domain
+			topTemp =       PhaseTrans->topTemp;    // T @ top
+			botTemp =       PhaseTrans->botTemp;    // T @ bottom
+			T_age   =       PhaseTrans->thermalAge; // thermal age
 
 			kappa   =       1e-6/( (scal->length_si)*(scal->length_si)/(scal->time_si));
 
-			d		=       zTop - P->X[2];
-			T		=       (botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
+			d       =       zTop - P->X[2];
+			T       =       (botTemp-topTemp)*erf(d/2.0/sqrt(kappa*T_age)) + topTemp;
 		}
-	    if(jr->ctrl.AdiabHeat > 0.0 && PhaseTrans->TempType != 0)
-	    {
-            mat   = jr->dbm->phases + PH1;
-            alpha = mat->alpha;
-            Cp    = mat->Cp;
-            // Get top of domain
-            if(jr->surf->UseFreeSurf)
-                Z_Top = jr->surf->InitLevel;
-            else
-                Z_Top = jr->fs->dsz.gcrdend;
+		if(jr->ctrl.AdiabHeat > 0.0 && PhaseTrans->TempType != 0)
+		{
+			mat   = jr->dbm->phases + PH1;
+			alpha = mat->alpha;
+			Cp    = mat->Cp;
+			// Get top of domain
+			if(jr->surf->UseFreeSurf)
+				Z_Top = jr->surf->InitLevel;
+			else
+				Z_Top = jr->fs->dsz.gcrdend;
 
-            // Global Domain thickness used to define dz
-            Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
+			// Global Domain thickness used to define dz
+			Ztot = Z_Top - jr->fs->dsz.gcrdbeg;
 			depth = PetscAbs(Z_Top - P->X[2]);
 			nsteps=(PetscInt)((depth/Ztot)*((PetscScalar)jr->fs->dsz.tcels/2.0))+1;
-            dz = depth/(PetscScalar)(nsteps);
+			dz = depth/(PetscScalar)(nsteps);
 
-            // Start with the temperature T (potential temperature from TempType)
-            T_adiab = T;
+			// Start with the temperature T (potential temperature from TempType)
+			T_adiab = T;
 
-            // RK2 integration: dT/dz = alpha * g * T / Cp
-            for(i = 0; i < nsteps; i++)
-            {
-                k1 = alpha * g * T_adiab / Cp;
-                k2 = alpha * g * (T_adiab + 0.5*dz*k1) / Cp;
-                T_adiab = T_adiab + dz * k2;
-            }
+			// RK2 integration: dT/dz = alpha * g * T / Cp
+			for(i = 0; i < nsteps; i++)
+			{
+				k1 = alpha * g * T_adiab / Cp;
+				k2 = alpha * g * (T_adiab + 0.5*dz*k1) / Cp;
+				T_adiab = T_adiab + dz * k2;
+			}
 
-            T = T_adiab;
-	    }
+			T = T_adiab;
+		}
 	}
-	else{  
+	else
+	{
 		// Outside; keep T
 
 		ph = PH2;
@@ -1363,43 +1403,45 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 
 //------------------------------------------------------------------------------------------------------------//
 PetscErrorCode Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,
-		Controls ctrl, PetscInt *ph_out, PetscInt *InAbove)
+        Controls ctrl, PetscInt *ph_out, PetscInt *InAbove)
 {
-	PetscInt 	ph,ip,neq, InAb;
-	PetscScalar Pres[2]={0.0, 0.0}, pShift;
+	PetscInt    ph,ip,neq, InAb;
+	PetscScalar Pres[2]= {0.0, 0.0}, pShift;
 
 	PetscFunctionBeginUser;
 
-  	if (ctrl.pShift){
+	if (ctrl.pShift)
+	{
 		pShift = ctrl.pShift;
 	}
-	else{
+	else
+	{
 		pShift = 0.0;
 	}
 
-	neq 	= 	PhaseTrans->neq;
-	InAb	=	0;
+	neq     =   PhaseTrans->neq;
+	InAb    =   0;
 	for (ip=0; ip<neq; ip++)
 	{
 		Pres[ip]    =   (P->T - PhaseTrans->T0_clapeyron[ip]) * PhaseTrans->clapeyron_slope[ip] + PhaseTrans->P0_clapeyron[ip];
 	}
 	if (neq==1)
 	{
-        if  ( (P->p+pShift) >= Pres[0]) {   ph  =   PH2;  InAb=1;  }
-        else                   			{   ph  =   PH1;    }
+		if  ( (P->p+pShift) >= Pres[0]) {   ph  =   PH2;  InAb=1;  }
+		else                            {   ph  =   PH1;    }
 	}
 	else
 	{
-        // in case we have two equations to describe the phase transition:
-        if  ( ((P->p+pShift) >= Pres[0]) && ( (P->p+pShift) >= Pres[1]) )	{   ph  =   PH2;  InAb=1;  	}
-        else                                                				{   ph  =   PH1;    		}
+		// in case we have two equations to describe the phase transition:
+		if  ( ((P->p+pShift) >= Pres[0]) && ( (P->p+pShift) >= Pres[1]) )   {   ph  =   PH2;  InAb=1;   }
+		else                                                                {   ph  =   PH1;            }
 
 	}
 
 	// return
-	*ph_out 	= 	ph;
-	*InAbove 	= 	InAb;
-	
+	*ph_out     =   ph;
+	*InAbove    =   InAb;
+
 	PetscFunctionReturn(0);
 }
 
@@ -1448,13 +1490,13 @@ PetscErrorCode DynamicPhTr_WriteRestart(JacRes *jr, FILE *fp)
 
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	{
-	   PhaseTrans = jr->dbm->matPhtr+nPtr;
+		PhaseTrans = jr->dbm->matPhtr+nPtr;
 
-          if (PhaseTrans->Type == _NotInAirBox_ )
-	   {
-	      fwrite(PhaseTrans->cbuffL,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
-	      fwrite(PhaseTrans->cbuffR,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
-           }
+		if (PhaseTrans->Type == _NotInAirBox_ )
+		{
+			fwrite(PhaseTrans->cbuffL,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
+			fwrite(PhaseTrans->cbuffR,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
+		}
 	}
 
 
@@ -1479,22 +1521,22 @@ PetscErrorCode DynamicPhTr_ReadRestart(JacRes *jr, FILE *fp)
 
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	{
-	   PhaseTrans = jr->dbm->matPhtr+nPtr;
+		PhaseTrans = jr->dbm->matPhtr+nPtr;
 
-          if (PhaseTrans->Type == _NotInAirBox_ )
-	   {
+		if (PhaseTrans->Type == _NotInAirBox_ )
+		{
 
-	      //Following code for reading coord vectors in fdstag "Discret1DReadRestart"
-  	      PetscCall(makeScalArray(&PhaseTrans->cbuffL, NULL, dsy->ncels+2));
-  	      PetscCall(makeScalArray(&PhaseTrans->cbuffR, NULL, dsy->ncels+2));
+			//Following code for reading coord vectors in fdstag "Discret1DReadRestart"
+			PetscCall(makeScalArray(&PhaseTrans->cbuffL, NULL, dsy->ncels+2));
+			PetscCall(makeScalArray(&PhaseTrans->cbuffR, NULL, dsy->ncels+2));
 
-	      fread(PhaseTrans->cbuffL,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
-	      fread(PhaseTrans->cbuffR,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
+			fread(PhaseTrans->cbuffL,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
+			fread(PhaseTrans->cbuffR,  sizeof(PetscScalar)*(size_t)(dsy->ncels + 2), 1, fp);
 
 
-	      PhaseTrans->celly_xboundL = PhaseTrans->cbuffL + 1;
-	      PhaseTrans->celly_xboundR = PhaseTrans->cbuffR + 1;
-	    }
+			PhaseTrans->celly_xboundL = PhaseTrans->cbuffL + 1;
+			PhaseTrans->celly_xboundR = PhaseTrans->cbuffR + 1;
+		}
 	}
 
 
@@ -1515,12 +1557,12 @@ PetscErrorCode DynamicPhTrDestroy(DBMat *dbm)
 
 	for(nPtr=0; nPtr<numPhTrn; nPtr++)
 	{
-	   PhaseTrans = dbm->matPhtr+nPtr;
-          if (PhaseTrans->Type == _NotInAirBox_ )
-	   {
-	      PetscCall(PetscFree(PhaseTrans->cbuffL));
-	      PetscCall(PetscFree(PhaseTrans->cbuffR));
-	   }
+		PhaseTrans = dbm->matPhtr+nPtr;
+		if (PhaseTrans->Type == _NotInAirBox_ )
+		{
+			PetscCall(PetscFree(PhaseTrans->cbuffL));
+			PetscCall(PetscFree(PhaseTrans->cbuffR));
+		}
 	}
 
 	PetscFunctionReturn(0);

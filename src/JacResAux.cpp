@@ -372,7 +372,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 
 		// compute depth of the current control volume
 		depth = gwLevel - COORD_CELL(k, sz, fs->dsz);
-		if(depth < 0.0) depth = 0.0;				// we don't want these calculations in the 'air'
+		if(depth < 0.0) depth = 0.0;                // we don't want these calculations in the 'air'
 
 		// Evaluate pore pressure ratio in control volume
 		rp_cv = 0.0;
@@ -514,17 +514,17 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 		PetscPrintf(PETSC_COMM_WORLD,"==========================================================================\n");
 		PetscPrintf(PETSC_COMM_WORLD,"EFFECTIVE PERMEABILITY CONSTANT: %E %s\n", ks*scal->area_si, scal->lbl_area_si);
 		PetscPrintf(PETSC_COMM_WORLD,"==========================================================================\n");
-		
+
 	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode JacResGetVelGrad(JacRes *jr,
-		Vec lvx,   Vec lvy,   Vec lvz,
-		Vec dvxdx, Vec dvxdy, Vec dvxdz,
-		Vec dvydx, Vec dvydy, Vec dvydz,
-		Vec dvzdx, Vec dvzdy, Vec dvzdz)
+                                Vec lvx,   Vec lvy,   Vec lvz,
+                                Vec dvxdx, Vec dvxdy, Vec dvxdz,
+                                Vec dvydx, Vec dvydy, Vec dvydz,
+                                Vec dvzdx, Vec dvzdy, Vec dvzdz)
 {
 	// compute velocity gradients for output
 

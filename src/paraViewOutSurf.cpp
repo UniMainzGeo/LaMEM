@@ -39,7 +39,7 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	pvsurf->topography = 1;
 	pvsurf->amplitude  = 1;
 	pvsurf->velocity   = 1;
-	
+
 
 	// read
 	PetscCall(getStringParam(fb, _OPTIONAL_, "out_file_name",       filename,        "output"));
@@ -154,8 +154,8 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 
 	// open structured grid data block (write total grid size)
 	fprintf(fp, "\t<PStructuredGrid GhostLevel=\"0\" WholeExtent=\"1 %" PetscInt_FMT " 1 %" PetscInt_FMT " 1 1\">\n",
-		fs->dsx.tnods,
-		fs->dsy.tnods);
+	        fs->dsx.tnods,
+	        fs->dsy.tnods);
 
 	// write cell data block (empty)
 	fprintf(fp, "\t\t<PCellData>\n");
@@ -199,9 +199,9 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 
 		// write data
 		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\" Source=\"%s_p%1.8" PetscInt_FMT ".vts\"/>\n",
-			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
-			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
-			pvsurf->outfile, iproc);
+		        (fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
+		        (fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
+		        pvsurf->outfile, iproc);
 	}
 
 	// close structured grid data block
@@ -248,13 +248,13 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 
 		// open structured grid data block (write total grid size)
 		fprintf(fp, "\t<StructuredGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\">\n",
-			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
-			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1));
+		        (fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
+		        (fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1));
 
 		// open sub-domain (piece) description block
 		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\">\n",
-			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
-			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1));
+		        (fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
+		        (fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1));
 
 		// write cell data block (empty)
 		fprintf(fp, "\t\t\t<CellData>\n");
@@ -275,7 +275,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		if(pvsurf->velocity)
 		{
 			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"velocity %s\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
-				scal->lbl_velocity, offset);
+			        scal->lbl_velocity, offset);
 
 			offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*3));
 		}
@@ -283,7 +283,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		if(pvsurf->topography)
 		{
 			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
-				scal->lbl_length, offset);
+			        scal->lbl_length, offset);
 
 			offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny));
 		}
@@ -291,7 +291,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		if(pvsurf->amplitude)
 		{
 			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
-				scal->lbl_length, offset);
+			        scal->lbl_length, offset);
 
 			offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny));
 		}
@@ -329,9 +329,9 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 }
 //---------------------------------------------------------------------------
 void OutputBufferWrite(
-	FILE     *fp,
-	float    *buff,
-	PetscInt  cn)
+    FILE     *fp,
+    float    *buff,
+    PetscInt  cn)
 {
 	if(!cn) return;
 

@@ -50,32 +50,42 @@ PetscScalar MPgetFReactive(PetscScalar P,PetscScalar T,PetscScalar Cf,PetscScala
 	Cf = (Cf<Cf_SAT) ? Cf:Cf_SAT;
 	dT = mp->K*pow(100.0*Cf,mp->gamma);
 	Tsol = mp->A1 + mp->A2*P + mp->A3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->A1 + mp->A2*Pc + mp->A3*Pc*Pc;
 		dTdP = mp->A2 + 2.0*mp->A3*Pc;
 		Tsol = T0 + dTdP*(P-Pc);
 	}
 	Tlhz = mp->B1 + mp->B2*P + mp->B3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->B1 + mp->B2*Pc + mp->B3*Pc*Pc;
 		dTdP = mp->B2 + 2.0*mp->B3*Pc;
 		Tlhz = T0 + dTdP*(P-Pc);
 	}
 	Tcpx = pow(Fcpx,1.0/mp->beta1)*(Tlhz - Tsol) + Tsol;
 	Tliq = mp->C1 + mp->C2*P + mp->C3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->C1 + mp->C2*Pc + mp->C3*Pc*Pc;
 		dTdP = mp->C2 + 2.0*mp->C3*Pc;
 		Tliq = T0 + dTdP*(P-Pc);
 	}
 
-	if (T<Tsol-dT) {
+	if (T<Tsol-dT)
+	{
 		F = 0.0;
-	} else if (T<Tcpx-dT) {
+	}
+	else if (T<Tcpx-dT)
+	{
 		F = pow(((T-(Tsol-dT))/(Tlhz-Tsol)),mp->beta1);
-	} else if (T<Tliq-dT) {
+	}
+	else if (T<Tliq-dT)
+	{
 		F = Fcpx + (1-Fcpx)*pow(((T-(Tcpx-dT))/(Tliq-Tcpx)),mp->beta2);
-	} else {
+	}
+	else
+	{
 		F = 1.0;
 	}
 
@@ -92,20 +102,23 @@ PetscScalar MPgetFEquilib(PetscScalar P,PetscScalar T,PetscScalar X,PetscScalar 
 	PetscScalar Tsol, Tlhz, Tcpx, Tliq, dT[3], T0, dTdP;
 
 	Tsol = mp->A1 + mp->A2*P + mp->A3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->A1 + mp->A2*Pc + mp->A3*Pc*Pc;
 		dTdP = mp->A2 + 2.0*mp->A3*Pc;
 		Tsol = T0 + dTdP*(P-Pc);
 	}
 	Tlhz = mp->B1 + mp->B2*P + mp->B3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->B1 + mp->B2*Pc + mp->B3*Pc*Pc;
 		dTdP = mp->B2 + 2.0*mp->B3*Pc;
 		Tlhz = T0 + dTdP*(P-Pc);
 	}
 	Tcpx = pow(Fcpx,1.0/mp->beta1)*(Tlhz - Tsol) + Tsol;
 	Tliq = mp->C1 + mp->C2*P + mp->C3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->C1 + mp->C2*Pc + mp->C3*Pc*Pc;
 		dTdP = mp->C2 + 2.0*mp->C3*Pc;
 		Tliq = T0 + dTdP*(P-Pc);
@@ -115,13 +128,19 @@ PetscScalar MPgetFEquilib(PetscScalar P,PetscScalar T,PetscScalar X,PetscScalar 
 	dT[1] = calcDT(P,X,Fcpx,mp); /* compute dT for F=Fcpx_out */
 	dT[2] = calcDT(P,X,1.0,mp);  /* compute dT for F=1.0 */
 
-	if (T<=(Tsol-dT[0])) {
+	if (T<=(Tsol-dT[0]))
+	{
 		return 0.0;
-	} else if (T<=(Tcpx-dT[1])) {
+	}
+	else if (T<=(Tcpx-dT[1]))
+	{
 		return FX_bal(0.0,Fcpx,T,P,X,Fcpx,mp);
-	} else if (T<=(Tliq-dT[2])) {
+	}
+	else if (T<=(Tliq-dT[2]))
+	{
 		return FX_bal(Fcpx,1.0,T,P,X,Fcpx,mp);
-	} else
+	}
+	else
 		return 1.0;
 }
 //---------------------------------------------------------------------------
@@ -132,7 +151,8 @@ PetscScalar MPgetTSolidus(PetscScalar P,PetscScalar X,meltPar_Katz *mp)
 	PetscScalar Tsol, dT, T0, dTdP;
 
 	Tsol = mp->A1 + mp->A2*P + mp->A3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->A1 + mp->A2*Pc + mp->A3*Pc*Pc;
 		dTdP = mp->A2 + 2.0*mp->A3*Pc;
 		Tsol = T0 + dTdP*(P-Pc);
@@ -150,35 +170,44 @@ PetscScalar MPgetTEquilib(PetscScalar P,PetscScalar F,PetscScalar X,PetscScalar 
 	PetscScalar Tsol, Tlhz, Tcpx, Tliq, T0, dTdP;
 
 	Tsol = mp->A1 + mp->A2*P + mp->A3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->A1 + mp->A2*Pc + mp->A3*Pc*Pc;
 		dTdP = mp->A2 + 2.0*mp->A3*Pc;
 		Tsol = T0 + dTdP*(P-Pc);
 	}
 	Tlhz = mp->B1 + mp->B2*P + mp->B3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->B1 + mp->B2*Pc + mp->B3*Pc*Pc;
 		dTdP = mp->B2 + 2.0*mp->B3*Pc;
 		Tlhz = T0 + dTdP*(P-Pc);
 	}
 	Tcpx = pow(Fcpx,1.0/mp->beta1)*(Tlhz - Tsol) + Tsol;
 	Tliq = mp->C1 + mp->C2*P + mp->C3*P*P;
-	if(P>Pc){
+	if(P>Pc)
+	{
 		T0   = mp->C1 + mp->C2*Pc + mp->C3*Pc*Pc;
 		dTdP = mp->C2 + 2.0*mp->C3*Pc;
 		Tliq = T0 + dTdP*(P-Pc);
 	}
 
 
-	if (F<=0.0) {
+	if (F<=0.0)
+	{
 		return Tsol - calcDT(P,X,0.0,mp);
-	} else if (F<=Fcpx) {
+	}
+	else if (F<=Fcpx)
+	{
 		return pow(F,1.0/mp->beta1)*(Tlhz-Tsol) + Tsol - calcDT(P,X,F,mp);
-	} else if (F<1.0) {
+	}
+	else if (F<1.0)
+	{
 		return pow((F-Fcpx)/(1.0-Fcpx),1.0/mp->beta2)*(Tliq-Tcpx) + Tcpx - calcDT(P,X,F,mp);
-	} else
+	}
+	else
 		return Tliq - calcDT(P,X,1.0,mp);
-}  
+}
 //---------------------------------------------------------------------------
 PetscScalar MPgetFconsH(PetscScalar P,PetscScalar Ti,PetscScalar X,PetscScalar M,PetscScalar *Tf,meltPar_Katz *mp)
 {
@@ -188,10 +217,13 @@ PetscScalar MPgetFconsH(PetscScalar P,PetscScalar Ti,PetscScalar X,PetscScalar M
 
 	Tsol = mp->A1 + mp->A2*P + mp->A3*P*P;
 
-	if (Ti<(Tsol-calcDT(P,X,0.0,mp))) {
+	if (Ti<(Tsol-calcDT(P,X,0.0,mp)))
+	{
 		*Tf = Ti;
 		return 0.0;
-	} else {
+	}
+	else
+	{
 		F  = FT_bal(0.0,1.0,Ti,P,X,M,mp);
 		*Tf = MPgetTEquilib(P,F,X,M,mp);
 		return F;
@@ -221,13 +253,19 @@ PetscScalar calcF(PetscScalar T,PetscScalar dT,PetscScalar P,PetscScalar Fcpx,me
 	Tcpx = pow(Fcpx,1.0/mp->beta1)*(Tlhz - Tsol) + Tsol;
 	Tliq = mp->C1 + mp->C2*P + mp->C3*P*P;
 
-	if (T<=(Tsol-dT)) {
+	if (T<=(Tsol-dT))
+	{
 		return 0.0;
-	} else if (T<=(Tcpx-dT)) {
+	}
+	else if (T<=(Tcpx-dT))
+	{
 		return pow((T - (Tsol-dT))/(Tlhz-Tsol),mp->beta1);
-	} else if (T<=(Tliq-dT)) {
+	}
+	else if (T<=(Tliq-dT))
+	{
 		return Fcpx + (1.0-Fcpx)*pow((T - (Tcpx-dT))/(Tliq-Tcpx),mp->beta2);
-	} else
+	}
+	else
 		return 1.0;
 }
 //---------------------------------------------------------------------------
@@ -253,10 +291,12 @@ PetscScalar FX_bal(PetscScalar x1,PetscScalar x2,PetscScalar T,PetscScalar P,Pet
 	fl = FZero(x1,T,P,X,Fcpx,mp);
 	fh = FZero(x2,T,P,X,Fcpx,mp);
 
-	if ( (fl>0.0 && fh<0.0) || (fl<0.0 && fh>0.0) ) {
+	if ( (fl>0.0 && fh<0.0) || (fl<0.0 && fh>0.0) )
+	{
 		xl=x1; xh=x2; ans=UNUSED_VAL;
 
-		for (j=1;j<=MAXITS;j++) {
+		for (j=1; j<=MAXITS; j++)
+		{
 			xm=0.5*(xl+xh);
 			fm=FZero(xm,T,P,X,Fcpx,mp);
 			s=sqrt(fm*fm-fl*fh);
@@ -266,25 +306,33 @@ PetscScalar FX_bal(PetscScalar x1,PetscScalar x2,PetscScalar T,PetscScalar P,Pet
 			ans=xnew;
 			fnew=FZero(ans,T,P,X,Fcpx,mp);
 			if (fnew==0.0) return ans;
-			if (SIG(fm,fnew) != fm) {
+			if (SIG(fm,fnew) != fm)
+			{
 				xl=xm;
 				fl=fm;
 				xh=ans;
 				fh=fnew;
-			} else if (SIG(fl,fnew) != fl) {
+			}
+			else if (SIG(fl,fnew) != fl)
+			{
 				xh=ans;
 				fh=fnew;
-			} else if (SIG(fh,fnew) != fh) {
+			}
+			else if (SIG(fh,fnew) != fh)
+			{
 				xl=ans;
 				fl=fnew;
-			} else
+			}
+			else
 				PetscPrintf(PETSC_COMM_WORLD,"FX_bal error: never get here (1)\n");
 
 			if (fabs(xh-xl) <= X_ACC) return ans;
 		}
 		PetscPrintf(PETSC_COMM_WORLD,"FX_bal error: exceed max iterations\n");
 
-	} else {
+	}
+	else
+	{
 		if (fl==0.0) return x1;
 		if (fh==0.0) return x2;
 		PetscPrintf(PETSC_COMM_WORLD,"FX_bal error: never get here (2)\n");
@@ -302,10 +350,12 @@ PetscScalar FT_bal(PetscScalar x1,PetscScalar x2,PetscScalar T,PetscScalar P,Pet
 	fl = HZero(x1,T,P,X,M,mp);
 	fh = HZero(x2,T,P,X,M,mp);
 
-	if ( (fl>0.0 && fh<0.0) || (fl<0.0 && fh>0.0) ) {
+	if ( (fl>0.0 && fh<0.0) || (fl<0.0 && fh>0.0) )
+	{
 		xl=x1; xh=x2; ans=UNUSED_VAL;
 
-		for (j=1;j<=MAXITS;j++) {
+		for (j=1; j<=MAXITS; j++)
+		{
 			xm=0.5*(xl+xh);
 			fm=HZero(xm,T,P,X,M,mp);
 			s=sqrt(fm*fm-fl*fh);
@@ -315,25 +365,33 @@ PetscScalar FT_bal(PetscScalar x1,PetscScalar x2,PetscScalar T,PetscScalar P,Pet
 			ans=xnew;
 			fnew=HZero(ans,T,P,X,M,mp);
 			if (fnew==0.0) return ans;
-			if (SIG(fm,fnew) != fm) {
+			if (SIG(fm,fnew) != fm)
+			{
 				xl=xm;
 				fl=fm;
 				xh=ans;
 				fh=fnew;
-			} else if (SIG(fl,fnew) != fl) {
+			}
+			else if (SIG(fl,fnew) != fl)
+			{
 				xh=ans;
 				fh=fnew;
-			} else if (SIG(fh,fnew) != fh) {
+			}
+			else if (SIG(fh,fnew) != fh)
+			{
 				xl=ans;
 				fl=fnew;
-			} else
+			}
+			else
 				PetscPrintf(PETSC_COMM_WORLD,"FX_bal error: never get here (1)\n");
 
 			if (fabs(xh-xl) <= X_ACC) return ans;
 		}
 		PetscPrintf(PETSC_COMM_WORLD,"FX_bal error: exceed max iterations\n");
 
-	} else {
+	}
+	else
+	{
 		if (fl==0.0) return x1;
 		if (fh==0.0) return x2;
 		PetscPrintf(PETSC_COMM_WORLD,"FX_bal error: never get here (2)\n");

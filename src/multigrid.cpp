@@ -628,9 +628,9 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 		idx[8]  = (PetscInt)ivy[K  ][J+1][I  ];
 		idx[9]  = (PetscInt)ivy[K  ][J+1][I+1];
 		idx[10] = (PetscInt)ivy[K+1][J+1][I  ];
-    	idx[11] = (PetscInt)ivy[K+1][J+1][I+1];
+		idx[11] = (PetscInt)ivy[K+1][J+1][I+1];
 
-    	// get fine grid boundary conditions
+		// get fine grid boundary conditions
 		bc[0]   =  fbcvy[K  ][J-1][I  ];
 		bc[1]   =  fbcvy[K  ][J-1][I+1];
 		bc[2]   =  fbcvy[K+1][J-1][I  ];
@@ -642,7 +642,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 		bc[8]   =  fbcvy[K  ][J+1][I  ];
 		bc[9]   =  fbcvy[K  ][J+1][I+1];
 		bc[10]  =  fbcvy[K+1][J+1][I  ];
-    	bc[11]  =  fbcvy[K+1][J+1][I+1];
+		bc[11]  =  fbcvy[K+1][J+1][I+1];
 
 		// setup row of restriction matrix
 		getRowRestrict(cbcvy[k][j][i], 12, idx, bc, v, vs);
@@ -679,9 +679,9 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 		idx[8]  = (PetscInt)ivz[K+1][J  ][I  ];
 		idx[9]  = (PetscInt)ivz[K+1][J  ][I+1];
 		idx[10] = (PetscInt)ivz[K+1][J+1][I  ];
-    	idx[11] = (PetscInt)ivz[K+1][J+1][I+1];
+		idx[11] = (PetscInt)ivz[K+1][J+1][I+1];
 
-    	// get fine grid boundary conditions
+		// get fine grid boundary conditions
 		bc[0]   =  fbcvz[K-1][J  ][I  ];
 		bc[1]   =  fbcvz[K-1][J  ][I+1];
 		bc[2]   =  fbcvz[K-1][J+1][I  ];
@@ -693,7 +693,7 @@ PetscErrorCode MGLevelSetupRestrict3D(MGLevel *lvl, MGLevel *fine)
 		bc[8]   =  fbcvz[K+1][J  ][I  ];
 		bc[9]   =  fbcvz[K+1][J  ][I+1];
 		bc[10]  =  fbcvz[K+1][J+1][I  ];
-    	bc[11]  =  fbcvz[K+1][J+1][I+1];
+		bc[11]  =  fbcvz[K+1][J+1][I+1];
 
 		// setup row of restriction matrix
 		getRowRestrict(cbcvz[k][j][i], 12, idx, bc, v, vs);
@@ -1170,7 +1170,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 		idx[2]  = (PetscInt)ivy[K+1][J][I  ];
 		idx[3]  = (PetscInt)ivy[K+1][J][I+1];
 
-    	// get fine grid boundary conditions
+		// get fine grid boundary conditions
 		bc[0]   =  fbcvy[K  ][J][I  ];
 		bc[1]   =  fbcvy[K  ][J][I+1];
 		bc[2]   =  fbcvy[K+1][J][I  ];
@@ -1207,7 +1207,7 @@ PetscErrorCode MGLevelSetupRestrict2D(MGLevel *lvl, MGLevel *fine)
 		idx[4]  = (PetscInt)ivz[K+1][J][I  ];
 		idx[5]  = (PetscInt)ivz[K+1][J][I+1];
 
-    	// get fine grid boundary conditions
+		// get fine grid boundary conditions
 		bc[0]   =  fbcvz[K-1][J][I  ];
 		bc[1]   =  fbcvz[K-1][J][I+1];
 		bc[2]   =  fbcvz[K  ][J][I  ];
@@ -1527,12 +1527,12 @@ PetscErrorCode MGLevelSetupProlong2D(MGLevel *lvl, MGLevel *fine)
 }
 //---------------------------------------------------------------------------
 void getRowRestrict(
-		PetscScalar parent,
-		PetscInt    n,
-		PetscInt    idx[],
-		PetscScalar bc[],
-		PetscScalar v[],
-		PetscScalar vs[])
+    PetscScalar parent,
+    PetscInt    n,
+    PetscInt    idx[],
+    PetscScalar bc[],
+    PetscScalar v[],
+    PetscScalar vs[])
 {
 	PetscInt j, pdof;
 
@@ -1563,12 +1563,12 @@ void getRowRestrict(
 }
 //---------------------------------------------------------------------------
 void getRowProlong(
-		PetscInt    parent,
-		PetscScalar parent_bc,
-		PetscInt    n,
-		PetscScalar bc[],
-		PetscScalar v[],
-		PetscScalar vs[])
+    PetscInt    parent,
+    PetscScalar parent_bc,
+    PetscInt    n,
+    PetscScalar bc[],
+    PetscScalar v[],
+    PetscScalar vs[])
 {
 	PetscInt    j;
 	PetscScalar pdof;
@@ -1716,7 +1716,7 @@ PetscErrorCode TestInterp(MatData *coarse, MatData *fine, Mat R, Mat P)
 	PetscCall(VecDuplicate(mgi.wf, &rf));
 
 	PetscCall(genRandVec(coarse, &rc));
-	PetscCall(genRandVec(fine  , &rf));
+	PetscCall(genRandVec(fine, &rf));
 
 	PetscCall(VecSetBC(coarse, rc));
 	PetscCall(VecSetBC(fine,   rf));

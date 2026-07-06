@@ -111,26 +111,26 @@ PetscErrorCode VecWriteRestart(Vec x, FILE *fp)
 PetscScalar getArthMean(PetscScalar *data, PetscInt n)
 {
 	PetscInt    k;
-    PetscScalar sum = 0.0;
+	PetscScalar sum = 0.0;
 
-    for (k=0; k<n; k++)
-        sum += data[k];
-    return (sum/(PetscScalar)n);
+	for (k=0; k<n; k++)
+		sum += data[k];
+	return (sum/(PetscScalar)n);
 }
 //---------------------------------------------------------------------------
 PetscScalar getVar(PetscScalar *data, PetscInt n)
 {
 	PetscInt    k;
-    PetscScalar mean = getArthMean(data,n);
-    PetscScalar temp = 0.0;
-    for (k=0; k<n; k++)
-        temp += (mean-data[k])*(mean-data[k]);
-    return (temp/(PetscScalar)n);
+	PetscScalar mean = getArthMean(data,n);
+	PetscScalar temp = 0.0;
+	for (k=0; k<n; k++)
+		temp += (mean-data[k])*(mean-data[k]);
+	return (temp/(PetscScalar)n);
 }
 //---------------------------------------------------------------------------
 PetscScalar getStdv(PetscScalar *data, PetscInt n)
 {
-    return sqrt(getVar(data,n));
+	return sqrt(getVar(data,n));
 }
 //---------------------------------------------------------------------------
 PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const PetscInt n)
@@ -248,9 +248,9 @@ PetscInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt 
 }
 //---------------------------------------------------------------------------
 PetscInt getGlobalRankPeriodic(
-		PetscInt i,  PetscInt j,  PetscInt k,
-		PetscInt m,  PetscInt n,  PetscInt p,
-		PetscInt pi, PetscInt pj, PetscInt pk)
+    PetscInt i,  PetscInt j,  PetscInt k,
+    PetscInt m,  PetscInt n,  PetscInt p,
+    PetscInt pi, PetscInt pj, PetscInt pk)
 {
 	// get global rank of processor in DMDA
 	if(pi) { if(i < 0) { i = m-1; } if(i >= m) {i = 0; } }
@@ -288,7 +288,7 @@ PetscErrorCode DirMake(const char *name)
 #else
 		// standard access pattern drwxr-xr-x
 		status = mkdir(name, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-#endif 
+#endif
 
 		if(status && errno != EEXIST)
 		{
@@ -391,11 +391,11 @@ PetscErrorCode DirCheck(const char *name, PetscInt *exists)
 //
 //---------------------------------------------------------------------------
 void polygon_box(
-	PetscInt    *pnv,    // number of polygon vertices (can be modified)
-	PetscScalar *vcoord, // coordinates of polygon vertices
-	PetscScalar  rtol,   // relative tolerance
-	PetscScalar *atol,   // absolute tolerance
-	PetscScalar *box)    // bounding box of a polygon
+    PetscInt    *pnv,    // number of polygon vertices (can be modified)
+    PetscScalar *vcoord, // coordinates of polygon vertices
+    PetscScalar  rtol,   // relative tolerance
+    PetscScalar *atol,   // absolute tolerance
+    PetscScalar *box)    // bounding box of a polygon
 {
 	PetscInt    iv, nv;
 	PetscScalar ax, bx, ay, by, xv, yv;
@@ -440,13 +440,13 @@ void polygon_box(
 }
 //---------------------------------------------------------------------------
 void in_polygon(
-	PetscInt     np,     // number of test points
-	PetscScalar *pcoord, // coordinates of test points
-	PetscInt     nv,     // number of polygon vertices
-	PetscScalar *vcoord, // coordinates of polygon vertices
-	PetscScalar *box,    // bounding box of a polygon (optimization)
-	PetscScalar  atol,   // absolute tolerance
-	PetscInt    *in)     // point location flags (1-inside, 0-outside)
+    PetscInt     np,     // number of test points
+    PetscScalar *pcoord, // coordinates of test points
+    PetscInt     nv,     // number of polygon vertices
+    PetscScalar *vcoord, // coordinates of polygon vertices
+    PetscScalar *box,    // bounding box of a polygon (optimization)
+    PetscScalar  atol,   // absolute tolerance
+    PetscInt    *in)     // point location flags (1-inside, 0-outside)
 {
 	PetscInt    ip, iv, ind;
 	PetscInt    point_on, point_in;
@@ -564,21 +564,21 @@ void in_polygon(
 }
 //---------------------------------------------------------------------------
 void linSpace(
-	PetscScalar  min,
-	PetscScalar  max,
-	PetscInt     N,
-	PetscScalar *outVec)
+    PetscScalar  min,
+    PetscScalar  max,
+    PetscInt     N,
+    PetscScalar *outVec)
 {
-    PetscScalar delta = (max-min)/((PetscScalar)(N-1));
+	PetscScalar delta = (max-min)/((PetscScalar)(N-1));
 
-    for(PetscInt i = 0; i < N; i++)
-    {
-        outVec[i] = min + ((PetscScalar)i)*delta;
-    }
+	for(PetscInt i = 0; i < N; i++)
+	{
+		outVec[i] = min + ((PetscScalar)i)*delta;
+	}
 }
 //---------------------------------------------------------------------------
 void interpStretch(
-	PetscScalar *Sx,
+    PetscScalar *Sx,
     PetscScalar *Sy,
     PetscInt     numCtrlPoly,
     PetscInt    *CtrlPoly,
@@ -586,76 +586,76 @@ void interpStretch(
     PetscScalar *SxAll,
     PetscScalar *SyAll)
 {
-    PetscInt     i,j,k;
+	PetscInt     i,j,k;
 	PetscInt     maxSize = 0;
-    
-    // enter first value
-    SxAll[CtrlPoly[0]] = Sx[0];
-    SyAll[CtrlPoly[0]] = Sy[0];
 
-    // get maximum size for SxNew and SyNew
-    for (i=1; i < numCtrlPoly; i++)
-    {  
-        if (CtrlPoly[i]-CtrlPoly[i-1]+1 > maxSize)
-        {
-            maxSize = CtrlPoly[i]-CtrlPoly[i-1]+1;
-        }
-    }
+	// enter first value
+	SxAll[CtrlPoly[0]] = Sx[0];
+	SyAll[CtrlPoly[0]] = Sy[0];
 
-    // interpolate the rest
-    for (i=1; i < numCtrlPoly; i++)
-    {
-        PetscScalar SxNew[maxSize];
-        PetscScalar SyNew[maxSize];
-        linSpace(Sx[i-1],Sx[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SxNew);
-        linSpace(Sy[i-1],Sy[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SyNew);
-        for (j = CtrlPoly[i-1], k = 0; j < CtrlPoly[i]+1; j++, k++)
-        {
-            SxAll[j] = SxNew[k];
-            SyAll[j] = SyNew[k];
-        }
-    }
+	// get maximum size for SxNew and SyNew
+	for (i=1; i < numCtrlPoly; i++)
+	{
+		if (CtrlPoly[i]-CtrlPoly[i-1]+1 > maxSize)
+		{
+			maxSize = CtrlPoly[i]-CtrlPoly[i-1]+1;
+		}
+	}
 
-    // extend stretch to first and last polygon
-    if (CtrlPoly[0] != 0)
-    {
-        for (i=0; i < CtrlPoly[0]; i++)
-        {
-            SxAll[i] = Sx[0];
-            SyAll[i] = Sy[0];
-        }
-    }
-    if (CtrlPoly[numCtrlPoly-1] != numCtrlPoly-1)
-    {
-        for (i=CtrlPoly[numCtrlPoly-1]; i < numPoly; i++)
-        {
-            SxAll[i] = Sx[numCtrlPoly-1];
-            SyAll[i] = Sy[numCtrlPoly-1];
-        }
-    }
+	// interpolate the rest
+	for (i=1; i < numCtrlPoly; i++)
+	{
+		PetscScalar SxNew[maxSize];
+		PetscScalar SyNew[maxSize];
+		linSpace(Sx[i-1],Sx[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SxNew);
+		linSpace(Sy[i-1],Sy[i],CtrlPoly[i] - CtrlPoly[i-1] + 1, SyNew);
+		for (j = CtrlPoly[i-1], k = 0; j < CtrlPoly[i]+1; j++, k++)
+		{
+			SxAll[j] = SxNew[k];
+			SyAll[j] = SyNew[k];
+		}
+	}
 
-    // no stretchfactor should be smaller than 0.1
-    for (i=0; i < numPoly; i++)
-    {
-    	if (SxAll[i] < 0.1) {SxAll[i] = 0.1;}
-    	if (SyAll[i] < 0.1) {SyAll[i] = 0.1;}
-    }
+	// extend stretch to first and last polygon
+	if (CtrlPoly[0] != 0)
+	{
+		for (i=0; i < CtrlPoly[0]; i++)
+		{
+			SxAll[i] = Sx[0];
+			SyAll[i] = Sy[0];
+		}
+	}
+	if (CtrlPoly[numCtrlPoly-1] != numCtrlPoly-1)
+	{
+		for (i=CtrlPoly[numCtrlPoly-1]; i < numPoly; i++)
+		{
+			SxAll[i] = Sx[numCtrlPoly-1];
+			SyAll[i] = Sy[numCtrlPoly-1];
+		}
+	}
+
+	// no stretchfactor should be smaller than 0.1
+	for (i=0; i < numPoly; i++)
+	{
+		if (SxAll[i] < 0.1) {SxAll[i] = 0.1;}
+		if (SyAll[i] < 0.1) {SyAll[i] = 0.1;}
+	}
 }
 //---------------------------------------------------------------------------
 void findCenterMass(
-	PetscScalar *coords,
-	PetscInt     nN,
-	PetscScalar &x_cen,
-	PetscScalar &y_cen)
+    PetscScalar *coords,
+    PetscInt     nN,
+    PetscScalar &x_cen,
+    PetscScalar &y_cen)
 {
-    PetscInt    i;
-    PetscScalar sumX = 0;
-    PetscScalar sumY = 0;
-    PetscScalar A = 0;
-    PetscScalar xc = 0; 
-    PetscScalar yc = 0;
-    PetscScalar meanX, meanY;
-    PetscScalar xp[nN], yp[nN], a[nN];
+	PetscInt    i;
+	PetscScalar sumX = 0;
+	PetscScalar sumY = 0;
+	PetscScalar A = 0;
+	PetscScalar xc = 0;
+	PetscScalar yc = 0;
+	PetscScalar meanX, meanY;
+	PetscScalar xp[nN], yp[nN], a[nN];
 
 	// split coords into x and y
 	PetscScalar x[nN];
@@ -666,78 +666,78 @@ void findCenterMass(
 		y[i] = coords[2*i+1];
 	}
 
-    // get mean of all nodes
-    for (i=0; i < nN; i++)
-    {
-        sumX += x[i];
-        sumY += y[i];
-    }
-    meanX = sumX/ ((PetscScalar) nN);
-    meanY = sumY/ ((PetscScalar) nN);
+	// get mean of all nodes
+	for (i=0; i < nN; i++)
+	{
+		sumX += x[i];
+		sumY += y[i];
+	}
+	meanX = sumX/ ((PetscScalar) nN);
+	meanY = sumY/ ((PetscScalar) nN);
 
-    // shift nodes by mean for better precision
-    for (i=0; i < nN; i++)
-    {
-        x[i] -= meanX;
-        y[i] -= meanY;
-    }
+	// shift nodes by mean for better precision
+	for (i=0; i < nN; i++)
+	{
+		x[i] -= meanX;
+		y[i] -= meanY;
+	}
 
-    // summations for CCW boundary
-    for (i=0; i < nN; i++)
-    {
-        if (i == nN-1) 
-        {
-            xp[i] = x[0];
-            yp[i] = y[0];
-        }
-        else
-        {
-            xp[i] = x[i+1];
-            yp[i] = y[i+1];
-        }
-        a[i]   =  x[i]*yp[i] - xp[i]*y[i];
-        xc    += (x[i]+xp[i])*a[i];
-        yc    += (y[i]+yp[i])*a[i];
-        A     +=  a[i];
-    }
-    A = A/2;
-    xc = xc/(6*A);
-    yc = yc/(6*A);
+	// summations for CCW boundary
+	for (i=0; i < nN; i++)
+	{
+		if (i == nN-1)
+		{
+			xp[i] = x[0];
+			yp[i] = y[0];
+		}
+		else
+		{
+			xp[i] = x[i+1];
+			yp[i] = y[i+1];
+		}
+		a[i]   =  x[i]*yp[i] - xp[i]*y[i];
+		xc    += (x[i]+xp[i])*a[i];
+		yc    += (y[i]+yp[i])*a[i];
+		A     +=  a[i];
+	}
+	A = A/2;
+	xc = xc/(6*A);
+	yc = yc/(6*A);
 
-    // shift back to original coords
-    x_cen = xc + meanX;
-    y_cen = yc + meanY;
+	// shift back to original coords
+	x_cen = xc + meanX;
+	y_cen = yc + meanY;
 }
 //---------------------------------------------------------------------------
 // stretch Polygon
 void stretchPolygon(
-	PetscScalar *coords,
-	PetscInt nN,
-	PetscScalar Sx,
-	PetscScalar Sy)
+    PetscScalar *coords,
+    PetscInt nN,
+    PetscScalar Sx,
+    PetscScalar Sy)
 {
-    PetscScalar x_cen, y_cen;    
-    PetscInt    iNode;
-    PetscScalar x,y;
+	PetscScalar x_cen, y_cen;
+	PetscInt    iNode;
+	PetscScalar x,y;
 
 	// find center of mass
-    findCenterMass(coords,nN,x_cen,y_cen);
+	findCenterMass(coords,nN,x_cen,y_cen);
 
-    // loop over nodes
-    for (iNode = 0; iNode < nN; iNode++)
-    {
-        // transform to relative coordinates
-        x        = coords[2*iNode]   - x_cen;
-        y        = coords[2*iNode+1] - y_cen;
+	// loop over nodes
+	for (iNode = 0; iNode < nN; iNode++)
+	{
+		// transform to relative coordinates
+		x        = coords[2*iNode]   - x_cen;
+		y        = coords[2*iNode+1] - y_cen;
 
-        // stretch
-        x        = x * Sx;
-        y        = y * Sy;
+		// stretch
+		x        = x * Sx;
+		y        = y * Sy;
 
-        // transform back to absolute corrdinates
-        coords[2*iNode]   = x + x_cen;
-        coords[2*iNode+1] = y + y_cen;
-    }
+		// transform back to absolute corrdinates
+		coords[2*iNode]   = x + x_cen;
+		coords[2*iNode+1] = y + y_cen;
+	}
 }
 //---------------------------------------------------------------------------
 // indexing functions
@@ -773,13 +773,13 @@ void rewindPtr(PetscInt n, PetscInt ptr[])
 }
 //---------------------------------------------------------------------------
 /*
-	PetscInt arr[18];
-	PetscInt counts[] = {3, 5, 7, 2, 1, 0};
-	PetscInt tnum = getPtrCnt(5, counts, counts);
-	counts[5] = tnum;
-	for(int i = 0; i < 5; i++) { for(int j = counts[i]; j < counts[i+1]; j++) arr[j] = i; }
-	for(int i = 0; i < 18; i++) counts[arr[i]]++;
-	rewindPtr(5, counts);
+    PetscInt arr[18];
+    PetscInt counts[] = {3, 5, 7, 2, 1, 0};
+    PetscInt tnum = getPtrCnt(5, counts, counts);
+    counts[5] = tnum;
+    for(int i = 0; i < 5; i++) { for(int j = counts[i]; j < counts[i+1]; j++) arr[j] = i; }
+    for(int i = 0; i < 18; i++) counts[arr[i]]++;
+    rewindPtr(5, counts);
 */
 //---------------------------------------------------------------------------
 // service functions
@@ -809,14 +809,14 @@ PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
 //-----------------------------------------------------------------------------
 // bisection algorithm for scalar nonlinear equation
 PetscInt solveBisect(
-		PetscScalar a,
-		PetscScalar b,
-		PetscScalar tol,
-		PetscInt    maxit,
-		PetscScalar &x,
-		PetscInt    &it,
-		PetscScalar (*f) (PetscScalar x, void *pctx),
-		void *pctx)
+    PetscScalar a,
+    PetscScalar b,
+    PetscScalar tol,
+    PetscInt    maxit,
+    PetscScalar &x,
+    PetscInt    &it,
+    PetscScalar (*f) (PetscScalar x, void *pctx),
+    void *pctx)
 {
 	PetscScalar fa, fx;
 
@@ -828,33 +828,35 @@ PetscInt solveBisect(
 	fa = f(a, pctx);
 
 	// check whether closed-form solution exists
-    if(PetscAbsScalar(fa) <= tol)
+	if(PetscAbsScalar(fa) <= tol)
 	{
-    	// return convergence flag
-    	return 1;
-    }
+		// return convergence flag
+		return 1;
+	}
 
 	do
-	{	// get new iterate
-	    x = (a + b)/2.0;
+	{
+		// get new iterate
+		x = (a + b)/2.0;
 
-	    // get new residual
-	    fx = f(x, pctx);
+		// get new residual
+		fx = f(x, pctx);
 
-	    // update interval
-	    if(fa*fx < 0.0)
-	    {
-	    	b = x;
-	    }
-	    else
-	    {
-	    	a = x; fa = fx;
-	    }
+		// update interval
+		if(fa*fx < 0.0)
+		{
+			b = x;
+		}
+		else
+		{
+			a = x; fa = fx;
+		}
 
-	    // update iteration count
-	    it++;
+		// update iteration count
+		it++;
 
-	} while( PetscAbsScalar(fx) > tol && it < maxit);
+	}
+	while( PetscAbsScalar(fx) > tol && it < maxit);
 
 	// return convergence flag
 	return PetscAbsScalar(fx) <= tol;

@@ -64,28 +64,28 @@ struct GeomPrim
 	// layer
 	PetscScalar top;
 	PetscScalar bot;
-	PetscInt    cosine; 	
+	PetscInt    cosine;
 	PetscScalar amplitude;
 	PetscScalar wavelength;
 	PetscScalar rand_amplitude;
 	// ridge
-    PetscScalar v_spread;
-    PetscScalar x_oblique;
-    PetscScalar ridgeseg_x[2];
-    PetscScalar ridgeseg_y[2];
-    PetscScalar x_ridgeLeft;
-    PetscScalar x_ridgeRight;
-    PetscScalar y_ridgeFront;
-    PetscScalar y_ridgeBack;
-    PetscScalar thermalAgeRidge;
-    PetscScalar age0;                   // thermal age @ ridge
-    PetscScalar maxAge;                 // maximum thermal Age a plate can have [say 80 Myrs on Earth]
-    // temperature
+	PetscScalar v_spread;
+	PetscScalar x_oblique;
+	PetscScalar ridgeseg_x[2];
+	PetscScalar ridgeseg_y[2];
+	PetscScalar x_ridgeLeft;
+	PetscScalar x_ridgeRight;
+	PetscScalar y_ridgeFront;
+	PetscScalar y_ridgeBack;
+	PetscScalar thermalAgeRidge;
+	PetscScalar age0;                   // thermal age @ ridge
+	PetscScalar maxAge;                 // maximum thermal Age a plate can have [say 80 Myrs on Earth]
+	// temperature
 	PetscInt    setTemp;
 	PetscScalar cstTemp;
 	PetscScalar topTemp, botTemp;
-	PetscScalar thermalAge;	
-    PetscScalar kappa;
+	PetscScalar thermalAge;
+	PetscScalar kappa;
 
 	void (*setPhase)(GeomPrim*, Marker*);
 };
@@ -105,16 +105,16 @@ void setPhaseHex(GeomPrim *hex, Marker *P);
 void setPhaseCylinder(GeomPrim *cylinder, Marker *P);
 
 void HexGetBoundingBox(
-		PetscScalar *coord,   // hex coordinates
-		PetscScalar *bounds); // bounding box
+    PetscScalar *coord,   // hex coordinates
+    PetscScalar *bounds); // bounding box
 
 PetscInt TetPointTest(
-		PetscScalar *coord, // tetrahedron coordinates
-		PetscInt    *ii,    // corner indices
-		PetscScalar *xp,    // point coordinate
-		PetscScalar  tol);  // relative tolerance
+    PetscScalar *coord, // tetrahedron coordinates
+    PetscInt    *ii,    // corner indices
+    PetscScalar *xp,    // point coordinate
+    PetscScalar  tol);  // relative tolerance
 
-void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T );		
+void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T );
 
 //---------------------------------------------------------------------------
 
@@ -178,12 +178,12 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Nslice, PetscInt *idx);
 //---------------------------------------------------------------------------
 
 #ifndef max
-    #define max(a,b) (a >= b ? a : b)
-    #define min(a,b) (a <= b ? a : b)
+#define max(a,b) (a >= b ? a : b)
+#define min(a,b) (a <= b ? a : b)
 #endif
 
 #define GET_GEOM(p, s, i, n) if(i < n) { p = &s[i++]; } \
-	else { SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %" PetscInt_FMT "", n); }
+    else { SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %" PetscInt_FMT "", n); }
 
 //---------------------------------------------------------------------------
 #endif

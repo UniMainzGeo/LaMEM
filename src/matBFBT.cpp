@@ -52,11 +52,11 @@ PetscErrorCode wBFBTCreate(wBFBTData *P, MatData *md)
 
 	// create DMDA
 	PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,
-		BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
-		DMDA_STENCIL_STAR,
-		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
-		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
-		1, 1, lx, ly, lz, &P->DA_P));
+	                            BC_TYPE_X, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+	                            DMDA_STENCIL_STAR,
+	                            fs->dsx.tcels, fs->dsy.tcels, fs->dsz.tcels,
+	                            fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+	                            1, 1, lx, ly, lz, &P->DA_P));
 
 	// set proper interpolation type for multigrid
 	PetscCall(DMDASetInterpolationType(P->DA_P, DMDA_Q0));

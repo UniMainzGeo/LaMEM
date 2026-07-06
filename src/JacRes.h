@@ -58,7 +58,7 @@ struct SolVarBulk
 	PetscScalar  mf;     // melt fraction from phase diagram
 	PetscScalar  phi;    // PSD angle
 	PetscScalar  Ha ;    // Adiabatic heating
-    PetscScalar  cond ;  // conductivity
+	PetscScalar  cond ;  // conductivity
 
 };
 
@@ -130,7 +130,7 @@ struct Controls
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
-	PetscScalar AdiabHeat;		// Adiabatic Heating efficiency
+	PetscScalar AdiabHeat;      // Adiabatic Heating efficiency
 	PetscInt    actTemp;        // temperature diffusion activation flag
 	PetscInt    actExp;         // thermal expansion activation flag
 	PetscInt    actSteadyTemp;  // steady-state temperature initial guess flag
@@ -144,7 +144,7 @@ struct Controls
 	PetscInt    pLimPlast;      // limit pressure at first iteration for plasticity
 	PetscScalar pShift;         // shift the pressure by a constant value while evaluating plasticity & for output
 	PetscInt    pShiftAct;      // pressure shift activation flag (zero pressure in the top cell layer)
-	PetscInt    printNorms;		// priny norms of velocity/pressure/temperature?
+	PetscInt    printNorms;     // priny norms of velocity/pressure/temperature?
 
 	PetscScalar eta_min;        // minimum viscosity
 	PetscScalar eta_max;        // maximum viscosity
@@ -268,21 +268,21 @@ PetscErrorCode JacResGetPressShift(JacRes *jr, Vec lp);
 
 // evaluate effective strain rate components in basic nodes
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr,
-		Vec lvx,  Vec lvy,  Vec lvz,
-		Vec ldxx, Vec ldyy, Vec ldzz,
-		Vec ldxy, Vec ldxz, Vec ldyz);
+                                      Vec lvx,  Vec lvy,  Vec lvz,
+                                      Vec ldxx, Vec ldyy, Vec ldzz,
+                                      Vec ldxy, Vec ldxz, Vec ldyz);
 
 // compute velocity gradients for output
 PetscErrorCode JacResGetVelGrad(JacRes *jr,
-		Vec lvx,   Vec lvy,   Vec lvz,
-		Vec dvxdx, Vec dvxdy, Vec dvxdz,
-		Vec dvydx, Vec dvydy, Vec dvydz,
-		Vec dvzdx, Vec dvzdy, Vec dvzdz);
+                                Vec lvx,   Vec lvy,   Vec lvz,
+                                Vec dvxdx, Vec dvxdy, Vec dvxdz,
+                                Vec dvydx, Vec dvydy, Vec dvydz,
+                                Vec dvzdx, Vec dvzdy, Vec dvzdz);
 
 // compute components of vorticity vector
 PetscErrorCode JacResGetVorticity(JacRes *jr,
-		Vec lvx,  Vec lvy,  Vec lvz,
-		Vec ldxy, Vec ldxz, Vec ldyz);
+                                  Vec lvx,  Vec lvy,  Vec lvz,
+                                  Vec ldxy, Vec ldxz, Vec ldyz);
 
 // initialize pressure
 PetscErrorCode JacResInitPres(JacRes *jr);
@@ -315,12 +315,12 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 //---------------------------------------------------------------------------
 
 PetscErrorCode JacResGetTempParam(
-	JacRes      *jr,
-	PetscScalar *phRat,
-	PetscScalar *k_,      // conductivity
-	PetscScalar *rho_Cp_, // volumetric heat capacity
-	PetscScalar *rho_A_,  // volumetric radiogenic heat   
-	PetscScalar Tc,       // temperature of cell
+    JacRes      *jr,
+    PetscScalar *phRat,
+    PetscScalar *k_,      // conductivity
+    PetscScalar *rho_Cp_, // volumetric heat capacity
+    PetscScalar *rho_A_,  // volumetric radiogenic heat
+    PetscScalar Tc,       // temperature of cell
     PetscScalar y_c,
     PetscInt J);          // coordinate of cell
 
@@ -363,8 +363,8 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr);
 //---------------------------------------------------------------------------
 
 #define SET_TPC(bc, a, k, j, i, pmdof) { \
-	if(bc[k][j][i] == DBL_MAX) a[k][j][i] = pmdof; \
-	else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
+    if(bc[k][j][i] == DBL_MAX) a[k][j][i] = pmdof; \
+    else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
 
 //---------------------------------------------------------------------------
 #endif

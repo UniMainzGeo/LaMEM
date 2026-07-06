@@ -486,9 +486,9 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 // low-level functions
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
-		Vec lvx, Vec lvy, Vec lvz, Vec gp,
-		Vec lfx, Vec lfy, Vec lfz, Vec gc,
-		PetscScalar cfInvEta)
+        Vec lvx, Vec lvy, Vec lvz, Vec gp,
+        Vec lfx, Vec lfy, Vec lfz, Vec gc,
+        PetscScalar cfInvEta)
 {
 	// cfInvEta - inverse viscosity term prefactor
 	// 0.0      - Picard operator
@@ -523,7 +523,7 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 	mny = fs->dsy.tnods - 1;
 	mnz = fs->dsz.tnods - 1;
 
-    // clear residual components
+	// clear residual components
 	PetscCall(VecZeroEntries(lfx));
 	PetscCall(VecZeroEntries(lfy));
 	PetscCall(VecZeroEntries(lfz));
@@ -774,9 +774,9 @@ PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeEvaluateRestrict(
-		MatData *coarse, MatData *fine,
-		Vec fx, Vec fy, Vec fz, Vec fp,
-		Vec cx, Vec cy, Vec cz, Vec cp)
+    MatData *coarse, MatData *fine,
+    Vec fx, Vec fy, Vec fz, Vec fp,
+    Vec cx, Vec cy, Vec cz, Vec cp)
 {
 	PetscScalar vs[12], sum;
 	PetscInt    I, J, K;
@@ -867,7 +867,7 @@ PetscErrorCode MatFreeEvaluateRestrict(
 		+     fya[K  ][J+1][I  ]*vs[8 ]
 		+     fya[K  ][J+1][I+1]*vs[9 ]
 		+     fya[K+1][J+1][I  ]*vs[10]
-    	+     fya[K+1][J+1][I+1]*vs[11];
+		+     fya[K+1][J+1][I+1]*vs[11];
 
 		// store coarse grid value
 		cya[k][j][i] = sum;
@@ -898,7 +898,7 @@ PetscErrorCode MatFreeEvaluateRestrict(
 		+     fza[K+1][J  ][I  ]*vs[8 ]
 		+     fza[K+1][J  ][I+1]*vs[9 ]
 		+     fza[K+1][J+1][I  ]*vs[10]
-    	+     fza[K+1][J+1][I+1]*vs[11];
+		+     fza[K+1][J+1][I+1]*vs[11];
 
 		// store coarse grid value
 		cza[k][j][i] = sum;
@@ -958,9 +958,9 @@ PetscErrorCode MatFreeEvaluateRestrict(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeEvaluateProlong(
-		MatData *coarse, MatData *fine,
-		Vec fx, Vec fy, Vec fz, Vec fp,
-		Vec cx, Vec cy, Vec cz, Vec cp)
+    MatData *coarse, MatData *fine,
+    Vec fx, Vec fy, Vec fz, Vec fp,
+    Vec cx, Vec cy, Vec cz, Vec cp)
 {
 	PetscScalar vsf[8], vsr[4], sum;
 	PetscInt    I, J, K, I1, J1, K1;
@@ -1158,7 +1158,7 @@ PetscErrorCode MatFreeEvaluateProlong(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
-		Vec ldx, Vec ldy, Vec ldz, Vec gdp)
+                                       Vec ldx, Vec ldy, Vec ldz, Vec gdp)
 {
 	// get diagonal of the preconditioner matrix
 
@@ -1194,7 +1194,7 @@ PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
 	mny = fs->dsy.tnods - 1;
 	mnz = fs->dsz.tnods - 1;
 
-    // clear diagonal components
+	// clear diagonal components
 	PetscCall(VecZeroEntries(ldx));
 	PetscCall(VecZeroEntries(ldy));
 	PetscCall(VecZeroEntries(ldz));

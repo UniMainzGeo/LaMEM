@@ -58,17 +58,17 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 }
 //---------------------------------------------------------------------------
 PetscErrorCode setUpCtrlVol(
-		ConstEqCtx  *ctx,    // context
-		PetscScalar *phRat,  // phase ratios in the control volume
-		SolVarDev   *svDev,  // deviatoric variables
-		SolVarBulk  *svBulk, // volumetric variables
-		PetscScalar  p,      // pressure
-		PetscScalar  p_lith, // lithostatic pressure
-		PetscScalar  p_pore, // pore pressure
-		PetscScalar  T,      // temperature
-		PetscScalar  DII,    // effective strain rate
-		PetscScalar  z,      // z-coordinate of control volume
-		PetscScalar  Le)     // characteristic element size
+    ConstEqCtx  *ctx,    // context
+    PetscScalar *phRat,  // phase ratios in the control volume
+    SolVarDev   *svDev,  // deviatoric variables
+    SolVarBulk  *svBulk, // volumetric variables
+    PetscScalar  p,      // pressure
+    PetscScalar  p_lith, // lithostatic pressure
+    PetscScalar  p_pore, // pore pressure
+    PetscScalar  T,      // temperature
+    PetscScalar  DII,    // effective strain rate
+    PetscScalar  z,      // z-coordinate of control volume
+    PetscScalar  Le)     // characteristic element size
 {
 	// setup control volume parameters
 
@@ -130,7 +130,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	T      = ctx->T;
 	mf     = 0.0;
 
-	p 	   = p + ctrl->pShift;		// add pressure shift to pressure field
+	p      = p + ctrl->pShift;      // add pressure shift to pressure field
 
 	if(mat->pdAct == 1)
 	{
@@ -143,7 +143,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 	//if(strcmp(mat->Melt_Parametrization,"none") & ctrl->melt_feedback == 1)
 //	{
-	//	mf = Compute_Melt_Fraction(p, T ,mat,ctx);
+	//  mf = Compute_Melt_Fraction(p, T ,mat,ctx);
 	//}
 
 	// set RT
@@ -181,7 +181,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(ctrl->gwType == _GW_NONE_) p_pore = 0.0;
 
 	// total pressure
-	p_total = p + ctrl->biot*p_pore; 
+	p_total = p + ctrl->biot*p_pore;
 
 	// assign pressure for viscous laws
 	if(ctrl->pLithoVisc)  p_visc = p_lith;
@@ -442,8 +442,8 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 				tauII = taupl + 2.0*ctx->eta_vp*DIIpl;
 				eta   = tauII/(2.0*DII);
 
-			    // store current strain strain rate
-			    DIIplc = DIIpl;
+				// store current strain strain rate
+				DIIplc = DIIpl;
 
 				// compute updated plastic strain rate
 				DIIpl = getConsEqRes(eta, ctx);
@@ -451,7 +451,8 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 				// set convergence flag
 				conv = (PetscAbsScalar((DIIpl - DIIplc)/DII) <= ctrl->lrtol);
 
-			} while(!conv && ++it < ctrl->lmaxit);
+			}
+			while(!conv && ++it < ctrl->lmaxit);
 		}
 	}
 
@@ -561,16 +562,16 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 }
 //---------------------------------------------------------------------------
 PetscScalar applyStrainSoft(
-		Soft_t      *soft, // material softening laws
-		PetscInt     ID,   // softening law ID
-		PetscScalar  APS,  // accumulated plastic strain
-		PetscScalar  Le,   // characteristic element size
-		PetscScalar  par)  // softening parameter
+    Soft_t      *soft, // material softening laws
+    PetscInt     ID,   // softening law ID
+    PetscScalar  APS,  // accumulated plastic strain
+    PetscScalar  Le,   // characteristic element size
+    PetscScalar  par)  // softening parameter
 {
 	// apply strain softening to a parameter (friction, cohesion)
 
 	PetscScalar  k;  // dt
-	PetscScalar  A, APS1, APS2, Lm; 
+	PetscScalar  A, APS1, APS2, Lm;
 	Soft_t      *s;
 
 	// check whether softening is defined
@@ -600,10 +601,10 @@ PetscScalar applyStrainSoft(
 }
 //---------------------------------------------------------------------------
 PetscScalar getI2Gdt(
-		PetscInt     numPhases, // number phases
-		Material_t  *phases,    // phase parameters
-		PetscScalar *phRat,     // phase ratios in the control volume
-		PetscScalar  dt)        // time step
+    PetscInt     numPhases, // number phases
+    Material_t  *phases,    // phase parameters
+    PetscScalar *phRat,     // phase ratios in the control volume
+    PetscScalar  dt)        // time step
 {
 	// compute inverse deviatoric elastic parameter
 
@@ -724,9 +725,9 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			{
 				// Compute density from phase diagram, while also taking the actual melt content into account
 				PetscScalar mf;
- 				
+
 				mf = Pd->mf;
-				if (mf > ctrl->mfmax){ mf = ctrl->mfmax; }
+				if (mf > ctrl->mfmax) { mf = ctrl->mfmax; }
 
 				rho = (mf * Pd->rho_f) + ((1.0 - mf ) * Pd->rho);
 			}
@@ -735,7 +736,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 				PetscScalar mf;
 
 				mf = Pd->mf;
-				if (mf > ctrl->mfmax){ mf = ctrl->mfmax; }
+				if (mf > ctrl->mfmax) { mf = ctrl->mfmax; }
 				rho = mat->rho*cf_comp*cf_therm;
 				rho = (Pd->mf * mat->rho_melt) + ((1-Pd->mf) * rho);
 
@@ -758,17 +759,17 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 }
 //---------------------------------------------------------------------------
 PetscErrorCode cellConstEq(
-		ConstEqCtx  *ctx,    // evaluation context
-		SolVarCell  *svCell, // solution variables
-		PetscScalar  dxx,    // effective normal strain rate components
-		PetscScalar  dyy,    // ...
-		PetscScalar  dzz,    // ...
-		PetscScalar &sxx,    // Cauchy stress components
-		PetscScalar &syy,    // ...
-		PetscScalar &szz,    // ...
-		PetscScalar &gres,   // volumetric residual
-		PetscScalar &rho,    // effective density
-		PetscScalar &dikeRHS) // dike RHS for gres calculation
+    ConstEqCtx  *ctx,    // evaluation context
+    SolVarCell  *svCell, // solution variables
+    PetscScalar  dxx,    // effective normal strain rate components
+    PetscScalar  dyy,    // ...
+    PetscScalar  dzz,    // ...
+    PetscScalar &sxx,    // Cauchy stress components
+    PetscScalar &syy,    // ...
+    PetscScalar &szz,    // ...
+    PetscScalar &gres,   // volumetric residual
+    PetscScalar &rho,    // effective density
+    PetscScalar &dikeRHS) // dike RHS for gres calculation
 {
 	// evaluate constitutive equations on the cell
 
@@ -819,8 +820,8 @@ PetscErrorCode cellConstEq(
 
 	// compute shear heating term contribution
 	svDev->Hr =
-		txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
-		sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
+	    txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
+	    sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
 
 	// compute total viscosity
 	svDev->eta = ctx->eta + eta_st;
@@ -844,21 +845,21 @@ PetscErrorCode cellConstEq(
 
 
 	if(ctrl->actExp && ctrl->actDike)
-    {
-        gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
-    }
+	{
+		gres= -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt + dikeRHS;
+	}
 	else if(ctrl->actDike)
-    {
-        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;
-    }
+	{
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + dikeRHS;
+	}
 	else if(ctrl->actExp)
-    {
-        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
-    }
+	{
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+	}
 	else
-    {
-        gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
-    }
+	{
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+	}
 
 	// store effective density
 	rho = svBulk->rho;
@@ -867,10 +868,10 @@ PetscErrorCode cellConstEq(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode edgeConstEq(
-		ConstEqCtx  *ctx,    // evaluation context
-		SolVarEdge  *svEdge, // solution variables
-		PetscScalar  d,      // effective shear strain rate component
-		PetscScalar &s)      // Cauchy stress component
+    ConstEqCtx  *ctx,    // evaluation context
+    SolVarEdge  *svEdge, // solution variables
+    PetscScalar  d,      // effective shear strain rate component
+    PetscScalar &s)      // Cauchy stress component
 {
 	// evaluate constitutive equations on the edge
 
@@ -947,14 +948,14 @@ PetscErrorCode checkConvConstEq(ConstEqCtx *ctx)
 //---------------------------------------------------------------------------
 // get the density from a phase diagram
 PetscErrorCode setDataPhaseDiagram(
-		PData       *pd,
-		PetscScalar  p,
-		PetscScalar  T,
-		char         pdn[])
+    PData       *pd,
+    PetscScalar  p,
+    PetscScalar  T,
+    char         pdn[])
 {
-    PetscInt       	i,j,i_pd,indT[2],indP[2],ind[4],found;
-    PetscScalar    	fx0,fx1,weight[4];
-	PetscScalar 	minP, dP, minT, dT;
+	PetscInt        i,j,i_pd,indT[2],indP[2],ind[4],found;
+	PetscScalar     fx0,fx1,weight[4];
+	PetscScalar     minP, dP, minT, dT;
 
 	PetscFunctionBeginUser;
 
@@ -999,10 +1000,10 @@ PetscErrorCode setDataPhaseDiagram(
 	}
 
 	// copy in temporary variables for code readability (and speed in fact as less reading from memory is triggered)
-	minP 	=	pd->minP[i_pd];
-	minT 	=	pd->minT[i_pd];
-	dP 		=	pd->dP[i_pd];
-	dT 		=	pd->dT[i_pd];
+	minP    =   pd->minP[i_pd];
+	minT    =   pd->minT[i_pd];
+	dP      =   pd->dP[i_pd];
+	dT      =   pd->dT[i_pd];
 
 	indT[0] = (PetscInt)floor((T-minT)/dT);
 	indT[1] = indT[0] + 1;

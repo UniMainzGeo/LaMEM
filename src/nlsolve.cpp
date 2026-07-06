@@ -49,7 +49,7 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 
 	// create matrix-free Jacobian operator
 	PetscCall(MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
-		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &J));
+	                         PETSC_DETERMINE, PETSC_DETERMINE, NULL, &J));
 	PetscCall(MatSetUp(J));
 
 	// set Jacobian application operation
@@ -57,17 +57,17 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 
 	// create matrix-free preconditioner operator
 	PetscCall(MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
-		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &P));
+	                         PETSC_DETERMINE, PETSC_DETERMINE, NULL, &P));
 	PetscCall(MatSetUp(P));
 
 	// create Picard Jacobian
 	PetscCall(MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
-		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &nl->PICARD));
+	                         PETSC_DETERMINE, PETSC_DETERMINE, NULL, &nl->PICARD));
 	PetscCall(MatSetUp(nl->PICARD));
 
 	// create finite-difference Jacobian
 	PetscCall(MatCreateMFFD(PETSC_COMM_WORLD, dof->ln, dof->ln,
-		PETSC_DETERMINE, PETSC_DETERMINE, &nl->MFFD));
+	                        PETSC_DETERMINE, PETSC_DETERMINE, &nl->MFFD));
 	PetscCall(MatSetOptionsPrefix(nl->MFFD,"fd_"));
 	PetscCall(MatSetFromOptions(nl->MFFD));
 	PetscCall(MatSetUp(nl->MFFD));
@@ -82,7 +82,7 @@ PetscErrorCode NLSolCreate(SNES *p_snes, JacRes *jr)
 	PetscCall(SNESSetJacobian(snes, J, P, &FormJacobian, NULL));
 	PetscCall(SNESSetConvergenceTest(snes, &SNESCoupledTest, NULL, NULL));
 	PetscCall(SNESGetLineSearch(snes, &linesearch));
-    PetscCall(SNESLineSearchSetPreCheck(linesearch, &SNESLineSearchPreCheck, (void*)nl));
+	PetscCall(SNESLineSearchSetPreCheck(linesearch, &SNESLineSearchPreCheck, (void*)nl));
 	PetscCall(SNESSetFromOptions(snes));
 
 	// setup linear solver & preconditioner
@@ -357,13 +357,13 @@ PetscErrorCode SNESLineSearchPreCheck(SNESLineSearch linesearch, Vec x, Vec d, P
 }
 //---------------------------------------------------------------------------
 PetscErrorCode SNESCoupledTest(
-	SNES                snes,
-	PetscInt            it,
-	PetscReal           xnorm,
-	PetscReal           gnorm,
-	PetscReal           f,
-	SNESConvergedReason *reason,
-	void                *cctx)
+    SNES                snes,
+    PetscInt            it,
+    PetscReal           xnorm,
+    PetscReal           gnorm,
+    PetscReal           f,
+    SNESConvergedReason *reason,
+    void                *cctx)
 {
 	NLSol       *nl;
 	JacRes      *jr;
@@ -477,10 +477,10 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscLogDouble t_beg)
 		PetscCall(SNESGetKSP(snes, &ksp));
 		PetscCall(KSPGetConvergedReason(ksp, &ksp_reason));
 
-		if(ksp_reason == KSP_DIVERGED_BREAKDOWN
-		|| ksp_reason == KSP_DIVERGED_INDEFINITE_PC
-		|| ksp_reason == KSP_DIVERGED_NANORINF
-		|| ksp_reason == KSP_DIVERGED_INDEFINITE_MAT)
+		if(ksp_reason == KSP_DIVERGED_BREAKDOWN     ||
+		   ksp_reason == KSP_DIVERGED_INDEFINITE_PC ||
+		   ksp_reason == KSP_DIVERGED_NANORINF      ||
+		   ksp_reason == KSP_DIVERGED_INDEFINITE_MAT)
 		{
 			div_severe = 1;
 		}

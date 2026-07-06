@@ -23,7 +23,7 @@ struct FDSTAG;
 
 struct InterpFlags
 {
- public:
+public:
 
 	PetscInt update;    // update vs. overwrite target vector
 	PetscInt use_bound; // use boundary ghost points for interpolation

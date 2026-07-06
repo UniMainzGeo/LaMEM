@@ -48,8 +48,8 @@ int main(int argc, char **argv)
 	else
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown parameter for 'Adjoint_mode'. Possibilities are [None; GenericInversion; AdjointGradients; GradientDescent or SyntheticForwardRun]");
-	} 
-	
+	}
+
 	if(IOparam.use == _none_)
 	{
 		// forward simulation

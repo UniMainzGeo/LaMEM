@@ -86,9 +86,9 @@ void OutBufDump(OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 void OutBufPutCoordVec(
-	OutBuf      *outbuf,
-	Discret1D   *ds,
-	PetscScalar  cf)  // scaling coefficient
+    OutBuf      *outbuf,
+    Discret1D   *ds,
+    PetscScalar  cf)  // scaling coefficient
 {
 	// put FDSTAG coordinate vector to output buffer
 
@@ -112,12 +112,12 @@ void OutBufPutCoordVec(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode OutBufPut3DVecComp(
-	OutBuf      *outbuf,
-	Vec          lbcor,  // vector containing component data
-	PetscInt     ncomp,  // number of components
-	PetscInt     dir,    // component identifier
-	PetscScalar  cf,     // scaling coefficient
-	PetscScalar  shift)  // shift parameter (subtracted from scaled values)
+    OutBuf      *outbuf,
+    Vec          lbcor,  // vector containing component data
+    PetscInt     ncomp,  // number of components
+    PetscInt     dir,    // component identifier
+    PetscScalar  cf,     // scaling coefficient
+    PetscScalar  shift)  // shift parameter (subtracted from scaled values)
 {
 	// put component of 3D vector to output buffer
 	// component data is taken from lbcor vector
@@ -189,9 +189,9 @@ PetscErrorCode OutBufPut3DVecComp(
 }
 //---------------------------------------------------------------------------
 PetscErrorCode OutBufZero3DVecComp(
-	OutBuf      *outbuf,
-	PetscInt     ncomp,  // number of components
-	PetscInt     dir)    // component identifier
+    OutBuf      *outbuf,
+    PetscInt     ncomp,  // number of components
+    PetscInt     dir)    // component identifier
 {
 	// put zero component to output buffer
 
@@ -500,7 +500,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->DIIpl)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_pl_rate",    scal->lbl_unit,             &PVOutWriteRelDIIpl,     1, NULL);
 	// === debugging vectors ===============================================
 	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1, NULL);
-	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1, NULL);
+	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "fluid_density",  scal->lbl_density,          &PVOutWriteFluidDensity, 1, NULL);
 	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3, NULL);
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1, NULL);
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1, NULL);
@@ -574,9 +574,9 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 
 	// open rectilinear grid data block (write total grid size)
 	fprintf(fp, "\t<PRectilinearGrid GhostLevel=\"0\" WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\">\n",
-		start, fs->dsx.tnods,
-		start, fs->dsy.tnods,
-		start, fs->dsz.tnods);
+	        start, fs->dsx.tnods,
+	        start, fs->dsy.tnods,
+	        start, fs->dsz.tnods);
 
 	// write cell data block (empty)
 	fprintf(fp, "\t\t<PCellData>\n");
@@ -593,8 +593,9 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	outvecs = pvout->outvecs;
 	fprintf(fp, "\t\t<PPointData>\n");
 	for(i = 0; i < pvout->nvec; i++)
-	{	fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%" PetscInt_FMT "\" format=\"appended\"/>\n",
-			outvecs[i].name, outvecs[i].ncomp);
+	{
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%" PetscInt_FMT "\" format=\"appended\"/>\n",
+		        outvecs[i].name, outvecs[i].ncomp);
 	}
 	fprintf(fp, "\t\t</PPointData>\n");
 
@@ -609,9 +610,9 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 
 		// write data
 		fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\" Source=\"%s_p%1.8" PetscInt_FMT ".vtr\"/>\n",
-			(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
-			(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
-			(fs->dsz.starts[rz] + 1), (fs->dsz.starts[rz+1] + 1), pvout->outfile, iproc);
+		        (fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
+		        (fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
+		        (fs->dsz.starts[rz] + 1), (fs->dsz.starts[rz+1] + 1), pvout->outfile, iproc);
 	}
 
 	// close rectilinear grid data block
@@ -664,15 +665,15 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 
 	// open rectilinear grid data block (write total grid size)
 	fprintf(fp, "\t<RectilinearGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\">\n",
-		(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
-		(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
-		(fs->dsz.starts[rz] + 1), (fs->dsz.starts[rz+1] + 1));
+	        (fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
+	        (fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
+	        (fs->dsz.starts[rz] + 1), (fs->dsz.starts[rz+1] + 1));
 
 	// open sub-domain (piece) description block
 	fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT "\">\n",
-		(fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
-		(fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
-		(fs->dsz.starts[rz] + 1), (fs->dsz.starts[rz+1] + 1));
+	        (fs->dsx.starts[rx] + 1), (fs->dsx.starts[rx+1] + 1),
+	        (fs->dsy.starts[ry] + 1), (fs->dsy.starts[ry+1] + 1),
+	        (fs->dsz.starts[rz] + 1), (fs->dsz.starts[rz+1] + 1));
 
 	// write cell data block (empty)
 	fprintf(fp, "\t\t\t<CellData>\n");
@@ -696,8 +697,9 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	outvecs = pvout->outvecs;
 	fprintf(fp, "\t\t\t<PointData>\n");
 	for(i = 0; i < pvout->nvec; i++)
-	{	fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%" PetscInt_FMT "\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
-			outvecs[i].name, outvecs[i].ncomp, offset);
+	{
+		fprintf(fp, "\t\t\t\t<DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%" PetscInt_FMT "\" format=\"appended\" offset=\"%" PRIu64 "\"/>\n",
+		        outvecs[i].name, outvecs[i].ncomp, offset);
 		// update offset
 		offset += (uint64_t)(sizeof(uint64_t) + sizeof(float)*(size_t)(nx*ny*nz*outvecs[i].ncomp));
 	}
@@ -748,8 +750,8 @@ void WriteXMLHeader(FILE *fp, const char *file_type)
 }
 //---------------------------------------------------------------------------
 PetscErrorCode UpdatePVDFile(
-		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt outpvd)
+    const char *dirName, const char *outfile, const char *ext,
+    long int *offset, PetscScalar ttime, PetscInt outpvd)
 {
 	FILE        *fp;
 	char        *fname;
@@ -785,7 +787,7 @@ PetscErrorCode UpdatePVDFile(
 
 	// add entry to .pvd file
 	fprintf(fp,"\t<DataSet timestep=\"%1.6e\" file=\"%s/%s.%s\"/>\n",
-		ttime, dirName, outfile, ext);
+	        ttime, dirName, outfile, ext);
 
 	// store current position in the file
 	(*offset) = ftell(fp);

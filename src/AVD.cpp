@@ -177,7 +177,8 @@ PetscErrorCode AVDCellInit(AVD *A)
 	mz = A->nz+2;
 
 	// find positions of points inside Voronoi cells
-	for (p = 0; p < npoints; p++){
+	for (p = 0; p < npoints; p++)
+	{
 
 		// compute cell index of the particles
 		i = (PetscInt)((points[p].X[0] - (A->xs[0] - A->dx))/A->dx);
@@ -191,7 +192,8 @@ PetscErrorCode AVDCellInit(AVD *A)
 
 		ind = i+j*mx+k*mx*my;
 
-		if (A->cell[ind].p == AVD_CELL_MASK) {
+		if (A->cell[ind].p == AVD_CELL_MASK)
+		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Inserting cells into boundary cells is not permitted \n");
 		}
 
@@ -229,7 +231,8 @@ PetscErrorCode AVDClaimCells(AVD *A, const PetscInt ip)
 	count  = 0;
 	bchain->nclaimed = 0;
 
-	for (i=0; i<bchain->length; i++) {
+	for (i=0; i<bchain->length; i++)
+	{
 		cell_num0 = bchain->bound[i]; // cell number we are trying to claim
 
 		// if cell unclaimed, then claim it
@@ -305,7 +308,8 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 
 	count = 0;
 	bchain->length = 0;
-	for( i=0; i<bchain->nclaimed; i++) {
+	for( i=0; i<bchain->nclaimed; i++)
+	{
 		cell_num0 = bchain->claim[i];
 		cell0 = &cells[cell_num0];
 
@@ -319,8 +323,10 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 		cell_num[5] = (cell0->i  ) + (cell0->j  )*mx + (cell0->k-1)*mx*my; // Back
 
 		// boundary protection
-		for (k=0; k<6; k++) {
-			if (cells[cell_num[k]].p == AVD_CELL_MASK) {
+		for (k=0; k<6; k++)
+		{
+			if (cells[cell_num[k]].p == AVD_CELL_MASK)
+			{
 				cell_num[k] = AVD_CELL_MASK;
 			}
 		}
@@ -432,7 +438,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 
 	npoints = A->npoints;
 	n  = (A->nx+2)*(A->ny+2)*(A->nz+2);
-	
+
 
 	// allocate memory to injected/deleted markers
 	if      (npoints < A->mmin) new_nmark = A->mmin - npoints;
@@ -441,7 +447,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 	// allocate memory for sorting
 	PetscCall(makeIntArray(&area, NULL, npoints));
 	PetscCall(makeIntArray(&sind, NULL, npoints));
-	
+
 
 	// compute dominant axis
 	for (i = 0; i < npoints; i++)
@@ -548,7 +554,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 
 	// sort in ascending order
 	PetscCall(PetscSortIntWithArray(npoints,area,sind));
-	
+
 
 	// inject markers
 	if      (npoints < A->mmin)
@@ -588,7 +594,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 		// update total counter
 		actx->cdel +=new_nmark;
 	}
-	
+
 
 	// free memory
 	PetscCall(PetscFree(area));
@@ -815,10 +821,10 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 }
 //-----------------------------------------------------------------------------
 PetscInt FindPointInCell(
-	PetscScalar *px, // node coordinates
-	PetscInt     L,  // index of the leftmost node
-	PetscInt     R,  // index of the rightmost node
-	PetscScalar  x)  // point coordinate
+    PetscScalar *px, // node coordinates
+    PetscInt     L,  // index of the leftmost node
+    PetscInt     R,  // index of the rightmost node
+    PetscScalar  x)  // point coordinate
 {
 	// find ID of the cell containing point (call this function for local point only!)
 	if(x < px[L] || x > px[R])
@@ -1192,16 +1198,16 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 	// sort in ascending order
 	PetscCall(PetscSortIntWithArray(npoints,area,sind));
 
-		ind = 0;
-		for (i = 0; i < new_nmark; i++)
-		{
-			num_chain = sind[ind];
-			actx->idel[actx->cdel+i] = A->chain[num_chain].gind;
-			ind++;
+	ind = 0;
+	for (i = 0; i < new_nmark; i++)
+	{
+		num_chain = sind[ind];
+		actx->idel[actx->cdel+i] = A->chain[num_chain].gind;
+		ind++;
 
-		}
-		// update total counter
-		actx->cdel +=new_nmark;
+	}
+	// update total counter
+	actx->cdel +=new_nmark;
 
 	// free memory
 	PetscCall(PetscFree(area));

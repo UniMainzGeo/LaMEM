@@ -18,10 +18,10 @@
 // MATRIX SERVICE FUNCTIONS
 //---------------------------------------------------------------------------
 PetscErrorCode MatAIJCreate(
-	PetscInt m, PetscInt n,
-	PetscInt d_nz, const PetscInt d_nnz[],
-	PetscInt o_nz, const PetscInt o_nnz[],
-	Mat *P)
+    PetscInt m, PetscInt n,
+    PetscInt d_nz, const PetscInt d_nnz[],
+    PetscInt o_nz, const PetscInt o_nnz[],
+    Mat *P)
 {
 	PetscFunctionBeginUser;
 
@@ -153,11 +153,11 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, MatData *md)
 }
 //---------------------------------------------------------------------------
 void getStiffMat(
-	PetscScalar eta, PetscScalar diag,
-	PetscScalar *v,  PetscScalar *cf,
-	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz)
+    PetscScalar eta, PetscScalar diag,
+    PetscScalar *v,  PetscScalar *cf,
+    PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
+    PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
+    PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz)
 {
 	// compute cell stiffness matrix with deviatoric projection
 
@@ -175,10 +175,10 @@ void getStiffMat(
 }
 //---------------------------------------------------------------------------
 void addDensGradStabil(
-	PetscScalar fssa, PetscScalar *v,
-	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
-	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
-	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz)
+    PetscScalar fssa, PetscScalar *v,
+    PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
+    PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
+    PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz)
 {
 	PetscScalar cf = -fssa*dt;
 
@@ -255,7 +255,8 @@ void getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScal
 			}
 		}
 		else
-		{	// internal point detected, cannot have two-point constraints
+		{
+			// internal point detected, cannot have two-point constraints
 			pdofidx[j] = -1;
 		}
 	}

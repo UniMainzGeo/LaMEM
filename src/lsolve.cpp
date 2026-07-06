@@ -325,8 +325,8 @@ PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, M
 	else                                         buildBvv = 0;
 
 	// set null space flag
-	if(param->vs_type == _VEL_USER_
-	&& param->vu_type != _VEL_USER_DIRECT_) set_null_space = 1;
+	if(param->vs_type == _VEL_USER_ &&
+	   param->vu_type != _VEL_USER_DIRECT_) set_null_space = 1;
 	else                                    set_null_space = 0;
 
 	// create matrix

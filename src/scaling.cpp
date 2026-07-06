@@ -98,13 +98,14 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 	density     = 0.0;
 
 	PetscCall(getScalarParam(fb, _REQUIRED_, "unit_temperature", &temperature, 1, 1.0));
-	PetscCall(getScalarParam(fb, _REQUIRED_, "unit_length",      &length ,     1, 1.0));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "unit_length",      &length,     1, 1.0));
 	PetscCall(getScalarParam(fb, _REQUIRED_, "unit_viscosity",   &viscosity,   1, 1.0));
 	PetscCall(getScalarParam(fb, _REQUIRED_, "unit_stress",      &stress,      1, 1.0));
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "unit_density",     &density,     1, 1.0));
 
 	// print summary
-	if (PrintOutput){
+	if (PrintOutput)
+	{
 		PetscPrintf(PETSC_COMM_WORLD, "Scaling parameters:\n");
 		PetscPrintf(PETSC_COMM_WORLD,"   Temperature : %g [C/K] \n",    temperature);
 		PetscPrintf(PETSC_COMM_WORLD,"   Length      : %g [m] \n",      length);
