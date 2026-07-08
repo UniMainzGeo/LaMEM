@@ -1,10 +1,15 @@
 using Pkg
 
+args_local = String[]
 if "is64bit" in ARGS
-    args_local = ["is64bit",]
-else
-    # 32bit PETSc installation
-    args_local = ["",]
+    push!(args_local, "is64bit")
+end
+if "valgrind" in ARGS
+    push!(args_local, "valgrind")
+end
+if isempty(args_local)
+    # 32bit PETSc installation, no valgrind
+    args_local = [""]
 end
 
 # compile LaMEM if required

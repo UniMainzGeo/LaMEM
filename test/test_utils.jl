@@ -33,17 +33,28 @@ end
 """
     run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
                         outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
-                        mpiexec="mpiexec", dylibs="")
+                        mpiexec="mpiexec", valgrind=false)
 
 This runs a LaMEM simulation with given `ParamFile` on 1 or more cores, while writing the output to a local log file.
+
+If `valgrind=true`, the run is instead performed under Valgrind (memcheck), invoked directly - for
+cores==1 as `valgrind ... exec`, for cores>1 as `mpiexec -n cores valgrind ... exec`, using the same
+`mpiexec` as a normal parallel run - and always uses the debug (`deb`) build regardless of the
+`opt`/`deb` kwargs passed in, since Valgrind needs debug info to produce useful reports. Valgrind's XML
+report(s) are written next to the log file as `outfile_<pid>.xml`, and its combined stdout/stderr as
+`outfile.out`.
 
 """
 function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""; 
                 outfile="test.out", bin_dir="../../bin", opt=true, deb=false,
-                mpiexec="mpiexec")
+                mpiexec="mpiexec", valgrind::Bool=false)
     
     cur_dir = pwd()
-    if opt
+    if valgrind
+        # Valgrind needs debug info (and is far more useful against an unoptimized build) - always use
+        # the debug binary here, regardless of which one the test itself asked for.
+        exec = joinpath(cur_dir,bin_dir,"deb","LaMEM")
+    elseif opt
         exec=joinpath(cur_dir,bin_dir,"opt","LaMEM")
     elseif deb
         exec=joinpath(cur_dir,bin_dir,"deb","LaMEM")
@@ -52,6 +63,39 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
     success = true
     dylibs, mpipath = get_dylibs()
     args = split(args)
+
+    if valgrind
+        # Run LaMEM directly under Valgrind, using the same mpiexec as a normal parallel run (for
+        # cores==1 we skip mpiexec entirely, just like the non-valgrind path below does).
+        # Valgrind's XML report is written per-rank as outbase_<pid>.xml; combined stdout/stderr as
+        # outbase.out.
+        outbase = isempty(outfile) ? "valgrind_out" : first(splitext(outfile))
+
+        valgrind_cmd = `valgrind -v --leak-check=full --track-origins=yes --show-reachable=yes --xml=yes --xml-file=$(outbase)_%p.xml --child-silent-after-fork=yes -q`
+
+        if cores == 1
+            perform_run = Cmd(`$(valgrind_cmd) $(exec) -ParamFile $(ParamFile) $args`)
+        else
+            perform_run = Cmd(`$(mpiexec) -n $(cores) $(valgrind_cmd) $(exec) -ParamFile $(ParamFile) $args`)
+        end
+
+        perform_run = addenv(perform_run, "DYLD_FALLBACK_LIBRARY_PATH"=>dylibs, "MPIWRAP_DEBUG"=>"quiet")
+
+        try
+            # Open once and share the same IOStream for stdout & stderr, so they interleave into a
+            # single file correctly (matching bash's `> file 2>&1`) instead of two independent writers.
+            open("$(outbase).out", "w") do io
+                run(pipeline(perform_run, stdout=io, stderr=io))
+            end
+        catch
+            println("An error occured running Valgrind in directory: $(cur_dir) ")
+            println("while running the command:")
+            println(perform_run)
+            success = false
+        end
+
+        return success
+    end
 
     try
         if cores==1
@@ -439,7 +483,8 @@ end
                         split_sign="=", 
                         debug::Bool=false, 
                         create_expected_file::Bool=false, 
-                        clean_dir::Bool=true)
+                        clean_dir::Bool=true,
+                        valgrind::Bool = (@isdefined(use_valgrind) ? use_valgrind : false))
 
 This performs a LaMEM simulation and compares certain keywords of the logfile with results of a previous simulation        
 
@@ -459,6 +504,9 @@ Parameters:
 - `debug`: set to true if you simply want to see the output of the simulation (no test done)
 - `create_expected_file`: create an expected file
 - `clean_dir`: delete all timestep & pvd files at the end?
+- `valgrind`: run this test through Valgrind instead of running LaMEM directly.
+   If not specified explicitly, this defaults to the global `use_valgrind` flag (set by `runtests.jl`
+   when `julia start_tests.jl ... valgrind` is used), so existing test definitions don't need to change.
 
 """
 function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String; 
@@ -466,11 +514,12 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
                 cores::Int64=1, args::String="",
                 bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec",
                 split_sign="=", 
-                debug::Bool=false, create_expected_file::Bool=false, clean_dir::Bool=true)
+                debug::Bool=false, create_expected_file::Bool=false, clean_dir::Bool=true,
+                valgrind::Bool = (@isdefined(use_valgrind) ? use_valgrind : false))
 
 
-    # print info abouy running tests                
-    @info "Performing test $ParamFile in directory $dir on $cores cores"
+    # print info about running tests                
+    @info "Performing test $ParamFile in directory $dir on $cores cores" valgrind
     
     cur_dir = pwd();
     cd(dir)
@@ -489,9 +538,13 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
 	expectedFile = "$expectedFile.expected";
 
     # perform simulation 
-    success = run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec);
+    success = run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec, valgrind=valgrind);
 
-    if success==true && debug==false
+    # Under Valgrind we always run the debug binary (see run_lamem_local_test), even for tests written
+    # as opt=true - so the log wouldn't be a fair comparison against a *_opt.expected file generated by
+    # the optimized build (minor floating-point differences between build variants can happen). Since
+    # the point of a valgrind run is leak detection, not numeric validation, skip that comparison here.
+    if success==true && debug==false && !valgrind
         # compare logfiles 
         success = compare_logfiles(outfile, expectedFile, keywords, accuracy, split_sign=split_sign)
     end

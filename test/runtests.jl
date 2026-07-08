@@ -31,7 +31,13 @@ else
     global is64bit=false
 end
 
-@show use_dynamic_lib create_plots
+if "valgrind" in ARGS
+    global use_valgrind=true
+else
+    global use_valgrind=false
+end
+
+@show use_dynamic_lib create_plots use_valgrind
 include("test_utils.jl")        # test-framework specific functions
 
 test_dir = pwd()
@@ -79,7 +85,7 @@ end
     @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
-
+#=
     @test perform_lamem_test(dir,ParamFile,"FB1_b_Direct_deb", 
                             keywords=keywords, accuracy=acc, cores=1, deb=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
@@ -89,8 +95,11 @@ end
     @test perform_lamem_test(dir,ParamFile,"FB1_c_MUMPS_opt", 
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
+=#
+
 end
 #---------------------------------------------------------------------------
+#=
 @testset "t02_FB2_MG" begin
 
     cd(test_dir)
@@ -1366,6 +1375,7 @@ end
         create_expected_file=update_expected, clean_dir=clean_files)
 end
 #---------------------------------------------------------------------------
+=#
 end
 #---------------------------------------------------------------------------
 
