@@ -1,6 +1,7 @@
 # Targets:
 #  1) Call Julia test harness (make test)
 #  2) Run tests under Valgrind (make grind)
+#  3) Remove remaining files (make clean)
 
 # define PETSc installation directories:
 # PETSC_DEB = /directory/where/petsc/debug/is/installed
@@ -27,9 +28,9 @@ endif
 #   make test 01 05 32
 #   make test 03-07 11 12-17
 # Make would normally try to build "01", "05", etc. as targets of their own,
-# so we grab everything besides "test"/"grind" as TEST_SELECTORS and turn
+# so we grab everything besides "test" "grind" "clean" as TEST_SELECTORS and turn
 # those words into harmless no-op targets.
-TEST_SELECTORS := $(filter-out test grind,$(MAKECMDGOALS))
+TEST_SELECTORS := $(filter-out test grind clean,$(MAKECMDGOALS))
 $(eval $(TEST_SELECTORS):;@:)
 
 # Test mode, settable on the command line, e.g.:
@@ -63,3 +64,7 @@ grind:
 	@julia --project=../. check_valgrind_report.jl; ret=$$?; \
  	rm -f **/*.xml \
 	exit $$ret
+	
+clean:
+	@rm -f **/*.xml
+

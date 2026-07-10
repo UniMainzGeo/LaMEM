@@ -1,39 +1,28 @@
-# Artistic Style config, mirroring the .clang-format style previously derived
-# from fdstag.cpp / fdstag.h, plus support for multi-statement lines that
-# clang-format cannot preserve.
-#
+# Artistic Style config
 # Usage:
 #   astyle --options=.astylerc --recursive "*.cpp" "*.h"
-#   (or just `astyle --options=.astylerc file.cpp` for a single file)
 
 # Don't create backup files, let git handle it
 suffix=none
 
-
-# --- Brace style: Allman (brace on its own line) ---
+# Brace style: Allman (brace on its own line)
 style=allman
 
-# --- Indentation: tabs, width 4, matching the source ---
+# Indentation: tabs, width 4, matching the source
 --indent=tab=4
 indent-cases
 
-# Only the leading indentation should use tabs; any tab appearing later in
-# a line (e.g. leftover mid-line alignment tabs) gets expanded to spaces.
+# Only the leading indentation should use tabs; any tab appearing gets expanded to spaces.
 convert-tabs
 
-# --- Pointers/references bind to the variable name: "PetscScalar *ms" ---
+# References bind to the variable name: "PetscScalar &ms"
 align-reference=name
 
-# --- Keep hand-placed compact formatting intact ---
-# Don't split multiple statements sharing one line into separate lines
+# Keep hand-placed compact formatting intact
 keep-one-line-statements
 
-# Don't break a one-line block, e.g. "if (x) { foo(); }", onto multiple lines
+# Don't break a one-line block
 keep-one-line-blocks
 
-# --- Spacing ---
-
-# do NOT pad-header -- keeps "if(", "for(", "while(" with no space,
-# matching the source (omitting --pad-header achieves this by default)
-
+# Spacing
 --min-conditional-indent=0
