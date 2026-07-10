@@ -17,101 +17,120 @@ Below, we give specific instructions.
 
 What forking does is create a copy of LaMEM within your own GitHub account on which you can do your own work, create branches etc. (or also give other access if you wish). Once you are ready to push a local branch back to LaMEM master, you can create a pull request.
 
-In order to fork, please follow the following steps:
+In order to fork, please follow the following steps.
 
-1. Login to your GitHub account and go from there to the LaMEM repository `https://github.com/UniMainzGeo/LaMEM`
-2. Click on the `Fork` button in the toolbar. You can make this repo private or public.
-3. Next, you clone LaMEM *from your own repository* to your local directory. The easiest way to do this is via the webpage where you go to `Clone` and copy the clone command. Next go to your terminal and type this
-   ``` 
-   git clone https://github.com/<username>/LaMEM.git ./LaMEM
-   ```
-   where `<username>` should be your GitHub username (or copy the command from the web interface).
-4. Change to the directory: `cd ./LaMEM` 
-5. Link the open-source main version of LaMEM (also called upstream version) with your local copy of it by typing on the command-line
-   ```
-   git remote add upstream https://github.com/UniMainzGeo/LaMEM.git
-   ```
-6. You can now always get the latest changes of the main version of LaMEM into your local copy by typing
-   ```
-   git pull upstream master   
-   ```
+Login to your GitHub account and go from there to the [LaMEM](https://github.com/UniMainzGeo/LaMEM) repository.
 
-#### 6.2.1 Starting and working on a new feature
+Click on the `Fork` button in the toolbar. You can make this repo private or public.
+
+Next, you clone LaMEM *from your own repository* to your local directory. The easiest way to do this is via the webpage where you go to `Clone` and copy the clone command. Next go to your terminal and type this:
+``` 
+git clone https://github.com/<username>/LaMEM.git ./LaMEM
+```
+where `<username>` should be your GitHub username (or copy the command from the web interface).
+
+Change to the directory:
+``` 
+cd ./LaMEM
+```
+
+Link the open-source main version of LaMEM (also called upstream version) with your local copy of it by typing on the command-line:
+```
+git remote add upstream https://github.com/UniMainzGeo/LaMEM.git
+```
+You can now always get the latest changes of the main version of LaMEM into your local copy by typing:
+```
+git pull upstream master   
+```
+
+### 6.2.2 Work on a new feature
 
 If you want to introduce a new feature to the code, you should *always* create a new branch for that.
 
 The workflow is as follows:
-1. Make sure you start from your local master by going to your local directory and typing 
-   ```
-   git checkout master
-   ```
-   Alternatively, you can also push a button in the GUI (which is what we tend to do). Many of us use SourceTree which is provided by Atlassian.
-2. Download the main changes of LaMEM into your own copy of the code
-   ```
-   git pull upstream master
-   ``` 
-3. Create and switch to a new feature branch:
-   ```
-    git checkout -b <loginname>/<goal>-<short-description>
-   ```
-   here `goal` should be either `bugfix` or `feature` to clarify whether it is to fix a bug or to add a new feature to the code.
 
-   For example, the new feature branch of Andrea on passive tracers should be called
-   ```
-   git checkout -b andrea_piccolo/feature-passive_tracers 
-   ```
-   Use all lowercase.
+Make sure you start from your local master by going to your local directory and typing 
+```
+git checkout master
+```
+Alternatively, you can also push a button in the GUI (which is what we tend to do). Many of us use SourceTree which is provided by Atlassian.
 
-4. Write code
+Download the main changes of LaMEM into your own copy of the code:
+```
+git pull upstream master
+``` 
 
-5. If you plan to merge your contributions to `LaMEM/master` it is mandatory to apply automated formatting using Artistic Style [astyle] (https://astyle.sourceforge.net/) tool.
+Create and switch to a new feature branch:
+```
+git checkout -b <loginname>/<goal>-<short-description>
+```
+here `goal` should be either `bugfix` or `feature` to clarify whether it is to fix a bug or to add a new feature to the code.
 
-   The astyle executables can be installed on Linux (e.g. Ubuntu) as folows:
-   ```
-   sudo apt-get install astyle
-   ```
-   and on Mac, using Homebrew:
-   ```
-   brew install astyle
-   ```
-   The formatting options are described in the hidden file `.astylerc` which is located in the source directory. Please do not modify this file, since otherwise LaMEM coding style will be broken.
-   To perform formatting of your changes you can simply use the `format` target from `Makefile`:
-   
-   ```
-   make format
-   ```
-   Apply the formatting regularly and modify the source if you are dissatisfied  with the result. Below is a couple of tips.
-   If you want to keep if-else statement on the the same line do not use curly brackets, otherwise formatter will put else statement on the next line:
-   ```
-   if(xp > xc)  II = I; else  II = I-1;
-   ```
-   Curly brackets are necessary to keep a macro after if statement:
-   ```
-   if(fi && fj ) { SET_EDGE_CORNER(lCenter, k, J, I, k, j, i, pmdof) }
-   ```
-   This is how you can nicely split long conditional or computational statement:
-   ```
-   if(X[0] < bx || X[0] > ex ||
-      X[1] < by || X[1] > ey ||
-      X[2] < bz || X[2] > ez) numNonLocal++;
-   ```
-6. Inspect changes: 
-   ```
-   git status
-   ``` 
-   or use one of the GUI's to do this 
-7. Regularly commit code:
+For example, the new feature branch of Andrea on passive tracers should be called (use lowercase):
+```
+git checkout -b andrea_piccolo/feature-passive_tracers 
+```
+
+Now you are ready to implememt your changes in the new branch.
+
+
+### 6.2.3 Format source code
+
+If you plan to merge your contributions to `LaMEM/master` it is mandatory to apply automated formatting using Artistic Style [astyle] (https://astyle.sourceforge.net/) tool.
+
+The astyle executable can be installed on Linux (e.g. Ubuntu) as folows:
+```
+sudo apt-get install astyle
+```
+and on Mac, using Homebrew:
+```
+brew install astyle
+```
+The formatting options are described in the hidden file `.astylerc` which is located in the source directory. Please do not modify this file, since otherwise LaMEM coding style will be broken.
+
+To perform formatting of your changes you can simply use the `format` target from `Makefile`:
+ 
+```
+make format
+```
+Apply the formatting regularly and modify the source if you are dissatisfied  with the result. Below is a couple of tips.
+
+If you want to keep if-else statement on the the same line do not use curly brackets, otherwise formatter will put else statement on the next line:
+```
+if(xp > xc)  II = I; else  II = I-1;
+```
+Curly brackets are necessary to keep good formatting of a macro after if statement:
+```
+if(fi && fj ) { SET_EDGE_CORNER(lCenter, k, J, I, k, j, i, pmdof) }
+```
+This is how you can nicely split long conditional or computational statement:
+```
+if(X[0] < bx || X[0] > ex ||
+   X[1] < by || X[1] > ey ||
+   X[2] < bz || X[2] > ez) numNonLocal++;
+```
+### 6.2.4 Commit and push changes
+
+Inspect changes: 
+```
+git status
+``` 
+or use one of the GUI's to do this 
+
+Regularly commit code:
    - Commit all files changed: `git commit -a` or
    - Commit selected files: `git commit file1 file2 file1` or
    - Add new files to be committed:`git add file1 file2` followed by `git commit`. Modified files can be added to a commit in the same way.
    - The same can of course be done through the GUI.
    - It is important to do this frequently and add useful commit messages as 
-8. Push the feature branch from your local hard disk to your online GitHub account, such that others (with access) can see it: `git push -u origin andrea_piccolo/feature-passive_tracers` (or equivalently, `git push --set-upstream origin andrea_piccolo/feature-passive_tracers`). Note that this step will still be in your own fork of LaMEM, and not in the main version of LaMEM.
-9. On a regular basis: merge `master` back into your feature or bugfix branch. This is easiest done with SourceTree. On a regular basis you should also pull the latest updates of the main LaMEM into your forked repository (step 2 above)
+
+Push the feature branch from your local hard disk to your online GitHub account, such that others (with access) can see it: `git push -u origin andrea_piccolo/feature-passive_tracers` (or equivalently, `git push --set-upstream origin andrea_piccolo/feature-passive_tracers`). Note that this step will still be in your own fork of LaMEM, and not in the main version of LaMEM.
+
+On a regular basis: merge `master` back into your feature or bug fix branch. This is easiest done with SourceTree. On a regular basis you should also pull the latest updates of the main LaMEM into your forked repository.
 
 Once your branch is ready and you would like to push it back to the main version of LaMEM, you should create a `Pull Request`, as described below.
 
-#### 6.2.3 Switching between and handling branches
+### 6.2.5 Switch between branches
 
 - Switch: `git checkout <branchname>`, for example `git checkout boris/feature-add_phase_transitions`
 - Show local and remote-tracking branches: `git branch -a`
@@ -126,33 +145,105 @@ Once your branch is ready and you would like to push it back to the main version
 Note that LaMEM is an open-source code, distributed under the terms of MIT License. Although this license is permissive, we still highly encourage you to contribute changes you made to the code back to LaMEM repository. By pushing back your contributions to `master` other users can benefit from your additions. If the additions are part of a paper that you would like to be cited, feel free to add the reference in the source code. 
 The LaMEM development team will make sure that things in master work and that tests will keep on running. By adding appropriate tests for your features it will also work in some time from now. Our experience shows that if you don't do this, or wait too long to push changes back to master, you will find that it becomes increasingly difficult to keep your branch in line with `LaMEM/master`.  
 
+### 6.3.1 Maintain granularity
 
-#### 6.3.1 Before filing a pull request
+If your contribution can be logically decomposed into 2 or more separate contributions, submit them in sequence with different branches instead of all at once. That makes it much easier to detect and resolve issues.
 
-- If your contribution can be logically decomposed into 2 or more separate contributions, submit them in sequence with different branches instead of all at once. That makes it much easier to detect and resolve issues.
-- Include tests which cover any changes to the source code.  Create a new directory for these tests within `LaMEM/test` and add the test itself to `runtests.jl`. You will have to create a Julia script for each new test directory, and will have to add `*.expected` files. Please make sure that these tests run reasonably fast, as it will otherwise significantly slow down the full testing framework (in most cases it is sufficient to have a low resolution case for testing). You can most likely get inspiration by looking at the existing examples.
-- Run the full test suite on your machine - i.e `make test` in the `/LaMEM/test` directory before a pull request. All tests should pass; if not ensure that. 
-- Make sure that there are NO compiler warnings left if you compile a fresh version of LaMEM with `make mode=deb clean_all; make mode=deb all`
-- Do the same on a different machine (e.g., linux, mac etc.) if it is available to you. Sometimes things work on one machine but not on the other.
-- If your additions resulted in new input parameters to the input script, add these new options (with a brief explanation of their meaning) to the input master file `LaMEM/info/options/input_file.dat`. Note that the nomenclature of the new parameters must be unique and case-independent. It is thus not allowed to call a parameter `K`, since we already have thermal conductivity `k`. The reason for this is that new parameters are automatically part of the adjoint inversion framework which otherwise gets confused.  New parameters should also have a clearly recognizable name (so everything related to your new plume inflow boundary condition should be called something like `Plume_`). Note that any new parameter in the input file can also automatically be called/overruled from the command line.
-- Merge the latest version of master back into your branch and make sure that all tests work (you may have to resolve conflicts; if you do his step regularly as suggested above it will in general be easier to keep your branch up-to-date). 
-- Make sure that you have no memory leaks. That means that every vector/matrix/dm you created should also be destroyed with VecDestroy, etc. In addition, if you happen to allocate memory yourself (with PetscMalloc) you must make sure that you free the memory again (using PetscFree). A simple way to check that you are fine with the PETSc objects is to use internal logging system which usually produces the following outputs: ![MemoryUsage](../assets/img/PETSc_memory_usage.png) The number of creations must be the same as the number of destruction. If there is a mismatch, you likely forgot to do a Destroy somewhere. Note that it is more difficult to track down `PetscMalloc` statements without corresponding `PetscFree`. Doing that is important as otherwise the memory of a simulation will go up with every time step, which ultimately makes the simulations run out of memory. To activate the logging simply run your test with the `-log_view` option added in the end.
-- You can also use a very powerful memory inspection tool [Valgrind](https://valgrind.org/) to identify all potential memory leaks and uninitialized variables. Valgrind is only available on Linux (e.g. Ubuntu) and can be installed with this command: `sudo apt-get install valgrind`. Running LaMEM under Valgrind can be  most easily done via the test framework, since it is fully integrated with Valgrind. Run `make grind` to perform the checks and obtain the report for all LaMEM tests. If everything runs fine the following statement will be printed: ![Valgrind_OK](../assets/img/Valgrind_OK.png) Otherwise you will see something like this: ![Valgrind_ERROR](../assets/img/Valgrind_ERROR.png) The test framework will merge multiple errors triggered by the same line of code and will only report it ones. This will drastically reduce the amount of text output and will let you focus on the actual problem. The error messages are also limited to LaMEM source files, since the mail goal is debugging LaMEM, not the external libraries. Please also prepare that Valgrind runs will take much longer (up to 100 times) to complete compared to normal runs. Valgrind runs will always use debug version in the background regardless of what optimization type is requested in the test (deb or opt) Numerical comparison of the output with the expected results will be also skipped. Because of that all test will be flagged as passed under Valgrind mode. The memory and variable check summary will appear after all tests complete exaction.
+### 6.3.2 Use test framework
+
+Include tests which cover any changes to the source code.  Create a new directory for these tests within `LaMEM/test` and add the test itself to `runtests.jl`. You will have to create a Julia script for each new test directory, and will have to add `*.expected` files. Please make sure that these tests run reasonably fast, as it will otherwise significantly slow down the full testing framework (in most cases it is sufficient to have a low resolution case for testing). You can most likely get inspiration by looking at the existing examples.
+
+Run the full test suite on your machine - i.e `make test` in the `/LaMEM/test` directory before a pull request. All tests should pass; if not ensure that.
+
+#### 6.3.2.1 Test selectors
+
+By default, `make test` and `make grind` run the full test suite. You can restrict a run to specific numbered testsets (`t01_...`, `t02_...`, etc.) by passing test numbers and/or ranges after the target:
+
+```bash
+make test 01 05 32          # run only t01, t05, t32
+make test 03-07 11 12-17    # run t03-t07, t11, and t12-t17
+make grind 05 12-15         # same syntax works for Valgrind runs
+```
+Numbers can be zero-padded or not (`01` and `1` are equivalent). Ranges are inclusive and order-independent (`07-03` also works). If no selectors are given, all tests run.
+
+Selection applies at the testset level only; individual sub-tests within a testset cannot be selected individually. If finer granularity is needed, split the testset into multiple numbered testsets.
+
+#### 6.3.2.2 Test modes
+
+`make test` supports a `mode` option that controls what happens to generated and expected files. It only applies to `make test`, not `make grind` (which always runs in `mode=test`, since Valgrind runs are for memory checking, not for curating reference output):
+
+```bash
+make test                # mode=test (default): run tests, clean up generated files
+make test mode=work      # run tests, keep generated files for inspection
+make test mode=update    # run tests and OVERWRITE the expected (reference) files
+```
+
+`mode` and test selectors can be combined:
+
+```bash
+make test mode=update 05 12-15   # regenerate expected files for t05, t12-t15 only
+```
+`mode=update` prints a warning banner before running, since it overwrites the reference files used to judge pass/fail in future runs.
+
+Combining test selectors and test modes provides a flexible way to develop a new test without interfering much with the rest of the test suite in `runtests.jl`. However as we mentioned before, after completing the new test it is mandatory to run the entire suite to make sure that other tests are not affected by your changes.
+
+### 6.3.3 Deal with compiler warnings
+
+Make sure that there are NO compiler warnings left if you compile a fresh version of LaMEM with `make mode=deb clean_all; make mode=deb all`. Do the same on a different machine (e.g., Linux, Mac etc.) if it is available to you. Sometimes things work on one machine but not on the other.
+
+### 6.3.4 Update reference input file
+
+If your additions resulted in new input parameters to the input script, add these new options (with a brief explanation of their meaning) to the input master file `LaMEM/info/options/input_file.dat`. Note that the nomenclature of the new parameters must be unique and case-independent. It is thus not allowed to call a parameter `K`, since we already have thermal conductivity `k`. The reason for this is that new parameters are automatically part of the adjoint inversion framework which otherwise gets confused. New parameters should also have a clearly recognizable name (so everything related to your new plume inflow boundary condition should be called something like `Plume_`). Note that any new parameter in the input file can also automatically be called/overruled from the command line.\
+
+### 6.3.5 Trace memory allocations
+
+Make sure that you have no memory leaks. That means that every vector/matrix/dm you created should also be destroyed with VecDestroy, etc. In addition, if you happen to allocate memory yourself (with PetscMalloc) you must make sure that you free the memory again (using PetscFree). A simple way to check that you are fine with the PETSc objects is to use internal logging system which usually produces the following outputs: 
+
+![MemoryUsage](../assets/img/PETSc_memory_usage.png) 
+
+The number of creations must be the same as the number of destruction. If there is a mismatch, you likely forgot to do a Destroy somewhere. Note that it is more difficult to track down `PetscMalloc` statements without corresponding `PetscFree`. Doing that is important as otherwise the memory of a simulation will go up with every time step, which ultimately makes the simulations run out of memory. To activate the logging simply run your test with the `-log_view` option added in the end.
+
+### 6.3.6 Use Valgrind
+
+You can also use a very powerful memory inspection tool [Valgrind](https://valgrind.org/) to identify all potential memory leaks and uninitialized variables. Valgrind is only available on Linux (e.g. Ubuntu) and can be installed with this command:
+
+```
+sudo apt-get install valgrind
+```
+Running LaMEM under Valgrind can be  most easily done via the test framework, since it is fully integrated with Valgrind. To perform the checks and obtain the report for all LaMEM tests run the following command in the test directory:
+
+```
+make grind
+```
+Of course you can use test selectors to narrow down your scope to a particular test, e.g.: 
+
+```
+make grind 26
+```
+This option is extremely useful since Valgrind runs are prohibitively expensive.
+
+If everything runs fine the following statement will be printed:
+
+![Valgrind_OK](../assets/img/Valgrind_OK.png)
+
+Otherwise you will see something like this:
+
+![Valgrind_ERROR](../assets/img/Valgrind_ERROR.png)
+
+The test framework will merge multiple errors triggered by the same line of code and will only report it ones. This will drastically reduce the amount of text output and will let you focus on the actual problem. The error messages are also limited to LaMEM source files, since the main goal is debugging LaMEM, not the external libraries. Please also prepare that Valgrind runs will take much longer (up to 100 times) to complete compared to normal runs. Valgrind runs will always use debug version in the background regardless of what optimization type is requested in the test (deb or opt). Numerical comparison of the output with the expected results will be also skipped. Because of that all test will be flagged as passed under Valgrind mode. The memory and variable check summary will appear after all tests complete execution.
     
-#### 6.3.2 Filing a pull request  
+### 6.3.7 Initiate pull request  
+
 Once you are ready to push back your branch to the main version of LaMEM, you should create a pull request. 
 Creating a pull request is best done through the GitHub web page:
 
-1. Go to your own GitHub account and the forked version of LaMEM. 
-2. Select `branches` on the left side and select the branch.
-3. On the right side you will have the option `Create Pull Request`
-4. Click on that, and select as destination on the right `UniMainzGeo/LaMEM` and `master` 
-5. Create a title and a description of what the pull request is about
-6. Select Anton and Boris as reviewers
-7. And push `Create Pull Request`
-8. Boris and Anton will review an email and at least one of us has to approve the pull request. If you want others to look at it as well, add them at this stage. They will all receive an email if the PR is created and if changes are made to the PR.
-9. We will go over the code, test it ourselves, and in most cases make suggestions for changes. These can be incorporated into your branch by committing changes in the usual manner. 
-10. Once approved, it will be merged to `master` and your branch will be closed. The tests will ensure that the new features will keep working.
+- Go to your own GitHub account and the forked version of LaMEM. 
+- Select `branches` on the left side and select the branch.
+- On the right side you will have the option `Create Pull Request`
+- Click on that, and select as destination on the right `UniMainzGeo/LaMEM` and `master` 
+- Create a title and a description of what the pull request is about
+- Select Anton and Boris as reviewers
+- And push `Create Pull Request`
+- We will review an email and at least one of us has to approve the pull request. If you want others to look at it as well, add them at this stage. They will all receive an email if the PR is created and if changes are made to the PR.
+- We will go over the code, test it ourselves, and in most cases make suggestions for changes. These can be incorporated into your branch by committing changes in the usual manner. - Once approved, it will be merged to `master` and your branch will be closed. The tests will ensure that the new features will keep working.
   
-
-

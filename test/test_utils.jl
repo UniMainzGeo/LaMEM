@@ -516,10 +516,15 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
                 split_sign="=", 
                 debug::Bool=false, create_expected_file::Bool=false, clean_dir::Bool=true,
                 valgrind::Bool = (@isdefined(use_valgrind) ? use_valgrind : false))
-
+   
+    if valgrind == true
+        valgrind_flag = "[valgrind]"
+    else
+        valgrind_flag = ""
+    end
 
     # print info about running tests                
-    @info "Performing test $ParamFile in directory $dir on $cores cores" valgrind
+    @info "Performing test $ParamFile in directory $dir on $cores cores $valgrind_flag"
     
     cur_dir = pwd();
     cd(dir)

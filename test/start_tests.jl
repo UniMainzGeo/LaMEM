@@ -7,6 +7,15 @@ end
 if "valgrind" in ARGS
     push!(args_local, "valgrind")
 end
+
+# Any remaining arguments are treated as test selectors (e.g. "01", "05",
+# "03-07") and forwarded so a subset of tests can be run, e.g.:
+#   make test 01 05 32
+#   make test 03-07 11 12-17
+known_flags = ("is64bit", "valgrind")
+test_selectors = [a for a in ARGS if !(a in known_flags)]
+append!(args_local, test_selectors)
+
 if isempty(args_local)
     # 32bit PETSc installation, no valgrind
     args_local = [""]

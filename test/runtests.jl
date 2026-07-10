@@ -40,38 +40,87 @@ end
 @show use_dynamic_lib create_plots use_valgrind
 include("test_utils.jl")        # test-framework specific functions
 
+#---------------------------------------------------------------------------
+# Test selection
+#
+# Allows running a subset of the numbered testsets (t01_..., t02_..., etc.),
+# e.g. from the command line:
+#   make test 01 05 32
+#   make test 03-07 11 12-17
+#
+# Any entry in ARGS that is a bare number ("5", "05") or a hyphenated range
+# ("03-07") is treated as a test selector. All other ARGS entries (flags such
+# as "is64bit", "valgrind", "use_dynamic_lib") are ignored for this purpose.
+# If no selectors are found, every test runs, preserving the current default
+# behaviour.
+function parse_test_selectors(args)
+    selected = Set{Int}()
+    for a in args
+        if occursin(r"^\d+-\d+$", a)
+            lo, hi = parse.(Int, split(a, "-"))
+            lo, hi = minmax(lo, hi)
+            union!(selected, lo:hi)
+        elseif occursin(r"^\d+$", a)
+            push!(selected, parse(Int, a))
+        end
+    end
+    return selected
+end
+
+const selected_tests = parse_test_selectors(ARGS)
+const run_all_tests   = isempty(selected_tests)
+
+if !run_all_tests
+    @info "Running a subset of tests: " * join(string.(sort(collect(selected_tests))), " ")
+end
+
+# Returns whether a testset with a given name (e.g. "t05_Permeability")
+# should be run, based on the selectors parsed above.
+function should_run_test(name::AbstractString)
+    run_all_tests && return true
+    m = match(r"^t0*(\d+)_", name)
+    m === nothing && return true   # fail open: always run testsets we can't parse
+    return parse(Int, m.captures[1]) in selected_tests
+end
+#---------------------------------------------------------------------------
+
 test_dir = pwd()
 
 #---------------------------------------------------------------------------
-maintenance = false # set to true when designing/debugging tests
+# Test mode
+#
+# Controls whether expected (reference) files are regenerated and whether
+# generated output/work files are cleaned up afterwards. Set on the command
+# line via:
+#   make test              - (mode=test, default) run tests, clean up generated files
+#   make test mode=work    - run tests, keep generated files for inspection
+#   make test mode=update  - run tests and OVERWRITE the expected files
+function parse_test_mode(args)
+    for a in args
+        m = match(r"^mode=(\w+)$", a)
+        m !== nothing && return m.captures[1]
+    end
+    return "test"
+end
 
-if maintenance
+const test_mode = parse_test_mode(ARGS)
 
-	#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	# WARNING! HANDLE WITH CARE
-	#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	update_expected = false # set to true when ready to update
-	#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	
-	if update_expected
-	
-		print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
-		print("WARNING! YOU ARE ABOUT TO OVERWRITE THE EXPECTED FILES\n")
-		print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
-	
-		clean_files = true # clean files when updating expected
-	else
-		clean_files = false # no need to clean files, keep working
-	end
-	
-else
-	# normal mode (do not update the expected files, just clean the output/work files)
-	update_expected = false 
-	clean_files     = true
+if !(test_mode in ("test", "work", "update"))
+    error("Unknown mode \"$test_mode\"; must be one of: test, work, update")
+end
+
+const update_expected = (test_mode == "update")
+const clean_files     = (test_mode != "work")
+
+if update_expected
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
+    print("WARNING! YOU ARE ABOUT TO OVERWRITE THE EXPECTED FILES\n")
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
 end
 #---------------------------------------------------------------------------
 @testset "LaMEM Testsuite" verbose=true begin
 #---------------------------------------------------------------------------
+if should_run_test("t01_FB1_Direct")
 @testset "t01_FB1_Direct" verbose=true begin
     cd(test_dir)
     dir = "t01_FB1_Direct";
@@ -85,7 +134,7 @@ end
     @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt", 
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
-#=
+
     @test perform_lamem_test(dir,ParamFile,"FB1_b_Direct_deb", 
                             keywords=keywords, accuracy=acc, cores=1, deb=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
@@ -95,11 +144,11 @@ end
     @test perform_lamem_test(dir,ParamFile,"FB1_c_MUMPS_opt", 
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
-=#
-
+end
 end
 #---------------------------------------------------------------------------
-#=
+
+if should_run_test("t02_FB2_MG")
 @testset "t02_FB2_MG" begin
 
     cd(test_dir)
@@ -115,7 +164,9 @@ end
                             keywords=keywords, accuracy=acc, cores=4, deb=true, opt=false, mpiexec=mpiexec, debug=false,
                                 create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t03_Subduction")
 @testset "t03_Subduction" begin
     cd(test_dir)
     dir = "t03_SubductionGMGinput";
@@ -166,7 +217,9 @@ end
                                 keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                                 create_expected_file=update_expected, clean_dir=clean_files)    
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t04_Localisation")
 @testset "t04_Localisation" begin
     cd(test_dir)
     dir = "t04_Loc";
@@ -206,7 +259,9 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t05_Permeability")
 @testset "t05_Permeability" begin
     cd(test_dir)
     dir = "t05_Perm";
@@ -221,7 +276,9 @@ end
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t06_AdjointGradientScalingLaws_p2")
 @testset "t06_AdjointGradientScalingLaws_p2" begin
     cd(test_dir)
     dir = "t06_AdjointGradientScaling";
@@ -261,7 +318,9 @@ end
                             create_expected_file=update_expected, clean_dir=clean_files)
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t07_AdjointGradientInversion")
 @testset "t07_AdjointGradientInversion" begin
     cd(test_dir)
     dir = "t07_AdjointGradientInversion";
@@ -367,7 +426,9 @@ end
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files) 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t08_AdjointGradients")
 @testset "t08_AdjointGradients" begin
 	cd(test_dir)
 	dir = "t08_AdjointGradients";
@@ -513,7 +574,9 @@ end
 	                        create_expected_file=update_expected, clean_dir=clean_files)
 	
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t09_PhaseDiagrams")
 @testset "t09_PhaseDiagrams" begin
     cd(test_dir)
     dir = "t09_PhaseDiagrams";
@@ -529,7 +592,9 @@ end
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t10_Compressibility")
 @testset "t10_Compressibility" begin
 	
 	# this ia a more complicated one, that requires a devoted script (with plotting)
@@ -572,7 +637,9 @@ end
     # --------------
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t11_Subgrid")
 @testset "t11_Subgrid" begin
     cd(test_dir)
     dir = "t11_Subgrid";
@@ -587,7 +654,9 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                         	create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t12_Temperature_diffusion")
 @testset "t12_Temperature_diffusion" begin
     cd(test_dir)
     dir = "t12_Temperature_diffusion";
@@ -639,8 +708,10 @@ end
     
     # ---
 end
+end
 #---------------------------------------------------------------------------
 # t13_Rheology0D
+if should_run_test("t13_Rheology0D")
 @testset "t13_Rheology0D" begin
     cd(test_dir)
     dir = "t13_Rheology0D";
@@ -783,8 +854,10 @@ end
     	clean_directory(dir)
    	end
 end
+end
 #---------------------------------------------------------------------------
 # t14_1DStrengthEnvelope/
+if should_run_test("t14_1DStrengthEnvelope")
 @testset "t14_1DStrengthEnvelope" begin
     cd(test_dir)
     dir = "t14_1DStrengthEnvelope";
@@ -847,7 +920,9 @@ end
 		clean_test_directory(dir)
 	end 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t15_RTI")
 @testset "t15_RTI" begin
     dir = "t15_RTI";
     include(joinpath(dir,"RT_analytics.jl"))
@@ -871,7 +946,9 @@ end
 	end 
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t16_PhaseTransitions")
 @testset "t16_PhaseTransitions" begin
     cd(test_dir)
     dir = "t16_PhaseTransitions";
@@ -919,7 +996,9 @@ end
                             create_expected_file=update_expected, clean_dir=clean_files)
                  
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t17_InflowOutflow")
 @testset "t17_InflowOutflow" begin
     cd(test_dir)
     dir = "t17_InflowOutflow";
@@ -951,7 +1030,9 @@ end
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)         
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t18_SimpleShear")
 @testset "t18_SimpleShear" begin
     cd(test_dir)
     dir = "t18_SimpleShear";
@@ -965,7 +1046,9 @@ end
                             create_expected_file=update_expected, clean_dir=clean_files)
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t19_CompensatedInflow")
 @testset "t19_CompensatedInflow" begin
     cd(test_dir)
     dir = "t19_CompensatedInflow";
@@ -993,7 +1076,9 @@ end
                             create_expected_file=update_expected, clean_dir=clean_files)
     
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t20_FSSA")
 @testset "t20_FSSA" begin
     cd(test_dir)
     dir = "t20_FSSA";
@@ -1007,7 +1092,9 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t21_Passive_Tracer")
 @testset "t21_Passive_Tracer" begin
     cd(test_dir)
     dir = "t21_Passive_Tracer";
@@ -1027,7 +1114,9 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t22_RidgeGeom")
 @testset "t22_RidgeGeom" begin
     cd(test_dir)
     dir = "t22_RidgeGeom";
@@ -1045,7 +1134,9 @@ end
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t23_Permeable")
 @testset "t23_Permeable" begin
     cd(test_dir)
     dir = "t23_Permeable";
@@ -1058,7 +1149,9 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t24_Erosion_Sedimentation")
 @testset "t24_Erosion_Sedimentation" begin
     cd(test_dir)
     dir = "t24_Erosion_Sedimentation";
@@ -1083,7 +1176,9 @@ end
                             keywords=keywords, accuracy=acc, cores=2, deb=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t25_APS_Healing")
 @testset "t25_APS_Healing" begin
     cd(test_dir)
     dir = "t25_APS_Healing";
@@ -1096,7 +1191,9 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t26_Dike")
 @testset "t26_Dike" begin
     cd(test_dir)
     dir = "t26_Dike";
@@ -1109,6 +1206,7 @@ end
                             args="-nstep_max 2 -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
+
 # this test fails to converge to any reasonable tolerance (deactivated for now)
 # diagnostics info: residual fluctuates          
 #    # heat_rhoA
@@ -1147,7 +1245,9 @@ end
                             create_expected_file=update_expected, clean_dir=clean_files)
 							                           
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t27_T-dep_Conductivity")
 @testset "t27_T-dep_Conductivity" begin
     cd(test_dir)
     dir = "t27_T-dep_Conductivity";
@@ -1161,7 +1261,9 @@ end
                             create_expected_file=update_expected, clean_dir=clean_files)
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t28_HeatRecharge")
 @testset "t28_HeatRecharge" begin
 
     cd(test_dir)
@@ -1183,7 +1285,9 @@ end
                             create_expected_file=update_expected, clean_dir=clean_files)
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t29_PermeableSides_VelBoxes")
 @testset "t29_PermeableSides_VelBoxes" begin
     cd(test_dir)
     dir = "t29_PermeableSides_VelBoxes";
@@ -1197,7 +1301,9 @@ end
                            create_expected_file=update_expected, clean_dir=clean_files)
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t30_Timestep_Schedule")
 @testset "t30_Timestep_Schedule" begin
     cd(test_dir)
     dir = "t30_Timestep_Schedule";
@@ -1211,7 +1317,9 @@ end
                             keywords=keywords, accuracy=acc, cores=4, opt=true, split_sign=":", mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t31_geomIO")
 @testset "t31_geomIO" begin
     cd(test_dir)
     dir = "t31_geomIO";
@@ -1232,7 +1340,9 @@ end
                             create_expected_file=update_expected, clean_dir=clean_files)
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t32_BC_velocity")
 @testset "t32_BC_velocity" begin
     cd(test_dir)
     dir = "t32_BC_velocity";
@@ -1250,7 +1360,9 @@ end
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t33_Initial_APS")
 @testset "t33_Initial_APS" begin
     cd(test_dir)
     dir = "t33_Initial_APS";
@@ -1300,7 +1412,9 @@ end
 	end
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t34_3D_2D_push_block")
 @testset "t34_3D_2D_push_block" begin
     cd(test_dir)
     dir = "t34_3D_2D_push_block";
@@ -1322,7 +1436,9 @@ end
 							create_expected_file=update_expected, clean_dir=clean_files)
 
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t35_TopoDiffusion")
 @testset "t35_TopoDiffusion" begin
     cd(test_dir)
     dir = "t35_TopoDiffusion"
@@ -1348,7 +1464,9 @@ end
 		rm(joinpath(dir,topo_file))
 	end
 end
+end
 #---------------------------------------------------------------------------
+if should_run_test("t36_spatially_limited_erosion")
 @testset "t36_spatially_limited_erosion" begin
     # Spatially-limited erosion (erosion_model = 3): the surface is eroded only
     # inside the window [er_x_min, er_x_max], like a river incising a valley into
@@ -1374,8 +1492,8 @@ end
         mpiexec  = mpiexec,
         create_expected_file=update_expected, clean_dir=clean_files)
 end
+end
 #---------------------------------------------------------------------------
-=#
 end
 #---------------------------------------------------------------------------
 
