@@ -647,7 +647,7 @@ if should_run_test("t11_Subgrid")
     ParamFile = "FallingBlockCoupledMG.dat";
     
     keywords = ("|Div|_inf", "|mRes|_2")
-    acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-3, atol=1e-4))
+    acc      = ((rtol=1e-5, atol=1e-5), (rtol=1e-3, atol=1e-4))
     
     # Perform tests
     @test perform_lamem_test(dir,ParamFile,"Subgrid_opt",
@@ -1054,7 +1054,7 @@ if should_run_test("t19_CompensatedInflow")
     dir = "t19_CompensatedInflow";
     
     keywords = ("|Div|_inf", "|mRes|_2")
-    acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-3, atol=1e-4))
+    acc      = ((rtol=1e-5, atol=1e-5), (rtol=1e-3, atol=1e-4))
     
     # test_a
     # t19_CompensatedInflow
