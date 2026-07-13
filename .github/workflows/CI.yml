@@ -10,6 +10,24 @@ on:
     branches: [ "master" ]
 
 jobs:
+  check_format:
+    name: 'Check source formatting'
+    runs-on: ubuntu-22.04
+    steps:
+
+    - name: 'Checkout LaMEM'
+      uses: actions/checkout@v3
+
+    - name: 'Install astyle'
+      run: |
+        sudo -E apt-get update
+        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install astyle
+
+    - name: 'Run make check'
+      run: |
+        cd src
+        make check
+
   runs_on:
     name: 'Linux'
     strategy:

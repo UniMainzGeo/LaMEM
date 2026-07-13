@@ -123,7 +123,7 @@ endif
 
 # target list
 
-.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc format
+.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc format check
 
 # default target (build executable)
 
@@ -139,6 +139,24 @@ format:
 	@echo "Formatting source files ..."
 	@astyle --options=.astylerc *.cpp *.h
 	@echo "Done."
+
+#==============================================================================
+
+# check that source files are formatted according to .astylerc
+# (fails if `make format` would modify any file; leaves the tree untouched)
+
+check:
+	@echo "Checking source formatting ..."
+	@if astyle --dry-run --options=.astylerc *.cpp *.h | grep -q '^Formatted'; then \
+		echo "............................................."; \
+		echo "ERROR: source files are not properly formatted."; \
+		astyle --dry-run --options=.astylerc *.cpp *.h | grep '^Formatted'; \
+		echo "Run 'make format' locally and commit the changes."; \
+		echo "............................................."; \
+		exit 1; \
+	else \
+		echo "All source files are properly formatted."; \
+	fi
 
 #==============================================================================
 

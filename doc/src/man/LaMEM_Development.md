@@ -109,6 +109,32 @@ if(X[0] < bx || X[0] > ex ||
    X[1] < by || X[1] > ey ||
    X[2] < bz || X[2] > ez) numNonLocal++;
 ```
+To make sure that your formatting follows the rules you can use the following target of the Makefile:
+
+```
+make check
+```
+If everything is fine you will see the following message:
+
+```
+Checking source formatting ...
+All source files are properly formatted.
+
+```
+Otherwise the target will fail with a list of the files that require modifications:
+
+```
+Checking source formatting ...
+.............................................
+ERROR: source files are not properly formatted.
+Formatted  /home/anton/PROG/LaMEM/src/fdstag.cpp
+Run 'make format' locally and commit the changes.
+.............................................
+make: *** [Makefile:150: check] Error 1
+
+```
+Note that continuous integration will also check source code formatting for your pull request. Passing these checks is a necessary prerequisite for merging the pull requests.
+
 ### 6.2.4 Commit and push changes
 
 Inspect changes: 
