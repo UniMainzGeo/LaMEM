@@ -722,8 +722,9 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	Ph_trans_t      *PhaseTrans;
 	Marker          *P;
 	JacRes          *jr;
-	PetscInt        i, ph,nPtr, numPhTrn,below,above,num_phas;
-	PetscInt        PH1,PH2, ID, InsideAbove,nphc; // nphc nophasechange condition
+	PetscInt        set_below, set_above;
+	PetscInt        i, ph,nPtr, numPhTrn, below, above, num_phas;
+	PetscInt        PH1,PH2, ID, InsideAbove, nphc; // nphc nophasechange condition
 	PetscScalar     T, time, factor, dxBox, dyBox, dzBox;
 	PetscLogDouble  t;
 	SolVarCell      *svCell;
@@ -777,37 +778,49 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 		for(i = 0; i < actx->nummark; i++)      // loop over all (local) particles
 		{
 			// access marker
-			P   =   &actx->markers[i];
+			P = &actx->markers[i];
 
 			// get consecutive index of the host cell of marker
-			ID =    actx->cellnum[i];
+			ID = actx->cellnum[i];
 
 			// access host cell solution variables
 			svCell = &jr->svCell[ID];
 
-			num_phas    =   PhaseTrans->number_phases;
+			num_phas = PhaseTrans->number_phases;
+
+			set_below = 0;
+			set_above = 0;
 
 			if(PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ )
 			{
-				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas, &below));
-				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas, &above));
+				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas, &below, &set_below));
+				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas, &above, &set_above));
 			}
 			else
 			{
-				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas, &below));
-				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseAbove,   P, num_phas, &above));
+				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas, &below, &set_below));
+				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseAbove,   P, num_phas, &above, &set_above));
+			}
+
+			if(!set_below)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Phase below remained unset in Check_Phase_above_below");
+			}
+
+			if(!set_above)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Phase above remained unset in Check_Phase_above_below");
 			}
 
 			PH1 = P->phase;
 			PH2 = P->phase;
 
-			if  ( (below >= 0) || (above >= 0) )
+			if((below >= 0) || (above >= 0))
 			{
-
 				// the current phase is indeed involved in a phase transition
-				if      (   (below>=0) && (nphc ==1))
+				if((below>=0) && (nphc ==1))
 				{
-					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_)
+					if(PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_)
 					{
 						PH1 = PhaseTrans->PhaseInside[below];
 						PH2 = PhaseTrans->PhaseOutside[below];
@@ -818,7 +831,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 						PH2 = PhaseTrans->PhaseAbove[below];
 					}
 				}
-				else if (   (above >=0) && (nphc==1))
+				else if((above >=0) && (nphc==1))
 				{
 					if ( PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_)
 					{
@@ -842,13 +855,12 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 				PetscCall(Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr, ID));
 
-				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) )
+				if((PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ))
 				{
 					if (PhaseTrans->PhaseInside[0]<0)
 					{
 						ph = P->phase;              // do not change the phase
 					}
-
 
 					if (PhaseTrans->BoxVicinity==1)
 					{
@@ -867,28 +879,28 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 
 				}
-				if (PhaseTrans->PhaseDirection==0)
+				if(PhaseTrans->PhaseDirection==0)
 				{
 					P->phase    =   ph;
 				}
-				else if ( (PhaseTrans->PhaseDirection==1) & (below>=0) )
+				else if((PhaseTrans->PhaseDirection==1) & (below>=0) )
 				{
 					P->phase    =   ph;
 				}
-				else if ( (PhaseTrans->PhaseDirection==2) & (above>=0) )
+				else if((PhaseTrans->PhaseDirection==2) & (above>=0) )
 				{
 					P->phase    =   ph;
 				}
 				P->T = T;   // set T
 
 				// Reset other parameters on particles if requested
-				if (PhaseTrans->PhaseDirection< 2)
+				if(PhaseTrans->PhaseDirection< 2)
 				{
 
 					// Both ways or below2above
-					if (InsideAbove==1)
+					if(InsideAbove==1)
 					{
-						if (PhaseTrans->Reset==1)
+						if(PhaseTrans->Reset==1)
 						{
 							P->APS = 0.0;
 						}
@@ -897,15 +909,13 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				else
 				{
 					// Above to below
-					if (InsideAbove==0)
+					if(InsideAbove == 0)
 					{
-						if (PhaseTrans->Reset==1)
+						if(PhaseTrans->Reset==1)
 						{
 							P->APS = 0.0;
 						}
 					}
-
-
 				}
 			}
 			else
@@ -916,11 +926,11 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 				PetscCall(Transition(PhaseTrans, P, PH1, PH2, jr->ctrl, scal, svCell, &ph, &T, &InsideAbove, time, jr, ID));
 
-				if ( (PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) )
+				if((PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ ) )
 				{
-					if (PhaseTrans->PhaseInside[0]<0)
+					if(PhaseTrans->PhaseInside[0]<0)
 					{
-						ph      = P->phase;             // do not change the phase
+						ph = P->phase;             // do not change the phase
 					}
 
 					if ((PhaseTrans->PhaseOutside[0]<0) & (PhaseTrans->PhaseDirection==2) & (InsideAbove==1))
@@ -934,26 +944,21 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					P->T    = T;    // set T
 				}
 			}
-
-
 		}
-
 	}
 	PetscCall(ADVInterpMarkToCell(actx));
 
 	PrintDone(t);
 	PetscFunctionReturn(0);
 }
-
 //----------------------------------------------------------------------------------------
-
 PetscErrorCode MovingBox(Ph_trans_t *PhaseTrans, TSSol *ts, JacRes *jr)
 {
 
 	PetscScalar  t0_box, t1_box, v_box;
 	PetscScalar  t_c, dt;
 	PetscInt     j, ny;
-	FDSTAG    *fs;
+	FDSTAG      *fs;
 
 	PetscFunctionBeginUser;
 
@@ -1080,7 +1085,7 @@ PetscErrorCode Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,
 
 	ph      = 0;
 	InAb    = 0;
-	if(PhaseTrans->Parameter_transition==_T_)  // NOTE: string comparisons can be slow; optimization possibility
+	if(PhaseTrans->Parameter_transition==_T_)
 	{
 		// Temperature transition
 		if ( P->T >= PhaseTrans->ConstantValue)     {   ph = PH2; InAb=1;   }
@@ -1445,8 +1450,8 @@ PetscErrorCode Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P
 	PetscFunctionReturn(0);
 }
 
-//------------------------------------------------------------------------------------------------------------//
-PetscErrorCode Check_Phase_above_below(PetscInt *phase_array, Marker *P, PetscInt num_phas, PetscInt *ID)
+//------------------------------------------------------------------------------------------------------------
+PetscErrorCode Check_Phase_above_below(PetscInt *phase_array, Marker *P, PetscInt num_phas, PetscInt *ID, PetscInt *set)
 {
 	PetscInt n, it, size;
 
@@ -1461,7 +1466,9 @@ PetscErrorCode Check_Phase_above_below(PetscInt *phase_array, Marker *P, PetscIn
 
 		if(P->phase == phase_array[it])
 		{
-			n = it;
+			n    = it;
+			*set = 1;
+
 			break;
 		}
 	}
