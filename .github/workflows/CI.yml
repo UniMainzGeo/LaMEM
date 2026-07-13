@@ -10,24 +10,6 @@ on:
     branches: [ "master" ]
 
 jobs:
-  check_format:
-    name: 'Check source formatting'
-    runs-on: ubuntu-22.04
-    steps:
-
-    - name: 'Checkout LaMEM'
-      uses: actions/checkout@v3
-
-    - name: 'Install astyle'
-      run: |
-        sudo -E apt-get update
-        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install astyle
-
-    - name: 'Run make check'
-      run: |
-        cd src
-        make check
-
   runs_on:
     name: 'Linux'
     strategy:
@@ -50,7 +32,7 @@ jobs:
         set -e
         uname -a
         sudo -E apt-get update
-        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make ${{ matrix.ci.packages }}
+        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make astyle ${{ matrix.ci.packages }}
         # Now create workspace directories, to later copy the pre-compiled PETSC libraries there
         sudo -E mkdir /workspace
         sudo -E mkdir /workspace/destdir
@@ -72,6 +54,12 @@ jobs:
         cd test
         julia --project=. setup_packages.jl
         cd ..
+
+    - name: 'Check source formatting'
+      run: |
+        cd src
+        export PETSC_OPT=/workspace/destdir/lib/petsc/double_real_Int32
+        make check
 
     - name: 'Compile LaMEM | Int32'
       run: |
