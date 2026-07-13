@@ -57,9 +57,9 @@ jobs:
 
     - name: 'Check source formatting'
       run: |
-        cd src
-        export PETSC_OPT=/workspace/destdir/lib/petsc/double_real_Int32
-        make check
+        cd test
+        julia --project=. compile_lamem.jl check
+        cd ..
 
     - name: 'Compile LaMEM | Int32'
       run: |
