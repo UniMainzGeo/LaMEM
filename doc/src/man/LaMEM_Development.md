@@ -179,39 +179,37 @@ If your contribution can be logically decomposed into 2 or more separate contrib
 
 Include tests which cover any changes to the source code.  Create a new directory for these tests within `LaMEM/test` and add the test itself to `runtests.jl`. You will have to create a Julia script for each new test directory, and will have to add `*.expected` files. Please make sure that these tests run reasonably fast, as it will otherwise significantly slow down the full testing framework (in most cases it is sufficient to have a low resolution case for testing). You can most likely get inspiration by looking at the existing examples.
 
-Run the full test suite on your machine - i.e `make test` in the `/LaMEM/test` directory before a pull request. All tests should pass; if not ensure that.
+Run the full test suite on your machine – i.e. `make test` in the `/LaMEM/test` directory before a pull request. All tests should pass; if not ensure that.
 
-#### 6.3.2.1 Test selectors
+#### 6.3.2.1 Test targets
 
-By default, `make test` and `make grind` run the full test suite. You can restrict a run to specific numbered testsets (`t01_...`, `t02_...`, etc.) by passing test numbers and/or ranges after the target:
+Test framework supports different targets that control what is going to be done and happens with generated and expected files:
 
 ```bash
-make test 01 05 32          # run only t01, t05, t32
-make test 03-07 11 12-17    # run t03-t07, t11, and t12-t17
-make grind 05 12-15         # same syntax works for Valgrind runs
+make test      # run tests, clean up generated files
+make work      # run tests, keep generated files for inspection
+make update    # run tests and OVERWRITE the expected (reference) files
+make grind     # run tests under Valgrind analyze .xml files and report errors
+make report    # analyze existing Valgrind .xml files and report errors
+make clean     # remove output files (e.g. .xml) 
+```
+`make update` prints a warning banner before running, since it overwrites the reference files used to judge pass/fail in future runs.
+
+#### 6.3.2.2 Test selectors
+
+By default `test`, `work`, `update`, and `grind` targets run the full test suite. You can restrict a run to specific numbered testsets (`t01_...`, `t02_...`, etc.) by passing test numbers and/or ranges after the target:
+
+```bash
+make test 03-07 11 12-17    # run tests t03-t07, t11, and t12-t17
+make work 01 05 32          # run only t01, t05, t32, keep output for inspection
+make update 05 12-15        # regenerate expected files for t05, t12-t15 only
+make grind 07               # report memory errors for t07
 ```
 Numbers can be zero-padded or not (`01` and `1` are equivalent). Ranges are inclusive and order-independent (`07-03` also works). If no selectors are given, all tests run.
 
-Selection applies at the testset level only; individual sub-tests within a testset cannot be selected individually. If finer granularity is needed, split the testset into multiple numbered testsets.
+Selection applies at the test set level only; individual sub-tests within a test set cannot be selected individually. If finer granularity is needed, split the test set into multiple numbered test sets.
 
-#### 6.3.2.2 Test modes
-
-`make test` supports a `mode` option that controls what happens to generated and expected files. It only applies to `make test`, not `make grind` (which always runs in `mode=test`, since Valgrind runs are for memory checking, not for curating reference output):
-
-```bash
-make test                # mode=test (default): run tests, clean up generated files
-make test mode=work      # run tests, keep generated files for inspection
-make test mode=update    # run tests and OVERWRITE the expected (reference) files
-```
-
-`mode` and test selectors can be combined:
-
-```bash
-make test mode=update 05 12-15   # regenerate expected files for t05, t12-t15 only
-```
-`mode=update` prints a warning banner before running, since it overwrites the reference files used to judge pass/fail in future runs.
-
-Combining test selectors and test modes provides a flexible way to develop a new test without interfering much with the rest of the test suite in `runtests.jl`. However as we mentioned before, after completing the new test it is mandatory to run the entire suite to make sure that other tests are not affected by your changes.
+Combining test selectors and test targets provides a flexible way to develop a new test without interfering much with the rest of the test suite in `runtests.jl`. However as we mentioned before, after completing the new test it is mandatory to run the entire suite to make sure that other tests are not affected by your changes.
 
 ### 6.3.3 Deal with compiler warnings
 
@@ -256,8 +254,16 @@ Otherwise you will see something like this:
 
 ![Valgrind_ERROR](../assets/img/Valgrind_ERROR.png)
 
-The test framework will merge multiple errors triggered by the same line of code and will only report it ones. This will drastically reduce the amount of text output and will let you focus on the actual problem. The error messages are also limited to LaMEM source files, since the main goal is debugging LaMEM, not the external libraries. Please also prepare that Valgrind runs will take much longer (up to 100 times) to complete compared to normal runs. Valgrind runs will always use debug version in the background regardless of what optimization type is requested in the test (deb or opt). Numerical comparison of the output with the expected results will be also skipped. Because of that all test will be flagged as passed under Valgrind mode. The memory and variable check summary will appear after all tests complete execution.
-    
+The test framework will merge multiple errors triggered by the same line of code and will only report it ones. This will drastically reduce the amount of text output and will let you focus on the actual problem. The error messages are also limited to LaMEM source files, since the main goal is debugging LaMEM, not the external libraries. Please also prepare that Valgrind runs will take much longer (up to 100 times) to complete compared to normal runs. Valgrind runs will always use debug version in the background regardless of what optimization type is requested in the test (deb or opt). Numerical comparison of the output with the expected results will be also skipped. Because of that all test will be flagged as passed under Valgrind mode, unless they trigger a real error (e.g. iteration overflow, access violation). The memory and variable check summary will appear after all tests complete execution. Since Valgrind runs are very expensive the test framework will only delete .xml file if all tests complete without errors and no memory and initialization issues are found. If either of this requirements is not met all .xml files will remain in the test directories for further review. To facilitate repeated evaluation test framework provides additional target to print the Valgrind report from the existing output:
+
+```
+make report
+```
+Finally when all issues are addressed .xml files can be purged with this command:
+
+```
+make clean
+```
 ### 6.3.7 Initiate pull request  
 
 Once you are ready to push back your branch to the main version of LaMEM, you should create a pull request. 

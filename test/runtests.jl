@@ -90,11 +90,13 @@ test_dir = pwd()
 # Test mode
 #
 # Controls whether expected (reference) files are regenerated and whether
-# generated output/work files are cleaned up afterwards. Set on the command
-# line via:
-#   make test              - (mode=test, default) run tests, clean up generated files
-#   make test mode=work    - run tests, keep generated files for inspection
-#   make test mode=update  - run tests and OVERWRITE the expected files
+# generated output/work files are cleaned up afterwards. Set via the Makefile
+# target used to invoke this script (each passes the corresponding mode=...
+# flag through to start_tests.jl):
+#   make test    - (mode=test)   run tests, clean up generated files
+#   make work    - (mode=work)   run tests, keep generated files for inspection
+#   make update  - (mode=update) run tests and OVERWRITE the expected files
+
 function parse_test_mode(args)
     for a in args
         m = match(r"^mode=(\w+)$", a)
@@ -147,7 +149,6 @@ if should_run_test("t01_FB1_Direct")
 end
 end
 #---------------------------------------------------------------------------
-
 if should_run_test("t02_FB2_MG")
 @testset "t02_FB2_MG" begin
 
