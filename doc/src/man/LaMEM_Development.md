@@ -183,13 +183,13 @@ Run the full test suite on your machine – i.e. `make test` in the `/LaMEM/test
 
 #### 6.3.2.1 Test targets
 
-Test framework supports different targets that control what is going to be done and happens with generated and expected files:
+Test framework supports different targets that control what is going to be done and what happens with generated and expected files:
 
 ```bash
 make test      # run tests, clean up generated files
 make work      # run tests, keep generated files for inspection
 make update    # run tests and OVERWRITE the expected (reference) files
-make grind     # run tests under Valgrind analyze .xml files and report errors
+make grind     # run tests under Valgrind, analyze .xml files and report errors
 make report    # analyze existing Valgrind .xml files and report errors
 make clean     # remove output files (e.g. .xml) 
 ```
@@ -254,12 +254,12 @@ Otherwise you will see something like this:
 
 ![Valgrind_ERROR](../assets/img/Valgrind_ERROR.png)
 
-The test framework will merge multiple errors triggered by the same line of code and will only report it ones. This will drastically reduce the amount of text output and will let you focus on the actual problem. The error messages are also limited to LaMEM source files, since the main goal is debugging LaMEM, not the external libraries. Please also prepare that Valgrind runs will take much longer (up to 100 times) to complete compared to normal runs. Valgrind runs will always use debug version in the background regardless of what optimization type is requested in the test (deb or opt). Numerical comparison of the output with the expected results will be also skipped. Because of that all test will be flagged as passed under Valgrind mode, unless they trigger a real error (e.g. iteration overflow, access violation). The memory and variable check summary will appear after all tests complete execution. Since Valgrind runs are very expensive the test framework will only delete .xml file if all tests complete without errors and no memory and initialization issues are found. If either of this requirements is not met all .xml files will remain in the test directories for further review. To facilitate repeated evaluation test framework provides additional target to print the Valgrind report from the existing output:
+The test framework will merge multiple errors triggered by the same line of code and will only report it ones. This will drastically reduce the amount of text output and will let you focus on the actual problem. The error messages are also limited to LaMEM source files, since the main goal is debugging LaMEM, not the external libraries. Please also prepare that Valgrind runs will take much longer (up to 100 times) to complete compared to normal runs. Valgrind runs will always use debug version in the background regardless of what optimization type is requested in the test (deb or opt). Numerical comparison of the output with the expected results will be also skipped. Because of that all test will be flagged as passed under Valgrind mode, unless they trigger a real error (e.g. iteration overflow, access violation). The memory and variable check summary will appear after all tests complete execution. Since Valgrind runs are very expensive the test framework will only delete .xml files if all tests complete without errors and no memory and initialization issues are found. If either of this requirements is not met all .xml files will remain in the test directories for further review. To facilitate repeated evaluation test framework provides additional target to print the Valgrind report from the existing output:
 
 ```
 make report
 ```
-Finally when all issues are addressed .xml files can be purged with this command:
+Finally when all issues are addressed .xml files can be deleted with the following command:
 
 ```
 make clean
