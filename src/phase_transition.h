@@ -38,7 +38,7 @@ PetscErrorCode Overwrite_density(DBMat *dbm);
 PetscErrorCode Phase_Transition(AdvCtx *actx);
 PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2,
                           Controls ctrl,Scaling *scal, SolVarCell *svCell, PetscInt *ph, PetscScalar *T, PetscInt *InsideAbove, PetscScalar, JacRes *jr, PetscInt cellID);
-PetscErrorCode Check_Phase_above_below(PetscInt *phase_array, Marker *P, PetscInt num_phas, PetscInt *ID, PetscInt *set);
+PetscErrorCode Check_Phase_above_below(PetscInt *phase_array, Marker *P, PetscInt num_phas, PetscInt *ID);
 PetscErrorCode Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl, SolVarCell *svCell, PetscInt *ph, PetscInt *InsideAbove, PetscScalar time);
 PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Marker *P,PetscInt PH1, PetscInt PH2, Scaling *scal, PetscInt *ph, PetscScalar *T, PetscInt *InsideAbove);
 PetscErrorCode Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2, Controls ctrl, PetscInt *ph, PetscInt *InsideAbove);
