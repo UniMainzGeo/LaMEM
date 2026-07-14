@@ -135,6 +135,12 @@ make: *** [Makefile:150: check] Error 1
 ```
 Note that continuous integration will also check source code formatting for your pull request. Passing these checks is a necessary prerequisite for merging the pull requests.
 
+To simplify the workflow you can directly invoke code formatting target every time you build the code. You can just program the following build command in your IDE:
+
+```
+make mode=deb format all
+```
+
 ### 6.2.4 Commit and push changes
 
 Inspect changes: 
