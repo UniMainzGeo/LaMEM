@@ -722,7 +722,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	Ph_trans_t      *PhaseTrans;
 	Marker          *P;
 	JacRes          *jr;
-	PetscInt        set_below, set_above;
 	PetscInt        i, ph,nPtr, numPhTrn, below, above, num_phas;
 	PetscInt        PH1,PH2, ID, InsideAbove, nphc; // nphc nophasechange condition
 	PetscScalar     T, time, factor, dxBox, dyBox, dzBox;
@@ -788,28 +787,15 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 			num_phas = PhaseTrans->number_phases;
 
-			set_below = 0;
-			set_above = 0;
-
 			if(PhaseTrans->Type == _Box_ || PhaseTrans->Type == _NotInAirBox_ )
 			{
-				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas, &below, &set_below));
-				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas, &above, &set_above));
+				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseInside,   P, num_phas, &below));
+				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseOutside,  P, num_phas, &above));
 			}
 			else
 			{
-				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas, &below, &set_below));
-				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseAbove,   P, num_phas, &above, &set_above));
-			}
-
-			if(!set_below)
-			{
-				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Phase below remained unset in Check_Phase_above_below");
-			}
-
-			if(!set_above)
-			{
-				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Phase above remained unset in Check_Phase_above_below");
+				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseBelow,   P, num_phas, &below));
+				PetscCall(Check_Phase_above_below(PhaseTrans->PhaseAbove,   P, num_phas, &above));
 			}
 
 			PH1 = P->phase;
@@ -1163,14 +1149,13 @@ PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Ma
 
 	PetscFunctionBeginUser;
 
-	g     = PetscAbs(jr->ctrl.grav[2]);
+	g  = PetscAbs(jr->ctrl.grav[2]);
 	ph = P->phase;
 	T  = P->T;
-	if ( (P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
-	     (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
-	     (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5])  )
+	if((P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
+	   (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
+	   (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]))
 	{
-
 		// We are within the box
 		ph      = PH1;
 		InAb    = 1;
@@ -1245,7 +1230,6 @@ PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Ma
 
 			T = T_adiab;
 		}
-
 	}
 	else
 	{
@@ -1315,18 +1299,15 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 		xboundR = PhaseTrans->celly_xboundR[J];
 	}
 
-	if  ( (xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
-	      (PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )
+	if((xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
+	   (PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )
 	{
 		// We are within the box
 		ph = PH1;
 
 		// Set the temperature structure
-		if      (PhaseTrans->TempType == 0)
+		if(PhaseTrans->TempType == 0)
 		{
-
-			//PetscPrintf(PETSC_COMM_WORLD,"inside NIAB in loop in none-temp \n");  // PRINT FOR NOTINAIRBOX TEST
-
 			// do nothing
 		}
 		else if (PhaseTrans->TempType == 1)
@@ -1394,9 +1375,7 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 	else
 	{
 		// Outside; keep T
-
 		ph = PH2;
-
 	}
 
 	// return
@@ -1405,7 +1384,6 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 
 	PetscFunctionReturn(0);
 }
-
 //------------------------------------------------------------------------------------------------------------//
 PetscErrorCode Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,
         Controls ctrl, PetscInt *ph_out, PetscInt *InAbove)
@@ -1449,9 +1427,8 @@ PetscErrorCode Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P
 
 	PetscFunctionReturn(0);
 }
-
 //------------------------------------------------------------------------------------------------------------
-PetscErrorCode Check_Phase_above_below(PetscInt *phase_array, Marker *P, PetscInt num_phas, PetscInt *ID, PetscInt *set)
+PetscErrorCode Check_Phase_above_below(PetscInt *phase_array, Marker *P, PetscInt num_phas, PetscInt *ID)
 {
 	PetscInt n, it, size;
 
@@ -1459,16 +1436,13 @@ PetscErrorCode Check_Phase_above_below(PetscInt *phase_array, Marker *P, PetscIn
 
 	size = num_phas;
 	it   = 0;
+	n    = -1;
 
 	for(it = 0; it < size; it++)
 	{
-		n = -1;
-
 		if(P->phase == phase_array[it])
 		{
-			n    = it;
-			*set = 1;
-
+			n = it;
 			break;
 		}
 	}
