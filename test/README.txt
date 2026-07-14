@@ -3,7 +3,7 @@ LaMEM TESTING
 ==========================================================================================
 
 This directory contains tests to verify the correct functionality of LaMEM. 
-We use the build-in testing framework of julia (provided through the Test package) for this
+We use the build-in testing framework of Julia (provided through the Test package) for this
 
 The general idea is that we run existing examples and compare certain keywords within the output
 file to that in an existing log file.
@@ -44,7 +44,7 @@ a) Create a new test directory.
 	Use t01, t02, ... only for directories, not for files (literally all files must be free of this prefix)
 
 b) Put the relevant LaMEM input file (*.dat) in the new test directory. 
-	If you need to create a more complicated input geometry, you might also have to create a new julia input file. 
+	If you need to create a more complicated input geometry, you might also have to create a new Julia input file. 
 	Have a look at 
 	
 	./t03_SubductionGMGinput/CreateMarkers_SubductionVEP_parallel.jl 
@@ -56,56 +56,31 @@ b) Put the relevant LaMEM input file (*.dat) in the new test directory.
 	
 c) Add the test to "runtests.jl". 
 
-	The main routine to do the tests is 
+	Example:
 
-		perform_lamem_test
-    
-	It has quite a few options, which you can read with the help information:
-	
-	julia>?perform_lamem_test	
+	if should_run_test("t09_PhaseDiagrams")
+	@testset "t09_PhaseDiagrams" begin
+	    cd(test_dir)
+	    dir = "t09_PhaseDiagrams";
+	    
+	    ParamFile = "FallingBlock_PhaseDiagrams.dat";
 
-	The way most LaMEM tests work is that we store the LaMEM output file in a file and 
-	compare certain keywords with an "expected" file generated at an earlier stage.
-	In the simplest case, this would be:
+	    keywords = ("|Div|_inf", "|mRes|_2")
+	    acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-3, atol=1e-4))
 
- 	dir = "t01_FB1_Direct";
-    ParamFile = "FallingBlock_mono_PenaltyDirect.dat";
-    keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    acc      = ((rtol=1e-7,atol=1e-8), (rtol=1e-5,atol=1e-8), (rtol=1e-4,atol=1e-8));
-    
-    # Perform test:
-    @test perform_lamem_test(dir,ParamFile,"FB1_a_Direct_opt", 
-                            keywords=keywords, accuracy=acc, cores=1, opt=true)
+	    # Perform tests
+	    @test perform_lamem_test(dir,ParamFile, "FallingBlock_PhaseDiagrams",
+	                             args="-mfmax 0.15",
+	                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
+	                             create_expected_file=update_expected, clean_dir=clean_files)
+	end
+	end
 
 	Provide expected file name without ".expected" extension. This is is added automatically.
-	Do not use postfix -p1, -p2, ... indicating number of mpi processes (this is always broken).
+	Do not use postfix -p1, -p2, ... indicating number of MPI processes (this is always broken).
 	
 	In some cases you may have to first generate a setup (see "t03_Subduction") 
 	or you want to compare the results with those of an analytical solution and/or create plots ("t13_Rheology0D" or "t14_1DStrengthEnvelope")
-
-
-d) Create the "expected" file for your new test. 
-	This can be done from the command-line. 
-	Assume that you are in the test directory, and that new test is in the directory "./t45_new" and is called "t45_new_test":
-
-	julia> using LaMEM_C, Test, GeophysicalModelGenerator, LaMEM.IO, CairoMakie
-	julia> include("test_utils.jl")
-	julia> keywords = ("|Div|_inf","|Div|_2","|mRes|_2")
-    julia> acc      = ((rtol=1e-7,atol=1e-11), (rtol=1e-5, atol=1e-11), (rtol=2e-4,atol=1e-10));
-
-	julia> perform_lamem_test(dir,"1D_VP.dat","t14_1D_VP_Direct_opt",
-                            keywords=keywords, accuracy=acc, cores=1, opt=true,
-							create_expected_file=refresh_expected, clean_dir=clean_files)
-			
-	For designing the test you can set the flags as follows:
-	
-	refresh_expected = true
-	clean_files      = false
-
-	Make sure to revert the flags after completing the test design:
-	
-	refresh_expected = false
-	clean_files      = true
 	
 	Sometimes you want to permanently set clean_dir=false, e.g. when you want to compare the results with closed-form solution ("t13_Rheology0D").
 	But later you anyway should clean the entire test directory like this:
@@ -117,23 +92,39 @@ d) Create the "expected" file for your new test.
 	or like this:
 	
 	if clean_files
-    	clean_directory(dir)
-    end
-    
-    Here clean_files flag has the same meaning as above. You can use it to keep the files while designing/debugging the test.
-    
-    In case that test is failing you can set the flag clean_files=false and compare .out file against .expected
-    
-    e.g.: t14_1D_VP_Direct_opt.out vs. t14_1D_VP_Direct_opt.expected
-    
-	Once you figure our what is wrong and fix the issue, you can again regenerate the expected file as described above.
+		clean_directory(dir)
+	end
+	
+d) Create the "expected" file for your new test.
 
-e) Tests to make sure that it works by running the full test-suite again
+	This can be done from the command-line (provided your test directory is t09 as in the example)
+	
+	make update 09
+	
+	If you want to review the failure reason for the existing test you can use different Makefile target:
 
-f) Please delete all unused files before committing.
-   Also make sure that test deletes all output files after run
-   Only .dat, .bin, .expected, and .jl files should remain.
-   Temporary .bin, .png, .jpeg files should be also deleted.
+	make work 09
+   
+	This will keep output files for inspection. Once you figure our what is wrong and fix the issue, you can again regenerate the expected files as described above.
+
+e) Make sure that all works fine by running the full test-suite again
+
+f) Please delete all unused files before committing
+
+   Take care of the file extensions!
+
+   Make sure that tests only write files with the following extensions (outside Timestep, marker, or restart directories):
+   .xml .png .pvd .vts .out .log .png .bin
+   
+   Never use these extensions for input files (e.g. use .dat for main text input and .poly for geomIO binary files)
+   
+   Use .out for all textual diagnostic output like main console output, permeability info, or adjoint diagnostics.
+
+   The following extensions will be automatically deleted by test framework .pvd .vts .out .log .png .bin
+   
+   Successful Valgrind runs will delete .xml files. Use make clean to delete .xml files when errors are detected.
+   
+   .png files will only be removed by make clean.
 
 g) Commit to LaMEM 
 	Push your new tests to the LaMEM repository (including the changes to runtests and the required input/expected files).

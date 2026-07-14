@@ -22,8 +22,6 @@ if "use_dynamic_lib" in ARGS
 else
     global use_dynamic_lib=false
 end
-  #global use_dynamic_lib=true
-test_mumps=true # if we do this later on windows, we have to deactivate this
 
 if "is64bit" in ARGS
     global is64bit=true
@@ -224,23 +222,17 @@ if should_run_test("t04_Localisation")
 @testset "t04_Localisation" begin
     cd(test_dir)
     dir = "t04_Loc";
-    
-    ParamFile = "localization.dat";
-    
+
     keywords = ("|Div|_inf", "|mRes|_2")
     acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-3, atol=1e-4))
-    
+
     # Perform tests
-    if test_mumps & !is64bit
-        # This test has issues on github actions with 64bit but works fine on our machines and with 32bit.
+    # Loc1_a_MUMPS_VEP_opt
+    @test perform_lamem_test(dir,"localization.dat","Loc1_a_MUMPS_VEP_opt",
+                             args="-nstep_max 20", 
+                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
+                             create_expected_file=update_expected, clean_dir=clean_files)
 
-        # Loc1_a_MUMPS_VEP_opt
-        @test perform_lamem_test(dir,"localization.dat","Loc1_a_MUMPS_VEP_opt",
-                                args="-nstep_max 20", 
-                                keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
-                            	create_expected_file=update_expected, clean_dir=clean_files)
-
-	end
     # Loc1_b_MUMPS_VEP_Reg_opt
     @test perform_lamem_test(dir,"localization_eta_min_reg.dat","Loc1_b_MUMPS_VEP_Reg_opt",
                             args="-nstep_max 20", 
@@ -1460,10 +1452,7 @@ if should_run_test("t35_TopoDiffusion")
         opt      = true,
         mpiexec  = mpiexec,
 		create_expected_file=update_expected, clean_dir=clean_files)
-	
-	if clean_files
-		rm(joinpath(dir,topo_file))
-	end
+
 end
 end
 #---------------------------------------------------------------------------
