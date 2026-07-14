@@ -141,7 +141,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 		mf = Pd->mf;
 	}
 
-	//if(strcmp(mat->Melt_Parametrization,"none") & ctrl->melt_feedback == 1)
+	//if(strcmp(mat->Melt_Parametrization,"none") && ctrl->melt_feedback == 1)
 //	{
 	//  mf = Compute_Melt_Fraction(p, T ,mat,ctx);
 	//}

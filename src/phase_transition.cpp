@@ -869,11 +869,11 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				{
 					P->phase    =   ph;
 				}
-				else if((PhaseTrans->PhaseDirection==1) & (below>=0) )
+				else if((PhaseTrans->PhaseDirection==1) && (below>=0) )
 				{
 					P->phase    =   ph;
 				}
-				else if((PhaseTrans->PhaseDirection==2) & (above>=0) )
+				else if((PhaseTrans->PhaseDirection==2) && (above>=0) )
 				{
 					P->phase    =   ph;
 				}
@@ -919,7 +919,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 						ph = P->phase;             // do not change the phase
 					}
 
-					if ((PhaseTrans->PhaseOutside[0]<0) & (PhaseTrans->PhaseDirection==2) & (InsideAbove==1))
+					if ((PhaseTrans->PhaseOutside[0]<0) && (PhaseTrans->PhaseDirection==2) && (InsideAbove==1))
 					{
 						// PhaseOutside is set to -1 and OutsideToInside is selected, in which case we
 						// set everything inside the box to a constant phase (specified in PhaseInside)
@@ -1152,9 +1152,9 @@ PetscErrorCode Check_Box_Phase_Transition(Ph_trans_t *PhaseTrans, JacRes *jr, Ma
 	g  = PetscAbs(jr->ctrl.grav[2]);
 	ph = P->phase;
 	T  = P->T;
-	if((P->X[0] >= PhaseTrans->bounds[0]) & (P->X[0] <= PhaseTrans->bounds[1]) &
-	   (P->X[1] >= PhaseTrans->bounds[2]) & (P->X[1] <= PhaseTrans->bounds[3]) &
-	   (P->X[2] >= PhaseTrans->bounds[4]) & (P->X[2] <= PhaseTrans->bounds[5]))
+	if((P->X[0] >= PhaseTrans->bounds[0]) && (P->X[0] <= PhaseTrans->bounds[1]) &&
+	   (P->X[1] >= PhaseTrans->bounds[2]) && (P->X[1] <= PhaseTrans->bounds[3]) &&
+	   (P->X[2] >= PhaseTrans->bounds[4]) && (P->X[2] <= PhaseTrans->bounds[5]))
 	{
 		// We are within the box
 		ph      = PH1;
@@ -1299,8 +1299,8 @@ PetscErrorCode Check_NotInAirBox_Phase_Transition(Ph_trans_t *PhaseTrans, Marker
 		xboundR = PhaseTrans->celly_xboundR[J];
 	}
 
-	if((xboundL <= P->X[0]) & (P->X[0] <= xboundR) &
-	   (PhaseTrans->zbounds[0] <= P->X[2]) & (P->X[2] <= PhaseTrans->zbounds[1]) & (ph != AirPhase) )
+	if((xboundL <= P->X[0]) && (P->X[0] <= xboundR) &&
+	   (PhaseTrans->zbounds[0] <= P->X[2]) && (P->X[2] <= PhaseTrans->zbounds[1]) && (ph != AirPhase) )
 	{
 		// We are within the box
 		ph = PH1;

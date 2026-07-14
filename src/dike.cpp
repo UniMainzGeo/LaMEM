@@ -670,7 +670,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 		svCell = &jr->svCell[ID];
 		Tc=lT[k][j][i];
 
-		if ((Tc<=Tsol) & (svCell->phRat[AirPhase] < 1.0))
+		if ((Tc<=Tsol) && (svCell->phRat[AirPhase] < 1.0))
 		{
 			dz  = SIZE_CELL(k, sz, (*dsz));
 			sxx[L][j][i]+=(svCell->hxx - svCell->svBulk.pn)*dz;  //integrating dz-weighted total stress
@@ -680,7 +680,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 		}
 
 		//interpolate depth to the solidus
-		if ((Tc <= Tsol) & (Tsol < lT[k-1][j][i]))
+		if ((Tc <= Tsol) && (Tsol < lT[k-1][j][i]))
 		{
 			zsol[L][j][i]=dsz->ccoor[k-sz]+(dsz->ccoor[k-sz-1]-dsz->ccoor[k-sz])/(lT[k-1][j][i]-Tc)*(Tsol-Tc);
 		}
@@ -748,7 +748,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	magma_presence=1.0;  //testing
 
 	START_PLANE_LOOP
-	dPmag=(dike->zmax_magma-zsol[L][j][i])*(dike->drhomagma)*grav[2];  //excess static magma pressure at solidus, z & grav[2] <0 so this is positive
+	dPmag=(dike->zmax_magma-zsol[L][j][i])*(dike->drhomagma)*grav[2];  //excess static magma pressure at solidus, z && grav[2] <0 so this is positive
 	//magma_presence=dike->magPfac*(zsol[L][j][i]-dike->zmax_magma)/(zsol_max-dike->zmax_magma);  //this feature undergoing testing
 	magPressure[L][j][i] = (Pmag[L][j][i]/liththick[L][j][i]+dPmag)*magma_presence;
 	gsxx_eff_ave[L][j][i]= sxx[L][j][i]/liththick[L][j][i];  //Depth weighted mean total stress
@@ -1441,7 +1441,7 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 		dsdx2=(sxxp-sxx_max)/(COORD_CELL(ixmax+1, sx, fs->dsx)-COORD_CELL(ixmax, sx, fs->dsx));  //slope right of max
 		dx12=(COORD_CELL(ixmax+1, sx, fs->dsx)-COORD_CELL(ixmax-1, sx, fs->dsx))/2;
 
-		if ((dsdx1>0) & (dsdx2<0))  //if local maximum, interpolate to find where dsdx=0;
+		if ((dsdx1>0) && (dsdx2<0))  //if local maximum, interpolate to find where dsdx=0;
 		{
 			x_maxsxx=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2-dsdx1/(dsdx2-dsdx1)*dx12;
 		}
