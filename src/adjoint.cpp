@@ -462,7 +462,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef", &IOparam->OFdef,          1, 1 ));       // Objective function defined by hand?
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_PrintScalingLaws", &IOparam->ScalLaws,          1, 1 ));            // Print scaling laws (combined with AdjointGradients)
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "Adjoint_UseInitialAdjointParams", &IOparam->SetInitAdjParam,    1, 1 ));    // Use InitialGuess specified in AdjointParamsStart/End as initial value?
-	PetscCall(getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename", str,  "ScalingLaw.dat"  ));          // Scaling law filename
+	PetscCall(getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename", str,  "ScalingLaw.out"  ));          // Scaling law filename
 	PetscCall(getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref", &IOparam->DII_ref,   1, 1        ));                     // Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
 
 	PetscCall(PetscMemcpy(IOparam->ScalLawFilename,     str,   (size_t)_str_len_*sizeof(char) ));
@@ -3116,7 +3116,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		char filename[_str_len_];
-		strcpy(filename, "ScalingLaw.dat"); // name
+		strcpy(filename, "ScalingLaw.out"); // name
 		PetscMemcpy(filename, IOparam->ScalLawFilename,   (size_t)_str_len_*sizeof(char) );
 
 		db = fopen(filename, "wb");

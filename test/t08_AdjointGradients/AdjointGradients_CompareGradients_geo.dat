@@ -165,7 +165,7 @@ noslip = 0 0 0 0 1 0
 	Adjoint_FieldSensitivity    		= 	0      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
 	Adjoint_PrintScalingLaws			=	1						# Output scaling laws?
-	Adjoint_ScalingLawFilename 			=   ScalingLaw_Test.dat
+	Adjoint_ScalingLawFilename 			=   ScalingLaw_Test.out
 	Adjoint_ReferenceDensity 			=	3200						# Reference density 
 	
 	

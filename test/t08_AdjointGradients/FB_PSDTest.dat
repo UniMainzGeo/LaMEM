@@ -157,7 +157,7 @@ v#==============================================================================
 	Adjoint_FieldSensitivity    		= 	0     					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
 	Adjoint_PrintScalingLaws			=	0						# Output scaling laws?
-	#Adjoint_ScalingLawFilename 		=   ScalingLaw_Test.dat
+	#Adjoint_ScalingLawFilename 		=   ScalingLaw_Test.out
 	Adjoint_ReferenceDensity 			=	0
 
 	# Inversion parameters

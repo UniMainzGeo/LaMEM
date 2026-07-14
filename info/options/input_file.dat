@@ -802,7 +802,7 @@
     Adjoint_FieldSensitivity            =   0                       # calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
     Adjoint_ScaleCostFunction           =   None                    # Scale cost function: [None=no; Mean=average values; Var=variance]
     Adjoint_PrintScalingLaws            =   1                       # Output scaling laws?
-    Adjoint_ScalingLawFilename          =   ScalingLaw_Test.dat     
+    Adjoint_ScalingLawFilename          =   ScalingLaw_Test.out     
     Adjoint_ReferenceDensity            =   2800                    # Reference density 
     Adjoint_DII_ref                     =   1e-15                   # Reference strain rate (needed for sensitivity kernels & powerlaw viscosity)
     

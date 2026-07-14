@@ -417,25 +417,15 @@ function clean_test_directory(dir)
     for f in glob("*.log")
         rm(f)
     end
-    for f in glob("ProcessorPartitioning*")
+    for f in glob("*.bin")
         rm(f)
-    end
-    for f in glob("*.vts")
-        rm(f)
-    end
-    for f in glob("Out*")
-        rm(f, force=true, recursive=true)
     end
     for f in glob("markers*")
         rm(f, force=true, recursive=true)
     end
-    for f in glob("markers")
+    for f in glob("restart")
         rm(f, force=true, recursive=true)
     end
-    for f in glob("ScalingLaw*.dat")
-        rm(f)
-    end
-    
     cd(cur_dir)  # return to directory       
 
 end

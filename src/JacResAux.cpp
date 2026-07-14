@@ -499,7 +499,7 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 
 		memset(path, 0, _str_len_);
 		strcpy(path, outfile);
-		strcat(path, ".darcy.dat");
+		strcat(path, ".out");
 
 		db = fopen(path, "wb");
 
