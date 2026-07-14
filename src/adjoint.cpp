@@ -3275,6 +3275,10 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 
 			As_Ind[ii] = ID;
 		}
+		else
+		{
+			As_Ind[ii] = -1;
+		}
 	}
 
 	// clear local residual vectors
@@ -3390,7 +3394,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 		// Loop over observations
 		for(ii = 0; ii < IOparam->mdI; ii++)
 		{
-			if (As_Ind[ii] == iterat-1)
+			if(As_Ind[ii] != -1 && As_Ind[ii] == iterat-1)
 			{
 				// Create coordinate vector
 				coord_local[0] = IOparam->Ax[ii];
