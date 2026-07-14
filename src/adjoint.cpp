@@ -301,7 +301,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 					// Check if the parameter is among the list of "ExcludedPhase"
 					for (j=0; j<numExcludedPhases; j++)
 					{
-						if  ((!strcmp(par_str,ExcludedPhaseName[j]) & (ExcludedPhase[j]==ID)) )
+						if  ((!strcmp(par_str,ExcludedPhaseName[j]) && (ExcludedPhase[j]==ID)) )
 						{
 							AddParamToGradient = PETSC_FALSE;
 							PetscPrintf(PETSC_COMM_WORLD,"|   Excluding parameter: %-5s[%" PetscInt_FMT "] \n", par_str, ExcludedPhase[j]);
@@ -503,7 +503,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		PetscPrintf(PETSC_COMM_WORLD, "|    Objective function type                  : %" PetscInt_FMT "    \n",  IOparam->MfitType);
 
 		PetscPrintf(PETSC_COMM_WORLD, "|    Objective function defined in input      : %" PetscInt_FMT "    \n",  IOparam->OFdef);
-		if ((IOparam->Gr==0) & (IOparam->ScalLaws==1) )
+		if ((IOparam->Gr==0) && (IOparam->ScalLaws==1) )
 		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "| If you want scaling laws, you need to have Adjoint_GradientCalculation=Solution rather than CostFunction \n");
 		}
@@ -787,7 +787,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	}
 
 	// read each individual index
-	if ( (fb->nblocks>0) & (IOparam->Ap==1))
+	if ( (fb->nblocks>0) && (IOparam->Ap==1))
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "| \n|   Total number of observation points     : %" PetscInt_FMT "   \n",  fb->nblocks);
 	}
@@ -842,7 +842,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 			}
 			Ae[i] = ts /scal.velocity;     // VELOCITY VALUE
 
-			if ((fb->nblocks<6) & (IOparam->Ap==1))
+			if ((fb->nblocks<6) && (IOparam->Ap==1))
 			{
 				// Print overview
 				if (IOparam->Gr==0)
@@ -876,7 +876,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 			}
 			Av[i] = 0;      // Placeholder
 
-			if ((fb->nblocks<6) & (IOparam->Ap==1))
+			if ((fb->nblocks<6) && (IOparam->Ap==1))
 			{
 				// Print overview
 				if (IOparam->Gr==0)
@@ -3061,7 +3061,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		k               = _idx[j];
 		CurPhase        =   IOparam->phs[k];
 		strcpy(CurName, IOparam->type_name[k]); // name
-		if (!strcmp("rho",CurName) & (IOparam->ReferenceDensity!=0.0))
+		if (!strcmp("rho",CurName) && (IOparam->ReferenceDensity!=0.0))
 		{
 			char *Name;
 			asprintf(&Name, "delta(%s)", CurName);  // w compute w.r.t. Reference Density
@@ -3158,7 +3158,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			strcpy(PhaseDescription, IOparam->dbm_modified.phases[CurPhase].Name);  // name
 
 			P = Par[k];
-			if (!strcmp("rho",CurName) & (IOparam->ReferenceDensity!=0.0))
+			if (!strcmp("rho",CurName) && (IOparam->ReferenceDensity!=0.0))
 			{
 				char *Name;
 				P = P - IOparam->ReferenceDensity;              // Compute with density difference
@@ -3437,7 +3437,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 							mfitParam += (phival);
 						}
 
-						Cons = -1 * (1/(pow(XX-YY,2)+4*pow(XY,2)));   // See up there that if phival < 0 -> dphi = - & if phival > 0 -> dphi = - as well
+						Cons = -1 * (1/(pow(XX-YY,2)+4*pow(XY,2)));
 						xdPardu[k][j  ][i  ] += dPardu_local * (Cons*(-XY)*(-1.0/dx) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1.0/bdy-1.0/fdy)*(1.0/8.0)); // 1
 						xdPardu[k][j  ][i+1] += dPardu_local * (Cons*(-XY)*( 1.0/dx) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1.0/bdy-1.0/fdy)*(1.0/8.0)); // 2
 						xdPardu[k][j-1][i  ] += dPardu_local * (Cons*(-XY)*( 0     ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*(-1.0/bdy      )*(1.0/8.0));   // 5

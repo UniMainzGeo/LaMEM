@@ -654,48 +654,4 @@ PetscErrorCode Tensor2RS2DSpectral(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
-// ERROR HANDLING FOR CONTEXT EVALUATION ROUTINE
-
- #include <math.h>
-#if defined(math_errhandling) \
-  && (math_errhandling & MATH_ERREXCEPT)
-#include <fenv.h>
-#endif
-
-#if defined(math_errhandling) \
-  && (math_errhandling & MATH_ERREXCEPT)
-  feclearexcept(FE_ALL_EXCEPT);
-#endif
-errno = 0;
-
-// call the function
-
-double x;
-double y;
-double result;
-
-if (((x == 0.f) && islessequal(y, 0)) || (isless(x, 0))) {
-  // handle domain error
-}
-
-result = pow(x, y);
-
-#if !defined(math_errhandling) \
-  || (math_errhandling & MATH_ERRNO)
-if (errno != 0) {
-  // handle range error
-}
-#endif
-#if defined(math_errhandling) \
-  && (math_errhandling & MATH_ERREXCEPT)
-if (fetestexcept(FE_INVALID
-               | FE_DIVBYZERO
-               | FE_OVERFLOW
-               | FE_UNDERFLOW) != 0)
-{
-  // handle range error
-}
-#endif
-*/
 
