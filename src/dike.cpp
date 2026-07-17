@@ -1633,7 +1633,6 @@ PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp)
 }
 
 //---------------------------------------------------------------------------
-
 PetscErrorCode DynamicDike_Destroy(JacRes *jr)
 {
 
@@ -1655,7 +1654,10 @@ PetscErrorCode DynamicDike_Destroy(JacRes *jr)
 		dike = jr->dbdike->matDike+nD;
 		if (dike->dyndike_start)
 		{
+			PetscCall(VecDestroy(&dike->sxx_eff_ave));
+			PetscCall(VecDestroy(&dike->magPressure));
 			PetscCall(VecDestroy(&dike->sxx_eff_ave_hist));
+
 			dyndike_on=1;
 		}
 	}
