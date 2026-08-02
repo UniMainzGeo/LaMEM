@@ -523,14 +523,14 @@ PetscErrorCode FSLoadNonUniformGrid(MeshSeg1DFS *ms_fs, PetscScalar xend, Scalin
 //---------------------------------------------------------------------------
 PetscErrorCode FastScapeCopyMeshSeg1D(FastScapeLib *FSLib, MeshSeg1D *ms, const char *dir)
 {
-    PetscInt i, tcels;
+    PetscInt i;
 
     if(strcmp("x", dir) == 0)
     {
         FSLib->msx_fs.nsegs             = ms->nsegs;
         FSLib->msx_fs.tcels             = ms->tcels;
 
-        for(i = 0, tcels = 0; i < ms->nsegs; i++)
+        for(i = 0; i < ms->nsegs; i++)
         {
             FSLib->msx_fs.istart[i]     = ms->istart[i];
             FSLib->msx_fs.xstart[i]     = ms->xstart[i];
@@ -543,7 +543,7 @@ PetscErrorCode FastScapeCopyMeshSeg1D(FastScapeLib *FSLib, MeshSeg1D *ms, const 
         FSLib->msy_fs.nsegs = ms->nsegs;
         FSLib->msy_fs.tcels             = ms->tcels;
 
-        for(i = 0, tcels = 0; i < ms->nsegs; i++)
+        for(i = 0; i < ms->nsegs; i++)
         {
             FSLib->msy_fs.istart[i]     = ms->istart[i];
             FSLib->msy_fs.xstart[i]     = ms->xstart[i];
@@ -718,34 +718,34 @@ PetscErrorCode ScalingFastScapeCreate(Scaling *scal)
     if(scal->utype == _SI_)
     {
         // s (LaMEM) -> yr (FastScape)
-        scal->time_fs             = 1/yr;                      snprintf(scal->lbl_time_fs, MAX_LABEL_LEN,        "[yr]");  
+        scal->time_fs             = 1/yr;                      snprintf(scal->lbl_time_fs, sizeof(scal->lbl_time_fs),        "[yr]");  
         // m (LaMEM) -> m (FastSCape)
-        scal->length_fs           = 1.0;                       snprintf(scal->lbl_length_fs,   MAX_LABEL_LEN,    "[m]");   
+        scal->length_fs           = 1.0;                       snprintf(scal->lbl_length_fs, sizeof(scal->lbl_length_fs),    "[m]");   
         // m/s (LaMEM) -> m/yr (FastScape)
-        scal->velocity_fs         = 1/yr;                      snprintf(scal->lbl_velocity_fs,  MAX_LABEL_LEN,   "[m/yr]"); 
+        scal->velocity_fs         = 1/yr;                      snprintf(scal->lbl_velocity_fs, sizeof(scal->lbl_velocity_fs),   "[m/yr]"); 
 
         // output 
         // m^2 --> m^2
-        scal->area_fs             = 1.0;                       snprintf(scal->lbl_area_fs,     MAX_LABEL_LEN,       "[m^2]"); 
+        scal->area_fs             = 1.0;                       snprintf(scal->lbl_area_fs, sizeof(scal->lbl_area_fs),       "[m^2]"); 
         // m/yr --> m/yr
-        scal->rate                = 1.0;                       snprintf(scal->lbl_rate,    MAX_LABEL_LEN,        "[m/yr]"); 
-        scal->degree              = 1.0;                       snprintf(scal->lbl_degree,   MAX_LABEL_LEN,       "[°]");   
+        scal->rate                = 1.0;                       snprintf(scal->lbl_rate, sizeof(scal->lbl_rate),        "[m/yr]"); 
+        scal->degree              = 1.0;                       snprintf(scal->lbl_degree, sizeof(scal->lbl_degree),       "[°]");   
     }
     else if(scal->utype == _GEO_)
     {
         // Myr (LaMEM) -> yr (FastScape)
-        scal->time_fs             = 1e6;                       snprintf(scal->lbl_time_fs,    MAX_LABEL_LEN,     "[yr]");  
+        scal->time_fs             = 1e6;                       snprintf(scal->lbl_time_fs, sizeof(scal->lbl_time_fs),     "[yr]");  
         // km (LaMEM) -> m (FastScape) 
-        scal->length_fs           = km;                        snprintf(scal->lbl_length_fs,  MAX_LABEL_LEN,     "[m]");   
+        scal->length_fs           = km;                        snprintf(scal->lbl_length_fs, sizeof(scal->lbl_length_fs),     "[m]");   
         // cm/yr (LaMEM) -> m/yr (FastScape)
-        scal->velocity_fs         = m;                         snprintf(scal->lbl_velocity_fs, MAX_LABEL_LEN,    "[m/yr]"); 
+        scal->velocity_fs         = m;                         snprintf(scal->lbl_velocity_fs, sizeof(scal->lbl_velocity_fs),    "[m/yr]"); 
 
         // output 
         // m^2 --> km^2
-        scal->area_fs             = km * km;                 snprintf(scal->lbl_area_fs,  MAX_LABEL_LEN,       "[km^2]"); 
+        scal->area_fs             = km * km;                 snprintf(scal->lbl_area_fs, sizeof(scal->lbl_area_fs),       "[km^2]"); 
         // m/yr --> km/yr
-        scal->rate                = 1.0 * km;                    snprintf(scal->lbl_rate,   MAX_LABEL_LEN,         "[km/yr]"); 
-        scal->degree              = 1.0;                       snprintf(scal->lbl_degree,    MAX_LABEL_LEN,      "[°]");   
+        scal->rate                = 1.0 * km;                    snprintf(scal->lbl_rate, sizeof(scal->lbl_rate),         "[km/yr]"); 
+        scal->degree              = 1.0;                       snprintf(scal->lbl_degree, sizeof(scal->lbl_degree),      "[°]");   
     }
     else    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect unit type for FastScape");
 
@@ -819,7 +819,7 @@ PetscErrorCode PVSurfFastScapeCreate(FastScapeLib *FSLib, FB *fb)
     PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
     // set file name
-    snprintf(FSLib->outfile_fs,   MAX_LABEL_LEN,     "%s_fs",        filename);
+    snprintf(FSLib->outfile_fs,   sizeof(FSLib->outfile_fs),     "%s_fs",        filename);
 
     PetscFunctionReturn(0);
 }
@@ -2633,7 +2633,7 @@ PetscErrorCode FastScapeInitialize(FastScapeLib *FSLib, PetscScalar *topo_pass, 
     fastscape_set_xl_yl_(&rangeX, &rangeY);
 
     // set topography boundary conditions
-    ibc_int = strtol(FSLib->FS_BC, &endptr, 10);
+    ibc_int = static_cast<int>(strtol(FSLib->FS_BC, &endptr, 10));
     fastscape_set_bc_(&ibc_int);
 
     // random noise

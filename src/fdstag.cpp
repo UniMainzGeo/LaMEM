@@ -893,7 +893,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	// to compute strain/rates/stresses/residuals including boundary conditions.
 
 	Scaling         *scal;
+#ifdef WITH_FASTSCAPE
 	FastScapeLib 	*FSLib;
+#endif
 	PetscInt         rank;
 	const PetscInt  *plx, *ply, *plz;
 	PetscInt        *lx,  *ly,  *lz;
@@ -907,7 +909,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb, PetscInt complete_build)
 	PetscFunctionBeginUser;
 
 	scal = fs->scal;
+#ifdef WITH_FASTSCAPE
 	FSLib = fs->FSLib;
+#endif
 
 	// set & read geometry tolerance
 	fs->gtol = 1e-6;
