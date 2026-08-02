@@ -166,13 +166,13 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
     {
         if(FSLib->refine == 1)
         {
-            FSLib->nx_solve    = FSLib->extendedXNodes;
-            FSLib->ny_solve    = FSLib->extendedYNodes;
+            PetscCall(PetscCIntCast(FSLib->extendedXNodes, &FSLib->nx_solve));
+            PetscCall(PetscCIntCast(FSLib->extendedYNodes, &FSLib->ny_solve));
         }
         else
         {
-            FSLib->nx_solve    = FSLib->etRefineXNodes;
-            FSLib->ny_solve    = FSLib->etRefineYNodes;
+            PetscCall(PetscCIntCast(FSLib->etRefineXNodes, &FSLib->nx_solve));
+            PetscCall(PetscCIntCast(FSLib->etRefineYNodes, &FSLib->ny_solve));
         }
     }
     else
@@ -181,20 +181,20 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
         {
             if(!FSLib->non_uniform_grid)
             {
-                FSLib->nx_solve    = FSLib->nx_LaMEM;
-                FSLib->ny_solve    = FSLib->ny_LaMEM;
+                PetscCall(PetscCIntCast(FSLib->nx_LaMEM, &FSLib->nx_solve));
+                PetscCall(PetscCIntCast(FSLib->ny_LaMEM, &FSLib->ny_solve));
             }
             else
             {
-                FSLib->nx_solve    = FSLib->msx_fs.nnodes_nug;
-                FSLib->ny_solve    = FSLib->msy_fs.nnodes_nug;                
+                PetscCall(PetscCIntCast(FSLib->msx_fs.nnodes_nug, &FSLib->nx_solve));
+                PetscCall(PetscCIntCast(FSLib->msy_fs.nnodes_nug, &FSLib->ny_solve));
             }
         }
         else
         {
-            FSLib->nx_solve    = FSLib->nx_refine;
-            FSLib->ny_solve    = FSLib->ny_refine;
-        }        
+            PetscCall(PetscCIntCast(FSLib->nx_refine, &FSLib->nx_solve));
+            PetscCall(PetscCIntCast(FSLib->ny_refine, &FSLib->ny_solve));
+        }
     }
     
     FSLib->nodes_solve = FSLib->nx_solve * FSLib->ny_solve;
@@ -205,37 +205,37 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
     PetscPrintf(PETSC_COMM_WORLD, "FastScape parameters: \n");
     // LaMEM grid
     PetscPrintf(PETSC_COMM_WORLD, "    Original grid: \n");  
-    PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%d, %d]\n",     FSLib->nx_LaMEM, FSLib->ny_LaMEM);        
+    PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%" PetscInt_FMT ", %" PetscInt_FMT "]\n",     FSLib->nx_LaMEM, FSLib->ny_LaMEM);
     // non uniform grid
     if(FSLib->non_uniform_grid)
     {
-        PetscPrintf(PETSC_COMM_WORLD, "    Non unifrom grid: \n");  
-        PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%d, %d]\n",     FSLib->msx_fs.nnodes_nug, FSLib->msy_fs.nnodes_nug);         
+        PetscPrintf(PETSC_COMM_WORLD, "    Non unifrom grid: \n");
+        PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%" PetscInt_FMT ", %" PetscInt_FMT "]\n",     FSLib->msx_fs.nnodes_nug, FSLib->msy_fs.nnodes_nug);
     }
     // 2D extended grid
-    if(FSLib->fs2D)  
+    if(FSLib->fs2D)
     {
         PetscPrintf(PETSC_COMM_WORLD, "    Extended  grid: \n");
         PetscPrintf(PETSC_COMM_WORLD, "    [rangeX,rangeY]       : [%g, %g] %s\n",   FSLib->extendedXRange / scal->length_fs, FSLib->extendedYRange / scal->length_fs, scal->lbl_length);
-        PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%d, %d]\n",      FSLib->extendedXNodes, FSLib->extendedYNodes);
+        PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%" PetscInt_FMT ", %" PetscInt_FMT "]\n",      FSLib->extendedXNodes, FSLib->extendedYNodes);
     }
     // refined grid
-    if(FSLib->refine > 1) 
+    if(FSLib->refine > 1)
     {
         PetscPrintf(PETSC_COMM_WORLD, "    Refined grid: \n");
-        PetscPrintf(PETSC_COMM_WORLD, "    Refined times         : %d\n",       FSLib->refine);   
+        PetscPrintf(PETSC_COMM_WORLD, "    Refined times         : %" PetscInt_FMT "\n",       FSLib->refine);
         // 2D
-        if(FSLib->fs2D) PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%d, %d]\n", FSLib->etRefineXNodes, FSLib->etRefineYNodes);        
+        if(FSLib->fs2D) PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%" PetscInt_FMT ", %" PetscInt_FMT "]\n", FSLib->etRefineXNodes, FSLib->etRefineYNodes);
         // 3D
-        else    PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%d, %d]\n", FSLib->nx_refine, FSLib->ny_refine);  
+        else    PetscPrintf(PETSC_COMM_WORLD, "    [nodeX, nodeY]        : [%" PetscInt_FMT ", %" PetscInt_FMT "]\n", FSLib->nx_refine, FSLib->ny_refine);
     }
 
     // surface process parameter
-    PetscPrintf(PETSC_COMM_WORLD, "  Surface process: \n");  
+    PetscPrintf(PETSC_COMM_WORLD, "  Surface process: \n");
     PetscPrintf(PETSC_COMM_WORLD, "    Max timestep          : %g %s\n",        FSLib->Max_dt / scal->time_fs, scal->lbl_time);
     PetscPrintf(PETSC_COMM_WORLD, "    Topography boundary   : %s\n",           FSLib->FS_BC);
     PetscPrintf(PETSC_COMM_WORLD, "    Velocity boundary     : %s\n",           FSLib->FS_VELBC);
-    PetscPrintf(PETSC_COMM_WORLD, "    Sedimentation phase   : %d\n",           FSLib->sedPhases);    
+    PetscPrintf(PETSC_COMM_WORLD, "    Sedimentation phase   : %" PetscInt_FMT "\n",           FSLib->sedPhases);
     PetscPrintf(PETSC_COMM_WORLD, "    SPL: \n");   
     PetscPrintf(PETSC_COMM_WORLD, "      Kf                  : %g\n",           FSLib->kf);
     PetscPrintf(PETSC_COMM_WORLD, "      Kfsed               : %g\n",           FSLib->kfsed);
@@ -493,7 +493,7 @@ PetscErrorCode FSLoadNonUniformGrid(MeshSeg1DFS *ms_fs, PetscScalar xend, Scalin
     {
         if(!ms_fs->bias)
         {
-            ms_fs->grid_spacing_min[i]  = (ms_fs->xstart[i+1] - ms_fs->xstart[i]) * scal->length / (ms_fs->istart[i+1] - ms_fs->istart[i]);
+            ms_fs->grid_spacing_min[i]  = (ms_fs->xstart[i+1] - ms_fs->xstart[i]) * scal->length / (PetscScalar)(ms_fs->istart[i+1] - ms_fs->istart[i]);
             ms_fs->grid_spacing_max[i]  = ms_fs->grid_spacing_min[i];
         }
         else
@@ -502,7 +502,7 @@ PetscErrorCode FSLoadNonUniformGrid(MeshSeg1DFS *ms_fs, PetscScalar xend, Scalin
             bias  = ms_fs->biases[i];
         
             // average cell size
-            avgSz = (ms_fs->xstart[i+1] - ms_fs->xstart[i]) * scal->length / (ms_fs->istart[i+1] - ms_fs->istart[i]);
+            avgSz = (ms_fs->xstart[i+1] - ms_fs->xstart[i]) * scal->length / (PetscScalar)(ms_fs->istart[i+1] - ms_fs->istart[i]);
 
             // cell size limits
             begSz = 2.0*avgSz/(1.0 + bias);
@@ -516,7 +516,7 @@ PetscErrorCode FSLoadNonUniformGrid(MeshSeg1DFS *ms_fs, PetscScalar xend, Scalin
     ms_fs->max_spacing = *max_element(ms_fs->grid_spacing_max, ms_fs->grid_spacing_max + ms_fs->nsegs);
 
     // get new spacing & nodes
-    ms_fs->nnodes_nug  = static_cast<PetscInt>(floor( (ms_fs->xstart[ms_fs->nsegs] - ms_fs->xstart[0]) * scal->length / ms_fs->min_spacing ) ) + 2; 
+    ms_fs->nnodes_nug  = (PetscInt)(floor( (ms_fs->xstart[ms_fs->nsegs] - ms_fs->xstart[0]) * scal->length / ms_fs->min_spacing ) ) + 2; 
  
     PetscFunctionReturn(0);
 }
@@ -558,7 +558,7 @@ void GenerateGridCoordinates(PetscScalar *coords, PetscInt numNodes, PetscScalar
 {
     for (PetscInt i = 0; i < numNodes; i++) 
     {
-        coords[i] = start + spacing * i;
+        coords[i] = start + spacing * (PetscScalar)i;
     }
 }
 //---------------------------------------------------------------------------
@@ -579,14 +579,14 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
     ts      = jr->ts;
     step_fs = ts->istep;
 
-    fsX->dx = FSLib->rangeX / scal->length_fs / (fsX->nodes - 1);
-    fsY->dx = FSLib->rangeY / scal->length_fs / (fsY->nodes - 1);
+    fsX->dx = FSLib->rangeX / scal->length_fs / (PetscScalar)(fsX->nodes - 1);
+    fsY->dx = FSLib->rangeY / scal->length_fs / (PetscScalar)(fsY->nodes - 1);
 
     // original fastscape grid
     if(mode == 1 || mode == 2)
     {
-        PetscCall(PetscMalloc(static_cast<size_t>(fsX->nodes) * sizeof(PetscScalar), &fsX->ncoor));
-        PetscCall(PetscMalloc(static_cast<size_t>(fsY->nodes) * sizeof(PetscScalar), &fsY->ncoor)); 
+        PetscCall(PetscMalloc((size_t)(fsX->nodes) * sizeof(PetscScalar), &fsX->ncoor));
+        PetscCall(PetscMalloc((size_t)(fsY->nodes) * sizeof(PetscScalar), &fsY->ncoor)); 
     } 
 
     GenerateGridCoordinates(fsX->ncoor, fsX->nodes, FSLib->rangeX_begin, fsX->dx);
@@ -599,12 +599,12 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
         {
             if(mode == 2 || step_fs == 0)
             {
-                PetscCall(PetscMalloc(static_cast<size_t>(fsX->nodes_refine) * sizeof(PetscScalar), &fsX->ncoor_refine));
-                PetscCall(PetscMalloc(static_cast<size_t>(fsY->nodes_refine) * sizeof(PetscScalar), &fsY->ncoor_refine));        
+                PetscCall(PetscMalloc((size_t)(fsX->nodes_refine) * sizeof(PetscScalar), &fsX->ncoor_refine));
+                PetscCall(PetscMalloc((size_t)(fsY->nodes_refine) * sizeof(PetscScalar), &fsY->ncoor_refine));        
             }
 
-            fsX->dx_refine = FSLib->rangeX / scal->length_fs  / (fsX->nodes_refine - 1);
-            fsY->dx_refine = FSLib->rangeY / scal->length_fs  / (fsY->nodes_refine - 1);
+            fsX->dx_refine = FSLib->rangeX / scal->length_fs  / (PetscScalar)(fsX->nodes_refine - 1);
+            fsY->dx_refine = FSLib->rangeY / scal->length_fs  / (PetscScalar)(fsY->nodes_refine - 1);
 
             GenerateGridCoordinates(fsX->ncoor_refine, fsX->nodes_refine, FSLib->rangeX_begin, fsX->dx_refine);
             GenerateGridCoordinates(fsY->ncoor_refine, fsY->nodes_refine, FSLib->rangeY_begin, fsY->dx_refine); 
@@ -615,12 +615,12 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
         // 2D grid 
         if(mode == 2 || step_fs == 0)
         {
-            PetscCall(PetscMalloc(static_cast<size_t>(fsX->nodes_extend) * sizeof(PetscScalar), &fsX->ncoor_extend));
-            PetscCall(PetscMalloc(static_cast<size_t>(fsY->nodes_extend) * sizeof(PetscScalar), &fsY->ncoor_extend));
+            PetscCall(PetscMalloc((size_t)(fsX->nodes_extend) * sizeof(PetscScalar), &fsX->ncoor_extend));
+            PetscCall(PetscMalloc((size_t)(fsY->nodes_extend) * sizeof(PetscScalar), &fsY->ncoor_extend));
         }
 
-        fsX->dx_extend = FSLib->extendedXRange / scal->length_fs  / (fsX->nodes_extend - 1);
-        fsY->dx_extend = FSLib->extendedYRange / scal->length_fs  / (fsY->nodes_extend - 1); 
+        fsX->dx_extend = FSLib->extendedXRange / scal->length_fs  / (PetscScalar)(fsX->nodes_extend - 1);
+        fsY->dx_extend = FSLib->extendedYRange / scal->length_fs  / (PetscScalar)(fsY->nodes_extend - 1); 
 
         GenerateGridCoordinates(fsX->ncoor_extend, fsX->nodes_extend, FSLib->rangeX_begin, fsX->dx_extend);
         GenerateGridCoordinates(fsY->ncoor_extend, fsY->nodes_extend, FSLib->rangeY_begin, fsY->dx_extend);
@@ -630,12 +630,12 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
         {
             if(mode == 2 || step_fs == 0)
             {
-                PetscCall(PetscMalloc(static_cast<size_t>(fsX->nodes_refine) * sizeof(PetscScalar), &fsX->ncoor_refine));
-                PetscCall(PetscMalloc(static_cast<size_t>(fsY->nodes_refine) * sizeof(PetscScalar), &fsY->ncoor_refine));      
+                PetscCall(PetscMalloc((size_t)(fsX->nodes_refine) * sizeof(PetscScalar), &fsX->ncoor_refine));
+                PetscCall(PetscMalloc((size_t)(fsY->nodes_refine) * sizeof(PetscScalar), &fsY->ncoor_refine));      
             }
 
-            fsX->dx_refine = FSLib->extendedXRange / scal->length_fs  / (fsX->nodes_refine - 1);
-            fsY->dx_refine = FSLib->extendedYRange / scal->length_fs  / (fsY->nodes_refine - 1);
+            fsX->dx_refine = FSLib->extendedXRange / scal->length_fs  / (PetscScalar)(fsX->nodes_refine - 1);
+            fsY->dx_refine = FSLib->extendedYRange / scal->length_fs  / (PetscScalar)(fsY->nodes_refine - 1);
 
             GenerateGridCoordinates(fsX->ncoor_refine, fsX->nodes_refine, FSLib->rangeX_begin, fsX->dx_refine);
             GenerateGridCoordinates(fsY->ncoor_refine, fsY->nodes_refine, FSLib->rangeY_begin, fsY->dx_refine);       
@@ -649,8 +649,8 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
         {
             if(mode == 2 || step_fs == 0)
             {
-                PetscCall(PetscMalloc(static_cast<size_t>((FSLib->nx_LaMEM + 1)) * sizeof(PetscScalar), &FSLib->ncoor_ori_x));
-                PetscCall(PetscMalloc(static_cast<size_t>((FSLib->ny_LaMEM + 1)) * sizeof(PetscScalar), &FSLib->ncoor_ori_y)); 
+                PetscCall(PetscMalloc((size_t)((FSLib->nx_LaMEM + 1)) * sizeof(PetscScalar), &FSLib->ncoor_ori_x));
+                PetscCall(PetscMalloc((size_t)((FSLib->ny_LaMEM + 1)) * sizeof(PetscScalar), &FSLib->ncoor_ori_y)); 
             }
 
             // x-direction
@@ -675,7 +675,7 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
         {
             if(FSLib->extendedX == 1)
             {
-                if(mode == 2 || step_fs == 0 )  PetscCall(PetscMalloc(static_cast<size_t>((FSLib->ny_LaMEM + 1)) * sizeof(PetscScalar), &FSLib->ncoor_ori_y));
+                if(mode == 2 || step_fs == 0 )  PetscCall(PetscMalloc((size_t)((FSLib->ny_LaMEM + 1)) * sizeof(PetscScalar), &FSLib->ncoor_ori_y));
 
                 // y-direction
                 for(i = 0; i < FSLib->msy_fs.nsegs; i++)
@@ -688,7 +688,7 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
             }
             else
             {
-                if(mode == 2|| step_fs == 0)    PetscCall(PetscMalloc(static_cast<size_t>((FSLib->nx_LaMEM + 1)) * sizeof(PetscScalar), &FSLib->ncoor_ori_x));
+                if(mode == 2|| step_fs == 0)    PetscCall(PetscMalloc((size_t)((FSLib->nx_LaMEM + 1)) * sizeof(PetscScalar), &FSLib->ncoor_ori_x));
    
                 // x-direction
                 for(i = 0; i < FSLib->msx_fs.nsegs; i++)
@@ -868,7 +868,7 @@ PetscErrorCode FastScapeCreateGlobalGrid(PetscScalar *ncoor, MeshSeg1DFS ms_fs, 
         // generate coordinates of local nodes
         for(i = istart; i < M + istart + 1; i++)
         {   
-            ncoor[i] = xstart + (PetscScalar)( (i - istart) * avgSz );
+            ncoor[i] = xstart + (PetscScalar)(i - istart) * avgSz;
         }
     }
     // non-uniform case
@@ -884,7 +884,7 @@ PetscErrorCode FastScapeCreateGlobalGrid(PetscScalar *ncoor, MeshSeg1DFS ms_fs, 
 		// generate coordinates of local nodes
 		for(i = istart; i < istart + M; i++)
 		{
-			ncoor[i] = xstart + (i - istart) * begSz + dx * sum ;
+			ncoor[i] = xstart + (PetscScalar)(i - istart) * begSz + dx * (PetscScalar)sum ;
             sum += i - istart;
 		}
     }
@@ -920,7 +920,7 @@ GridIndex FindIndexForInterpolation(FastScapeLib* FSLib, PetscScalar x_coor, Pet
             break;
         }
 
-        find_indx = static_cast<PetscInt>(floor((x_coor - x1) / dx));
+        find_indx = (PetscInt)(floor((x_coor - x1) / dx));
 
         if(find_indx > 0) p += find_indx; 
         else p++; 
@@ -945,7 +945,7 @@ GridIndex FindIndexForInterpolation(FastScapeLib* FSLib, PetscScalar x_coor, Pet
                 break;
             }
 
-            find_indy = static_cast<PetscInt>(floor((y_coor - y1) / dy));
+            find_indy = (PetscInt)(floor((y_coor - y1) / dy));
 
             if(find_indy > 0) q += find_indy;
             else q++; 
@@ -1107,8 +1107,8 @@ PetscErrorCode InterpolationFor2DNonUniformGrid(FastScapeLib *FSLib, PetscScalar
             PetscReal weight = (x_coor - x1) / dx;
             value_out[i] = (1.0 - weight) * value_in[idx_left] + weight * value_in[idx_right];
         } else {
-            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, 
-                   "Interpolation failed at point %d (coord=%.4f) between nodes [%.4f, %.4f]", 
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
+                   "Interpolation failed at point %" PetscInt_FMT " (coord=%.4f) between nodes [%.4f, %.4f]",
                    i, x_coor, x_min, x_max);
         }
     }
@@ -1118,7 +1118,8 @@ PetscErrorCode InterpolationFor2DNonUniformGrid(FastScapeLib *FSLib, PetscScalar
 //---------------------------------------------------------------------------
 PetscErrorCode GatherVariableFromLaMEM(FastScapeLib *FSLib, PetscScalar *topo_alloc, PetscScalar *vx_alloc, PetscScalar *vy_alloc, PetscScalar *vz_alloc, PetscInt step_fs)
 {
-    PetscInt L, sx, sy, sz, nx, ny, nz, tproc, rankZ_id, i, j;
+    PetscInt L, sx, sy, sz, nx, ny, nz, tproc, i, j;
+    PetscMPIInt rankZ_id;
     PetscScalar ***topo;
     PetscScalar ***vz, ***vx, ***vy;
     PetscScalar ***vz_collect, ***vx_collect, ***vy_collect;
@@ -1181,7 +1182,7 @@ PetscErrorCode GatherVariableFromLaMEM(FastScapeLib *FSLib, PetscScalar *topo_al
     tproc = fs->dsx.nproc * fs->dsy.nproc * fs->dsz.nproc;
     rankZ_id = NO_NEED;    
 
-    if (fs->dsz.rank == 0)  rankZ_id = fs->dsx.nproc * fs->dsy.rank + fs->dsx.rank;
+    if (fs->dsz.rank == 0)  PetscCall(PetscMPIIntCast(fs->dsx.nproc * fs->dsy.rank + fs->dsx.rank, &rankZ_id));
 
     // local process info  
     ProcInfo local_info = {sx, sy, sz, nx, ny, nz, rankZ_id};    
@@ -1190,7 +1191,7 @@ PetscErrorCode GatherVariableFromLaMEM(FastScapeLib *FSLib, PetscScalar *topo_al
     // allocate memory    
     if (ISRankZero(PETSC_COMM_WORLD)) 
     {        
-        PetscCall(PetscMalloc(static_cast<size_t>(tproc) * sizeof(ProcInfo), &global_infos));
+        PetscCall(PetscMalloc((size_t)(tproc) * sizeof(ProcInfo), &global_infos));
         if (!global_infos)  SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_MEM, "Memory allocation failed");        
     } 
 
@@ -1295,14 +1296,14 @@ PetscErrorCode BilinearInterpolate(FastScapeLib *FSLib, PetscScalar *data, Petsc
         const PetscInt j0 = j / FSLib->refine;
         const PetscInt j1 = PetscMin(j0 + 1, ny_source - 1);
         const PetscScalar ty =
-            (PetscScalar)(j % FSLib->refine) / FSLib->refine;
+            (PetscScalar)(j % FSLib->refine) / (PetscScalar)(FSLib->refine);
 
         for (PetscInt i = 0; i < nx_refine; ++i)
         {
             const PetscInt i0 = i / FSLib->refine;
             const PetscInt i1 = PetscMin(i0 + 1, nx_source - 1);
             const PetscScalar tx =
-                (PetscScalar)(i % FSLib->refine) / FSLib->refine;
+                (PetscScalar)(i % FSLib->refine) / (PetscScalar)(FSLib->refine);
 
             const PetscScalar q00 = data[j0 * nx_source + i0] * unit_factor;
             const PetscScalar q10 = data[j0 * nx_source + i1] * unit_factor;
@@ -1351,8 +1352,8 @@ PetscErrorCode Extended2D(FastScapeLib *FSLib, PetscScalar *data, PetscScalar *d
         }
     }
 
-    PetscCall(PetscMalloc(static_cast<size_t>(origDim) * sizeof(PetscScalar), &data_aver_ori));
-    PetscCall(PetscMalloc(static_cast<size_t>(targetDim) * sizeof(PetscScalar), &data_aver));
+    PetscCall(PetscMalloc((size_t)(origDim) * sizeof(PetscScalar), &data_aver_ori));
+    PetscCall(PetscMalloc((size_t)(targetDim) * sizeof(PetscScalar), &data_aver));
 
     // calculate averange values with scaling
     for (i = 0; i < origDim; i++) 
@@ -1365,7 +1366,7 @@ PetscErrorCode Extended2D(FastScapeLib *FSLib, PetscScalar *data, PetscScalar *d
             sum += data[idx] * unit_factor;
         }
 
-        data_aver_ori[i] = sum / otherDim;
+        data_aver_ori[i] = sum / (PetscScalar)(otherDim);
     }
 
     // non-uniform grid
@@ -1452,11 +1453,11 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
     // Gather topography and velocity
     tnodes_ori    = FSLib->nx_LaMEM * FSLib->ny_LaMEM;  
 
-    PetscCall(PetscMalloc(static_cast<size_t>(tnodes_ori) * sizeof(PetscScalar), &topo_fs));
-    PetscCall(PetscMalloc(static_cast<size_t>(tnodes_ori) * sizeof(PetscScalar), &topo_alloc));
-    PetscCall(PetscMalloc(static_cast<size_t>(tnodes_ori) * sizeof(PetscScalar), &vx_alloc));
-    PetscCall(PetscMalloc(static_cast<size_t>(tnodes_ori) * sizeof(PetscScalar), &vy_alloc));
-    PetscCall(PetscMalloc(static_cast<size_t>(tnodes_ori) * sizeof(PetscScalar), &vz_alloc));  
+    PetscCall(PetscMalloc((size_t)(tnodes_ori) * sizeof(PetscScalar), &topo_fs));
+    PetscCall(PetscMalloc((size_t)(tnodes_ori) * sizeof(PetscScalar), &topo_alloc));
+    PetscCall(PetscMalloc((size_t)(tnodes_ori) * sizeof(PetscScalar), &vx_alloc));
+    PetscCall(PetscMalloc((size_t)(tnodes_ori) * sizeof(PetscScalar), &vy_alloc));
+    PetscCall(PetscMalloc((size_t)(tnodes_ori) * sizeof(PetscScalar), &vz_alloc));  
 
     PetscCall(GatherVariableFromLaMEM(FSLib, topo_alloc, vx_alloc, vy_alloc, vz_alloc, step_fs));        
 
@@ -1465,7 +1466,7 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
         PetscScalar dt_max = FSLib->Max_dt; // Maximum step length, if dt_LaMEM is larger than this, use this
         PetscScalar dt_n = 0; //dt_residual
         PetscScalar quotient = dt_fs/dt_max;
-        PetscInt nsteps = static_cast<PetscInt>(floor( dt_fs/dt_max ));
+        PetscInt nsteps = (PetscInt)(floor( dt_fs/dt_max ));
         PetscScalar *topo_pass = nullptr, *vx_pass = nullptr, *vy_pass = nullptr, *vz_pass = nullptr; 
 
         // store the phase that is being sedimented
@@ -1473,10 +1474,10 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 
         tnodes      = FSLib->nodes_solve;  
 
-        PetscCall(PetscMalloc(static_cast<size_t>(tnodes) * sizeof(PetscScalar), &topo_pass));
-        PetscCall(PetscMalloc(static_cast<size_t>(tnodes) * sizeof(PetscScalar), &vx_pass));
-        PetscCall(PetscMalloc(static_cast<size_t>(tnodes) * sizeof(PetscScalar), &vy_pass));
-        PetscCall(PetscMalloc(static_cast<size_t>(tnodes) * sizeof(PetscScalar), &vz_pass));             
+        PetscCall(PetscMalloc((size_t)(tnodes) * sizeof(PetscScalar), &topo_pass));
+        PetscCall(PetscMalloc((size_t)(tnodes) * sizeof(PetscScalar), &vx_pass));
+        PetscCall(PetscMalloc((size_t)(tnodes) * sizeof(PetscScalar), &vy_pass));
+        PetscCall(PetscMalloc((size_t)(tnodes) * sizeof(PetscScalar), &vz_pass));             
 
         // timestep
         if(nsteps < 1) 
@@ -1484,10 +1485,10 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
             nsteps = 1;
             dt_max = dt_fs;
         }
-        else if( (nsteps >= 1) && (nsteps != quotient) )
+        else if( (nsteps >= 1) && ((PetscScalar)(nsteps) != quotient) )
         {
             nsteps = nsteps + 1;
-            dt_n   = dt_fs - (nsteps - 1) * dt_max;
+            dt_n   = dt_fs - (PetscScalar)(nsteps - 1) * dt_max;
         }
 
         FSLib->count_nsteps += nsteps;
@@ -1550,8 +1551,8 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
             // apply refinement
             else 
             {
-                printf("Refined times                    : %d\n", FSLib->refine);
-                printf("Refined grid cells [nx, ny]      : [%d, %d] \n", FSLib->nx_refine, FSLib->ny_refine);
+                printf("Refined times                    : %" PetscInt_FMT "\n", FSLib->refine);
+                printf("Refined grid cells [nx, ny]      : [%" PetscInt_FMT ", %" PetscInt_FMT "] \n", FSLib->nx_refine, FSLib->ny_refine);
 
                 PetscCall(VecGetArray(FSLib->gtopo_refine, &topo_solve_refine));
                 PetscCall(VecGetArray(FSLib->vx_refine, &vx_solve_refine));
@@ -1794,7 +1795,7 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
             PetscCall(VecRestoreArray(FSLib->vz_extend, &vz_solve));       
         }
         // run FastScape
-        PetscCall( FastScapeFortranCppAdvc(FSLib, dt_max, dt_n, FSLib->count_nsteps, step_fs, vx_pass, vy_pass, vz_pass, topo_pass));
+        PetscCall( FastScapeFortranCppAdvc(FSLib, dt_max, dt_n, FSLib->count_nsteps, (PetscScalar)step_fs, vx_pass, vy_pass, vz_pass, topo_pass));
 
         PetscCall(VecGetArray(FSLib->gtopo_fs, &gtopo_rank0));
 
@@ -1891,8 +1892,8 @@ PetscErrorCode PassValue2D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
     secNodes = FSLib->extendedX ? FSLib->extendedXNodes : FSLib->extendedYNodes;
     laMEMNodes = FSLib->extendedX ? FSLib->ny_LaMEM : FSLib->nx_LaMEM;
 
-    PetscCall(PetscMalloc1(static_cast<size_t>(mainNodes), &topo_aver));
-    PetscCall(PetscMalloc1(static_cast<size_t>(laMEMNodes), &topo_aver_ori));
+    PetscCall(PetscMalloc1((size_t)(mainNodes), &topo_aver));
+    PetscCall(PetscMalloc1((size_t)(laMEMNodes), &topo_aver_ori));
 
     // refine
     if (FSLib->refine > 1) 
@@ -1945,7 +1946,7 @@ PetscErrorCode PassValue2D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
             sum += topo_extend[ind];
         }
 
-        topo_aver[idx] = sum / secNodes;
+        topo_aver[idx] = sum / (PetscScalar)(secNodes);
     }
 
     // non-uniform grid
@@ -1957,15 +1958,15 @@ PetscErrorCode PassValue2D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
             begin = FSLib->extendedX ? FSLib->ncoor_ori_y[0] : FSLib->ncoor_ori_x[0];
             delta = FSLib->extendedX ? fsY->dx : fsX->dx;
 
-            n = static_cast<PetscInt>(PetscFloorReal((coord - begin) / delta));
+            n = (PetscInt)(PetscFloorReal((coord - begin) / delta));
             nn = n + 1;
 
             if (nn >= mainNodes) nn = n;
             if (n == nn)  topo_aver_ori[idx] = topo_aver[n];
             else 
             {
-                coord0 = begin + n * delta;
-                coord1 = begin + nn * delta;
+                coord0 = begin + (PetscScalar)n * delta;
+                coord1 = begin + (PetscScalar)nn * delta;
                 topo_aver_ori[idx] = linearInterp(coord, coord0, coord1, topo_aver[n], topo_aver[nn]);
             }
         }
@@ -2087,11 +2088,11 @@ PetscErrorCode PassValue3D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
 
                     // get nearest four index
                     // x-direction
-                    m  = static_cast<PetscInt>(floor( (x_coor - x_begin) / dx ));
+                    m  = (PetscInt)(floor( (x_coor - x_begin) / dx ));
                     mm = (m + 1 < fsX->nodes) ? m + 1 : m;
 
                     // y-direction
-                    n  = static_cast<PetscInt>(floor( (y_coor - y_begin) / dy ));
+                    n  = (PetscInt)(floor( (y_coor - y_begin) / dy ));
                     nn = (n + 1 < fsY->nodes) ? n + 1 : n;
 
                     // interpolate
@@ -2150,11 +2151,11 @@ PetscErrorCode PassValue3D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
 
                     // get nearest four index
                     // x-direction
-                    m  = static_cast<PetscInt>(floor( (x_coor - x_begin) / dx ));
+                    m  = (PetscInt)(floor( (x_coor - x_begin) / dx ));
                     mm = (m + 1 < fsX->nodes) ? m + 1 : m;
 
                     // y-direction
-                    n  = static_cast<PetscInt>(floor( (y_coor - y_begin) / dy ));
+                    n  = (PetscInt)(floor( (y_coor - y_begin) / dy ));
                     nn = (n + 1 < fsY->nodes) ? n + 1 : n;
 
                     // interpolate
@@ -2223,9 +2224,9 @@ PetscErrorCode PVSurfWriteVTSFS(FastScapeLib *FSLib, const char *dirName, PetscS
 
     // grid info
     fprintf(fp, "\t<StructuredGrid WholeExtent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\">\n",
-            1, nx, 1, ny);
+            (PetscInt)1, nx, (PetscInt)1, ny);
     fprintf(fp, "\t\t<Piece Extent=\"%" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " %" PetscInt_FMT " 1 1\">\n",
-            1, nx, 1, ny);
+            (PetscInt)1, nx, (PetscInt)1, ny);
     fprintf(fp, "\t\t\t<CellData/>\n");  
 
     // offset & nodes
@@ -2633,13 +2634,13 @@ PetscErrorCode FastScapeInitialize(FastScapeLib *FSLib, PetscScalar *topo_pass, 
     fastscape_set_xl_yl_(&rangeX, &rangeY);
 
     // set topography boundary conditions
-    ibc_int = static_cast<int>(strtol(FSLib->FS_BC, &endptr, 10));
+    ibc_int = (int)(strtol(FSLib->FS_BC, &endptr, 10));
     fastscape_set_bc_(&ibc_int);
 
     // random noise
     if (FSLib->random_noise && restart == 0) 
     {
-        PetscCall(PetscMalloc(static_cast<size_t>(FSLib->nodes_solve) * sizeof(PetscScalar), &topo_random));
+        PetscCall(PetscMalloc((size_t)(FSLib->nodes_solve) * sizeof(PetscScalar), &topo_random));
         for (ind = 0; ind < FSLib->nodes_solve; ind++) 
         {
             topo_random[ind] = distribution(generator)/10000.0;
@@ -2688,11 +2689,11 @@ PetscErrorCode FastScapeFortranCppAdvc(FastScapeLib *FSLib, PetscScalar dt_max, 
     std::vector<PetscInt> output_flags;
     std::vector<void (*)(PetscScalar*)> output_functions;
 
-    PetscCall(PetscMalloc(static_cast<size_t>(FSLib->nodes_solve) * sizeof(PetscScalar), &kf));
-    PetscCall(PetscMalloc(static_cast<size_t>(FSLib->nodes_solve) * sizeof(PetscScalar), &kd));
+    PetscCall(PetscMalloc((size_t)(FSLib->nodes_solve) * sizeof(PetscScalar), &kf));
+    PetscCall(PetscMalloc((size_t)(FSLib->nodes_solve) * sizeof(PetscScalar), &kd));
  
     // output 
-    auto manage_output = [&](int flag, Vec vec, PetscScalar** array, void (*copy_func)(PetscScalar*)) -> PetscErrorCode 
+    auto manage_output = [&](PetscInt flag, Vec vec, PetscScalar** array, void (*copy_func)(PetscScalar*)) -> PetscErrorCode
     {
         if (flag) 
         {
@@ -2733,7 +2734,7 @@ PetscErrorCode FastScapeFortranCppAdvc(FastScapeLib *FSLib, PetscScalar dt_max, 
     std::fill_n(kd, FSLib->nodes_solve, FSLib->kd);        
 
     // velocity boundary conditions
-    auto set_velocity_boundary = [&](int i, int j, int ind) 
+    auto set_velocity_boundary = [&](PetscInt i, PetscInt j, PetscInt ind)
     {   
         // bottom
         if (FSLib->FS_VELBC[0] == '1' && j == 0) 
