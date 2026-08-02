@@ -166,13 +166,13 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
     {
         if(FSLib->refine == 1)
         {
-            PetscCall(PetscCIntCast(FSLib->extendedXNodes, &FSLib->nx_solve));
-            PetscCall(PetscCIntCast(FSLib->extendedYNodes, &FSLib->ny_solve));
+            FSLib->nx_solve    = (int)FSLib->extendedXNodes;
+            FSLib->ny_solve    = (int)FSLib->extendedYNodes;
         }
         else
         {
-            PetscCall(PetscCIntCast(FSLib->etRefineXNodes, &FSLib->nx_solve));
-            PetscCall(PetscCIntCast(FSLib->etRefineYNodes, &FSLib->ny_solve));
+            FSLib->nx_solve    = (int)FSLib->etRefineXNodes;
+            FSLib->ny_solve    = (int)FSLib->etRefineYNodes;
         }
     }
     else
@@ -181,19 +181,19 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
         {
             if(!FSLib->non_uniform_grid)
             {
-                PetscCall(PetscCIntCast(FSLib->nx_LaMEM, &FSLib->nx_solve));
-                PetscCall(PetscCIntCast(FSLib->ny_LaMEM, &FSLib->ny_solve));
+                FSLib->nx_solve    = (int)FSLib->nx_LaMEM;
+                FSLib->ny_solve    = (int)FSLib->ny_LaMEM;
             }
             else
             {
-                PetscCall(PetscCIntCast(FSLib->msx_fs.nnodes_nug, &FSLib->nx_solve));
-                PetscCall(PetscCIntCast(FSLib->msy_fs.nnodes_nug, &FSLib->ny_solve));
+                FSLib->nx_solve    = (int)FSLib->msx_fs.nnodes_nug;
+                FSLib->ny_solve    = (int)FSLib->msy_fs.nnodes_nug;
             }
         }
         else
         {
-            PetscCall(PetscCIntCast(FSLib->nx_refine, &FSLib->nx_solve));
-            PetscCall(PetscCIntCast(FSLib->ny_refine, &FSLib->ny_solve));
+            FSLib->nx_solve    = (int)FSLib->nx_refine;
+            FSLib->ny_solve    = (int)FSLib->ny_refine;
         }
     }
     
