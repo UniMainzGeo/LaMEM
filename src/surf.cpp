@@ -184,13 +184,17 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	PetscInt       bc_node;
 	DMBoundaryType BC_TYPE_X;
 	const PetscInt *lx, *ly;
+#ifdef WITH_FASTSCAPE
 	FastScapeLib   *FSLib;
+#endif
 
 	PetscFunctionBeginUser;
 
 	// access context
 	fs = surf->jr->fs;
+#ifdef WITH_FASTSCAPE
 	FSLib = surf->FSLib;
+#endif
 
 	// set boundary type in x direction
 	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }

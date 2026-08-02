@@ -486,7 +486,9 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	Marker          *P, *IP;
 	FDSTAG          *fs;
 	FreeSurf        *surf;
+#ifdef WITH_FASTSCAPE
 	FastScapeLib    *FSLib;
+#endif
 	Vec             vphase;
 	PetscInt        sx, sy, sz, nx, ny;
 	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
@@ -502,7 +504,9 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 
 	// access context
 	surf      = actx->surf;
+#ifdef WITH_FASTSCAPE
 	FSLib     = surf->FSLib;
+#endif
 	fs        = actx->fs;
 	L         = fs->dsz.rank;
 	AirPhase  = surf->AirPhase;
