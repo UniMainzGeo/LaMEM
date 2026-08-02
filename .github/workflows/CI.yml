@@ -81,12 +81,14 @@ jobs:
 
     - name: 'Compile LaMEM | Int64 + FastScape'
       run: |
+        # cleanup stale objects from the previous (non-FastScape) build so the
+        # -DWITH_FASTSCAPE flag actually takes effect (make only tracks the
+        # Makefile's mtime, not compiler flags, so it won't recompile otherwise)
+        rm -rf lib/opt/*
+        rm -rf dep/opt/*
         cd test
         julia --project=. compile_lamem.jl int64 fastscape
         pwd
-        # cleanup
-        rm -rf ../lib/opt/*
-        rm -rf ../dep/opt/*
         cd ../bin
         sudo -E mv -f opt opt64fs
         cd ..
