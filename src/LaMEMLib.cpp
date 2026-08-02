@@ -742,7 +742,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 				PetscCall(FreeSurfGetAvgTopo(&lm->surf));
 			}
 #else
-			// apply erosion to the free surface
+  	
+      // apply erosion to the free surface
 			PetscCall(FreeSurfAppErosion(&lm->surf));
 
 			// apply sedimentation to the free surface

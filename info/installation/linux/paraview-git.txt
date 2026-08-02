@@ -1,0 +1,31 @@
+------------------------------------------------------------------
+GIT
+------------------------------------------------------------------
+
+git config --global user.name "Your User Name"
+git config --global user.email "your_email@example.com"
+git config remote.origin.prune true
+
+------------------------------------------------------------------
+PARAVIEW
+------------------------------------------------------------------
+
+WARNING!
+Don't apt install paraview
+It messes with MPI installation
+Download binaries form paraview website
+
+Download and unpack
+
+Install (copy) to /opt
+
+At best rename mpiexec in paraview bin directory to make it safe in any case:
+
+cd /opt/paraview-install-dir/bin
+mv mpiexec mpiexec-bak
+
+Create desktop launcher in the same way as eclipse
+Icon file can be found in share/icons in paraview installation directory
+
+
+

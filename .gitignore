@@ -25,4 +25,5 @@
 /test/t33_Initial_APS/Timestep_*
 Manifest.toml  
 docs/build/
+.claude
 

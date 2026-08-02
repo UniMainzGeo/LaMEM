@@ -1,0 +1,56 @@
+
+Install Command Line Tools and Homebrew
+
+brew install gfortran 
+brew install make 
+brew install bison
+brew install mpich
+
+./configure \
+--prefix=/Users/USERNAME/SOFT/petsc/petsc-3.24.6-deb \
+--COPTFLAGS="-g -O0" \
+--FOPTFLAGS="-g -O0" \
+--CXXOPTFLAGS="-g -O0" \
+--with-debugging=1 \
+--with-large-file-io=1 \
+--with-c++-support=1 \
+--with-cc=mpicc \
+--with-cxx=mpicxx \
+--with-fc=mpif90 \
+--with-make-exec=gmake \
+--with-bison-exec=/opt/homebrew/opt/bison/bin/bison \
+--download-openblas \
+--download-metis=1 \
+--download-parmetis=1 \
+--download-ptscotch=1 \
+--download-scalapack=1 \
+--download-mumps=1 \
+--download-superlu_dist=1 \
+--with-clean
+
+./configure \
+--prefix=/Users/USERNAME/SOFT/petsc/petsc-3.24.6-opt \
+--COPTFLAGS="-O2" \
+--FOPTFLAGS="-O2" \
+--CXXOPTFLAGS="-O2" \
+--with-debugging=0 \
+--with-large-file-io=1 \
+--with-c++-support=1 \
+--with-cc=mpicc \
+--with-cxx=mpicxx \
+--with-fc=mpif90 \
+--with-make-exec=gmake \
+--with-bison-exec=/opt/homebrew/opt/bison/bin/bison \
+--download-openblas \
+--download-metis=1 \
+--download-parmetis=1 \
+--download-ptscotch=1 \
+--download-scalapack=1 \
+--download-mumps=1 \
+--download-superlu_dist=1 \
+--with-clean
+
+Add PETSc paths to .zshrc
+
+export PETSC_DEB=/Users/USERNAME/SOFT/petsc/petsc-3.24.6-deb
+export PETSC_OPT=/Users/USERNAME/SOFT/petsc/petsc-3.24.6-opt

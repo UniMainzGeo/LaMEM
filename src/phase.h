@@ -231,7 +231,7 @@ struct PData
 	PetscScalar  maxP[_max_num_pd_];                      // maximum pressure of diagram
 	PetscScalar  dP[_max_num_pd_];                        // pressure increment
 	PetscInt     nP[_max_num_pd_];                        // number of pressure points
-	PetscInt     numProps[_max_num_pd_];                  // number of collumns (or stored properties) in phase diagram
+	PetscInt     numProps[_max_num_pd_];                  // number of columns (or stored properties) in phase diagram
 
 	char         rho_pdns[_pd_name_sz_][_max_num_pd_];    // loaded phase diagram numbers
 	PetscScalar  rho_v[_max_pd_sz_][_max_num_pd_];        // Array containing the actual density data (= bulk density, including that of partial melt)

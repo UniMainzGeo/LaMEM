@@ -942,7 +942,7 @@ PetscErrorCode setSolverOptions(FB *fb)
 
 	// set simplified solver options from the input file
 	PetscCall(solverOptionsSetDefaults(fb));
-	printf("hello333\n");
+
 	// load additional options from file
 	PetscCall(PetscOptionsReadFromFile(fb));
 

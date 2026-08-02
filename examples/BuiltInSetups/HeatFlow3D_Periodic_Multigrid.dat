@@ -1,0 +1,183 @@
+# Heat diffusion problem in 3D with periodic boundary conditions.
+# Heat source is placed close to one boundary such that temperature perturbation
+# is also visible on the opposite boundary due to periodicity.
+# Background viscous flow is similar to falling block setup but with arbitrary
+# orientation of the gravity vector (not aligned with vertical direction).
+# As usual the setup can be executed with the following command:
+#    mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile HeatFlow3D_Periodic_Multigrid.dat
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt        = 1e-6  # time step
+	dt_min    = 1e-9  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 1e-6   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 32
+	nel_y = 32
+	nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 1.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+# Periodic geometry flags
+# WARNING! only implemented for x-direction
+	
+	periodic = 1
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# No-slip boundary flag mask (left right front back bottom top)
+
+    noslip = 0 0 0 0 1 0
+
+    temp_top                =   0.0
+    temp_bot                =   10.0 
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.1 0.3 -1.0   # gravity vector
+
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+
+	act_temp_diff   = 1             # temperature diffusion activation flag
+	act_steady_temp = 1             # steady-state temperature initial guess activation flag
+
+	init_guess     = 0              # initial guess flag
+	eta_min        = 1e-3           # viscosity upper bound
+	eta_max        = 1e12           # viscosity lower limit
+
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+
+
+# Geometric primtives:
+
+	<BoxStart>
+		phase  = 1
+		bounds = 0.25 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	<BoxStart>
+		phase  = 2
+		bounds = 0.85 0.95 0.45 0.65 0.45 0.65  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name    = HeatFlow # output file name
+	out_pvd          = 1          # activate writing .pvd file
+
+	out_density      = 1
+	out_temperature  = 1
+	out_energ_res    = 1
+
+
+# AVD phase viewer output options (requires activation)
+
+#	out_avd     = 1 # activate AVD phase output
+#	out_avd_pvd = 1 # activate writing .pvd file
+#	out_avd_ref = 3 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 1 # density
+		eta = 1 # viscosity
+		Cp  = 1
+		k   = 1
+	<MaterialEnd>
+
+	# Define properties of block
+	<MaterialStart>
+		ID  = 1   # phase id
+		rho = 2   # density
+		eta = 100 # viscosity
+		Cp  = 1
+		k   = 3
+	<MaterialEnd>
+
+	# Define properties of heat source zone
+	<MaterialStart>
+		ID  = 2 # phase id
+		rho = 1 # density
+		eta = 1 # viscosity
+		Cp  = 1
+		k   = 1
+		A   = 1000
+	<MaterialEnd>
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+
+<SolverOptionsStart>
+
+	nonlinear_tolerances =  1e-6 1e-4 50    # rtol, atol, maxit
+	linear_tolerances    =  1e-6 1e-6 100   # rtol, atol, maxit
+	thermal_tolerances   =  1e-9 1e-6 500   # rtol, atol, maxit (-1 = automatic setting, only for atol)
+	stokes_solver        =  coupled_mg          
+	smoother_type        =  light           # richardson + jacobi
+	smoother_num_sweeps  =  5
+	coarse_solver        =  direct               
+     num_mg_levels        =  3
+     init_thermal_solver  =  mg
+     coarse_num_cpu       = 1
+     
+<SolverOptionsEnd>
+
+#===============================================================================
+

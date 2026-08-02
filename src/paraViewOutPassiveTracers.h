@@ -24,7 +24,7 @@ struct AdvCtx;
 struct PVPtr
 {
 	AdvCtx    *actx;              // advection context
-	char      outfile[_str_len_+20]; // output file name
+	char      outfile[_str_len_+_str_len_]; // output file name
 	long int  offset;             // pvd file offset
 	PetscInt  outptr;             // marker output flag
 	PetscInt  outpvd;             // pvd file output flag
@@ -50,8 +50,6 @@ PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar
 // .vtu marker output
 PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName);
 
-// .pvtu marker output
-PetscErrorCode PVPtrWritePVTU(PVPtr *pvptr, const char *dirName);
-
+//---------------------------------------------------------------------------
 
 #endif

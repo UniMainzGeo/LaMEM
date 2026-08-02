@@ -41,7 +41,7 @@
 	PetscScalar ***buff, cf; \
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter; \
 	InterpFlags iflag; \
-	PetscErrorCode ierr; \
+	 \
 	PetscFunctionBeginUser; \
 	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \
@@ -57,7 +57,7 @@
 	Scaling     *scal; \
 	PetscScalar  cf; \
 	InterpFlags  iflag; \
-	PetscErrorCode ierr; \
+	 \
 	PetscFunctionBeginUser; \
 	jr     = outvec->jr; \
 	outbuf = outvec->outbuf; \
@@ -66,23 +66,23 @@
 	iflag.use_bound = 0;
 //---------------------------------------------------------------------------
 #define COPY_TO_LOCAL_BUFFER(da, vec, FIELD) \
-	ierr = DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr); \
-	ierr = DMDAVecGetArray(da, vec, &buff); CHKERRQ(ierr); \
+	PetscCall(DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz)); \
+	PetscCall(DMDAVecGetArray(da, vec, &buff)); \
 	iter = 0; \
 	START_STD_LOOP \
 		FIELD \
 	END_STD_LOOP \
-	ierr = DMDAVecRestoreArray(da, vec, &buff); CHKERRQ(ierr); \
+	PetscCall(DMDAVecRestoreArray(da, vec, &buff)); \
 	LOCAL_TO_LOCAL(da, vec)
 //---------------------------------------------------------------------------
 #define INTERPOLATE_COPY(da, vec, IFUNCT, FIELD, ncomp, dir) \
 	COPY_TO_LOCAL_BUFFER(da, vec, FIELD) \
-	ierr = IFUNCT(fs, vec, outbuf->lbcor, iflag); CHKERRQ(ierr); \
-	if(!iflag.update) { ierr = OutBufPut3DVecComp(outbuf, ncomp, dir, cf, 0.0); CHKERRQ(ierr); }
+	PetscCall(IFUNCT(fs, vec, outbuf->lbcor, iflag)); \
+	if(!iflag.update) { PetscCall(OutBufPut3DVecComp(outbuf, ncomp, dir, cf, 0.0)); }
 //---------------------------------------------------------------------------
 #define INTERPOLATE_ACCESS(vec, IFUNCT, ncomp, dir, shift) \
-	ierr = IFUNCT(outbuf->fs, vec, outbuf->lbcor, iflag); CHKERRQ(ierr); \
-	ierr = OutBufPut3DVecComp(outbuf, ncomp, dir, cf, shift); CHKERRQ(ierr);
+	PetscCall(IFUNCT(outbuf->fs, vec, outbuf->lbcor, iflag)); \
+	PetscCall(OutBufPut3DVecComp(outbuf, ncomp, dir, cf, shift));
 //---------------------------------------------------------------------------
 //...........  Multi-component output vector data structure .................
 //---------------------------------------------------------------------------
@@ -235,9 +235,10 @@ PetscErrorCode PVOutWriteVelocity(OutVec* outvec)
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->velocity;
+
 	iflag.use_bound = 1;
 
-	ierr = JacResCopyVel(jr, jr->gsol); CHKERRQ(ierr);
+	PetscCall(JacResCopyVel(jr, jr->gsol));
 
 	INTERPOLATE_ACCESS(jr->lvx, InterpXFaceCorner, 3, 0, 0.0)
 	INTERPOLATE_ACCESS(jr->lvy, InterpYFaceCorner, 3, 1, 0.0)
@@ -248,16 +249,16 @@ PetscErrorCode PVOutWriteVelocity(OutVec* outvec)
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWritePressure(OutVec* outvec)
 {
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	if(outvec->jr->ctrl.gwType != _GW_NONE_)
 	{
-		ierr = PVOutWriteTotalPress(outvec); CHKERRQ(ierr);
+		PetscCall(PVOutWriteTotalPress(outvec));
 	}
 	else
 	{
-		ierr = PVOutWriteEffPress(outvec); CHKERRQ(ierr);
+		PetscCall(PVOutWriteEffPress(outvec));
 	}
 
 	PetscFunctionReturn(0);
@@ -295,17 +296,16 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 
 	ACCESS_FUNCTION_HEADER
 
-	biot 	= jr->ctrl.biot;
-	
-	cf  	= scal->stress;
+	biot = jr->ctrl.biot;
+	cf   = scal->stress;
 
 	// scale pressure shift
-	pShift 	= -cf*jr->ctrl.pShift;		// minus to be consistent with output routine
+	pShift = -cf*jr->ctrl.pShift;
 	
-	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
+	PetscCall(JacResCopyPres(jr, jr->gsol));
 
 	// compute total pressure [add pore fluid P]
-	ierr = VecWAXPY(outbuf->lbcen, biot, jr->lp_pore, jr->lp); CHKERRQ(ierr);
+	PetscCall(VecWAXPY(outbuf->lbcen, biot, jr->lp_pore, jr->lp));
 	
 	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
 
@@ -338,7 +338,7 @@ PetscErrorCode PVOutWriteOverPress(OutVec* outvec)
 	
 	// scale pressure shift
 	pShift 	= -cf*jr->ctrl.pShift;
-	ierr 	= JacResGetOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
+	PetscCall(JacResGetOverPressure(jr, outbuf->lbcen));
 
 	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
 
@@ -382,16 +382,16 @@ PetscErrorCode PVOutWriteTemperature(OutVec* outvec)
 PetscErrorCode PVOutWriteConductivity(OutVec* outvec)
 {
 
-  COPY_FUNCTION_HEADER
+	COPY_FUNCTION_HEADER
 
 	// macros to copy conductivity to buffer  
-        #define GET_COND_CENTER buff[k][j][i] = jr->svCell[iter++].svBulk.cond;
+	#define GET_COND_CENTER buff[k][j][i] = jr->svCell[iter++].svBulk.cond;
 
-        cf = scal->conductivity;
+	cf = scal->conductivity;
 	
-        INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_COND_CENTER, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_COND_CENTER, 1, 0)
 
-        PetscFunctionReturn(0);
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
@@ -460,7 +460,7 @@ PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 
 	iflag.update = 1;
 
-	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+	PetscCall(VecSet(outbuf->lbcor, 0.0));
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRESS_CENTER,  1, 0)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRESS_XY_EDGE, 1, 0)
@@ -468,9 +468,9 @@ PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRESS_XZ_EDGE, 1, 0)
 
 	// compute & store second invariant
-	ierr = VecSqrtAbs(outbuf->lbcor); CHKERRQ(ierr);
+	PetscCall(VecSqrtAbs(outbuf->lbcor));
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+	PetscCall(OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0));
 
 	PetscFunctionReturn(0);
 }
@@ -527,7 +527,7 @@ PetscErrorCode PVOutWriteJ2StrainRate(OutVec* outvec)
 
 	iflag.update = 1;
 
-	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+	PetscCall(VecSet(outbuf->lbcor, 0.0));
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRAIN_RATE_CENTER,  1, 0)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRAIN_RATE_XY_EDGE, 1, 0)
@@ -535,9 +535,9 @@ PetscErrorCode PVOutWriteJ2StrainRate(OutVec* outvec)
 	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRAIN_RATE_XZ_EDGE, 1, 0)
 
 	// compute & store second invariant
-	ierr = VecSqrtAbs(outbuf->lbcor); CHKERRQ(ierr);
+	PetscCall(VecSqrtAbs(outbuf->lbcor));
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+	PetscCall(OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0));
 
 	PetscFunctionReturn(0);
 }
@@ -570,37 +570,29 @@ PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = 0;  CHKERRQ(ierr);
-	if(outvec) outvec = NULL;
+	UNUSED(outvec);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteVorticity(OutVec* outvec)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = 0;  CHKERRQ(ierr);
-	if(outvec) outvec = NULL;
+	UNUSED(outvec);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteAngVelMag(OutVec* outvec)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = 0;  CHKERRQ(ierr);
-	if(outvec) outvec = NULL;
+	UNUSED(outvec);
 
 	PetscFunctionReturn(0);
 }
@@ -655,21 +647,20 @@ PetscErrorCode PVOutWritePlastDissip(OutVec* outvec)
 
 	iflag.update = 1;
 
-	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+	PetscCall(VecSet(outbuf->lbcor, 0.0));
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SHEAR_HEATING_CENTER,  1, 0)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SHEAR_HEATING_XY_EDGE, 1, 0)
 	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SHEAR_HEATING_YZ_EDGE, 1, 0)
 	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SHEAR_HEATING_XZ_EDGE, 1, 0)
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+	PetscCall(OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0));
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscErrorCode PVOutWriteTotDispl(OutVec* outvec)
 {
-
 	COPY_FUNCTION_HEADER
 
 	cf = scal->length;
@@ -693,12 +684,12 @@ PetscErrorCode PVOutWriteSHmax(OutVec* outvec)
 	cf = scal->unit;
 
 	// compute maximum horizontal compressive stress (SHmax) orientation
-	ierr = JacResGetSHmax(jr); CHKERRQ(ierr);
+	PetscCall(JacResGetSHmax(jr));
 
 	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 3, 0, 0.0)
 	INTERPOLATE_ACCESS(jr->ldyy, InterpCenterCorner, 3, 1, 0.0)
 
-	ierr = OutBufZero3DVecComp(outbuf, 3, 2); CHKERRQ(ierr);
+	PetscCall(OutBufZero3DVecComp(outbuf, 3, 2));
 
 	PetscFunctionReturn(0);
 }
@@ -710,12 +701,12 @@ PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 	cf = scal->unit;
 
 	// compute maximum horizontal extension rate (EHmax) orientation
-	ierr = JacResGetEHmax(jr); CHKERRQ(ierr);
+	PetscCall(JacResGetEHmax(jr));
 
 	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 3, 0, 0.0)
 	INTERPOLATE_ACCESS(jr->ldyy, InterpCenterCorner, 3, 1, 0.0)
 
-	ierr = OutBufZero3DVecComp(outbuf, 3, 2); CHKERRQ(ierr);
+	PetscCall(OutBufZero3DVecComp(outbuf, 3, 2));
 
 	PetscFunctionReturn(0);
 }
@@ -803,7 +794,7 @@ PetscErrorCode PVOutWriteMomentRes(OutVec* outvec)
 
 	cf = scal->volumetric_force;
 
-	ierr = JacResCopyMomentumRes(jr, jr->gres); CHKERRQ(ierr);
+	PetscCall(JacResCopyMomentumRes(jr, jr->gres));
 
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
@@ -822,7 +813,7 @@ PetscErrorCode PVOutWriteContRes(OutVec* outvec)
 
 	cf  = scal->strain_rate;
 
-	ierr = JacResCopyContinuityRes(jr, jr->gres); CHKERRQ(ierr);
+	PetscCall(JacResCopyContinuityRes(jr, jr->gres));
 
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->gc, outbuf->lbcen)
 
@@ -843,10 +834,10 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 
 	fs = jr->fs;
 
-	ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_T,   jr->ge,         &ge);    CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen));
+	PetscCall(DMDAVecGetArray(jr->DA_T,   jr->ge,         &ge));
 
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	START_STD_LOOP
 	{
@@ -854,8 +845,8 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 	}
 	END_STD_LOOP
 
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_T,   jr->ge,         &ge);    CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen));
+	PetscCall(DMDAVecRestoreArray(jr->DA_T,   jr->ge,         &ge));
 
 	LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
 
@@ -864,25 +855,60 @@ PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscErrorCode PVOutWriteVelocityGr(OutVec* outvec)
+PetscErrorCode PVOutWriteVelGrad(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
 
-	//COPY_FUNCTION_HEADER
 	ACCESS_FUNCTION_HEADER
-//	// macro to copy deviatoric strain rate components to buffer
 
+	FDSTAG *fs;
+
+	Vec dvxdx, dvxdy, dvxdz;
+	Vec dvydx, dvydy, dvydz;
+	Vec dvzdx, dvzdy, dvzdz;
+
+	// access context
+	fs = jr->fs;
 	cf = scal->strain_rate;
 
-	INTERPOLATE_ACCESS(jr->dvxdx, InterpCenterCorner, 9, 0,0.0)
-	INTERPOLATE_ACCESS(jr->dvxdy, InterpXYEdgeCorner, 9, 1,0.0)
-	INTERPOLATE_ACCESS(jr->dvxdz, InterpXZEdgeCorner, 9, 2,0.0)
-	INTERPOLATE_ACCESS(jr->dvydx, InterpXYEdgeCorner, 9, 3,0.0)
-	INTERPOLATE_ACCESS(jr->dvydy, InterpCenterCorner, 9, 4,0.0)
-	INTERPOLATE_ACCESS(jr->dvydz, InterpYZEdgeCorner, 9, 5,0.0)
-	INTERPOLATE_ACCESS(jr->dvzdx, InterpXZEdgeCorner, 9, 6,0.0)
-	INTERPOLATE_ACCESS(jr->dvzdy, InterpYZEdgeCorner, 9, 7,0.0)
-	INTERPOLATE_ACCESS(jr->dvzdz, InterpCenterCorner, 9, 8,0.0)
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &dvxdx));
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &dvydy));
+	PetscCall(DMGetLocalVector(fs->DA_CEN, &dvzdz));
+	PetscCall(DMGetLocalVector(fs->DA_XY,  &dvxdy));
+	PetscCall(DMGetLocalVector(fs->DA_XY,  &dvydx));
+	PetscCall(DMGetLocalVector(fs->DA_XZ,  &dvxdz));
+	PetscCall(DMGetLocalVector(fs->DA_XZ,  &dvzdx));
+	PetscCall(DMGetLocalVector(fs->DA_YZ,  &dvydz));
+	PetscCall(DMGetLocalVector(fs->DA_YZ,  &dvzdy));
+
+	// copy velocity to local vectors
+	PetscCall(JacResCopyVel(jr, jr->gsol));
+
+	// compute velocity gradients
+	PetscCall(JacResGetVelGrad(jr,
+		dvxdx,  dvxdy,  dvxdz,
+		dvydx,  dvydy,  dvydz,
+		dvzdx,  dvzdy,  dvzdz));
+
+	INTERPOLATE_ACCESS(dvxdx, InterpCenterCorner, 9, 0, 0.0)
+	INTERPOLATE_ACCESS(dvxdy, InterpXYEdgeCorner, 9, 1, 0.0)
+	INTERPOLATE_ACCESS(dvxdz, InterpXZEdgeCorner, 9, 2, 0.0)
+	INTERPOLATE_ACCESS(dvydx, InterpXYEdgeCorner, 9, 3, 0.0)
+	INTERPOLATE_ACCESS(dvydy, InterpCenterCorner, 9, 4, 0.0)
+	INTERPOLATE_ACCESS(dvydz, InterpYZEdgeCorner, 9, 5, 0.0)
+	INTERPOLATE_ACCESS(dvzdx, InterpXZEdgeCorner, 9, 6, 0.0)
+	INTERPOLATE_ACCESS(dvzdy, InterpYZEdgeCorner, 9, 7, 0.0)
+	INTERPOLATE_ACCESS(dvzdz, InterpCenterCorner, 9, 8, 0.0)
+
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &dvxdx));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &dvydy));
+	PetscCall(DMRestoreLocalVector(fs->DA_CEN, &dvzdz));
+	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &dvxdy));
+	PetscCall(DMRestoreLocalVector(fs->DA_XY,  &dvydx));
+	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &dvxdz));
+	PetscCall(DMRestoreLocalVector(fs->DA_XZ,  &dvzdx));
+	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &dvydz));
+	PetscCall(DMRestoreLocalVector(fs->DA_YZ,  &dvzdy));
 
 	PetscFunctionReturn(0);
 }

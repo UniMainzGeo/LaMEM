@@ -8,135 +8,150 @@
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 //---------------------------------------------------------------------------
-//...................   LINEAR PRECONDITIONER ROUTINES   ....................
+//......................   PRECONDITIONER ROUTINES   ........................
 //---------------------------------------------------------------------------
 #ifndef __lsolve_h__
 #define __lsolve_h__
 //---------------------------------------------------------------------------
-// Stokes preconditioner type
+// Picard operator storage type
+enum PicardType
+{
+	_PICARD_ASSEMBLED_,
+	_PICARD_MAT_FREE_
+};
+//---------------------------------------------------------------------------
+// preconditioner type
 enum PCStokesType
 {
 	_STOKES_BF_,  // block factorization
-	_STOKES_MG_,  // Galerkin multigrid
+	_STOKES_MG_,  // coupled Galerkin multigrid
 	_STOKES_USER_ // user-defined
-
 };
-
 //---------------------------------------------------------------------------
-
-// Stokes preconditioner type
+// block factorization type
 enum PCBFType
 {
-	_UPPER_,  // upper triangular factorization
-	_LOWER_   // lower triangular factorization
-
+	_BF_UPPER_,  // upper triangular factorization
+	_BF_LOWER_   // lower triangular factorization
 };
-
 //---------------------------------------------------------------------------
-
-// velocity block preconditioner type (bf only)
+// velocity block preconditioner type
 enum PCVelType
 {
-	_VEL_MG_,  // Galerkin multigrid
-	_VEL_USER_ // user-defined
-
+	_VEL_MG_,     // Galerkin multigrid
+	_VEL_USER_    // user-defined
 };
 //---------------------------------------------------------------------------
-
-typedef struct _p_PCStokes *PCStokes;
-
-typedef struct _p_PCStokes
+enum PCVelUserType
 {
-	PCStokesType  type;
-	PMat          pm;   // preconditioner matrix
-	void         *data; // type-specific context
-
-	// operations
-	PetscErrorCode (*Create)  (PCStokes pc);
-	PetscErrorCode (*Setup)   (PCStokes pc);
-	PetscErrorCode (*Destroy) (PCStokes pc);
-	PetscErrorCode (*Apply)   (Mat P, Vec x, Vec y);
-
-} p_PCStokes;
-
-// PCStokes - pointer to an opaque structure (to be used in declarations)
-// sizeof(p_PCStokes) - size of the opaque structure
-
+	_VEL_USER_DIRECT_, // direct solver
+	_VEL_USER_GENERAL_ // all other solvers
+};
 //---------------------------------------------------------------------------
-
-PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm);
-
-PetscErrorCode PCStokesSetFromOptions(PCStokes pc);
-
-PetscErrorCode PCStokesSetup(PCStokes pc);
-
-PetscErrorCode PCStokesDestroy(PCStokes pc);
-
-//---------------------------------------------------------------------------
-
-// Block Factorization preconditioner context
-struct PCStokesBF
+// Schur complement preconditioner type
+enum PCSchurType
 {
-	PCVelType vtype; // velocity solver type
-	KSP       vksp;  // velocity solver
-	MG        vmg;   // velocity multigrid context
-	PCBFType  type;  // factorization type
+	_SCHUR_INV_ETA_, // inverse viscosity
+	_SCHUR_WBFBT_    // wBFBT
+};
+//--------------------------------------------------------------------------
 
+struct PCParam
+{
+	PicardType    ps_type; // Picard operator storage type
+	PCStokesType  pc_type; // preconditioner type
+	PCBFType      bf_type; // block factorization type
+	PCVelType     vs_type; // velocity solver type
+	PCVelUserType vu_type; // user velocity solver type
+	PCSchurType   sp_type; // Schur preconditioner type
+	PetscScalar   pgamma;  // penalty parameter
+};
+
+//--------------------------------------------------------------------------
+
+PetscErrorCode PCParamSetFromOptions(PCParam *p);
+
+//--------------------------------------------------------------------------
+
+struct PCData
+{
+	PCParam param; // parameters and options
+	void    *data; // type-specific data
 };
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PCStokesBFCreate(PCStokes pc);
+PetscErrorCode PCDataCreate(PCData *pc, JacRes *jr, Mat J, Mat P);
 
-PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc);
+PetscErrorCode PCDataDestroy(PCData *pc);
 
-PetscErrorCode PCStokesBFDestroy(PCStokes pc);
-
-PetscErrorCode PCStokesBFSetup(PCStokes pc);
-
-PetscErrorCode PCStokesBFApply(Mat JP, Vec x, Vec y);
+PetscErrorCode PCDataSetup(PCData *pc, JacRes *jr);
 
 //---------------------------------------------------------------------------
+//....................... COUPLED GALERKIN MULTIGRID ........................
+//---------------------------------------------------------------------------
 
-// Galerkin multigrid preconditioner context
-struct PCStokesMG
+struct PCDataMG
 {
-	MG mg; // coupled multigrid context
-
+	PCParam  *param; // parameters and options
+	PMatMono  pm;    // monolithic matrix
+	MatData   md;    // matrix assembly context
+	MG        mg;    // coupled multigrid context
 };
 
-//---------------------------------------------------------------------------
+PetscErrorCode PCDataMGCreate(PCDataMG *pc, PCParam *param, JacRes *jr, Mat J, Mat P);
 
-PetscErrorCode PCStokesMGCreate(PCStokes pc);
+PetscErrorCode PCDataMGDestroy(PCDataMG *pc);
 
-PetscErrorCode PCStokesMGDestroy(PCStokes pc);
+PetscErrorCode PCDataMGSetup(PCDataMG *pc, JacRes *jr);
 
-PetscErrorCode PCStokesMGSetup(PCStokes pc);
-
-PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y);
+PetscErrorCode PCDataMGApply(Mat P, Vec r, Vec x);
 
 //---------------------------------------------------------------------------
+//........................... BLOCK FACTORIZATION ...........................
+//---------------------------------------------------------------------------
 
-// User-defined
-struct PCStokesUser
+struct PCDataBF
 {
-	PC pc;       // general preconditioner object
-	IS isv, isp; // velocity and pressure index sets
+	PCParam   *param; // parameters and options
+	PMatBlock  pm;    // block matrix
+	MatData    md;    // matrix assembly context
+	MG         vmg;   // velocity multigrid context
+	KSP        vksp;  // velocity solver
+	KSP        pksp;  // pressure solver
+};
 
-} ;
+PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, Mat P);
+
+PetscErrorCode PCDataBFDestroy(PCDataBF *pc);
+
+PetscErrorCode PCDataBFSetup(PCDataBF *pc, JacRes *jr);
+
+PetscErrorCode PCDataBFApply(Mat P, Vec r, Vec x);
+
+PetscErrorCode PCDataBFBTApply(PCDataBF *pc, Vec x, Vec y);
+
 
 //---------------------------------------------------------------------------
-
-PetscErrorCode PCStokesUserCreate(PCStokes pc);
-
-PetscErrorCode PCStokesUserAttachIS(PCStokes pc);
-
-PetscErrorCode PCStokesUserDestroy(PCStokes pc);
-
-PetscErrorCode PCStokesUserSetup(PCStokes pc);
-
-PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y);
-
+//............................. USER-DEFINED ................................
 //---------------------------------------------------------------------------
+
+struct PCDataUser
+{
+	PCParam  *param; // parameters and options
+	PMatMono  pm;    // monolithic matrix
+	MatData   md;    // matrix assembly context
+	PC        pc;    // general preconditioner object
+};
+
+PetscErrorCode PCDataUserCreate(PCDataUser *pc, PCParam *param, JacRes *jr, Mat J, Mat P);
+
+PetscErrorCode PCDataUserDestroy(PCDataUser *pc);
+
+PetscErrorCode PCDataUserSetup(PCDataUser *pc, JacRes *jr);
+
+PetscErrorCode PCDataUserApply(Mat P, Vec r, Vec x);
+
+//-----------------------------------------------------------------------------
 
 #endif

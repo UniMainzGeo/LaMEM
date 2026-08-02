@@ -24,7 +24,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	PetscInt jj;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	//===============
@@ -32,7 +32,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//===============
 
 	// setup block access mode
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SofteningStart>", "<SofteningEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<SofteningStart>", "<SofteningEnd>"));
 
 	if(fb->nblocks)
 	{
@@ -47,7 +47,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		// error checking
 		if(fb->nblocks > _max_num_soft_)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)_max_num_soft_);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %" PetscInt_FMT "", _max_num_soft_);
 		}
 
 		// store actual number of softening laws
@@ -60,29 +60,25 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		// read each individual softening law
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
+			PetscCall(DBMatReadSoft(dbm, fb, PrintOutput));
 
 			fb->blockID++;
 		}
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	//================
 	// MATERIAL PHASES
 	//================
 	if(PrintOutput)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
 		// print overview of material parameters read from file
-		PetscPrintf(PETSC_COMM_WORLD,"Material parameters: \n");
-
-		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"Material parameters: \n\n");
 	}
 
 	// setup block access mode
-	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"));
 
 	// initialize ID for consistency checks
 	for(jj = 0; jj < _max_num_phases_; jj++) dbm->phases[jj].ID = -1;
@@ -90,7 +86,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// error checking
 	if(fb->nblocks > _max_num_phases_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %" PetscInt_FMT "", _max_num_phases_);
 	}
 
 	// store actual number of phases
@@ -99,21 +95,16 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// read each individual phase
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		ierr = DBMatReadPhase(dbm, fb, PrintOutput); CHKERRQ(ierr);
+		PetscCall(DBMatReadPhase(dbm, fb, PrintOutput));
 
 		fb->blockID++;
 
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
-
-	if(PrintOutput)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-	}
+	PetscCall(FBFreeBlocks(fb));
 
 	// setup block access mode
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"));
 
 	if(fb->nblocks)
 	{
@@ -126,7 +117,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		// error checking
 		if(fb->nblocks > _max_num_tr_)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase_transition specified! Max allowed: %lld", (LLD)_max_num_tr_);
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase_transition specified! Max allowed: %" PetscInt_FMT "", _max_num_tr_);
 		}
 
 		// store actual number of Phase Transition laws
@@ -137,24 +128,25 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		// read each individual phase transition
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadPhaseTr(dbm, fb); CHKERRQ(ierr);
+			PetscCall(DBMatReadPhaseTr(dbm, fb));
 
 			fb->blockID++;
 		}
 
 		// adjust density if needed
-		ierr = Overwrite_density(dbm);CHKERRQ(ierr);
+		PetscCall(Overwrite_density(dbm));
 
 	}
 
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
     //====================================================
 	// OVERWRITE MATERIAL PARAMETERS WITH GLOBAL VARIABLES
 	//====================================================
-    ierr = DBMatOverwriteWithGlobalVariables(dbm, fb); CHKERRQ(ierr);
+    PetscCall(DBMatOverwriteWithGlobalVariables(dbm, fb));
 
-	if (PrintOutput){
+	if(PrintOutput)
+	{
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 
@@ -169,14 +161,14 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Soft_t   *s;
 	PetscInt  ID;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
 	scal = dbm->scal;
 
 	// softening law ID
-	ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1); CHKERRQ(ierr);
+	PetscCall(getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1));
 	fb->ID  = ID;
 
 	// get pointer to specified softening law
@@ -192,44 +184,44 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	s->ID = ID;
 
 	// read and store softening law parameters. At least one of A, APS1, APS2, or healTau must be defined
-	ierr = getScalarParam(fb, _OPTIONAL_, "A",    &s->A,    1, 1.0); CHKERRQ(ierr); 
-	ierr = getScalarParam(fb, _OPTIONAL_, "APS1", &s->APS1, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "APSheal2", &s->APSheal2, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Lm",   &s->Lm,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "healTau", &s->healTau,   1, 1.0); CHKERRQ(ierr);   
-    ierr = getScalarParam(fb, _OPTIONAL_, "healTau2", &s->healTau2,   1, 1.0); CHKERRQ(ierr);   
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "A",    &s->A,    1, 1.0)); 
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "APS1", &s->APS1, 1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "APS2", &s->APS2, 1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "APSheal2", &s->APSheal2, 1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Lm",   &s->Lm,   1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "healTau", &s->healTau,   1, 1.0));   
+    PetscCall(getScalarParam(fb, _OPTIONAL_, "healTau2", &s->healTau2,   1, 1.0));   
 
 	
     if(!s->healTau && (!s->A || !s->APS1 || !s->APS2)) 
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %lld", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %" PetscInt_FMT "", ID);
 	}
 
 	if ((s->healTau2 && !s->APSheal2) || (!s->healTau2 && s->APSheal2))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "healTau2 and APSheal2 must be set together for heal law %lld", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "healTau2 and APSheal2 must be set together for heal law %" PetscInt_FMT "", ID);
 	}
 
 
 	if (PrintOutput){
 		if(s->Lm)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (s->ID), s->A, s->APS1, s->APS2, s->Lm);
 		}
 		if(s->healTau && s->healTau2)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, APSheal2 = %g, healTau = %g, healTau2= %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->APSheal2,s->healTau, s->healTau2);
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g, APSheal2 = %g, healTau = %g, healTau2= %g\n", (s->ID), s->A, s->APS1, s->APS2, s->APSheal2,s->healTau, s->healTau2);
 		}
 		else if (s->healTau && !s->healTau2)
   		{
-			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, healTau = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->healTau);
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g, healTau = %g\n", (s->ID), s->A, s->APS1, s->APS2, s->healTau);
 			s->APSheal2=s->APS2;
 			s->healTau2=s->healTau;
 		}
 		else
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%" PetscInt_FMT "] : A = %g, APS1 = %g, APS2 = %g\n", (s->ID), s->A, s->APS1, s->APS2);
 		}
 	}
 
@@ -257,7 +249,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// access context
@@ -284,7 +276,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	MSN      =  dbm->numSoft - 1;
 	
 	// phase ID
-	ierr 	 = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
+	PetscCall(getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1));
 	fb->ID	 = ID;
 	
 	// get pointer to specified phase
@@ -300,13 +292,13 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->ID = ID;
 
 	// visualization ID
-	ierr = getIntParam(fb, _OPTIONAL_, "visID", &visID, 1, 0); CHKERRQ(ierr);
+	PetscCall(getIntParam(fb, _OPTIONAL_, "visID", &visID, 1, 0));
 
 	if(visID != -1) m->visID = visID;
 	else            m->visID = ID;
 
 	// Name of the phase (mostly for visualization purposes)
-	ierr = getStringParam(fb, _OPTIONAL_, "Name", Name, "none"); CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "Name", Name, "none"));
 	if(strcmp(Name, "none"))
 	{
 		strcpy(m->Name, Name);
@@ -316,7 +308,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// density & phase diagram info
 	//============================================================
 	// Get the name of the phase diagram
-	ierr = getStringParam(fb, _OPTIONAL_, "rho_ph",   PhaseDiagram, "none");          CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, "rho_ph",   PhaseDiagram, "none"));
 	if (strcmp(PhaseDiagram, "none"))
 	{
 		// Note: the maximum length of the string PhaseDiagram is _str_len_
@@ -327,15 +319,18 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		m->pdAct = 1;
 		
 		// Get the directory of the phase diagram if specified
-		ierr = getStringParam(fb, _OPTIONAL_, "rho_ph_file", PhaseDiagram_Dir, "none"); CHKERRQ(ierr);
+		PetscCall(getStringParam(fb, _OPTIONAL_, "rho_ph_file", PhaseDiagram_Dir, "none"));
 		if(strcmp(PhaseDiagram_Dir, "none"))
 		{
 			StringLength = StringLength + strlen(PhaseDiagram_Dir);	
 			strcpy(m->pdf, PhaseDiagram_Dir);
 		}
 		// check that the length of the directory and the length of the file name does not exceed 	
-		if (StringLength>_pd_name_sz_){
-			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"The length of the Phase Diagram Name and directory exceeds the maximum allowed length of %i /n", _pd_name_sz_);
+		if (StringLength>_pd_name_sz_)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,
+				"The length of the Phase Diagram Name and directory exceeds the maximum allowed length of %" PetscInt_FMT "\n",
+				_pd_name_sz_);
 		}
 
 		// copy string
@@ -345,7 +340,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		strcpy(m->pdn, PhaseDiagram);
 
 	    // Take into account only the melt, and not the density from a phase diagram
-		ierr = getIntParam(fb, _OPTIONAL_, "Phase_Melt", &m->Phase_Diagram_melt, 1, 1); CHKERRQ(ierr);
+		PetscCall(getIntParam(fb, _OPTIONAL_, "Phase_Melt", &m->Phase_Diagram_melt, 1, 1));
 
 	}
 	else
@@ -355,109 +350,107 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	
 	// Default Melt_Parametrization value
 
-
 	//============================================================
 	// Creep profiles
 	//============================================================
 	// set predefined diffusion creep profile
-	ierr = GetProfileName(fb, scal, ndiff, "diff_prof"); CHKERRQ(ierr);
-	ierr = SetDiffProfile(m, ndiff);                     CHKERRQ(ierr);
+	PetscCall(GetProfileName(fb, scal, ndiff, "diff_prof"));
+	PetscCall(SetDiffProfile(m, ndiff));
 	// set predefined dislocation creep profile
-	ierr = GetProfileName(fb, scal, ndisl, "disl_prof"); CHKERRQ(ierr);
-	ierr = SetDislProfile(m, ndisl);                     CHKERRQ(ierr);
+	PetscCall(GetProfileName(fb, scal, ndisl, "disl_prof"));
+	PetscCall(SetDislProfile(m, ndisl));
 	// set predefined Peierls creep profile
-	ierr = GetProfileName(fb, scal, npeir, "peir_prof"); CHKERRQ(ierr);
-	ierr = SetPeirProfile(m, npeir);                     CHKERRQ(ierr);
+	PetscCall(GetProfileName(fb, scal, npeir, "peir_prof"));
+	PetscCall(SetPeirProfile(m, npeir));
 	//=================================================================================
 	// density
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho",      &m->rho,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_n",    &m->rho_n, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_c",    &m->rho_c, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "beta",     &m->beta,  1, 1.0); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "rho",      &m->rho,   1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "rho_n",    &m->rho_n, 1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "rho_c",    &m->rho_c, 1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "beta",     &m->beta,  1, 1.0));
 	//=================================================================================
 	// elasticity
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "G",        &G,        1, 1.0); CHKERRQ(ierr);
-//	ierr = getScalarParam(fb, _OPTIONAL_, "K",        &K,        1, 1.0); CHKERRQ(ierr); // note-> will be removed (avoid confusion with k)
-	ierr = getScalarParam(fb, _OPTIONAL_, "Kb",       &Kb,       1, 1.0); CHKERRQ(ierr); // note-> new nomenclature of bulk modulus (avoid confusion with k)
-	ierr = getScalarParam(fb, _OPTIONAL_, "E",        &E,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "nu",       &nu,       1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Kp",       &m->Kp,    1, 1.0); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "G",        &G,        1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Kb",       &Kb,       1, 1.0)); // note-> new nomenclature of bulk modulus (avoid confusion with k)
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "E",        &E,        1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "nu",       &nu,       1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Kp",       &m->Kp,    1, 1.0));
 	//=================================================================================
 	// Newtonian linear diffusion creep
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta",      &eta,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Bd",       &m->Bd,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Ed",       &m->Ed,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Vd",       &m->Vd,    1, 1.0); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "eta",      &eta,      1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Bd",       &m->Bd,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Ed",       &m->Ed,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Vd",       &m->Vd,    1, 1.0));
 	//=================================================================================
 	// power-law (dislocation) creep
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta0",     &eta0,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "e0",       &e0,       1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Bn",       &m->Bn,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "En",       &m->En,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Vn",       &m->Vn,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "n",        &m->n,     1, 1.0); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "eta0",     &eta0,     1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "e0",       &e0,       1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Bn",       &m->Bn,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "En",       &m->En,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Vn",       &m->Vn,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "n",        &m->n,     1, 1.0));
 	//=================================================================================
 	// Peierls creep
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "Bp",       &m->Bp,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Ep",       &m->Ep,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Vp",       &m->Vp,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "taup",     &m->taup,  1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "gamma",    &m->gamma, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "q",        &m->q,     1, 1.0); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Bp",       &m->Bp,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Ep",       &m->Ep,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Vp",       &m->Vp,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "taup",     &m->taup,  1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "gamma",    &m->gamma, 1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "q",        &m->q,     1, 1.0));
 	//=================================================================================
 	// Frank-Kamenetzky
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "gamma_fk", &m->gamma_fk,1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "TRef_fk",  &m->TRef_fk, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_fk",   &m->eta_fk,  1, 1.0); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "gamma_fk", &m->gamma_fk,1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "TRef_fk",  &m->TRef_fk, 1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "eta_fk",   &m->eta_fk,  1, 1.0));
 	//=================================================================================
 	// dc-creep
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "Bdc",      &m->Bdc,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Edc",      &m->Edc,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Rdc",      &m->Rdc,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "mu",       &m->mu,    1, 1.0); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Bdc",      &m->Bdc,   1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Edc",      &m->Edc,   1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Rdc",      &m->Rdc,   1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "mu",       &m->mu,    1, 1.0));
 	//=================================================================================
 	// ps-creep
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "Bps",      &m->Bps,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Eps",      &m->Eps,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "d",        &m->d,     1, 1.0); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Bps",      &m->Bps,   1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Eps",      &m->Eps,   1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "d",        &m->d,     1, 1.0));
 	//=================================================================================
 	// plasticity (Drucker-Prager)
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "ch",       &m->ch,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "fr",       &m->fr,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_st",   &eta_st,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_vp",   &eta_vp,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,     1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID,  1, MSN); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID,  1, MSN); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "healID",   &healID,    1, MSN); CHKERRQ(ierr); 
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "ch",       &m->ch,     1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "fr",       &m->fr,     1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "eta_st",   &eta_st,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "eta_vp",   &eta_vp,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,     1, 1.0));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID,  1, MSN));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID,  1, MSN));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "healID",   &healID,    1, MSN)); 
 	//=================================================================================
 	// energy
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "alpha",    &m->alpha, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Cp",       &m->Cp,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "k",        &m->k,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "nu_k",     &m->nu_k,  1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T_Nu",     &m->T_Nu,  1, 1.0); CHKERRQ(ierr);  
-	ierr = getScalarParam(fb, _OPTIONAL_, "Latent_hx", &m->Latent_hx,  1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T_liq",    &m->T_liq,  1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T_sol",    &m->T_sol,  1, 1.0); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "alpha",    &m->alpha, 1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Cp",       &m->Cp,    1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "k",        &m->k,     1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "nu_k",     &m->nu_k,  1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "T_Nu",     &m->T_Nu,  1, 1.0));  
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Latent_hx", &m->Latent_hx,  1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "T_liq",    &m->T_liq,  1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "T_sol",    &m->T_sol,  1, 1.0));
 
 	//=================================================================================
 	// melt fraction viscosity parametrization
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,   1, 1.0);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0);  CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,   1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "rho_melt", &m->rho_melt,1, 1.0));
 
 	if (PrintOutput)
 	{	
@@ -471,7 +464,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	||	(m->T_liq && (!m->Latent_hx || !m->T_sol)) 
 	||  (m->T_sol && (!m->Latent_hx || !m->T_liq)))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %lld (T_sol, T_liq, Latent_hx) \n", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Some but not all dike heating parameters defined for phase %" PetscInt_FMT " (T_sol, T_liq, Latent_hx) \n", ID);
 	}
 
 	// DEPTH-DEPENDENT
@@ -479,34 +472,34 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// check depth-dependent density parameters
 	if((!m->rho_n && m->rho_c) || (m->rho_n && !m->rho_c))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Depth-dependent density parameters must be specified simultaneously for phase %lld (rho_n + rho_c)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Depth-dependent density parameters must be specified simultaneously for phase %" PetscInt_FMT " (rho_n + rho_c)", ID);
 	}
 
 	if(m->rp < 0.0 || m->rp > 1.0)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Pore pressure ratio must be between 0 and 1 for phase %lld (rp)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Pore pressure ratio must be between 0 and 1 for phase %" PetscInt_FMT " (rp)", ID);
 	}
 
 	// PLASTICITY
 
 	if(m->fr && !m->ch)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (fr + ch)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %" PetscInt_FMT " (fr + ch)", ID);
 	}
 
 	if(!m->fr && frSoftID != -1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Friction angle must be specified for phase %lld (frSoftID + fr)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Friction angle must be specified for phase %" PetscInt_FMT " (frSoftID + fr)", ID);
 	}
 
 	if(!m->ch && chSoftID != -1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %" PetscInt_FMT " (chSoftID + ch)", ID);
 	}
 	
 	if((!m->rho_melt && m->Phase_Diagram_melt))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You need to specify the density of the melting phase for phase %lld", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You need to specify the density of the melting phase for phase %" PetscInt_FMT "", ID);
 	}
 
 
@@ -522,9 +515,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	if(!(( eta && !m->Bd)   // eta
 	||   ( !eta && m->Bd)   // Bd
-	||   ( !eta && !m->Bd))) // nothing
+	||   ( !eta && !m->Bd)  // nothing
+	||   (eta && m->Bd && (PetscAbsScalar(m->Bd - scal->viscosity/(2.0*eta)) < PetscAbsScalar(1e-10 * m->Bd))))) //on restart both exist; compare in non-dimensional units
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %lld (eta, Bd)\n", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %" PetscInt_FMT " (eta, Bd)\n", ID);
 	}
 
 	// compute diffusion creep constant
@@ -534,9 +528,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	if(!(( eta0 &&  e0 &&  m->n &&  !m->Bn)   // eta0, e0, n
 	||   (!eta0 && !e0 &&  m->n &&   m->Bn)   // Bn, n
-	||   (!eta0 && !e0 &&  !m->n && !m->Bn))) // nothing
+	||   (!eta0 && !e0 &&  !m->n && !m->Bn)   // nothing
+	||   ( eta0 &&  e0 && m->n &&  m->Bn && (PetscAbsScalar(m->Bn - (pow(2.0*eta0, -m->n)*pow(e0, 1 - m->n)*pow(scal->stress_si, m->n)*scal->time_si)) < PetscAbsScalar(1e-10 * m->Bn))))) // on restart: full set, compare in non-dimensional units
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %lld (eta0 + e0 + n, Bn + n)\n", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %" PetscInt_FMT " (eta0 + e0 + n, Bn + n)\n", ID);
 	}
 
 	// compute dislocation creep constant
@@ -546,48 +541,48 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep parameters are incomplete for phase %lld (Bp + taup + gamma + q + Ep)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep parameters are incomplete for phase %" PetscInt_FMT " (Bp + taup + gamma + q + Ep)", ID);
 	}
 
 	if(m->Bp && !m->Bn)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep requires dislocation creep for phase %lld (Bp, Bn)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep requires dislocation creep for phase %" PetscInt_FMT " (Bp, Bn)", ID);
 	}
 
 	// Frank-Kamenetzky
 
 		if((m->eta_fk && (!m->gamma_fk)) || (m->gamma_fk && (!m->eta_fk)))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Frank-Kamenetzky parameters are incomplete for phase %lld (eta_fk + gamma_fk)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Frank-Kamenetzky parameters are incomplete for phase %" PetscInt_FMT " (eta_fk + gamma_fk)", ID);
 	}
 
 	// DC
 
 	if(m->Bdc && (!m->Edc || !m->Rdc || !m->mu))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dc-creep parameters are incomplete for phase %lld (Bdc + Edc + Rdc + mu)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dc-creep parameters are incomplete for phase %" PetscInt_FMT " (Bdc + Edc + Rdc + mu)", ID);
 	}
 
 	if(m->Bdc && m->Bn)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine dc-creep with dislocation creep for phase %lld (Bdc + Bn)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine dc-creep with dislocation creep for phase %" PetscInt_FMT " (Bdc + Bn)", ID);
 	}
 
 	// PS
 
 	if(m->Bps && (!m->Eps || !m->d))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep parameters are incomplete for phase %lld (Bps + Eps + d)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep parameters are incomplete for phase %" PetscInt_FMT " (Bps + Eps + d)", ID);
 	}
 
 	if(m->Bps && !m->Bdc && !m->Bn)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep requires either dc-creep or dislocation creep for phase %lld (Bps + Bdc, Bps + Bn)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep requires either dc-creep or dislocation creep for phase %" PetscInt_FMT " (Bps + Bdc, Bps + Bn)", ID);
 	}
 
 	if(m->Bps && m->Bd)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine ps-creep with diffusion creep for phase %lld (Bps + Bd)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine ps-creep with diffusion creep for phase %" PetscInt_FMT " (Bps + Bd)", ID);
 	}
 
 	// ELASTICITY
@@ -604,17 +599,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	||   (!G && !Kb &&  E &&  nu)   // E & nu
 	||   (!G && !Kb && !E && !nu))) // nothing
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %lld (G, Kb, G + Kb, G + nu, Kb + nu, E + nu)\n", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %" PetscInt_FMT " (G, Kb, G + Kb, G + nu, Kb + nu, E + nu)\n", ID);
 	}
 
 	if(m->Kp && !Kb)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Bulk modulus (Kb) must be specified for phase %lld (Kb + Kp)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Bulk modulus (Kb) must be specified for phase %" PetscInt_FMT " (Kb + Kp)", ID);
 	}
 
 	if(m->beta && Kb)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta, Kb)", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %" PetscInt_FMT " (beta, Kb)", ID);
 	}
 
 	// compute elastic parameters
@@ -633,17 +628,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G && !m->Bdc && !m->eta_fk)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G, eta_fk must be specified for phase %lld", (LLD)ID);
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G, eta_fk must be specified for phase %" PetscInt_FMT "", ID);
 	}
 
 	// PRINT (optional)
 	if (PrintOutput){
 		if (strlen(m->Name)>0){
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld     --   %s ",(LLD)(m->ID), m->Name);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %" PetscInt_FMT "     --   %s ",(m->ID), m->Name);
 		}
 		else
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld  %s ",(LLD)(m->ID), m->Name);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %" PetscInt_FMT "  %s ",(m->ID), m->Name);
 			
 		}
 
@@ -718,9 +713,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
 		MatPrintScalParam(m->eta_vp, "eta_vp", "[Pa*s]", scal, title, &print_title);
 		MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);		
-		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
-		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
-		if(healID != -1)   PetscPrintf(PETSC_COMM_WORLD, "healID = %lld ",   (LLD)healID);
+		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %" PetscInt_FMT " ", frSoftID);
+		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %" PetscInt_FMT " ", chSoftID);
+		if(healID != -1)   PetscPrintf(PETSC_COMM_WORLD, "healID = %" PetscInt_FMT " ",   healID);
 		
 		sprintf(title, "   (temp)   : "); print_title = 1;
 		MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
@@ -835,10 +830,10 @@ PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key
 {
 	// read profile name from file
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
-	ierr = getStringParam(fb, _OPTIONAL_, key, name, NULL);  CHKERRQ(ierr);
+	PetscCall(getStringParam(fb, _OPTIONAL_, key, name, NULL));
 
 	if(strlen(name) && scal->utype == _NONE_)
 	{
@@ -879,7 +874,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	PetscScalar      d0, p;
 	PetscScalar      C_OH_0, r;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check for empty string
@@ -958,7 +953,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	}
 
 	// correct experimental creep prefactor to tensor units
-	ierr = CorrExpPreFactor(m->Bd, 1, type, MPa); CHKERRQ(ierr);
+	PetscCall(CorrExpPreFactor(m->Bd, 1, type, MPa));
 
 	// take into account grain size and water content
 	m->Bd *= pow(d0,-p)*pow(C_OH_0,r);
@@ -996,7 +991,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	PetscInt         MPa;
 	PetscScalar      C_OH_0, r;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check for empty string
@@ -1357,7 +1352,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	}
 
 	// correct experimental creep prefactor to tensor units
-	ierr = CorrExpPreFactor(m->Bn, m->n, type, MPa); CHKERRQ(ierr);
+	PetscCall(CorrExpPreFactor(m->Bn, m->n, type, MPa));
 
 	// take into account grain size and water content
 	m->Bn *= pow(C_OH_0,r);
@@ -1385,7 +1380,7 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	ExpType  type;
 	PetscInt MPa;
 
-	PetscErrorCode ierr;
+	
 	PetscFunctionBeginUser;
 
 	// check for empty string
@@ -1411,7 +1406,7 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	}
 
 	// correct Peierls prefactor & stress to tensor units
-	ierr = CorrExpStressStrainRate(m->Bp, m->taup, type, MPa); CHKERRQ(ierr);
+	PetscCall(CorrExpStressStrainRate(m->Bp, m->taup, type, MPa));
 
 	PetscFunctionReturn(0);
 }
@@ -1463,188 +1458,13 @@ PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType t
 
 	PetscFunctionReturn(0);
 }
-//------------------------------------------------------------------
-
-//--------------------------------------------------------------------------
-
-/*
-//---------------------------------------------------------------------------
-// This needs to be updated for the use in the inversion routines
-//---------------------------------------------------------------------------
-PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
-{
-	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
-
-	PetscInt 	id,im;
-	PetscScalar eta, eta0, e0;
-	Material_t  *m;
-
-	PetscFunctionBeginUser;
-
-	if(mod == NULL) PetscFunctionReturn(0);
-
-	// does a calling function provide model parameters?
-	if(mod->use == 0) PetscFunctionReturn(0);
-
-	// set material properties
-	if(mod->use == 1) {
-		PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
-		PetscPrintf(PETSC_COMM_WORLD," Material properties set from calling function: \n");
-
-
-		for(im=0;im<mod->mdN;im++)
-		{
-
-			id = mod->phs[im];
-			// get pointer to specified phase
-			m = jr->phases + id;
-
-			// linear viscosity
-			if(mod->typ[im] == _ETA_)
-			{
-
-				// initialize additional parameters
-				eta      =  0.0;
-				eta0     =  0.0;
-				e0       =  0.0;
-				eta = mod->val[im];
-
-				// check strain-rate dependent creep
-				if((!eta0 && e0) || (eta0 && !e0))
-				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// check power-law exponent
-				if(!m->n && ((eta0 && e0) || m->Bn))
-				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)id);
-				}
-
-				// check Peierls creep
-				if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
-				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// recompute creep parameters
-				if(eta)        m->Bd = 1.0/(2.0*eta);
-				if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
-
-				// check that at least one essential deformation mechanism is specified
-				if(!m->Bd && !m->Bn && !m->G)
-				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
-				}
-
-				PetscPrintf(PETSC_COMM_WORLD,"    eta[%lld] = %g \n",(LLD)id,eta);
-			}
-
-			// constant density
-			else if(mod->typ[im] == _RHO0_)
-			{
-				m->rho = mod->val[im];
-				PetscPrintf(PETSC_COMM_WORLD,"    rho0[%lld] = %5.5f \n",(LLD)id,m->rho);
-			}
-
-			else
-			{
-				PetscPrintf(PETSC_COMM_WORLD,"WARNING: inversion parameter type is not implemented \n");
-			}
-
-		}
-		PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscErrorCode MatPropSetFromCL(JacRes *jr)
-{
-	// overwrite MATERIAL PARAMETERS with command line options
-
-	PetscErrorCode 	ierr;
-	PetscBool		flg,get_options;
-	PetscInt 		id;
-	char 			matprop_opt[MAX_PATH_LEN];
-	PetscScalar eta, eta0, e0;
-	Material_t *m;
-
-	PetscFunctionBeginUser;
-
-	flg = PETSC_FALSE;
-	get_options = PETSC_FALSE;
-
-	ierr = PetscOptionsGetBool(NULL, NULL, "-SetMaterialProperties", &get_options, NULL ); 					CHKERRQ(ierr);
-
-	if(get_options) {
-		PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
-		PetscPrintf(PETSC_COMM_WORLD," Material properties set from command line: \n");
-
-		for(id=0;id<jr->numPhases;id++){
-
-			// get pointer to specified phase
-			m = jr->phases + id;
-
-			// initialize additional parameters
-			eta      =  0.0;
-			eta0     =  0.0;
-			e0       =  0.0;
-
-			// linear viscosity
-			sprintf(matprop_opt,"-eta_%lld",(LLD)id);
-			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&eta	, &flg); 				CHKERRQ(ierr);
-
-				// check strain-rate dependent creep
-				if((!eta0 && e0) || (eta0 && !e0))
-				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// check power-law exponent
-				if(!m->n && ((eta0 && e0) || m->Bn))
-				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)id);
-				}
-
-				// check Peierls creep
-				if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
-				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// recompute creep parameters
-				if(eta)        m->Bd = 1.0/(2.0*eta);
-				if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
-
-				// check that at least one essential deformation mechanism is specified
-				if(!m->Bd && !m->Bn && !m->G)
-				{
-					SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
-				}
-
-			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"    eta[%lld]	= %g \n",(LLD)id,eta);
-
-			// constant density
-			sprintf(matprop_opt,"-rho0_%lld",(LLD)id);
-			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&m->rho	, &flg);			CHKERRQ(ierr);
-			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"    rho0[%lld]	= %5.5f \n",(LLD)id,m->rho);
-
-		}
-		PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-*/
 //---------------------------------------------------------------------------
 PetscErrorCode PrintMatProp(Material_t *MatProp)
 {
 	// Prints an overview of the material properties specified for a certain phase (for debugging)
 	PetscFunctionBeginUser;
 
-	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %i with visId=%i : \n",MatProp->ID, MatProp->visID);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %" PetscInt_FMT " with visId=%" PetscInt_FMT " : \n",MatProp->ID, MatProp->visID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Density:          rho   = %1.7e,  rho_n = %1.7e,    rho_c = %1.7e,   beta = %1.7e \n",  MatProp->rho,MatProp->rho_c, MatProp->rho_c, MatProp->beta);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Elasticity:       Kb    = %1.7e,  Kp    = %1.7e,    G     = %1.7e \n",                MatProp->Kb, MatProp->Kp, MatProp->G);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Diffusion Cr.:    Bd    = %1.7e,  Ed    = %1.7e,    Vd    = %1.7e \n",                MatProp->Bd, MatProp->Ed, MatProp->Vd);
@@ -1653,7 +1473,7 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 	PetscPrintf(PETSC_COMM_WORLD,">>> dc Cr.:           Bdc   = %1.7e,  Edc   = %1.7e,    Rdc   = %1.7e,    mu  = %1.7e \n", MatProp->Bdc, MatProp->Edc, MatProp->Rdc, MatProp->mu);
     PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
     
-    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_vp= %1.7e,    eta_st= %1.7e, rp= %1.7e,    frSoftID = %i,  chSoftID = %i,   healID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->eta_vp, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
+    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_vp= %1.7e,    eta_st= %1.7e, rp= %1.7e,    frSoftID = %" PetscInt_FMT ",  chSoftID = %" PetscInt_FMT ",   healID = %" PetscInt_FMT " \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->eta_vp, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID, MatProp->healID);
 	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
 	PetscPrintf(PETSC_COMM_WORLD,"          			nu_k  = %1.7e,  T_Nu  = %1.7e,   \n", MatProp->nu_k, MatProp->T_Nu);
 	PetscPrintf(PETSC_COMM_WORLD,"          			T_sol = %1.7e, T_liq  = %1.7e,   Latent_hx= %1.7e,    \n", MatProp->T_sol, MatProp->T_liq, MatProp->Latent_hx);
@@ -1663,24 +1483,21 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
   
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb)
 {
-
     PetscScalar     eta_min;
     PetscInt        ID;
     Material_t      *m;
     Scaling         *scal;
 
-    PetscErrorCode  ierr;
 	PetscFunctionBeginUser;
 
 	// access context
 	scal    = dbm->scal;
 
     eta_min = 0;
-    ierr    = getScalarParam(fb, _OPTIONAL_, "eta_min",         &eta_min,        1, 1.0); CHKERRQ(ierr);
+    PetscCall(getScalarParam(fb, _OPTIONAL_, "eta_min",         &eta_min,        1, 1.0));
 
 	for(ID = 0; ID < dbm->numPhases; ID++)
 	{   

@@ -5,14 +5,15 @@ message: >-
   metadata from this file.
 type: software
 authors:
-  - given-names: Anton
+  - given-names: Anton A.
     family-names: Popov
+    orcid: 'https://orcid.org/0000-0002-8075-8406'
     affiliation: Johannes Gutenberg University Mainz
-  - given-names: Boris
+  - given-names: Boris J.P.
     family-names: Kaus
     orcid: 'https://orcid.org/0000-0002-0247-8660'
     affiliation: Johannes Gutenberg University Mainz
 keywords:
   - computational geosciences
   - high-performance computing
-license: GPL-3.0
+license: MIT

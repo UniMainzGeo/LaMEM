@@ -51,7 +51,7 @@ void PrintStep(PetscInt step)
 	char line[] = "==========================================================================";
 	char left[]  = " STEP ";
 	char right[] = " ";
-	asprintf(&number, "%lld", (LLD) step);
+	asprintf(&number, "%" PetscInt_FMT "",  step);
 
 	p = line + (strlen(line) - strlen(left) - strlen(number) - strlen(right))/2;
 
@@ -69,19 +69,18 @@ PetscErrorCode VecReadRestart(Vec x, FILE *fp)
 	PetscInt     size;
 	PetscScalar *xarr;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
+	PetscCall(VecGetLocalSize(x, &size));
 
 	// get vector array
-	ierr = VecGetArray(x, &xarr); CHKERRQ(ierr);
+	PetscCall(VecGetArray(x, &xarr));
 
 	// write to file
 	fread(xarr, sizeof(PetscScalar), (size_t)size, fp);
 
 	// restore vector array
-	ierr = VecRestoreArray(x, &xarr); CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(x, &xarr));
 
 	PetscFunctionReturn(0);
 }
@@ -91,19 +90,18 @@ PetscErrorCode VecWriteRestart(Vec x, FILE *fp)
 	PetscInt     size;
 	PetscScalar *xarr;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
-	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
+	PetscCall(VecGetLocalSize(x, &size));
 
 	// get vector array
-	ierr = VecGetArray(x, &xarr); CHKERRQ(ierr);
+	PetscCall(VecGetArray(x, &xarr));
 
 	// write to file
 	fwrite(xarr, sizeof(PetscScalar), (size_t)size, fp);
 
 	// restore vector array
-	ierr = VecRestoreArray(x, &xarr); CHKERRQ(ierr);
+	PetscCall(VecRestoreArray(x, &xarr));
 
 	PetscFunctionReturn(0);
 }
@@ -125,7 +123,6 @@ PetscScalar getVar(PetscScalar *data, PetscInt n)
 	PetscInt    k;
     PetscScalar mean = getArthMean(data,n);
     PetscScalar temp = 0.0;
-//	PetscPrintf(PETSC_COMM_WORLD,"mean=%g \n",mean);
     for (k=0; k<n; k++)
         temp += (mean-data[k])*(mean-data[k]);
     return (temp/(PetscScalar)n);
@@ -140,16 +137,15 @@ PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const
 {
 	PetscMPIInt    *tmp;
 	size_t          sz;
-	PetscErrorCode 	ierr;
 	PetscFunctionBeginUser;
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscMPIInt);
 	// allocate space
-	ierr = PetscMalloc(sz, &tmp); CHKERRQ(ierr);
+	PetscCall(PetscMalloc(sz, &tmp));
 	// initialize memory from vector (if required)
-	if(init) { ierr = PetscMemcpy(tmp, init, sz); CHKERRQ(ierr); }
+	if(init) { PetscCall(PetscMemcpy(tmp, init, sz)); }
 	// or just clear memory
-	else { ierr = PetscMemzero(tmp, sz); CHKERRQ(ierr); }
+	else { PetscCall(PetscMemzero(tmp, sz)); }
 	// return pointer
 	*arr = tmp;
 	PetscFunctionReturn(0);
@@ -157,8 +153,7 @@ PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const
 //---------------------------------------------------------------------------
 PetscErrorCode clearIntArray(PetscInt *arr, const PetscInt n)
 {
-	size_t          sz;
-	PetscErrorCode 	ierr;
+	size_t sz;
 
 	PetscFunctionBeginUser;
 
@@ -166,7 +161,7 @@ PetscErrorCode clearIntArray(PetscInt *arr, const PetscInt n)
 	sz = (size_t)n*sizeof(PetscInt);
 
 	// clear memory
-	ierr = PetscMemzero(arr, sz); CHKERRQ(ierr);
+	PetscCall(PetscMemzero(arr, sz));
 
 	PetscFunctionReturn(0);
 }
@@ -175,16 +170,15 @@ PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt
 {
 	PetscInt       *tmp;
 	size_t          sz;
-	PetscErrorCode 	ierr;
 	PetscFunctionBeginUser;
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscInt);
 	// allocate space
-	ierr = PetscMalloc(sz, &tmp); CHKERRQ(ierr);
+	PetscCall(PetscMalloc(sz, &tmp));
 	// initialize memory from vector (if required)
-	if(init) { ierr = PetscMemcpy(tmp, init, sz); CHKERRQ(ierr); }
+	if(init) { PetscCall(PetscMemcpy(tmp, init, sz)); }
 	// or just clear memory
-	else { ierr = PetscMemzero(tmp, sz); CHKERRQ(ierr); }
+	else { PetscCall(PetscMemzero(tmp, sz)); }
 	// return pointer
 	*arr = tmp;
 	PetscFunctionReturn(0);
@@ -194,19 +188,36 @@ PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const P
 {
 	PetscScalar    *tmp;
 	size_t          sz;
-	PetscErrorCode 	ierr;
 	PetscFunctionBeginUser;
 	// compute size in bytes
 	sz = (size_t)n*sizeof(PetscScalar);
 	// allocate space
-	ierr = PetscMalloc(sz, &tmp); CHKERRQ(ierr);
+	PetscCall(PetscMalloc(sz, &tmp));
 	// initialize memory from vector (if required)
-	if(init) { ierr = PetscMemcpy(tmp, init, sz); CHKERRQ(ierr); }
+	if(init) { PetscCall(PetscMemcpy(tmp, init, sz)); }
 	// or just clear memory
-	else { ierr = PetscMemzero(tmp, sz); CHKERRQ(ierr); }
+	else { PetscCall(PetscMemzero(tmp, sz)); }
 	// return pointer
 	*arr = tmp;
 	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscInt GetRank(MPI_Comm comm)
+{
+	PetscMPIInt rank;
+
+	MPI_Comm_rank(comm, &rank);
+
+	return (PetscInt)rank;
+}
+//---------------------------------------------------------------------------
+PetscInt GetNProc(MPI_Comm comm)
+{
+	PetscMPIInt nproc;
+
+	MPI_Comm_size(comm, &nproc);
+
+	return (PetscInt)nproc;
 }
 //---------------------------------------------------------------------------
 PetscInt ISRankZero(MPI_Comm comm)
@@ -227,16 +238,16 @@ PetscInt ISParallel(MPI_Comm comm)
 	return (size > 1);
 }
 //---------------------------------------------------------------------------
-PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
+PetscInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
 {
 	// get global rank of processor in DMDA
 
 	if(i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
 
-	return (PetscMPIInt)(i + j*m + k*m*n);
+	return i + j*m + k*m*n;
 }
 //---------------------------------------------------------------------------
-PetscMPIInt getGlobalRankPeriodic(
+PetscInt getGlobalRankPeriodic(
 		PetscInt i,  PetscInt j,  PetscInt k,
 		PetscInt m,  PetscInt n,  PetscInt p,
 		PetscInt pi, PetscInt pj, PetscInt pk)
@@ -248,10 +259,10 @@ PetscMPIInt getGlobalRankPeriodic(
 
 	if(i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
 
-	return (PetscMPIInt)(i + j*m + k*m*n);
+	return i + j*m + k*m*n;
 }
 //---------------------------------------------------------------------------
-void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n)
+void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscInt rank, PetscInt m, PetscInt n)
 {
 	// get local ranks of processor in DMDA
 
@@ -265,7 +276,6 @@ PetscErrorCode DirMake(const char *name)
 {
 	int status;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// create a new directory on rank zero
@@ -287,7 +297,7 @@ PetscErrorCode DirMake(const char *name)
 	}
 
 	// synchronize
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
 	PetscFunctionReturn(0);
 }
@@ -296,11 +306,10 @@ PetscErrorCode DirRemove(const char *name)
 {
 	int status;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// synchronize
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
 	// remove directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
@@ -320,11 +329,10 @@ PetscErrorCode DirRename(const char *old_name, const char *new_name)
 {
 	int status;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// synchronize
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+	PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
 	// rename directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
@@ -346,7 +354,6 @@ PetscErrorCode DirCheck(const char *name, PetscInt *exists)
 	int         status;
 	PetscInt    check;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// check directory on rank zero
@@ -361,7 +368,7 @@ PetscErrorCode DirCheck(const char *name, PetscInt *exists)
 	// synchronize
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Bcast(&check, 1, MPIU_INT, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		PetscCallMPI(MPI_Bcast(&check, 1, MPIU_INT, 0, PETSC_COMM_WORLD));
 	}
 
 	(*exists) = check;
@@ -852,4 +859,49 @@ PetscInt solveBisect(
 	// return convergence flag
 	return PetscAbsScalar(fx) <= tol;
 }
+//---------------------------------------------------------------------------
+// Solver viewer
+//---------------------------------------------------------------------------
+PetscErrorCode ViewSolver(KSP ksp)
+{
+	PC          pc;
+	PetscBool   flg;
+	const char *prefix;
+	char       *opt;
+
+	PetscFunctionBeginUser;
+
+	// get prefix
+	PetscCall(KSPGetOptionsPrefix(ksp, &prefix));
+
+	asprintf(&opt, "-%s%s", prefix, "pc_view");
+
+	PetscCall(PetscOptionsHasName(NULL, NULL, opt, &flg));
+
+	free(opt);
+
+	if(flg == PETSC_TRUE)
+	{
+		PetscCall(KSPGetPC(ksp, &pc));
+
+		PetscCall(PCView(pc, PETSC_VIEWER_STDOUT_WORLD));
+	}
+
+	PetscFunctionReturn(0);
+}
 //-----------------------------------------------------------------------------
+PetscErrorCode DMDAGetLocalGridSize(DM DA, PetscInt &nnods)
+{
+	PetscInt nx, ny, nz;
+
+	PetscFunctionBeginUser;
+
+	PetscCall(DMDAGetCorners(DA, NULL, NULL, NULL, &nx, &ny, &nz));
+
+	nnods = nx*ny*nz;
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+
+

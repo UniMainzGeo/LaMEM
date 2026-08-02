@@ -148,6 +148,11 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		                                 surf->topo_diffusivity * scal->length_si * scal->length_si / scal->time_si);
 	}
 
+	PetscPrintf(PETSC_COMM_WORLD, "   Topographic diffusion     : ");
+	if(!surf->topo_diff) PetscPrintf(PETSC_COMM_WORLD, "none\n");
+	else                 PetscPrintf(PETSC_COMM_WORLD, "active (K = %g [m^2/s])\n",
+	                                 surf->topo_diffusivity * scal->length_si * scal->length_si / scal->time_si);
+
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 #ifdef WITH_FASTSCAPE
@@ -186,6 +191,10 @@ PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 	// access context
 	fs = surf->jr->fs;
 	FSLib = surf->FSLib;
+
+	// set boundary type in x direction
+	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }
+	else             { BC_TYPE_X = DM_BOUNDARY_NONE;     bc_node = 0; }
 
 	// set boundary type in x direction
 	if(fs->periodic) { BC_TYPE_X = DM_BOUNDARY_PERIODIC; bc_node = 1; }

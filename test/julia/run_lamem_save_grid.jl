@@ -56,14 +56,6 @@ function deactivate_multithreading(cmd::Cmd)
     return cmd
 end
 
-
-function JuliaStringToArray(input)
-
-
-    arr = split(input,"\n")
-	return arr
-end
-
 #=
 function get_line_containing(stringarray::Vector{SubString{String}}, lookfor::String)
 
@@ -103,7 +95,7 @@ function run_lamem_save_grid(ParamFile::String, cores::Int64=1; verbose=true, di
 	ParamFile    = abspath(ParamFile)
 	logoutput    = run_lamem_with_log(ParamFile, cores,"-mode save_grid" )
 	
-	arr          = JuliaStringToArray(logoutput)
+	arr          = split(logoutput,"\n")
 	foundline    = get_line_containing(arr,"Processor grid  [nx, ny, nz]         : ")
 	foundline    = join(map(x -> isspace(foundline[x]) ? "" : foundline[x], 1:length(foundline)))
 	

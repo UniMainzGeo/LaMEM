@@ -1,7 +1,12 @@
-# LaMEM
+<img src="./doc/src/assets/img/logo_LaMEM_c.png" width="200">
+
 [![Build Status](https://github.com/UniMainzGeo/LaMEM/workflows/CI/badge.svg)](https://github.com/UniMainzGeo/LaMEM/actions)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://unimainzgeo.github.io/LaMEM/dev)
 [![DOI](https://zenodo.org/badge/641438500.svg)](https://zenodo.org/doi/10.5281/zenodo.10211634)
+
+> [!NOTE]
+> **Upgrading from LaMEM v2.2.1 to v3.0.0+?**
+> v3.0.0 introduces breaking changes to input files. Please refer to the [Upgrading from v2.2.1 to v3.0.0 guide](https://unimainzgeo.github.io/LaMEM/dev/man/Upgrade_v2.2.1_to_v3.0.0/).
 
 LaMEM (Lithosphere and Mantle Evolution Model) is a parallel 3D numerical code that can be used to simulate various thermo-mechanical 
 geodynamical processes such as mantle-lithosphere interaction for rocks 
@@ -15,7 +20,7 @@ quasi-Newton solvers (provided through the PETSc interface).
 
 LaMEM has been tested on a variety of machines ranging from laptops to a massively parallel cluster with 458'752 cores.
 
- ![Getting Started](./docs/src/assets/img/LaMEM_overview.png)
+ ![Getting Started](./doc/src/assets/img/LaMEM_overview.png)
 
 ## Getting started
 
@@ -26,6 +31,7 @@ You can also install and run a parallel version of LaMEM with the julia package 
 LaMEM is an open source code that was initially developed at the Johannes-Gutenberg University in Mainz (Germany). Many other colleagues have contributed to its development as well (see the documentation).
 The key funding for the Mainz team came from:
 - The European Research Council through Grants ERC StG 258830 (MODEL), ERC PoC 713397 (SALTED) and ERC CoG 771143 (MAGMA)
+- EuroHPC through the Center of Excellence [ChEESE-2p](https://cheese2.eu/)
 - The German ministry of Science and Eduction (BMBF) through projects SECURE, PERMEA, and PERMEA2.
 - Priority programs of the German research foundation (DFG), specifically the [4DMB](http://www.spp-mountainbuilding.de) and [Habitable Earth](https://habitableearth.uni-koeln.de) projects. 
    

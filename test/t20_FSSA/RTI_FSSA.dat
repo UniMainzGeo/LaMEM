@@ -1,8 +1,6 @@
 # This reproduces the setup to test the FSSA algorithm, as described in Kaus et al. (2010)
 # By default, FSSA is activated. 
 #
-# 
-
 #===============================================================================
 # Scaling
 #===============================================================================
@@ -27,8 +25,8 @@
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
 	CFL       = 0.75   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.75   # CFL criterion for elasticity
-	nstep_max = 1000   # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 100     # save output every n steps
+	nstep_max = 100    # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 5     # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
 
@@ -39,7 +37,7 @@
 # Number of cells for all segments
 
 	nel_x = 20
-	nel_y = 1
+	nel_y = 2
 	nel_z = 300
 
 # Coordinates of all segments (including start and end points)
@@ -79,12 +77,6 @@
 	eta_min        = 1e16           # viscosity upper bound
 	eta_max        = 1e23           # viscosity lower limit
 		
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 			=	direct 	# solver [direct or multigrid]
-	DirectSolver 		=	umfpack
-	
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -169,17 +161,18 @@
 
 
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
+<SolverOptionsStart>
+
+	set_linear_problem = 1
+	monitor_solvers    = 1
+	stokes_solver      = block_direct
+	direct_solver_type = mumps
 	
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly # no nonlinear solver
-
-
-	-objects_dump
-
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================
+
+

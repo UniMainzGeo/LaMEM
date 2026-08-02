@@ -13,8 +13,6 @@
 #ifndef __objFunct_h__
 #define __objFunct_h__
 //---------------------------------------------------------------------------
-#include "parsing.h"	// filebuffer
-#include "adjoint.h"    // defines the global variables _MAX_PAR_ and _MAX_OBS_, which we need here
 
 struct FB;
 struct FreeSurf;
@@ -40,27 +38,11 @@ enum InvTypes// List of inversion types
 	_none_, _inversion_, _adjointgradients_, _gradientdescent_, _syntheticforwardrun_, 
 };
 
-/*
-const char *PTypesName[] ={
-		// -- material model parameter types --
-		"rho0","rho_n","rho_c",                        // density
-		"eta","Bd","Ed","Vd",                          // newtonian linear diffiusion
-		"eta0","e0","Bn","n","En","Vn",                // power-law (dislocation) creep
-		"Bp","taup","gamma","q","Ep","Vp",             // Peierls creep
-		"shear","bulk","Kp",                           // elasticity
-		"cohesion","friction","chSoftID","frSoftID",   // plasticity (Drucker Prager)
-		"alpha","cp","k","A"                           // energy
-
-		// -- others --
-		// ... (geometry, pushing box , etc. ...)
-};
-*/
-
 //-----------------------------------------------------------------------------
 // Structure that holds inversion parameters
 struct ModParam
 {
-	PetscInt         use;                               // Choose one of InvTypes
+	InvTypes         use;                               // Choose one of InvTypes
 	PetscInt         mdN;                               // number of model parameters
 	PetscInt         mID;                               // current model number
 	char 			 type_name[_MAX_PAR_][_str_len_];   // stores the name of the adjoint parameters
@@ -115,8 +97,6 @@ struct ModParam
 	PetscScalar      Avel_num[_MAX_OBS_];             	// Numerically computed velocity at the comparison points
 	PetscBool        Apoint_on_proc[_MAX_OBS_];         // Is the observation point on the current processor or not (simplified printing)?
 	char   			 ScalLawFilename[_str_len_];		// Name of scaling law file
-
-	PetscLogStage	 stages[4]; 						/* Create stages for PETSC profiling */
 };
 
 // observation type

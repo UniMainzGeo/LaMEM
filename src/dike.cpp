@@ -29,61 +29,71 @@
 #include "fdstag.h"
 #include "tools.h"
 #include "surf.h"
+#include "Tensor.h"
 #include "advect.h"
 
 //---------------------------------------------------------------------------
 PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput)   
 {
 
-        // read all dike parameter blocks from file
+    // read all dike parameter blocks from file periodic
 	Dike     *dike;
 	FDSTAG   *fs;
 	PetscScalar ***gsxx_eff_ave_hist;
 	PetscInt jj, nD, numDike, numdyndike, istep_nave;
 	PetscInt i, j, istep_count, sx, sy, sisc, nx, ny;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	if (!jr->ctrl.actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
  
 	fs = jr->fs;
+
+	// check compatibility with periodic bc
+	if(fs->periodic)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Dike implementation has not been tested with periodic boundary condition yet\n");
+	}
+
  	//===============                                                                                                                                               
 	// DIKE PARAMETER                                                                                                               
 	//===============                                                                                                                                               
 
 	// setup block access mode                                                                                                                                      
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<DikeStart>", "<DikeEnd>"); CHKERRQ(ierr);
+	PetscCall(FBFindBlocks(fb, _OPTIONAL_, "<DikeStart>", "<DikeEnd>"));
 
 	if(fb->nblocks)
 	{
-	// print overview of dike blocks from file                                                                                                           
-	if (PrintOutput)
-	PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n");
+		// print overview of dike blocks from file
+		if(PrintOutput){ PetscPrintf(PETSC_COMM_WORLD,"Dike blocks : \n"); }
 
-	// initialize ID for consistency checks                                                                                                                 
+		// initialize ID for consistency checks
 
-	for(jj = 0; jj < _max_num_dike_ ; jj++) dbdike->matDike[jj].ID = -1; 
+		for(jj = 0; jj < _max_num_dike_ ; jj++) { dbdike->matDike[jj].ID = -1; }
 
         // error checking
-	if(fb->nblocks >_max_num_dike_)
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %lld", (LLD)_max_num_dike_ );
+		if(fb->nblocks >_max_num_dike_)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many dikes specified! Max allowed: %" PetscInt_FMT "", _max_num_dike_);
+		}
 
         // store actual number of dike blocks 
         dbdike->numDike = fb->nblocks;
 
-        if (PrintOutput)
+        if(PrintOutput)
+        {
             PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-		
+        }
+
         // read each individual dike block                                                                                                                   
         for(jj = 0; jj < fb->nblocks; jj++)
         {
-            ierr = DBReadDike(dbdike, dbm, fb, jr, PrintOutput); CHKERRQ(ierr);
+            PetscCall(DBReadDike(dbdike, dbm, fb, jr, PrintOutput));
             fb->blockID++;
         }
 	}
  
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+	PetscCall(FBFreeBlocks(fb));
 
 	numdyndike=0;
 
@@ -98,24 +108,24 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 			{
 				// DM for 1D cell center vector. vector is ny+1 long, but for whatever reason that must appear in the first,
 				// not second entry on line 2 below 
-				ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
+				PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
 				fs->dsy.tnods, fs->dsy.nproc, fs->dsz.nproc, 
 				fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
-				0, 0, 0, &dbdike->DA_CELL_1D); CHKERRQ(ierr);
+				0, 0, 0, &dbdike->DA_CELL_1D));
 
 				//DM for 2D cell center vector, with istep_nave planes for time averaging
-				ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
+				PetscCall(DMDACreate3DSetUp(PETSC_COMM_WORLD,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DM_BOUNDARY_NONE,DMDA_STENCIL_BOX,
 				fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc*dike->istep_nave, 
             	fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc, 1, 1,
-				0, 0, 0, &dbdike->DA_CELL_2D_tave); CHKERRQ(ierr);
+				0, 0, 0, &dbdike->DA_CELL_2D_tave));
 			}
 
 			//creating local vectors and inializing the history vector
-			ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave);  CHKERRQ(ierr);
-			ierr = DMCreateLocalVector( jr->DA_CELL_2D, &dike->magPressure);  CHKERRQ(ierr);
-			ierr = DMCreateLocalVector( dbdike->DA_CELL_2D_tave, &dike->sxx_eff_ave_hist);  CHKERRQ(ierr);
-			ierr = DMDAVecGetArray(dbdike->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
-			ierr = DMDAGetCorners(dbdike->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave); CHKERRQ(ierr);    
+			PetscCall(DMCreateLocalVector( jr->DA_CELL_2D, &dike->sxx_eff_ave));
+			PetscCall(DMCreateLocalVector( jr->DA_CELL_2D, &dike->magPressure));
+			PetscCall(DMCreateLocalVector( dbdike->DA_CELL_2D_tave, &dike->sxx_eff_ave_hist));
+			PetscCall(DMDAVecGetArray(dbdike->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist));
+			PetscCall(DMDAGetCorners(dbdike->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave));    
 
 			for(j = sy; j < sy+ny; j++) 
 			{
@@ -128,7 +138,7 @@ PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, 
 				}
 			}
 
-			ierr = DMDAVecRestoreArray(dbdike->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+			PetscCall(DMDAVecRestoreArray(dbdike->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist));
 		}  //End if dyndike->start
  
 	}  //End loop through dikes
@@ -145,14 +155,13 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	PetscInt  ID;
 	Scaling  *scal;
 	
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	// access context           
 	scal = dbm->scal;
 
 	// Dike ID                                                                                                                                                         
-	ierr    = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbdike->numDike-1); CHKERRQ(ierr);
+	PetscCall(getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbdike->numDike-1));
 	fb->ID  = ID;
 
 	// get pointer to specified dike parameters
@@ -173,13 +182,13 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 	dike->y_Mc = 0.0;
 
 	// read and store dike  parameters. 
-	ierr = getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0);              CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Mc",      &dike->Mc,      1, 1.0);              CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0);              CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "y_Mc",    &dike->y_Mc,    1, 1.0);              CHKERRQ(ierr);
-	ierr = getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1); CHKERRQ(ierr);  
-	ierr = getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
-	ierr = getIntParam(   fb, _OPTIONAL_, "dyndike_start",&dike->dyndike_start, 1, -1); CHKERRQ(ierr);
+	PetscCall(getScalarParam(fb, _REQUIRED_, "Mf",      &dike->Mf,      1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "Mc",      &dike->Mc,      1, 1.0));
+	PetscCall(getScalarParam(fb, _REQUIRED_, "Mb",      &dike->Mb,      1, 1.0));
+	PetscCall(getScalarParam(fb, _OPTIONAL_, "y_Mc",    &dike->y_Mc,    1, 1.0));
+	PetscCall(getIntParam(   fb, _REQUIRED_, "PhaseID", &dike->PhaseID, 1, dbm->numPhases-1));  
+	PetscCall(getIntParam(   fb, _REQUIRED_, "PhaseTransID", &dike->PhaseTransID, 1, dbm->numPhtr-1));
+	PetscCall(getIntParam(   fb, _OPTIONAL_, "dyndike_start",&dike->dyndike_start, 1, -1));
 
 	if (dike->dyndike_start)
 	{
@@ -194,23 +203,19 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
 		dike->out_dikeloc = 0;
 		dike->magPfac=1.0;
 		dike->magPwidth=1e+30; 
-		//dike->ymindyn=-1e+30;
-		//dike->ymaxdyn=1e+30; 
 
-		ierr = getScalarParam(fb, _OPTIONAL_, "Tsol",		&dike->Tsol,		1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "zmax_magma",	&dike->zmax_magma,	1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "filtx",		&dike->filtx,		1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "filty",		&dike->filty,		1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "drhomagma",	&dike->drhomagma,	1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "magPfac",	&dike->magPfac,		1, 1.0); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _OPTIONAL_, "magPwidth",	&dike->magPwidth,	1, 1.0); CHKERRQ(ierr);
-		//ierr = getScalarParam(fb, _OPTIONAL_, "ymindyn",	&dike->ymindyn,		1, 1.0); CHKERRQ(ierr);
-		//ierr = getScalarParam(fb, _OPTIONAL_, "ymaxdyn",	&dike->ymaxdyn,		1, 1.0); CHKERRQ(ierr);
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "Tsol",		&dike->Tsol,		1, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "zmax_magma",	&dike->zmax_magma,	1, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "filtx",		&dike->filtx,		1, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "filty",		&dike->filty,		1, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "drhomagma",	&dike->drhomagma,	1, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "magPfac",	&dike->magPfac,		1, 1.0));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "magPwidth",	&dike->magPwidth,	1, 1.0));
 
-		ierr = getIntParam(fb, _OPTIONAL_, "istep_nave",	&dike->istep_nave,	1, 50); CHKERRQ(ierr);
-		ierr = getIntParam(fb, _OPTIONAL_, "nstep_locate",	&dike->nstep_locate,1, 1000); CHKERRQ(ierr);
-		ierr = getIntParam(fb, _OPTIONAL_, "out_stress",	&dike->out_stress,	1, 50); CHKERRQ(ierr);
-		ierr = getIntParam(fb, _OPTIONAL_, "out_dikeloc",	&dike->out_dikeloc,	1, 50); CHKERRQ(ierr);
+		PetscCall(getIntParam(fb, _OPTIONAL_, "istep_nave",	&dike->istep_nave,	1, 50));
+		PetscCall(getIntParam(fb, _OPTIONAL_, "nstep_locate",	&dike->nstep_locate,1, 1000));
+		PetscCall(getIntParam(fb, _OPTIONAL_, "out_stress",	&dike->out_stress,	1, 50));
+		PetscCall(getIntParam(fb, _OPTIONAL_, "out_dikeloc",	&dike->out_dikeloc,	1, 50));
 
 		dike->istep_count=dike->istep_nave;   //initialize so that when istep=dike_start, it is set to 0
 	}
@@ -222,16 +227,16 @@ PetscErrorCode DBReadDike(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, Pe
   
 	if (PrintOutput)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%lld]: PhaseTransID=%lld PhaseID=%lld Mf=%g, Mb=%g, Mc=%g, y_Mc=%g \n", 
-		(LLD)(dike->ID), (LLD)(dike->PhaseTransID), (LLD)(dike->PhaseID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
+		PetscPrintf(PETSC_COMM_WORLD,"  Dike parameters ID[%" PetscInt_FMT "]: PhaseTransID=%" PetscInt_FMT " PhaseID=%" PetscInt_FMT " Mf=%g, Mb=%g, Mc=%g, y_Mc=%g \n", 
+		(dike->ID), (dike->PhaseTransID), (dike->PhaseID), dike->Mf, dike->Mb, dike->Mc, dike->y_Mc);
 	if (dike->dyndike_start)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"       dyndike_start=%lld, Tsol=%g, zmax_magma=%g,drhomagma=%g, magPfac=%g, magPwidth=%g\n", 
-			(LLD)(dike->dyndike_start), dike->Tsol, dike->zmax_magma, dike->drhomagma, dike->magPfac, dike->magPwidth);
-		PetscPrintf(PETSC_COMM_WORLD,"       filtx=%g, filty=%g, istep_nave=%lld, istep_count=%lld \n",
-			dike->filtx, dike->filty, (LLD)(dike->istep_nave), (LLD)(dike->istep_count));
-		PetscPrintf(PETSC_COMM_WORLD,"       nstep_locate=%lld, out_stress=%lld, out_dikeloc=%lld\n",
-			(LLD)(dike->nstep_locate), (LLD)(dike->out_stress), (LLD)(dike->out_dikeloc));
+		PetscPrintf(PETSC_COMM_WORLD,"       dyndike_start=%" PetscInt_FMT ", Tsol=%g, zmax_magma=%g,drhomagma=%g, magPfac=%g, magPwidth=%g\n", 
+			(dike->dyndike_start), dike->Tsol, dike->zmax_magma, dike->drhomagma, dike->magPfac, dike->magPwidth);
+		PetscPrintf(PETSC_COMM_WORLD,"       filtx=%g, filty=%g, istep_nave=%" PetscInt_FMT ", istep_count=%" PetscInt_FMT " \n",
+			dike->filtx, dike->filty, (dike->istep_nave), (dike->istep_count));
+		PetscPrintf(PETSC_COMM_WORLD,"       nstep_locate=%" PetscInt_FMT ", out_stress=%" PetscInt_FMT ", out_dikeloc=%" PetscInt_FMT "\n",
+			(dike->nstep_locate), (dike->out_stress), (dike->out_dikeloc));
     }
     PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");    
 	}
@@ -486,8 +491,6 @@ PetscErrorCode Dike_k_heatsource(JacRes *jr,
 //------------------------------------------------------------------------------------------------------------------
 PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 {
-
-
   Controls    *ctrl;
   JacRes      *jr;
   Dike        *dike;
@@ -495,7 +498,6 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
   FDSTAG      *fs;
   PetscInt   nD, numDike, numPhtr, nPtr, n, icounter;
   PetscInt   j, j1, j2, sx, sy, sz, ny, nx, nz;
-  PetscErrorCode ierr; 
 
   PetscFunctionBeginUser;
 
@@ -512,7 +514,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
   numPhtr    = jr->dbm->numPhtr;
 
   icounter=0;
-  ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+  PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
   for(nD = 0; nD < numDike; nD++)
   {
@@ -525,8 +527,8 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 		// compute lithostatic pressure
        if (icounter==0) 
        {
-         ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
-         ierr = ADVInterpMarkToCell(actx);   CHKERRQ(ierr);
+         PetscCall(JacResGetLithoStaticPressure(jr));
+         PetscCall(ADVInterpMarkToCell(actx));
        }
        icounter++;
        //---------------------------------------------------------------------------------------------
@@ -542,7 +544,7 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
           }
        }//end loop over Phtr
        if (nPtr==-1) 
-       SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %lld, nPtr=%lld\n", (LLD)(nD), (LLD)(nPtr));
+       SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "PhaseTransID problems with dike %" PetscInt_FMT ", nPtr=%" PetscInt_FMT "\n", (nD), (nPtr));
        CurrPhTr = jr->dbm->matPhtr+nPtr;
        //---------------------------------------------------------------------------------------------
        //  Find y-bounds of current dynamic dike
@@ -558,13 +560,13 @@ PetscErrorCode Locate_Dike_Zones(AdvCtx *actx)
 			}
        	}
 
-		ierr = Compute_sxx_magP(jr, nD); CHKERRQ(ierr);  //compute mean effective sxx across the lithosphere
+		PetscCall(Compute_sxx_magP(jr, nD));  //compute mean effective sxx across the lithosphere
 
-		ierr = Smooth_sxx_eff(jr,nD, nPtr, j1, j2); CHKERRQ(ierr);  //smooth mean effective sxx
+		PetscCall(Smooth_sxx_eff(jr,nD, nPtr, j1, j2));  //smooth mean effective sxx
 		if (((jr->ts->istep+1) % dike->nstep_locate) == 0)
 		{
-	   		PetscPrintf(PETSC_COMM_WORLD, "Calling Set_dike_zones: istep=%lld dike # %lld\n", (LLD)(jr->ts->istep + 1),(LLD)(nD));
-			ierr = Set_dike_zones(jr, nD, nPtr,j1, j2); CHKERRQ(ierr); //centered on peak sxx_eff_ave 
+	   		PetscPrintf(PETSC_COMM_WORLD, "Calling Set_dike_zones: istep=%" PetscInt_FMT " dike # %" PetscInt_FMT "\n", (jr->ts->istep + 1),(nD));
+			PetscCall(Set_dike_zones(jr, nD, nPtr,j1, j2)); //centered on peak sxx_eff_ave 
 		}
     }
 
@@ -585,16 +587,12 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   PetscScalar xcell, ycell;
   PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, L, ID, AirPhase;
   PetscInt 	  istep, nstep_out;
-  PetscMPIInt    rank;
-
-
   FDSTAG      *fs;
   Dike        *dike;
   Discret1D   *dsz;
   SolVarCell  *svCell;
   Controls    *ctrl;
 
-  PetscErrorCode ierr;
   PetscFunctionBeginUser;
 
   istep=jr->ts->istep+1; 
@@ -608,59 +606,57 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
   L   =  (PetscInt)dsz->rank;
   AirPhase  = jr->surf->AirPhase;
 
-
-  MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-  ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+  PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith));
 
   dike = jr->dbdike->matDike+nD;
 
   // get local grid sizes
-  ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+  PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
   // get integration/communication buffer (Gets a PETSc vector, vsxx, that may be used with the DM global routines)
-  ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vsxx); CHKERRQ(ierr);
-  ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vPmag); CHKERRQ(ierr);
-  ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vliththick); CHKERRQ(ierr);
-  ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vzsol); CHKERRQ(ierr);
+  PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vsxx));
+  PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vPmag));
+  PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vliththick));
+  PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vzsol));
 
-  ierr = VecZeroEntries(vsxx); CHKERRQ(ierr);
-  ierr = VecZeroEntries(vPmag); CHKERRQ(ierr);
-  ierr = VecZeroEntries(vliththick); CHKERRQ(ierr);
-  ierr = VecZeroEntries(vzsol); CHKERRQ(ierr);
+  PetscCall(VecZeroEntries(vsxx));
+  PetscCall(VecZeroEntries(vPmag));
+  PetscCall(VecZeroEntries(vliththick));
+  PetscCall(VecZeroEntries(vzsol));
 
   // open index buffer for computation (sxx the array that shares data with vector vsxx and is indexed with global dimensions<<G.Ito)
   // DMDAVecGetArray(DM da,Vec vec,void *array) Returns a multiple dimension array that shares data with the underlying vector 
   // and is indexed using the global dimension
-  ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(jr->DA_CELL_2D, vPmag, &Pmag); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(jr->DA_CELL_2D, vliththick, &liththick); CHKERRQ(ierr);
-  ierr = DMDAVecGetArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr);
+  PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vsxx, &sxx));
+  PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vPmag, &Pmag));
+  PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vliththick, &liththick));
+  PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vzsol, &zsol));
 
   // open linear buffer for send/receive  (returns the point, lsxx, that contains this processor portion of vector data, vsxx<<G.Ito)
   //Returns a pointer to a contiguous array that contains this processors portion of the vector data.
-  ierr = VecGetArray(vsxx, &lsxx); CHKERRQ(ierr);
-  ierr = VecGetArray(vPmag, &lPmag); CHKERRQ(ierr);
-  ierr = VecGetArray(vliththick, &lliththick); CHKERRQ(ierr);
-  ierr = VecGetArray(vzsol, &lzsol); CHKERRQ(ierr);
+  PetscCall(VecGetArray(vsxx, &lsxx));
+  PetscCall(VecGetArray(vPmag, &lPmag));
+  PetscCall(VecGetArray(vliththick, &lliththick));
+  PetscCall(VecGetArray(vzsol, &lzsol));
 
   //Access temperatures
-  ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
+  PetscCall(DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT));
 
   // receive from top domain (next)  dsz->grnext is the next proc up (in increasing z). Top to bottom doesn't matter here, its this way
   // because the code is patterned after GetLithoStaticPressure
   if(dsz->nproc != 1 && dsz->grnext != -1)
   {
-     ierr = MPI_Irecv(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Irecv(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Irecv(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Irecv(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
   }
   Tsol=dike->Tsol;
@@ -692,54 +688,54 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
       //After integrating and averaging, send it down to the next proc. 
   if(dsz->nproc != 1 && dsz->grprev != -1)
   {
-     ierr = MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Isend(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Isend(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
   }
       
 	//Now receive/send the answer from successive previous (underlying) procs so all procs have the answers
   if(dsz->nproc != 1 && dsz->grprev != -1)
   {
-     ierr = MPI_Irecv(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Irecv(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Irecv(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Irecv(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Irecv(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Irecv(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+     PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
   }
 
   if(dsz->nproc != 1 && dsz->grnext != -1)
   {
-     ierr = MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Isend(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Isend(lPmag, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Isend(lliththick, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-     ierr = MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     PetscCallMPI(MPI_Isend(lzsol, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsz->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
   }
 
   // (gdev is the array that shares data with devxx_mean and is indexed with global dimensions)
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->magPressure, &magPressure));
 
   //now all cores in z have the same solution so give that to the stress array
 
@@ -764,40 +760,40 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 			START_PLANE_LOOP
 				xcell=COORD_CELL(i, sx, fs->dsx);
 				ycell=COORD_CELL(j, sy, fs->dsy);
-				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %lld %g %g %g %g %lld %g %g\n", (LLD)(jr->ts->istep+1), 
-				xcell, ycell, gsxx_eff_ave[L][j][i], magPressure[L][j][i], (LLD)(nD), zsol[L][j][i],magma_presence);     
+				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"101010.1010 %" PetscInt_FMT " %g %g %g %g %" PetscInt_FMT " %g %g\n", (jr->ts->istep+1), 
+				xcell, ycell, gsxx_eff_ave[L][j][i], magPressure[L][j][i], (nD), zsol[L][j][i],magma_presence);     
 			END_PLANE_LOOP 
 		} 
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT); //All procs must run this
 	}
 
   // restore buffer and mean stress vectors
-  ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);      
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
+  PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT));
+  PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));      
+  PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure));
 
 
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &Pmag); CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vliththick, &liththick); CHKERRQ(ierr);
-  ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vzsol, &zsol); CHKERRQ(ierr);
+  PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &sxx));
+  PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &Pmag));
+  PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vliththick, &liththick));
+  PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vzsol, &zsol));
 
-  ierr = VecRestoreArray(vsxx, &lsxx); CHKERRQ(ierr);
-  ierr = VecRestoreArray(vsxx, &lPmag); CHKERRQ(ierr);
-  ierr = VecRestoreArray(vliththick, &lliththick); CHKERRQ(ierr);
-  ierr = VecRestoreArray(vzsol, &lzsol); CHKERRQ(ierr);
+  PetscCall(VecRestoreArray(vsxx, &lsxx));
+  PetscCall(VecRestoreArray(vsxx, &lPmag));
+  PetscCall(VecRestoreArray(vliththick, &lliththick));
+  PetscCall(VecRestoreArray(vzsol, &lzsol));
 
-  ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx); CHKERRQ(ierr);
-  ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vPmag); CHKERRQ(ierr);  
-  ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vliththick); CHKERRQ(ierr);
-  ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vzsol); CHKERRQ(ierr);
+  PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx));
+  PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vPmag));  
+  PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vliththick));
+  PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vzsol));
 
   //fill ghost points
       
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
   LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->magPressure);
 
-  ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+  PetscCall(DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith));
   PetscFunctionReturn(0);
 }
 
@@ -812,7 +808,6 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	Dike        *dike;
 	Discret1D   *dsz, *dsy;
 	Ph_trans_t  *CurrPhTr;
-
 	PetscScalar ***gsxx_eff_ave, ***gsxx_eff_ave_hist, ***magPressure;
 	PetscScalar ***ycoors, *lycoors, ***ycoors_prev, *lycoors_prev, ***ycoors_next, *lycoors_next;
 	PetscScalar ***xcenter, *lxcenter, ***xcenter_prev, *lxcenter_prev, ***xcenter_next, *lxcenter_next;
@@ -823,36 +818,29 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	PetscScalar xcent, xcent_north, xcent_south, ycent_north, ycent_south, xcent_search, ycent_search;
 	PetscScalar azim, dalong, dxazim, dyazim, radbound, sumslope, sumadd;
 	PetscScalar dx_tot, dy_tot, str_y;
-
 	Vec         vycoors, vycoors_prev, vycoors_next;
 	Vec         vxcenter, vxcenter_prev, vxcenter_next;
 	Vec         vsxx, vsxx_prev, vsxx_next;
 	Vec         vmagP, vmagP_prev, vmagP_next;
-
 	PetscInt    j, jj, j1prev, j2prev, j1next, j2next, jj1, jj2; 
 	PetscInt    i,ii, ii1, ii2;
 	PetscInt    sx, sy, sz, nx, ny, nz;
 	PetscInt    L, M;
-	PetscMPIInt rank;
 	PetscInt    sisc, istep_count, istep_nave, istep, nstep_out;
-
-  
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 	MPI_Request srequest, rrequest, srequest2, rrequest2, srequest3, rrequest3, srequest4, rrequest4;
 
-	fs  =  jr->fs;
-	dsz = &fs->dsz;
-	dsy = &fs->dsy;
-	L   =  (PetscInt)dsz->rank;
-	M   =  (PetscInt)dsy->rank;
+	PetscFunctionBeginUser;
+
+	fs   =  jr->fs;
+	dsz  = &fs->dsz;
+	dsy  = &fs->dsy;
+	L    =  (PetscInt)dsz->rank;
+	M    =  (PetscInt)dsy->rank;
 
 	istep=jr->ts->istep+1; 
 	nstep_out=jr->ts->nstep_out;
 
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	dike = jr->dbdike->matDike+nD;
 	filtx=dike->filtx;
@@ -864,82 +852,81 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 	CurrPhTr = jr->dbm->matPhtr+nPtr;
 
 // get communication buffer (Gets a PETSc vector, vycoors, that may be used with the DM global routines)
-//y node coords
-	ierr = DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_prev); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_next); CHKERRQ(ierr);
+	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors));
+	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_prev));
+	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_next));
 
-	ierr = VecZeroEntries(vycoors); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vycoors_prev); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vycoors_next); CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(vycoors));
+	PetscCall(VecZeroEntries(vycoors_prev));
+	PetscCall(VecZeroEntries(vycoors_next));
 
-//for dike center
-	ierr = DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_prev); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_next); CHKERRQ(ierr);
+// for dike center
+	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter));
+	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_prev));
+	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_next));
 
-	ierr = VecZeroEntries(vxcenter); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vxcenter_prev); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vxcenter_next); CHKERRQ(ierr);
+	PetscCall(VecZeroEntries(vxcenter));
+	PetscCall(VecZeroEntries(vxcenter_prev));
+	PetscCall(VecZeroEntries(vxcenter_next));
 
 //sxx_ave info
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vsxx); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vsxx_prev); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vsxx_next); CHKERRQ(ierr);
+	PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vsxx));
+	PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vsxx_prev));
+	PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vsxx_next));
 
-	ierr = VecZeroEntries(vsxx); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vsxx_prev); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vsxx_next); CHKERRQ(ierr); 
+	PetscCall(VecZeroEntries(vsxx));
+	PetscCall(VecZeroEntries(vsxx_prev));
+	PetscCall(VecZeroEntries(vsxx_next)); 
 
 //magP info
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vmagP); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vmagP_prev); CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vmagP_next); CHKERRQ(ierr);
+	PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vmagP));
+	PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vmagP_prev));
+	PetscCall(DMGetGlobalVector(jr->DA_CELL_2D, &vmagP_next));
 
-	ierr = VecZeroEntries(vmagP); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vmagP_prev); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vmagP_next); CHKERRQ(ierr); 
+	PetscCall(VecZeroEntries(vmagP));
+	PetscCall(VecZeroEntries(vmagP_prev));
+	PetscCall(VecZeroEntries(vmagP_next)); 
 
 // open index buffer for computation (ycoors is the array that shares data with vector vycoors & indexed with global dimensions)
 //y node coords
-	ierr = DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vycoors, &ycoors); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vycoors_prev, &ycoors_prev); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vycoors_next, &ycoors_next); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vycoors, &ycoors));
+	PetscCall(DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vycoors_prev, &ycoors_prev));
+	PetscCall(DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vycoors_next, &ycoors_next));
 //dike center info
-	ierr = DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxcenter, &xcenter); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxcenter_prev, &xcenter_prev); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxcenter_next, &xcenter_next); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxcenter, &xcenter));
+	PetscCall(DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxcenter_prev, &xcenter_prev));
+	PetscCall(DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxcenter_next, &xcenter_next));
 //sxx_ave info
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx_prev, &sxx_prev); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vsxx_next, &sxx_next); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vsxx, &sxx));
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vsxx_prev, &sxx_prev));
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vsxx_next, &sxx_next));
 //magP info
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vmagP, &magP); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vmagP_prev, &magP_prev); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vmagP_next, &magP_next); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vmagP, &magP));
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vmagP_prev, &magP_prev));
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, vmagP_next, &magP_next));
 
 
 // open linear buffer for send/receive  (returns the pointer, lsxx..., that contains this processor portion of vector data, vycoors)
 //y node coords
-	ierr = VecGetArray(vycoors, &lycoors); CHKERRQ(ierr);
-	ierr = VecGetArray(vycoors_prev, &lycoors_prev); CHKERRQ(ierr);
-	ierr = VecGetArray(vycoors_next, &lycoors_next); CHKERRQ(ierr);
+	PetscCall(VecGetArray(vycoors, &lycoors));
+	PetscCall(VecGetArray(vycoors_prev, &lycoors_prev));
+	PetscCall(VecGetArray(vycoors_next, &lycoors_next));
 //celly_xbound info
-	ierr = VecGetArray(vxcenter, &lxcenter); CHKERRQ(ierr);
-	ierr = VecGetArray(vxcenter_prev, &lxcenter_prev); CHKERRQ(ierr);
-	ierr = VecGetArray(vxcenter_next, &lxcenter_next); CHKERRQ(ierr);
+	PetscCall(VecGetArray(vxcenter, &lxcenter));
+	PetscCall(VecGetArray(vxcenter_prev, &lxcenter_prev));
+	PetscCall(VecGetArray(vxcenter_next, &lxcenter_next));
 //sxx_ave info
-	ierr = VecGetArray(vsxx, &lsxx); CHKERRQ(ierr);
-	ierr = VecGetArray(vsxx_prev, &lsxx_prev); CHKERRQ(ierr);
-	ierr = VecGetArray(vsxx_next, &lsxx_next); CHKERRQ(ierr);
+	PetscCall(VecGetArray(vsxx, &lsxx));
+	PetscCall(VecGetArray(vsxx_prev, &lsxx_prev));
+	PetscCall(VecGetArray(vsxx_next, &lsxx_next));
 //magP info
-	ierr = VecGetArray(vmagP, &lmagP); CHKERRQ(ierr);
-	ierr = VecGetArray(vmagP_prev, &lmagP_prev); CHKERRQ(ierr);
-	ierr = VecGetArray(vmagP_next, &lmagP_next); CHKERRQ(ierr);
+	PetscCall(VecGetArray(vmagP, &lmagP));
+	PetscCall(VecGetArray(vmagP_prev, &lmagP_prev));
+	PetscCall(VecGetArray(vmagP_next, &lmagP_next));
 
 //access depth-averaged arrays on current proc
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->magPressure, &magPressure));
 
   
 	START_PLANE_LOOP
@@ -967,45 +954,45 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
 //--------------------------------------------------
 	if (dsy->nproc > 1 && dsy->grprev != -1)  //Exchange arrays from previous proc, if not the first proc
 	{
-		ierr = MPI_Irecv(lycoors_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Irecv(lxcenter_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest2); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest2, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Irecv(lsxx_prev, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest3); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest3, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Irecv(lmagP_prev, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest4); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest4, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Irecv(lycoors_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Irecv(lxcenter_prev, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest2));
+		PetscCallMPI(MPI_Wait(&rrequest2, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Irecv(lsxx_prev, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest3));
+		PetscCallMPI(MPI_Wait(&rrequest3, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Irecv(lmagP_prev, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest4));
+		PetscCallMPI(MPI_Wait(&rrequest4, MPI_STATUSES_IGNORE));
 
 
-		ierr = MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest2); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest2, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest3); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest3, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Isend(lmagP, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest4); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest4, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest2));
+		PetscCallMPI(MPI_Wait(&srequest2, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest3));
+		PetscCallMPI(MPI_Wait(&srequest3, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Isend(lmagP, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest4));
+		PetscCallMPI(MPI_Wait(&srequest4, MPI_STATUSES_IGNORE));
 	}
 
 	if ((dsy->nproc != 1) &&  (dsy->grnext != -1))  //Exhange arrays with next proc, if not the last proc
 	{
-		ierr = MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest2); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest2, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest3); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest3, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Isend(lmagP, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest4); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest4, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Isend(lycoors, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Isend(lxcenter, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest2));
+		PetscCallMPI(MPI_Wait(&srequest2, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Isend(lsxx, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest3));
+		PetscCallMPI(MPI_Wait(&srequest3, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Isend(lmagP, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest4));
+		PetscCallMPI(MPI_Wait(&srequest4, MPI_STATUSES_IGNORE));
 
-		ierr = MPI_Irecv(lycoors_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Irecv(lxcenter_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest2); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest2, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Irecv(lsxx_next, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest3); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest3, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-		ierr = MPI_Irecv(lmagP_next, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest4); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest4, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Irecv(lycoors_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Irecv(lxcenter_next, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest2));
+		PetscCallMPI(MPI_Wait(&rrequest2, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Irecv(lsxx_next, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest3));
+		PetscCallMPI(MPI_Wait(&rrequest3, MPI_STATUSES_IGNORE));
+		PetscCallMPI(MPI_Irecv(lmagP_next, (PetscMPIInt)(nx*ny), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest4));
+		PetscCallMPI(MPI_Wait(&rrequest4, MPI_STATUSES_IGNORE));
 
 	}
 
@@ -1245,56 +1232,56 @@ PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  
   	//PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT); // debugging All procs must run this
 
 	//restore ycoors arrays
-	ierr = DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vycoors_prev, &ycoors_prev); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vycoors_prev, &lycoors_prev); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_prev); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vycoors_prev, &ycoors_prev));
+	PetscCall(VecRestoreArray(vycoors_prev, &lycoors_prev));
+	PetscCall(DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_prev));
 
-	ierr = DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vycoors, &ycoors); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vycoors, &lycoors); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vycoors, &ycoors));
+	PetscCall(VecRestoreArray(vycoors, &lycoors));
+	PetscCall(DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors));
 
-	ierr = DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vycoors_next, &ycoors_next); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vycoors_next, &lycoors_next); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_next); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vycoors_next, &ycoors_next));
+	PetscCall(VecRestoreArray(vycoors_next, &lycoors_next));
+	PetscCall(DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vycoors_next));
 
 	//restore xcenter arrays
-	ierr = DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxcenter_prev, &xcenter_prev); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vxcenter_prev, &lxcenter_prev); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_prev); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxcenter_prev, &xcenter_prev));
+	PetscCall(VecRestoreArray(vxcenter_prev, &lxcenter_prev));
+	PetscCall(DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_prev));
 
-	ierr = DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxcenter, &xcenter); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vxcenter, &lxcenter); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxcenter, &xcenter));
+	PetscCall(VecRestoreArray(vxcenter, &lxcenter));
+	PetscCall(DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter));
 
-	ierr = DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxcenter_next, &xcenter_next); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vxcenter_next, &lxcenter_next); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_next); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxcenter_next, &xcenter_next));
+	PetscCall(VecRestoreArray(vxcenter_next, &lxcenter_next));
+	PetscCall(DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxcenter_next));
 
 	//restore sxx arrays
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx_prev, &sxx_prev); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vsxx_prev, &lsxx_prev); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx_prev); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx_prev, &sxx_prev));
+	PetscCall(VecRestoreArray(vsxx_prev, &lsxx_prev));
+	PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx_prev));
 
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &sxx); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vsxx, &lsxx); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &sxx));
+	PetscCall(VecRestoreArray(vsxx, &lsxx));
+	PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx));
 
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx_next, &sxx_next); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vsxx_next, &lsxx_next); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx_next); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx_next, &sxx_next));
+	PetscCall(VecRestoreArray(vsxx_next, &lsxx_next));
+	PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vsxx_next));
 
 	//restore magP arrays
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vmagP_prev, &magP_prev); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vmagP_prev, &lmagP_prev); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vmagP_prev); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vmagP_prev, &magP_prev));
+	PetscCall(VecRestoreArray(vmagP_prev, &lmagP_prev));
+	PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vmagP_prev));
 
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vmagP, &magP); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vmagP, &lmagP); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vmagP); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vmagP, &magP));
+	PetscCall(VecRestoreArray(vmagP, &lmagP));
+	PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vmagP));
 
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vmagP_next, &magP_next); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vmagP_next, &lmagP_next); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vmagP_next); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vmagP_next, &magP_next));
+	PetscCall(VecRestoreArray(vmagP_next, &lmagP_next));
+	PetscCall(DMRestoreGlobalVector(jr->DA_CELL_2D, &vmagP_next));
 
 //--------------------------------------------------
 //  Send smoothed stress of current step to stdout
@@ -1306,8 +1293,8 @@ if (((istep % nstep_out)==0) && (dike->out_stress>0))
 			START_PLANE_LOOP
 				xc=COORD_CELL(i, sx, fs->dsx);
 				yc=COORD_CELL(j, sy, fs->dsy);
-				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"202020.2020 %lld %g %g %g %g %lld %lld\n", (LLD)(jr->ts->istep+1),xc, yc, gsxx_eff_ave[L][j][i], 
-				magPressure[L][j][i],(LLD)(nD), (LLD)(dike->istep_count));       
+				PetscSynchronizedPrintf(PETSC_COMM_WORLD,"202020.2020 %" PetscInt_FMT " %g %g %g %g %" PetscInt_FMT " %" PetscInt_FMT "\n", (jr->ts->istep+1),xc, yc, gsxx_eff_ave[L][j][i], 
+				magPressure[L][j][i],(nD), (dike->istep_count));       
 			END_PLANE_LOOP  
 		}
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT); //All procs must run this
@@ -1318,15 +1305,15 @@ if (((istep % nstep_out)==0) && (dike->out_stress>0))
 //--------------------------------------------------
 	if (dike->istep_nave>1)
 	{
-		ierr = DMDAGetCorners(jr->dbdike->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave); CHKERRQ(ierr);
+		PetscCall(DMDAGetCorners(jr->dbdike->DA_CELL_2D_tave, &sx, &sy, &sisc, &nx, &ny, &istep_nave));
 
 		if(istep_nave!=dike->istep_nave) 
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems: istep_nave=%lld, dike->istep_nave=%lld\n", 
-			(LLD)(istep_nave), (LLD)(dike->istep_nave));
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems: istep_nave=%" PetscInt_FMT ", dike->istep_nave=%" PetscInt_FMT "\n", 
+			(istep_nave), (dike->istep_nave));
 		}
 
-		ierr = DMDAVecGetArray(jr->dbdike->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+		PetscCall(DMDAVecGetArray(jr->dbdike->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist));
 
 		dike->istep_count++;
 
@@ -1351,11 +1338,11 @@ if (((istep % nstep_out)==0) && (dike->out_stress>0))
 			}
 		}
 
-		ierr = DMDAVecRestoreArray(jr->dbdike->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist); CHKERRQ(ierr);
+		PetscCall(DMDAVecRestoreArray(jr->dbdike->DA_CELL_2D_tave, dike->sxx_eff_ave_hist, &gsxx_eff_ave_hist));
 	}// end if nstep_ave>1
 	//restore arrays
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure));
 
 	LOCAL_TO_LOCAL(jr->DA_CELL_2D, dike->sxx_eff_ave);
 
@@ -1383,7 +1370,6 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 	PetscInt    ixmax, istep, nstep_out;
  	MPI_Request srequest, rrequest;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	fs  =  jr->fs;
@@ -1404,11 +1390,11 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 
 	if (Lx>0)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Set_dike_zones requires cpu_x = 1 Lx = %lld \n", (LLD)(Lx));
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Set_dike_zones requires cpu_x = 1 Lx = %lld \n", (LLD)(Lx));
+		PetscPrintf(PETSC_COMM_WORLD,"Set_dike_zones requires cpu_x = 1 Lx = %" PetscInt_FMT " \n", (Lx));
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Set_dike_zones requires cpu_x = 1 Lx = %" PetscInt_FMT " \n", (Lx));
 	}
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	PetscCall(DMDAVecGetArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
+	PetscCall(DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz));
 
 	for(lj = j1; lj <= j2; lj++)  //local index
 	{
@@ -1479,9 +1465,9 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 		{ 
 			ycell = COORD_CELL(j, sy, fs->dsy);  
         	xcell=(COORD_CELL(ixmax-1, sx, fs->dsx)+COORD_CELL(ixmax, sx, fs->dsx))/2;
-        	PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %lld %g %g %g %g %g %lld %g \n", 
-				(LLD)(jr->ts->istep+1), ycell, xcenter, xshift, 
-				CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], (LLD)(nD), dtime);  
+        	PetscSynchronizedPrintf(PETSC_COMM_WORLD,"303030.3030 %" PetscInt_FMT " %g %g %g %g %g %" PetscInt_FMT " %g \n", 
+				(jr->ts->istep+1), ycell, xcenter, xshift, 
+				CurrPhTr->celly_xboundL[lj], CurrPhTr->celly_xboundR[lj], (nD), dtime);  
 		}
 
 	}//end loop over j cell row
@@ -1490,20 +1476,20 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 	{
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
 	}
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->sxx_eff_ave, &gsxx_eff_ave));
 
 	//-----------------------------------------------------------------------------------
 	// Set locations of ghost nodes
 	//-----------------------------------------------------------------------------------
-	ierr = DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxboundL_pass); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vxboundL_pass); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxboundL_pass, &xboundL_pass); CHKERRQ(ierr);
-	ierr = VecGetArray(vxboundL_pass, &lxboundL_pass); CHKERRQ(ierr);
+	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxboundL_pass));
+	PetscCall(VecZeroEntries(vxboundL_pass));
+	PetscCall(DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxboundL_pass, &xboundL_pass));
+	PetscCall(VecGetArray(vxboundL_pass, &lxboundL_pass));
 
-	ierr = DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxboundR_pass); CHKERRQ(ierr);
-	ierr = VecZeroEntries(vxboundR_pass); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxboundR_pass, &xboundR_pass); CHKERRQ(ierr);
-	ierr = VecGetArray(vxboundR_pass, &lxboundR_pass); CHKERRQ(ierr);
+	PetscCall(DMGetGlobalVector(jr->dbdike->DA_CELL_1D, &vxboundR_pass));
+	PetscCall(VecZeroEntries(vxboundR_pass));
+	PetscCall(DMDAVecGetArray(jr->dbdike->DA_CELL_1D, vxboundR_pass, &xboundR_pass));
+	PetscCall(VecGetArray(vxboundR_pass, &lxboundR_pass));
 
 	//Northernmost (top) ghost coord of northernmost (top) proc
 	if (dsy->grnext == -1) 
@@ -1521,11 +1507,11 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 	//Receive from 2nd northernmost (top in y) proc to southernmost (bottom in y) and set bottom ghost node
 	if (dsy->nproc > 1 && dsy->grnext != -1) //MPI_Wait will make this run in sequence from top to bottom
 	{
-		ierr = MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-		ierr = MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
 		CurrPhTr->celly_xboundL[ny] = xboundL_pass[L][M][0];
 		CurrPhTr->celly_xboundR[ny] = xboundR_pass[L][M][0];
@@ -1539,20 +1525,20 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 			xboundL_pass[L][M][lj] = CurrPhTr->celly_xboundL[lj];  
 			xboundR_pass[L][M][lj] = CurrPhTr->celly_xboundR[lj];  
 		}
-		ierr = MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-		ierr = MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &srequest));
+		PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
   	}
 
 	if(dsy->nproc != 1 && dsy->grprev != -1)  //Receive coordinates from previous node & set BOTTOM ghost node
 	{
-		ierr = MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Irecv(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 
-		ierr = MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
-		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Irecv(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grprev, 0, PETSC_COMM_WORLD, &rrequest));
+		PetscCallMPI(MPI_Wait(&rrequest, MPI_STATUSES_IGNORE));
 	
 		CurrPhTr->celly_xboundL[-1] = xboundL_pass[L][M][ny-1];
 		CurrPhTr->celly_xboundR[-1] = xboundR_pass[L][M][ny-1];
@@ -1565,46 +1551,42 @@ PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt j
 			xboundL_pass[L][M][lj] = CurrPhTr->celly_xboundL[lj];  
 			xboundR_pass[L][M][lj] = CurrPhTr->celly_xboundR[lj];  
 		}
-     	ierr = MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     	ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+     	PetscCallMPI(MPI_Isend(lxboundL_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     	PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
 
-		ierr = MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, dsy->grnext, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
-     	ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+		PetscCallMPI(MPI_Isend(lxboundR_pass, (PetscMPIInt)(ny+1), MPIU_SCALAR, (PetscMPIInt)dsy->grnext, 0, PETSC_COMM_WORLD, &srequest));
+     	PetscCallMPI(MPI_Wait(&srequest, MPI_STATUSES_IGNORE));
   	}
 
-	ierr = DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxboundL_pass, &xboundL_pass); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vxboundL_pass, &lxboundL_pass); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxboundL_pass); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxboundL_pass, &xboundL_pass));
+	PetscCall(VecRestoreArray(vxboundL_pass, &lxboundL_pass));
+	PetscCall(DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxboundL_pass));
 
-	ierr = DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxboundR_pass, &xboundR_pass); CHKERRQ(ierr);
-	ierr = VecRestoreArray(vxboundR_pass, &lxboundR_pass); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxboundR_pass); CHKERRQ(ierr);
+	PetscCall(DMDAVecRestoreArray(jr->dbdike->DA_CELL_1D, vxboundR_pass, &xboundR_pass));
+	PetscCall(VecRestoreArray(vxboundR_pass, &lxboundR_pass));
+	PetscCall(DMRestoreGlobalVector(jr->dbdike->DA_CELL_1D, &vxboundR_pass));
 
   PetscFunctionReturn(0);  
 }
 
 //---------------------------------------------------------------------------
-PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp)
+PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp, FB *fb)
 {
-	FB              *fb;
 	Controls    *ctrl;
 	Dike        *dike;
 	PetscInt   nD, numDike;
 
-	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
 
 	ctrl = &jr->ctrl;
 	if (!ctrl->actDike) PetscFunctionReturn(0);   // only execute this function if dikes are active
 
-	ierr = FBLoad(&fb, PETSC_TRUE);
-	ierr = TSSolCreate(ts, fb); 				CHKERRQ(ierr);
+	PetscCall(TSSolCreate(ts, fb));
 
-	numDike    = dbdike->numDike; // number of dikes
+	numDike = dbdike->numDike; // number of dikes
 
-// create dike database
-	ierr = DBDikeCreate(dbdike, dbm, fb, jr, PETSC_TRUE);   CHKERRQ(ierr);
-	ierr = FBDestroy(&fb); CHKERRQ(ierr);
+	// create dike database
+	PetscCall(DBDikeCreate(dbdike, dbm, fb, jr, PETSC_TRUE));
 
 	for(nD = 0; nD < numDike; nD++)
 	{
@@ -1612,11 +1594,9 @@ PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike,  DBMat *dbm, JacRes *
 		if (dike->dyndike_start)
 		{
 			// read mean stress history, 2D array (local vector created with DA_CELL_2D_tave in DBReadDike)
-			ierr = VecReadRestart(dike->sxx_eff_ave_hist, fp); CHKERRQ(ierr);
+			PetscCall(VecReadRestart(dike->sxx_eff_ave_hist, fp));
 		}
 	}
-
-	
 
 	PetscFunctionReturn(0);
 }
@@ -1628,7 +1608,6 @@ PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp)
   Dike        *dike;
   PetscInt   nD, numDike;
 
-  PetscErrorCode ierr;
   PetscFunctionBeginUser;
 
   ctrl = &jr->ctrl;
@@ -1642,7 +1621,7 @@ PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp)
     if (dike->dyndike_start)
     {
       // WRITE mean stress history 2D array (local vector created with DA_CELL_2D_tave in DBReadDike)
-       ierr = VecWriteRestart(dike->sxx_eff_ave_hist, fp); CHKERRQ(ierr);
+       PetscCall(VecWriteRestart(dike->sxx_eff_ave_hist, fp));
     }
   }
 
@@ -1658,7 +1637,6 @@ PetscErrorCode DynamicDike_Destroy(JacRes *jr)
   Controls    *ctrl;
   PetscInt   nD, numDike, dyndike_on;
 
-  PetscErrorCode ierr;
   PetscFunctionBeginUser;
 
   ctrl = &jr->ctrl;
@@ -1673,15 +1651,15 @@ PetscErrorCode DynamicDike_Destroy(JacRes *jr)
      dike = jr->dbdike->matDike+nD;
      if (dike->dyndike_start)
      {
-       ierr = VecDestroy(&dike->sxx_eff_ave_hist); CHKERRQ(ierr);
+       PetscCall(VecDestroy(&dike->sxx_eff_ave_hist));
        dyndike_on=1;
      }
   }
 
   if (dyndike_on==1)
   {
-    ierr = DMDestroy(&jr->dbdike->DA_CELL_2D_tave); CHKERRQ(ierr);
-    ierr = DMDestroy(&jr->dbdike->DA_CELL_1D); CHKERRQ(ierr);    
+    PetscCall(DMDestroy(&jr->dbdike->DA_CELL_2D_tave));
+    PetscCall(DMDestroy(&jr->dbdike->DA_CELL_1D));    
   }
 
   PetscFunctionReturn(0);

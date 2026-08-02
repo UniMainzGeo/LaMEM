@@ -51,8 +51,6 @@ public:
   PetscScalar zmax_magma;
   PetscScalar magPfac;
   PetscScalar magPwidth;
-  //PetscScalar ymindyn;
-  //PetscScalar ymaxdyn;
   Vec sxx_eff_ave;
   Vec magPressure;
   Vec sxx_eff_ave_hist;
@@ -96,7 +94,7 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD);
 PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
 PetscErrorCode Set_dike_zones(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);
 PetscErrorCode Locate_Dike_Zones(AdvCtx *actx);
-PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp);
+PetscErrorCode DynamicDike_ReadRestart(DBPropDike *dbdike, DBMat *dbm, JacRes *jr, TSSol *ts, FILE *fp, FB *fb);
 PetscErrorCode DynamicDike_WriteRestart(JacRes *jr, FILE *fp);
 PetscErrorCode DynamicDike_Destroy(JacRes *jr);
 

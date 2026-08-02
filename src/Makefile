@@ -28,22 +28,24 @@ surf = none
 # FASTSCAPELIB = /directory/where/FastScapeLib/is/located
 
 ifeq ($(mode), deb)
-ifeq (${PETSC_DEB},)
-$(error Environmental variable PETSC_DEB must be set to PETSc debug installation directory)
-endif
-PETSC_DIR = ${PETSC_DEB}
+   ifeq (${PETSC_DEB},)
+      $(error Environmental variable PETSC_DEB must be set to PETSc debug installation directory)
+   endif
+   PETSC_DIR = ${PETSC_DEB}
 else ifeq ($(mode), opt)
-ifeq (${PETSC_OPT},)
-$(error Environmental variable PETSC_OPT must be set to PETSc optimized installation directory)
-endif
-PETSC_DIR = ${PETSC_OPT}
+   ifeq (${PETSC_OPT},)
+      $(error Environmental variable PETSC_OPT must be set to PETSc optimized installation directory)
+   endif
+   PETSC_DIR = ${PETSC_OPT}
+else
+   $(error Unknown compilation mode specified)
 endif
 
 ifeq ($(surf), scape)
-ifeq (${FASTSCAPE_LIB},)
-${error Environmental variable FASTSCAPE_LIB must be set to installation directory}
-endif
-FASTSCAPE_DIR = ${FASTSCAPE_LIB}
+   ifeq (${FASTSCAPE_LIB},)
+      ${error Environmental variable FASTSCAPE_LIB must be set to installation directory}
+   endif
+   FASTSCAPE_DIR = ${FASTSCAPE_LIB}
 endif
 
 # include PETSc environmental variables:
@@ -222,9 +224,9 @@ ${LAMEM} : ${LAMEM_LIB} ${LAMEM_OBJ}
 	@echo "......... Linking LaMEM Executable .........."
 	@echo "............................................."
 ifeq ($(surf), scape)
-	${CXXLINKER} ${LAMEM_OBJ} ${LAMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} ${FS_LIB} -o  $@
+	${LINKER} ${LAMEM_OBJ} ${LAMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} ${FS_LIB} -o  $@
 else
-	${CXXLINKER} ${LAMEM_OBJ} ${LAMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o  $@
+	${LINKER} ${LAMEM_OBJ} ${LAMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o  $@
 endif
 
 #==============================================================================
@@ -232,7 +234,7 @@ endif
 # pattern rules for automatic generation of object & dependency files
 # insert full path to object files in dependency files with sed command
 
-../lib/${mode}/%.o : %.cpp 
+../lib/${mode}/%.o : %.cpp
 	${MPI_COMPILER} ${LAMEM_FLAGS} -c $< -o $@
 	@${MPI_COMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} $< -o ../dep/${mode}/$*.d.tmp
 	@sed '1s,^,../lib/${mode}/,' < ../dep/${mode}/$*.d.tmp > ../dep/${mode}/$*.d
@@ -277,7 +279,6 @@ ifeq ($(surf), scape)
 	@echo "............................................."
 endif
 
-
 #==============================================================================
 
 clean_all :
@@ -287,4 +288,5 @@ clean_all :
 	@rm -rf ../lib/$(mode)/*
 	@rm -rf ../bin/$(mode)/*
 	@rm -rf ../dep/$(mode)/*
+
 #==============================================================================

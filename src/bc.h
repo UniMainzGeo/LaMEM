@@ -23,15 +23,6 @@ struct DBMat;
 struct JacRes;
 
 //---------------------------------------------------------------------------
-// index shift type
-enum ShiftType
-{
-	_LOCAL_TO_GLOBAL_,
-	_GLOBAL_TO_LOCAL_
-
-};
-
-//---------------------------------------------------------------------------
 // Bezier block (rotating polygon moving along Bezier curve)
 //---------------------------------------------------------------------------
 
@@ -39,14 +30,15 @@ struct BCBlock
 {
 	// path description
 	PetscInt    npath;                        // number of path points of Bezier curve
+	PetscInt    pathDim;                      // path dimension (2 = x-y plane, 3 = full 3D)
 	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
 	PetscScalar time [  _max_path_points_  ]; // times at path points
-	PetscScalar path [6*_max_path_points_-4]; // Bezier curve path & control points (3*n-2)
+	PetscScalar path [9*_max_path_points_-6]; // Bezier curve path & control points (3*n-2 points, up to 3 coords each)
 
 	// block description
 	PetscInt    npoly;                      // number of polygon vertices
 	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
-	PetscScalar bot, top;                   // bottom & top coordinates of the block
+	PetscScalar bot, top;                   // bottom & top z-coordinates at initial time (move with path for 3D)
 
 	// WARNING bottom coordinate should be advected (how? average?)
 	// Top of the box can be assumed to be the free surface
@@ -59,10 +51,15 @@ struct BCBlock
 // setup data structures
 PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb);
 
+// print Bezier block summary
+PetscErrorCode BCBlockPrint(BCBlock *bcb, Scaling *scal, PetscInt cnt);
+
 // compute position along the path and rotation angle as a function of time
+// For 2D path: x[0]=x, x[1]=y, x[2]=theta
+// For 3D path: x[0]=x, x[1]=y, x[2]=z, x[3]=theta
 PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar x[]);
 
-// compute current polygon coordinates
+// compute current polygon coordinates (2D x-y polygon, z handled separately in BCApplyBezier)
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
 
 //---------------------------------------------------------------------------
@@ -128,12 +125,15 @@ struct BCCtx
 	//        DBL_MAX   - free-slip (zero-flux) condition flag
 	//        otherwise - two-point constraint (TPC) value
 	//
+	//    *Periodic ghost point is marked with a DOF index of the opposite boundary
+	//
 	// Boundary ghost points require consistent setting of constraints
 	// on the processor boundaries (since PETSc doesn't exchange boundary
 	// ghost point values). Internal ghost points should be synchronized
 	// after initializing the single-point constraints. Synchronization
 	// can be skipped if all ghost points are initialized redundantly
-	// on all the processes (DO THIS!).
+	// on all the processes.
+	//
 	//
 	// Single point constraints are additionally stored as lists
 	// for constraining matrices and vectors. Matrices require global
@@ -145,18 +145,15 @@ struct BCCtx
 	// NOTE! It may be worth storing TPC also as lists (for speedup).
 	//=====================================================================
 
-
 	FDSTAG   *fs;   // staggered grid
 	TSSol    *ts;   // time stepping parameters
 	Scaling  *scal; // scaling parameters
 	DBMat    *dbm;  // material database
 	JacRes   *jr;   // Jacobian-residual context (CROSS-REFERENCE!)
 
-
 	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
 
 	// single-point constraints
-	ShiftType    stype;   // current index shift type
 	PetscInt     numSPC;  // total number of constraints
 	PetscInt    *SPCList; // local indices of SPC
 	PetscScalar *SPCVals; // values of SPC
@@ -176,13 +173,6 @@ struct BCCtx
 	PetscInt    *tSPCList;
 	PetscScalar *tSPCVals;
 
-	// two-point constraints
-//	PetscInt     numTPC;       // number of two-point constraints (TPC)
-//	PetscInt    *TPCList;      // local indices of TPC (ghosted layout)
-//	PetscInt    *TPCPrimeDOF;  // local indices of primary DOF (ghosted layout)
-//	PetscScalar *TPCVals;      // values of TPC
-//	PetscScalar *TPCLinComPar; // linear combination parameters
-
 	//=====================
 	// VELOCITY CONSTRAINTS
 	//=====================
@@ -200,71 +190,67 @@ struct BCCtx
 	PetscInt     ExyNumPeriods;
 	PetscScalar  ExyTimeDelims [_max_periods_-1];
 	PetscScalar  ExyStrainRates[_max_periods_  ];
-	
-	PetscInt     EyzNumPeriods;
-	PetscScalar  EyzTimeDelims [_max_periods_-1];
-	PetscScalar  EyzStrainRates[_max_periods_  ];
-
-	PetscInt     ExzNumPeriods;
-	PetscScalar  ExzTimeDelims [_max_periods_-1];
-	PetscScalar  ExzStrainRates[_max_periods_  ];
 
 	// background strain rate reference point
 	PetscScalar  BGRefPoint[3];
 
 	// Bezier block
-	PetscInt 	 nblocks;             // number of Bezier blocks
+	PetscInt     nblocks;             // number of Bezier blocks
 	BCBlock      blocks[_max_boxes_]; // BC block
 
-    // internal velocity boxes
-	PetscInt 	 nboxes;              // number of velocity boxes
-    VelBox       vboxes[_max_boxes_]; // velocity boxes
+	// internal velocity boxes
+	PetscInt     nboxes;              // number of velocity boxes
+	VelBox       vboxes[_max_boxes_]; // velocity boxes
 
 	// internal velocity cylinders
-	PetscInt 	 ncylinders;                            // number of velocity boxes
-    VelCylinder  vcylinders[_max_boxes_];               // velocity boxes
+	PetscInt     ncylinders;                            // number of velocity boxes
+	VelCylinder  vcylinders[_max_boxes_];               // velocity boxes
 
 	// velocity inflow & outflow boundary condition
-	PetscInt     face,face_out,num_phase_bc,phase[5];   // face (1-left 2-right 3-front 4-back) & phase identifiers
-	PetscScalar  bot, top,relax_dist,phase_interval[6]; // bottom & top coordinates of the plate
-	PetscScalar  velin, velout; 			            // inflow & outflow velocities
-	PetscScalar  velbot, veltop; 		                // bottom/top inflow velocities
+	PetscInt     face, face_out, num_phase_bc, phase[5];  // face (1-left 2-right 3-front 4-back) & phase identifiers
+	PetscScalar  bot, top, relax_dist, phase_interval[6]; // bottom & top coordinates of the plate
+	PetscScalar  velin,  velout;                          // inflow & outflow velocities
+	PetscScalar  velbot, veltop;                          // bottom/top inflow velocities
 	PetscInt     bvel_temperature_inflow;
-	PetscScalar  bvel_thermal_age,bvel_potential_temperature, bvel_temperature_top;
+	PetscScalar  bvel_thermal_age, bvel_potential_temperature, bvel_temperature_top;
 	PetscScalar  bvel_constant_temperature;
-	PetscInt     VelNumPeriods; 			// number of periods when boundary inflow velocity will change , must be less than _max_periods_
-    PetscScalar  VelTimeDelims [_max_periods_-1];
-    PetscScalar  velin_array [_max_periods_];
+	PetscInt     VelNumPeriods;                           // number of periods when boundary inflow velocity will change , must be less than _max_periods_
+	PetscScalar  VelTimeDelims [_max_periods_-1];
+	PetscScalar  velin_array [_max_periods_];
+	PetscInt     VelNetNumPeriods;
+	PetscScalar  VelNetTimeDelims [_max_periods_-1];
+	PetscScalar  velin_net_array [_max_periods_];
 
-	// Plume inflow bottom boundary condition
+	// plume inflow bottom boundary condition
 	PetscInt        Plume_Inflow;
-	PetscInt		Plume_Type;                 // Do we have a plume-like inflow boundary?
-	PetscInt 		Plume_flux_ctr;             // Plume flux is constrained or not?
-	PetscInt 		Plume_Dimension;            // Type [2D=1, or 3D=2]
-	PetscInt		Plume_Phase;                // Phase of plume
+	PetscInt        Plume_Type;                 // Do we have a plume-like inflow boundary?
+	PetscInt        Plume_flux_ctr;             // Plume flux is constrained or not?
+	PetscInt        Plume_Dimension;            // Type [2D=1, or 3D=2]
+	PetscInt        Plume_Phase;                // Phase of plume
 	PetscInt        Plume_Phase_Mantle;         // Mantle phase (astenosphere)
 	PetscScalar     Plume_Depth;                // Column plume height
-	PetscScalar		Plume_Temperature;          // Temperature
-	PetscScalar		Plume_Center[2];            // center [x,y] coordinates (for 3D plume)		
-	PetscScalar		Plume_Radius;               // radius of plume (for 3D plume)
-	PetscScalar		Plume_Inflow_Velocity;      // inflow velocity
-	PetscInt 		Plume_VelocityType;         // type of inflow [Gaussian=0=default or Poiseuille=1]
+	PetscScalar     Plume_Temperature;          // Temperature
+	PetscScalar     Plume_Center[2];            // center [x,y] coordinates (for 3D plume)
+	PetscScalar     Plume_Radius;               // radius of plume (for 3D plume)
+	PetscScalar     Plume_Inflow_Velocity;      // inflow velocity
+	PetscInt        Plume_VelocityType;         // type of inflow [Gaussian=0=default or Poiseuille=1]
 	PetscScalar     Plume_areaFrac;             // how much of the plume area is actually in the model
 	PetscScalar     Plume_Pressure;             // Plume Pressure at the bottom of the model (i.e. the bottom pressure boundary condition)
+
 	// open boundary flag
-	PetscInt     	top_open;
-	PetscInt 		bot_open;
+	PetscInt        top_open;
+	PetscInt        bot_open;
 	PetscInt        phase_inflow_bot;
 
 	// no-slip boundary condition mask
-	PetscInt     	noslip[6];
+	PetscInt        noslip[6];
 
 	// fixed phase (no-flow condition)
-	PetscInt     	fixPhase;
+	PetscInt         fixPhase;
 
 	// fixed cells (no-flow condition)
-	PetscInt       	fixCell;
-	unsigned char 	*fixCellFlag;
+	PetscInt         fixCell;
+	unsigned char   *fixCellFlag;
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
@@ -272,20 +258,20 @@ struct BCCtx
 
 	// temperature on top and bottom boundaries and initial guess activation flag
 	// bottom T can change with time
-	PetscInt     	TbotNumPeriods;
-	PetscScalar  	TbotTimeDelims [_max_periods_-1];
-	PetscScalar  	Tbot[_max_periods_  ];
+	PetscInt     TbotNumPeriods;
+	PetscScalar  TbotTimeDelims [_max_periods_-1];
+	PetscScalar  Tbot           [_max_periods_];
 
-	PetscScalar  	Ttop;
-	PetscInt     	initTemp;
+	PetscScalar  Ttop;
+	PetscInt     initTemp;
 
 	//=====================
 	// PRESSURE CONSTRAINTS
 	//=====================
 
 	// pressure on top and bottom boundaries and initial guess activation flag
-	PetscScalar  	pbot, ptop;
-	PetscInt     	initPres;
+	PetscScalar  pbot, ptop;
+	PetscInt     initPres;
 
 };
 //---------------------------------------------------------------------------
@@ -313,13 +299,6 @@ PetscErrorCode BCApply(BCCtx *bc);
 
 // apply SPC to global solution vector
 PetscErrorCode BCApplySPC(BCCtx *bc);
-
-// shift indices of constrained nodes
-PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
-
-// plume pressure like boundary condition
-PetscErrorCode BCApplyPres_Plume_Pressure(BCCtx *bc);
-
 
 //---------------------------------------------------------------------------
 // Specific constraints
@@ -361,17 +340,6 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc);
 // apply plume_open_boundary condition
 PetscErrorCode BC_Plume_inflow(BCCtx *bc);
 
-// apply pressure permeable boundary condition
-PetscErrorCode BCApply_Permeable_Pressure(BCCtx *bc);
-
-// Get the average lithostatic pressure at the bottom
-PetscErrorCode GetAverageLithostatic(BCCtx *bc);
-
-// Get the densities of the external material
-PetscScalar GetDensity(BCCtx *bc,PetscInt Phase, PetscScalar T, PetscScalar p );
-
-
-
 //---------------------------------------------------------------------------
 // Service functions
 //---------------------------------------------------------------------------
@@ -383,16 +351,15 @@ PetscErrorCode BCGetBGStrainRates(
 		PetscScalar *Eyy_,
 		PetscScalar *Ezz_,
 		PetscScalar *Exy_,
-		PetscScalar *Eyz_,
-		PetscScalar *Exz_,
 		PetscScalar *Rxx_,
 		PetscScalar *Ryy_,
 		PetscScalar *Rzz_);
+
 //change velin in accordance with given time intervals
 PetscErrorCode BCGetVelins(
 		BCCtx       *bc);
 
-// Get current bottom temperature
+// get current bottom temperature
 PetscErrorCode BCGetTempBound(
 		BCCtx       *bc,
 		PetscScalar *Tbot);

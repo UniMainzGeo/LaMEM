@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 #ifndef __JacRes_h__
 #define __JacRes_h__
+//---------------------------------------------------------------------------
 
 struct FB;
 struct Scaling;
@@ -119,7 +120,6 @@ struct Controls
 {
 	PetscScalar grav[3];       // global gravity components
 	PetscScalar FSSA;          // free surface stabilization parameter [0 - 1]
-	PetscInt    FSSA_allVel;   // Use all velocity components for FSSA?
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
@@ -164,10 +164,8 @@ struct Controls
 	PetscScalar Adiabatic_gr;   // Adiabatic gradient
 
 	PetscInt    actDike;        // Flag to activate dike, additional term on RHS of divergence
-
-  PetscInt    useTk;     // activation flag for using temperature-dependent conductivity
-
-  PetscInt  dikeHeat;   // activation flag for using Behn & Ito heat source in dike
+	PetscInt    useTk;          // activation flag for using temperature-dependent conductivity
+	PetscInt    dikeHeat;       // activation flag for using Behn & Ito heat source in dike
 };
 
 //---------------------------------------------------------------------------
@@ -177,14 +175,14 @@ struct Controls
 struct JacRes
 {
 	// external handles
-	Scaling  *scal;  // scaling
-	TSSol    *ts;    // time-stepping parameters
-	FDSTAG   *fs;    // staggered-grid layout
-	FreeSurf *surf;  // free surface
-	BCCtx    *bc;    // boundary condition context
-    DBPropDike *dbdike; // dike database
-	DBMat    *dbm;   // material database
-  
+	Scaling    *scal;   // scaling
+	TSSol      *ts;     // time-stepping parameters
+	FDSTAG     *fs;     // staggered-grid layout
+	FreeSurf   *surf;   // free surface
+	BCCtx      *bc;     // boundary condition context
+	DBPropDike *dbdike; // dike database
+	DBMat      *dbm;    // material database
+
 	// parameters and controls
 	Controls ctrl;
 
@@ -194,7 +192,6 @@ struct JacRes
 	// velocity	components
 	Vec gvx,  gvy, gvz;  // global
 	Vec lvx,  lvy, lvz;  // local (ghosted)
-	Vec dvxdx,dvxdy, dvxdz,dvydx,dvydy,dvydz,dvzdx,dvzdy,dvzdz;  // velocity tensor components
 
 	// momentum residual components
 	Vec gfx,  gfy, gfz;  // global
@@ -205,7 +202,7 @@ struct JacRes
 	Vec                   gdxy, gdxz, gdyz; // global
 	// (ADVInterpMarkToEdge & ADVInterpFieldToMark is the only
 	//  couple of functions where global vectors (gdxy, gdxz, gdyz) are used.
-	//  Get a fuck rid of this ugly averaging between markers & edges!
+	//  Get rid of this ugly averaging between markers & edges!
 	//  In ADVInterpFieldToMark it's easy.
 	//  In ADVInterpMarkToEdge it's impossible because of assembly operation.
 	//  Really really really need to switch to ghost marker approach!
@@ -254,10 +251,14 @@ struct JacRes
 	Vec ge;   // energy residual (global)
 	KSP tksp; // temperature diffusion solver
 
+	// reference energy residual norm for automatic tolerance setting
+	PetscScalar ts_ksp_ref_norm;
+
 	//==========================
 	// 2D integration primitives
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
+
 };
 //---------------------------------------------------------------------------
 
@@ -285,6 +286,12 @@ PetscErrorCode JacResGetPressShift(JacRes *jr);
 // evaluate effective strain rate components in basic nodes
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr);
 
+// compute velocity gradients for output
+PetscErrorCode JacResGetVelGrad(JacRes *jr,
+		Vec dvxdx, Vec dvxdy, Vec dvxdz,
+		Vec dvydx, Vec dvydy, Vec dvydz,
+		Vec dvzdx, Vec dvzdy, Vec dvzdz);
+
 // compute components of vorticity vector
 PetscErrorCode JacResGetVorticity(JacRes *jr);
 
@@ -294,10 +301,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr);
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 
-// copy solution from global to local vectors, enforce boundary constraints
+// copy velocity solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopyVel(JacRes *jr, Vec x);
 
-// copy solution from global to local vectors, enforce boundary constraints
+// copy pressure solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopyPres(JacRes *jr, Vec x);
 
 // initialize pressure
@@ -316,14 +323,6 @@ PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f);
 PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
 
 PetscErrorCode JacResViewRes(JacRes *jr);
-
-//---------------------------------------------------------------------------
-
-// compute velocity gradient and normalized velocities at cell center
-PetscErrorCode getGradientVel(
-	FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
-	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz,
-	Tensor2RN *L, PetscScalar *vel, PetscScalar *pvnrm);
 
 //---------------------------------------------------------------------------
 
@@ -397,9 +396,6 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr);
 #define SET_TPC(bc, a, k, j, i, pmdof) { \
 	if(bc[k][j][i] == DBL_MAX) a[k][j][i] = pmdof; \
 	else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
-
-#define SET_EDGE_CORNER(n, a, K, J, I, k, j, i, pmdof) \
-	a[K][J][I] = a[k][j][I] + a[k][J][i] + a[K][j][i] - 2.0*pmdof;
 
 //---------------------------------------------------------------------------
 #endif

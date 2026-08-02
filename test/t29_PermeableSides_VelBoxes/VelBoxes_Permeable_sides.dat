@@ -31,7 +31,7 @@
 
 # Number of cells for all segments
 	nel_x 	= 	128
-	nel_y 	= 	1
+	nel_y 	= 	2
 	nel_z 	= 	32
 
 # Coordinates of all segments (including start and end points)
@@ -95,12 +95,6 @@
 	mfmax 		   = 0.08			# 	maximum melt fraction used for computation of density & viscosity
 	
 	#adiabatic_gradient     = 0.3
-#===============================================================================
-# Solver options
-#===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e4
 
 #===============================================================================
 # Model setup & advection
@@ -764,34 +758,20 @@
         Cp          =   1050        	# heat capacity
 	<MaterialEnd>
 
-
 #===============================================================================
-# PETSc options
+# Solver options
 #===============================================================================
 
-<PetscOptionsStart>
-	# LINEAR & NONLINEAR SOLVER OPTIONS
-	#-snes_ksp_ew
-	#-snes_ksp_ew_rtolmax 1e-4
-	-snes_rtol 1e-4					
-	-snes_atol 1e-4					
-	-snes_max_it 30					
-	
-	-snes_PicardSwitchToNewton_rtol 1e-4   # relative tolerance to switch to Newton (1e-2)
-	-snes_NewtonSwitchToPicard_it  	5     # number of Newton iterations after which we switch back to Picard
+<SolverOptionsStart>
 
-	
-	-js_ksp_type fgmres
-	#-js_ksp_monitor 				# display how the inner iterations converge
-	-js_ksp_max_it 20				# inner
-	-js_ksp_atol 1e-8
-	-js_ksp_rtol 1e-5
+	nonlinear_tolerances = 1e-4 1e-4 30        # rtol, atol, maxit
+	linear_tolerances    = 1e-5 1e-8  20       # rtol, atol, maxit
+	picard_to_newton     = 1e-4  5  1.2  20   # picard rtol, picard minit, newton rtol, newton maxit
+	monitor_solvers      = 1
+	stokes_solver        = coupled_direct
+	direct_solver_type   = mumps
 
-	-snes_linesearch_type l2
-	#-snes_linesearch_monitor
-	-snes_linesearch_maxstep 10
-	
-<PetscOptionsEnd>
+<SolverOptionsEnd>
 
 #===============================================================================
 

@@ -1,0 +1,160 @@
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 100.0   # simulation end time
+	dt        = 1     # time step
+	dt_min    = 0.1   # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 5     # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 50    # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 64
+	nel_y = 32
+	nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 2.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+# Periodic geometry flags
+# WARNING! only implemented for x-direction
+	
+	periodic = 1
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+    surf_use           = 1                # free surface activation flag
+    surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+    surf_topo_file     = topo.bin
+    surf_level         = 0.5
+    surf_air_phase     = 1                # phase ID of sticky air layer
+    surf_max_angle     = 45.0             # maximum angle with horizon (smoothed if larger)
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# No-slip boundary flag mask (left right front back bottom top)
+
+    noslip = 0 0 0 0 1 0
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 1.0    # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 0              # initial guess flag
+	eta_min        = 1e-3           # viscosity upper bound
+	eta_max        = 1e12           # viscosity lower limit
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	mark_ctrl      = basic
+	
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = surf_test # output file name
+	out_pvd             = 1         # activate writing .pvd file
+	out_j2_dev_stress   = 1
+	out_dev_stress      = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_density = 1
+	
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
+
+
+# Free surface output options (can be activated only if surface tracking is enabled)
+
+    out_surf            = 1 # activate surface output
+    out_surf_pvd        = 1 # activate writing .pvd file
+    out_surf_velocity   = 1
+    out_surf_topography = 1
+    out_surf_amplitude  = 1
+
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of air
+	<MaterialStart>
+		ID  = 0   # phase id
+		rho = 0.1 # density
+		eta = 1   # viscosity
+	<MaterialEnd>
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID  = 1   # phase id
+		rho = 1   # density
+		eta = 1   # viscosity
+	<MaterialEnd>
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+
+<SolverOptionsStart>
+
+	linear_tolerances       =  1e-6 -1   100
+	monitor_solvers         =  1                     # show linear iteration convergence
+	set_linear_problem      =  1                     # linear problem activation flag (skip nonlinear iteration)
+	stokes_solver           =  coupled_mg                # [block_direct, coupled_mg, block_mg, wbt]
+	smoother_type           =  light                # [light (richardson + jacobi), intermediate (chebyshev + sor), heavy (gmres + bjacobi)]
+	smoother_num_sweeps     =  5
+	coarse_solver           =  direct               # [direct, hypre, bjacobi, asm] (hypre, bjacobi and asm use gmres)
+	coarse_num_cpu          =  1
+
+
+
+<SolverOptionsEnd>
+
+<PetscOptionsStart>
+
+-gmg_pc_mg_levels 3
+
+<PetscOptionsEnd>
+
+#===============================================================================
+

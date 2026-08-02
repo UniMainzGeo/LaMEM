@@ -1,0 +1,555 @@
+--------------------------------------------------------------------------
+Parsing input file : VelBoxes_Permeable_sides.dat 
+Finished parsing input file 
+--------------------------------------------------------------------------
+Parsing PETSc options
+Total number of options added: 0
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type user # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-05 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile VelBoxes_Permeable_sides.dat # (source: code)
+-snes_atol 0.0001 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs 1000000000 # (source: code)
+-snes_max_it 30 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 5 # (source: code)
+-snes_picard_rtol 0.0001 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-snes_stol 1e-32 # (source: code)
+-ts_ksp_atol_auto # (source: code)
+-ts_ksp_converged_reason # (source: code)
+-ts_ksp_max_it 500 # (source: code)
+-ts_ksp_monitor # (source: code)
+-ts_ksp_rtol 1e-08 # (source: code)
+-ts_ksp_type fgmres # (source: code)
+#End of PETSc Option Table entries
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
+     Version : 2.2.1 
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Scaling parameters:
+   Temperature : 1000. [C/K] 
+   Length      : 100000. [m] 
+   Viscosity   : 1e+20 [Pa*s] 
+   Stress      : 1e+09 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1000. [Myr] 
+   Maximum number of steps      : 1 
+   Time step                    : 0.001 [Myr] 
+   Minimum time step            : 1e-09 [Myr] 
+   Maximum time step            : 1. [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.8 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+   Save restart every [n] steps : 200 
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 2 
+   Processor grid  [nx, ny, nz]         : [2, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [128, 2, 32]
+   Number of cells                      :  8192
+   Number of faces                      :  28992
+   Maximum cell aspect ratio            :  1.64062
+   Lower coordinate bounds [bx, by, bz] : [-2100., -20., -1000.]
+   Upper coordinate bounds [ex, ey, ez] : [2100., 20., 0.]
+--------------------------------------------------------------------------
+Material parameters: 
+
+   Phase ID : 0     --   StickyAir 
+   (dens)   : rho = 10. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1e+06 [J/kg/K]  k = 100. [W/m/k]  
+
+   Phase ID : 1     --   OceanicCrust 
+   diffusion creep profile  : Wet_Plagioclase_RybackiDresen_2000
+   dislocation creep profile: Wet_Plagioclase_RybackiDresen_2000
+   (dens)   : rho = 3000. [kg/m^3]  
+   (diff)   : Bd = 4.74279e-11 [1/Pa/s]  Ed = 159000. [J/mol]  Vd = 3.8e-05 [m^3/mol]  
+   (disl)   : Bn = 1.13035e-15 [1/Pa^n/s]  En = 345000. [J/mol]  Vn = 3.8e-05 [m^3/mol]  n = 3. [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 2     --   OceanicMantleLithosphere 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 1e-05 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 3     --   UpperMantle 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 4     --   Plume 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 5     --   LowerMantle 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 6     --   ZirconsRichUpperMantle 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 7   
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 8     --   LowerPlume 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3200. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 9     --   ZirconsRich_Reidite 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 10     --   ZirconsRichPlume_Reidite 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 11     --   LowerMantle_Reidite 
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3660. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 12   
+   diffusion creep profile  : Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+   dislocation creep profile: Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+   (dens)   : rho = 3660. [kg/m^3]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 8e-06 [m^3/mol]  
+   (disl)   : Bn = 6.22254e-16 [1/Pa^n/s]  En = 530000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 13     --   UpperMantlePermeableSide 
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 14     --   LowerMantlePermeableSide 
+   (dens)   : rho = 3600. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 15     --   OceanicMantleLithospherePermeableSide 
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+   Phase ID : 16     --   OceanicCrustPermeableSide 
+   (dens)   : rho = 3000. [kg/m^3]  
+   (diff)   : eta = 1e+18 [Pa*s]  Bd = 5e-19 [1/Pa/s]  
+   (temp)   : alpha = 3e-05 [1/K]  Cp = 1050. [J/kg/K]  k = 3. [W/m/k]  
+
+Phase Transition laws: 
+--------------------------------------------------------------------------
+   Phase Transition [0] :   Box 
+     Box Bounds         :   [2000.0; 2100.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    9  10  11  12  
+     Phase Inside       :   13  13  13  13  
+     Direction          :   OutsideToInside 
+   Phase Transition [1] :   Box 
+     Box Bounds         :   [2000.0; 2100.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    3  5  2  1  
+     Phase Inside       :   13  14  15  16  
+     Direction          :   BothWays 
+   Phase Transition [2] :   Box 
+     Box Bounds         :   [-2100.0; -2000.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    9  10  11  12  
+     Phase Inside       :   13  13  13  13  
+     Direction          :   OutsideToInside 
+   Phase Transition [3] :   Box 
+     Box Bounds         :   [-2100.0; -2000.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Only check particles within vicinity of box (twice width) to determine inside/outside 
+     Don't set T inside @   
+     Phase Outside      :    3  5  2  1  
+     Phase Inside       :   13  14  15  16  
+     Direction          :   BothWays 
+   Phase Transition [4] :   Box 
+     Box Bounds         :   [-2100.0; -1850.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Use all particles to check inside/outside 
+     Halfspace; top T   :   0.0 [C] 
+     Halfspace; bot T   :   1350.0 [C] 
+     Halfspace; Age     :   30.0 [Myr] 
+     No phase change    @   
+   Phase Transition [5] :   Box 
+     Box Bounds         :   [1950.0; 2200.0; -100.0; 100.0; -1000.0; 0.0] [km] 
+     Box Vicinity       :   Use all particles to check inside/outside 
+     Halfspace; top T   :   0.0 [C] 
+     Halfspace; bot T   :   1350.0 [C] 
+     Halfspace; Age     :   30.0 [Myr] 
+     No phase change    @   
+   Phase Transition [6] :   Constant 
+     Parameter          :   T 
+     Transition Value   :   1200.000 
+     Phase Above        :   3  13  
+     Phase Below        :   2  15  
+     Direction          :   BothWays 
+   Phase Transition [7] :   Constant 
+     Parameter          :   Depth 
+     Transition Value   :   -660.000 
+     Phase Above        :   3  4  9  10  13  
+     Phase Below        :   5  8  11  12  14  
+     Direction          :   BothWays 
+   Phase Transition [8] :   Constant 
+     Parameter          :   MeltFraction 
+     Transition Value   :   0.040 
+     Phase Above        :   6  7  
+     Phase Below        :   3  4  
+     Direction          :   BelowToAbove 
+   Phase Transition [9] :   Clapeyron 
+     Transition law     :   Zircon_Reidite
+       # Equations      :   1    [ P = P0 + gamma*(T-T0) ] 
+       eq[0]            :   gamma =  1.90e+00 [MPa/C], P0 = 8.00e+09 [Pa],  T0 = 25.0 [deg C] 
+     Phase Above        :   9  10  
+     Phase Below        :   6  7  
+     Direction          :   BelowToAbove 
+   Phase Transition [10] :   Constant 
+     Parameter          :   Depth 
+     Transition Value   :   -10.000 
+     Phase Above        :   16  
+     Phase Below        :   15  
+     Direction          :   BothWays 
+   Phase Transition [11] :   Constant 
+     Parameter          :   Depth 
+     Transition Value   :   -80.000 
+     Phase Above        :   15  
+     Phase Below        :   13  
+     Direction          :   BothWays 
+
+   Adjusting density values due to phase transitions: 
+     Phase              :    5, rho = 3600.0 [kg/m^3] 
+     Phase              :    3, rho = 3300.0 [kg/m^3] 
+     Phase              :    8, rho = 3600.0 [kg/m^3] 
+     Phase              :    4, rho = 3300.0 [kg/m^3] 
+     Phase              :   11, rho = 3600.0 [kg/m^3] 
+     Phase              :    9, rho = 3300.0 [kg/m^3] 
+     Phase              :   12, rho = 3600.0 [kg/m^3] 
+     Phase              :   10, rho = 3300.0 [kg/m^3] 
+     Phase              :   14, rho = 3600.0 [kg/m^3] 
+     Phase              :   13, rho = 3300.0 [kg/m^3] 
+     Phase              :    6, rho = 3300.0 [kg/m^3] 
+     Phase              :    9, rho = 3300.0 [kg/m^3] 
+     Phase              :    7, rho = 3300.0 [kg/m^3] 
+     Phase              :   10, rho = 3300.0 [kg/m^3] 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
+   Top boundary temperature                   : 0. [C] 
+   Bottom boundary temperature                : 1350. [C] 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
+   Activate temperature diffusion          @ 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Enforce zero average pressure on top    @ 
+   Minimum viscosity                       : 1e+18 [Pa*s] 
+   Maximum viscosity                       : 1e+24 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
+   Universal gas constant                  : 8.31446 [J/mol/K] 
+   Max. melt fraction (viscosity, density) : 0.08    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Passive Tracers are active              @ 
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Periodic marker advection     @
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : empirical STAGP (STAG + pressure points)
+   Marker control type           : subgrid 
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+   Background phase ID           : 0 
+   Interpolation constant        : 0.666667 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.00707929 sec)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Passive Tracers: 
+   Initial coordinate Box x = [Left,Right] : -1200.000000, 1200.000000 
+   Initial coordinate Box y = [Front,Back] : -1.000000, 1.000000 
+   Initial coordinate Box z = [Bot, Top]   : -200.000000, -100.000000 
+   # of tracers in [x,y,z] direction       : [300, 1, 300] 
+   Total # of tracers                      : 90000 
+   Tracer advection activation type        : Melt_Fraction > 0.08     
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : PlumeLithosphereInteraction 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Total Pressure                          @ 
+   Overpressure                            @ 
+   Lithostatic pressure                    @ 
+   Temperature                             @ 
+   Deviatoric stress tensor                @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate tensor           @ 
+   Deviatoric strain rate second invariant @ 
+   Yield stress                            @ 
+   Accumulated Plastic Strain (APS)        @ 
+   Plastic dissipation                     @ 
+   Total displacements                     @ 
+   Momentum residual                       @ 
+   Continuity residual                     @ 
+   Melt fraction                           @ 
+--------------------------------------------------------------------------
+Passive Tracers output parameters:
+   Write Passive tracers pvd file  
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Picard operator type          : assembled
+   Preconditioner type           : user-defined
+   Penalty parameter (pgamma)    : 1.000000e+03
+Initializing pressure with lithostatic pressure ... done (0.000716488 sec)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.849608533268e+02
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.849608533268e+02
+    1 KSP Residual norm 8.299039092964e-01
+    2 KSP Residual norm 5.877852811439e-07
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.222926846309e-03
+  1 KSP Residual norm 1.207327258901e-08
+  2 KSP Residual norm 2.712416522109e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 5.877852811493e-07
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 1
+SNES solution time      : 0.943839 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.348443884405e-08 
+      |Div|_2   = 5.877852811259e-07 
+   Momentum: 
+      |mRes|_2  = 5.238071484590e-12 
+   Energy: 
+      |eRes|_2  = 2.736509007265e-13 
+--------------------------------------------------------------------------
+Saving output ... done (0.0587135 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000000 [Myr] 
+Tentative time step : 0.00100000 [Myr] 
+--------------------------------------------------------------------------
+Phase_Transition ... done (0.0328519 sec)
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.488894896387e+03
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.488894896387e+03
+    1 KSP Residual norm 1.322883756813e-02
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.222926846309e-03
+  1 KSP Residual norm 1.219214947140e-08
+  2 KSP Residual norm 2.784457409805e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 2
+  1 SNES Function norm 7.872505551719e+00
+  1 PICARD ||F||/||F0||=5.287482e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.872505551719e+00
+    1 KSP Residual norm 1.900534196768e-03
+    2 KSP Residual norm 3.921753725472e-04
+    3 KSP Residual norm 1.582862284390e-04
+    4 KSP Residual norm 8.494092890648e-05
+    5 KSP Residual norm 5.290103070968e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 5
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.813052311330e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  2 SNES Function norm 1.455409893369e+00
+  2 PICARD ||F||/||F0||=9.775102e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.455409893369e+00
+    1 KSP Residual norm 8.654218557546e-05
+    2 KSP Residual norm 2.969036557551e-05
+    3 KSP Residual norm 1.770408532521e-05
+    4 KSP Residual norm 1.184009087253e-05
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 4
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.813052311330e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  3 SNES Function norm 4.874455975562e-01
+  3 PICARD ||F||/||F0||=3.273875e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.874455975562e-01
+    1 KSP Residual norm 2.676605789010e-05
+    2 KSP Residual norm 1.165114947857e-05
+    3 KSP Residual norm 8.757868100753e-06
+    4 KSP Residual norm 6.969185537886e-06
+    5 KSP Residual norm 5.460163720951e-06
+    6 KSP Residual norm 4.448995979252e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.813052311330e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  4 SNES Function norm 1.965788249925e-01
+  4 PICARD ||F||/||F0||=1.320300e-04 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.965788249925e-01
+    1 KSP Residual norm 1.001199351486e-05
+    2 KSP Residual norm 4.851923831243e-06
+    3 KSP Residual norm 3.724666257043e-06
+    4 KSP Residual norm 3.424279017928e-06
+    5 KSP Residual norm 3.252568501443e-06
+    6 KSP Residual norm 3.064398430573e-06
+    7 KSP Residual norm 2.666833575088e-06
+    8 KSP Residual norm 2.439988138159e-06
+    9 KSP Residual norm 2.236775562532e-06
+   10 KSP Residual norm 2.038935321812e-06
+   11 KSP Residual norm 1.900191332379e-06
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+  Residual norms for ts_ solve.
+  0 KSP Residual norm 2.813052311330e-13
+  Linear ts_ solve converged due to CONVERGED_ATOL iterations 0
+  5 SNES Function norm 8.797875285684e-02
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 5
+SNES solution time      : 4.06975 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.620055632935e-07 
+      |Div|_2   = 1.900191332353e-06 
+   Momentum: 
+      |mRes|_2  = 8.797875283632e-02 
+   Energy: 
+      |eRes|_2  = 2.813052311330e-13 
+--------------------------------------------------------------------------
+Actual time step : 0.00110 [Myr] 
+--------------------------------------------------------------------------
+Advection Passive tracers ... 
+ Currently active tracers    :  0 
+done (0.00414547 sec)
+--------------------------------------------------------------------------
+Performing marker control (subgrid algorithm)
+Marker control [0]: (subgrid) cloned 1 markers and merged 0 markers in 2.3017e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.0485947 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 5.29302 (sec) 
+--------------------------------------------------------------------------
+#PETSc Option Table entries:
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
+-jp_pgamma 1000 # (source: code)
+-jp_type user # (source: code)
+-js_ksp_atol 1e-08 # (source: code)
+-js_ksp_converged_reason # (source: code)
+-js_ksp_max_it 20 # (source: code)
+-js_ksp_monitor # (source: code)
+-js_ksp_rtol 1e-05 # (source: code)
+-js_ksp_type fgmres # (source: code)
+-options_left # (source: code)
+-ParamFile VelBoxes_Permeable_sides.dat # (source: code)
+-snes_atol 0.0001 # (source: code)
+-snes_linesearch_max_it 5 # (source: code)
+-snes_linesearch_maxstep 1.0 # (source: code)
+-snes_linesearch_minlambda 0.05 # (source: code)
+-snes_linesearch_type l2 # (source: code)
+-snes_max_funcs 1000000000 # (source: code)
+-snes_max_it 30 # (source: code)
+-snes_monitor # (source: code)
+-snes_newton_maxit 20 # (source: code)
+-snes_newton_rtol 1.2 # (source: code)
+-snes_picard_minit 5 # (source: code)
+-snes_picard_rtol 0.0001 # (source: code)
+-snes_rtol 0.0001 # (source: code)
+-snes_stol 1e-32 # (source: code)
+-ts_ksp_atol_auto # (source: code)
+-ts_ksp_converged_reason # (source: code)
+-ts_ksp_max_it 500 # (source: code)
+-ts_ksp_monitor # (source: code)
+-ts_ksp_rtol 1e-08 # (source: code)
+-ts_ksp_type fgmres # (source: code)
+#End of PETSc Option Table entries
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There is one unused database option. It is:
+Option left: name:-ParamFile value: VelBoxes_Permeable_sides.dat source: code
