@@ -7,23 +7,25 @@
 #   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
 #
 #==============================================================================
-
-# Include platform-specific constants
-
-include Makefile.in
-
-#====================================================
-
-# Include PETSc library
-#
-# Environmental variables for PETSc installation directories:
-# PETSC_DEB = /directory/where/petsc/debug/is/installed
-# PETSC_OPT = /directory/where/petsc/optimized/is/installed
-#
 # LaMEM compilation command:
 #  make mode=deb all (compile debug version of LaMEM and put in /bin/deb)
 #  make mode=opt all (compile optimized version of LaMEM and put in /bin/opt)
 #  make all          (compile optimized version of LaMEM and put in /bin/opt)
+#  make mode=deb surf=scape (compile debug version of LaMEM with fastscape)
+#  surf_mode = 1 in .dat file; don't use fastscape; surf_mode = 2 in .dat file; use fastscape 
+#==============================================================================
+
+# define compilation mode
+# deb - debug 
+# opt - optimized (default)
+
+mode = opt
+surf = none
+
+# define PETSc installation directories:
+# PETSC_DEB = /directory/where/petsc/debug/is/installed
+# PETSC_OPT = /directory/where/petsc/optimized/is/installed
+# FASTSCAPELIB = /directory/where/FastScapeLib/is/located
 
 ifeq ($(mode), deb)
 ifeq (${PETSC_DEB},)
@@ -35,54 +37,120 @@ ifeq (${PETSC_OPT},)
 $(error Environmental variable PETSC_OPT must be set to PETSc optimized installation directory)
 endif
 PETSC_DIR = ${PETSC_OPT}
-else
-$(error Unknown compilation mode specified)
 endif
 
+ifeq ($(surf), scape)
+ifeq (${FASTSCAPE_LIB},)
+${error Environmental variable FASTSCAPE_LIB must be set to installation directory}
+endif
+FASTSCAPE_DIR = ${FASTSCAPE_LIB}
+endif
+
+# include PETSc environmental variables:
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
-# Define PETSc-based C++ compiler command
-CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
+# define platform
+PLATFORM = $(shell uname -m)
 
+# check if platform is supported
+ifneq ($(findstring $(PLATFORM), x86_64 arm64 aarch64 armv6l armv7l i686 powerpc64le amd64), $(PLATFORM))
+   $(error Unsupported platform)
+endif
+
+# define MPI compiler and linker
+MPI_COMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
+LINKER       = ${CXXLINKER}
+
+# extract actual compiler
+MPI_COMPILER_SHOW := $(shell \
+	$(MPI_COMPILER) --showme:command 2>/dev/null || \
+	$(MPI_COMPILER) --show 2>/dev/null || \
+	$(MPI_COMPILER) -show 2>/dev/null )
+
+CXX_COMMAND  := $(word 1, $(filter-out ccache,$(MPI_COMPILER_SHOW)))
+CXX_COMPILER := $(shell readlink -f $$(which $(CXX_COMMAND)))
+
+# set dependency flag (should be supported by all compilers)
+DEPEN_FLAGS = -MM
+
+# set common compiler flags (should be supported by all compilers)
+LAMEM_FLAGS = -std=c++17 -Wall -Wextra -Wconversion \
+              -Wpointer-arith -Wcast-align -Wwrite-strings -Wformat=2 \
+              -Wundef -Wnon-virtual-dtor -Wno-unused-result -Wunused-but-set-variable
+
+# tune compiler flags
+ifeq ($(findstring clang++, $(CXX_COMPILER)), clang++)
+   LAMEM_FLAGS += -Wimplicit-fallthrough \
+                  -Wshorten-64-to-32 -Wnewline-eof
+else ifeq ($(findstring icpx, $(CXX_COMPILER)), icpx)
+   LAMEM_FLAGS += -Wimplicit-fallthrough -Wno-sign-conversion \
+                  -Wno-float-conversion -Wno-deprecated-declarations -Wno-vla-cxx-extension
+else ifeq ($(findstring g++, $(CXX_COMPILER)), g++)
+   LAMEM_FLAGS += -Wduplicated-cond -Wlogical-op -Wnull-dereference
+else
+    $(error Unsupported compiler: $(CXX_COMPILER))
+endif
+
+# fastscape part
+ifeq ($(surf), scape)
+LAMEM_FLAGS += -DWITH_FASTSCAPE
+endif
+
+# add debuggiing flag if in debug mode
+ifeq ($(mode), deb)
+   LAMEM_FLAGS += -g
+endif
+
+# Windows requires this linker flag
+UNAME := $(shell uname)
+ifneq ($(filter MSYS%,$(UNAME)),)
+   CLIB_FLAGS = -lssp
+endif
+
+#==============================================================================
+
+# Define FastScapeFortranLib 
+# FS_LIB = -L${FASTSCAPE_DIR} -lfastscapelib_fortran -lgfortran
+FS_LIB = -L${FASTSCAPE_DIR} -lfastscapelib_fortran
 #====================================================
 
-# Define list of LaMEM library source files
-# List files to be excluded after filter-out
+# define list of LaMEM library source files
+# list files to be excluded after filter-out
 CSRC = $(filter-out LaMEM.cpp, $(wildcard *.cpp))
 
-#====================================================
+#==============================================================================
 
-# Generate lists of library object files:
+# generate lists of library object files:
 COBJ := $(addprefix ../lib/${mode}/, $(notdir $(CSRC:.cpp=.o)))
 
-# Generate lists of library dependency files:
+# generate lists of library dependency files:
 CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.cpp=.d)))
 
-# Get library and executable objects:
-LaMEM = ../bin/${mode}/LaMEM
-LaMEM_OBJ = ../lib/${mode}/LaMEM.o
-LaMEM_DEP = ../dep/${mode}/LaMEM.d
-LaMEM_LIB = ../lib/${mode}/liblamem.a
+# get library and executable objects:
+LAMEM = ../bin/${mode}/LaMEM
+LAMEM_OBJ = ../lib/${mode}/LaMEM.o
+LAMEM_DEP = ../dep/${mode}/LaMEM.d
+LAMEM_LIB = ../lib/${mode}/liblamem.a
 
-# If we build LaMEM for BinaryBuilder we link to a PETSc build that has a different name
+# if we build LaMEM for BinaryBuilder we link to a PETSc build that has a different name
 ifeq ($(LAMEM_BINARYBUILDER), true)
-	PETSC_LIB := $(filter-out -lpetsc, $(PETSC_LIB))
-	PETSC_LIB += -lpetsc_double_real_Int32
+   PETSC_LIB := $(filter-out -lpetsc, $(PETSC_LIB))
+   PETSC_LIB += -lpetsc_double_real_Int32
 endif
-#====================================================
+#==============================================================================
 
-# Target list
+# target list
 
-.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc
+.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc 
 
-# Default target (build executable)
+# default target (build executable)
 
 .DEFAULT_TARGET: all
 
 all : lamem
 
-#====================================================
+#==============================================================================
 
 # directory make rules
 
@@ -109,111 +177,108 @@ all : lamem
 
 builddir : ../bin ../lib ../dep ../bin/${mode} ../lib/${mode} ../dep/${mode}
 
-#====================================================
+#==============================================================================
 
 # force full rebuild when Makefiles are modified
 
-../dep/$(mode)/makefile.stat : Makefile Makefile.in
+../dep/$(mode)/makefile.stat : Makefile
 	@rm -rf ../lib/$(mode)/*
 	@rm -rf ../bin/$(mode)/*
 	@rm -rf ../dep/$(mode)/*
 	@echo 'makefile timestamp status file' > ../dep/$(mode)/makefile.stat
 
-#====================================================
+#==============================================================================
 
-# Build LaMEM library
+# build LaMEM library
 
 lamemlib : builddir buildlib
 
-buildlib : ${LaMEM_LIB}
+buildlib : ${LAMEM_LIB}
 
-${LaMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
+${LAMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 	@echo "............................................."
 	@echo ".......... Building LaMEM Library ..........."
 	@echo "............................................."
 	ar cr $@ ${COBJ}
 	ranlib $@
 
-# Create a dynamic library
+# create a dynamic library
 dylib: ${COBJ}
-	$(CCOMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
+ifeq ($(surf), scape)
+	$(MPI_COMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} ${FS_LIB}
+else
+	$(MPI_COMPILER) -shared -fPIC -o ../lib/$(mode)/LaMEMLib.dylib ${COBJ}  ${PETSC_LIB} 
+endif
+#==============================================================================
 
-#====================================================
-
-# Link LaMEM executable
+# link LaMEM executable
 
 lamem : lamemlib linkexe
 
-linkexe : ${LaMEM}
+linkexe : ${LAMEM}
 
-${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
+${LAMEM} : ${LAMEM_LIB} ${LAMEM_OBJ}
 	@echo "............................................."
 	@echo "......... Linking LaMEM Executable .........."
 	@echo "............................................."
-	${CXXLINKER} ${LaMEM_OBJ} ${LaMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o $@
-
-#====================================================
-
-# Pattern rules for automatic generation of object & dependency files
-# Insert full path to object files in dependency files with sed command
-# NOTE: IBM XL compiler generates dependency as a by-product of compilation
-
-../lib/${mode}/%.o : %.cpp
-	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@
-ifeq ($(PLATFORM), ppc64)
-	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
+ifeq ($(surf), scape)
+	${CXXLINKER} ${LAMEM_OBJ} ${LAMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} ${FS_LIB} -o  $@
 else
-	@${CCOMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} $< -o ../dep/${mode}/$*.d.tmp
+	${CXXLINKER} ${LAMEM_OBJ} ${LAMEM_LIB} ${PETSC_LIB} ${CLIB_FLAGS} -o  $@
 endif
+
+#==============================================================================
+
+# pattern rules for automatic generation of object & dependency files
+# insert full path to object files in dependency files with sed command
+
+../lib/${mode}/%.o : %.cpp 
+	${MPI_COMPILER} ${LAMEM_FLAGS} -c $< -o $@
+	@${MPI_COMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} $< -o ../dep/${mode}/$*.d.tmp
 	@sed '1s,^,../lib/${mode}/,' < ../dep/${mode}/$*.d.tmp > ../dep/${mode}/$*.d
 	@rm -f ../dep/${mode}/$*.d.tmp
 
-#====================================================
+#==============================================================================
 
-# Include available dependency files
--include ${CDEP} ${LaMEM_DEP}
+# include available dependency files
+-include ${CDEP} ${LAMEM_DEP}
 
-#====================================================
+#==============================================================================
 
 print :
 	@echo "............................................."
 	@echo "........ Environmental variables ............"
 	@echo "............................................."
-ifeq ($(PLATFORM), x86_64)
-ifneq ($(shell mpicc --version 2>&1 | grep -c pgcc), 0)
-	@echo "COMPILER    :  PORTLAND GROUP"
-else ifneq ($(shell mpicc --version 2>&1 | grep -c gcc), 0)
-	@echo "COMPILER    :  GNU "
-else ifneq ($(shell mpicc --version 2>&1 | grep -c icc), 0)
-	@echo "COMPILER    :  INTEL "
-else
-	@echo "COMPILER    :  UNKNOWN "
+	@echo "mode         : " ${mode}
+	@echo "............................................."
+	@echo "PLATFORM     : " ${PLATFORM}
+	@echo "............................................."
+	@echo "PETSC_DIR    : " ${PETSC_DIR}
+	@echo "............................................."
+	@echo "MPI_COMPILER : " ${MPI_COMPILER}
+	@echo "............................................."
+	@echo "CXX_COMPILER : " ${CXX_COMPILER}
+	@echo "............................................."
+	@echo "LINKER       : " ${LINKER}	
+	@echo "............................................."
+	@echo "DEPEN_FLAGS  : " ${DEPEN_FLAGS}
+	@echo "............................................."
+	@echo "LAMEM_FLAGS  : " ${LAMEM_FLAGS}
+	@echo "............................................."
+	@echo "LAMEM_LIB    : " ${LAMEM_LIB}
+	@echo "............................................."
+	@echo "PETSC_LIB    : " ${PETSC_LIB}
+	@echo "............................................."
+	@echo "CLIB_FLAGS   : " ${CLIB_FLAGS}
+	@echo "............................................."
+ifeq ($(surf), scape)
+	@echo "............................................."
+	@echo "FASTSCAPE_LIB   : " ${FS_LIB}
+	@echo "............................................."
 endif
-endif
-ifeq ($(PLATFORM), ppc64)
-	@echo "COMPILER    :  IBM "
-endif
-	@echo "............................................."
-	@echo "mode        : " ${mode}
-	@echo "............................................."
-	@echo "PETSC_DIR   : " ${PETSC_DIR}
-	@echo "............................................."
-	@echo "DEPEN_FLAGS : " ${DEPEN_FLAGS}
-	@echo "............................................."
-	@echo "LAMEM_FLAGS : " ${LAMEM_FLAGS}
-	@echo "............................................."
-	@echo "LAMEM_LIB   : " ${LAMEM_LIB}
-	@echo "............................................."
-	@echo "CCOMPILER   : " ${CCOMPILER}
-	@echo "............................................."
-	@echo "CLINKER     : " ${CLINKER}
-	@echo "............................................."
-	@echo "PETSC_LIB   : " ${PETSC_LIB}
-	@echo "............................................."
-	@echo "CLIB_FLAGS  : " ${CLIB_FLAGS}
-	@echo "............................................."
 
-#====================================================
+
+#==============================================================================
 
 clean_all :
 	@echo "............................................."
@@ -222,12 +287,4 @@ clean_all :
 	@rm -rf ../lib/$(mode)/*
 	@rm -rf ../bin/$(mode)/*
 	@rm -rf ../dep/$(mode)/*
-
-#====================================================
-
-# Create automatic documentation
-
-doc:
-	PDFLATEX=$(PDFLATEX) BIBTEX=$(BIBTEX) ../doc/Manual/./CreateDevelDoc.sh
-
-#====================================================
+#==============================================================================

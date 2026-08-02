@@ -14,6 +14,10 @@
 #define __LaMEMLib_h__
 //---------------------------------------------------------------------------
 
+struct FB;
+
+//---------------------------------------------------------------------------
+
 enum RunMode
 {
 	//==================
@@ -28,6 +32,7 @@ enum RunMode
 };
 
 //---------------------------------------------------------------------------
+#include "fastscape.h"
 
 struct LaMEMLib
 {
@@ -37,6 +42,7 @@ struct LaMEMLib
     DBPropDike dbdike;   // dike database
 	FDSTAG   fs;     // staggered-grid layout
 	FreeSurf surf;   // free-surface grid
+	FastScapeLib FSLib; // fastscape grid
 	BCCtx    bc;     // boundary condition context
 	AdvCtx   actx;   // advection context
 	JacRes   jr;     // Jacobian & residual context
@@ -52,11 +58,11 @@ struct LaMEMLib
 // LAMEM LIBRARY FUNCTIONS
 //---------------------------------------------------------------------------
 
-PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param);
+PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param, FB *fb);
 
-PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm);
+PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm, FB *fb);
 
-PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm);
+PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm, FB *fb);
 
 PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm);
 
@@ -68,7 +74,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm);
 
 PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm, PetscInt dirInd);
 
-PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, PetscLogStage stages[4]);
+PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param);
 
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm);
 
