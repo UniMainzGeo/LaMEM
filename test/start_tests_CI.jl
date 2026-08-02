@@ -15,6 +15,10 @@ if "no_superlu" in ARGS
     args_local = push!(args_local,"no_superlu")
 end
 
+if "fastscape_only" in ARGS
+    args_local = push!(args_local,"fastscape_only")
+end
+
 # run test suite
 Pkg.test("LaMEM_C", test_args=args_local)
 

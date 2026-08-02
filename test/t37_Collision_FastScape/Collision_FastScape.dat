@@ -1,0 +1,418 @@
+#===============================================================================
+# Test: continent-continent collision above a subducting slab, driven by
+# FastScape (surf_mode = 2). This is a drastically down-scaled version (grid,
+# core count, and run length) of the subduction-collision example
+# (Collision.dat / CreateMarkers_Collision.m), translated to
+# CreateMarkers_Collision.jl (GeophysicalModelGenerator). It only exercises a
+# handful of time steps to check that LaMEM <-> FastScape coupling runs
+# correctly; it is not meant to reproduce the physics of the full-size model.
+#===============================================================================
+# Scaling
+#===============================================================================
+units = geo
+
+unit_temperature = 1000.0
+unit_length      = 1000
+unit_viscosity   = 1e20
+unit_stress      = 1e12
+
+#===============================================================================
+time_end  = 0.02   # simulation end time
+dt        = 0.0001  # time step
+dt_min    = 0.000001  # minimum time step
+dt_max    = 0.005   # maximum time step
+inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+CFL       = 0.5
+CFLMAX    = 1.0
+nstep_max = 3     # maximum allowed number of steps (kept tiny for CI)
+nstep_out = 1
+nstep_rdb = 0
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+gtol = 1e-6
+cpu_x = 1
+cpu_y = 1
+cpu_z = 1
+
+nel_x = 32
+nel_y = 8
+nel_z = 16
+coord_x = 0 1800
+coord_y = 0 600
+coord_z = -660 15
+
+#===============================================================================
+# Free surface
+#===============================================================================
+surf_use           = 1
+surf_level         = 0.0
+surf_air_phase     = 0
+surf_max_angle     = 45.0
+surf_corr_phase    = 1
+
+surf_mode	   = 2		# surface mode: 2 = FastScape
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+open_top_bound = 1
+temp_top  = 0.0
+temp_bot  = 1630
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+gravity         = 0.0 0.0 -9.81
+FSSA            = 1.0
+FSSA_allVel     = 0
+shear_heat_eff  = 1.0
+Adiabatic_Heat  = 1.0
+act_temp_diff   = 1
+act_steady_temp = 0
+init_lith_pres  = 0
+init_guess      = 1
+p_litho_visc    = 0
+p_litho_plast   = 0
+p_lim_plast     = 1
+eta_min         = 1e18
+eta_max         = 1e24
+eta_ref         = 1e21
+tau_ult         = 1e9
+lmaxit          = 50
+lrtol           = 1e-6
+
+#===============================================================================
+# Solver options
+#===============================================================================
+SolverType 	=   direct
+DirectSolver    =   mumps
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+msetup          = files
+nmark_x         = 3
+nmark_y         = 3
+nmark_z         = 3
+rand_noise      = 1
+bg_phase        = 2
+mark_load_file  = ./markers/mdb
+advect          = rk2
+interp          = minmod
+mark_ctrl       = basic
+nmark_lim       = 10 100
+
+#===============================================================================
+# Output
+#===============================================================================
+out_file_name       = Collision
+out_pvd             = 1
+out_phase           = 1
+out_density         = 1
+out_visc_total      = 1
+out_velocity        = 1
+out_temperature     = 1
+
+out_surf               = 1
+out_surf_fs		   = 1
+out_surf_pvd           = 1
+out_fs_pvd		   = 1
+out_surf_velocity      = 1
+out_surf_topography    = 1
+out_surf_topofs        = 1
+out_surf_total_erosion = 1
+out_surf_erosion_rate  = 1
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+<SofteningStart>
+ID   = 0
+APS1 = 0.01
+APS2 = 0.05
+A    = 0.9
+<SofteningEnd>
+
+#-------------------------------------------------------------------------------
+# sticky-air
+<MaterialStart>
+ID        = 0
+rho       = 1
+eta       = 1e18
+alpha     = 3e-5
+k         = 100
+Cp        = 1e6
+A         = 0
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# weak zone
+<MaterialStart>
+ID        = 1
+rho       = 3200
+beta      = 1e-11
+G         = 5e10
+eta       = 1e19
+alpha     = 3e-5
+k         = 3
+Cp        = 1.2e3
+A         = 0
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# asthenosphere
+<MaterialStart>
+ID         = 2
+diff_prof  = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+disl_prof  = Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+rho        = 3300
+beta       = 1e-11
+G          = 10e10
+ch         = 1e7
+fr         = 30.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 3.5
+A          = 6e-12
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# upper continental crust -- subducting continent
+<MaterialStart>
+ID         = 3
+disl_prof  = Wet_Quarzite-Ranalli_1995
+rho        = 2.7e3
+beta       = 1e-11
+G          = 3e10
+ch         = 1e7
+fr         = 10.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 2.5
+A          = 3e-10
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# lower continental crust -- subducting continent
+<MaterialStart>
+ID         = 4
+disl_prof  = Plagioclase_An75-Ranalli_1995
+rho        = 2.9e3
+beta       = 1e-11
+G          = 5e10
+ch         = 1e7
+fr         = 20.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 3.0
+A          = 3e-11
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# lithospheric mantle -- subducting continent
+<MaterialStart>
+ID         = 5
+diff_prof  = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+disl_prof  = Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+rho        = 3300
+beta       = 1e-11
+G          = 10e10
+ch         = 1e7
+fr         = 30.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 3.5
+A          = 6e-12
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# Basalt -- subducting ocean
+<MaterialStart>
+ID         = 6
+disl_prof  = Wet_Quarzite-Ranalli_1995
+rho        = 2.9e3
+beta       = 1e-11
+G          = 5e10
+ch         = 1e6
+fr         = 5.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 3.0
+A          = 3e-11
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# lithospheric mantle -- subducting ocean
+<MaterialStart>
+ID         = 7
+diff_prof  = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+disl_prof  = Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+rho        = 3.3e3
+beta       = 1e-11
+G          = 10e10
+ch         = 1e7
+fr         = 30.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 3.5
+A          = 6e-12
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# upper continental crust -- overriding continent
+<MaterialStart>
+ID         = 8
+disl_prof  = Wet_Quarzite-Ranalli_1995
+rho        = 2.7e3
+beta       = 1e-11
+G          = 3e10
+ch         = 1e7
+fr         = 10.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 2.5
+A          = 3e-10
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# lower continental crust -- overriding continent
+<MaterialStart>
+ID         = 9
+disl_prof  = Plagioclase_An75-Ranalli_1995
+rho        = 2.9e3
+beta       = 1e-11
+G          = 5e10
+ch         = 1e7
+fr         = 20.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 3.0
+A          = 3e-11
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# lithospheric mantle -- overriding continent
+<MaterialStart>
+ID         = 10
+diff_prof  = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+disl_prof  = Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003
+rho        = 3300
+beta       = 1e-11
+G          = 10e10
+ch         = 1e7
+fr         = 30.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 3.5
+A          = 6e-12
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# sediments
+<MaterialStart>
+ID         = 11
+disl_prof  = Wet_Quarzite-Ranalli_1995
+rho        = 2.5e3
+beta       = 1e-11
+G          = 2e10
+ch         = 1e6
+fr         = 10.0
+eta_st     = 1e19
+chSoftID   = 0
+frSoftID   = 0
+alpha      = 3e-5
+Cp         = 1.2e3
+k          = 2.5
+A          = 4e-10
+<MaterialEnd>
+#-------------------------------------------------------------------------------
+# FastScape routine
+<FastScapeStart>
+		non_uniform_grid   = 0
+    		fs2D     	   = 0
+        	fs_refine	   = 1		# no refinement (keep the FastScape grid small for CI)
+
+		Max_dt 	           = 0.0001 	# max dt used in FastScape
+    		topo_boundary	   = 1111	# boundary condition in FastScape
+		vel_boundary	   = 0000
+		random_noise	   = 1
+		surf_out_nstep     = 1
+		vec_times	   = 1
+    		sed_phases         = 11                 # sediment layers phase numbers
+
+    		kf 	    = 1e-6		# bedrock incision rate parameter
+    		kfsed	    = -1.0		# sediment incision rate parameter
+    		m	    = 0.4		# drainage area exponent in SPL
+    		n 	    = 1.0		# slope area exponent in SPL
+    		kd          = 1e-2		# bedrock transport coefficient
+    		kdsed       = -1.0		# sediment transport coefficient
+    		g	    = 0.0		# bedrock dimensionless coefficient for enriched SPL
+    		gsed        = 0.0		# sediment dimensionless coefficient for enriched SPL
+    		p	    = -2.0		# slope exponent for multi-direction flow
+
+		setMarine   = 0
+    		sealevel    = 0.0
+    		poroSilt    = 0.0
+    		poroSand    = 0.0
+    		zporoSilt   = 1e3
+    		zporoSand   = 1e3
+    		ratio       = 0.5
+    		Lsolve      = 1e2
+    		kdsSilt     = 3e2
+    		kdsSand     = 1.5e2
+<FastScapeEnd>
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+-snes_ksp_ew
+-snes_ksp_ew_rtol0 1e-5
+-snes_ksp_ew_rtolmax 1e-5
+
+-snes_monitor
+-snes_atol 1e-4
+-snes_rtol 1e-5
+-snes_stol 1e-8
+-snes_max_it 25
+-snes_max_funcs 50000
+-res_log
+
+-snes_linesearch_monitor
+-snes_linesearch_type l2
+-snes_linesearch_maxstep 1.0
+
+-js_ksp_type fgmres
+-js_ksp_max_it 40
+-js_ksp_converged_reason
+-js_ksp_monitor
+-js_ksp_rtol 1e-8
+-js_ksp_atol 1e-8
+
+-pcmat_type mono
+-pcmat_no_dev_proj
+
+-jp_type user
+-jp_pc_type lu
+-jp_pc_factor_mat_solver_type mumps
+<PetscOptionsEnd>
+
+#===============================================================================

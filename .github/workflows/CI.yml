@@ -38,7 +38,7 @@ jobs:
         sudo -E mkdir /workspace/destdir
         
     - name: 'Install julia'
-      uses: julia-actions/setup-julia@v1
+      uses: julia-actions/setup-julia@v3
       with:
         version: '1.10'
         
@@ -107,13 +107,21 @@ jobs:
         # rename directories
         sudo -E rm -rf opt
         sudo -E rm -rf deb
-        
+
         sudo -E cp -r opt64 opt
         sudo -E cp -r deb64 deb
-        
+
         cd ..
-        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit 
-        
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit
+
+    - name: 'Test LaMEM | Int64 + FastScape'
+      run: |
+        cd bin
+        sudo -E rm -rf opt
+        sudo -E cp -r opt64fs opt
+        cd ..
+        julia --color=yes --depwarn=yes --inline=yes --project=. test/start_tests_CI.jl is64bit fastscape_only
+
   build_docs:
     runs-on: ubuntu-latest
     steps:

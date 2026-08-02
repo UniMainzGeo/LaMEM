@@ -31,7 +31,13 @@ else
     global is64bit=false
 end
 
-@show use_dynamic_lib create_plots
+if "fastscape_only" in ARGS
+    global fastscape_only=true
+else
+    global fastscape_only=false
+end
+
+@show use_dynamic_lib create_plots fastscape_only
 include("test_utils.jl")        # test-framework specific functions
 
 test_dir = pwd()
@@ -65,6 +71,8 @@ else
 end
 #---------------------------------------------------------------------------
 @testset "LaMEM Testsuite" verbose=true begin
+#---------------------------------------------------------------------------
+if !fastscape_only
 #---------------------------------------------------------------------------
 @testset "t01_FB1_Direct" verbose=true begin
     cd(test_dir)
@@ -1426,6 +1434,46 @@ end
         opt      = true,
         mpiexec  = mpiexec,
         create_expected_file=update_expected, clean_dir=clean_files)
+end
+#---------------------------------------------------------------------------
+end # !fastscape_only
+#---------------------------------------------------------------------------
+@testset "t37_Collision_FastScape" begin
+    # Continent-continent collision above a subducting slab, with the free
+    # surface driven by FastScape (surf_mode = 2). Only run this test if the
+    # currently installed LaMEM binary was actually compiled with FastScape
+    # support (make surf=scape) -- otherwise surf_mode = 2 silently falls back
+    # to the non-FastScape code path, so there is nothing meaningful to test.
+    cd(test_dir)
+    dir = "t37_Collision_FastScape"
+
+    # sanity-check the -fastscape_info probe itself (guards src/LaMEM.cpp's
+    # -fastscape_info flag against regression, independent of whether this
+    # particular build has FastScape enabled)
+    has_fastscape = LaMEM_has_fastscape(bin_dir="../bin", opt=true)
+    @test has_fastscape isa Bool
+
+    if has_fastscape
+        include(joinpath(dir, "CreateMarkers_Collision.jl"))
+
+        keywords = ("|Div|_inf", "|Div|_2", "|mRes|_2")
+        acc      = ((rtol=1e-6, atol=1e-6), (rtol=1e-5, atol=5e-5), (rtol=2.5e-4, atol=1e-4))
+
+        ParamFile = "Collision_FastScape.dat"
+
+        CreateMarkers_Collision(dir, ParamFile; NumberCores=1, mpiexec=mpiexec)
+
+        @test perform_lamem_test(dir, ParamFile, "Collision_FastScape_opt";
+            keywords = keywords,
+            accuracy = acc,
+            cores    = 1,
+            opt      = true,
+            mpiexec  = mpiexec,
+            create_expected_file=update_expected, clean_dir=clean_files)
+    else
+        @info "Skipping t37_Collision_FastScape: LaMEM binary was not compiled with FastScape support (make surf=scape)"
+        @test_skip "FastScape not enabled in this LaMEM build"
+    end
 end
 #---------------------------------------------------------------------------
 end

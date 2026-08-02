@@ -112,9 +112,11 @@ endif
 
 #==============================================================================
 
-# Define FastScapeFortranLib 
+# Define FastScapeFortranLib
 # FS_LIB = -L${FASTSCAPE_DIR} -lfastscapelib_fortran -lgfortran
-FS_LIB = -L${FASTSCAPE_DIR} -lfastscapelib_fortran
+# (embed an rpath so the resulting binary finds libfastscapelib_fortran at
+# runtime without requiring LD_LIBRARY_PATH/DYLD_FALLBACK_LIBRARY_PATH to be set)
+FS_LIB = ${CC_LINKER_SLFLAG}${FASTSCAPE_DIR} -L${FASTSCAPE_DIR} -lfastscapelib_fortran
 #====================================================
 
 # define list of LaMEM library source files

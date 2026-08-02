@@ -9,7 +9,7 @@ if use_dynamic_lib
 end
 
 export run_lamem_local_test, perform_lamem_test, clean_test_directory, run_lamem_save_grid_local, mpiexec
-export CreatePartitioningFile_local
+export CreatePartitioningFile_local, LaMEM_has_fastscape
 
 
 if use_dynamic_lib
@@ -107,6 +107,40 @@ function run_lamem_local_test(ParamFile::String, cores::Int64=1, args::String=""
     end
   
     return success
+end
+
+"""
+    LaMEM_has_fastscape(; bin_dir="../bin", opt=true, deb=false)
+
+Checks whether the LaMEM binary currently installed in `bin_dir` was compiled
+with FastScape support (`make surf=scape`), by running it with the
+`-fastscape_info` flag and inspecting its output. Used to skip FastScape-only
+tests when running against a binary that wasn't built with FastScape enabled.
+"""
+function LaMEM_has_fastscape(; bin_dir="../bin", opt=true, deb=false)
+
+    cur_dir = pwd()
+    if opt
+        exec = joinpath(cur_dir, bin_dir, "opt", "LaMEM")
+    elseif deb
+        exec = joinpath(cur_dir, bin_dir, "deb", "LaMEM")
+    end
+
+    if !isfile(exec)
+        return false
+    end
+
+    dylibs, _ = get_dylibs()
+    has_fastscape = false
+    try
+        perform_run = addenv(Cmd(`$(exec) -fastscape_info`), "DYLD_FALLBACK_LIBRARY_PATH"=>dylibs)
+        out = read(perform_run, String)
+        has_fastscape = contains(out, "FASTSCAPE_ENABLED")
+    catch
+        has_fastscape = false
+    end
+
+    return has_fastscape
 end
 
 function get_line_containing(stringarray::Vector{SubString{String}}, lookfor::String)
