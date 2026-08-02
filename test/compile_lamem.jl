@@ -13,32 +13,44 @@ else
     is64bit = false
 end
 
+with_fastscape = any(contains.(ARGS,"fastscape"))
+
 # Take the environment (dynamic libraries etc.) from the PETSc
 if is64bit
     println("Compiling LaMEM with PETSc that has 64bit integers")
-    cmd = addenv(PETSc_jll.ex42(), 
+    cmd = addenv(PETSc_jll.ex42(),
                     "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int64",
                     "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int64_deb",
                 )
-    
+
 else
     println("Compiling LaMEM with PETSc that has 32bit integers")
-    cmd = addenv(PETSc_jll.ex42(), 
+    cmd = addenv(PETSc_jll.ex42(),
                     "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int32",
                     "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int32",
                 )
 end
 
+if with_fastscape
+    cmd = addenv(cmd, "FASTSCAPE_LIB"=>"/workspace/destdir/lib/fastscape")
+end
+
 @show pkgversion(PETSc_jll)
 #@show pkgversion(MPICH_jll)
 
-println("---- Compiling LaMEM opt version ----")
-compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
-run(compile_lamem)
+if with_fastscape
+    println("---- Compiling LaMEM opt version (with FastScape) ----")
+    compile_lamem = Cmd(`make mode=opt surf=scape all`, env = cmd.env)
+    run(compile_lamem)
+else
+    println("---- Compiling LaMEM opt version ----")
+    compile_lamem = Cmd(`make mode=opt all`, env = cmd.env)
+    run(compile_lamem)
 
-println("---- Compiling LaMEM deb version ----")
-compile_lamem = Cmd(`make mode=deb all`, env = cmd.env)
-run(compile_lamem)
+    println("---- Compiling LaMEM deb version ----")
+    compile_lamem = Cmd(`make mode=deb all`, env = cmd.env)
+    run(compile_lamem)
+end
 
 
 

@@ -79,6 +79,18 @@ jobs:
         sudo -E mv -f deb deb64
         cd ..
 
+    - name: 'Compile LaMEM | Int64 + FastScape'
+      run: |
+        cd test
+        julia --project=. compile_lamem.jl int64 fastscape
+        pwd
+        # cleanup
+        rm -rf ../lib/opt/*
+        rm -rf ../dep/opt/*
+        cd ../bin
+        sudo -E mv -f opt opt64fs
+        cd ..
+
     - name: 'Test LaMEM | Int32'
       run: |
         cd bin
