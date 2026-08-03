@@ -129,7 +129,11 @@
     surf_air_phase     = 0                # phase ID of sticky air layer
     surf_max_angle     = 45.0             # maximum angle with horizon (smoothed if larger)
     surf_topo_file     = ./input/topo.dat # initial topography file (redundant)
-    
+
+    surf_mode          = 1                # surface evolution mode [0-none (default), 1-built-in erosion/sedimentation, 2-FastScape]
+                                          # NOTE: surf_mode = 2 requires LaMEM compiled with FastScape support
+                                          #       (make surf=scape) and a <FastScapeStart>/<FastScapeEnd> block (see below)
+
     erosion_model      = 2                # erosion model [0-none (default), 1-infinitely fast, 2-prescribed rate with given level, 3-spatially limited]
     er_num_phases      = 3                # number of erosion phases
     er_time_delims     = 0.5   2.5        # erosion time delimiters (one less than number)
@@ -154,6 +158,73 @@
     # Topographic diffusion (runs after erosion/sedimentation each time step)
     topo_diff          = 0                # topographic diffusion flag [0-none (default), 1-active]
   # topo_diffusivity   = 1e-5            # topographic diffusivity [m^2/s] (required when topo_diff=1)
+
+#===============================================================================
+# FastScape surface processes (requires surf_mode = 2)
+#===============================================================================
+
+# Couples LaMEM to the FastScape Fortran library, which computes fluvial incision,
+# sediment transport/deposition, hillslope diffusion and (optionally) marine
+# transport and compaction. Each LaMEM time step is subdivided into FastScape
+# substeps of at most Max_dt.
+#
+# Requires LaMEM compiled with FastScape support:  make surf=scape
+# (with the FASTSCAPE_LIB environment variable set to the FastScape library)
+#
+# NOTE: FastScape runs serially on rank 0 and its surface grid is created once at
+#       startup and never regenerated. Setups with a dynamically stretching grid
+#       (background strain rate) are therefore not supported.
+
+    <FastScapeStart>
+        # --- Grid & coupling ---
+        non_uniform_grid = 0       # LaMEM grid type flag [0-uniform (default), 1-non-uniform]
+                                   # must be set consistently with the LaMEM grid
+        fs2D             = 0       # dimensionality flag [0-3D LaMEM model (default), 1-2D model]
+                                   # in 2D the 1D LaMEM surface is extended in the 2nd horizontal direction
+        extendedRange    = 100     # length of the FastScape domain in the extended direction [km]
+                                   # (required if fs2D = 1)
+        extendedNodes    = 193     # number of FastScape nodes in the extended direction, must be > 2
+                                   # (required if fs2D = 1 and non_uniform_grid = 0)
+        fs_refine        = 2       # surface-grid refinement factor (default 1); a factor n inserts
+                                   # n-1 equally spaced points between adjacent nodes in each direction
+        Max_dt           = 0.001   # maximum FastScape substep [time units, e.g. Myr] (required)
+                                   # larger LaMEM steps are split into several FastScape substeps
+        sed_phases       = 3       # LaMEM phase ID assigned to newly deposited sediment (required)
+
+        # --- Boundary conditions, initialization & output ---
+        topo_boundary    = 1111    # topographic BC, 4 digits (required): per boundary
+                                   # 0-reflective/no-flux, 1-fixed height/open (sediment may leave)
+                                   # two opposing reflective boundaries may be treated as cyclic
+        vel_boundary     = 0000    # surface velocity BC, 4 digits (required): per boundary
+                                   # 0-zero velocity, 1-keep velocity transferred from LaMEM
+        random_noise     = 1       # add random perturbation to the initial topography (required)
+        surf_out_nstep   = 1       # write FastScape output every n coupled time steps (default 1)
+        vec_times        = 1       # vertical (z) exaggeration factor applied to the output (default 1)
+
+        # --- Fluvial incision & hillslope transport (all required) ---
+        kf               = 1e-6    # bedrock river incision coefficient Kf [m^(1-2m)/yr]
+        kfsed            = -1.0    # sediment river incision coefficient; if < 0, kf is used for both
+        m                = 0.4     # drainage area exponent in the stream power law
+        n                = 1.0     # local slope exponent in the stream power law
+        kd               = 1e-2    # bedrock transport coefficient (hillslope diffusivity) [m^2/yr]
+        kdsed            = -1.0    # sediment transport coefficient; if < 0, kd is used for both
+        g                = 0.0     # dimensionless bedrock deposition coefficient (enriched SPL)
+        gsed             = 0.0     # dimensionless sediment deposition coefficient; if < 0, g is used for both
+        p                = -2.0    # slope exponent for multi-direction flow routing
+
+        # --- Marine transport & compaction ---
+        setMarine        = 0       # marine transport & compaction flag [0-off (default), 1-on]
+                                   # the parameters below are required if setMarine = 1
+        sealevel         = 0.0     # sea level [m]
+        poroSilt         = 0.0     # reference (surface) porosity of silt
+        poroSand         = 0.0     # reference (surface) porosity of sand
+        zporoSilt        = 1e3     # e-folding depth of the porosity law for silt [m]
+        zporoSand        = 1e3     # e-folding depth of the porosity law for sand [m]
+        ratio            = 0.5     # silt fraction of material supplied from the continental domain
+        Lsolve           = 1e2     # averaging depth used to solve the silt/sand transport equation [m]
+        kdsSilt          = 3e2     # marine transport coefficient for silt [m^2/yr]
+        kdsSand          = 1.5e2   # marine transport coefficient for sand [m^2/yr]
+    <FastScapeEnd>
 
 #===============================================================================
 # Boundary conditions
@@ -565,6 +636,22 @@
     out_surf_velocity   = 1
     out_surf_topography = 1
     out_surf_amplitude  = 1
+
+# FastScape surface output options (surf_mode = 2 only; written to <out_file_name>_fs.pvd)
+
+    out_surf_fs            = 1 # activate FastScape surface output
+    out_fs_pvd             = 1 # activate writing FastScape .pvd file
+    out_surf_topofs        = 1 # FastScape topography
+    out_surf_silt_fraction = 1 # silt fraction (marine transport, setMarine = 1)
+    out_surf_basement      = 1 # basement elevation (topography minus sediment thickness)
+    out_surf_total_erosion = 1 # cumulative erosion
+    out_surf_drainage_area = 1 # drainage area
+    out_surf_erosion_rate  = 1 # erosion rate
+    out_surf_slope         = 1 # surface slope
+    out_surf_curvature     = 1 # surface curvature
+    out_surf_chi           = 1 # chi parameter (integrated drainage-area metric)
+    out_surf_catchment     = 1 # catchment ID
+    out_surf_lake_depth    = 1 # lake depth
 
 # Marker output options (requires activation)
 
