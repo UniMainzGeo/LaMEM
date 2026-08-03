@@ -483,18 +483,22 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 {
 	// change marker phase when crossing free surface
 
-	Marker          *P, *IP;
+	Marker          *P;
 	FDSTAG          *fs;
 	FreeSurf        *surf;
-#ifdef WITH_FASTSCAPE
-	FastScapeLib    *FSLib;
-#endif
 	Vec             vphase;
-	PetscInt        sx, sy, sz, nx, ny;
-	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
-	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *X, *IX;
-    spair           d;
+	PetscInt        sx, sy, nx, ny;
+	PetscInt        jj, ID, I, J, K, L, AirPhase;
+	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp;
+#ifndef WITH_FASTSCAPE
+	// only used by the nearest-rock-marker search of the numerical sedimentation
+	// model, which is bypassed when FastScape drives the free surface
+	Marker          *IP;
+	PetscInt        sz, ii, phaseID, nmark, *markind, markid;
+	PetscScalar     *X, *IX;
+	spair           d;
 	vector <spair>  dist;
+#endif
 
 	
 	PetscFunctionBeginUser;
@@ -504,9 +508,6 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 
 	// access context
 	surf      = actx->surf;
-#ifdef WITH_FASTSCAPE
-	FSLib     = surf->FSLib;
-#endif
 	fs        = actx->fs;
 	L         = fs->dsz.rank;
 	AirPhase  = surf->AirPhase;
@@ -514,14 +515,17 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
 	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
-	sz = fs->dsz.pstart;
 
 	// grid coordinates
 	ncx = fs->dsx.ncoor;
 	ncy = fs->dsy.ncoor;
 
+#ifndef WITH_FASTSCAPE
+	sz = fs->dsz.pstart;
+
 	// reserve marker distance buffer
 	dist.reserve(_mark_buff_sz_);
+#endif
 
 	// request local vector for reference sedimentation phases
 	PetscCall(DMGetLocalVector(fs->DA_CEN, &vphase));

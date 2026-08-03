@@ -806,16 +806,22 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 {
 	// change marker passive tracers when crossing free surface
 
-	Marker          *IP;
 	FDSTAG          *fs;
 	FreeSurf        *surf;
 	Vec             vphase;
-	PetscInt        sx, sy, sz;
-	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
-	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *IX,bz,ez,by,ey,bx,ex,Xm[3];
+	PetscInt        sx, sy;
+	PetscInt        jj, I, J, K, L, AirPhase;
+	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, bz,ez,by,ey,bx,ex;
 	PetscScalar     *Xp, *Yp,*Zp,*phaseptr;
+#ifndef WITH_FASTSCAPE
+	// only used by the nearest-rock-marker search of the numerical sedimentation
+	// model, which is bypassed when FastScape drives the free surface
+	Marker          *IP;
+	PetscInt        ID, sz, ii, phaseID, nmark, *markind, markid;
+	PetscScalar     *IX, Xm[3];
 	spair           d;
 	vector <spair>  dist;
+#endif
 
 	PetscFunctionBeginUser;
 
@@ -831,7 +837,6 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 	// starting indices & number of cells
 	sx = fs->dsx.pstart;
 	sy = fs->dsy.pstart;
-	sz = fs->dsz.pstart;
 
 	// grid coordinates
 	ncx = fs->dsx.ncoor;
@@ -839,8 +844,12 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 
 	PetscCall(FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez));
 
+#ifndef WITH_FASTSCAPE
+	sz = fs->dsz.pstart;
+
 	// reserve marker distance buffer
 	dist.reserve(_mark_buff_sz_);
+#endif
 
 	// request local vector for reference sedimentation phases
 	PetscCall(DMGetLocalVector(fs->DA_CEN, &vphase));
@@ -872,7 +881,9 @@ PetscErrorCode ADVMarkCrossFreeSurfPassive_Tracers(AdvCtx *actx)
 			PetscCall(Discret1DFindPoint(&fs->dsy, yp, J));
 			PetscCall(Discret1DFindPoint(&fs->dsz, zp, K));
 
+#ifndef WITH_FASTSCAPE
 			GET_CELL_ID(ID, I, J, K, fs->dsx.ncels, fs->dsy.ncels)
+#endif
 
 			// compute surface topography at marker position
 			topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
