@@ -130,9 +130,10 @@
     surf_max_angle     = 45.0             # maximum angle with horizon (smoothed if larger)
     surf_topo_file     = ./input/topo.dat # initial topography file (redundant)
 
-    surf_mode          = 1                # surface evolution mode [0-none (default), 1-built-in erosion/sedimentation, 2-FastScape]
+    surf_mode          = 1                # surface evolution mode [1-built-in erosion/sedimentation (default), 2-FastScape]
                                           # NOTE: surf_mode = 2 requires LaMEM compiled with FastScape support
                                           #       (make surf=scape) and a <FastScapeStart>/<FastScapeEnd> block (see below)
+                                          # the erosion_model/sediment_model options below apply to surf_mode = 1 only
 
     erosion_model      = 2                # erosion model [0-none (default), 1-infinitely fast, 2-prescribed rate with given level, 3-spatially limited]
     er_num_phases      = 3                # number of erosion phases
