@@ -119,7 +119,7 @@ struct FastScapeLib
 	PetscInt    nodes_solve;
 
 	// surface parameter
-	PetscScalar Max_dt; // max dt used in FastScape
+	PetscScalar max_fs_dt; // max dt used in FastScape
 	char    FS_BC[_str_len_];  // topography boundary condition in FastScape
 	char    FS_VELBC[_str_len_]; // velocity boundary condition in FastScape
 	PetscInt    random_noise; // random noise flag for topography
@@ -139,7 +139,7 @@ struct FastScapeLib
 	PetscScalar p;    // slope exponent for multi-direction flow; the distribution of flow among potential receivers
 	//(defined as the neighbouring nodes that define a negative slope)is proportional to local slope to power p
 	// sedimentaion
-	PetscInt    setMarine; // flag of using marine process
+	PetscInt    set_marine; // flag of using marine process
 	PetscInt    sedPhases;   // sediment layers phase numbers
 	PetscScalar sealevel; // sea level in meters
 	PetscScalar poro_silt; // reference/surface porosity for silt
@@ -147,7 +147,7 @@ struct FastScapeLib
 	PetscScalar zporo_silt; // e-folding depth for exponential porosity law for silt
 	PetscScalar zporo_sand; // e-folding depth for exponential porosity law for sand
 	PetscScalar ratio; // silt fraction for material leaving the continent
-	PetscScalar Lsolve; // averaging depth/thickness needed to solve the silt-sand equation in meters
+	PetscScalar depth_siltsand_solve; // averaging depth/thickness needed to solve the silt-sand equation in meters
 	PetscScalar kds_silt; // marine transport coefficient (diffusivity) for silt in meters squared per year
 	PetscScalar kds_sand; // marine transport coefficient (diffusivity) for sand in meters squared per year
 

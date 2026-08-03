@@ -48,11 +48,11 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 	// refine times & load refined grid
 	FSLib->refine            =   1;
 	// max timestep
-	FSLib->Max_dt            =   0.01 * scal->time_fs;
+	FSLib->max_fs_dt            =   0.01 * scal->time_fs;
 	// random noise
 	FSLib->random_noise      =   1;
 	// sedimentation
-	FSLib->setMarine         =   0;
+	FSLib->set_marine         =   0;
 	// output information
 	FSLib->surf_out_nstep    =   1;
 	FSLib->vec_times         =   1;
@@ -90,7 +90,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 		// FastScape PARAMETER
 		//===============================
 		// dt & boundary condition
-		PetscCall(getScalarParam(fb, _REQUIRED_, "Max_dt",            &FSLib->Max_dt,           1,  1 / scal->time_fs)); // Myr (LaMEM) ->yr (FastScape)
+		PetscCall(getScalarParam(fb, _REQUIRED_, "max_fs_dt",            &FSLib->max_fs_dt,           1,  1 / scal->time_fs)); // Myr (LaMEM) ->yr (FastScape)
 
 		// bottom-right-top-left; 0 = reflective, 1 = fixed height boundary; When two reflective boundaris face each other they become cyclic
 		PetscCall(getStringParam(fb, _REQUIRED_, "topo_boundary",     FSLib->FS_BC,                 "1111"));
@@ -126,8 +126,8 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 		//-------------------------------
 		// Sedimentation process
 		//-------------------------------
-		PetscCall(getIntParam   (fb, _OPTIONAL_, "setMarine",         &FSLib->setMarine,        1,         1)); // flag
-		if(FSLib->setMarine)
+		PetscCall(getIntParam   (fb, _OPTIONAL_, "set_marine",         &FSLib->set_marine,        1,         1)); // flag
+		if(FSLib->set_marine)
 		{
 			PetscCall(getScalarParam(fb, _REQUIRED_, "sealevel",      &FSLib->sealevel,         1,         1 / scal->length_fs)); // m
 			PetscCall(getScalarParam(fb, _REQUIRED_, "poroSilt",      &FSLib->poro_silt,        1,         1.0)); // non-dimensional
@@ -135,7 +135,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 			PetscCall(getScalarParam(fb, _REQUIRED_, "zporoSilt",     &FSLib->zporo_silt,       1,         1 / scal->length_fs));
 			PetscCall(getScalarParam(fb, _REQUIRED_, "zporoSand",     &FSLib->zporo_sand,       1,         1 / scal->length_fs));
 			PetscCall(getScalarParam(fb, _REQUIRED_, "ratio",         &FSLib->ratio,            1,         1.0)); // non-dimensional
-			PetscCall(getScalarParam(fb, _REQUIRED_, "Lsolve",        &FSLib->Lsolve,           1,         1 / scal->length_fs)); // m
+			PetscCall(getScalarParam(fb, _REQUIRED_, "depth_siltsand_solve",        &FSLib->depth_siltsand_solve,           1,         1 / scal->length_fs)); // m
 			PetscCall(getScalarParam(fb, _REQUIRED_, "kdsSilt",       &FSLib->kds_silt,         1,         1.0)); // m2/yr
 			PetscCall(getScalarParam(fb, _REQUIRED_, "kdsSand",       &FSLib->kds_sand,         1,         1.0)); // m2/yr
 		}
@@ -232,7 +232,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 
 	// surface process parameter
 	PetscPrintf(PETSC_COMM_WORLD, "  Surface process: \n");
-	PetscPrintf(PETSC_COMM_WORLD, "    Max timestep          : %g %s\n",        FSLib->Max_dt / scal->time_fs, scal->lbl_time);
+	PetscPrintf(PETSC_COMM_WORLD, "    Max timestep          : %g %s\n",        FSLib->max_fs_dt / scal->time_fs, scal->lbl_time);
 	PetscPrintf(PETSC_COMM_WORLD, "    Topography boundary   : %s\n",           FSLib->FS_BC);
 	PetscPrintf(PETSC_COMM_WORLD, "    Velocity boundary     : %s\n",           FSLib->FS_VELBC);
 	PetscPrintf(PETSC_COMM_WORLD, "    Sedimentation phase   : %" PetscInt_FMT "\n",           FSLib->sedPhases);
@@ -248,7 +248,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "      gsed                : %g\n",           FSLib->gsed);
 	PetscPrintf(PETSC_COMM_WORLD, "      p                   : %g\n",           FSLib->p);
 
-	if(FSLib->setMarine)
+	if(FSLib->set_marine)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "    Marine process: \n");
 		PetscPrintf(PETSC_COMM_WORLD, "      sealevel            : %g %s\n",    FSLib->sealevel / scal->length_fs, scal->lbl_length);
@@ -257,7 +257,7 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD, "      zporo_silt          : %g\n",       FSLib->zporo_silt);
 		PetscPrintf(PETSC_COMM_WORLD, "      zporo_sand          : %g\n",       FSLib->zporo_sand);
 		PetscPrintf(PETSC_COMM_WORLD, "      ratio               : %g\n",       FSLib->ratio);
-		PetscPrintf(PETSC_COMM_WORLD, "      L                   : %g\n",       FSLib->Lsolve);
+		PetscPrintf(PETSC_COMM_WORLD, "      L                   : %g\n",       FSLib->depth_siltsand_solve);
 		PetscPrintf(PETSC_COMM_WORLD, "      kds_silt            : %g\n",       FSLib->kds_silt);
 		PetscPrintf(PETSC_COMM_WORLD, "      kds_sand            : %g\n",       FSLib->kds_sand);
 	}
@@ -1473,7 +1473,7 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
-		PetscScalar dt_max = FSLib->Max_dt; // Maximum step length, if dt_LaMEM is larger than this, use this
+		PetscScalar dt_max = FSLib->max_fs_dt; // Maximum step length, if dt_LaMEM is larger than this, use this
 		PetscScalar dt_n = 0; //dt_residual
 		PetscScalar quotient = dt_fs/dt_max;
 		PetscInt nsteps = (PetscInt)(floor( dt_fs/dt_max ));
@@ -2670,7 +2670,7 @@ PetscErrorCode FastScapeInitialize(FastScapeLib *FSLib, PetscScalar *topo_pass, 
 		fastscape_set_basement_(basement);
 		PetscCall(VecRestoreArray(FSLib->basement, &basement));
 
-		if(FSLib->setMarine == 1)
+		if(FSLib->set_marine == 1)
 		{
 			PetscCall(VecGetArray(FSLib->silt_fraction, &silt_fraction));
 			fastscape_init_f_(silt_fraction);
@@ -2802,10 +2802,10 @@ PetscErrorCode FastScapeFortranCppAdvc(FastScapeLib *FSLib, PetscScalar dt_max, 
 	fastscape_set_erosional_parameters_(kf, &FSLib->kfsed, &FSLib->m, &FSLib->n, kd, &FSLib->kdsed, &FSLib->g, &FSLib->gsed, &FSLib->p);
 
 	// set marine transport parameters
-	if (FSLib->setMarine)
+	if (FSLib->set_marine)
 	{
 		fastscape_set_marine_parameters_(&FSLib->sealevel, &FSLib->poro_silt, &FSLib->poro_sand, &FSLib->zporo_silt,
-		                                 &FSLib->zporo_sand, &FSLib->ratio, &FSLib->Lsolve, &FSLib->kds_silt, &FSLib->kds_sand);
+		                                 &FSLib->zporo_sand, &FSLib->ratio, &FSLib->depth_siltsand_solve, &FSLib->kds_silt, &FSLib->kds_sand);
 	}
 
 	// set number of time steps and initialize counter istep
@@ -2900,7 +2900,7 @@ PetscErrorCode FastScapeReadRestart(FastScapeLib *FSLib, FILE *fp)
 		// FastScape part
 		PetscCall(VecReadRestart(FSLib->basement, fp));
 
-		if(FSLib->setMarine == 1)
+		if(FSLib->set_marine == 1)
 		{
 			PetscCall(VecReadRestart(FSLib->silt_fraction, fp));
 		}
@@ -2945,7 +2945,7 @@ PetscErrorCode FastScapeWriteRestart(FastScapeLib *FSLib, FILE *fp)
 		// FastScape part
 		PetscCall(VecWriteRestart(FSLib->basement, fp));
 
-		if(FSLib->setMarine)
+		if(FSLib->set_marine)
 		{
 			PetscCall(VecWriteRestart(FSLib->silt_fraction, fp));
 		}
