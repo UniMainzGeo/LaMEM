@@ -569,26 +569,30 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PetscInt       restart, track_stages;
 	PetscLogDouble t;
 	PetscLogStage  stages[4];
+	PetscBool      flag;
 
 	PetscFunctionBeginUser;
 
 	jr = &lm->jr;
 
+	track_stages = 0;
+
 	if(!param)
 	{
-		// normal mode only
-		track_stages = 1;
+		// check an option to track solution stages
+		// stage tracking should never be activated in the inversion mode
+		// therefore only testing here (when inversion parameters are not specified)
 
+		PetscCall(PetscOptionsHasName(NULL, NULL, "-snes_track_stages", &flag)); if(flag) { track_stages = 1; }
+	}
+
+	if(track_stages)
+	{
 		// name computational stages
 		PetscCall(PetscLogStageRegister("Initial guess",  &stages[0]));
 		PetscCall(PetscLogStageRegister("SNES solve",     &stages[1]));
 		PetscCall(PetscLogStageRegister("Advect markers", &stages[2]));
 		PetscCall(PetscLogStageRegister("I/O",            &stages[3]));
-	}
-	else
-	{
-		// not for the inversion!
-		track_stages = 0;
 	}
 
 	// create nonlinear solver
