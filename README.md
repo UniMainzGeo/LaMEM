@@ -4,6 +4,10 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://unimainzgeo.github.io/LaMEM/dev)
 [![DOI](https://zenodo.org/badge/641438500.svg)](https://zenodo.org/doi/10.5281/zenodo.10211634)
 
+> [!NOTE]
+> **Upgrading from LaMEM v2.2.1 to v3.0.0+?**
+> v3.0.0 introduces breaking changes to input files. Please refer to the [Upgrading from v2.2.1 to v3.0.0 guide](https://unimainzgeo.github.io/LaMEM/dev/man/Upgrade_v2.2.1_to_v3.0.0/).
+
 LaMEM (Lithosphere and Mantle Evolution Model) is a parallel 3D numerical code that can be used to simulate various thermo-mechanical 
 geodynamical processes such as mantle-lithosphere interaction for rocks 
 that have visco-elasto-plastic rheologies. It was developed to better understand geological 

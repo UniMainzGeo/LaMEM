@@ -24,6 +24,9 @@ makedocs(;
             "Getting Started" =>  "man/GettingStarted.md",
             "Initial Model setup" =>  "man/InitialModelSetup.md",
         ],
+        "Release Notes" => Any[
+            "Upgrading from v2.2.1 to v3.0.0" => "man/Upgrade_v2.2.1_to_v3.0.0.md",
+        ],
         "Development" => Any[
             "LaMEM Development" => "man/LaMEM_Development.md",
             "LaMEM Debugging" => "man/Debugging.md"
