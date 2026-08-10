@@ -54,6 +54,10 @@ b) Put the relevant LaMEM input file (*.dat) in the new test directory.
 	Make sure the test does not run long. Limit the resolution by 64x64x64 in 3D (or equivalent).
 	Do not use more than 30 time steps, unless it is a 1D test, or heat diffusion problem, or a very small domain.
 	
+	Never use continue_on_fail = 1 option!
+	
+	All tests should always converge to a given tolerance.
+	
 c) Add the test to "runtests.jl". 
 
 	Example:
