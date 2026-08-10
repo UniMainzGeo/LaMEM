@@ -1325,7 +1325,7 @@ PetscErrorCode PMatBlockAssemble(PMatBlock *P)
 	PetscCall(DMDAVecRestoreArray(fs->DA_XY,  md->etaxy, &vetaxy));
 	PetscCall(DMDAVecRestoreArray(fs->DA_XZ,  md->etaxz, &vetaxz));
 	PetscCall(DMDAVecRestoreArray(fs->DA_YZ,  md->etayz, &vetayz));
-	
+
 	// assemble velocity-pressure matrix blocks, remove constrained rows
 	PetscCall(MatAIJAssemble(P->Avv, md->vNumSPC, md->vSPCListMat, 1.0));
 	PetscCall(MatAIJAssemble(P->Avp, md->vNumSPC, md->vSPCListMat, 0.0));
