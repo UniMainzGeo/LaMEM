@@ -12,6 +12,7 @@ OPTIONS & PREFIXES
 	-snes_newton_maxit[value] - maximum number of Newton iterations to switch to Picard (divergence)
 	-snes_atol_auto           - automatic selection of absolute tolerance
 	-snes_continue_on_fail    - continue simulation if nonlinear solver diverged
+	-snes_track_stages        - activates staged logging (off by default)
 
 * MFFD Jacobian options prefix: -fd_
 
