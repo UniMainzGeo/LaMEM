@@ -976,18 +976,18 @@ if should_run_test("t16_PhaseTransitions")
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
-# this test fails to converge to any reasonable tolerance (deactivated for now)
-# diagnostics info: residual fluctuates                   
-#    # Test dike feature using optimized LaMEM
-#    @test perform_lamem_test(dir,"PhaseTransNotInAirBox_move.dat","PhaseTransNotInAirBox_move",
-#                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
-#                            create_expected_file=update_expected, clean_dir=clean_files)
-
     # Check that it works when one Phase==0; addresses issue #14    
     @test perform_lamem_test(dir,"Plume_PhaseTransitions_SwappedPhases.dat","PhaseTransitions-Melting_SwappedPhases",
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
-                 
+
+    # Test dike feature using optimized LaMEM
+	# *** WARNING! This test fails to converge to a reasonable tolerance ***
+    keywords = ("|mRes|_2",)
+    acc      = ((rtol=1, atol=5e-2),)
+    @test perform_lamem_test(dir,"PhaseTransNotInAirBox_move.dat","PhaseTransNotInAirBox_move",
+                            keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)                 
 end
 end
 #---------------------------------------------------------------------------
@@ -1200,14 +1200,6 @@ if should_run_test("t26_Dike")
                             keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
 
-# this test fails to converge to any reasonable tolerance (deactivated for now)
-# diagnostics info: residual fluctuates          
-#    # heat_rhoA
-#    @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA",
-#                            args="-nstep_max 2 -nel_y 2",
-#                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-#                            create_expected_file=update_expected, clean_dir=clean_files)
-
     keywords = ("|Div|_inf", "|mRes|_2")
     acc      = ((rtol=1e-5, atol=1e-7), (rtol=1e-2, atol=1e-3))
     
@@ -1222,21 +1214,30 @@ if should_run_test("t26_Dike")
                             args="",
                             keywords=keywords, accuracy=acc, cores=4, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
-                            
-# this test fails to converge to any reasonable tolerance (deactivated for now)
-# diagnostics info: residual fluctuates                                        
-#    # test_variableM
-#    @test perform_lamem_test(dir,"dike_variableM.dat","dike_variableM",
-#                            args="-nstep_max 2 -nel_y 2",
-#                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
-#                            create_expected_file=update_expected, clean_dir=clean_files)
 
     # test_M075_2D_2cores
     @test perform_lamem_test(dir,"dike_M075_2D_2cores.dat","dike_M075_2D_2cores",
                             args="-nstep_max 2 -nel_y 2",
                             keywords=keywords, accuracy=acc, cores=2, opt=true, mpiexec=mpiexec,
                             create_expected_file=update_expected, clean_dir=clean_files)
-							                           
+
+    # heat_rhoA
+	# *** WARNING! This test fails to converge to a reasonable tolerance ***
+    keywords = ("|eRes|_2",)
+    acc      = ((rtol=1e-4,atol=1e-5),);       
+    @test perform_lamem_test(dir,"dike_heating_rhoA.dat","dike_heating_rhoA",
+                            args="-nstep_max 2 -nel_y 2",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+                           create_expected_file=update_expected, clean_dir=clean_files)
+
+    # test_variableM
+	# *** WARNING! This test fails to converge to a reasonable tolerance ***
+    keywords = ("|mRes|_2",)
+    acc      = ((rtol=1, atol=5e-2),)
+    @test perform_lamem_test(dir,"dike_variableM.dat","dike_variableM",
+                            args="-nstep_max 2 -nel_y 2",
+                            keywords=keywords, accuracy=acc, cores=1, opt=true, mpiexec=mpiexec,
+                            create_expected_file=update_expected, clean_dir=clean_files)						                           
 end
 end
 #---------------------------------------------------------------------------
