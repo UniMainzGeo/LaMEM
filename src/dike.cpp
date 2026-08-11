@@ -775,13 +775,13 @@ PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD)
 	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, dike->magPressure, &magPressure));
 
 
-	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &sxx));
-	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx, &Pmag));
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vsxx,  &sxx));
+	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vPmag, &Pmag));
 	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vliththick, &liththick));
 	PetscCall(DMDAVecRestoreArray(jr->DA_CELL_2D, vzsol, &zsol));
 
-	PetscCall(VecRestoreArray(vsxx, &lsxx));
-	PetscCall(VecRestoreArray(vsxx, &lPmag));
+	PetscCall(VecRestoreArray(vsxx,  &lsxx));
+	PetscCall(VecRestoreArray(vPmag, &lPmag));
 	PetscCall(VecRestoreArray(vliththick, &lliththick));
 	PetscCall(VecRestoreArray(vzsol, &lzsol));
 
