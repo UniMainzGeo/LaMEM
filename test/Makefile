@@ -4,7 +4,9 @@
 #  3) Call Julia test harness and OVERWRITE the expected/reference files (make update)
 #  4) Run tests under Valgrind (make grind)
 #  5) Re-check existing Valgrind .xml output from a previous 'make grind' (make report)
-#  6) Remove remaining files (make clean)
+#  6) Run tests with -log_view; each test fails on a creations/destructions mismatch
+#     instead of the usual numeric comparison (make check)
+#  7) Remove remaining files (make clean)
 
 # define PETSc installation directories:
 # PETSC_DEB = /directory/where/petsc/debug/is/installed
@@ -33,10 +35,10 @@ endif
 # Make would normally try to build "01", "05", etc. as targets of their own,
 # so we grab everything besides "test" "work" "update" "grind" "report" "clean"
 # as TEST_SELECTORS and turn those words into harmless no-op targets.
-TEST_SELECTORS := $(filter-out test work update grind report clean,$(MAKECMDGOALS))
+TEST_SELECTORS := $(filter-out test work update grind report check clean,$(MAKECMDGOALS))
 $(eval $(TEST_SELECTORS):;@:)
 
-.PHONY : test work update grind report clean
+.PHONY : test work update grind report check clean
 
 # test   - run tests, clean up generated output/work files
 # work   - run tests, keep generated files around for inspection
@@ -87,7 +89,17 @@ report:
 	@echo "Checking Valgrind output for leaks & uninitialised values"
 	@echo "========================================================="
 	@julia --project=../. check_valgrind_report.jl
-	
+
+# check - run the test suite with '-log_view' appended to every test. Instead of the
+#         usual numeric comparison against the expected files, each test fails if any
+#         PETSc object type was destroyed a different number of times than it was created.
+check:
+	@echo "==================================================================="
+	@echo "Running LaMEM Julia testing framework with -log_view in" ${BIT} "mode"
+	@echo "(each test fails on a PETSc object Creations/Destructions mismatch)"
+	@echo "==================================================================="
+	@julia --project=../. start_tests.jl ${ARGS} check ${TEST_SELECTORS}
+
 clean:
 	@echo "............................................."
 	@echo ".......... Performing full clean ............"

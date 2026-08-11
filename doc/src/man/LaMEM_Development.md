@@ -76,7 +76,7 @@ Now you are ready to implememt your changes in the new branch.
 
 ### 6.2.3 Format source code
 
-If you plan to merge your contributions to `LaMEM/master` it is mandatory to apply automated formatting using Artistic Style [astyle] (https://astyle.sourceforge.net/) tool.
+If you plan to merge your contributions to `master` it is mandatory to apply automated formatting using Artistic Style [astyle] (https://astyle.sourceforge.net/) tool.
 
 The astyle executable can be installed on Linux (e.g. Ubuntu) as folows:
 ```
@@ -88,7 +88,7 @@ brew install astyle
 ```
 The formatting options are described in the hidden file `.astylerc` which is located in the source directory. Please do not modify this file, since otherwise LaMEM coding style will be broken.
 
-To perform formatting of your changes you can simply use the `format` target from `Makefile`:
+To perform formatting of your changes you can simply use the `format` target from `Makefile` in `LaMEM/src` directory:
  
 ```
 make format
@@ -109,7 +109,7 @@ if(X[0] < bx || X[0] > ex ||
    X[1] < by || X[1] > ey ||
    X[2] < bz || X[2] > ez) numNonLocal++;
 ```
-To make sure that your formatting follows the rules you can use the following target of the Makefile:
+To make sure that your formatting follows the rules you can use the following target of the Makefile in `LaMEM/src` directory:
 
 ```
 make check
@@ -185,7 +185,7 @@ If your contribution can be logically decomposed into 2 or more separate contrib
 
 Include tests which cover any changes to the source code.  Create a new directory for these tests within `LaMEM/test` and add the test itself to `runtests.jl`. You will have to create a Julia script for each new test directory, and will have to add `*.expected` files. Please make sure that these tests run reasonably fast, as it will otherwise significantly slow down the full testing framework (in most cases it is sufficient to have a low resolution case for testing). You can most likely get inspiration by looking at the existing examples.
 
-Run the full test suite on your machine – i.e. `make test` in the `/LaMEM/test` directory before a pull request. All tests should pass; if not ensure that.
+Run the full test suite on your machine – i.e. `make test` in the `LaMEM/test` directory before a pull request. All tests should pass; if not ensure that.
 
 #### 6.3.2.1 Test targets
 
@@ -197,6 +197,7 @@ make work      # run tests, keep generated files for inspection
 make update    # run tests and OVERWRITE the expected (reference) files
 make grind     # run tests under Valgrind, analyze .xml files and report errors
 make report    # analyze existing Valgrind .xml files and report errors
+make check     # run tests and check match between creations/destructions of PETSc objects
 make clean     # remove output files (e.g. .xml) 
 ```
 `make update` prints a warning banner before running, since it overwrites the reference files used to judge pass/fail in future runs.
@@ -232,6 +233,21 @@ Make sure that you have no memory leaks. That means that every vector/matrix/dm 
 ![MemoryUsage](../assets/img/PETSc_memory_usage.png) 
 
 The number of creations must be the same as the number of destruction. If there is a mismatch, you likely forgot to do a Destroy somewhere. Note that it is more difficult to track down `PetscMalloc` statements without corresponding `PetscFree`. Doing that is important as otherwise the memory of a simulation will go up with every time step, which ultimately makes the simulations run out of memory. To activate the logging simply run your test with the `-log_view` option added in the end.
+
+This check is also fully integrated into the test framework. Run the following command in the `LaMEM/test` directory:
+
+```
+make check
+```
+(Note this is a different target from the `make check` described above, which checks source *formatting* and is run from the LaMEM source root rather than `test`.)
+
+`make check` runs the entire test suite with `-log_view` automatically appended to every test. Instead of the usual numeric comparison against the expected files, each test instead fails if any PETSc object type reports a different number of Creations than Destructions, e.g.:
+```
+LEAK SUSPECTED in FB1_a_Direct_opt.out (Creations != Destructions):
+  Object Type              | Creations  | Destructions
+  Vector                   | 258        | 255
+```
+As with the other test targets, you can use test selectors to narrow this down, e.g. `make check 07`. Because the check happens right after each test runs, there is no separate report step and no leftover files to clean up afterwards - pass/fail for every test shows up in the usual test summary at the end of the run, just like `make test`.
 
 ### 6.3.6 Use Valgrind
 

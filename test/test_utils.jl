@@ -163,6 +163,87 @@ function get_line_containing(stringarray::Vector{SubString{String}}, lookfor::St
 	end
 end
 
+# Matches a single "Object Type   Creations   Destructions [  Memory  Descendants' Mem.]"
+# row from PETSc's `-log_view` memory-usage table. The trailing Memory/Descendants' Mem.
+# columns are only present for some PETSc builds (e.g. debug builds track allocation sizes;
+# optimized builds often only track Creations/Destructions counts), so they are optional:
+#   "              Vector   258            258     18944816     0."   (deb-style, with sizes)
+#   "              Vector   140            140"                       (opt-style, counts only)
+# The object-type name is matched non-greedily so it can contain spaces.
+const MEMORY_ROW_RE = r"^\s*([A-Za-z][A-Za-z0-9 /'\-]*?)\s+(\d+)\s+(\d+)(?:\s+[\d.]+\s+[\d.]+\.?)?\s*$"
+
+"""
+    counts = parse_memory_usage(file::String)
+
+Parses a `-log_view` log `file` and returns a `Dict{String,Tuple{Int,Int}}` mapping each
+PETSc object type (Vector, Matrix, Index Set, ...) to its summed `(creations,
+destructions)` across the whole file (all event stages combined). Returns an empty `Dict`
+if the file contains no `-log_view` object-tracking table.
+
+The table's header line ("Object Type   Creations   Destructions ...") is used as the
+trigger to start parsing, rather than a fixed marker string, since its exact wording
+(and whether Memory/Descendants' Mem. columns are present) varies between PETSc builds.
+"""
+function parse_memory_usage(file::String)
+    counts = Dict{String,Tuple{Int,Int}}()
+    in_section = false
+
+    open(file) do io
+        for line in eachline(io)
+            if !in_section
+                if occursin("Creations", line) && occursin("Destructions", line)
+                    in_section = true
+                end
+                continue
+            end
+
+            m = match(MEMORY_ROW_RE, line)
+            m === nothing && continue
+
+            name = strip(m.captures[1])
+            creations    = parse(Int, m.captures[2])
+            destructions = parse(Int, m.captures[3])
+
+            prev = get(counts, name, (0, 0))
+            counts[name] = (prev[1] + creations, prev[2] + destructions)
+        end
+    end
+
+    return counts
+end
+
+"""
+    success = check_memory_usage(file::String)
+
+Checks a `-log_view` log `file` (see `parse_memory_usage`) and reports whether every
+PETSc object type was destroyed as many times as it was created. On a mismatch (a likely
+missing `*Destroy()` call) this prints the offending object types and returns `false`.
+If the file contains no `-log_view` table at all, a warning is printed and `false`
+is returned. Otherwise returns `true`.
+"""
+function check_memory_usage(file::String)
+    counts = parse_memory_usage(file)
+
+    if isempty(counts)
+        println("WARNING: no -log_view memory usage table found in $file; nothing to check")
+        return false
+    end
+
+    mismatches = [(name, c, d) for (name, (c, d)) in counts if c != d]
+    if isempty(mismatches)
+        return true
+    end
+
+    println("LEAK SUSPECTED in $file (Creations != Destructions):")
+    println("  $(rpad("Object Type", 24)) | $(rpad("Creations", 10)) | Destructions")
+    for (name, c, d) in sort(mismatches, by = x -> x[1])
+        printstyled("  $(rpad(name, 24)) | $(rpad(c, 10)) | $d\n", color = :red)
+    end
+
+    return false
+end
+
+
 """
     Procpartname = CreatePartitioningFile_local(ParamFile::String, cores::Int64=1, args::String=""; bin_dir="../../bin", opt=true, deb=false,mpiexec="mpiexec", dylibs="")
 
@@ -474,7 +555,8 @@ end
                         debug::Bool=false, 
                         create_expected_file::Bool=false, 
                         clean_dir::Bool=true,
-                        valgrind::Bool = (@isdefined(use_valgrind) ? use_valgrind : false))
+                        valgrind::Bool = (@isdefined(use_valgrind) ? use_valgrind : false),
+                        memcheck::Bool = (@isdefined(use_memcheck) ? use_memcheck : false))
 
 This performs a LaMEM simulation and compares certain keywords of the logfile with results of a previous simulation        
 
@@ -497,6 +579,10 @@ Parameters:
 - `valgrind`: run this test through Valgrind instead of running LaMEM directly.
    If not specified explicitly, this defaults to the global `use_valgrind` flag (set by `runtests.jl`
    when `julia start_tests.jl ... valgrind` is used), so existing test definitions don't need to change.
+- `memcheck`: append `-log_view` to the run and, instead of the usual keyword-based numeric comparison,
+   check that every PETSc object type reported by `-log_view` was destroyed as many times as it was
+   created. The test fails if there is a mismatch (a likely missing `*Destroy()` call).
+   If not specified explicitly, this defaults to the global `use_memcheck`.
 
 """
 function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String; 
@@ -505,10 +591,13 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
                 bin_dir="../bin",  opt=true, deb=false, mpiexec="mpiexec",
                 split_sign="=", 
                 debug::Bool=false, create_expected_file::Bool=false, clean_dir::Bool=true,
-                valgrind::Bool = (@isdefined(use_valgrind) ? use_valgrind : false))
+                valgrind::Bool = (@isdefined(use_valgrind) ? use_valgrind : false),
+                memcheck::Bool = (@isdefined(use_memcheck) ? use_memcheck : false))
    
     if valgrind == true
         valgrind_flag = "[valgrind]"
+    elseif memcheck == true
+        valgrind_flag = "[memcheck]"
     else
         valgrind_flag = ""
     end
@@ -532,6 +621,13 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
 	
 	expectedFile = "$expectedFile.expected";
 
+    if memcheck
+        # -log_view makes PETSc print, per object type, how many objects were created vs.
+        # destroyed. It is appended to whatever command-line args the test already uses,
+        # and is written to the same stdout log used below.
+        args = isempty(args) ? "-log_view" : args * " -log_view"
+    end
+
     # perform simulation 
     success = run_lamem_local_test(ParamFile, cores, args, outfile=outfile, bin_dir=bin_dir, opt=opt, deb=deb, mpiexec=mpiexec, valgrind=valgrind);
 
@@ -539,7 +635,10 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     # as opt=true - so the log wouldn't be a fair comparison against a *_opt.expected file generated by
     # the optimized build (minor floating-point differences between build variants can happen). Since
     # the point of a valgrind run is leak detection, not numeric validation, skip that comparison here.
-    if success==true && debug==false && !valgrind
+    if success==true && debug==false && memcheck
+        # Memory-leak check instead of the usual numeric comparison - see check_memory_usage.
+        success = check_memory_usage(outfile)
+    elseif success==true && debug==false && !valgrind
         # compare logfiles 
         success = compare_logfiles(outfile, expectedFile, keywords, accuracy, split_sign=split_sign)
     end

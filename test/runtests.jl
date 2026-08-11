@@ -35,7 +35,13 @@ else
     global use_valgrind=false
 end
 
-@show use_dynamic_lib create_plots use_valgrind
+if "check" in ARGS
+    global use_memcheck=true
+else
+    global use_memcheck=false
+end
+
+@show use_dynamic_lib create_plots use_valgrind use_memcheck
 include("test_utils.jl")        # test-framework specific functions
 
 #---------------------------------------------------------------------------
