@@ -1656,6 +1656,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx,TSSol *ts)
 	}
 	while(!conv && it++ < maxit);
 
+	PetscCall(DMDAVecRestoreArray(fs->DA_CEN, lT, &T));
 	PetscCall(JacResRestoreSolution(jr, NULL, NULL, NULL, NULL, &lT));
 
 	// copy lithostatic pressure to pressure history of grid
