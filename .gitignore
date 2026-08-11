@@ -23,6 +23,6 @@
 /test/*/ProcessorPartitioning*.*
 /test/t33_Initial_APS/Timestep_*
 Manifest.toml  
-docs/build/
+doc/build/
 .claude
 
