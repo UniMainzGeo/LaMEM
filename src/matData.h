@@ -78,7 +78,7 @@ PetscErrorCode MatDataListSPC(MatData *md);
 //---------------------------------------------------------------------------
 
 #define LIST_SPC_IND(bc, list, cnt, iter) \
-	if(bc[k][j][i] != DBL_MAX) { list[cnt] = iter; cnt++; }
+    if(bc[k][j][i] != DBL_MAX) { list[cnt] = iter; cnt++; }
 
 //---------------------------------------------------------------------------
 

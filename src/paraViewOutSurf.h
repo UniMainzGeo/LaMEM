@@ -59,9 +59,9 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName);
 //---------------------------------------------------------------------------
 
 void OutputBufferWrite(
-	FILE     *fp,
-	float    *buff,
-	PetscInt  cn);
+    FILE     *fp,
+    float    *buff,
+    PetscInt  cn);
 
 PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp);
 

@@ -28,7 +28,6 @@ PetscErrorCode PCParamSetFromOptions(PCParam *p)
 	char      vs_type   [_str_len_], sp_type[_str_len_];
 	char      vs_pc_type[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// set defaults
@@ -113,7 +112,6 @@ PetscErrorCode PCParamSetFromOptions(PCParam *p)
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataCreate(PCData *pc, JacRes *jr, Mat J, Mat P)
 {
-	
 	PetscFunctionBeginUser;
 
 	PCParam *param = &pc->param;
@@ -159,7 +157,6 @@ PetscErrorCode PCDataCreate(PCData *pc, JacRes *jr, Mat J, Mat P)
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataDestroy(PCData *pc)
 {
-	
 	PetscFunctionBeginUser;
 
 	PCParam *param = &pc->param;
@@ -195,7 +192,6 @@ PetscErrorCode PCDataDestroy(PCData *pc)
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataSetup(PCData *pc, JacRes *jr)
 {
-	
 	PetscFunctionBeginUser;
 
 	PCParam *param = &pc->param;
@@ -220,7 +216,6 @@ PetscErrorCode PCDataSetup(PCData *pc, JacRes *jr)
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataMGCreate(PCDataMG *pc, PCParam *param, JacRes *jr, Mat J, Mat P)
 {
-	
 	PetscFunctionBeginUser;
 
 	// set parameters
@@ -261,7 +256,6 @@ PetscErrorCode PCDataMGCreate(PCDataMG *pc, PCParam *param, JacRes *jr, Mat J, M
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataMGDestroy(PCDataMG *pc)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatDataDestroy(&pc->md));
@@ -278,7 +272,6 @@ PetscErrorCode PCDataMGDestroy(PCDataMG *pc)
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataMGSetup(PCDataMG *pc, JacRes *jr)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatDataSetup(&pc->md, jr));
@@ -297,7 +290,6 @@ PetscErrorCode PCDataMGApply(Mat P, Vec r, Vec x)
 {
 	PCDataMG *pc;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatShellGetContext(P, (void**)&pc));
@@ -316,7 +308,6 @@ PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, M
 	PC        vpc;
 	PetscInt  buildwBFBT, buildBvv, set_null_space;
 
-	
 	PetscFunctionBeginUser;
 
 	// set parameters
@@ -334,8 +325,8 @@ PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, M
 	else                                         buildBvv = 0;
 
 	// set null space flag
-	if(param->vs_type == _VEL_USER_
-	&& param->vu_type != _VEL_USER_DIRECT_) set_null_space = 1;
+	if(param->vs_type == _VEL_USER_ &&
+	   param->vu_type != _VEL_USER_DIRECT_) set_null_space = 1;
 	else                                    set_null_space = 0;
 
 	// create matrix
@@ -393,7 +384,6 @@ PetscErrorCode PCDataBFCreate(PCDataBF *pc, PCParam *param, JacRes *jr, Mat J, M
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataBFDestroy(PCDataBF *pc)
 {
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatDataDestroy(&pc->md));
@@ -421,7 +411,6 @@ PetscErrorCode PCDataBFDestroy(PCDataBF *pc)
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataBFSetup(PCDataBF *pc, JacRes *jr)
 {
-	
 	PetscFunctionBeginUser;
 
 	PMatBlock *pm = &pc->pm;
@@ -457,7 +446,6 @@ PetscErrorCode PCDataBFApply(Mat P, Vec r, Vec x)
 
 	PCDataBF *pc;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatShellGetContext(P, (void**)&pc));
@@ -525,7 +513,6 @@ PetscErrorCode PCDataBFBTApply(PCDataBF *pc, Vec x, Vec y)
 	// wBFBT preconditioner action
 	//============================
 
-	
 	PetscFunctionBeginUser;
 
 	PMatBlock *pm = &pc->pm;
@@ -567,7 +554,6 @@ PetscErrorCode PCDataUserCreate(PCDataUser *pc, PCParam *param, JacRes *jr, Mat 
 	IS        isv, isp;
 	PetscInt  set_null_space;
 
-	
 	PetscFunctionBeginUser;
 
 	// set parameters
@@ -628,7 +614,6 @@ PetscErrorCode PCDataUserDestroy(PCDataUser *pc)
 {
 	PetscBool flg;
 
-	
 	PetscFunctionBeginUser;
 
 	// view preconditioner
@@ -650,7 +635,6 @@ PetscErrorCode PCDataUserDestroy(PCDataUser *pc)
 //---------------------------------------------------------------------------
 PetscErrorCode PCDataUserSetup(PCDataUser *pc, JacRes *jr)
 {
-	
 	PetscFunctionBeginUser;
 
 	PMatMono *P = &pc->pm;
@@ -670,7 +654,6 @@ PetscErrorCode PCDataUserApply(Mat P, Vec r, Vec x)
 {
 	PCDataUser *pc;
 
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(MatShellGetContext(P, (void**)&pc));

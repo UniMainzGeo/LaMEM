@@ -41,8 +41,8 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -95,7 +95,6 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -103,7 +102,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (6.3891e-05 sec)
+Reading geometric primitives ... done (0.000103123 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : TS_Schedule 
@@ -127,7 +126,7 @@ Preconditioner parameters:
    Number of matrix-free levels  :  0
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
-Saving output ... done (0.00174098 sec)
+Saving output ... done (0.00194885 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -137,43 +136,43 @@ Tentative time step : 0.00100000 [ ]
   0 SNES Function norm 2.513961017995e+01
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 2.278409778793e-03
+  1 SNES Function norm 2.278409778820e-03
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0134032 (sec)
+SNES solution time      : 0.0149099 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
       |Div|_inf = 3.321672494202e-04 
-      |Div|_2   = 2.171047734264e-03 
+      |Div|_2   = 2.171047734262e-03 
    Momentum: 
-      |mRes|_2  = 6.911605136655e-04 
+      |mRes|_2  = 6.911605137569e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00813 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.00147726 sec)
+Saving output ... done (0.00189804 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00812500 [ ] 
 Tentative time step : 0.00812500 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.510184533616e-03
+  0 SNES Function norm 2.510184533698e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 7
-  1 SNES Function norm 5.931154557031e-06
+  1 SNES Function norm 5.931154556412e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00660543 (sec)
+SNES solution time      : 0.00668026 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 6.452657421024e-07 
-      |Div|_2   = 4.978478025589e-06 
+      |Div|_inf = 6.452657421163e-07 
+      |Div|_2   = 4.978478025653e-06 
    Momentum: 
-      |mRes|_2  = 3.223872039662e-06 
+      |mRes|_2  = 3.223872038424e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.01937 [ ] 
 --------------------------------------------------------------------------
@@ -182,21 +181,21 @@ Actual time step : 0.01937 [ ]
 Current time        : 0.02750000 [ ] 
 Tentative time step : 0.01937500 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.196932454583e-03
+  0 SNES Function norm 2.196932454584e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
-  1 SNES Function norm 8.161870892607e-06
+  1 SNES Function norm 8.161870891537e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00306039 (sec)
+SNES solution time      : 0.00316032 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.094742803498e-06 
-      |Div|_2   = 4.825713188796e-06 
+      |Div|_inf = 1.094742803503e-06 
+      |Div|_2   = 4.825713188802e-06 
    Momentum: 
-      |mRes|_2  = 6.582448532808e-06 
+      |mRes|_2  = 6.582448531477e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.03063 [ ] 
 --------------------------------------------------------------------------
@@ -208,18 +207,18 @@ Tentative time step : 0.03062500 [ ]
   0 SNES Function norm 3.291842069826e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
-  1 SNES Function norm 6.748956527612e-06
+  1 SNES Function norm 6.748956527963e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00366417 (sec)
+SNES solution time      : 0.00388335 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.630048662554e-06 
-      |Div|_2   = 6.631403655649e-06 
+      |Div|_inf = 1.630048662550e-06 
+      |Div|_2   = 6.631403655660e-06 
    Momentum: 
-      |mRes|_2  = 1.254153007991e-06 
+      |mRes|_2  = 1.254153009816e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.04188 [ ] 
 --------------------------------------------------------------------------
@@ -228,21 +227,21 @@ Actual time step : 0.04188 [ ]
 Current time        : 0.10000000 [ ] 
 Tentative time step : 0.04187500 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.446620797512e-03
+  0 SNES Function norm 4.446620797511e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
-  1 SNES Function norm 9.989054466917e-06
+  1 SNES Function norm 9.989054467433e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00358492 (sec)
+SNES solution time      : 0.00365427 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.312881800499e-06 
+      |Div|_inf = 2.312881800496e-06 
       |Div|_2   = 9.762834977857e-06 
    Momentum: 
-      |mRes|_2  = 2.113826468319e-06 
+      |mRes|_2  = 2.113826470759e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.05000 [ ] 
 --------------------------------------------------------------------------
@@ -251,21 +250,21 @@ Actual time step : 0.05000 [ ]
 Current time        : 0.15000000 [ ] 
 Tentative time step : 0.05000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 5.293737053540e-03
+  0 SNES Function norm 5.293737053539e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 3
-  1 SNES Function norm 2.865316154493e-06
+  1 SNES Function norm 2.865316154192e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00411956 (sec)
+SNES solution time      : 0.00418538 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.354257436099e-07 
-      |Div|_2   = 2.772489784483e-06 
+      |Div|_inf = 5.354257436117e-07 
+      |Div|_2   = 2.772489784488e-06 
    Momentum: 
-      |mRes|_2  = 7.234203896323e-07 
+      |mRes|_2  = 7.234203884223e-07 
 --------------------------------------------------------------------------
 Actual time step : 0.05000 [ ] 
 --------------------------------------------------------------------------
@@ -274,21 +273,21 @@ Actual time step : 0.05000 [ ]
 Current time        : 0.20000000 [ ] 
 Tentative time step : 0.05000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 5.379433312420e-03
+  0 SNES Function norm 5.379433312421e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
-  1 SNES Function norm 9.815878909013e-06
+  1 SNES Function norm 9.815878913107e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00304327 (sec)
+SNES solution time      : 0.0031436 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.872631252528e-06 
-      |Div|_2   = 7.959837622693e-06 
+      |Div|_inf = 1.872631252529e-06 
+      |Div|_2   = 7.959837622699e-06 
    Momentum: 
-      |mRes|_2  = 5.743906665046e-06 
+      |mRes|_2  = 5.743906672035e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.04337 [ ] 
 --------------------------------------------------------------------------
@@ -297,21 +296,21 @@ Actual time step : 0.04337 [ ]
 Current time        : 0.24337500 [ ] 
 Tentative time step : 0.04337500 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 4.837043531935e-03
+  0 SNES Function norm 4.837043531937e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
-  1 SNES Function norm 9.009586539632e-06
+  1 SNES Function norm 9.009586539189e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00358183 (sec)
+SNES solution time      : 0.00366623 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.729126989251e-06 
-      |Div|_2   = 7.716355822501e-06 
+      |Div|_inf = 1.729126989218e-06 
+      |Div|_2   = 7.716355822370e-06 
    Momentum: 
-      |mRes|_2  = 4.650860397353e-06 
+      |mRes|_2  = 4.650860396713e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.03112 [ ] 
 --------------------------------------------------------------------------
@@ -320,21 +319,21 @@ Actual time step : 0.03112 [ ]
 Current time        : 0.27450000 [ ] 
 Tentative time step : 0.03112500 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 3.787768334738e-03
+  0 SNES Function norm 3.787768334737e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 2
-  1 SNES Function norm 7.420049635368e-06
+  1 SNES Function norm 7.420049636391e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00364953 (sec)
+SNES solution time      : 0.0036692 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.350579987106e-06 
-      |Div|_2   = 6.458526387460e-06 
+      |Div|_inf = 1.350579987119e-06 
+      |Div|_2   = 6.458526387454e-06 
    Momentum: 
-      |mRes|_2  = 3.653022514823e-06 
+      |mRes|_2  = 3.653022516912e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.01887 [ ] 
 --------------------------------------------------------------------------
@@ -343,46 +342,46 @@ Actual time step : 0.01887 [ ]
 Current time        : 0.29337500 [ ] 
 Tentative time step : 0.01887500 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 2.579884533236e-03
+  0 SNES Function norm 2.579884533238e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
-  1 SNES Function norm 7.985255014317e-06
+  1 SNES Function norm 7.985255015203e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00305377 (sec)
+SNES solution time      : 0.00313824 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.594758344390e-06 
-      |Div|_2   = 7.414536256225e-06 
+      |Div|_inf = 1.594758344389e-06 
+      |Div|_2   = 7.414536256249e-06 
    Momentum: 
-      |mRes|_2  = 2.964616290315e-06 
+      |mRes|_2  = 2.964616292640e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.00662 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.00130073 sec)
+Saving output ... done (0.00157521 sec)
 --------------------------------------------------------------------------
 ================================ STEP 11 =================================
 --------------------------------------------------------------------------
 Current time        : 0.30000000 [ ] 
 Tentative time step : 0.00662500 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.563037474619e-03
+  0 SNES Function norm 1.563037474616e-03
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 1
-  1 SNES Function norm 7.783199040454e-06
+  1 SNES Function norm 7.783199043372e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00307608 (sec)
+SNES solution time      : 0.00316951 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.411180079649e-06 
-      |Div|_2   = 6.956859846461e-06 
+      |Div|_inf = 1.411180079656e-06 
+      |Div|_2   = 6.956859846479e-06 
    Momentum: 
-      |mRes|_2  = 3.490026988438e-06 
+      |mRes|_2  = 3.490026994909e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.23367 [ ] 
 --------------------------------------------------------------------------
@@ -394,18 +393,18 @@ Tentative time step : 0.23366667 [ ]
   0 SNES Function norm 3.118636509929e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 4
-  1 SNES Function norm 7.431532502518e-06
+  1 SNES Function norm 7.431532502550e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00465052 (sec)
+SNES solution time      : 0.00475669 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 1.394114387211e-06 
-      |Div|_2   = 7.319593173228e-06 
+      |Div|_inf = 1.394114387222e-06 
+      |Div|_2   = 7.319593173236e-06 
    Momentum: 
-      |mRes|_2  = 1.285002379144e-06 
+      |mRes|_2  = 1.285002379286e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.50000 [ ] 
 --------------------------------------------------------------------------
@@ -417,18 +416,18 @@ Tentative time step : 0.50000000 [ ]
   0 SNES Function norm 5.588099011077e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 5
-  1 SNES Function norm 3.036276330463e-06
+  1 SNES Function norm 3.036276331694e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00518384 (sec)
+SNES solution time      : 0.005273 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.905972451448e-07 
-      |Div|_2   = 2.436736837172e-06 
+      |Div|_inf = 2.905972451466e-07 
+      |Div|_2   = 2.436736837171e-06 
    Momentum: 
-      |mRes|_2  = 1.811432455627e-06 
+      |mRes|_2  = 1.811432457691e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.50000 [ ] 
 --------------------------------------------------------------------------
@@ -437,21 +436,21 @@ Actual time step : 0.50000 [ ]
 Current time        : 1.53366667 [ ] 
 Tentative time step : 0.50000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 5.382063875615e-02
+  0 SNES Function norm 5.382063875616e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 4
-  1 SNES Function norm 4.638720061774e-06
+  1 SNES Function norm 4.638720059906e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00466153 (sec)
+SNES solution time      : 0.0048796 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.594001626001e-07 
-      |Div|_2   = 3.183194108513e-06 
+      |Div|_inf = 5.594001625948e-07 
+      |Div|_2   = 3.183194108520e-06 
    Momentum: 
-      |mRes|_2  = 3.374166427287e-06 
+      |mRes|_2  = 3.374166424712e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.46633 [ ] 
 --------------------------------------------------------------------------
@@ -460,21 +459,21 @@ Actual time step : 0.46633 [ ]
 Current time        : 2.00000000 [ ] 
 Tentative time step : 0.46633333 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 5.096901456572e-02
+  0 SNES Function norm 5.096901456573e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 4
-  1 SNES Function norm 6.614126683854e-06
+  1 SNES Function norm 6.614126684296e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00467194 (sec)
+SNES solution time      : 0.00470507 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.586329115230e-07 
-      |Div|_2   = 4.555912473038e-06 
+      |Div|_inf = 8.586329115247e-07 
+      |Div|_2   = 4.555912473042e-06 
    Momentum: 
-      |mRes|_2  = 4.794823597182e-06 
+      |mRes|_2  = 4.794823597788e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.50000 [ ] 
 --------------------------------------------------------------------------
@@ -483,29 +482,29 @@ Actual time step : 0.50000 [ ]
 Current time        : 2.50000000 [ ] 
 Tentative time step : 0.50000000 [ ] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 5.338461881464e-02
+  0 SNES Function norm 5.338461881465e-02
   0 PICARD ||F||/||F0||=1.000000e+00 
     Linear js_ solve converged due to CONVERGED_ATOL iterations 4
-  1 SNES Function norm 6.996768316228e-06
+  1 SNES Function norm 6.996768310642e-06
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00466099 (sec)
+SNES solution time      : 0.00483559 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 8.544366056160e-07 
-      |Div|_2   = 4.678836917881e-06 
+      |Div|_inf = 8.544366056074e-07 
+      |Div|_2   = 4.678836917849e-06 
    Momentum: 
-      |mRes|_2  = 5.202235285610e-06 
+      |mRes|_2  = 5.202235278125e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.50000 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.00131607 sec)
+Saving output ... done (0.00159385 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0956743 (sec) 
+Total solution time : 0.104936 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -gmg_mg_coarse_ksp_type preonly # (source: code)

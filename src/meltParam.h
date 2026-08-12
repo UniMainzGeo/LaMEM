@@ -32,11 +32,12 @@
 //---------------------------------------------------------------------------
 // melting parameter
 //---------------------------------------------------------------------------
-typedef struct melt_parameters_s {
-  PetscScalar A1, A2, A3, B1, B2, B3, C1, C2, C3;
-  PetscScalar r1, r2, beta1, beta2, K,gamma;
-  PetscScalar D_water,chi1, chi2, lambda;
-  PetscScalar Cp, DS;
+typedef struct melt_parameters_s
+{
+	PetscScalar A1, A2, A3, B1, B2, B3, C1, C2, C3;
+	PetscScalar r1, r2, beta1, beta2, K,gamma;
+	PetscScalar D_water,chi1, chi2, lambda;
+	PetscScalar Cp, DS;
 } meltPar_Katz;
 
 //---------------------------------------------------------------------------
@@ -69,7 +70,7 @@ PetscScalar MPgetTSolidus (PetscScalar P,PetscScalar X, meltPar_Katz *mp);
 #define DEFAULT_B1        1475.0
 #define DEFAULT_B2          80.0
 #define DEFAULT_B3          -3.2
-#define DEFAULT_C1        1780.0 
+#define DEFAULT_C1        1780.0
 #define DEFAULT_C2          45.0
 #define DEFAULT_C3          -2.0
 #define DEFAULT_R1           0.5

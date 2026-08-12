@@ -43,11 +43,11 @@ struct BCCtx;
 // Structure that holds parameters for the adjoint gradient computation
 struct AdjGrad
 {
-	PetscScalar 	 FD_epsilon;			  // Epsilon, employed for finite difference calculation of dres/dp			  	
+	PetscScalar      FD_epsilon;              // Epsilon, employed for finite difference calculation of dres/dp
 	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
 	PetscScalar      CurScal, CurScalst;
 	Vec              dF, dPardu;
-	Vec 			 pro;
+	Vec              pro;
 	Vec              vx, vy, vz, sty;
 	Vec              gradfield;                // Used if gradient at every point is computed (same size as jr->p)
 };
@@ -69,13 +69,13 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam);
 
 // Initialize & read input
 PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs *Adjoint_Vectors);
-PetscErrorCode Adjoint_ScanForMaterialParameters(FB*, Scaling*, PetscInt*, char, PetscInt* ,PetscScalar*,PetscInt*, PetscScalar*);
+PetscErrorCode Adjoint_ScanForMaterialParameters(FB*, Scaling*, PetscInt*, char, PetscInt*,PetscScalar*,PetscInt*, PetscScalar*);
 
 
 // Create & Destroy Adjoint_Vectors object
 PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_vectors, ModParam *IOparam);
 PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_vectors, ModParam *IOparam);
- 
+
 // Compute the gradients for the adjoint inversion
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, ModParam *IOparam, SNES snes);
 
@@ -87,10 +87,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc);
 
 // Cost function
- PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOparam, FreeSurf *surf);
+PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOparam, FreeSurf *surf);
 
 // 'Brute-force' finite difference gradients
-PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam);				
+PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam);
 PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam);
 PetscErrorCode PrintCostFunction(ModParam *IOparam);
 
@@ -102,9 +102,6 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 
 // reset the perturbed input parameter within the gradient computation
 PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
-
-// Gradient function for field sensitivity for rho (FD approximation)
-PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop, ModParam *IOparam );
 
 // Add or remove parameters from command-line database & update material DB
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val);
@@ -125,7 +122,7 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam);
 PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
 PetscErrorCode cellConstEqFD(ConstEqCtx  *ctx,  SolVarCell  *svCell, PetscScalar  dxx,    PetscScalar  dyy,  PetscScalar  dzz, PetscScalar &sxx,  PetscScalar &syy,PetscScalar &szz,PetscScalar &gres,PetscScalar &rho, AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
 PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
-PetscErrorCode edgeConstEqFD(ConstEqCtx  *ctx,    SolVarEdge  *svEdge, PetscScalar  d,      PetscScalar &s,AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);     
+PetscErrorCode edgeConstEqFD(ConstEqCtx  *ctx,    SolVarEdge  *svEdge, PetscScalar  d,      PetscScalar &s,AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
 
 // Helper functions
 PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B);
