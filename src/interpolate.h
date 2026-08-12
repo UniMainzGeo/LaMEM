@@ -18,23 +18,12 @@
 struct FDSTAG;
 
 //---------------------------------------------------------------------------
-// Edge and corner initialization functions:
-
-PetscErrorCode SetEdgeCornerCenter(FDSTAG *fs, Vec Center);
-
-PetscErrorCode SetEdgeCornerXFace (FDSTAG *fs, Vec XFace);
-
-PetscErrorCode SetEdgeCornerYFace (FDSTAG *fs, Vec YFace);
-
-PetscErrorCode SetEdgeCornerZFace (FDSTAG *fs, Vec ZFace);
-
-//---------------------------------------------------------------------------
 
 // Interpolation flags
 
 struct InterpFlags
 {
- public:
+public:
 
 	PetscInt update;    // update vs. overwrite target vector
 	PetscInt use_bound; // use boundary ghost points for interpolation
@@ -77,10 +66,5 @@ PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlag
 
 //---------------------------------------------------------------------------
 // MACROS
-//---------------------------------------------------------------------------
-
-#define SET_EDGE_CORNER(a, K, J, I, k, j, i, pmdof) \
-	a[K][J][I] = a[k][j][I] + a[k][J][i] + a[K][j][i] - 2.0*pmdof;
-
 //---------------------------------------------------------------------------
 #endif

@@ -165,10 +165,10 @@
 #===============================================================================
 
 <SolverOptionsStart>
-
 	set_linear_problem = 1
+	linear_tolerances  = 1e-8 1e-8 40
 	monitor_solvers    = 1
-	stokes_solver      = block_direct
+	stokes_solver      = coupled_direct
 	direct_solver_type = mumps
 	
 <SolverOptionsEnd>

@@ -1,0 +1,28 @@
+# Artistic Style config
+# Usage:
+#   astyle --options=.astylerc --recursive "*.cpp" "*.h"
+
+# Don't create backup files, let git handle it
+suffix=none
+
+# Brace style: Allman (brace on its own line)
+style=allman
+
+# Indentation: tabs, width 4, matching the source
+--indent=tab=4
+indent-cases
+
+# Only the leading indentation should use tabs; any tab appearing gets expanded to spaces.
+convert-tabs
+
+# References bind to the variable name: "PetscScalar &ms"
+align-reference=name
+
+# Keep hand-placed compact formatting intact
+keep-one-line-statements
+
+# Don't break a one-line block
+keep-one-line-blocks
+
+# Spacing
+--min-conditional-indent=0

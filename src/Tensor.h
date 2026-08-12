@@ -43,11 +43,11 @@ struct Tensor2RS
 
 // compute rotation matrix from axis & angle (Euler-Rodrigues formula)
 void GetRotationMatrix(
-	Tensor2RN   *R,   // rotation matrix
-	PetscScalar  dt,  // time step
-	PetscScalar  wx,  // vorticity vector components
-	PetscScalar  wy,  // ...
-	PetscScalar  wz); // ...
+    Tensor2RN   *R,   // rotation matrix
+    PetscScalar  dt,  // time step
+    PetscScalar  wx,  // vorticity vector components
+    PetscScalar  wy,  // ...
+    PetscScalar  wz); // ...
 
 // rotate stress tensor
 void RotateStress(Tensor2RN *R, Tensor2RS *S, Tensor2RS *SR);
@@ -87,10 +87,10 @@ void Tensor2RNUnit(Tensor2RN *A);
 void Tensor2RNDivide(Tensor2RN *A, PetscScalar k);
 
 void Tensor2RNSum3(
-	Tensor2RN *A, PetscScalar ka,
-	Tensor2RN *B, PetscScalar kb,
-	Tensor2RN *C, PetscScalar kc,
-	Tensor2RN *R);
+    Tensor2RN *A, PetscScalar ka,
+    Tensor2RN *B, PetscScalar kb,
+    Tensor2RN *C, PetscScalar kc,
+    Tensor2RN *R);
 
 void Tensor2RNView(Tensor2RN *A, const char *msg);
 
@@ -99,24 +99,24 @@ void Tensor2RSView(Tensor2RS *A, const char *msg);
 PetscInt Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[]);
 
 PetscInt Tensor2RSSpectral(
-	Tensor2RS   *A,      // symmetric tensor
-	PetscScalar eval[],  // eigenvalues (sorted)
-	PetscScalar evect[], // eigenvectors (corresponding)
-	PetscScalar ttol,    // tight tolerance (convergence condition)
-	PetscScalar ltol,    // loose tolerance (divergence condition)
-	PetscInt    itmax);  // maximum number rotations
+    Tensor2RS   *A,      // symmetric tensor
+    PetscScalar eval[],  // eigenvalues (sorted)
+    PetscScalar evect[], // eigenvectors (corresponding)
+    PetscScalar ttol,    // tight tolerance (convergence condition)
+    PetscScalar ltol,    // loose tolerance (divergence condition)
+    PetscInt    itmax);  // maximum number rotations
 
 PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm);
 
 PetscErrorCode Tensor2RS2DSpectral(
-	PetscScalar  axx,
-	PetscScalar  ayy,
-	PetscScalar  axy,
-	PetscScalar *pa1,
-	PetscScalar *pa2,
-	PetscScalar  v1[],
-	PetscScalar  v2[],
-	PetscScalar  tol);
+    PetscScalar  axx,
+    PetscScalar  ayy,
+    PetscScalar  axy,
+    PetscScalar *pa1,
+    PetscScalar *pa2,
+    PetscScalar  v1[],
+    PetscScalar  v2[],
+    PetscScalar  tol);
 
 //---------------------------------------------------------------------------
 #endif

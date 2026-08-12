@@ -8,14 +8,15 @@ Parsing PETSc options
 Total number of options added: 2
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
--bf_vs_type user # (source: code)
 -coord_x -0.4,0.4 # (source: code)
 -eta[0] 10 # (source: code)
 -eta[1] 1 # (source: code)
 -FreeSurf_AmplCos 1e-3 # (source: code)
 -FreeSurf_Wavelength 0.8 # (source: code)
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
 -jp_pgamma 1000 # (source: code)
--jp_type bf # (source: code)
+-jp_type user # (source: code)
 -js_ksp_atol 1e-15 # (source: code)
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 50 # (source: code)
@@ -26,9 +27,6 @@ Total number of options added: 2
 -snes_monitor # (source: code)
 -snes_type ksponly # (source: code)
 -surf_level 0.1 # (source: code)
--vs_ksp_type preonly # (source: code)
--vs_pc_factor_mat_solver_type mumps # (source: code)
--vs_pc_type lu # (source: code)
 #End of PETSc Option Table entries
 | ------------------------------------------------------------------------- 
 |                                      LaMEM                                
@@ -37,7 +35,6 @@ Total number of options added: 2
 | Adjoint parameters:  
 |    Adjoint mode                             : AdjointGradients  
 |    Gradients are computed w.r.t.            : Solution     
-|    Field-based gradient evaluation          : 0    
 |    Gradient evaluation points               : several observation points 
 |    Advect evaluation points with flow       : 0    
 |    Objective function type                  : 0    
@@ -56,8 +53,8 @@ Total number of options added: 2
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 14:47:50 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -118,7 +115,6 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -126,7 +122,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 1 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000484271 sec)
+Reading geometric primitives ... done (0.000619575 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : RTI_test 
@@ -147,13 +143,10 @@ Surface output parameters:
 --------------------------------------------------------------------------
 Preconditioner parameters: 
    Picard operator type          : assembled
-   Preconditioner type           : block factorization
-   Block factorization type      : upper 
-   Velocity preconditioner       : user-defined
-   Schur preconditioner          : inverse viscosity
+   Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.00108915 sec)
+Saving output ... done (0.00121868 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -162,32 +155,32 @@ Tentative time step : 100.00000000 [ ]
 --------------------------------------------------------------------------
   0 SNES Function norm 6.038861570174e+01
   0 PICARD ||F||/||F0||=1.000000e+00 
-    Linear js_ solve converged due to CONVERGED_RTOL iterations 9
-  1 SNES Function norm 8.894126093193e-10
+    Linear js_ solve converged due to CONVERGED_RTOL iterations 3
+  1 SNES Function norm 5.287185942170e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.209048 (sec)
+SNES solution time      : 0.221848 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.098308400078e-11 
-      |Div|_2   = 8.883228633398e-10 
+      |Div|_inf = 5.360669693856e-12 
+      |Div|_2   = 5.286818609804e-11 
    Momentum: 
-      |mRes|_2  = 4.401454400332e-11 
+      |mRes|_2  = 6.232314262889e-13 
 --------------------------------------------------------------------------
 Actual time step : 110.00000 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.000961162 sec)
+Saving output ... done (0.00101382 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.442758 (sec) 
+Total solution time : 0.34683 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 6.5209409431e-07
+| Current Cost function = 6.5209367874e-07
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -195,10 +188,10 @@ Total solution time : 0.442758 (sec)
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 0]            6.519089e-07 
-|  adjoint     2:          eta[ 0]           -4.473036e-08 
+|  adjoint     1:          rho[ 0]            6.519090e-07 
+|  adjoint     2:          eta[ 0]           -4.473034e-08 
 |  adjoint     3:          rho[ 1]            nan 
-|  adjoint     4:          eta[ 1]           -2.043516e-07 
+|  adjoint     4:          eta[ 1]           -2.043518e-07 
 | 
 | 
 | Observation points: 
@@ -226,23 +219,24 @@ Total solution time : 0.442758 (sec)
 |                  eta[  1]      -0.313           Lower
 |                  rho[  1]       nan             Lower
 |       
-|   Prefactor A               :  3.16416985e-06 
+|   Prefactor A               :  3.16416864e-06 
 |   Reference Density         :  0.00  
-|   Velocity check            :  6.52094094e-07 
+|   Velocity check            :  6.52093679e-07 
 |   Scaling law data saved to :  ScalingLaw.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 0.443256 s                         	 
+| Adjoint computation was successful & took 0.347287 s                         	 
 | ************************************************************************ 
 #PETSc Option Table entries:
--bf_vs_type user # (source: code)
 -coord_x -0.4,0.4 # (source: code)
 -eta[0] 1.00000000000000000000e+01 # (source: code)
 -eta[1] 1.00000000000000000000e+00 # (source: code)
 -FreeSurf_AmplCos 1e-3 # (source: code)
 -FreeSurf_Wavelength 0.8 # (source: code)
+-jp_pc_factor_mat_solver_type mumps # (source: code)
+-jp_pc_type lu # (source: code)
 -jp_pgamma 1000 # (source: code)
--jp_type bf # (source: code)
+-jp_type user # (source: code)
 -js_ksp_atol 1e-15 # (source: code)
 -js_ksp_converged_reason # (source: code)
 -js_ksp_max_it 50 # (source: code)
@@ -255,9 +249,6 @@ Total solution time : 0.442758 (sec)
 -snes_monitor # (source: code)
 -snes_type ksponly # (source: code)
 -surf_level 0.1 # (source: code)
--vs_ksp_type preonly # (source: code)
--vs_pc_factor_mat_solver_type mumps # (source: code)
--vs_pc_type lu # (source: code)
 #End of PETSc Option Table entries
 WARNING! There are options you set that were not used!
 WARNING! could be spelling mistake, etc!

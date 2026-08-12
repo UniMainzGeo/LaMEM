@@ -26,7 +26,6 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 {
 	char filename[_str_len_];
 
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -38,7 +37,7 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 
 	// check activation
 
-    // Default Values ( if passive tracers are used, there is no point to let someone to not
+	// Default Values ( if passive tracers are used, there is no point to let someone to not
 	// visualize them)
 	pvptr->ID          = 1;
 	pvptr->Pressure    = 1;
@@ -52,9 +51,9 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_Pressure",        &pvptr->Pressure,  1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_phase",           &pvptr->Phase,   1, 1));
 	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_MeltFraction",    &pvptr->MeltFraction, 1, 1));
-	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_Active",          &pvptr->Active   , 1, 1));
-	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_Grid_Mf",         &pvptr->Grid_mf   , 1, 1));
-	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_APS",             &pvptr->APS       , 1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_Active",          &pvptr->Active, 1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_Grid_Mf",         &pvptr->Grid_mf, 1, 1));
+	PetscCall(getIntParam   (fb, _OPTIONAL_, "out_ptr_APS",             &pvptr->APS, 1, 1));
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Passive Tracers output parameters:\n");
@@ -69,7 +68,6 @@ PetscErrorCode PVPtrCreate(PVPtr *pvptr, FB *fb)
 //---------------------------------------------------------------------------
 PetscErrorCode PVPtrWriteTimeStep(PVPtr *pvptr, const char *dirName, PetscScalar ttime)
 {
-	
 	PetscFunctionBeginUser;
 
 	// check activation
@@ -96,7 +94,7 @@ PetscErrorCode PVPtrWriteVTU(PVPtr *pvptr, const char *dirName)
 	float       var_float, Xp[3];
 	int         var_int;
 	uint64_t    offset = 0;
-	uint64_t 	length;
+	uint64_t    length;
 
 	PetscFunctionBeginUser;
 

@@ -146,7 +146,7 @@
 	Adjoint_GradientCalculation        	= 	Solution #CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
 	Adjoint_ScaleCostFunction 			=	None
 	Adjoint_PrintScalingLaws			=	1						# Output scaling laws?
-	#Adjoint_ScalingLawFilename 		=   ScalingLaw_Test.dat
+	#Adjoint_ScalingLawFilename 		=   ScalingLaw_Test.out
 	Adjoint_AdvectPoint 				= 	0
 	
 	<AdjointParameterStart>

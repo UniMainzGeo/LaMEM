@@ -35,7 +35,6 @@ PetscErrorCode AVDCreate(AVD *A)
 	PetscScalar x[3], dx[3];
 	PetscScalar s[3];
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize variables
@@ -135,7 +134,6 @@ PetscErrorCode AVDDestroy(AVD *A)
 {
 	PetscInt p;
 
-	
 	PetscFunctionBeginUser;
 
 	// --------------
@@ -168,7 +166,6 @@ PetscErrorCode AVDCellInit(AVD *A)
 	PetscInt    p,i,j,k;
 	PetscInt    mx,my,mz,ind;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize variables
@@ -180,7 +177,8 @@ PetscErrorCode AVDCellInit(AVD *A)
 	mz = A->nz+2;
 
 	// find positions of points inside Voronoi cells
-	for (p = 0; p < npoints; p++){
+	for (p = 0; p < npoints; p++)
+	{
 
 		// compute cell index of the particles
 		i = (PetscInt)((points[p].X[0] - (A->xs[0] - A->dx))/A->dx);
@@ -194,7 +192,8 @@ PetscErrorCode AVDCellInit(AVD *A)
 
 		ind = i+j*mx+k*mx*my;
 
-		if (A->cell[ind].p == AVD_CELL_MASK) {
+		if (A->cell[ind].p == AVD_CELL_MASK)
+		{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Inserting cells into boundary cells is not permitted \n");
 		}
 
@@ -222,7 +221,6 @@ PetscErrorCode AVDClaimCells(AVD *A, const PetscInt ip)
 	PetscInt    cell_num0;
 	PetscInt    buffer;
 
-	
 	PetscFunctionBeginUser;
 
 	buffer = A->buffer;
@@ -233,7 +231,8 @@ PetscErrorCode AVDClaimCells(AVD *A, const PetscInt ip)
 	count  = 0;
 	bchain->nclaimed = 0;
 
-	for (i=0; i<bchain->length; i++) {
+	for (i=0; i<bchain->length; i++)
+	{
 		cell_num0 = bchain->bound[i]; // cell number we are trying to claim
 
 		// if cell unclaimed, then claim it
@@ -299,7 +298,6 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 	AVDCell  *cells,*cell0;
 	PetscInt mx,my,buffer;
 
-	
 	PetscFunctionBeginUser;
 
 	buffer = A->buffer;
@@ -310,7 +308,8 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 
 	count = 0;
 	bchain->length = 0;
-	for( i=0; i<bchain->nclaimed; i++) {
+	for( i=0; i<bchain->nclaimed; i++)
+	{
 		cell_num0 = bchain->claim[i];
 		cell0 = &cells[cell_num0];
 
@@ -324,8 +323,10 @@ PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 		cell_num[5] = (cell0->i  ) + (cell0->j  )*mx + (cell0->k-1)*mx*my; // Back
 
 		// boundary protection
-		for (k=0; k<6; k++) {
-			if (cells[cell_num[k]].p == AVD_CELL_MASK) {
+		for (k=0; k<6; k++)
+		{
+			if (cells[cell_num[k]].p == AVD_CELL_MASK)
+			{
 				cell_num[k] = AVD_CELL_MASK;
 			}
 		}
@@ -368,7 +369,6 @@ PetscErrorCode AVDReAlloc(AVDChain *chain, PetscInt buffer)
 {
 	PetscInt *temp;
 
-	
 	PetscFunctionBeginUser;
 
 	// 1. allocate memory for claimed cells
@@ -432,14 +432,13 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 	PetscScalar xp[3], xc[3], xh[3];
 	PetscInt    *area, *sind, axis;
 
-	
 	PetscFunctionBeginUser;
 
 	bc = actx->jr->bc;
 
 	npoints = A->npoints;
 	n  = (A->nx+2)*(A->ny+2)*(A->nz+2);
-	
+
 
 	// allocate memory to injected/deleted markers
 	if      (npoints < A->mmin) new_nmark = A->mmin - npoints;
@@ -448,7 +447,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 	// allocate memory for sorting
 	PetscCall(makeIntArray(&area, NULL, npoints));
 	PetscCall(makeIntArray(&sind, NULL, npoints));
-	
+
 
 	// compute dominant axis
 	for (i = 0; i < npoints; i++)
@@ -555,7 +554,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 
 	// sort in ascending order
 	PetscCall(PetscSortIntWithArray(npoints,area,sind));
-	
+
 
 	// inject markers
 	if      (npoints < A->mmin)
@@ -595,7 +594,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 		// update total counter
 		actx->cdel +=new_nmark;
 	}
-	
+
 
 	// free memory
 	PetscCall(PetscFree(area));
@@ -610,7 +609,6 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 	AVD          A;
 	PetscInt       i,claimed;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize some parameters
@@ -672,7 +670,6 @@ PetscErrorCode AVDMarkerControl(AdvCtx *actx)
 {
 	// check marker distribution and delete or inject markers if necessary
 
-	
 	PetscFunctionBeginUser;
 
 	// AVD routine for every control volume
@@ -692,7 +689,6 @@ PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype)
 	MarkerVolume  mv;
 	PetscInt      dir = -1;
 
-	
 	PetscFunctionBeginUser;
 
 	if      (vtype == _CELL_) dir = -1;
@@ -724,7 +720,6 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	PetscLogDouble t0,t1;
 	char           lbl[_lbl_sz_];
 
-	
 	PetscFunctionBeginUser;
 
 	// record time
@@ -826,10 +821,10 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 }
 //-----------------------------------------------------------------------------
 PetscInt FindPointInCell(
-	PetscScalar *px, // node coordinates
-	PetscInt     L,  // index of the leftmost node
-	PetscInt     R,  // index of the rightmost node
-	PetscScalar  x)  // point coordinate
+    PetscScalar *px, // node coordinates
+    PetscInt     L,  // index of the leftmost node
+    PetscInt     R,  // index of the rightmost node
+    PetscScalar  x)  // point coordinate
 {
 	// find ID of the cell containing point (call this function for local point only!)
 	if(x < px[L] || x > px[R])
@@ -862,7 +857,6 @@ PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	PetscInt     i, ID, I, J, K;
 	PetscInt    *numMarkCell, *m, p;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -940,7 +934,6 @@ PetscErrorCode AVDCreateMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	// allocate memory and info to marker volume control structure
 	FDSTAG      *fs;
 
-	
 	PetscFunctionBeginUser;
 
 	fs = actx->fs;
@@ -975,7 +968,6 @@ PetscErrorCode AVDCreateMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 PetscErrorCode AVDDestroyMV(MarkerVolume *mv)
 {
 	// free memory
-	
 	PetscFunctionBeginUser;
 
 	PetscCall(PetscFree(mv->cellnum));
@@ -1022,7 +1014,6 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 	PetscScalar xp[3], xc[3], xh[3];
 	PetscInt    *area, *sind, axis;
 
-	
 	PetscFunctionBeginUser;
 
 	bc = actx->jr->bc;
@@ -1188,7 +1179,6 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 	PetscInt    npoints, new_nmark = 0;
 	PetscInt    *area, *sind;
 
-	
 	PetscFunctionBeginUser;
 
 	npoints = A->npoints;
@@ -1208,16 +1198,16 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 	// sort in ascending order
 	PetscCall(PetscSortIntWithArray(npoints,area,sind));
 
-		ind = 0;
-		for (i = 0; i < new_nmark; i++)
-		{
-			num_chain = sind[ind];
-			actx->idel[actx->cdel+i] = A->chain[num_chain].gind;
-			ind++;
+	ind = 0;
+	for (i = 0; i < new_nmark; i++)
+	{
+		num_chain = sind[ind];
+		actx->idel[actx->cdel+i] = A->chain[num_chain].gind;
+		ind++;
 
-		}
-		// update total counter
-		actx->cdel +=new_nmark;
+	}
+	// update total counter
+	actx->cdel +=new_nmark;
 
 	// free memory
 	PetscCall(PetscFree(area));
@@ -1232,7 +1222,6 @@ PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, 
 	AVD          A;
 	PetscInt     i,claimed;
 
-	
 	PetscFunctionBeginUser;
 
 	// initialize some parameters

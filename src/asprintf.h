@@ -41,55 +41,62 @@
 inline int
 vasprintf(char **str, const char *fmt, va_list ap)
 {
-    int ret;
-    va_list ap2;
-    char *string, *newstr;
-    size_t len;
+	int ret;
+	va_list ap2;
+	char *string, *newstr;
+	size_t len;
 
-    if ((string = (char*)malloc(INIT_SZ)) == NULL)
-        goto fail;
+	if ((string = (char*)malloc(INIT_SZ)) == NULL)
+		goto fail;
 
-    VA_COPY(ap2, ap);
-    ret = vsnprintf(string, INIT_SZ, fmt, ap2);
-    va_end(ap2);
-    if (ret >= 0 && ret < INIT_SZ) { /* succeeded with initial alloc */
-        *str = string;
-    } else if (ret == INT_MAX || ret < 0) { /* Bad length */
-        free(string);
-        goto fail;
-    } else {    /* bigger than initial, realloc allowing for nul */
-        len = (size_t)ret + 1;
-        if ((newstr = (char*)realloc(string, len)) == NULL) {
-            free(string);
-            goto fail;
-        }
-        VA_COPY(ap2, ap);
-        ret = vsnprintf(newstr, len, fmt, ap2);
-        va_end(ap2);
-        if (ret < 0 || (size_t)ret >= len) { /* failed with realloc'ed string */
-            free(newstr);
-            goto fail;
-        }
-        *str = newstr;
-    }
-    return (ret);
+	VA_COPY(ap2, ap);
+	ret = vsnprintf(string, INIT_SZ, fmt, ap2);
+	va_end(ap2);
+	if (ret >= 0 && ret < INIT_SZ)   /* succeeded with initial alloc */
+	{
+		*str = string;
+	}
+	else if (ret == INT_MAX || ret < 0)     /* Bad length */
+	{
+		free(string);
+		goto fail;
+	}
+	else        /* bigger than initial, realloc allowing for nul */
+	{
+		len = (size_t)ret + 1;
+		if ((newstr = (char*)realloc(string, len)) == NULL)
+		{
+			free(string);
+			goto fail;
+		}
+		VA_COPY(ap2, ap);
+		ret = vsnprintf(newstr, len, fmt, ap2);
+		va_end(ap2);
+		if (ret < 0 || (size_t)ret >= len)   /* failed with realloc'ed string */
+		{
+			free(newstr);
+			goto fail;
+		}
+		*str = newstr;
+	}
+	return (ret);
 
 fail:
-    *str = NULL;
-    errno = ENOMEM;
-    return (-1);
+	*str = NULL;
+	errno = ENOMEM;
+	return (-1);
 }
 
 inline int asprintf(char **str, const char *fmt, ...)
 {
-    va_list ap;
-    int ret;
-    
-    *str = NULL;
-    va_start(ap, fmt);
-    ret = vasprintf(str, fmt, ap);
-    va_end(ap);
+	va_list ap;
+	int ret;
 
-    return ret;
+	*str = NULL;
+	va_start(ap, fmt);
+	ret = vasprintf(str, fmt, ap);
+	va_end(ap);
+
+	return ret;
 }
 #endif

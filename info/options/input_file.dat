@@ -802,7 +802,7 @@
     Adjoint_FieldSensitivity            =   0                       # calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
     Adjoint_ScaleCostFunction           =   None                    # Scale cost function: [None=no; Mean=average values; Var=variance]
     Adjoint_PrintScalingLaws            =   1                       # Output scaling laws?
-    Adjoint_ScalingLawFilename          =   ScalingLaw_Test.dat     
+    Adjoint_ScalingLawFilename          =   ScalingLaw_Test.out     
     Adjoint_ReferenceDensity            =   2800                    # Reference density 
     Adjoint_DII_ref                     =   1e-15                   # Reference strain rate (needed for sensitivity kernels & powerlaw viscosity)
     
@@ -849,6 +849,7 @@
 	view_solvers            = 0                     # show linear solver configuration
 	monitor_solvers         = 0                     # show linear iteration convergence
 	set_linear_problem      = 0                     # linear problem activation flag (skip nonlinear iteration)
+	continue_on_fail        = 0                     # continue simulation if nonlinear solver diverged (unless severe reason is detected)
 
 	nonlinear_tolerances    =  1e-5 -1   50         # rtol, atol, maxit (-1 = automatic setting, only for atol)
 	linear_tolerances       =  1e-6 -1   200        # rtol, atol, maxit (-1 = automatic setting, only for atol)

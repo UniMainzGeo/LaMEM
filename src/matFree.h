@@ -66,26 +66,26 @@ PetscErrorCode MatFreeCombineVec(MatData *md, Vec v, Vec gvx, Vec gvy, Vec gvz, 
 //---------------------------------------------------------------------------
 
 PetscErrorCode MatFreeEvaluateLinearOperator(MatData *md,
-		Vec lvx, Vec lvy, Vec lvz, Vec gp,
-		Vec lfx, Vec lfy, Vec lfz, Vec gc,
-		PetscScalar cfInvEta);
+        Vec lvx, Vec lvy, Vec lvz, Vec gp,
+        Vec lfx, Vec lfy, Vec lfz, Vec gc,
+        PetscScalar cfInvEta);
 
 // cfInvEta - inverse viscosity term prefactor
 // 0.0      - Picard operator
 // 1.0      - preconditioner operator
 
 PetscErrorCode MatFreeEvaluateRestrict(
-		MatData *coarse, MatData *fine,
-		Vec fx, Vec fy, Vec fz, Vec fp,
-		Vec cx, Vec cy, Vec cz, Vec cp);
+    MatData *coarse, MatData *fine,
+    Vec fx, Vec fy, Vec fz, Vec fp,
+    Vec cx, Vec cy, Vec cz, Vec cp);
 
 PetscErrorCode MatFreeEvaluateProlong(
-		MatData *coarse, MatData *fine,
-		Vec fx, Vec fy, Vec fz, Vec fp,
-		Vec cx, Vec cy, Vec cz, Vec cp);
+    MatData *coarse, MatData *fine,
+    Vec fx, Vec fy, Vec fz, Vec fp,
+    Vec cx, Vec cy, Vec cz, Vec cp);
 
 PetscErrorCode MatFreeEvaluateDiagonal(MatData *md,
-		Vec vx, Vec vy, Vec vz, Vec vp);
+                                       Vec vx, Vec vy, Vec vz, Vec vp);
 
 //---------------------------------------------------------------------------
 // MACROS

@@ -31,7 +31,6 @@ Total number of options added: 0
 | Adjoint parameters:  
 |    Adjoint mode                             : AdjointGradients  
 |    Gradients are computed w.r.t.            : Solution     
-|    Field-based gradient evaluation          : 0    
 |    Gradient evaluation points               : several observation points 
 |    Advect evaluation points with flow       : 0    
 |    Objective function type                  : 0    
@@ -46,8 +45,8 @@ Total number of options added: 0
 | 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -105,7 +104,6 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -113,7 +111,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000239856 sec)
+Reading geometric primitives ... done (0.000459081 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -138,7 +136,7 @@ Preconditioner parameters:
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0136113 sec)
+Saving output ... done (0.037753 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -150,31 +148,31 @@ Tentative time step : 0.01000000 [ ]
     Residual norms for js_ solve.
     0 KSP Residual norm 2.513961017995e+01
     1 KSP Residual norm 7.520981123357e-03
-    2 KSP Residual norm 5.490360023876e-06
-    3 KSP Residual norm 5.556022432778e-09
-    4 KSP Residual norm 1.127510697115e-11
+    2 KSP Residual norm 5.490360023893e-06
+    3 KSP Residual norm 5.556022432876e-09
+    4 KSP Residual norm 1.127510697651e-11
     Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-  1 SNES Function norm 1.132003433323e-11
+  1 SNES Function norm 1.131376943168e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00883051 (sec)
+SNES solution time      : 0.0120146 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.687525549327e-12 
-      |Div|_2   = 1.127510689557e-11 
+      |Div|_inf = 2.687527284051e-12 
+      |Div|_2   = 1.127510696428e-11 
    Momentum: 
-      |mRes|_2  = 1.007542455198e-12 
+      |mRes|_2  = 9.345275261800e-13 
 --------------------------------------------------------------------------
 | IOparam->mfit = 2.969379e+00 
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0130538 sec)
+Saving output ... done (0.0360951 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0528959 (sec) 
+Total solution time : 0.119184 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************ 
 |                       FINITE DIFFERENCE GRADIENTS                        
@@ -182,8 +180,8 @@ Total solution time : 0.0528959 (sec)
 | Reference objective function:  2.969379e+00 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -241,7 +239,6 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -249,7 +246,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000230931 sec)
+Reading geometric primitives ... done (0.00043632 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -274,7 +271,7 @@ Preconditioner parameters:
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0120953 sec)
+Saving output ... done (0.03513 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -286,38 +283,38 @@ Tentative time step : 0.01000000 [ ]
     Residual norms for js_ solve.
     0 KSP Residual norm 2.513961495330e+01
     1 KSP Residual norm 7.520982233712e-03
-    2 KSP Residual norm 5.490361609979e-06
-    3 KSP Residual norm 5.556023642245e-09
-    4 KSP Residual norm 1.127510893647e-11
+    2 KSP Residual norm 5.490361609998e-06
+    3 KSP Residual norm 5.556023641898e-09
+    4 KSP Residual norm 1.127510865651e-11
     Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-  1 SNES Function norm 1.131858920843e-11
+  1 SNES Function norm 1.131827244205e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00738571 (sec)
+SNES solution time      : 0.0115622 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.687520345157e-12 
-      |Div|_2   = 1.127510429091e-11 
+      |Div|_inf = 2.687525549327e-12 
+      |Div|_2   = 1.127511155357e-11 
    Momentum: 
-      |mRes|_2  = 9.912037621501e-13 
+      |mRes|_2  = 9.874971022761e-13 
 --------------------------------------------------------------------------
 | IOparam->mfit = 2.969380e+00 
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0128946 sec)
+Saving output ... done (0.0341632 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0475132 (sec) 
+Total solution time : 0.105878 (sec) 
 --------------------------------------------------------------------------
 |  Perturbed Misfit value     :  2.969380e+00 
 |  Brute force FD gradient   rho[ 2] = 8.992473e-02, with eps=1.0000e-06 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: May  4 2026 - Time: 12:51:48 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -375,7 +372,6 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Euler 1-st order (basic implementation)
-   Periodic marker advection     @
    Marker setup scheme           : geometric primitives
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : no marker control
@@ -383,7 +379,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000234515 sec)
+Reading geometric primitives ... done (0.00044169 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : AdjointGradients_test 
@@ -408,7 +404,7 @@ Preconditioner parameters:
    Preconditioner type           : user-defined
    Penalty parameter (pgamma)    : 1.000000e+03
 --------------------------------------------------------------------------
-Saving output ... done (0.0119593 sec)
+Saving output ... done (0.032123 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -420,37 +416,37 @@ Tentative time step : 0.01000000 [ ]
     Residual norms for js_ solve.
     0 KSP Residual norm 2.513961017995e+01
     1 KSP Residual norm 7.520981123357e-03
-    2 KSP Residual norm 5.490360023876e-06
-    3 KSP Residual norm 5.556022432778e-09
-    4 KSP Residual norm 1.127510697115e-11
+    2 KSP Residual norm 5.490360023893e-06
+    3 KSP Residual norm 5.556022432876e-09
+    4 KSP Residual norm 1.127510697651e-11
     Linear js_ solve converged due to CONVERGED_RTOL iterations 4
-  1 SNES Function norm 1.132003433323e-11
+  1 SNES Function norm 1.131376943168e-11
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.00720598 (sec)
+SNES solution time      : 0.0115261 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 2.687525549327e-12 
-      |Div|_2   = 1.127510689557e-11 
+      |Div|_inf = 2.687527284051e-12 
+      |Div|_2   = 1.127510696428e-11 
    Momentum: 
-      |mRes|_2  = 1.007542455198e-12 
+      |mRes|_2  = 9.345275261800e-13 
 --------------------------------------------------------------------------
 | IOparam->mfit = 2.969379e+00 
     Residual norms for as_ solve.
     0 KSP Residual norm 4.941497892977e+02
     1 KSP Residual norm 2.256021937389e-02
-    2 KSP Residual norm 1.271224360894e-05
-    3 KSP Residual norm 2.488568213862e-08
+    2 KSP Residual norm 1.271224360934e-05
+    3 KSP Residual norm 2.488568214006e-08
 | grad=-8.992492e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 Actual time step : 0.01100 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0114665 sec)
+Saving output ... done (0.0320432 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.0446115 (sec) 
+Total solution time : 0.102509 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
@@ -473,7 +469,7 @@ Total solution time : 0.0446115 (sec)
 |       --------------------------------- --- ------------- ------------- 
 | 1   : [    0.150;     0.300;     0.900] PSD   9.00000e+01   1.70133e+02
 | 
-| Adjoint computation was successful & took 0.145197 s                         	 
+| Adjoint computation was successful & took 0.327897 s                         	 
 | ************************************************************************ 
 #PETSc Option Table entries:
 -jp_pc_factor_mat_solver_type mumps # (source: code)

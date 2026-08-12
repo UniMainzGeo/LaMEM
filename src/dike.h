@@ -7,71 +7,71 @@
  **   Contact      : kaus@uni-mainz.de, popov@uni-mainz.de
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-//---------------------------------------------------------------------------                                                                                                      
-//.................. MATERIAL PARAMETERS READING ROUTINES....................                                                                                                      
-//---------------------------------------------------------------------------                                                                                                      
+//---------------------------------------------------------------------------
+//.................. MATERIAL PARAMETERS READING ROUTINES....................
+//---------------------------------------------------------------------------
 #ifndef __dike_h__
 #define __dike_h__
-//---------------------------------------------------------------------------   
+//---------------------------------------------------------------------------
 
-struct FB; 
+struct FB;
 struct ConstEqCtx;
 struct DBMat;
 struct FDSTAG;
 struct TSSol;
 struct JacRes;
 struct Controls;
-struct AdvCtx; 
+struct AdvCtx;
 
-//---------------------------------------------------------------------------       
-//.......................   Dike Parameters  .......................                                                                                                      
+//---------------------------------------------------------------------------
+//.......................   Dike Parameters  .......................
 //---------------------------------------------------------------------------
 
 struct Dike
 {
 public:
-  PetscInt ID;        // dike ID
-  PetscInt dyndike_start;  //starting timestep for dynamic diking if 0 then no dynamic diking
-  PetscInt PhaseID, PhaseTransID, nPtr;      // associated material phase and phase transition IDs
-  PetscInt istep_count, nD, j1, j2;
-  PetscInt istep_nave;       //number of timesteps for time averaging
-  PetscInt nstep_locate; // Locate dike every nstep_locate timestep to allow elastic stresses to settle down between relocations
-  PetscInt out_stress;  //option to output mean stresses to std out
-  PetscInt out_dikeloc;  //option to output dike location to std out
-  PetscScalar Mf;        // amount of magma-accomodated extension in front of box 
-  PetscScalar Mb;        // amount of magma-accommodated extension in back of box
-  PetscScalar Mc;        // amount of magma-accommodated extension in center of box
-  PetscScalar y_Mc;      // location in y direction of Mc, if in x-direction x_Mc needs to be given or in z-direction z_Mc
-  PetscScalar x_Mc;
-  PetscScalar z_Mc;
-  PetscScalar Tsol;
-  PetscScalar filtx; 
-  PetscScalar filty;
-  PetscScalar drhomagma;
-  PetscScalar zmax_magma;
-  PetscScalar magPfac;
-  PetscScalar magPwidth;
-  Vec sxx_eff_ave;
-  Vec magPressure;
-  Vec sxx_eff_ave_hist;
+	PetscInt ID;        // dike ID
+	PetscInt dyndike_start;  //starting timestep for dynamic diking if 0 then no dynamic diking
+	PetscInt PhaseID, PhaseTransID, nPtr;      // associated material phase and phase transition IDs
+	PetscInt istep_count, nD, j1, j2;
+	PetscInt istep_nave;       //number of timesteps for time averaging
+	PetscInt nstep_locate; // Locate dike every nstep_locate timestep to allow elastic stresses to settle down between relocations
+	PetscInt out_stress;  //option to output mean stresses to std out
+	PetscInt out_dikeloc;  //option to output dike location to std out
+	PetscScalar Mf;        // amount of magma-accomodated extension in front of box
+	PetscScalar Mb;        // amount of magma-accommodated extension in back of box
+	PetscScalar Mc;        // amount of magma-accommodated extension in center of box
+	PetscScalar y_Mc;      // location in y direction of Mc, if in x-direction x_Mc needs to be given or in z-direction z_Mc
+	PetscScalar x_Mc;
+	PetscScalar z_Mc;
+	PetscScalar Tsol;
+	PetscScalar filtx;
+	PetscScalar filty;
+	PetscScalar drhomagma;
+	PetscScalar zmax_magma;
+	PetscScalar magPfac;
+	PetscScalar magPwidth;
+	Vec sxx_eff_ave;
+	Vec magPressure;
+	Vec sxx_eff_ave_hist;
 
 };
-      
+
 struct DBPropDike
 {
-  PetscInt numDike;                   // number of dikes
-  Dike     matDike[_max_num_dike_];   // dike properties per dike ID
-  //===========================================
+	PetscInt numDike;                   // number of dikes
+	Dike     matDike[_max_num_dike_];   // dike properties per dike ID
+	//===========================================
 	// 2D planview plus levels for time averaging
 	//===========================================
 	DM DA_CELL_2D_tave; // 2D cell center grid
-  //==================================
+	//==================================
 	// For 1D arrays
 	//==================================
 	DM DA_CELL_1D; // 1D cell center grid
 };
 
-// create the dike strutures for read-in 
+// create the dike strutures for read-in
 PetscErrorCode DBDikeCreate(DBPropDike *dbdike, DBMat *dbm, FB *fb, JacRes *jr, PetscBool PrintOutput);
 
 // read in dike parameters
@@ -82,13 +82,13 @@ PetscErrorCode GetDikeContr(ConstEqCtx *ctx, PetscScalar *phRat, PetscInt &Airph
 
 // compute dike heat after Behn & Ito, 2008
 PetscErrorCode Dike_k_heatsource(JacRes *jr,
-                                Material_t *phases,
-                                PetscScalar &Tc,
-                                PetscScalar *phRat,          // phase ratios in the control volume
-                                PetscScalar &k,
-                                PetscScalar &rho_A,
-                                PetscScalar &y_c,
-                                PetscInt J); 
+                                 Material_t *phases,
+                                 PetscScalar &Tc,
+                                 PetscScalar *phRat,          // phase ratios in the control volume
+                                 PetscScalar &k,
+                                 PetscScalar &rho_A,
+                                 PetscScalar &y_c,
+                                 PetscInt J);
 
 PetscErrorCode Compute_sxx_magP(JacRes *jr, PetscInt nD);
 PetscErrorCode Smooth_sxx_eff(JacRes *jr, PetscInt nD, PetscInt nPtr, PetscInt  j1, PetscInt j2);

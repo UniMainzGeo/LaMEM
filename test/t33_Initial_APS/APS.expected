@@ -27,8 +27,8 @@ Total number of options added: 0
 #End of PETSc Option Table entries
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Apr 27 2026 - Time: 20:33:00 	    
-     Version : 2.2.1 
+     Compiled: Date: Jul  1 2026 - Time: 19:41:29 	    
+     Version : 3.0.0 
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -87,14 +87,13 @@ Solution parameters & controls:
 --------------------------------------------------------------------------
 Advection parameters:
    Advection scheme              : Runge-Kutta 2-nd order
-   Periodic marker advection     @
    Marker setup scheme           : binary files (MATLAB)
    Velocity interpolation scheme : STAG (linear)
    Marker control type           : subgrid 
    Markers per cell [nx, ny, nz] : [3, 3, 3] 
    Marker distribution type      : random noise
 --------------------------------------------------------------------------
-Loading markers in parallel from file(s) <./markers_APS/mdb> ... done (0.00391803 sec)
+Loading markers in parallel from file(s) <./markers_APS/mdb> ... done (0.00417269 sec)
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Passive Tracers: 
@@ -143,7 +142,7 @@ Preconditioner parameters:
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0297426 (sec)
+SNES solution time      : 0.030145 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -152,7 +151,7 @@ Residual summary:
    Momentum: 
       |mRes|_2  = 1.875029171173e-13 
 --------------------------------------------------------------------------
-Saving output ... done (0.00459587 sec)
+Saving output ... done (0.00460527 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -166,7 +165,7 @@ Tentative time step : 0.04000000 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0253243 (sec)
+SNES solution time      : 0.0260167 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -179,12 +178,12 @@ Actual time step : 0.04400 [ ]
 --------------------------------------------------------------------------
 Advection Passive tracers ... 
  Currently active tracers    :  1000 
-done (0.000115763 sec)
+done (0.000137403 sec)
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 8.6942e-04 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 8.7277e-04 s
 --------------------------------------------------------------------------
-Saving output ... done (0.00431672 sec)
+Saving output ... done (0.00438405 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
@@ -198,7 +197,7 @@ Tentative time step : 0.04400000 [ ]
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.0221738 (sec)
+SNES solution time      : 0.0226305 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -211,16 +210,16 @@ Actual time step : 0.04840 [ ]
 --------------------------------------------------------------------------
 Advection Passive tracers ... 
  Currently active tracers    :  1000 
-done (0.000109463 sec)
+done (0.000141373 sec)
 --------------------------------------------------------------------------
 Performing marker control (subgrid algorithm)
-Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 9.4530e-04 s
+Marker control [0]: (subgrid) cloned 0 markers and merged 0 markers in 8.7069e-04 s
 --------------------------------------------------------------------------
-Saving output ... done (0.00434651 sec)
+Saving output ... done (0.00439459 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.123197 (sec) 
+Total solution time : 0.128042 (sec) 
 --------------------------------------------------------------------------
 #PETSc Option Table entries:
 -bf_vs_type user # (source: code)
