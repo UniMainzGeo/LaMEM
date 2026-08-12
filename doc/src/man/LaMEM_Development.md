@@ -112,7 +112,7 @@ if(X[0] < bx || X[0] > ex ||
 To make sure that your formatting follows the rules you can use the following target of the Makefile in `LaMEM/src` directory:
 
 ```
-make check
+make checkformat
 ```
 If everything is fine you will see the following message:
 
@@ -130,7 +130,7 @@ ERROR: source files are not properly formatted.
 Formatted  /home/anton/PROG/LaMEM/src/fdstag.cpp
 Run 'make format' locally and commit the changes.
 .............................................
-make: *** [Makefile:150: check] Error 1
+make: *** [Makefile:150: checkformat] Error 1
 
 ```
 Note that continuous integration will also check source code formatting for your pull request. Passing these checks is a necessary prerequisite for merging the pull requests.
@@ -141,7 +141,38 @@ To simplify the workflow you can directly invoke code formatting target every ti
 make mode=deb format all
 ```
 
-### 6.2.4 Commit and push changes
+### 6.2.4 Check PETSc Get/Restore Array pairing
+
+LaMEM, like PETSc itself, requires that every `VecGetArray()` call (and its `Read`/`Write` variants, plus the `DMDAVecGetArray*`/`DMDAVecGetArrayDOF*` family) is matched by the corresponding `VecRestoreArray()`/`DMDAVecRestoreArray*()` call within the same function. A missing Restore call is a common source of subtle bugs and is easy to miss in review, so it is good practice to check for this before submitting a pull request.
+
+To catch these automatically, run the following target of the Makefile in `LaMEM/src` directory:
+
+```
+make checkgetrestore
+```
+
+This runs `scripts/petsc_getrestore_check.jl`, a lightweight static scanner that pairs Get/Restore calls per function and reports any that are unmatched. It requires a working `julia` installation on your `PATH`.
+
+If everything is paired correctly you will see:
+```
+Checking PETSc Get/Restore Array pairing ...
+
+0 potential mismatch(es) found.
+```
+Otherwise it lists every offending call together with its file and line number, e.g.:
+```
+Checking PETSc Get/Restore Array pairing ...
+../src/fdstag.cpp:412: VecGetArray() never matched by a Restore call
+../src/fdstag.cpp:498: VecRestoreArray() with no matching preceding Get call
+
+2 potential mismatch(es) found.
+```
+
+Note that this is a lexical scanner rather than a full C parser: it does not understand preprocessor branching (`#ifdef`), so a Get/Restore pair split across mutually-exclusive `#ifdef` branches will be (falsely) reported as unmatched. Review any flagged case manually before assuming it is a real bug.
+
+Running `make check` (without a specific sub-target) executes both `checkformat` and `checkgetrestore` together.
+
+### 6.2.5 Commit and push changes
 
 Inspect changes: 
 ```
@@ -162,7 +193,7 @@ On a regular basis: merge `master` back into your feature or bug fix branch. Thi
 
 Once your branch is ready and you would like to push it back to the main version of LaMEM, you should create a `Pull Request`, as described below.
 
-### 6.2.5 Switch between branches
+### 6.2.6 Switch between branches
 
 - Switch: `git checkout <branchname>`, for example `git checkout boris/feature-add_phase_transitions`
 - Show local and remote-tracking branches: `git branch -a`
@@ -239,7 +270,7 @@ This check is also fully integrated into the test framework. Run the following c
 ```
 make check
 ```
-(Note this is a different target from the `make check` described above, which checks source *formatting* and is run from the LaMEM source root rather than `test`.)
+(Note this is a different target from the `make check` described above, which is run from the LaMEM source root rather than `test` and checks source *formatting* and PETSc Get/Restore Array pairing.)
 
 `make check` runs the entire test suite with `-log_view` automatically appended to every test. Instead of the usual numeric comparison against the expected files, each test instead fails if any PETSc object type reports a different number of Creations than Destructions, e.g.:
 ```
