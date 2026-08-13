@@ -30,6 +30,8 @@ PetscErrorCode FastScapeCreate(FastScapeLib *FSLib, FB *fb)
 	Scaling        *scal;
 	FreeSurf       *surf;
 
+	PetscFunctionBeginUser;
+
 	// access context
 	surf    = FSLib->surf;
 	scal    = FSLib->scal;
@@ -474,6 +476,8 @@ PetscErrorCode FSLoadNonUniformGrid(MeshSeg1DFS *ms_fs, PetscScalar xend, Scalin
 	PetscInt i;
 	PetscScalar begSz, endSz, avgSz, bias;
 
+	PetscFunctionBeginUser;
+
 	// initialize
 	ms_fs->bias = 0;
 	ms_fs->xstart[ms_fs->nsegs] = xend;
@@ -525,6 +529,8 @@ PetscErrorCode FastScapeCopyMeshSeg1D(FastScapeLib *FSLib, MeshSeg1D *ms, const 
 {
 	PetscInt i;
 
+	PetscFunctionBeginUser;
+
 	if(strcmp("x", dir) == 0)
 	{
 		FSLib->msx_fs.nsegs             = ms->nsegs;
@@ -571,6 +577,8 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
 	TSSol    *ts;
 	JacRes   *jr;
 	PetscInt i, step_fs;
+
+	PetscFunctionBeginUser;
 
 	fsX     = &FSLib->fsX;
 	fsY     = &FSLib->fsY;
@@ -707,8 +715,9 @@ PetscErrorCode FastScapeCreateSurfaceGrid(FastScapeLib *FSLib, PetscInt mode)
 //---------------------------------------------------------------------------
 PetscErrorCode ScalingFastScapeCreate(Scaling *scal)
 {
-	PetscFunctionBeginUser;
 	PetscScalar km, yr, m;
+
+	PetscFunctionBeginUser;
 
 	// read unit values
 	km     = 1e3;
@@ -754,7 +763,6 @@ PetscErrorCode ScalingFastScapeCreate(Scaling *scal)
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfFastScapeCreate(FastScapeLib *FSLib, FB *fb)
 {
-
 	char filename[_str_len_];
 
 	PetscFunctionBeginUser;
@@ -989,6 +997,8 @@ PetscErrorCode InterpolationFor3DNonUniformGrid(FastScapeLib *FSLib, PetscScalar
 	PetscScalar *value_save;
 	Vec target_vec;
 
+	PetscFunctionBeginUser;
+
 	fsX     = &FSLib->fsX;
 	fsY     = &FSLib->fsY;
 
@@ -1054,6 +1064,8 @@ PetscErrorCode InterpolationFor2DNonUniformGrid(FastScapeLib *FSLib, PetscScalar
 	PetscFunctionBegin;
 	PetscInt i;
 	PetscReal x_min, x_max;
+
+	PetscFunctionBeginUser;
 
 	// interpolation direction
 	if (FSLib->extendedX)
@@ -1151,6 +1163,8 @@ PetscErrorCode GatherVariableFromLaMEM(FastScapeLib *FSLib, PetscScalar *topo_al
 	VecScatter ctx_vx   = nullptr;
 	VecScatter ctx_vy   = nullptr;
 	VecScatter ctx_vz   = nullptr;
+
+	PetscFunctionBeginUser;
 
 	surf   = FSLib->surf;
 	fs     = surf->jr->fs;
@@ -1293,11 +1307,14 @@ PetscErrorCode GatherVariableFromLaMEM(FastScapeLib *FSLib, PetscScalar *topo_al
 PetscErrorCode BilinearInterpolate(FastScapeLib *FSLib, PetscScalar *data, PetscScalar *data_refine,
                                    PetscScalar *data_refine_pass, Scaling *scal, PetscInt corMode, PetscInt nx_refine, PetscInt ny_refine)
 {
+	PetscFunctionBeginUser;
+
 	//PetscInt interpolationMode = 1;
 	// linear interpolation
 	// refine = 1; no nodes; 2, add a node between two original nearest nodes; 3, add two nodes between two nearest original nodes;
 	// corMode: 1 -- topography, (km) in LaMEM to (m) in FastScape; 2 -- velocity, (cm/yr) in LaMEM to (m/yr) in FastScape
 	PetscScalar unit_factor = 1.0;
+
 
 	if (corMode == 1)
 	{
@@ -1355,6 +1372,8 @@ PetscErrorCode Extended2D(FastScapeLib *FSLib, PetscScalar *data, PetscScalar *d
 	PetscInt origDim    = extendX ? FSLib->ny_LaMEM : FSLib->nx_LaMEM;
 	PetscInt targetDim  = extendX ? FSLib->extendedYNodes : FSLib->extendedXNodes;
 	PetscInt otherDim   = extendX ? FSLib->nx_LaMEM : FSLib->ny_LaMEM;
+
+	PetscFunctionBeginUser;
 
 	// scaling factor
 	if(!isRefine)
@@ -1440,6 +1459,9 @@ PetscErrorCode FastScapeRun(FastScapeLib *FSLib)
 	// Apply surface process to the internal free surface of the model
 	// free surface cases only
 	FreeSurf *surf;
+
+	PetscFunctionBeginUser;
+
 	surf = FSLib->surf;
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
@@ -1889,6 +1911,9 @@ PetscErrorCode PassValue2D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
 	PetscScalar *topo_extend, *topo_aver, *topo_aver_ori, *topo_et_refine;
 	PetscInt mainNodes, secNodes, laMEMNodes, i, j, ind, ind2, idx, sec, n, nn, countY = 0, countX = 0;
 	PetscScalar sum, coord, begin, delta, coord0, coord1;
+
+	PetscFunctionBeginUser;
+
 	// scaling function
 	auto convertValue = [&](PetscScalar value) -> PetscScalar
 	{
@@ -2017,6 +2042,8 @@ PetscErrorCode PassValue3D(FastScapeLib *FSLib, PetscScalar *topo_pass_f, PetscS
 	PetscInt m, n, mm, nn, ind_a, ind_b, ind_c, ind_d, refine, i, j, ind, ind2, countX = 0, countY = 0;
 	PetscScalar dx, dy, wtx, wty, x_coor, y_coor, x_begin = 0.0, y_begin = 0.0;
 	PetscScalar *topo_refine = nullptr, *topo_nug = nullptr;
+
+	PetscFunctionBeginUser;
 
 	fsX     = &FSLib->fsX;
 	fsY     = &FSLib->fsY;
@@ -2208,6 +2235,7 @@ PetscErrorCode PVSurfWriteVTSFS(FastScapeLib *FSLib, const char *dirName, PetscS
 	FreeSurf  *surf;
 	size_t    offset = 0;
 	PVSurf    *pvsurf;
+
 	PetscFunctionBeginUser;
 
 	PetscInt i, nx, ny, numFields;
@@ -2399,6 +2427,7 @@ PetscErrorCode PVSurfWriteCoordFS(FastScapeLib *FSLib, FILE *fp, PetscScalar *to
 	PetscInt    i, j, ind, cn, nx, ny;
 	FSGrid  *fsX;
 	FSGrid  *fsY;
+
 	PetscFunctionBeginUser;
 
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
@@ -2450,10 +2479,11 @@ PetscErrorCode PVSurfWriteCoordFS(FastScapeLib *FSLib, FILE *fp, PetscScalar *to
 //---------------------------------------------------------------------------
 PetscErrorCode PVSurfWriteInfFS(FastScapeLib *FSLib, FILE *fp, PetscScalar *Inf, PetscInt InfMode)
 {
+	float    *buff;
+	PetscInt ind, cn, nx, ny;
+	Scaling  *scal;
+
 	PetscFunctionBeginUser;
-	float       *buff;
-	PetscInt    ind, cn, nx, ny;
-	Scaling *scal;
 
 	scal = FSLib->scal;
 
@@ -2557,6 +2587,7 @@ PetscErrorCode UpdatePVDFileFS(
 PetscErrorCode SavePvtsFS(FastScapeLib *FSLib, PetscScalar ttime, PetscInt step, const char *dirName, PetscScalar *topo)
 {
 	PetscFunctionBeginUser;
+
 	PetscInt mode = 0;
 
 	// check activation
@@ -2576,6 +2607,8 @@ PetscErrorCode SavePvtsFS(FastScapeLib *FSLib, PetscScalar ttime, PetscInt step,
 //---------------------------------------------------------------------------
 PetscErrorCode FastScapeSave(FastScapeLib *FSLib, PetscInt step_fs, PetscScalar time_fs)
 {
+	PetscFunctionBeginUser;
+
 	PetscInt status;
 	char *dirName = NULL;
 	PetscScalar *saveArray = nullptr;
@@ -2637,6 +2670,8 @@ PetscErrorCode FastScapeInitialize(FastScapeLib *FSLib, PetscScalar *topo_pass, 
 	PetscInt ind;
 	int ibc_int;
 	char *endptr;
+
+	PetscFunctionBeginUser;
 
 	// random noise (uniform distribution)
 	mt19937 generator;
@@ -2700,7 +2735,7 @@ PetscErrorCode FastScapeFortranCppAdvc(FastScapeLib *FSLib, PetscScalar dt_max, 
 	PetscInt ind, i, j;
 	PetscScalar *kf = nullptr, *kd = nullptr;
 
-
+	PetscFunctionBeginUser;
 
 	PetscCall(PetscMalloc((size_t)(FSLib->nodes_solve) * sizeof(PetscScalar), &kf));
 	PetscCall(PetscMalloc((size_t)(FSLib->nodes_solve) * sizeof(PetscScalar), &kd));
