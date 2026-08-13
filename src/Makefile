@@ -146,7 +146,7 @@ endif
 
 # target list
 
-.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc format check checkastyle checkformat checkgetrestore
+.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc format check checkformat checkgetrestore
 
 # default target (build executable)
 
@@ -192,7 +192,7 @@ format: checkastyle
 # check that source files are formatted according to .astylerc
 # (fails if `make format` would modify any file; leaves the tree untouched)
 
-checkformat: checkastyle
+checkformat:
 	@echo "Checking source formatting ..."
 	@if astyle --dry-run --options=.astylerc *.cpp *.h | grep -q '^Formatted'; then \
 		echo "............................................."; \

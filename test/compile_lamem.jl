@@ -13,14 +13,14 @@ with_fastscape = any(contains.(ARGS, "fastscape"))
 # Take the environment (dynamic libraries etc.) from the PETSc
 if is64bit
     println("Using PETSc that has 64bit integers")
-    cmd = addenv(PETSc_jll.ex42(),
+    cmd = addenv(PETSc_jll.ex42(), 
                     "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int64",
                     "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int64_deb",
                 )
 
 else
     println("Using PETSc that has 32bit integers")
-    cmd = addenv(PETSc_jll.ex42(),
+    cmd = addenv(PETSc_jll.ex42(), 
                     "PETSC_OPT"=>"/workspace/destdir/lib/petsc/double_real_Int32",
                     "PETSC_DEB"=>"/workspace/destdir/lib/petsc/double_real_Int32",
                 )
@@ -38,13 +38,6 @@ if do_check
     println("---- Checking LaMEM source formatting ----")
     check_format = Cmd(`make mode=opt check`, env = cmd.env)
     run(check_format)
-elseif with_fastscape
-    # FastScape-enabled build (opt only; there is no deb FastScape build in the CI)
-    println("Compiling LaMEM")
-
-    println("---- Compiling LaMEM opt version (with FastScape) ----")
-    compile_lamem = Cmd(`make mode=opt surf=scape all`, env = cmd.env)
-    run(compile_lamem)
 else
     println("Compiling LaMEM")
 

@@ -38,6 +38,7 @@ jobs:
         # clear message if it ever changes (see ASTYLE_VERSION in src/Makefile).
         sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make astyle ${{ matrix.ci.packages }}
         astyle --version
+        sudo -E apt-get -yq --no-install-suggests --no-install-recommends install make astyle ${{ matrix.ci.packages }}
         # Now create workspace directories, to later copy the pre-compiled PETSC libraries there
         sudo -E mkdir /workspace
         sudo -E mkdir /workspace/destdir
