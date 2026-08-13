@@ -24,8 +24,9 @@
 //---------------------------------------------------------------------------
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 {
-	Scaling  *scal;
-	PetscInt  maxPhaseID, jj;
+	Scaling     *scal;
+	PetscInt     maxPhaseID, jj;
+	PetscScalar  unit_m_yr;
 
 	PetscFunctionBeginUser;
 
@@ -95,6 +96,23 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		PetscCall(getScalarParam(fb, _REQUIRED_, "sed_rates2nd",        surf->sedRates2nd,   surf->numLayers,   scal->velocity));
 	}
 
+	// non-dimensional value of 1 [m/yr] (the input unit of prefactor_slope);
+	// in non-dimensional mode (utype == _NONE_) the input is taken as-is
+	unit_m_yr = scal->length_si/scal->time_si;
+	if(scal->utype != _NONE_) unit_m_yr *= 3600.0*24.0*365.25;
+
+	PetscCall(getIntParam(fb, _OPTIONAL_, "slope_dependent_erosion", &surf->slope_dependent_erosion, 1, 1));
+
+	if(surf->slope_dependent_erosion)
+	{
+		// defaults: prefactor of 1 [m/yr] and linear slope dependence
+		surf->prefactor_slope = 1.0/unit_m_yr;
+		surf->n_slope         = 1.0;
+
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "prefactor_slope", &surf->prefactor_slope, 1, unit_m_yr));
+		PetscCall(getScalarParam(fb, _OPTIONAL_, "n_slope",         &surf->n_slope,         1, 1.0));
+	}
+
 	PetscCall(getIntParam(fb, _OPTIONAL_, "topo_diff", &surf->topo_diff, 1, 1));
 
 	if(surf->topo_diff)
@@ -132,6 +150,10 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %" PetscInt_FMT " \n",  surf->numLayers);
 	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
 	if(surf->MaxAngle)  PetscPrintf(PETSC_COMM_WORLD, "   Maximum surface slope     : %g %s\n",  surf->MaxAngle*scal->angle, scal->lbl_angle);
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Slope-dependent erosion   : ");
+	if(!surf->slope_dependent_erosion) PetscPrintf(PETSC_COMM_WORLD, "none\n");
+	else PetscPrintf(PETSC_COMM_WORLD, "active (E = %g [m/yr] * slope^%g)\n", surf->prefactor_slope*unit_m_yr, surf->n_slope);
 
 	PetscPrintf(PETSC_COMM_WORLD, "   Topographic diffusion     : ");
 	if(!surf->topo_diff) PetscPrintf(PETSC_COMM_WORLD, "none\n");
@@ -1002,6 +1024,188 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 		PetscPrintf(PETSC_COMM_WORLD, "  X-coordinate range:  [%e, %e] %s\n",
 		            xmin*scal->length, xmax*scal->length, scal->lbl_length);
 	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscErrorCode FreeSurfAppSlopeErosion(FreeSurf *surf)
+{
+	// Apply slope-dependent erosion to the internal free surface:
+	// E = prefactor_slope * slope^n_slope, slope = |grad(topo)| (dimensionless).
+	// Runs on top of any erosion model. Activated when slope_dependent_erosion = 1.
+	// Explicit update with sub-stepping: the vertical drop per sub-step is limited
+	// to half the minimum horizontal grid spacing, so slopes change by at most O(1)
+	// between slope re-evaluations (valid for any n_slope, unlike a formal
+	// Hamilton-Jacobi CFL, which is ill-defined for n_slope < 1).
+
+	JacRes      *jr;
+	FDSTAG      *fs;
+	Scaling     *scal;
+	PetscScalar ***topo, ***topo_old;
+	PetscScalar  dt, dx, dy, gx, gy, slope, z, zbot, ztop, unit_m_yr;
+	PetscScalar  slope_max_loc, slope_max, E_max, dt_cfl, dt_solve;
+	PetscScalar  dx_min_loc, dy_min_loc, dx_min, dy_min, d_min;
+	PetscInt     L, i, j, nx, ny, sx, sy, sz;
+	PetscInt     I, I1, I2, J, J1, J2, mx, my;
+	PetscInt     ksolve, nsolve, ii, jj;
+
+	PetscFunctionBeginUser;
+
+	// free surface and slope-dependent erosion cases only
+	if(!surf->UseFreeSurf)             PetscFunctionReturn(0);
+	if(!surf->slope_dependent_erosion) PetscFunctionReturn(0);
+
+	// access context
+	jr   = surf->jr;
+	fs   = jr->fs;
+	dt   = jr->ts->dt;
+	L    = (PetscInt)fs->dsz.rank;
+	mx   = fs->dsx.tnods;
+	my   = fs->dsy.tnods;
+	scal = jr->scal;
+
+	// get box z-bounds for clamping
+	PetscCall(FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop));
+
+	// get local domain corners
+	PetscCall(DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL));
+
+	// find local minimum node spacing in x and y (for sub-step limit)
+	dx_min_loc = 1.0e+30;
+	for(ii = 0; ii < fs->dsx.nnods - 1; ii++)
+	{
+		PetscScalar d = fs->dsx.ncoor[ii+1] - fs->dsx.ncoor[ii];
+		if(d < dx_min_loc) dx_min_loc = d;
+	}
+	dy_min_loc = 1.0e+30;
+	for(jj = 0; jj < fs->dsy.nnods - 1; jj++)
+	{
+		PetscScalar d = fs->dsy.ncoor[jj+1] - fs->dsy.ncoor[jj];
+		if(d < dy_min_loc) dy_min_loc = d;
+	}
+
+	// find local maximum slope
+	slope_max_loc = 0.0;
+
+	PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo_old));
+
+	START_PLANE_LOOP
+	{
+		I  = i;
+		I1 = I-1; if(I1 < 0)   I1 = I;
+		I2 = I+1; if(I2 >= mx) I2 = I;
+		J  = j;
+		J1 = J-1; if(J1 < 0)   J1 = J;
+		J2 = J+1; if(J2 >= my) J2 = J;
+
+		gx = 0.0;
+		if(I1 != I2)
+		{
+			dx = COORD_NODE(I2, sx, fs->dsx) - COORD_NODE(I1, sx, fs->dsx);
+			gx = (topo_old[L][J][I2] - topo_old[L][J][I1])/dx;
+		}
+		gy = 0.0;
+		if(J1 != J2)
+		{
+			dy = COORD_NODE(J2, sy, fs->dsy) - COORD_NODE(J1, sy, fs->dsy);
+			gy = (topo_old[L][J2][I] - topo_old[L][J1][I])/dy;
+		}
+
+		slope = PetscSqrtScalar(gx*gx + gy*gy);
+
+		if(slope > slope_max_loc) slope_max_loc = slope;
+	}
+	END_PLANE_LOOP
+
+	PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo_old));
+
+	// global minima/maximum across all processors
+	PetscCallMPI(MPI_Allreduce(&dx_min_loc,    &dx_min,    1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
+	PetscCallMPI(MPI_Allreduce(&dy_min_loc,    &dy_min,    1, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD));
+	PetscCallMPI(MPI_Allreduce(&slope_max_loc, &slope_max, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD));
+
+	// maximum erosion rate (conservative estimate; slopes generally decay as erosion proceeds)
+	E_max = 0.0;
+	if(slope_max > 0.0) E_max = surf->prefactor_slope*PetscPowScalar(slope_max, surf->n_slope);
+
+	// number of sub-steps: limit vertical drop per sub-step to half the minimum spacing
+	d_min  = (dx_min < dy_min) ? dx_min : dy_min;
+	nsolve = 1;
+	if(E_max > 0.0)
+	{
+		dt_cfl = 0.5*d_min/E_max;
+		if(dt_cfl < dt) nsolve = (PetscInt)PetscCeilReal(dt/dt_cfl);
+	}
+	dt_solve = dt/(PetscScalar)nsolve;
+
+	// sub-stepping loop
+	for(ksolve = 0; ksolve < nsolve; ksolve++)
+	{
+		// read from ltopo (includes ghost cells), write to gtopo
+		PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &topo));
+		PetscCall(DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo_old));
+
+		START_PLANE_LOOP
+		{
+			I  = i;
+			I1 = I-1; if(I1 < 0)   I1 = I;
+			I2 = I+1; if(I2 >= mx) I2 = I;
+			J  = j;
+			J1 = J-1; if(J1 < 0)   J1 = J;
+			J2 = J+1; if(J2 >= my) J2 = J;
+
+			// topographic gradient (centered differences; one-sided at global boundaries)
+			gx = 0.0;
+			if(I1 != I2)
+			{
+				dx = COORD_NODE(I2, sx, fs->dsx) - COORD_NODE(I1, sx, fs->dsx);
+				gx = (topo_old[L][J][I2] - topo_old[L][J][I1])/dx;
+			}
+			gy = 0.0;
+			if(J1 != J2)
+			{
+				dy = COORD_NODE(J2, sy, fs->dsy) - COORD_NODE(J1, sy, fs->dsy);
+				gy = (topo_old[L][J2][I] - topo_old[L][J1][I])/dy;
+			}
+
+			// slope magnitude (dimensionless)
+			slope = PetscSqrtScalar(gx*gx + gy*gy);
+
+			// get topography
+			z = topo_old[L][J][I];
+
+			// erode with slope-dependent rate
+			if(slope > 0.0)
+			{
+				z -= surf->prefactor_slope*PetscPowScalar(slope, surf->n_slope)*dt_solve;
+			}
+
+			// check if internal free surface goes outside the model domain
+			if(z > ztop) z = ztop;
+			if(z < zbot) z = zbot;
+
+			// store updated topography
+			topo[L][j][i] = z;
+		}
+		END_PLANE_LOOP
+
+		// restore access
+		PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &topo));
+		PetscCall(DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo_old));
+
+		// refresh ghost cells before next sub-step
+		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
+	}
+
+	// compute & store average topography
+	PetscCall(FreeSurfGetAvgTopo(surf));
+
+	// non-dimensional value of 1 [m/yr] (the input unit of prefactor_slope) for printing
+	unit_m_yr = scal->length_si/scal->time_si;
+	if(scal->utype != _NONE_) unit_m_yr *= 3600.0*24.0*365.25;
+
+	PetscPrintf(PETSC_COMM_WORLD, "Applying slope-dependent erosion (E = %g [m/yr] * slope^%g) in %" PetscInt_FMT " sub-step(s).\n",
+	            surf->prefactor_slope*unit_m_yr, surf->n_slope, nsolve);
 
 	PetscFunctionReturn(0);
 }

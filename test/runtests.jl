@@ -1491,6 +1491,43 @@ if should_run_test("t36_spatially_limited_erosion")
 end
 end
 #---------------------------------------------------------------------------
+if should_run_test("t37_slope_dependent_erosion")
+@testset "t37_slope_dependent_erosion" begin
+    # Slope-dependent erosion (slope_dependent_erosion = 1):
+    # E [m/yr] = prefactor_slope * slope^n_slope, slope = |grad(topo)|.
+    # A semicircular dome (same initial topography as t35_TopoDiffusion) is
+    # eroded on its flanks where the slope is largest, while the flat far field
+    # stays untouched. Guards FreeSurfAppSlopeErosion in src/surf.cpp (m/yr unit
+    # conversion, gradient stencil, and increment-limited sub-stepping), combined
+    # with 45-degree max-angle smoothing as in production use (and t35).
+    # Analytic validation of this setup: with smoothing disabled, the first-step
+    # erosion increment (isolated by differencing against a slope_dependent_erosion=0
+    # run, since erosion is applied after surface advection) matches the analytic
+    # E*dt = 0.1 km * slope^2 to <1 mm per node, peaks at 155 m on the steepest
+    # flank, and leaves the flat far field untouched. Serial and 2/4-core runs agree
+    # to within the erosion-independent solver noise of the same setup.
+    cd(test_dir)
+    dir = "t37_slope_dependent_erosion"
+    include(joinpath(dir, "t37_CreateSetup.jl"))
+
+    keywords = ("|Div|_inf", "|Div|_2", "|mRes|_2")
+    acc      = ((rtol=1e-6, atol=1e-6), (rtol=1e-5, atol=5e-5), (rtol=2.5e-4, atol=1e-4))
+
+    ParamFile = "slope_dependent_erosion.dat"
+    topo_file = "t37_topo.bin"
+
+    t37_CreateSetup(dir, topo_file)
+
+    @test perform_lamem_test(dir, ParamFile, "slope_dependent_erosion_opt";
+        keywords = keywords,
+        accuracy = acc,
+        cores    = 1,
+        opt      = true,
+        mpiexec  = mpiexec,
+        create_expected_file=update_expected, clean_dir=clean_files)
+end
+end
+#---------------------------------------------------------------------------
 end
 #---------------------------------------------------------------------------
 

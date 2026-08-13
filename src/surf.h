@@ -60,6 +60,11 @@ struct FreeSurf
 	PetscScalar hDown;                      // down dip thickness of sediment cover
 	PetscScalar dTrans;                     // half of transition zone
 
+	// slope-dependent erosion parameters
+	PetscInt    slope_dependent_erosion; // slope-dependent erosion flag [0-none, 1-active]
+	PetscScalar prefactor_slope;         // erosion prefactor (non-dimensional, input in [m/yr])
+	PetscScalar n_slope;                 // slope power exponent (dimensionless)
+
 	// topographic diffusion parameters
 	PetscInt    topo_diff;        // topographic diffusion flag [0-none, 1-active]
 	PetscScalar topo_diffusivity; // topographic diffusivity (non-dimensional, input in [m^2/s])
@@ -104,6 +109,9 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf);
 
 // apply erosion to the free surface
 PetscErrorCode FreeSurfAppErosion(FreeSurf *surf);
+
+// apply slope-dependent erosion to the free surface
+PetscErrorCode FreeSurfAppSlopeErosion(FreeSurf *surf);
 
 // apply sedimentation to the free surface
 PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf);

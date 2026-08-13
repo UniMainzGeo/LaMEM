@@ -138,6 +138,12 @@
     er_x_min           = -10 -10 -10      # minimum x-coordinates for erosion (model 3 only, one per phase)
     er_x_max           = 10  10  10       # maximum x-coordinates for erosion (model 3 only, one per phase)
 
+    # Slope-dependent erosion: E [m/yr] = prefactor_slope * slope^n_slope, slope = |grad(topo)| (dimensionless)
+    # Independent of erosion_model (can run on top of it); applied after erosion, before sedimentation and topographic diffusion
+    slope_dependent_erosion = 0           # slope-dependent erosion flag [0-none (default), 1-active]
+    prefactor_slope         = 1.0         # erosion prefactor [m/yr] (optional, default 1.0; NOTE: input in m/yr, unlike er_rates/sed_rates in cm/yr)
+    n_slope                 = 1.0         # slope power exponent [-] (optional, default 1.0)
+
     sediment_model     = 1                # sedimentation model [0-none (dafault), 1-prescribed rate with given level, 2-cont. margin]
     sed_num_layers     = 3                # number of sediment layers
     sed_time_delims    = 0.5   2.5        # sediment layers time delimiters (one less than number)
