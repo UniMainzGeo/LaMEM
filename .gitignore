@@ -22,7 +22,9 @@
 /src/.project
 /test/*/ProcessorPartitioning*.*
 /test/t33_Initial_APS/Timestep_*
-Manifest.toml  
+Manifest.toml
 doc/build/
+# leftovers of the pre-v3.0.0 documentation (the sources now live in doc/)
+docs/
 .claude
 
