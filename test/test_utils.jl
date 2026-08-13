@@ -634,9 +634,15 @@ function perform_lamem_test(dir::String, ParamFile::String, expectedFile::String
     else
         valgrind_flag = ""
     end
+    
+    if deb
+        opt_mod="deb"
+    else
+        opt_mod="opt"
+    end 
 
     # print info about running tests                
-    @info "Performing test $ParamFile in directory $dir on $cores cores $valgrind_flag"
+    @info "Performing test $ParamFile in directory $dir on $cores cores in $opt_mod mode $valgrind_flag"
     
     cur_dir = pwd();
     cd(dir)
